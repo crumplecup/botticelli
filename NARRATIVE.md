@@ -65,15 +65,28 @@ The `narrations/mint.toml` file defines a three-act narrative for generating soc
   - Validates empty prompt detection
   - Validates well-formed narratives
 
-### Step 3: Implement Narrative Executor
+### Step 3: Implement Narrative Executor ✓ COMPLETE
 
-- Create executor that processes acts in order
-- For each act:
-  - Build prompt (potentially including previous outputs)
-  - Call LLM API using existing BoticelliDriver
-  - Capture response
-  - Store in execution history
-- Design context passing strategy (append to conversation history vs explicit context injection)
+**Completed:**
+- Created `NarrativeExecutor<D: BoticelliDriver>` in `src/narrative/executor.rs`
+- Implemented sequential act processing:
+  - Builds `GenerateRequest` with conversation history
+  - Calls LLM API using `BoticelliDriver::generate()`
+  - Extracts text responses from `Output` enum
+  - Maintains alternating User/Assistant message history
+- Context passing strategy: conversation history approach
+  - Each act sees all previous outputs as conversation context
+  - Enables multi-step workflows (generate → critique → improve)
+- Data structures:
+  - `ActExecution` - stores prompt, response, metadata for single act
+  - `NarrativeExecution` - aggregates complete execution with all acts
+- Proper derives: `Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize`
+- Error handling with `BoticelliResult`
+- Exported types at crate level in `lib.rs`
+- Tests: 4 passing tests in `tests/narrative_executor_test.rs`
+  - Mock driver for deterministic testing
+  - Tests cover: single/multiple acts, context passing, driver access
+  - Context tracking test validates conversation history growth
 
 ### Step 4: Database Schema for Narrative Executions
 
