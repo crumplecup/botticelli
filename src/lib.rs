@@ -87,6 +87,6 @@ pub use models::GeminiClient;
 
 // Re-export narrative types
 pub use narrative::{
-    ActExecution, Narrative, NarrativeError, NarrativeErrorKind, NarrativeExecution,
+    ActConfig, ActExecution, Narrative, NarrativeError, NarrativeErrorKind, NarrativeExecution,
     NarrativeExecutor, NarrativeMetadata, NarrativeProvider, NarrativeToc,
 };

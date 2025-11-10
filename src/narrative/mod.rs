@@ -14,4 +14,4 @@ mod provider;
 pub use core::{Narrative, NarrativeMetadata, NarrativeToc};
 pub use error::{NarrativeError, NarrativeErrorKind};
 pub use executor::{ActExecution, NarrativeExecution, NarrativeExecutor};
-pub use provider::NarrativeProvider;
+pub use provider::{ActConfig, NarrativeProvider};

@@ -1,8 +1,23 @@
 use async_trait::async_trait;
 use boticelli::{
-    BoticelliDriver, BoticelliResult, GenerateRequest, GenerateResponse, Narrative,
-    NarrativeExecutor, NarrativeProvider, Output,
+    ActConfig, BoticelliDriver, BoticelliResult, GenerateRequest, GenerateResponse, Input,
+    Narrative, NarrativeExecutor, NarrativeProvider, Output,
 };
+
+/// Helper to extract text from inputs for testing.
+fn get_text_from_inputs(inputs: &[Input]) -> String {
+    inputs
+        .iter()
+        .filter_map(|input| {
+            if let Input::Text(text) = input {
+                Some(text.clone())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
 
 /// Mock LLM driver for testing that echoes the prompt with a prefix.
 struct MockDriver {
@@ -90,14 +105,14 @@ async fn test_execute_simple_narrative() {
     // Check first act
     let act1 = &result.act_executions[0];
     assert_eq!(act1.act_name, "act1");
-    assert_eq!(act1.prompt, "First prompt");
+    assert_eq!(get_text_from_inputs(&act1.inputs), "First prompt");
     assert_eq!(act1.response, "Response: First prompt");
     assert_eq!(act1.sequence_number, 0);
 
     // Check second act
     let act2 = &result.act_executions[1];
     assert_eq!(act2.act_name, "act2");
-    assert_eq!(act2.prompt, "Second prompt");
+    assert_eq!(get_text_from_inputs(&act2.inputs), "Second prompt");
     assert_eq!(act2.response, "Response: Second prompt");
     assert_eq!(act2.sequence_number, 1);
 }
@@ -130,7 +145,7 @@ async fn test_execute_single_act_narrative() {
 
     let act = &result.act_executions[0];
     assert_eq!(act.act_name, "only_act");
-    assert_eq!(act.prompt, "The only prompt");
+    assert_eq!(get_text_from_inputs(&act.inputs), "The only prompt");
     assert_eq!(act.response, "Result: The only prompt");
     assert_eq!(act.sequence_number, 0);
 }
@@ -238,8 +253,10 @@ async fn test_trait_abstraction_with_simple_provider() {
             &self.act_order
         }
 
-        fn get_act_prompt(&self, act_name: &str) -> Option<&str> {
-            self.act_prompts.get(act_name).map(|s| s.as_str())
+        fn get_act_config(&self, act_name: &str) -> Option<ActConfig> {
+            self.act_prompts
+                .get(act_name)
+                .map(|text| ActConfig::from_text(text.clone()))
         }
     }
 
@@ -265,9 +282,122 @@ async fn test_trait_abstraction_with_simple_provider() {
     assert_eq!(result.narrative_name, "in_memory_test");
     assert_eq!(result.act_executions.len(), 2);
     assert_eq!(result.act_executions[0].act_name, "greeting");
-    assert_eq!(result.act_executions[0].prompt, "Say hello");
+    assert_eq!(
+        get_text_from_inputs(&result.act_executions[0].inputs),
+        "Say hello"
+    );
     assert_eq!(result.act_executions[0].response, "Mock: Say hello");
     assert_eq!(result.act_executions[1].act_name, "farewell");
-    assert_eq!(result.act_executions[1].prompt, "Say goodbye");
+    assert_eq!(
+        get_text_from_inputs(&result.act_executions[1].inputs),
+        "Say goodbye"
+    );
     assert_eq!(result.act_executions[1].response, "Mock: Say goodbye");
+}
+
+#[tokio::test]
+async fn test_multimodal_and_per_act_config() {
+    // This test demonstrates the new flexible configuration capabilities:
+    // - Multimodal inputs (text, images, etc.)
+    // - Per-act model selection
+    // - Per-act temperature/max_tokens overrides
+
+    struct FlexibleProvider {
+        name: String,
+        acts: Vec<String>,
+        configs: std::collections::HashMap<String, ActConfig>,
+    }
+
+    impl NarrativeProvider for FlexibleProvider {
+        fn name(&self) -> &str {
+            &self.name
+        }
+
+        fn act_names(&self) -> &[String] {
+            &self.acts
+        }
+
+        fn get_act_config(&self, act_name: &str) -> Option<ActConfig> {
+            self.configs.get(act_name).cloned()
+        }
+    }
+
+    // Build a narrative with different configurations per act
+    let mut configs = std::collections::HashMap::new();
+
+    // Act 1: Simple text with GPT-4, high temperature for creativity
+    configs.insert(
+        "creative".to_string(),
+        ActConfig::from_text("Write a poem")
+            .with_model("gpt-4")
+            .with_temperature(0.9)
+            .with_max_tokens(100),
+    );
+
+    // Act 2: Text only, Claude, lower temperature for analysis
+    configs.insert(
+        "analytical".to_string(),
+        ActConfig::from_text("Analyze the poem")
+            .with_model("claude-3-opus-20240229")
+            .with_temperature(0.3),
+    );
+
+    // Act 3: Multimodal input (text + hypothetical image)
+    configs.insert(
+        "multimodal".to_string(),
+        ActConfig::from_inputs(vec![
+            Input::Text("Describe this image in relation to the poem".to_string()),
+            Input::Image {
+                mime: Some("image/png".to_string()),
+                source: boticelli::MediaSource::Url("https://example.com/image.png".to_string()),
+            },
+        ])
+        .with_model("gemini-pro-vision"),
+    );
+
+    let provider = FlexibleProvider {
+        name: "multimodal_test".to_string(),
+        acts: vec![
+            "creative".to_string(),
+            "analytical".to_string(),
+            "multimodal".to_string(),
+        ],
+        configs,
+    };
+
+    let driver = MockDriver::new("Result");
+    let executor = NarrativeExecutor::new(driver);
+
+    let result = executor
+        .execute(&provider)
+        .await
+        .expect("Execution failed");
+
+    // Verify act 1 configuration was applied
+    assert_eq!(result.act_executions[0].act_name, "creative");
+    assert_eq!(result.act_executions[0].model, Some("gpt-4".to_string()));
+    assert_eq!(result.act_executions[0].temperature, Some(0.9));
+    assert_eq!(result.act_executions[0].max_tokens, Some(100));
+    assert_eq!(get_text_from_inputs(&result.act_executions[0].inputs), "Write a poem");
+
+    // Verify act 2 configuration was applied
+    assert_eq!(result.act_executions[1].act_name, "analytical");
+    assert_eq!(
+        result.act_executions[1].model,
+        Some("claude-3-opus-20240229".to_string())
+    );
+    assert_eq!(result.act_executions[1].temperature, Some(0.3));
+    assert_eq!(result.act_executions[1].max_tokens, None);
+
+    // Verify act 3 has multimodal inputs
+    assert_eq!(result.act_executions[2].act_name, "multimodal");
+    assert_eq!(
+        result.act_executions[2].model,
+        Some("gemini-pro-vision".to_string())
+    );
+    assert_eq!(result.act_executions[2].inputs.len(), 2);
+    // First input is text
+    assert!(matches!(&result.act_executions[2].inputs[0], Input::Text(_)));
+    // Second input is image
+    assert!(matches!(&result.act_executions[2].inputs[1], Input::Image { .. }));
 }

@@ -1,6 +1,6 @@
 //! Core data structures for narratives.
 
-use crate::narrative::{NarrativeError, NarrativeErrorKind, NarrativeProvider};
+use crate::narrative::{ActConfig, NarrativeError, NarrativeErrorKind, NarrativeProvider};
 use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
@@ -150,7 +150,9 @@ impl NarrativeProvider for Narrative {
         &self.toc.order
     }
 
-    fn get_act_prompt(&self, act_name: &str) -> Option<&str> {
-        self.acts.get(act_name).map(|s| s.as_str())
+    fn get_act_config(&self, act_name: &str) -> Option<ActConfig> {
+        self.acts
+            .get(act_name)
+            .map(|prompt| ActConfig::from_text(prompt.clone()))
     }
 }

@@ -8,13 +8,22 @@ use crate::{BoticelliResult, NarrativeProvider};
 use serde::{Deserialize, Serialize};
 
 /// Execution result for a single act in a narrative.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActExecution {
     /// Name of the act (from the narrative).
     pub act_name: String,
 
-    /// The prompt that was sent to the LLM.
-    pub prompt: String,
+    /// The multimodal inputs that were sent to the LLM.
+    pub inputs: Vec<Input>,
+
+    /// The model used for this act (if overridden).
+    pub model: Option<String>,
+
+    /// The temperature used for this act (if overridden).
+    pub temperature: Option<f32>,
+
+    /// The max_tokens used for this act (if overridden).
+    pub max_tokens: Option<u32>,
 
     /// The text response from the LLM.
     pub response: String,
@@ -24,7 +33,7 @@ pub struct ActExecution {
 }
 
 /// Complete execution result for a narrative.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NarrativeExecution {
     /// Name of the narrative that was executed.
     pub narrative_name: String,
@@ -66,22 +75,22 @@ impl<D: BoticelliDriver> NarrativeExecutor<D> {
         let mut conversation_history: Vec<Message> = Vec::new();
 
         for (sequence_number, act_name) in narrative.act_names().iter().enumerate() {
-            // Get the prompt for this act
-            let prompt = narrative
-                .get_act_prompt(act_name)
+            // Get the configuration for this act
+            let config = narrative
+                .get_act_config(act_name)
                 .expect("NarrativeProvider should ensure all acts exist");
 
-            // Build the request with conversation history + current prompt
+            // Build the request with conversation history + current act inputs
             conversation_history.push(Message {
                 role: Role::User,
-                content: vec![Input::Text(prompt.to_string())],
+                content: config.inputs.clone(),
             });
 
             let request = GenerateRequest {
                 messages: conversation_history.clone(),
-                max_tokens: None,
-                temperature: None,
-                model: None,
+                max_tokens: config.max_tokens,
+                temperature: config.temperature,
+                model: config.model.clone(),
             };
 
             // Call the LLM
@@ -93,7 +102,10 @@ impl<D: BoticelliDriver> NarrativeExecutor<D> {
             // Store the act execution
             act_executions.push(ActExecution {
                 act_name: act_name.clone(),
-                prompt: prompt.to_string(),
+                inputs: config.inputs.clone(),
+                model: config.model,
+                temperature: config.temperature,
+                max_tokens: config.max_tokens,
                 response: response_text.clone(),
                 sequence_number,
             });
