@@ -180,22 +180,115 @@ TOML file → Parse → ActConfig → NarrativeExecutor → LLM API
 
 ### Step 4: Database Schema for Narrative Executions
 
-- Create table `narrative_executions` to store execution metadata
-  - `id` - unique identifier
-  - `narrative_name` - which narrative was run
-  - `started_at` - timestamp
-  - `completed_at` - timestamp (nullable)
-  - `status` - (running, completed, failed)
-- Create table `narrative_act_outputs` to store individual act results
-  - `id` - unique identifier
-  - `execution_id` - foreign key to narrative_executions
-  - `act_name` - which act this is from
-  - `prompt` - the prompt that was sent
-  - `response` - the LLM response
-  - `sequence_number` - order in the execution
-  - `created_at` - timestamp
-- Add Diesel migrations
-- Create Rust models for these tables
+**Schema Design Goals:**
+- Store complete execution history with full reproducibility
+- Preserve multimodal input configurations
+- Track per-act model selection and parameters
+- Handle media sources (URL, Base64, Binary) efficiently
+- Enable querying and analysis of execution patterns
+
+**Proposed Tables:**
+
+1. **`narrative_executions`** - Top-level execution tracking
+   - `id` (SERIAL PRIMARY KEY) - Unique identifier
+   - `narrative_name` (TEXT NOT NULL) - Which narrative was run
+   - `narrative_description` (TEXT) - Description from narrative metadata
+   - `started_at` (TIMESTAMP NOT NULL) - Execution start time
+   - `completed_at` (TIMESTAMP) - Execution completion time (NULL if running)
+   - `status` (TEXT NOT NULL) - Execution status: 'running', 'completed', 'failed'
+   - `error_message` (TEXT) - Error details if status='failed'
+   - `created_at` (TIMESTAMP DEFAULT NOW())
+
+2. **`act_executions`** - Individual act execution results
+   - `id` (SERIAL PRIMARY KEY) - Unique identifier
+   - `execution_id` (INTEGER NOT NULL REFERENCES narrative_executions(id) ON DELETE CASCADE)
+   - `act_name` (TEXT NOT NULL) - Name of the act from narrative
+   - `sequence_number` (INTEGER NOT NULL) - Order in execution (0-indexed)
+   - `model` (TEXT) - Model used (if overridden from default)
+   - `temperature` (REAL) - Temperature parameter (if overridden)
+   - `max_tokens` (INTEGER) - Max tokens parameter (if overridden)
+   - `response` (TEXT NOT NULL) - LLM text response
+   - `created_at` (TIMESTAMP DEFAULT NOW())
+   - INDEX on (execution_id, sequence_number)
+
+3. **`act_inputs`** - Multimodal inputs for each act
+   - `id` (SERIAL PRIMARY KEY) - Unique identifier
+   - `act_execution_id` (INTEGER NOT NULL REFERENCES act_executions(id) ON DELETE CASCADE)
+   - `input_order` (INTEGER NOT NULL) - Position in inputs array (0-indexed)
+   - `input_type` (TEXT NOT NULL) - 'text', 'image', 'audio', 'video', 'document'
+   - `text_content` (TEXT) - For Text inputs (NULL for media types)
+   - `mime_type` (TEXT) - MIME type for media inputs
+   - `source_type` (TEXT) - 'url', 'base64', 'binary' (NULL for text)
+   - `source_url` (TEXT) - URL source (if source_type='url')
+   - `source_base64` (TEXT) - Base64 content (if source_type='base64')
+   - `source_binary` (BYTEA) - Binary content (if source_type='binary')
+   - `source_size_bytes` (BIGINT) - Size of binary/base64 data (for monitoring)
+   - `content_hash` (TEXT) - SHA256 hash of content (for future deduplication)
+   - `filename` (TEXT) - Optional filename (for Document inputs)
+   - `created_at` (TIMESTAMP DEFAULT NOW())
+   - INDEX on (act_execution_id, input_order)
+   - INDEX on (content_hash) - For future deduplication queries
+
+**Implementation Tasks:**
+- [ ] Create Diesel migration for all three tables with proper constraints
+- [ ] Create Diesel schema in `src/schema.rs`
+- [ ] Create DB models in `src/db/` module:
+  - `models.rs` - Diesel models (`NarrativeExecutionRow`, `ActExecutionRow`, `ActInputRow`)
+  - `operations.rs` - Database operations (save, load, query)
+  - `conversions.rs` - Convert between domain types and DB models
+- [ ] Implement `save_execution()`:
+  - Insert into narrative_executions
+  - For each act: insert into act_executions
+  - For each input: insert into act_inputs
+  - Wrap in transaction for atomicity
+- [ ] Implement `load_execution(id)`:
+  - Join across all three tables
+  - Reconstruct NarrativeExecution with all ActExecutions and Inputs
+- [ ] Implement `list_executions()` with filtering:
+  - Filter by narrative_name
+  - Filter by date range
+  - Filter by status
+  - Pagination support
+- [ ] Add unit tests using in-memory SQLite for CI
+- [ ] Add integration tests with PostgreSQL (optional, requires DB)
+
+**Design Decisions:**
+
+1. **Binary Media Storage**: ✓ RESOLVED
+   - Store everything in PostgreSQL using Diesel
+   - URLs stored as TEXT (source_url)
+   - Base64 stored as TEXT (source_base64)
+   - Binary data stored as BYTEA (source_binary)
+   - Focus on text and images (video support deferred to future work)
+   - Trade-off: Simplicity and ACID guarantees over performance at massive scale
+
+2. **Supported Media Types (Initial Implementation)**:
+   - ✓ Text inputs (primary use case)
+   - ✓ Image inputs (PNG, JPEG, WebP, GIF)
+   - ✓ Audio inputs (MP3, WAV, OGG) - stored but not primary focus
+   - ✓ Document inputs (PDF, TXT, etc.)
+   - ⏸️ Video inputs - **deferred to future work** (large file sizes)
+
+**Open Design Questions:**
+
+3. **Media Deduplication**: Should we deduplicate media by content hash?
+   - Would save space for repeated images across executions
+   - Adds complexity to deletion and reference tracking
+   - **Recommendation**: Add `content_hash` column now, implement deduplication later if needed
+
+4. **Retention Policy**: How long to keep execution history?
+   - Automatic cleanup of old executions?
+   - Archive completed executions to separate table?
+   - **Recommendation**: Start without automatic cleanup, add retention policies based on actual usage
+
+5. **Conversation History**: Should we store intermediate conversation state?
+   - Currently only storing final response per act
+   - Could store full Message history for debugging
+   - **Recommendation**: Store only final responses initially, add Message history if debugging requires it
+
+6. **Performance Considerations**:
+   - Should we lazy-load binary media when querying executions?
+   - **Recommendation**: Start with eager loading, add lazy loading if performance becomes an issue
 
 ### Step 5: CLI Interface
 
