@@ -23,7 +23,7 @@ This document serves as both design specification and implementation guide. Sect
 - 🚧 **In Progress** - Currently being implemented
 - 📋 **Planned** - Designed but not yet implemented
 
-### Current Status (Step 7 of 8 Complete)
+### Current Status (Step 8 of 8 Complete)
 
 | Step | Component | Status | Location |
 |------|-----------|--------|----------|
@@ -34,7 +34,7 @@ This document serves as both design specification and implementation guide. Sect
 | 5 | HeaderRateLimitDetector | ✅ Implemented | `src/rate_limit/detector.rs` |
 | 6 | GeminiClient integration | ✅ Implemented | `src/models/gemini.rs` |
 | 7 | CLI override flags | ✅ Implemented | `src/main.rs` |
-| 8 | Testing & validation | 📋 Planned | - |
+| 8 | Testing & validation | ✅ Implemented | `tests/rate_limit_integration_test.rs`, `TESTING.md` |
 
 ### Core Trait (✅ Implemented)
 
@@ -1126,6 +1126,187 @@ async fn run_narrative(cmd: RunCommand) -> BoticelliResult<()> {
     Ok(())
 }
 ```
+
+## Testing & Validation (✅ Implemented - Step 8)
+
+### Economical Testing Strategy
+
+To conserve API quota while still validating rate limiting functionality, Boticelli uses a multi-tier testing approach:
+
+1. **Unit tests (no API calls)** - Test rate limiting logic with mock drivers
+2. **Integration tests (gated)** - Minimal API tests behind `BOTICELLI_RUN_API_TESTS` environment variable
+3. **Manual CLI testing** - Minimal narratives for end-to-end validation
+
+### Test Budget Management
+
+**Gemini Free Tier Limits:**
+- 10 requests per minute (RPM)
+- 250,000 tokens per minute (TPM)
+- 250 requests per day (RPD)
+
+**Test Suite Budget:**
+
+| Test Type | Requests | Tokens | % of Daily Quota |
+|-----------|----------|--------|------------------|
+| Unit tests (`cargo test`) | 0 | 0 | 0% |
+| Integration tests (API) | 2 | ~14 | 0.8% |
+| Manual CLI test (1x) | 1 | ~5 | 0.4% |
+| **Total per full cycle** | **3** | **~19** | **1.2%** |
+
+This allows running the full test suite **~83 times per day** before hitting the 250 RPD limit.
+
+### Integration Test Suite
+
+**Location:** `tests/rate_limit_integration_test.rs`
+
+The integration test file contains 8 tests:
+- **6 unit tests** - Test rate limiting logic without API calls
+- **2 API tests** - Gated behind `BOTICELLI_RUN_API_TESTS` environment variable
+
+```rust
+/// Check if API tests should run
+#[cfg(feature = "gemini")]
+fn should_run_api_tests() -> bool {
+    std::env::var("BOTICELLI_RUN_API_TESTS").is_ok()
+}
+
+/// Skip test if API tests are disabled
+#[cfg(feature = "gemini")]
+macro_rules! skip_unless_api_tests_enabled {
+    () => {
+        if !should_run_api_tests() {
+            println!("Skipping API test (set BOTICELLI_RUN_API_TESTS=1 to enable)");
+            return;
+        }
+    };
+}
+```
+
+**Unit tests (0 API calls):**
+1. `test_rate_limiter_blocks_on_rpm_limit` - Tests RPM limiting logic
+2. `test_rate_limiter_releases_concurrent_slots` - Tests RAII guard pattern
+3. `test_rate_limiter_with_multiple_limits` - Tests combined RPM/TPM/RPD/concurrent limits
+4. `test_tier_trait_from_config` - Tests Tier trait implementation
+5. `test_gemini_tier_enum` - Tests GeminiTier enum values (feature-gated)
+
+**API tests (2 requests, ~14 tokens total):**
+1. `test_gemini_client_without_rate_limiting` - 1 request, ~7 tokens
+2. `test_gemini_client_with_rate_limiting` - 1 request, ~7 tokens
+
+Each API test uses minimal prompts and output limits:
+
+```rust
+#[cfg(feature = "gemini")]
+#[tokio::test]
+async fn test_gemini_client_without_rate_limiting() {
+    skip_unless_api_tests_enabled!();
+
+    let client = GeminiClient::new().expect("Failed to create client");
+
+    let request = GenerateRequest {
+        messages: vec![Message {
+            role: Role::User,
+            content: vec![Input::Text("Say 'hi'".to_string())], // ~2 tokens
+        }],
+        temperature: Some(0.0),  // Deterministic
+        max_tokens: Some(5),     // Minimal output
+        model: None,
+    };
+
+    let response = client.generate(&request).await.expect("API call failed");
+    assert!(!response.outputs.is_empty());
+}
+```
+
+### Running Tests
+
+**Default (no API calls):**
+```bash
+cargo test
+# Runs 39 unit tests in < 1 second, uses 0 tokens
+```
+
+**With API tests:**
+```bash
+export GEMINI_API_KEY="your-key-here"
+BOTICELLI_RUN_API_TESTS=1 cargo test
+# Runs 39 unit tests + 2 API tests, uses ~14 tokens
+```
+
+**Specific test suites:**
+```bash
+# Rate limiter logic only (no API)
+cargo test --test rate_limit_limiter_test
+
+# Integration tests with optional API
+BOTICELLI_RUN_API_TESTS=1 cargo test --test rate_limit_integration_test
+```
+
+### Manual CLI Testing
+
+**Minimal test narrative:** `narratives/test_minimal.toml`
+
+```toml
+[narration]
+name = "Minimal Test"
+description = "Smallest possible narrative for testing rate limiting"
+
+[toc]
+order = ["test"]
+
+[acts]
+test = "Say 'ok'"
+```
+
+This narrative uses ~5 tokens total (2 input, 3 output).
+
+**Testing with CLI:**
+```bash
+# Test with default rate limiting
+cargo run -- run -n narratives/test_minimal.toml --backend gemini
+
+# Test with specific tier
+cargo run -- run -n narratives/test_minimal.toml --backend gemini --tier free
+
+# Test with aggressive limits to see blocking
+cargo run -- run -n narratives/test_minimal.toml --backend gemini --rpm 1
+
+# Test without rate limiting
+cargo run -- run -n narratives/test_minimal.toml --backend gemini --no-rate-limit
+```
+
+### Conservative Testing Workflow
+
+**Default development cycle** (multiple times per day):
+```bash
+cargo test  # Unit tests only, 0 API calls, 0 tokens
+```
+
+**Before commits** (1-2 times per feature):
+```bash
+BOTICELLI_RUN_API_TESTS=1 cargo test  # +2 requests, +14 tokens
+```
+
+**Manual CLI verification** (once per major change):
+```bash
+cargo run -- run -n narratives/test_minimal.toml --backend gemini  # +1 request, +5 tokens
+```
+
+### Testing Documentation
+
+Comprehensive testing guide available in `TESTING.md`:
+- Test categories and budget management
+- Conservative testing strategies
+- Examples of economical test patterns
+- CI/CD recommendations
+- Troubleshooting guide
+
+Key testing principles:
+1. **Use mocks by default** - All new tests should use mock drivers unless specifically testing API integration
+2. **Gate API tests** - Always use `skip_unless_api_tests_enabled!()` macro
+3. **Minimal prompts** - Test prompts should be 1-5 words
+4. **Low max_tokens** - Use `max_tokens: Some(5)` in test requests
+5. **Deterministic** - Use `temperature: Some(0.0)` for predictable responses
 
 ### Auto-Detection from Response Headers (✅ Implemented - Step 5)
 

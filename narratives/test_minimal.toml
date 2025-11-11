@@ -1,0 +1,12 @@
+# Minimal test narrative for API testing
+# Uses ~10 tokens total to conserve quota
+
+[narration]
+name = "Minimal Test"
+description = "Smallest possible narrative for testing rate limiting"
+
+[toc]
+order = ["test"]
+
+[acts]
+test = "Say 'ok'"
