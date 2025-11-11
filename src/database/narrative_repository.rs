@@ -1,11 +1,14 @@
 //! PostgreSQL implementation of NarrativeRepository.
 
-use crate::database::narrative_conversions::*;
-use crate::database::narrative_models::*;
-use crate::database::schema::*;
+use crate::database::narrative_conversions::{
+    act_execution_to_new_row, execution_to_new_row, input_to_new_row, rows_to_act_execution,
+    rows_to_narrative_execution, status_to_string, string_to_status,
+};
+use crate::database::schema::{act_executions, act_inputs, narrative_executions};
 use crate::{
-    BoticelliError, BoticelliErrorKind, BoticelliResult, ExecutionFilter, ExecutionStatus,
-    ExecutionSummary, NarrativeExecution, NarrativeRepository,
+    ActExecutionRow, ActInputRow, BoticelliError, BoticelliErrorKind, BoticelliResult,
+    ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution,
+    NarrativeExecutionRow, NarrativeRepository,
 };
 use async_trait::async_trait;
 use chrono::Utc;

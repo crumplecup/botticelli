@@ -1,9 +1,9 @@
 //! Conversions between domain types and database models for narrative executions.
 
-use crate::database::narrative_models::*;
 use crate::{
-    ActExecution, BoticelliError, BoticelliErrorKind, BoticelliResult, ExecutionStatus, Input,
-    MediaSource, NarrativeExecution,
+    ActExecution, ActExecutionRow, ActInputRow, BoticelliError, BoticelliErrorKind,
+    BoticelliResult, ExecutionStatus, Input, MediaSource, NarrativeExecution,
+    NarrativeExecutionRow, NewActExecutionRow, NewActInputRow, NewNarrativeExecutionRow,
 };
 use chrono::Utc;
 

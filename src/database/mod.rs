@@ -1,14 +1,14 @@
 //! Database module for storing and retrieving model responses and narrative executions.
 
-pub mod error;
-pub mod models;
-pub mod narrative_conversions;
-pub mod narrative_models;
-pub mod narrative_repository;
-pub mod schema;
+mod error;
+mod models;
+mod narrative_conversions;
+mod narrative_models;
+mod narrative_repository;
+mod schema;
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 
 pub use error::{DatabaseError, DatabaseErrorKind, DatabaseResult};
 pub use models::{ModelResponse, NewModelResponse, SerializableModelResponse};
@@ -55,7 +55,10 @@ pub fn establish_connection() -> DatabaseResult<PgConnection> {
     let port = std::env::var("DATABASE_PORT").unwrap_or_else(|_| "5432".to_string());
     let name = std::env::var("DATABASE_NAME").unwrap_or_else(|_| "boticelli".to_string());
 
-    let database_url = format!("postgres://{}:{}@{}:{}/{}", user, password, host, port, name);
+    let database_url = format!(
+        "postgres://{}:{}@{}:{}/{}",
+        user, password, host, port, name
+    );
 
     PgConnection::establish(&database_url).map_err(Into::into)
 }
@@ -155,7 +158,7 @@ pub fn delete_response(conn: &mut PgConnection, response_id: uuid::Uuid) -> Data
 /// Run pending migrations.
 #[cfg(feature = "database")]
 pub fn run_migrations(conn: &mut PgConnection) -> DatabaseResult<()> {
-    use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+    use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 

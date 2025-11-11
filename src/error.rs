@@ -11,12 +11,12 @@ pub enum BoticelliErrorKind {
     Backend(String),
     /// Gemini-specific error
     #[cfg(feature = "gemini")]
-    Gemini(crate::models::gemini::GeminiError),
+    Gemini(crate::GeminiError),
     /// Database error
     #[cfg(feature = "database")]
-    Database(crate::database::error::DatabaseError),
+    Database(crate::DatabaseError),
     /// Narrative error
-    Narrative(crate::narrative::NarrativeError),
+    Narrative(crate::NarrativeError),
     /// Configuration error
     Config(String),
     /// Feature not yet implemented
@@ -44,8 +44,8 @@ impl From<crate::models::gemini::GeminiError> for BoticelliErrorKind {
 }
 
 #[cfg(feature = "database")]
-impl From<crate::database::error::DatabaseError> for BoticelliErrorKind {
-    fn from(err: crate::database::error::DatabaseError) -> Self {
+impl From<crate::DatabaseError> for BoticelliErrorKind {
+    fn from(err: crate::DatabaseError) -> Self {
         BoticelliErrorKind::Database(err)
     }
 }

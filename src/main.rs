@@ -1,6 +1,6 @@
-use boticelli::{BoticelliConfig, BoticelliDriver, Narrative, NarrativeExecutor, Tier, TierConfig};
 #[cfg(feature = "database")]
 use boticelli::NarrativeRepository;
+use boticelli::{BoticelliConfig, BoticelliDriver, Narrative, NarrativeExecutor, Tier, TierConfig};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -54,7 +54,10 @@ impl RateLimitOptions {
     }
 
     /// Build a tier configuration from CLI overrides and config
-    fn build_tier(&self, provider: &str) -> Result<Option<Box<dyn Tier>>, Box<dyn std::error::Error>> {
+    fn build_tier(
+        &self,
+        provider: &str,
+    ) -> Result<Option<Box<dyn Tier>>, Box<dyn std::error::Error>> {
         // If --no-rate-limit is set, return None (no tier)
         if self.no_rate_limit && self.tier.is_none() && self.rpm.is_none() && self.tpm.is_none() {
             return Ok(None);
@@ -284,7 +287,8 @@ async fn run_narrative(
 
     // Display rate limiting status
     if let Some(ref t) = tier {
-        println!("  Rate Limiting: {} (RPM: {:?}, TPM: {:?}, RPD: {:?})",
+        println!(
+            "  Rate Limiting: {} (RPM: {:?}, TPM: {:?}, RPD: {:?})",
             t.name(),
             t.rpm(),
             t.tpm(),
@@ -317,7 +321,11 @@ async fn run_narrative(
         return Ok(());
     }
 
-    Err(format!("Unsupported backend: {} (feature may not be enabled)", backend).into())
+    Err(format!(
+        "Unsupported backend: {} (feature may not be enabled)",
+        backend
+    )
+    .into())
 }
 
 #[allow(dead_code)]
@@ -351,8 +359,8 @@ async fn execute_with_driver<D: BoticelliDriver>(
     #[cfg(feature = "database")]
     if save {
         println!("💾 Saving to database...");
-        let conn = boticelli::database::establish_connection()?;
-        let repo = boticelli::database::PostgresNarrativeRepository::new(conn);
+        let conn = boticelli::establish_connection()?;
+        let repo = boticelli::PostgresNarrativeRepository::new(conn);
         let execution_id = repo.save_execution(&execution).await?;
         println!("✓ Saved as execution ID: {}", execution_id);
     }
@@ -382,7 +390,10 @@ async fn execute_with_progress<D: BoticelliDriver>(
     verbose: bool,
 ) -> Result<boticelli::NarrativeExecution, Box<dyn std::error::Error>> {
     if verbose {
-        println!("Executing {} acts in sequence:\n", narrative.toc.order.len());
+        println!(
+            "Executing {} acts in sequence:\n",
+            narrative.toc.order.len()
+        );
     }
 
     // For now, execute all at once and show progress
@@ -391,7 +402,8 @@ async fn execute_with_progress<D: BoticelliDriver>(
 
     if verbose {
         for (i, act) in execution.act_executions.iter().enumerate() {
-            println!("  ✓ Act {}/{}: {} ({} chars)",
+            println!(
+                "  ✓ Act {}/{}: {} ({} chars)",
                 i + 1,
                 execution.act_executions.len(),
                 act.act_name,
@@ -410,8 +422,8 @@ async fn list_executions(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use boticelli::ExecutionFilter;
 
-    let conn = boticelli::database::establish_connection()?;
-    let repo = boticelli::database::PostgresNarrativeRepository::new(conn);
+    let conn = boticelli::establish_connection()?;
+    let repo = boticelli::PostgresNarrativeRepository::new(conn);
 
     let mut filter = ExecutionFilter::new().with_limit(limit);
     if let Some(name) = name_filter {
@@ -443,8 +455,8 @@ async fn list_executions(
 
 #[cfg(feature = "database")]
 async fn show_execution(id: i32) -> Result<(), Box<dyn std::error::Error>> {
-    let conn = boticelli::database::establish_connection()?;
-    let repo = boticelli::database::PostgresNarrativeRepository::new(conn);
+    let conn = boticelli::establish_connection()?;
+    let repo = boticelli::PostgresNarrativeRepository::new(conn);
 
     let execution = repo.load_execution(id).await?;
 

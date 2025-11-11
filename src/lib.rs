@@ -51,7 +51,7 @@ mod interface;
 mod models;
 
 #[cfg(feature = "database")]
-pub mod database;
+mod database;
 
 mod narrative;
 mod rate_limit;
@@ -59,6 +59,14 @@ mod rate_limit;
 // Re-export core types
 pub use core::{
     GenerateRequest, GenerateResponse, Input, MediaSource, Message, Output, Role, ToolCall,
+};
+
+#[cfg(feature = "database")]
+pub use database::{
+    ActExecutionRow, ActInputRow, DatabaseError, DatabaseErrorKind, DatabaseResult,
+    ModelResponse, NarrativeExecutionRow, NewActExecutionRow, NewActInputRow,
+    NewModelResponse, NewNarrativeExecutionRow, PostgresNarrativeRepository,
+    SerializableModelResponse, establish_connection,
 };
 
 // Re-export error types
