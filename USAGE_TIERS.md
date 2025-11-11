@@ -23,7 +23,7 @@ This document serves as both design specification and implementation guide. Sect
 - 🚧 **In Progress** - Currently being implemented
 - 📋 **Planned** - Designed but not yet implemented
 
-### Current Status (Step 6 of 8 Complete)
+### Current Status (Step 7 of 8 Complete)
 
 | Step | Component | Status | Location |
 |------|-----------|--------|----------|
@@ -33,7 +33,7 @@ This document serves as both design specification and implementation guide. Sect
 | 4 | RateLimiter (governor/GCRA) | ✅ Implemented | `src/rate_limit/limiter.rs` |
 | 5 | HeaderRateLimitDetector | ✅ Implemented | `src/rate_limit/detector.rs` |
 | 6 | GeminiClient integration | ✅ Implemented | `src/models/gemini.rs` |
-| 7 | CLI override flags | 📋 Planned | - |
+| 7 | CLI override flags | ✅ Implemented | `src/main.rs` |
 | 8 | Testing & validation | 📋 Planned | - |
 
 ### Core Trait (✅ Implemented)
@@ -841,7 +841,7 @@ Configuration is loaded in the following order (highest priority first):
 Header detection is preferred because it reflects the actual current limits from the provider,
 automatically updates when you upgrade tiers, and never goes stale.
 
-### CLI Override Flags (📋 Planned - Step 7)
+### CLI Override Flags (✅ Implemented - Step 7)
 
 Override rate limits at runtime for quick testing or one-off adjustments:
 
@@ -860,87 +860,136 @@ boticelli run -n narrative.toml --backend anthropic \
 boticelli run -n narrative.toml --backend gemini --no-rate-limit
 ```
 
-CLI flag implementation:
+CLI flag implementation in `src/main.rs`:
 
 ```rust
-#[derive(Parser)]
-struct RunCommand {
-    /// Path to narrative TOML file
-    #[arg(short, long)]
-    narrative: PathBuf,
-
-    /// LLM backend to use
-    #[arg(short, long, default_value = "gemini")]
-    backend: String,
-
-    /// API tier to use (overrides config and env)
-    #[arg(long)]
+/// CLI rate limiting options
+#[derive(Debug, Clone)]
+struct RateLimitOptions {
     tier: Option<String>,
-
-    /// Override requests per minute limit
-    #[arg(long)]
     rpm: Option<u32>,
-
-    /// Override tokens per minute limit
-    #[arg(long)]
     tpm: Option<u64>,
-
-    /// Override requests per day limit
-    #[arg(long)]
     rpd: Option<u32>,
-
-    /// Override max concurrent requests
-    #[arg(long)]
     max_concurrent: Option<u32>,
-
-    /// Override input token cost (per million)
-    #[arg(long)]
     cost_input: Option<f64>,
-
-    /// Override output token cost (per million)
-    #[arg(long)]
     cost_output: Option<f64>,
-
-    /// Disable rate limiting
-    #[arg(long)]
     no_rate_limit: bool,
 }
 
-impl RunCommand {
-    /// Apply CLI overrides to tier config
-    fn apply_overrides(&self, mut tier_config: TierConfig) -> TierConfig {
+impl RateLimitOptions {
+    /// Apply CLI overrides to a tier configuration
+    fn apply_to_config(&self, mut config: TierConfig) -> TierConfig {
         if self.no_rate_limit {
             // Remove all limits
-            tier_config.rpm = None;
-            tier_config.tpm = None;
-            tier_config.rpd = None;
-            tier_config.max_concurrent = None;
+            config.rpm = None;
+            config.tpm = None;
+            config.rpd = None;
+            config.max_concurrent = None;
         } else {
             // Apply individual overrides
             if let Some(rpm) = self.rpm {
-                tier_config.rpm = Some(rpm);
+                config.rpm = Some(rpm);
             }
             if let Some(tpm) = self.tpm {
-                tier_config.tpm = Some(tpm);
+                config.tpm = Some(tpm);
             }
             if let Some(rpd) = self.rpd {
-                tier_config.rpd = Some(rpd);
+                config.rpd = Some(rpd);
             }
             if let Some(max_concurrent) = self.max_concurrent {
-                tier_config.max_concurrent = Some(max_concurrent);
+                config.max_concurrent = Some(max_concurrent);
             }
         }
 
+        // Apply cost overrides
         if let Some(cost_input) = self.cost_input {
-            tier_config.cost_per_million_input_tokens = Some(cost_input);
+            config.cost_per_million_input_tokens = Some(cost_input);
         }
         if let Some(cost_output) = self.cost_output {
-            tier_config.cost_per_million_output_tokens = Some(cost_output);
+            config.cost_per_million_output_tokens = Some(cost_output);
         }
 
-        tier_config
+        config
+    }
+
+    /// Build a tier configuration from CLI overrides and config
+    fn build_tier(&self, provider: &str) -> Result<Option<Box<dyn Tier>>, Box<dyn std::error::Error>> {
+        // Get tier name from: CLI > Env > Config default
+        let tier_name = self
+            .tier
+            .clone()
+            .or_else(|| {
+                let env_var = format!("{}_TIER", provider.to_uppercase());
+                std::env::var(&env_var).ok()
+            })
+            .or_else(|| {
+                config
+                    .as_ref()
+                    .and_then(|c| c.providers.get(provider))
+                    .map(|p| p.default_tier.clone())
+            });
+
+        // Load base tier config from file
+        let config = BoticelliConfig::load().ok();
+        let mut tier_config = config
+            .and_then(|cfg| cfg.get_tier(provider, tier_name.as_deref()))
+            .ok_or_else(|| format!("Tier not found for provider '{}'", provider))?;
+
+        // Apply CLI overrides to base config
+        tier_config = self.apply_to_config(tier_config);
+
+        Ok(Some(Box::new(tier_config) as Box<dyn Tier>))
     }
 }
+```
+
+### Full Precedence Chain
+
+Configuration is loaded in the following order (highest priority first):
+
+1. **CLI flags** - `--rpm`, `--tpm`, `--rpd`, `--max-concurrent`, `--cost-input`, `--cost-output`, `--no-rate-limit`
+2. **CLI tier selection** - `--tier payasyougo`
+3. **Environment variables** - `GEMINI_TIER`, `ANTHROPIC_TIER`, etc.
+4. **User config file** - `./boticelli.toml` or `~/.config/boticelli/boticelli.toml`
+5. **Bundled defaults** - The `boticelli.toml` shipped with Boticelli
+
+### Usage Examples
+
+```bash
+# Use default tier from config (free tier for Gemini)
+boticelli run -n mint.toml --backend gemini
+
+# Select specific tier
+boticelli run -n mint.toml --backend gemini --tier payasyougo
+
+# Override RPM for testing (keeps other limits from config)
+boticelli run -n mint.toml --backend gemini --rpm 5
+
+# Override multiple limits
+boticelli run -n mint.toml --backend gemini --rpm 20 --tpm 500000 --max-concurrent 3
+
+# Disable rate limiting for quick test
+boticelli run -n mint.toml --backend gemini --no-rate-limit
+
+# Set environment variable for tier
+export GEMINI_TIER=payasyougo
+boticelli run -n mint.toml --backend gemini
+
+# Combine config, env, and CLI (CLI has highest priority)
+export GEMINI_TIER=free
+boticelli run -n mint.toml --backend gemini --rpm 20  # Uses free tier with RPM=20
+```
+
+The CLI displays the active rate limiting configuration on startup:
+
+```
+📖 Loading narrative from "mint.toml"...
+✓ Loaded: Video Creation Narrative
+  Description: Generates video content workflow
+  Acts: 3
+  Rate Limiting: Free (RPM: Some(10), TPM: Some(250000), RPD: Some(250))
+
+🚀 Executing narrative...
 ```
 
 ### Environment Variables

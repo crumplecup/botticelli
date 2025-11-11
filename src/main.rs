@@ -1,8 +1,113 @@
-use boticelli::{BoticelliDriver, Narrative, NarrativeExecutor};
+use boticelli::{BoticelliConfig, BoticelliDriver, Narrative, NarrativeExecutor, Tier, TierConfig};
 #[cfg(feature = "database")]
 use boticelli::NarrativeRepository;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
+
+/// CLI rate limiting options
+#[derive(Debug, Clone)]
+struct RateLimitOptions {
+    tier: Option<String>,
+    rpm: Option<u32>,
+    tpm: Option<u64>,
+    rpd: Option<u32>,
+    max_concurrent: Option<u32>,
+    cost_input: Option<f64>,
+    cost_output: Option<f64>,
+    no_rate_limit: bool,
+}
+
+impl RateLimitOptions {
+    /// Apply CLI overrides to a tier configuration
+    fn apply_to_config(&self, mut config: TierConfig) -> TierConfig {
+        if self.no_rate_limit {
+            // Remove all limits
+            config.rpm = None;
+            config.tpm = None;
+            config.rpd = None;
+            config.max_concurrent = None;
+        } else {
+            // Apply individual overrides
+            if let Some(rpm) = self.rpm {
+                config.rpm = Some(rpm);
+            }
+            if let Some(tpm) = self.tpm {
+                config.tpm = Some(tpm);
+            }
+            if let Some(rpd) = self.rpd {
+                config.rpd = Some(rpd);
+            }
+            if let Some(max_concurrent) = self.max_concurrent {
+                config.max_concurrent = Some(max_concurrent);
+            }
+        }
+
+        // Apply cost overrides
+        if let Some(cost_input) = self.cost_input {
+            config.cost_per_million_input_tokens = Some(cost_input);
+        }
+        if let Some(cost_output) = self.cost_output {
+            config.cost_per_million_output_tokens = Some(cost_output);
+        }
+
+        config
+    }
+
+    /// Build a tier configuration from CLI overrides and config
+    fn build_tier(&self, provider: &str) -> Result<Option<Box<dyn Tier>>, Box<dyn std::error::Error>> {
+        // If --no-rate-limit is set, return None (no tier)
+        if self.no_rate_limit && self.tier.is_none() && self.rpm.is_none() && self.tpm.is_none() {
+            return Ok(None);
+        }
+
+        // Load config file
+        let config = BoticelliConfig::load().ok();
+
+        // Get tier name from: CLI > Env > Config default
+        let tier_name = self
+            .tier
+            .clone()
+            .or_else(|| {
+                let env_var = format!("{}_TIER", provider.to_uppercase());
+                std::env::var(&env_var).ok()
+            })
+            .or_else(|| {
+                config
+                    .as_ref()
+                    .and_then(|c| c.providers.get(provider))
+                    .map(|p| p.default_tier.clone())
+            });
+
+        // Load base tier config
+        let mut tier_config = if let Some(cfg) = config {
+            cfg.get_tier(provider, tier_name.as_deref())
+                .ok_or_else(|| {
+                    format!(
+                        "Tier '{}' not found for provider '{}'",
+                        tier_name.as_deref().unwrap_or("default"),
+                        provider
+                    )
+                })?
+        } else {
+            // If no config file, create a basic config from CLI overrides
+            TierConfig {
+                name: tier_name.unwrap_or_else(|| "CLI Override".to_string()),
+                rpm: self.rpm,
+                tpm: self.tpm,
+                rpd: self.rpd,
+                max_concurrent: self.max_concurrent,
+                daily_quota_usd: None,
+                cost_per_million_input_tokens: self.cost_input,
+                cost_per_million_output_tokens: self.cost_output,
+            }
+        };
+
+        // Apply CLI overrides to base config
+        tier_config = self.apply_to_config(tier_config);
+
+        Ok(Some(Box::new(tier_config) as Box<dyn Tier>))
+    }
+}
 
 #[derive(Parser)]
 #[command(name = "boticelli")]
@@ -36,6 +141,39 @@ enum Commands {
         /// Show detailed progress
         #[arg(short, long)]
         verbose: bool,
+
+        // Rate limiting options
+        /// API tier to use (overrides config and env)
+        #[arg(long)]
+        tier: Option<String>,
+
+        /// Override requests per minute limit
+        #[arg(long)]
+        rpm: Option<u32>,
+
+        /// Override tokens per minute limit
+        #[arg(long)]
+        tpm: Option<u64>,
+
+        /// Override requests per day limit
+        #[arg(long)]
+        rpd: Option<u32>,
+
+        /// Override max concurrent requests
+        #[arg(long)]
+        max_concurrent: Option<u32>,
+
+        /// Override input token cost (per million)
+        #[arg(long)]
+        cost_input: Option<f64>,
+
+        /// Override output token cost (per million)
+        #[arg(long)]
+        cost_output: Option<f64>,
+
+        /// Disable rate limiting entirely
+        #[arg(long)]
+        no_rate_limit: bool,
     },
 
     /// List stored narrative executions
@@ -78,7 +216,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             #[cfg(feature = "database")]
             save,
             verbose,
+            tier,
+            rpm,
+            tpm,
+            rpd,
+            max_concurrent,
+            cost_input,
+            cost_output,
+            no_rate_limit,
         } => {
+            let rate_limit_opts = RateLimitOptions {
+                tier,
+                rpm,
+                tpm,
+                rpd,
+                max_concurrent,
+                cost_input,
+                cost_output,
+                no_rate_limit,
+            };
+
             run_narrative(
                 narrative,
                 backend,
@@ -86,6 +243,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 #[cfg(feature = "database")]
                 save,
                 verbose,
+                rate_limit_opts,
             )
             .await?;
         }
@@ -110,6 +268,7 @@ async fn run_narrative(
     _api_key: Option<String>,
     #[cfg(feature = "database")] _save: bool,
     _verbose: bool,
+    rate_limit_opts: RateLimitOptions,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Load the narrative
     println!("📖 Loading narrative from {:?}...", narrative_path);
@@ -119,6 +278,21 @@ async fn run_narrative(
     println!("✓ Loaded: {}", narrative.metadata.name);
     println!("  Description: {}", narrative.metadata.description);
     println!("  Acts: {}", narrative.toc.order.len());
+
+    // Build tier configuration from CLI options
+    let tier = rate_limit_opts.build_tier(&backend)?;
+
+    // Display rate limiting status
+    if let Some(ref t) = tier {
+        println!("  Rate Limiting: {} (RPM: {:?}, TPM: {:?}, RPD: {:?})",
+            t.name(),
+            t.rpm(),
+            t.tpm(),
+            t.rpd()
+        );
+    } else {
+        println!("  Rate Limiting: Disabled");
+    }
     println!();
 
     // Dispatch to backend-specific execution
@@ -131,7 +305,7 @@ async fn run_narrative(
             }
         }
 
-        let driver = boticelli::GeminiClient::new()?;
+        let driver = boticelli::GeminiClient::new_with_tier(tier)?;
         execute_with_driver(
             driver,
             narrative,
