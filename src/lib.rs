@@ -54,6 +54,7 @@ mod models;
 pub mod database;
 
 pub mod narrative;
+pub mod rate_limit;
 
 // Re-export core types
 pub use core::{
@@ -92,3 +93,6 @@ pub use narrative::{
     NarrativeExecution, NarrativeExecutor, NarrativeMetadata, NarrativeProvider,
     NarrativeRepository, NarrativeToc, VideoMetadata,
 };
+
+// Re-export rate limiting types
+pub use rate_limit::Tier;
