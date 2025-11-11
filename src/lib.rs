@@ -96,3 +96,10 @@ pub use narrative::{
 
 // Re-export rate limiting types
 pub use rate_limit::{BoticelliConfig, ProviderConfig, Tier, TierConfig};
+
+// Re-export provider-specific tier enums
+#[cfg(feature = "gemini")]
+pub use rate_limit::GeminiTier;
+#[cfg(feature = "anthropic")]
+pub use rate_limit::AnthropicTier;
+pub use rate_limit::OpenAITier;
