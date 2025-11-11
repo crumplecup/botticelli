@@ -6,8 +6,8 @@ use std::env;
 use gemini_rust::Gemini;
 
 use crate::{
-    BoticelliDriver, BoticelliResult, GenerateRequest, GenerateResponse, Input, Metadata,
-    ModelMetadata, Output, Role, Vision,
+    BoticelliConfig, BoticelliDriver, BoticelliResult, GenerateRequest, GenerateResponse, Input,
+    Metadata, ModelMetadata, Output, RateLimiter, Role, Tier, Vision,
 };
 
 //
@@ -97,27 +97,98 @@ pub type GeminiResult<T> = Result<T, GeminiError>;
 pub struct GeminiClient {
     client: Gemini,
     model_name: String,
+    rate_limiter: Option<RateLimiter>,
 }
 
 impl std::fmt::Debug for GeminiClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("GeminiClient")
             .field("model_name", &self.model_name)
+            .field(
+                "rate_limiter",
+                &if self.rate_limiter.is_some() {
+                    "Some(RateLimiter)"
+                } else {
+                    "None"
+                },
+            )
             .finish_non_exhaustive()
     }
 }
 
 impl GeminiClient {
-    /// Create a new Gemini client.
+    /// Create a new Gemini client without rate limiting.
     ///
     /// Reads the API key from the `GEMINI_API_KEY` environment variable.
     /// Defaults to using Gemini 2.0 Flash model.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use boticelli::GeminiClient;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = GeminiClient::new()?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn new() -> BoticelliResult<Self> {
-        Self::new_internal().map_err(Into::into)
+        Self::new_with_tier(None)
+    }
+
+    /// Create a new Gemini client with rate limiting.
+    ///
+    /// Reads the API key from the `GEMINI_API_KEY` environment variable.
+    /// Applies rate limiting according to the provided tier.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use boticelli::{GeminiClient, GeminiTier};
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let client = GeminiClient::new_with_tier(Some(Box::new(GeminiTier::Free)))?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new_with_tier(tier: Option<Box<dyn Tier>>) -> BoticelliResult<Self> {
+        Self::new_internal(tier).map_err(Into::into)
+    }
+
+    /// Create a new Gemini client with rate limiting from configuration.
+    ///
+    /// Loads tier configuration from boticelli.toml and applies rate limiting.
+    /// Falls back to no rate limiting if configuration cannot be loaded.
+    ///
+    /// # Arguments
+    ///
+    /// * `tier_name` - Optional tier name (uses provider default if None)
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use boticelli::GeminiClient;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// // Use default tier from config
+    /// let client = GeminiClient::new_with_config(None)?;
+    ///
+    /// // Use specific tier
+    /// let client = GeminiClient::new_with_config(Some("payasyougo"))?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new_with_config(tier_name: Option<&str>) -> BoticelliResult<Self> {
+        let tier = BoticelliConfig::load()
+            .ok()
+            .and_then(|config| config.get_tier("gemini", tier_name))
+            .map(|tier_config| Box::new(tier_config) as Box<dyn Tier>);
+
+        Self::new_with_tier(tier)
     }
 
     /// Internal constructor that returns Gemini-specific errors.
-    fn new_internal() -> GeminiResult<Self> {
+    fn new_internal(tier: Option<Box<dyn Tier>>) -> GeminiResult<Self> {
         // Load .env file if present
         let _ = dotenvy::dotenv();
 
@@ -128,9 +199,13 @@ impl GeminiClient {
             GeminiError::new(GeminiErrorKind::ClientCreation(e.to_string()))
         })?;
 
+        // Create rate limiter if tier provided
+        let rate_limiter = tier.map(RateLimiter::new);
+
         Ok(Self {
             client,
             model_name: "gemini-2.0-flash".to_string(),
+            rate_limiter,
         })
     }
 
@@ -147,8 +222,34 @@ impl GeminiClient {
         inputs.iter().any(|i| !matches!(i, Input::Text(_)))
     }
 
+    /// Estimate token count from text (rough approximation: chars / 4).
+    ///
+    /// This is a conservative estimate. Actual token count may be lower.
+    fn estimate_tokens(text: &str) -> u64 {
+        (text.len() / 4).max(1) as u64
+    }
+
     /// Internal generate method that returns Gemini-specific errors.
     async fn generate_internal(&self, req: &GenerateRequest) -> GeminiResult<GenerateResponse> {
+        // Acquire rate limit permission if rate limiting is enabled
+        let _guard = if let Some(limiter) = &self.rate_limiter {
+            // Estimate tokens for all input messages
+            let estimated_tokens: u64 = req
+                .messages
+                .iter()
+                .flat_map(|msg| &msg.content)
+                .filter_map(Self::extract_text)
+                .map(|text| Self::estimate_tokens(&text))
+                .sum();
+
+            // Add max_tokens if specified (output token estimate)
+            let total_estimate = estimated_tokens + req.max_tokens.unwrap_or(1000) as u64;
+
+            Some(limiter.acquire(total_estimate).await)
+        } else {
+            None
+        };
+
         // Start building the request
         let mut builder = self.client.generate_content();
 

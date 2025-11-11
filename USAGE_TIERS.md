@@ -23,7 +23,7 @@ This document serves as both design specification and implementation guide. Sect
 - 🚧 **In Progress** - Currently being implemented
 - 📋 **Planned** - Designed but not yet implemented
 
-### Current Status (Step 5 of 8 Complete)
+### Current Status (Step 6 of 8 Complete)
 
 | Step | Component | Status | Location |
 |------|-----------|--------|----------|
@@ -32,7 +32,7 @@ This document serves as both design specification and implementation guide. Sect
 | 3 | Provider tier enums | ✅ Implemented | `src/rate_limit/tiers.rs` |
 | 4 | RateLimiter (governor/GCRA) | ✅ Implemented | `src/rate_limit/limiter.rs` |
 | 5 | HeaderRateLimitDetector | ✅ Implemented | `src/rate_limit/detector.rs` |
-| 6 | GeminiClient integration | 📋 Planned | - |
+| 6 | GeminiClient integration | ✅ Implemented | `src/models/gemini.rs` |
 | 7 | CLI override flags | 📋 Planned | - |
 | 8 | Testing & validation | 📋 Planned | - |
 
@@ -416,7 +416,116 @@ pub struct RateLimiterGuard {
 4. **Composable** - Each quota type has its own independent limiter
 5. **Accurate** - GCRA provides mathematically precise rate limiting
 
-## Integration with BoticelliDriver (📋 Planned - Step 6)
+## Integration with BoticelliDriver (✅ Implemented - Step 6)
+
+### GeminiClient Integration
+
+The `GeminiClient` now includes optional rate limiting support with three constructor variants:
+
+```rust
+pub struct GeminiClient {
+    client: Gemini,
+    model_name: String,
+    rate_limiter: Option<RateLimiter>,
+}
+
+impl GeminiClient {
+    /// Create client without rate limiting (backward compatible)
+    pub fn new() -> BoticelliResult<Self> {
+        Self::new_with_tier(None)
+    }
+
+    /// Create client with explicit tier
+    pub fn new_with_tier(tier: Option<Box<dyn Tier>>) -> BoticelliResult<Self> {
+        // Create rate limiter if tier provided
+        let rate_limiter = tier.map(RateLimiter::new);
+
+        Ok(Self {
+            client,
+            model_name: "gemini-2.0-flash".to_string(),
+            rate_limiter,
+        })
+    }
+
+    /// Create client with tier from config
+    pub fn new_with_config(tier_name: Option<&str>) -> BoticelliResult<Self> {
+        let tier = BoticelliConfig::load()
+            .ok()
+            .and_then(|config| config.get_tier("gemini", tier_name))
+            .map(|tier_config| Box::new(tier_config) as Box<dyn Tier>);
+
+        Self::new_with_tier(tier)
+    }
+}
+```
+
+### Rate Limit Acquisition
+
+Before each API request, the client acquires rate limit permission with token estimation:
+
+```rust
+async fn generate_internal(&self, req: &GenerateRequest) -> GeminiResult<GenerateResponse> {
+    // Acquire rate limit permission if rate limiting is enabled
+    let _guard = if let Some(limiter) = &self.rate_limiter {
+        // Estimate tokens for all input messages
+        let estimated_tokens: u64 = req
+            .messages
+            .iter()
+            .flat_map(|msg| &msg.content)
+            .filter_map(Self::extract_text)
+            .map(|text| Self::estimate_tokens(&text))
+            .sum();
+
+        // Add max_tokens if specified (output token estimate)
+        let total_estimate = estimated_tokens + req.max_tokens.unwrap_or(1000) as u64;
+
+        Some(limiter.acquire(total_estimate).await)
+    } else {
+        None
+    };
+
+    // Make API request...
+    // Guard is held until function exits (RAII)
+}
+```
+
+### Token Estimation
+
+Simple character-based estimation (rough approximation: 4 chars per token):
+
+```rust
+fn estimate_tokens(text: &str) -> u64 {
+    (text.len() / 4).max(1) as u64
+}
+```
+
+### Usage Examples
+
+```rust
+// Without rate limiting (default, backward compatible)
+let client = GeminiClient::new()?;
+
+// With explicit tier enum
+let client = GeminiClient::new_with_tier(Some(Box::new(GeminiTier::Free)))?;
+
+// With config (uses boticelli.toml)
+let client = GeminiClient::new_with_config(None)?;  // Default tier
+let client = GeminiClient::new_with_config(Some("payasyougo"))?;  // Specific tier
+
+// Make requests - rate limiting is transparent
+let response = client.generate(&request).await?;
+```
+
+### Limitations
+
+**Note**: The `gemini-rust` wrapper doesn't expose HTTP response headers, so header-based rate limit detection isn't available for GeminiClient. Users must:
+- Configure tier via `GeminiTier` enum
+- Load from `boticelli.toml` configuration
+- Use CLI flags (Step 7) to override limits
+
+Future work could use a lower-level HTTP client (e.g., `reqwest` directly) to access headers, but this would require reimplementing the Gemini API protocol.
+
+## Original Design Alternatives (Pre-Implementation)
 
 ### Option 1: Add Rate Limiting to Driver Trait
 
