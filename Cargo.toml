@@ -65,7 +65,9 @@ derive_more = { version = "2", features = ["display", "from"] }
 derive-new = "0.7"                                              # Derive new constructors
 anyhow = "1"                                                    # Internal utils
 toml = "0.9"                                                    # TOML parsing for narratives
+config = { version = "0.14", features = ["toml"] }              # Configuration management
 clap = { version = "4", features = ["derive"] }                 # CLI argument parsing
+dirs = "5"                                                      # Cross-platform directory paths
 
 [features]
 default = []
@@ -78,3 +80,6 @@ perplexity = ["dep:perplexity"]
 database = ["dep:diesel", "dep:diesel_migrations", "dep:chrono", "dep:uuid"]
 # Enable tests that consume API tokens
 api = []
+
+[dev-dependencies]
+tempfile = "3"

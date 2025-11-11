@@ -95,4 +95,4 @@ pub use narrative::{
 };
 
 // Re-export rate limiting types
-pub use rate_limit::Tier;
+pub use rate_limit::{BoticelliConfig, ProviderConfig, Tier, TierConfig};

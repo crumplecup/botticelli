@@ -23,12 +23,12 @@ This document serves as both design specification and implementation guide. Sect
 - 🚧 **In Progress** - Currently being implemented
 - 📋 **Planned** - Designed but not yet implemented
 
-### Current Status (Step 1 of 8 Complete)
+### Current Status (Step 2 of 8 Complete)
 
 | Step | Component | Status | Location |
 |------|-----------|--------|----------|
 | 1 | Core Tier trait | ✅ Implemented | `src/rate_limit/tier.rs` |
-| 2 | TierConfig & BoticelliConfig | 📋 Planned | - |
+| 2 | TierConfig & BoticelliConfig | ✅ Implemented | `src/rate_limit/config.rs` |
 | 3 | Provider tier enums | 📋 Planned | - |
 | 4 | RateLimiter (token bucket) | 📋 Planned | - |
 | 5 | HeaderRateLimitDetector | 📋 Planned | - |
@@ -502,7 +502,7 @@ pub fn calculate_cost(tier: &dyn Tier, input_tokens: u64, output_tokens: u64) ->
 }
 ```
 
-## Configuration (📋 Planned - Step 2)
+## Configuration (✅ Implemented - Step 2)
 
 ### Configuration File: boticelli.toml
 
@@ -591,12 +591,15 @@ cost_per_million_output_tokens = 10.0
 
 ### Configuration Loading
 
+Uses the [`config`](https://crates.io/crates/config) crate for robust multi-source configuration management with automatic merging:
+
 ```rust
+use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Top-level configuration structure
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct BoticelliConfig {
     #[serde(default)]
     pub providers: HashMap<String, ProviderConfig>,
@@ -630,123 +633,83 @@ pub struct TierConfig {
 }
 
 impl Tier for TierConfig {
-    fn rpm(&self) -> Option<u32> {
-        self.rpm
-    }
-
-    fn tpm(&self) -> Option<u64> {
-        self.tpm
-    }
-
-    fn rpd(&self) -> Option<u32> {
-        self.rpd
-    }
-
-    fn max_concurrent(&self) -> Option<u32> {
-        self.max_concurrent
-    }
-
-    fn daily_quota_usd(&self) -> Option<f64> {
-        self.daily_quota_usd
-    }
-
+    fn rpm(&self) -> Option<u32> { self.rpm }
+    fn tpm(&self) -> Option<u64> { self.tpm }
+    fn rpd(&self) -> Option<u32> { self.rpd }
+    fn max_concurrent(&self) -> Option<u32> { self.max_concurrent }
+    fn daily_quota_usd(&self) -> Option<f64> { self.daily_quota_usd }
     fn cost_per_million_input_tokens(&self) -> Option<f64> {
         self.cost_per_million_input_tokens
     }
-
     fn cost_per_million_output_tokens(&self) -> Option<f64> {
         self.cost_per_million_output_tokens
     }
-
-    fn name(&self) -> &str {
-        &self.name
-    }
+    fn name(&self) -> &str { &self.name }
 }
 
 impl BoticelliConfig {
-    /// Load configuration from file
+    /// Load configuration from a specific file path
     pub fn from_file(path: impl AsRef<std::path::Path>) -> BoticelliResult<Self> {
-        let content = std::fs::read_to_string(path.as_ref())
+        Config::builder()
+            .add_source(File::from(path.as_ref()))
+            .build()?
+            .try_deserialize()
             .map_err(|e| BoticelliError::new(BoticelliErrorKind::Config(
-                format!("Failed to read boticelli.toml: {}", e)
-            )))?;
-
-        toml::from_str(&content)
-            .map_err(|e| BoticelliError::new(BoticelliErrorKind::Config(
-                format!("Failed to parse boticelli.toml: {}", e)
+                format!("Failed to parse configuration: {}", e)
             )))
     }
 
-    /// Load bundled default configuration
-    fn load_defaults() -> BoticelliResult<Self> {
-        const DEFAULT_CONFIG: &str = include_str!("../boticelli.toml");
-
-        toml::from_str(DEFAULT_CONFIG)
-            .map_err(|e| BoticelliError::new(BoticelliErrorKind::Config(
-                format!("Failed to parse bundled boticelli.toml: {}", e)
-            )))
-    }
-
-    /// Load configuration with precedence: user override > bundled default
+    /// Load configuration with automatic precedence handling
+    ///
+    /// Sources in order of precedence (later sources override earlier):
+    /// 1. Bundled defaults (include_str! from repo boticelli.toml)
+    /// 2. User config in home directory (~/.config/boticelli/boticelli.toml)
+    /// 3. User config in current directory (./boticelli.toml)
+    ///
+    /// User config files are optional and silently skipped if not found.
     pub fn load() -> BoticelliResult<Self> {
-        // Start with bundled defaults
-        let mut config = Self::load_defaults()?;
+        const DEFAULT_CONFIG: &str = include_str!("../../boticelli.toml");
 
-        // Try to load user override from current directory
-        if let Ok(user_config) = Self::from_file("boticelli.toml") {
-            config.merge(user_config);
-            return Ok(config);
-        }
+        let mut builder = Config::builder()
+            // Start with bundled defaults
+            .add_source(File::from_str(DEFAULT_CONFIG, FileFormat::Toml));
 
-        // Try to load user override from home directory
+        // Add user config from home directory (optional)
         if let Some(home) = dirs::home_dir() {
-            let path = home.join(".config/boticelli/boticelli.toml");
-            if let Ok(user_config) = Self::from_file(&path) {
-                config.merge(user_config);
-                return Ok(config);
-            }
+            let home_config = home.join(".config/boticelli/boticelli.toml");
+            builder = builder.add_source(File::from(home_config).required(false));
         }
 
-        // No user override found, return defaults
-        Ok(config)
-    }
+        // Add user config from current directory (optional, highest precedence)
+        builder = builder.add_source(File::with_name("boticelli").required(false));
 
-    /// Merge another config into this one, with the other config taking precedence
-    pub fn merge(&mut self, other: BoticelliConfig) {
-        for (provider_name, provider_config) in other.providers {
-            self.providers
-                .entry(provider_name)
-                .and_modify(|existing| {
-                    // Override default tier if specified
-                    existing.default_tier = provider_config.default_tier.clone();
-
-                    // Merge tiers (other's tiers override ours)
-                    for (tier_name, tier_config) in &provider_config.tiers {
-                        existing.tiers.insert(tier_name.clone(), tier_config.clone());
-                    }
-                })
-                .or_insert(provider_config);
-        }
+        builder
+            .build()
+            .map_err(|e| BoticelliError::new(BoticelliErrorKind::Config(
+                format!("Failed to build configuration: {}", e)
+            )))?
+            .try_deserialize()
+            .map_err(|e| BoticelliError::new(BoticelliErrorKind::Config(
+                format!("Failed to parse configuration: {}", e)
+            )))
     }
 
     /// Get tier configuration for a provider
     pub fn get_tier(&self, provider: &str, tier_name: Option<&str>) -> Option<TierConfig> {
         let provider_config = self.providers.get(provider)?;
-
         let tier = tier_name.unwrap_or(&provider_config.default_tier);
-
         provider_config.tiers.get(tier).cloned()
     }
 }
-
-impl Default for BoticelliConfig {
-    fn default() -> Self {
-        Self {
-            providers: HashMap::new(),
-        }
-    }
-}
 ```
+
+**Key improvements using `config` crate:**
+
+- **Automatic merging**: Config sources are merged automatically by the `config` crate based on order added
+- **Optional files**: `.required(false)` allows user configs to be absent without errors
+- **Format detection**: Automatically detects TOML format from file extension
+- **String sources**: `File::from_str()` enables bundled defaults via `include_str!()`
+- **Error handling**: Comprehensive error messages for configuration issues
 
 ### Configuration Precedence
 

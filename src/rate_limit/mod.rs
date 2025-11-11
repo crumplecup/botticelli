@@ -4,6 +4,8 @@
 //! It supports multiple providers with different tier structures and automatically
 //! detects limits from API response headers when possible.
 
+pub mod config;
 pub mod tier;
 
+pub use config::{BoticelliConfig, ProviderConfig, TierConfig};
 pub use tier::Tier;

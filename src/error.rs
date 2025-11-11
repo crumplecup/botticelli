@@ -17,6 +17,8 @@ pub enum BoticelliErrorKind {
     Database(crate::database::error::DatabaseError),
     /// Narrative error
     Narrative(crate::narrative::NarrativeError),
+    /// Configuration error
+    Config(String),
     /// Feature not yet implemented
     NotImplemented(String),
 }
@@ -65,6 +67,7 @@ impl std::fmt::Display for BoticelliErrorKind {
             #[cfg(feature = "database")]
             BoticelliErrorKind::Database(e) => write!(f, "{}", e),
             BoticelliErrorKind::Narrative(e) => write!(f, "{}", e),
+            BoticelliErrorKind::Config(msg) => write!(f, "Configuration error: {}", msg),
             BoticelliErrorKind::NotImplemented(msg) => write!(f, "Not implemented: {}", msg),
         }
     }
