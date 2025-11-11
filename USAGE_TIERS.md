@@ -23,7 +23,7 @@ This document serves as both design specification and implementation guide. Sect
 - 🚧 **In Progress** - Currently being implemented
 - 📋 **Planned** - Designed but not yet implemented
 
-### Current Status (Step 4 of 8 Complete)
+### Current Status (Step 5 of 8 Complete)
 
 | Step | Component | Status | Location |
 |------|-----------|--------|----------|
@@ -31,7 +31,7 @@ This document serves as both design specification and implementation guide. Sect
 | 2 | TierConfig & BoticelliConfig | ✅ Implemented | `src/rate_limit/config.rs` |
 | 3 | Provider tier enums | ✅ Implemented | `src/rate_limit/tiers.rs` |
 | 4 | RateLimiter (governor/GCRA) | ✅ Implemented | `src/rate_limit/limiter.rs` |
-| 5 | HeaderRateLimitDetector | 📋 Planned | - |
+| 5 | HeaderRateLimitDetector | ✅ Implemented | `src/rate_limit/detector.rs` |
 | 6 | GeminiClient integration | 📋 Planned | - |
 | 7 | CLI override flags | 📋 Planned | - |
 | 8 | Testing & validation | 📋 Planned | - |
@@ -969,7 +969,7 @@ async fn run_narrative(cmd: RunCommand) -> BoticelliResult<()> {
 }
 ```
 
-### Auto-Detection from Response Headers (📋 Planned - Step 5)
+### Auto-Detection from Response Headers (✅ Implemented - Step 5)
 
 Most providers return rate limit information in response headers. This is the most accurate
 source of truth since it reflects your actual current limits and automatically updates when

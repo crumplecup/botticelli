@@ -95,7 +95,10 @@ pub use narrative::{
 };
 
 // Re-export rate limiting types
-pub use rate_limit::{BoticelliConfig, ProviderConfig, RateLimiter, RateLimiterGuard, Tier, TierConfig};
+pub use rate_limit::{
+    BoticelliConfig, HeaderRateLimitDetector, ProviderConfig, RateLimiter, RateLimiterGuard, Tier,
+    TierConfig,
+};
 
 // Re-export provider-specific tier enums
 #[cfg(feature = "gemini")]
