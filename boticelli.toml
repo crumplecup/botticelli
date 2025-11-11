@@ -1,0 +1,149 @@
+# Boticelli Configuration
+#
+# This file defines rate limits and pricing for LLM API providers.
+# Rate limits change over time - update these values as providers adjust their quotas.
+#
+# Configuration precedence (highest to lowest):
+# 1. CLI flags (--tier, --rpm, --tpm, etc.)
+# 2. Environment variables (GEMINI_TIER, ANTHROPIC_TIER, etc.)
+# 3. User override: ./boticelli.toml or ~/.config/boticelli/boticelli.toml
+# 4. Default: boticelli.toml (this file)
+
+# ============================================================================
+# Gemini (Google AI)
+# ============================================================================
+# Last updated: 2025-01-11
+# Source: https://ai.google.dev/pricing
+
+[providers.gemini]
+default_tier = "free"
+
+[providers.gemini.tiers.free]
+name = "Free"
+rpm = 10                                # Requests per minute
+tpm = 250_000                           # Tokens per minute (250K)
+rpd = 250                               # Requests per day
+max_concurrent = 1                      # Maximum concurrent requests
+cost_per_million_input_tokens = 0.0    # Free tier
+cost_per_million_output_tokens = 0.0   # Free tier
+
+[providers.gemini.tiers.payasyougo]
+name = "Pay-as-you-go"
+rpm = 360                               # 6 requests per second
+tpm = 4_000_000                         # 4M tokens per minute
+# rpd not specified = unlimited
+max_concurrent = 1
+cost_per_million_input_tokens = 0.075  # Gemini 2.0 Flash
+cost_per_million_output_tokens = 0.30
+
+# ============================================================================
+# Anthropic (Claude)
+# ============================================================================
+# Last updated: 2025-01-11
+# Source: https://docs.anthropic.com/claude/docs/rate-limits
+
+[providers.anthropic]
+default_tier = "tier1"
+
+[providers.anthropic.tiers.tier1]
+name = "Tier 1"
+rpm = 5
+tpm = 20_000
+max_concurrent = 5
+cost_per_million_input_tokens = 3.0    # Claude 3.5 Sonnet
+cost_per_million_output_tokens = 15.0
+
+[providers.anthropic.tiers.tier2]
+name = "Tier 2"
+rpm = 50
+tpm = 40_000
+max_concurrent = 5
+cost_per_million_input_tokens = 3.0
+cost_per_million_output_tokens = 15.0
+
+[providers.anthropic.tiers.tier3]
+name = "Tier 3"
+rpm = 1000
+tpm = 80_000
+max_concurrent = 5
+cost_per_million_input_tokens = 3.0
+cost_per_million_output_tokens = 15.0
+
+[providers.anthropic.tiers.tier4]
+name = "Tier 4"
+rpm = 2000
+tpm = 160_000
+max_concurrent = 5
+cost_per_million_input_tokens = 3.0
+cost_per_million_output_tokens = 15.0
+
+# ============================================================================
+# OpenAI
+# ============================================================================
+# Last updated: 2025-01-11
+# Source: https://platform.openai.com/docs/guides/rate-limits
+
+[providers.openai]
+default_tier = "tier1"
+
+[providers.openai.tiers.free]
+name = "Free"
+rpm = 3
+tpm = 40_000
+rpd = 200
+max_concurrent = 50
+cost_per_million_input_tokens = 0.0
+cost_per_million_output_tokens = 0.0
+
+[providers.openai.tiers.tier1]
+name = "Tier 1"
+rpm = 500
+tpm = 200_000
+max_concurrent = 50
+cost_per_million_input_tokens = 2.50   # GPT-4 Turbo (varies by model)
+cost_per_million_output_tokens = 10.0
+
+[providers.openai.tiers.tier2]
+name = "Tier 2"
+rpm = 5000
+tpm = 2_000_000
+max_concurrent = 50
+cost_per_million_input_tokens = 2.50
+cost_per_million_output_tokens = 10.0
+
+[providers.openai.tiers.tier3]
+name = "Tier 3"
+rpm = 10000
+tpm = 10_000_000
+max_concurrent = 50
+cost_per_million_input_tokens = 2.50
+cost_per_million_output_tokens = 10.0
+
+[providers.openai.tiers.tier4]
+name = "Tier 4"
+rpm = 10000
+tpm = 30_000_000
+max_concurrent = 50
+cost_per_million_input_tokens = 2.50
+cost_per_million_output_tokens = 10.0
+
+[providers.openai.tiers.tier5]
+name = "Tier 5"
+rpm = 10000
+tpm = 100_000_000
+max_concurrent = 50
+cost_per_million_input_tokens = 2.50
+cost_per_million_output_tokens = 10.0
+
+# ============================================================================
+# Additional Providers
+# ============================================================================
+# Add your custom providers or override defaults here.
+# Example:
+#
+# [providers.mylocal]
+# default_tier = "unlimited"
+#
+# [providers.mylocal.tiers.unlimited]
+# name = "Local Model"
+# # All limits omitted = no restrictions

@@ -64,8 +64,8 @@ perplexity = { version = "0.1", optional = true }
 derive_more = { version = "2", features = ["display", "from"] }
 derive-new = "0.7"                                              # Derive new constructors
 anyhow = "1"                                                    # Internal utils
-toml = "0.8"                                                    # TOML parsing for narratives
-clap = { version = "4", features = ["derive"] }                # CLI argument parsing
+toml = "0.9"                                                    # TOML parsing for narratives
+clap = { version = "4", features = ["derive"] }                 # CLI argument parsing
 
 [features]
 default = []
