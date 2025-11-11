@@ -112,7 +112,11 @@ Executing 3 acts in sequence:
 
 ## Database Setup (Optional)
 
-If you want to save execution history with the `--save` flag, you'll need PostgreSQL:
+If you want to save execution history with the `--save` flag, you'll need PostgreSQL.
+
+📖 **New to PostgreSQL or need detailed setup help?** See [POSTGRES.md](POSTGRES.md) for a comprehensive step-by-step guide.
+
+Quick setup for experienced users:
 
 ### 1. Install PostgreSQL
 
@@ -360,6 +364,28 @@ brew services list
 
 # Test connection
 psql $DATABASE_URL
+```
+
+### "role 'boticelli' does not exist" or "database 'boticelli' does not exist"
+
+**Problem:** PostgreSQL database and user haven't been created yet.
+
+**Solution:** See [POSTGRES.md](POSTGRES.md) for step-by-step instructions on creating the database and user, or run:
+```bash
+# Connect as postgres superuser
+sudo -u postgres psql
+
+# Create user
+CREATE USER boticelli WITH PASSWORD 'your_password';
+
+# Create database
+CREATE DATABASE boticelli OWNER boticelli;
+
+# Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE boticelli TO boticelli;
+
+# Exit
+\q
 ```
 
 ### "Act prompt cannot be empty"
