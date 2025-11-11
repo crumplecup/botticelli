@@ -37,11 +37,14 @@ diesel::table! {
     model_responses (id) {
         id -> Uuid,
         created_at -> Timestamp,
+        #[max_length = 50]
         provider -> Varchar,
+        #[max_length = 100]
         model_name -> Varchar,
         request_messages -> Jsonb,
         request_temperature -> Nullable<Float4>,
         request_max_tokens -> Nullable<Int4>,
+        #[max_length = 100]
         request_model -> Nullable<Varchar>,
         response_outputs -> Jsonb,
         duration_ms -> Nullable<Int4>,

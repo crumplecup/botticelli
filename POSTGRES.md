@@ -225,10 +225,10 @@ Exit psql:
 
 ### Step 11: Test with Boticelli
 
-Try running a narrative with the `--save` flag:
+Try running a narrative with the `--save` flag. Note that you must enable the `database` and `gemini` features:
 
 ```bash
-cargo run --release -- run -n narrations/mint.toml --save --verbose
+cargo run --release --features database,gemini -- run -n narrations/mint.toml --save --verbose
 ```
 
 If everything is set up correctly, you should see:
@@ -236,6 +236,8 @@ If everything is set up correctly, you should see:
 💾 Saving to database...
 ✓ Saved as execution ID: 1
 ```
+
+**Note:** The `database` feature is not enabled by default. You must explicitly include it with `--features database` when using database functionality.
 
 ## Troubleshooting
 
@@ -327,6 +329,22 @@ cargo install diesel_cli --no-default-features --features postgres --force
 cat .env | grep DATABASE
 
 # Try running migrations again
+diesel migration run
+```
+
+### Error: "Received an empty query" during diesel migration run
+
+**Problem:** The diesel_initial_setup migration contains only comments (no SQL statements), which PostgreSQL rejects.
+
+**Solution:**
+```bash
+# First, run diesel setup to create the migrations table
+diesel setup
+
+# Manually mark the initial setup as complete
+psql -U boticelli -h localhost -d boticelli -c "INSERT INTO __diesel_schema_migrations (version, run_on) VALUES ('00000000000000', NOW()) ON CONFLICT DO NOTHING;"
+
+# Now run the actual migrations
 diesel migration run
 ```
 
@@ -493,15 +511,17 @@ Once PostgreSQL is set up and working:
 You're ready to use Boticelli with database persistence! Try running:
 
 ```bash
-# Run narrative and save to database
-cargo run --release -- run -n narrations/mint.toml --save --verbose
+# Run narrative and save to database (must include database feature)
+cargo run --release --features database,gemini -- run -n narrations/mint.toml --save --verbose
 
 # List saved executions
-cargo run --release -- list
+cargo run --release --features database,gemini -- list
 
 # Show execution details
-cargo run --release -- show 1
+cargo run --release --features database,gemini -- show 1
 ```
+
+**Important:** Always include `--features database,gemini` (or your chosen backend) when using database functionality.
 
 ## Additional Resources
 
