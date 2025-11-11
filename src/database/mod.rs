@@ -22,14 +22,40 @@ use crate::{GenerateRequest, GenerateResponse};
 
 /// Establish a connection to the PostgreSQL database.
 ///
-/// Reads the `DATABASE_URL` environment variable.
+/// Composes the connection URL from environment variables:
+/// - `DATABASE_USER` - PostgreSQL username (required)
+/// - `DATABASE_PASSWORD` - PostgreSQL password (required)
+/// - `DATABASE_HOST` - Database host (defaults to "localhost")
+/// - `DATABASE_PORT` - Database port (defaults to "5432")
+/// - `DATABASE_NAME` - Database name (defaults to "boticelli")
+///
+/// Alternatively, you can provide a complete `DATABASE_URL` which takes precedence.
 pub fn establish_connection() -> DatabaseResult<PgConnection> {
     let _ = dotenvy::dotenv();
-    let database_url = std::env::var("DATABASE_URL").map_err(|_| {
+
+    // If DATABASE_URL is set, use it directly
+    if let Ok(database_url) = std::env::var("DATABASE_URL") {
+        return PgConnection::establish(&database_url).map_err(Into::into);
+    }
+
+    // Otherwise, compose from components
+    let user = std::env::var("DATABASE_USER").map_err(|_| {
         DatabaseError::new(DatabaseErrorKind::Connection(
-            "DATABASE_URL environment variable not set".to_string(),
+            "DATABASE_USER environment variable not set".to_string(),
         ))
     })?;
+
+    let password = std::env::var("DATABASE_PASSWORD").map_err(|_| {
+        DatabaseError::new(DatabaseErrorKind::Connection(
+            "DATABASE_PASSWORD environment variable not set".to_string(),
+        ))
+    })?;
+
+    let host = std::env::var("DATABASE_HOST").unwrap_or_else(|_| "localhost".to_string());
+    let port = std::env::var("DATABASE_PORT").unwrap_or_else(|_| "5432".to_string());
+    let name = std::env::var("DATABASE_NAME").unwrap_or_else(|_| "boticelli".to_string());
+
+    let database_url = format!("postgres://{}:{}@{}:{}/{}", user, password, host, port, name);
 
     PgConnection::establish(&database_url).map_err(Into::into)
 }
