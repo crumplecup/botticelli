@@ -4,11 +4,11 @@
 //! It supports multiple providers with different tier structures and automatically
 //! detects limits from API response headers when possible.
 
-pub mod config;
-pub mod detector;
-pub mod limiter;
-pub mod tier;
-pub mod tiers;
+mod config;
+mod detector;
+mod limiter;
+mod tier;
+mod tiers;
 
 pub use config::{BoticelliConfig, ProviderConfig, TierConfig};
 pub use detector::HeaderRateLimitDetector;

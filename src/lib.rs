@@ -53,8 +53,8 @@ mod models;
 #[cfg(feature = "database")]
 pub mod database;
 
-pub mod narrative;
-pub mod rate_limit;
+mod narrative;
+mod rate_limit;
 
 // Re-export core types
 pub use core::{
@@ -65,8 +65,9 @@ pub use core::{
 pub use error::{BoticelliError, BoticelliErrorKind, BoticelliResult};
 
 // Re-export model-specific error types
+// Re-export model implementations
 #[cfg(feature = "gemini")]
-pub use models::{GeminiError, GeminiErrorKind};
+pub use models::{GeminiClient, GeminiError, GeminiErrorKind};
 
 // Re-export core trait
 pub use interface::BoticelliDriver;
@@ -82,16 +83,12 @@ pub use interface::{
     FinishReason, HealthStatus, ModelMetadata, StreamChunk, ToolDefinition, ToolResult,
 };
 
-// Re-export model implementations
-#[cfg(feature = "gemini")]
-pub use models::GeminiClient;
-
 // Re-export narrative types
 pub use narrative::{
     ActConfig, ActExecution, ExecutionFilter, ExecutionStatus, ExecutionSummary,
-    InMemoryNarrativeRepository, Narrative, NarrativeError, NarrativeErrorKind,
-    NarrativeExecution, NarrativeExecutor, NarrativeMetadata, NarrativeProvider,
-    NarrativeRepository, NarrativeToc, VideoMetadata,
+    InMemoryNarrativeRepository, Narrative, NarrativeError, NarrativeErrorKind, NarrativeExecution,
+    NarrativeExecutor, NarrativeMetadata, NarrativeProvider, NarrativeRepository, NarrativeToc,
+    VideoMetadata,
 };
 
 // Re-export rate limiting types
@@ -101,8 +98,8 @@ pub use rate_limit::{
 };
 
 // Re-export provider-specific tier enums
-#[cfg(feature = "gemini")]
-pub use rate_limit::GeminiTier;
 #[cfg(feature = "anthropic")]
 pub use rate_limit::AnthropicTier;
+#[cfg(feature = "gemini")]
+pub use rate_limit::GeminiTier;
 pub use rate_limit::OpenAITier;
