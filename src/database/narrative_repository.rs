@@ -24,8 +24,7 @@ use tokio::sync::Mutex;
 ///
 /// # Example
 /// ```no_run
-/// use boticelli::database::{PostgresNarrativeRepository, establish_connection};
-/// use boticelli::NarrativeRepository;
+/// use boticelli::{PostgresNarrativeRepository, establish_connection, NarrativeRepository};
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
