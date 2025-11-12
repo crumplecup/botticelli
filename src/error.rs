@@ -1,5 +1,11 @@
 //! Error types for the Boticelli library.
 
+#[cfg(feature = "database")]
+use crate::DatabaseError;
+#[cfg(feature = "gemini")]
+use crate::GeminiError;
+use crate::NarrativeError;
+
 /// HTTP error wrapping reqwest errors with source location.
 #[derive(Debug)]
 pub struct HttpError {
@@ -184,36 +190,31 @@ impl std::error::Error for BackendError {}
 #[derive(Debug, derive_more::From)]
 pub enum BoticelliErrorKind {
     /// HTTP error from reqwest
+    #[from(HttpError)]
     Http(HttpError),
     /// JSON serialization/deserialization error
+    #[from(JsonError)]
     Json(JsonError),
     /// Generic backend error
+    #[from(BackendError)]
     Backend(BackendError),
     /// Gemini-specific error
     #[cfg(feature = "gemini")]
-    Gemini(crate::GeminiError),
+    #[from(GeminiError)]
+    Gemini(GeminiError),
     /// Database error
     #[cfg(feature = "database")]
-    Database(crate::DatabaseError),
+    #[from(DatabaseError)]
+    Database(DatabaseError),
     /// Narrative error
-    Narrative(crate::NarrativeError),
+    #[from(NarrativeError)]
+    Narrative(NarrativeError),
     /// Configuration error
+    #[from(ConfigError)]
     Config(ConfigError),
     /// Feature not yet implemented
+    #[from(NotImplementedError)]
     NotImplemented(NotImplementedError),
-}
-
-// Convenience From implementations to wrap external errors
-impl From<reqwest::Error> for BoticelliErrorKind {
-    fn from(err: reqwest::Error) -> Self {
-        BoticelliErrorKind::Http(HttpError::new(err))
-    }
-}
-
-impl From<serde_json::Error> for BoticelliErrorKind {
-    fn from(err: serde_json::Error) -> Self {
-        BoticelliErrorKind::Json(JsonError::new(err))
-    }
 }
 
 impl std::fmt::Display for BoticelliErrorKind {
