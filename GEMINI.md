@@ -267,6 +267,14 @@ fn model_name_to_enum(name: &str) -> Model {
   - `models/gemini-experimental` → preserved as-is
   - `custom-model-name` → `Model::Custom("models/custom-model-name")`
 
+**NOT Supported** (require different API endpoints):
+- **Live API models** - These models require WebSocket/streaming endpoints, not the standard `generateContent` endpoint:
+  - `gemini-2.5-flash-native-audio-preview-09-2025`
+  - `gemini-live-2.5-flash-preview`
+  - `gemini-2.0-flash-live-001`
+
+  Live API models are designed for real-time audio/video streaming and would require a separate implementation.
+
 ### Tier Conversion
 
 Since `new_with_tier()` accepts `Option<Box<dyn Tier>>` (for API compatibility) but we need concrete `GeminiTier`, we use name matching:
