@@ -232,7 +232,7 @@ let execution = executor.execute(&narrative).await?;
 
 The gemini-rust crate requires `Model` enum variants, not string model names. We convert string model names to the appropriate enum variants:
 
-**File**: `src/models/gemini.rs` (lines 254-267)
+**File**: `src/models/gemini.rs` (lines 254-281)
 
 ```rust
 fn model_name_to_enum(name: &str) -> Model {
@@ -241,18 +241,31 @@ fn model_name_to_enum(name: &str) -> Model {
         "gemini-2.5-flash-lite" => Model::Gemini25FlashLite,
         "gemini-2.5-pro" => Model::Gemini25Pro,
         "text-embedding-004" => Model::TextEmbedding004,
-        // For other model names, use Custom variant
-        other => Model::Custom(other.to_string()),
+        // For other model names, use Custom variant with "models/" prefix
+        other => {
+            if other.starts_with("models/") {
+                Model::Custom(other.to_string())
+            } else {
+                Model::Custom(format!("models/{}", other))
+            }
+        }
     }
 }
 ```
 
-**Important**: Only Gemini 2.5 models are guaranteed to work. Older models like "gemini-2.0-flash" use the `Model::Custom()` variant, which may not work correctly depending on the gemini-rust crate version.
+**Key Detail**: The Gemini API requires model names in `Model::Custom()` to be prefixed with `"models/"`. Our conversion automatically adds this prefix if not already present.
 
-**Recommendation**: Always use Gemini 2.5 models:
-- `gemini-2.5-flash` (default)
-- `gemini-2.5-flash-lite`
-- `gemini-2.5-pro`
+**Supported Models**:
+- **Gemini 2.5 models** (use enum variants):
+  - `gemini-2.5-flash` (default)
+  - `gemini-2.5-flash-lite`
+  - `gemini-2.5-pro`
+- **Gemini 2.0 models** (use Custom with "models/" prefix):
+  - `gemini-2.0-flash` → `Model::Custom("models/gemini-2.0-flash")`
+  - `gemini-2.0-flash-lite` → `Model::Custom("models/gemini-2.0-flash-lite")`
+- **Any other model** (use Custom with "models/" prefix):
+  - `models/gemini-experimental` → preserved as-is
+  - `custom-model-name` → `Model::Custom("models/custom-model-name")`
 
 ### Tier Conversion
 
@@ -298,18 +311,34 @@ This pragmatic approach handles the Box<dyn Tier> → GeminiTier conversion with
 
 ## Testing
 
-**File**: `tests/gemini_model_test.rs`
+Test suites validate both Gemini 2.5 and 2.0 model support:
 
-Test suite includes:
+### Gemini 2.5 Model Tests
+**File**: `tests/gemini_model_test.rs`
 
 1. **Default model usage**: Verify default model when `req.model` is None
 2. **Model override**: Verify correct model used when `req.model` is Some
 3. **Multiple model requests**: Verify client pool handles different models
 4. **Narrative integration**: Verify multi-model narrative execution
 
+### Gemini 2.0 Model Tests
+**File**: `tests/gemini_2_0_models_test.rs`
+
+1. **Gemini 2.0 Flash**: Verify gemini-2.0-flash works via Model::Custom
+2. **Gemini 2.0 Flash Lite**: Verify gemini-2.0-flash-lite works
+3. **Mixed 2.0 and 2.5 models**: Verify client pool handles both generations
+4. **Explicit "models/" prefix**: Verify user-provided prefix is preserved
+
 **Run tests** (requires `GEMINI_API_KEY`):
 ```bash
-cargo test --features gemini
+# Run all Gemini tests
+cargo test --features gemini -- --ignored
+
+# Run only 2.5 model tests
+cargo test --features gemini --test gemini_model_test -- --ignored
+
+# Run only 2.0 model tests
+cargo test --features gemini --test gemini_2_0_models_test -- --ignored
 ```
 
 ## Benefits of This Architecture

@@ -254,15 +254,29 @@ impl GeminiClient {
     /// Convert a model name string to a gemini-rust Model enum variant.
     ///
     /// Maps common model name strings to their corresponding Model enum variants.
-    /// Uses Model::Custom for unrecognized model names.
+    /// Uses Model::Custom for unrecognized model names, automatically adding the
+    /// "models/" prefix required by the Gemini API.
+    ///
+    /// # Examples
+    ///
+    /// - "gemini-2.5-flash" → Model::Gemini25Flash
+    /// - "gemini-2.0-flash" → Model::Custom("models/gemini-2.0-flash")
+    /// - "models/gemini-2.0-flash" → Model::Custom("models/gemini-2.0-flash") (preserved)
     fn model_name_to_enum(name: &str) -> Model {
         match name {
             "gemini-2.5-flash" => Model::Gemini25Flash,
             "gemini-2.5-flash-lite" => Model::Gemini25FlashLite,
             "gemini-2.5-pro" => Model::Gemini25Pro,
             "text-embedding-004" => Model::TextEmbedding004,
-            // For other model names (including gemini-2.0-*), use Custom variant
-            other => Model::Custom(other.to_string()),
+            // For other model names, use Custom variant with "models/" prefix
+            other => {
+                // Add "models/" prefix if not already present
+                if other.starts_with("models/") {
+                    Model::Custom(other.to_string())
+                } else {
+                    Model::Custom(format!("models/{}", other))
+                }
+            }
         }
     }
 
