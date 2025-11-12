@@ -6,21 +6,21 @@ description = "Generate social media content to support the MINT homeless shelte
 order = ["act1", "act2", "act3"]
 
 [acts.act1]
-model = "gemini-2.0-flash-lite"
+model = "gemini-2.5-flash-lite"
 
 [[acts.act1.input]]
 type = "text"
 content = "Create short-form social media posts to support the MINT (Mobile Integrative Navigation Team) homeless navigation center, which needs more visiblity and donations."
 
 [acts.act2]
-model = "gemini-2.0-flash-lite"
+model = "gemini-2.5-flash-lite"
 
 [[acts.act2.input]]
 type = "text"
 content = "Critique the list of posts for quality, impact and professionalism."
 
 [acts.act3]
-model = "gemini-2.0-flash-lite"
+model = "gemini-2.5-flash-lite"
 
 [[acts.act3.input]]
 type = "text"
