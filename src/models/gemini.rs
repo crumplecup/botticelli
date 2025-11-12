@@ -1,4 +1,55 @@
 //! Google Gemini API implementation.
+//!
+//! This module provides a client for the Google Gemini API with support for:
+//! - Per-request model selection (different requests can use different models)
+//! - Client pooling with lazy initialization (one client per model)
+//! - Per-model rate limiting (each model has independent rate limits)
+//! - Thread-safe concurrent access
+//!
+//! # Architecture
+//!
+//! The [`GeminiClient`] maintains a pool of model-specific clients, each wrapped in its own
+//! rate limiter. When a request specifies a model (via `GenerateRequest.model`), the client
+//! either retrieves the existing client for that model or creates a new one on-demand.
+//!
+//! This design enables:
+//! - Multi-model narratives where different acts use different models
+//! - Cost optimization by selecting appropriate models per task
+//! - Independent rate limiting per model
+//!
+//! # Example
+//!
+//! ```no_run
+//! use boticelli::{BoticelliDriver, GeminiClient, GenerateRequest, Message, Role, Input};
+//!
+//! # #[tokio::main]
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let client = GeminiClient::new()?;
+//!
+//! // Use default model (gemini-2.0-flash)
+//! let request1 = GenerateRequest {
+//!     messages: vec![Message {
+//!         role: Role::User,
+//!         content: vec![Input::Text("Hello".to_string())],
+//!     }],
+//!     model: None,
+//!     ..Default::default()
+//! };
+//! let response1 = client.generate(&request1).await?;
+//!
+//! // Override to use a different model
+//! let request2 = GenerateRequest {
+//!     messages: vec![Message {
+//!         role: Role::User,
+//!         content: vec![Input::Text("Complex task".to_string())],
+//!     }],
+//!     model: Some("gemini-2.5-flash".to_string()),
+//!     ..Default::default()
+//! };
+//! let response2 = client.generate(&request2).await?;
+//! # Ok(())
+//! # }
+//! ```
 
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -445,12 +496,24 @@ impl BoticelliDriver for GeminiClient {
         "gemini"
     }
 
+    /// Returns the default model name used when `GenerateRequest.model` is None.
+    ///
+    /// Note: This returns the default model configured at client creation time.
+    /// Individual requests may use different models by specifying `GenerateRequest.model`.
     fn model_name(&self) -> &str {
         &self.model_name
     }
 }
 
 impl Metadata for GeminiClient {
+    /// Returns metadata for the default model.
+    ///
+    /// Note: This returns capabilities for the default model configured at client creation.
+    /// Different Gemini models may have different capabilities and limits. When using
+    /// per-request model selection via `GenerateRequest.model`, verify that the requested
+    /// model supports the features you need.
+    ///
+    /// Current metadata reflects Gemini 2.0 Flash capabilities.
     fn metadata(&self) -> ModelMetadata {
         ModelMetadata {
             provider: "gemini",
