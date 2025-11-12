@@ -325,27 +325,51 @@ impl GeminiClient {
 
     /// Internal generate method that returns Gemini-specific errors.
     async fn generate_internal(&self, req: &GenerateRequest) -> GeminiResult<GenerateResponse> {
-        // Acquire rate limit permission if rate limiting is enabled
-        let _guard = if let Some(limiter) = &self.rate_limiter {
-            // Estimate tokens for all input messages
-            let estimated_tokens: u64 = req
-                .messages
-                .iter()
-                .flat_map(|msg| &msg.content)
-                .filter_map(Self::extract_text)
-                .map(|text| Self::estimate_tokens(&text))
-                .sum();
+        // Determine which model to use
+        let model_name = req.model.as_ref().unwrap_or(&self.model_name);
 
-            // Add max_tokens if specified (output token estimate)
-            let total_estimate = estimated_tokens + req.max_tokens.unwrap_or(1000) as u64;
+        // Get or create rate-limited client for this model
+        let rate_limited_client = {
+            let mut clients = self.clients.lock().unwrap();
+            clients
+                .entry(model_name.clone())
+                .or_insert_with(|| {
+                    // Create new Gemini client for this model
+                    let client = Gemini::with_model(&self.api_key, model_name.clone())
+                        .expect("Failed to create Gemini client for model");
 
-            Some(limiter.acquire(total_estimate).await)
-        } else {
-            None
+                    // Wrap client with tier
+                    let tiered = TieredGemini {
+                        client,
+                        tier: self.default_tier,
+                    };
+
+                    // Wrap in rate limiter
+                    RateLimiter::new(tiered)
+                })
+                .clone()
         };
 
+        // Estimate tokens for rate limiting
+        let estimated_tokens: u64 = req
+            .messages
+            .iter()
+            .flat_map(|msg| &msg.content)
+            .filter_map(Self::extract_text)
+            .map(|text| Self::estimate_tokens(&text))
+            .sum();
+
+        // Add max_tokens if specified (output token estimate)
+        let total_estimate = estimated_tokens + req.max_tokens.unwrap_or(1000) as u64;
+
+        // Acquire rate limit permission
+        let _guard = rate_limited_client.acquire(total_estimate).await;
+
+        // Access the client through the rate limiter
+        let client = &rate_limited_client.inner().client;
+
         // Start building the request
-        let mut builder = self.client.generate_content();
+        let mut builder = client.generate_content();
 
         // Process messages in order
         let mut system_prompt = None;
