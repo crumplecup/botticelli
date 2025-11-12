@@ -8,7 +8,10 @@
 //!
 //! API tests are minimal (1 request, ~10 tokens) to conserve quota.
 
-use boticelli::{BoticelliDriver, RateLimiter, Tier, TierConfig};
+use boticelli::{RateLimiter, Tier, TierConfig};
+
+#[cfg(feature = "gemini")]
+use boticelli::BoticelliDriver;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -48,7 +51,7 @@ async fn test_rate_limiter_blocks_on_rpm_limit() {
         cost_per_million_output_tokens: None,
     };
 
-    let limiter = RateLimiter::new(Box::new(tier));
+    let limiter = RateLimiter::new(tier);
 
     // First two requests should succeed immediately
     let start = Instant::now();
@@ -87,7 +90,7 @@ async fn test_rate_limiter_releases_concurrent_slots() {
         cost_per_million_output_tokens: None,
     };
 
-    let limiter = Arc::new(RateLimiter::new(Box::new(tier)));
+    let limiter = Arc::new(RateLimiter::new(tier));
 
     // First request acquires the slot
     {
@@ -200,7 +203,7 @@ async fn test_rate_limiter_with_multiple_limits() {
         cost_per_million_output_tokens: None,
     };
 
-    let limiter = RateLimiter::new(Box::new(tier));
+    let limiter = RateLimiter::new(tier);
 
     // Should be able to make requests within all limits
     let _g1 = limiter.try_acquire(10).expect("First request (10 tokens)");

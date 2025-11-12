@@ -6,6 +6,8 @@
 //! - Cost control (using cheaper models when appropriate)
 //! - Feature testing across different model capabilities
 
+#![cfg(feature = "gemini")]
+
 use boticelli::{BoticelliDriver, GenerateRequest, GeminiClient, Input, Message, Role};
 
 /// Test that GeminiClient uses the default model when no model is specified.

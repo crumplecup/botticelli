@@ -26,20 +26,32 @@ type DirectRateLimiter = GovernorRateLimiter<NotKeyed, InMemoryState, DefaultClo
 /// - **RPD** (requests per day): Enforced via governor with daily quota
 /// - **Concurrent requests**: Enforced via Tokio Semaphore
 ///
+/// The limiter takes ownership of a value implementing `Tier` and uses it
+/// to configure rate limits. Access to the inner value is provided through
+/// the `inner()` method after acquiring rate limit permission.
+///
+/// # Type Parameters
+///
+/// * `T` - Any type implementing the `Tier` trait. The limiter takes ownership
+///   of this value and provides controlled access through rate limiting.
+///
 /// # Example
 ///
 /// ```rust,ignore
 /// use boticelli::{RateLimiter, GeminiTier};
 ///
-/// let limiter = RateLimiter::new(Box::new(GeminiTier::Free));
+/// let limiter = RateLimiter::new(GeminiTier::Free);
 ///
 /// // Acquire permission for a request with estimated 1000 tokens
 /// let guard = limiter.acquire(1000).await;
+/// // Access the inner tier through the limiter
+/// let tier_ref = limiter.inner();
 /// // Make API call...
 /// drop(guard); // Releases concurrent slot
 /// ```
-pub struct RateLimiter {
-    _tier: Box<dyn Tier>,
+#[derive(Clone)]
+pub struct RateLimiter<T: Tier> {
+    inner: T,
 
     // RPM limiter (requests per minute)
     rpm_limiter: Option<Arc<DirectRateLimiter>>,
@@ -54,9 +66,10 @@ pub struct RateLimiter {
     concurrent_semaphore: Arc<Semaphore>,
 }
 
-impl RateLimiter {
+impl<T: Tier> RateLimiter<T> {
     /// Create a new rate limiter from a tier.
     ///
+    /// Takes ownership of the tier and uses it to configure rate limits.
     /// The limiter will enforce all non-None limits from the tier:
     /// - If `tier.rpm()` is Some, enforces requests per minute
     /// - If `tier.tpm()` is Some, enforces tokens per minute
@@ -68,10 +81,10 @@ impl RateLimiter {
     /// ```rust,ignore
     /// use boticelli::{RateLimiter, GeminiTier};
     ///
-    /// let limiter = RateLimiter::new(Box::new(GeminiTier::Free));
+    /// let limiter = RateLimiter::new(GeminiTier::Free);
     /// // Enforces: 10 RPM, 250K TPM, 250 RPD, 1 concurrent
     /// ```
-    pub fn new(tier: Box<dyn Tier>) -> Self {
+    pub fn new(tier: T) -> Self {
         // Create RPM limiter
         let rpm_limiter = tier.rpm().and_then(|rpm| {
             NonZeroU32::new(rpm).map(|n| {
@@ -106,12 +119,29 @@ impl RateLimiter {
         let concurrent_semaphore = Arc::new(Semaphore::new(max_concurrent as usize));
 
         Self {
-            _tier: tier,
+            inner: tier,
             rpm_limiter,
             tpm_limiter,
             rpd_limiter,
             concurrent_semaphore,
         }
+    }
+
+    /// Get a reference to the inner tier value.
+    ///
+    /// This allows access to the wrapped value (which implements `Tier`)
+    /// after the rate limiter has been created. Useful for accessing the
+    /// underlying client or tier information.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let limiter = RateLimiter::new(my_tiered_client);
+    /// let client_ref = limiter.inner();
+    /// // Use client_ref to make API calls
+    /// ```
+    pub fn inner(&self) -> &T {
+        &self.inner
     }
 
     /// Acquire rate limit permission for a request.

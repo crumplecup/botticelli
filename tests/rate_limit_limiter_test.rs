@@ -1,6 +1,6 @@
 //! Tests for rate limiter implementation.
 
-use boticelli::{RateLimiter, Tier, TierConfig};
+use boticelli::{RateLimiter, TierConfig};
 use std::sync::Arc;
 
 fn create_test_tier(
@@ -8,8 +8,8 @@ fn create_test_tier(
     tpm: Option<u64>,
     rpd: Option<u32>,
     max_concurrent: Option<u32>,
-) -> Box<dyn Tier> {
-    Box::new(TierConfig {
+) -> TierConfig {
+    TierConfig {
         name: "Test".to_string(),
         rpm,
         tpm,
@@ -18,7 +18,7 @@ fn create_test_tier(
         daily_quota_usd: None,
         cost_per_million_input_tokens: None,
         cost_per_million_output_tokens: None,
-    })
+    }
 }
 
 #[tokio::test]
