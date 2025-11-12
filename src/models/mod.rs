@@ -4,4 +4,4 @@
 mod gemini;
 
 #[cfg(feature = "gemini")]
-pub use gemini::{GeminiClient, GeminiError, GeminiErrorKind};
+pub use gemini::{GeminiClient, GeminiError, GeminiErrorKind, TieredGemini};
