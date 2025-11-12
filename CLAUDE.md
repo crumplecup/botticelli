@@ -95,6 +95,7 @@
   - Expand and improve error structs and enums as necessary to capture sufficient information about the error conditions to gain insight into the nature of the problem.
 - After creating a new unique error type, add a variant to the crate level error enum using the new error name as a variant type, including the new error type as a field (e.g. `CrateErrorKind::Canvas(CanvasError)`)
   - Use `#[derive(Debug, derive_more::From)]` on the crate-level error enum to automatically generate From implementations for all error variants.
+  - Use explicit `#[from(ErrorType)]` attributes on each enum variant to make the From implementations clear and explicit (e.g., `#[from(CanvasError)] Canvas(CanvasError)`).
   - The display impl for the crate-level enum should forward the impl from the original error (e.g. If the display value of NewError is e, then the display for CrateErrorKind is "{e}").
   - The display impl for the wrapper struct around the crate-level enum should include the display value of its kind field (e.g. If the display value of CrateErrorKind is e, then CrateError displays "Crate Error: {e}").
   - Use a generic blanket `From` implementation on the wrapper struct to automatically convert any type that implements `Into<CrateErrorKind>` (eliminates need for individual From implementations per error type).
@@ -177,9 +178,12 @@ impl std::fmt::Display for ConfigError {
 impl std::error::Error for ConfigError {}
 
 // Crate-level error enum with derive_more::From
+// Use explicit #[from(ErrorType)] attributes on each variant
 #[derive(Debug, derive_more::From)]
 pub enum FormErrorKind {
+    #[from(CanvasError)]
     Canvas(CanvasError),
+    #[from(ConfigError)]
     Config(ConfigError),
     // ... other variants
 }
