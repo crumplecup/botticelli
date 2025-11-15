@@ -220,5 +220,32 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
             })
     }
 
+    // Media storage methods - simple passthrough to future implementations
+    async fn store_media(
+        &self,
+        _data: &[u8],
+        _metadata: &crate::MediaMetadata,
+    ) -> BoticelliResult<crate::MediaReference> {
+        Err(crate::BoticelliError::from(crate::NotImplementedError::new(
+            "Media storage not yet implemented for in-memory repository",
+        )))
+    }
+
+    async fn load_media(
+        &self,
+        _reference: &crate::MediaReference,
+    ) -> BoticelliResult<Vec<u8>> {
+        Err(crate::BoticelliError::from(crate::NotImplementedError::new(
+            "Media loading not yet implemented for in-memory repository",
+        )))
+    }
+
+    async fn get_media_by_hash(
+        &self,
+        _content_hash: &str,
+    ) -> BoticelliResult<Option<crate::MediaReference>> {
+        Ok(None)
+    }
+
     // Video methods use default implementations (return NotImplemented)
 }

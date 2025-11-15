@@ -75,8 +75,54 @@ pub trait NarrativeRepository: Send + Sync {
     /// * `id` - The execution ID to delete
     async fn delete_execution(&self, id: i32) -> BoticelliResult<()>;
 
-    // Video storage methods - defined in trait for future implementations
-    // Default implementations return NotImplemented errors
+    // Media storage methods - new unified approach for images/audio/video
+
+    /// Store media using configured storage backend and save metadata to database.
+    ///
+    /// This stores the binary data in the configured backend (filesystem, S3, etc.)
+    /// and records metadata in the media_references table. Handles deduplication
+    /// automatically via content hash.
+    ///
+    /// # Arguments
+    /// * `data` - Raw media bytes
+    /// * `metadata` - Media metadata (type, mime type, dimensions, etc.)
+    ///
+    /// # Returns
+    /// A `MediaReference` containing the UUID and location information
+    async fn store_media(
+        &self,
+        data: &[u8],
+        metadata: &crate::MediaMetadata,
+    ) -> BoticelliResult<crate::MediaReference>;
+
+    /// Retrieve media by reference.
+    ///
+    /// # Arguments
+    /// * `reference` - The media reference from `store_media`
+    ///
+    /// # Returns
+    /// The raw media bytes
+    async fn load_media(
+        &self,
+        reference: &crate::MediaReference,
+    ) -> BoticelliResult<Vec<u8>>;
+
+    /// Get media reference by content hash for deduplication.
+    ///
+    /// Check if media with the same content hash already exists.
+    ///
+    /// # Arguments
+    /// * `content_hash` - SHA-256 hash of the content
+    ///
+    /// # Returns
+    /// `Some(MediaReference)` if found, `None` otherwise
+    async fn get_media_by_hash(
+        &self,
+        content_hash: &str,
+    ) -> BoticelliResult<Option<crate::MediaReference>>;
+
+    // Video storage methods - DEPRECATED, use store_media/load_media instead
+    // Kept for backward compatibility, default implementations return NotImplemented
 
     /// Store video input data separately (for large file handling).
     ///

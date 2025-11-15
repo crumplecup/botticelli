@@ -24,12 +24,14 @@ use tokio::sync::Mutex;
 ///
 /// # Example
 /// ```no_run
-/// use boticelli::{PostgresNarrativeRepository, establish_connection, NarrativeRepository};
+/// use boticelli::{PostgresNarrativeRepository, FileSystemStorage, establish_connection, NarrativeRepository};
+/// use std::sync::Arc;
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let mut conn = establish_connection()?;
-///     let repo = PostgresNarrativeRepository::new(conn);
+///     let storage = Arc::new(FileSystemStorage::new("/var/boticelli/media")?);
+///     let repo = PostgresNarrativeRepository::new(conn, storage);
 ///     // Use repo.save_execution(), load_execution(), etc.
 ///     Ok(())
 /// }
@@ -40,6 +42,8 @@ pub struct PostgresNarrativeRepository {
     /// Note: This is a simple implementation. For production use, consider using
     /// a connection pool like r2d2 or deadpool.
     conn: Arc<Mutex<PgConnection>>,
+    /// Media storage backend for binary content
+    storage: Arc<dyn crate::MediaStorage>,
 }
 
 impl PostgresNarrativeRepository {
@@ -47,19 +51,21 @@ impl PostgresNarrativeRepository {
     ///
     /// # Arguments
     /// * `conn` - A PostgreSQL connection
+    /// * `storage` - Media storage backend
     ///
     /// # Note
     /// The connection is wrapped in Arc<Mutex> to allow async access.
     /// For better performance with concurrent access, consider using a connection pool.
-    pub fn new(conn: PgConnection) -> Self {
+    pub fn new(conn: PgConnection, storage: Arc<dyn crate::MediaStorage>) -> Self {
         Self {
             conn: Arc::new(Mutex::new(conn)),
+            storage,
         }
     }
 
     /// Create a repository from an Arc<Mutex<PgConnection>> (for sharing connections).
-    pub fn from_arc(conn: Arc<Mutex<PgConnection>>) -> Self {
-        Self { conn }
+    pub fn from_arc(conn: Arc<Mutex<PgConnection>>, storage: Arc<dyn crate::MediaStorage>) -> Self {
+        Self { conn, storage }
     }
 }
 
@@ -287,6 +293,145 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             })?;
 
         Ok(())
+    }
+
+    // Media storage methods
+    async fn store_media(
+        &self,
+        data: &[u8],
+        metadata: &crate::MediaMetadata,
+    ) -> BoticelliResult<crate::MediaReference> {
+        use crate::database::schema::media_references;
+        use sha2::{Digest, Sha256};
+
+        // Compute hash for deduplication
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let hash = format!("{:x}", hasher.finalize());
+
+        // Check if already exists
+        if let Some(existing) = self.get_media_by_hash(&hash).await? {
+            tracing::debug!(
+                hash = %hash,
+                id = %existing.id,
+                "Media already exists, returning existing reference"
+            );
+            return Ok(existing);
+        }
+
+        // Store in backend
+        let reference = self.storage.store(data, metadata).await?;
+
+        // Save reference to database
+        let mut conn = self.conn.lock().await;
+
+        #[derive(Insertable)]
+        #[diesel(table_name = media_references)]
+        struct NewMediaReferenceRow {
+            id: uuid::Uuid,
+            media_type: String,
+            mime_type: String,
+            size_bytes: i64,
+            content_hash: String,
+            storage_backend: String,
+            storage_path: String,
+            width: Option<i32>,
+            height: Option<i32>,
+            duration_seconds: Option<f32>,
+        }
+
+        let new_row = NewMediaReferenceRow {
+            id: reference.id,
+            media_type: reference.media_type.as_str().to_string(),
+            mime_type: reference.mime_type.clone(),
+            size_bytes: reference.size_bytes,
+            content_hash: reference.content_hash.clone(),
+            storage_backend: reference.storage_backend.clone(),
+            storage_path: reference.storage_path.clone(),
+            width: metadata.width.map(|w| w as i32),
+            height: metadata.height.map(|h| h as i32),
+            duration_seconds: metadata.duration_seconds,
+        };
+
+        diesel::insert_into(media_references::table)
+            .values(&new_row)
+            .execute(&mut *conn)
+            .map_err(|e| {
+                BoticelliError::from(BackendError::new(format!(
+                    "Failed to save media reference: {}",
+                    e
+                )))
+            })?;
+
+        tracing::info!(
+            id = %reference.id,
+            hash = %reference.content_hash,
+            media_type = %reference.media_type,
+            size_bytes = reference.size_bytes,
+            "Stored media in database"
+        );
+
+        Ok(reference)
+    }
+
+    async fn load_media(
+        &self,
+        reference: &crate::MediaReference,
+    ) -> BoticelliResult<Vec<u8>> {
+        self.storage.retrieve(reference).await
+    }
+
+    async fn get_media_by_hash(
+        &self,
+        content_hash: &str,
+    ) -> BoticelliResult<Option<crate::MediaReference>> {
+        use crate::database::schema::media_references;
+
+        let mut conn = self.conn.lock().await;
+
+        let result: Option<(
+            uuid::Uuid,
+            String,
+            String,
+            i64,
+            String,
+            String,
+            String,
+        )> = media_references::table
+            .select((
+                media_references::id,
+                media_references::media_type,
+                media_references::mime_type,
+                media_references::size_bytes,
+                media_references::content_hash,
+                media_references::storage_backend,
+                media_references::storage_path,
+            ))
+            .filter(media_references::content_hash.eq(content_hash))
+            .first(&mut *conn)
+            .optional()
+            .map_err(|e| {
+                BoticelliError::from(BackendError::new(format!(
+                    "Failed to query media by hash: {}",
+                    e
+                )))
+            })?;
+
+        Ok(result.map(
+            |(id, media_type_str, mime_type, size_bytes, hash, backend, path)| {
+                crate::MediaReference {
+                    id,
+                    media_type: media_type_str
+                        .parse()
+                        .unwrap_or(crate::MediaType::Image),
+                    mime_type,
+                    size_bytes,
+                    content_hash: hash,
+                    storage_backend: backend,
+                    storage_path: path,
+                }
+            },
+        ))
     }
 
     // Video methods use default implementations from trait (return NotImplemented)

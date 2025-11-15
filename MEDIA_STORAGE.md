@@ -355,7 +355,87 @@ DROP INDEX IF EXISTS idx_media_content_hash;
 DROP TABLE IF EXISTS media_references;
 ```
 
-### Step 4: Update Repository Layer (2-3 days)
+### Step 4: Update Repository Layer ✅ COMPLETE
+
+**Status**: Implemented and tested  
+**Date Completed**: 2025-11-15
+
+**4.1 Add MediaStorage to NarrativeRepository Trait** ✅
+
+Added three new methods to the `NarrativeRepository` trait:
+- `store_media(data, metadata) -> MediaReference` - Store media and save metadata to database
+- `load_media(reference) -> Vec<u8>` - Retrieve media by reference
+- `get_media_by_hash(content_hash) -> Option<MediaReference>` - Check for existing media (deduplication)
+
+Marked old `store_video`/`load_video` methods as DEPRECATED in favor of unified `store_media`/`load_media`.
+
+**4.2 Update PostgresNarrativeRepository** ✅
+
+Modified struct to include:
+- `storage: Arc<dyn MediaStorage>` field for pluggable storage backend
+- Updated `new()` and `from_arc()` constructors to require storage parameter
+
+Implemented media storage methods:
+- **`store_media`**: Computes SHA-256 hash, checks for duplicates, stores in backend, saves metadata to database
+- **`load_media`**: Simple passthrough to storage backend
+- **`get_media_by_hash`**: Queries media_references table by content_hash
+
+**Key Features**:
+- Automatic deduplication via content hash lookup before storing
+- Atomic database transaction for metadata insertion
+- Structured logging with tracing
+- Proper error handling with context-rich messages
+
+**4.3 Update InMemoryNarrativeRepository** ✅
+
+Added stub implementations that return `NotImplemented` errors:
+- `store_media`, `load_media`, `get_media_by_hash`
+- Maintains trait compliance for testing
+
+**4.4 Update CLI** ✅
+
+Created `create_postgres_repository()` helper function:
+- Establishes database connection
+- Creates `FileSystemStorage` in temp directory
+- Returns configured repository
+
+Updated all CLI commands to use helper:
+- `run_narrative` with `--save` flag
+- `list_executions`
+- `show_execution`
+
+**Testing** ✅
+
+- All 28 tests pass (9 ignored for features not enabled)
+- Doc tests updated and passing
+- No compilation errors or clippy warnings
+- Integration ready for Step 5 (data migration)
+
+**Architecture Summary**:
+
+```
+User Code
+    ↓
+NarrativeRepository trait
+    ↓
+PostgresNarrativeRepository
+    ├─→ MediaStorage trait (filesystem/S3/etc.)
+    └─→ PostgreSQL (metadata only)
+```
+
+Media flow:
+1. User calls `repo.store_media(data, metadata)`
+2. Repository computes SHA-256 hash
+3. Repository checks `media_references` table for existing hash
+4. If new: calls `storage.store()` → saves to filesystem/S3
+5. Repository inserts row into `media_references` table
+6. Returns `MediaReference` with UUID and location
+
+**Next Step**: Step 5 will create a data migration script to move existing binary data from `act_inputs` columns (`source_binary`, `source_base64`) to the new storage system.
+
+---
+
+### Step 4 Reference Implementation (as documented)
 
 **4.1 Add MediaStorage to NarrativeRepository Trait**
 

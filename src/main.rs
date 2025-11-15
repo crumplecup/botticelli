@@ -266,6 +266,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[cfg(feature = "database")]
+fn create_postgres_repository() -> Result<boticelli::PostgresNarrativeRepository, Box<dyn std::error::Error>> {
+    let conn = boticelli::establish_connection()?;
+    
+    // Create filesystem storage in temp directory
+    // TODO: Make this configurable via CLI args or config file
+    let storage_path = std::env::temp_dir().join("boticelli_media");
+    let storage = std::sync::Arc::new(boticelli::FileSystemStorage::new(storage_path)?);
+    
+    Ok(boticelli::PostgresNarrativeRepository::new(conn, storage))
+}
+
 async fn run_narrative(
     narrative_path: PathBuf,
     backend: String,
@@ -360,8 +372,7 @@ async fn execute_with_driver<D: BoticelliDriver>(
     #[cfg(feature = "database")]
     if save {
         println!("💾 Saving to database...");
-        let conn = boticelli::establish_connection()?;
-        let repo = boticelli::PostgresNarrativeRepository::new(conn);
+        let repo = create_postgres_repository()?;
         let execution_id = repo.save_execution(&execution).await?;
         println!("✓ Saved as execution ID: {}", execution_id);
     }
@@ -423,8 +434,7 @@ async fn list_executions(
 ) -> Result<(), Box<dyn std::error::Error>> {
     use boticelli::ExecutionFilter;
 
-    let conn = boticelli::establish_connection()?;
-    let repo = boticelli::PostgresNarrativeRepository::new(conn);
+    let repo = create_postgres_repository()?;
 
     let mut filter = ExecutionFilter::new().with_limit(limit);
     if let Some(name) = name_filter {
@@ -456,8 +466,7 @@ async fn list_executions(
 
 #[cfg(feature = "database")]
 async fn show_execution(id: i32) -> Result<(), Box<dyn std::error::Error>> {
-    let conn = boticelli::establish_connection()?;
-    let repo = boticelli::PostgresNarrativeRepository::new(conn);
+    let repo = create_postgres_repository()?;
 
     let execution = repo.load_execution(id).await?;
 
