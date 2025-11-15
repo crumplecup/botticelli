@@ -213,7 +213,85 @@ Added 7 tests covering all functionality:
 
 ---
 
-### Step 3: Database Migration (1 day)
+### Step 3: Database Migration ✅ COMPLETE
+
+**Status**: Implemented and tested  
+**Date Completed**: 2025-11-15
+
+**3.1 Create Migration** ✅
+
+Created migration: `2025-11-15-221441-0000_add_media_references`
+
+**3.2 Migration Up SQL** ✅
+
+Successfully created:
+- `media_references` table with all planned fields
+- Indexes on `content_hash`, `media_type`, and `storage_backend`/`storage_path`
+- `media_ref_id` foreign key column in `act_inputs` table
+- Index on `media_ref_id` for join performance
+- Table and column comments for documentation
+
+**Key Features**:
+- UUID primary key for media references
+- `CHECK` constraint ensures media_type is 'image', 'audio', or 'video'
+- `UNIQUE` constraint on content_hash for deduplication
+- `ON DELETE SET NULL` for graceful handling of deleted media
+- Optional metadata fields (width, height, duration_seconds)
+- Tracking fields (uploaded_at, last_accessed_at, access_count)
+
+**3.3 Migration Down SQL** ✅
+
+Clean rollback script that:
+- Removes `media_ref_id` column and index from `act_inputs`
+- Drops all indexes on `media_references`
+- Drops `media_references` table
+
+**3.4 Schema Update** ✅
+
+Regenerated Diesel schema with:
+- New `media_references` table definition
+- Updated `act_inputs` with `media_ref_id` column
+- Proper joinable relationship: `act_inputs -> media_references`
+
+**3.5 Model Updates** ✅
+
+Updated Rust structs:
+- Added `media_ref_id: Option<uuid::Uuid>` to `ActInputRow`
+- Added `media_ref_id: Option<uuid::Uuid>` to `NewActInputRow`
+- Updated conversion functions to initialize field (currently None, will be populated in Step 4)
+
+**Migration Testing** ✅
+
+- Migration runs successfully on existing database
+- All tests pass (28 passed, 9 ignored for features not enabled)
+- Database schema matches Diesel models
+- No compilation warnings (except dead_code for unused functions)
+
+**Database Structure**:
+```sql
+media_references (
+    id UUID PRIMARY KEY,
+    media_type TEXT CHECK(IN 'image'|'audio'|'video'),
+    mime_type TEXT,
+    size_bytes BIGINT,
+    content_hash TEXT UNIQUE,  -- SHA-256 for deduplication
+    storage_backend TEXT,
+    storage_path TEXT,
+    uploaded_at TIMESTAMP,
+    last_accessed_at TIMESTAMP NULL,
+    access_count INT DEFAULT 0,
+    width INT NULL,
+    height INT NULL,
+    duration_seconds REAL NULL
+)
+
+act_inputs (
+    ...existing fields...,
+    media_ref_id UUID NULL REFERENCES media_references(id)
+)
+```
+
+---
 
 **3.1 Create Migration**
 

@@ -30,6 +30,25 @@ diesel::table! {
         content_hash -> Nullable<Text>,
         filename -> Nullable<Text>,
         created_at -> Timestamp,
+        media_ref_id -> Nullable<Uuid>,
+    }
+}
+
+diesel::table! {
+    media_references (id) {
+        id -> Uuid,
+        media_type -> Text,
+        mime_type -> Text,
+        size_bytes -> Int8,
+        content_hash -> Text,
+        storage_backend -> Text,
+        storage_path -> Text,
+        uploaded_at -> Timestamp,
+        last_accessed_at -> Nullable<Timestamp>,
+        access_count -> Nullable<Int4>,
+        width -> Nullable<Int4>,
+        height -> Nullable<Int4>,
+        duration_seconds -> Nullable<Float4>,
     }
 }
 
@@ -67,10 +86,12 @@ diesel::table! {
 
 diesel::joinable!(act_executions -> narrative_executions (execution_id));
 diesel::joinable!(act_inputs -> act_executions (act_execution_id));
+diesel::joinable!(act_inputs -> media_references (media_ref_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     act_executions,
     act_inputs,
+    media_references,
     model_responses,
     narrative_executions,
 );

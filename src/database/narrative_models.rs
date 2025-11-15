@@ -80,6 +80,7 @@ pub struct ActInputRow {
     pub content_hash: Option<String>,
     pub filename: Option<String>,
     pub created_at: NaiveDateTime,
+    pub media_ref_id: Option<uuid::Uuid>,
 }
 
 /// Insertable struct for act_inputs table.
@@ -98,4 +99,5 @@ pub struct NewActInputRow {
     pub source_size_bytes: Option<i64>,
     pub content_hash: Option<String>,
     pub filename: Option<String>,
+    pub media_ref_id: Option<uuid::Uuid>,
 }

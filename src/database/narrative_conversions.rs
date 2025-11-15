@@ -75,6 +75,7 @@ pub fn input_to_new_row(input: &Input, act_execution_id: i32, order: usize) -> B
         source_size_bytes: None,
         content_hash: None,
         filename: None,
+        media_ref_id: None,  // Will be populated by Step 4
     };
 
     match input {
