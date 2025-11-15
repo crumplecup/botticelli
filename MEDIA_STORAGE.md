@@ -603,7 +603,82 @@ async fn store_media_source(
 }
 ```
 
-### Step 5: Data Migration Script (1-2 days)
+### Step 5: Data Migration Script ✅ COMPLETE
+
+**Status**: Implemented and tested  
+**Date Completed**: 2025-11-15
+
+**5.1 Create Migration Binary** ✅
+
+Created `src/bin/migrate_media.rs` - standalone binary for one-time data migration.
+
+**Features**:
+- Queries `act_inputs` for rows with `source_binary` or `source_base64` data
+- Filters to only rows without `media_ref_id` (unmigrated data)
+- Decodes base64 data if needed
+- Calls `repo.store_media()` for each input
+- Updates `act_inputs.media_ref_id` to reference new storage
+- Progress reporting every 100 items
+- Structured logging with tracing
+- Configurable storage path via environment variable
+
+**Usage**:
+```bash
+# Set environment variables
+export DATABASE_URL="postgres://user:pass@localhost/boticelli"
+export MEDIA_STORAGE_PATH="/var/boticelli/media"  # Optional, defaults to temp dir
+
+# Run migration
+cargo run --bin migrate_media --features database
+
+# With custom log level
+RUST_LOG=debug cargo run --bin migrate_media --features database
+```
+
+**Migration Flow**:
+1. Connect to database and storage backend
+2. Query for `act_inputs` rows with binary data and no `media_ref_id`
+3. For each row:
+   - Extract binary data (from `source_binary` or decode `source_base64`)
+   - Determine `MediaType` from `input_type` column
+   - Create `MediaMetadata` with mime_type
+   - Call `repo.store_media()` (handles deduplication automatically)
+   - Update `act_inputs.media_ref_id` with returned UUID
+4. Report statistics (migrated/skipped/failed)
+
+**Error Handling**:
+- Skips rows with unknown input types
+- Logs base64 decode failures and continues
+- Exits with code 1 if any migrations failed
+- Idempotent: safe to re-run (only migrates rows without `media_ref_id`)
+
+**5.2 Cargo Configuration** ✅
+
+Added binary target to `Cargo.toml`:
+```toml
+[[bin]]
+name = "migrate_media"
+path = "src/bin/migrate_media.rs"
+required-features = ["database"]
+```
+
+**Compilation**: ✅ Compiles successfully with `--features database`
+
+**Testing Strategy**:
+- Migration is idempotent (safe to re-run)
+- Test on staging database first
+- Backup database before running in production
+- Monitor logs for failures
+- Verify media files created in storage path
+
+**Next Steps**:
+- Run migration on production data
+- Verify all media accessible
+- Proceed to Step 6 (cleanup old columns) only after validation
+
+---
+
+### Step 5 Reference Implementation (as documented)
 
 **5.1 Create Migration Tool**
 

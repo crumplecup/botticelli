@@ -17,6 +17,11 @@ path = "src/lib.rs"
 name = "boticelli"
 path = "src/main.rs"
 
+[[bin]]
+name = "migrate_media"
+path = "src/bin/migrate_media.rs"
+required-features = ["database"]
+
 
 [dependencies]
 # Common async + HTTP stack
