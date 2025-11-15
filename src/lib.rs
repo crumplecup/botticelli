@@ -78,7 +78,8 @@ pub use error::{
 
 // Re-export storage types
 pub use storage::{
-    MediaMetadata, MediaReference, MediaStorage, MediaType, StorageError, StorageErrorKind,
+    FileSystemStorage, MediaMetadata, MediaReference, MediaStorage, MediaType, StorageError,
+    StorageErrorKind,
 };
 
 // Re-export model-specific error types

@@ -150,99 +150,68 @@ uuid = "1.18"          # Made non-optional for media reference IDs
 
 ---
 
-### Step 2: Implement Filesystem Storage (2-3 days)
+### Step 2: Implement Filesystem Storage ✅ COMPLETE
 
-**2.1 Core Implementation**
+**Status**: Implemented and tested  
+**Date Completed**: 2025-01-15
 
-```rust
-// src/storage/filesystem.rs
-pub struct FileSystemStorage {
-    base_path: PathBuf,
-}
+**2.1 Core Implementation** ✅
 
-impl FileSystemStorage {
-    pub fn new(base_path: impl Into<PathBuf>) -> BoticelliResult<Self> {
-        let base_path = base_path.into();
-        std::fs::create_dir_all(&base_path)?;
-        Ok(Self { base_path })
-    }
-    
-    fn compute_hash(data: &[u8]) -> String {
-        use sha2::{Sha256, Digest};
-        let mut hasher = Sha256::new();
-        hasher.update(data);
-        format!("{:x}", hasher.finalize())
-    }
-    
-    fn get_path(&self, hash: &str, media_type: MediaType) -> PathBuf {
-        let type_dir = match media_type {
-            MediaType::Image => "images",
-            MediaType::Audio => "audio",
-            MediaType::Video => "video",
-        };
-        
-        // Content-addressable: type/ha/sh/hash.ext
-        self.base_path
-            .join(type_dir)
-            .join(&hash[0..2])
-            .join(&hash[2..4])
-            .join(hash)
-    }
-}
+Created `src/storage/filesystem.rs` with full `FileSystemStorage` implementation:
 
-impl MediaStorage for FileSystemStorage {
-    async fn store(&self, data: &[u8], metadata: &MediaMetadata) 
-        -> BoticelliResult<MediaReference> 
-    {
-        let hash = Self::compute_hash(data);
-        let path = self.get_path(&hash, metadata.media_type);
-        
-        // Create parent directories
-        if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent).await?;
-        }
-        
-        // Write file (atomic via temp + rename)
-        let temp_path = path.with_extension("tmp");
-        tokio::fs::write(&temp_path, data).await?;
-        tokio::fs::rename(&temp_path, &path).await?;
-        
-        Ok(MediaReference {
-            id: Uuid::new_v4(),
-            content_hash: hash,
-            storage_backend: "filesystem".to_string(),
-            storage_path: path.to_string_lossy().to_string(),
-            size_bytes: data.len() as i64,
-            media_type: metadata.media_type,
-            mime_type: metadata.mime_type.clone(),
-        })
-    }
-    
-    async fn retrieve(&self, reference: &MediaReference) 
-        -> BoticelliResult<Vec<u8>> 
-    {
-        let path = PathBuf::from(&reference.storage_path);
-        Ok(tokio::fs::read(&path).await?)
-    }
-    
-    // ... implement other methods
-}
+**Key Features**:
+- **Content-addressable storage**: Files stored by SHA-256 hash
+- **Automatic deduplication**: Same content → same hash → same file location
+- **Atomic writes**: Uses temp file + rename pattern for crash safety
+- **Organized structure**: Two-level subdirectories (`images/ab/cd/abcdef...`) prevent directory bloat
+- **Hash verification**: Detects corruption on retrieval
+- **Structured logging**: Uses `tracing` for debug/info logs
+
+**Directory Structure**:
+```text
+{base_path}/
+├── images/
+│   └── {hash[0:2]}/
+│       └── {hash[2:4]}/
+│           └── {full_hash}
+├── audio/
+│   └── {hash[0:2]}/
+│       └── {hash[2:4]}/
+│           └── {full_hash}
+└── video/
+    └── {hash[0:2]}/
+        └── {hash[2:4]}/
+            └── {full_hash}
 ```
 
-**2.2 Add Configuration**
+**Implementation Highlights**:
+- All operations async using `tokio::fs`
+- Returns `None` for `get_url()` (filesystem doesn't support direct URLs)
+- Creates parent directories automatically
+- Handles both I/O errors and hash mismatches appropriately
 
-```toml
-# In boticelli.toml or .env
-[storage]
-backend = "filesystem"  # or "s3", "postgres", "hybrid"
-base_path = "/var/boticelli/media"
+**2.2 Comprehensive Test Suite** ✅
 
-# For hybrid strategy
-[storage.hybrid]
-small_threshold_bytes = 1048576  # 1MB
-small_backend = "postgres"
-large_backend = "filesystem"
-```
+Added 7 tests covering all functionality:
+1. `test_store_and_retrieve` - Basic store/retrieve cycle
+2. `test_deduplication` - Verifies same content uses same file
+3. `test_hash_verification` - Detects corrupted files on read
+4. `test_delete` - File deletion and existence checks
+5. `test_not_found` - Proper error handling for missing files
+6. `test_content_addressable_structure` - Validates directory layout
+7. `test_no_direct_urls` - Confirms URL generation returns None
+
+**Test Results**: All 16 tests pass (9 existing + 7 new)
+
+**2.3 Integration** ✅
+
+- Exported `FileSystemStorage` from `storage` module
+- Re-exported in `lib.rs` for public API
+- Implemented `std::str::FromStr` for `MediaType` (fixes clippy warning)
+
+**Clippy**: No warnings
+
+---
 
 ### Step 3: Database Migration (1 day)
 

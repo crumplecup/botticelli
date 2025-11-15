@@ -9,8 +9,10 @@ use std::time::Duration;
 use uuid::Uuid;
 
 mod error;
+mod filesystem;
 
 pub use error::{StorageError, StorageErrorKind};
+pub use filesystem::FileSystemStorage;
 
 /// Trait for pluggable media storage backends.
 ///
@@ -147,14 +149,17 @@ impl MediaType {
             MediaType::Video => "video",
         }
     }
+}
 
-    /// Parse from string representation.
-    pub fn from_str(s: &str) -> Option<Self> {
+impl std::str::FromStr for MediaType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "image" => Some(MediaType::Image),
-            "audio" => Some(MediaType::Audio),
-            "video" => Some(MediaType::Video),
-            _ => None,
+            "image" => Ok(MediaType::Image),
+            "audio" => Ok(MediaType::Audio),
+            "video" => Ok(MediaType::Video),
+            _ => Err(format!("Unknown media type: {}", s)),
         }
     }
 }
