@@ -214,9 +214,12 @@ You should see tables like:
  public | __diesel_schema_migrations | table | boticelli
  public | act_executions        | table | boticelli
  public | act_inputs            | table | boticelli
+ public | media_references      | table | boticelli
  public | model_responses       | table | boticelli
  public | narrative_executions  | table | boticelli
 ```
+
+**Note:** The `media_references` table stores metadata for images, audio, and video files. The actual media files are stored externally (filesystem, S3, etc.) to keep the database lightweight and scalable.
 
 Exit psql:
 ```sql
@@ -496,7 +499,50 @@ SELECT id, input_type, input_order FROM act_inputs WHERE act_execution_id = 1;
 
 -- Count total executions
 SELECT COUNT(*) FROM narrative_executions;
+
+-- Check media references
+SELECT id, media_type, mime_type, size_bytes, storage_backend FROM media_references LIMIT 10;
+
+-- Find inputs with media attachments
+SELECT ai.id, ai.input_type, mr.mime_type, mr.size_bytes
+FROM act_inputs ai
+JOIN media_references mr ON ai.media_ref_id = mr.id;
 ```
+
+## Media Storage
+
+Boticelli stores media files (images, audio, video) separately from the database for better performance and scalability:
+
+- **Metadata**: Stored in the `media_references` table (MIME type, dimensions, file size, storage location)
+- **Binary Content**: Stored externally (filesystem, S3, etc.) based on configuration
+
+### Media Storage Configuration
+
+Media storage is configured via environment variables:
+
+```bash
+# Set storage path (defaults to system temp directory)
+export MEDIA_STORAGE_PATH="/var/boticelli/media"
+```
+
+### Media Migration Tools
+
+If you have existing data with binary content in the database, use the migration tools:
+
+```bash
+# 1. Migrate existing media to external storage
+export DATABASE_URL="postgres://boticelli:password@localhost/boticelli"
+export MEDIA_STORAGE_PATH="/var/boticelli/media"
+cargo run --bin migrate_media --features database
+
+# 2. Validate migration is complete
+cargo run --bin validate_migration --features database
+
+# 3. Clean up old columns (after validation)
+diesel migration run
+```
+
+See [MEDIA_STORAGE.md](MEDIA_STORAGE.md) for detailed information on the media storage architecture and migration process.
 
 ## Next Steps
 
