@@ -5,10 +5,8 @@
 
 use crate::{DiscordError, DiscordErrorKind, DiscordRepository};
 use diesel::pg::PgConnection;
-use serenity::all::GatewayIntents;
 use serenity::Client;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tracing::info;
 
 use super::handler::BoticelliHandler;

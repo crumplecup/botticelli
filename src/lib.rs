@@ -67,10 +67,14 @@ pub use core::{
 
 #[cfg(feature = "database")]
 pub use database::{
+    // Connection and utility functions
+    establish_connection, store_response, store_error, get_response_by_id,
+    get_responses_by_model, get_recent_responses, delete_response, run_migrations,
+    // Database row types
     ActExecutionRow, ActInputRow, DatabaseError, DatabaseErrorKind, DatabaseResult,
     ModelResponse, NarrativeExecutionRow, NewActExecutionRow, NewActInputRow,
     NewModelResponse, NewNarrativeExecutionRow, PostgresNarrativeRepository,
-    SerializableModelResponse, establish_connection,
+    SerializableModelResponse,
     // Re-export schema tables for migration tools
     act_inputs, media_references, narrative_executions,
 };

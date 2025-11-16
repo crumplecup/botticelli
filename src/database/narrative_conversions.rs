@@ -2,7 +2,7 @@
 
 use crate::{
     ActExecution, ActExecutionRow, ActInputRow, BackendError, BoticelliError,
-    BoticelliResult, ExecutionStatus, Input, MediaSource, NarrativeExecution,
+    BoticelliResult, ExecutionStatus, Input, NarrativeExecution,
     NarrativeExecutionRow, NewActExecutionRow, NewActInputRow, NewNarrativeExecutionRow,
 };
 use chrono::Utc;
