@@ -451,12 +451,51 @@ The schema reflection module uses Diesel's `QueryableByName` to safely query Pos
 - `src/social/discord/processors.rs` - All 6 processors + tests
 - `tests/narrative_executor_test.rs` - Test providers + imports
 
-**Phase 2c: ContentGenerationProcessor**
-1. Create `ContentGenerationProcessor` struct with DB connection
-2. Implement `should_process` - check for `template` field
-3. Implement table creation logic (call schema reflection)
-4. Implement dynamic JSON insertion with metadata
-5. Add proper error handling and logging
+**Phase 2c: ContentGenerationProcessor** ✅ COMPLETE
+1. ~~Create `ContentGenerationProcessor` struct with DB connection~~
+2. ~~Implement `should_process` - check for `template` field~~
+3. ~~Implement table creation logic (call schema reflection)~~
+4. ~~Implement dynamic JSON insertion with metadata~~
+5. ~~Add proper error handling and logging~~
+
+**Implementation Notes:**
+
+The ContentGenerationProcessor is now fully functional with:
+
+- **Template detection**: Routes based on `template` field in narrative metadata
+- **Dynamic table creation**: Uses `create_content_table` from schema reflection
+- **JSON parsing**: Handles both single objects and arrays from LLM responses
+- **Metadata columns**: Automatically adds `source_narrative`, `source_act`, `generation_model`
+- **SQL conversion**: Helper function `json_value_to_sql` with proper escaping
+- **Thread safety**: Database connection wrapped in `Arc<Mutex<PgConnection>>`
+- **Feature-gated**: Only available with `database` feature
+
+**Code Style Compliance:**
+
+Per CLAUDE.md guidelines:
+- Tests moved to `tests/narrative_content_generation_test.rs` (no inline mod tests)
+- Imports use crate-level exports: `use crate::{Type}` not `use crate::module::Type`
+- Exports added to lib.rs: `create_content_table`, `PgConnection`, `ContentGenerationProcessor`
+
+**Bug Fixes:**
+
+Fixed pre-existing bug in schema_reflection.rs:
+- VARCHAR generation was producing `VARCHAR VARCHAR(100)` 
+- Fixed to produce correct `VARCHAR(100)` syntax
+
+**Files Created/Modified:**
+- `src/narrative/content_generation.rs` - New processor (201 lines)
+- `tests/narrative_content_generation_test.rs` - Test suite (73 lines)
+- `src/lib.rs` - Export processor and dependencies
+- `src/narrative/mod.rs` - Re-export processor
+- `src/database/schema_reflection.rs` - Fixed VARCHAR bug
+
+**Testing:**
+- 3 new tests for ContentGenerationProcessor
+- All 69 tests passing
+- Zero clippy warnings
+
+**Next Steps:** Proceed to Phase 2d to update processor test infrastructure.
 
 **Phase 2d: Testing**
 1. Update processor test utilities
