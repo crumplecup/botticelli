@@ -153,30 +153,163 @@ Generated tables use the `name` field directly:
 
 ### Processor Pipeline Extension
 
-#### New Processor: `ContentGenerationProcessor`
+#### Architectural Challenge: Processor Context
 
-**Responsibilities:**
+**Current State:**
 
-1. Detect narratives with `template` field
-2. Ensure target table exists (create if needed)
-3. Insert generated content into custom table
-4. Add metadata (generation timestamp, narrative source, act name)
+The existing `ActProcessor` trait provides:
+- `process(&self, execution: &ActExecution)` - Act-level data
+- `should_process(&self, act_name: &str, response: &str)` - Minimal routing info
 
-**Detection Logic:**
+**What ContentGenerationProcessor Needs:**
+
+1. ✅ **Act name** - Available in `should_process`
+2. ✅ **Response text** - Available in `should_process`
+3. ✅ **Model used** - Available in `ActExecution.model`
+4. ✅ **Sequence number** - Available in `ActExecution.sequence_number`
+5. ❌ **Narrative template field** - NOT available (narrative-level metadata)
+6. ❌ **Narrative name** - NOT available (needed for `source_narrative` column)
+7. ❌ **Narrative description** - NOT available (needed for table metadata)
+
+**The Gap:**
+
+Content generation requires **narrative-level context** but processors currently only receive **act-level data**. The `template` field is in `NarrativeMetadata` which is not passed to processors.
+
+#### Proposed Solution: ProcessorContext
+
+Extend the processor trait to include narrative context:
 
 ```rust
-fn should_process(&self, context: &ProcessorContext) -> bool {
-    // Process if narration has a template field
-    context.narrative.template.is_some()
+/// Context provided to processors for act processing.
+pub struct ProcessorContext<'a> {
+    /// The act execution result
+    pub execution: &'a ActExecution,
+    
+    /// Narrative metadata (name, description, template)
+    pub narrative_metadata: &'a NarrativeMetadata,
+    
+    /// Full narrative name for tracking
+    pub narrative_name: &'a str,
+}
+
+#[async_trait]
+pub trait ActProcessor: Send + Sync {
+    /// Process an act execution with narrative context.
+    async fn process(&self, context: &ProcessorContext<'_>) -> BoticelliResult<()>;
+    
+    /// Check if this processor should handle the given act.
+    /// Now receives full context including narrative metadata.
+    fn should_process(&self, context: &ProcessorContext<'_>) -> bool;
+    
+    /// Return a human-readable name for this processor.
+    fn name(&self) -> &str;
 }
 ```
+
+**Key Design Points:**
+
+1. **Lifetime Parameters**: `ProcessorContext` borrows from the executor, no cloning needed
+2. **Backward Compatibility**: This is a breaking change to the trait
+   - All existing processors (Discord*) must be updated
+   - Update is mechanical: wrap existing params in context
+3. **Narrative Metadata**: Includes `name`, `description`, and `template` fields
+4. **Clean Architecture**: Processors have explicit access to all needed data
+
+#### Updated Detection Logic
+
+```rust
+impl ActProcessor for ContentGenerationProcessor {
+    fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+        // Process if narration has a template field
+        context.narrative_metadata.template.is_some()
+    }
+    
+    async fn process(&self, context: &ProcessorContext<'_>) -> BoticelliResult<()> {
+        let template = context.narrative_metadata.template
+            .as_ref()
+            .expect("should_process ensures template exists");
+        
+        let table_name = &context.narrative_metadata.name;
+        
+        // Create table if needed
+        create_content_table(
+            &mut self.conn,
+            table_name,
+            template,
+            Some(&context.narrative_name),
+            context.narrative_metadata.description.as_deref(),
+        )?;
+        
+        // Insert generated content with metadata
+        let json_str = extract_json(&context.execution.response)?;
+        insert_with_metadata(
+            &mut self.conn,
+            table_name,
+            &json_str,
+            &context.narrative_name,
+            &context.execution.act_name,
+            context.execution.model.as_deref(),
+        )?;
+        
+        Ok(())
+    }
+    
+    fn name(&self) -> &str {
+        "ContentGenerationProcessor"
+    }
+}
+```
+
+#### Migration Impact
+
+**Files Requiring Updates:**
+
+1. `src/narrative/processor.rs` - Add `ProcessorContext`, update trait
+2. `src/narrative/executor.rs` - Build context, pass to processors
+3. `src/social/discord/processors.rs` - Update all Discord processors to use context
+4. Tests - Update test processors to use new signature
+
+**Example Discord Processor Migration:**
+
+```rust
+// Before
+fn should_process(&self, act_name: &str, response: &str) -> bool {
+    act_name.to_lowercase().contains("guild")
+}
+
+async fn process(&self, execution: &ActExecution) -> BoticelliResult<()> {
+    let json_str = extract_json(&execution.response)?;
+    // ...
+}
+
+// After
+fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+    context.execution.act_name.to_lowercase().contains("guild")
+}
+
+async fn process(&self, context: &ProcessorContext<'_>) -> BoticelliResult<()> {
+    let json_str = extract_json(&context.execution.response)?;
+    // ...
+}
+```
+
+#### Alternative Considered: Act Name Convention
+
+An alternative approach would be to encode the template in the act name (e.g., `@template:discord_messages`), but this:
+- Pollutes act names with implementation details
+- Doesn't provide access to narrative-level metadata
+- Is less explicit and harder to validate
+- Doesn't solve the narrative name access problem
+
+The `ProcessorContext` approach is cleaner and more maintainable.
 
 #### Processor Registration
 
 ```rust
 // In main.rs or processor registration
 if cli.process_content_generation {
-    registry.register(Box::new(ContentGenerationProcessor::new()));
+    let conn = establish_connection()?;
+    registry.register(Box::new(ContentGenerationProcessor::new(conn)));
 }
 ```
 
@@ -272,20 +405,54 @@ The schema reflection module uses Diesel's `QueryableByName` to safely query Pos
 
 **Next Steps:** Proceed to Phase 2 to implement the content generation processor.
 
-### Phase 2: Processor Pipeline (Week 2-3)
+### Phase 2: Processor Pipeline (Week 2-3) 🚧 IN PROGRESS
 
 **Goals:**
 
+- [ ] Implement `ProcessorContext` struct with narrative metadata
+- [ ] Update `ActProcessor` trait to use context (breaking change)
+- [ ] Update all existing Discord processors to new signature
 - [ ] Implement `ContentGenerationProcessor`
-- [ ] Register processor with `--process-content-generation` flag
-- [ ] Handle JSON parsing and insertion
+- [ ] Handle JSON parsing and dynamic insertion
 - [ ] Add generation metadata (timestamp, source narrative, act)
 
 **Deliverables:**
 
+- ProcessorContext struct and updated trait
+- Migrated Discord processors
 - Working content generation processor
 - End-to-end generation from narrative to custom table
 - Test suite for processor
+
+**Implementation Plan:**
+
+**Phase 2a: ProcessorContext and Trait Update**
+1. Define `ProcessorContext<'a>` struct in `processor.rs`
+2. Update `ActProcessor` trait with new signatures
+3. Update `ProcessorRegistry::process()` to build and pass context
+4. Update `NarrativeExecutor` to pass narrative metadata to registry
+
+**Phase 2b: Migrate Discord Processors**
+1. Update `DiscordGuildProcessor` to use context
+2. Update `DiscordUserProcessor` to use context
+3. Update `DiscordChannelProcessor` to use context
+4. Update `DiscordGuildMemberProcessor` to use context
+5. Update `DiscordRoleProcessor` to use context
+6. Update `DiscordMemberRoleProcessor` to use context
+
+**Phase 2c: ContentGenerationProcessor**
+1. Create `ContentGenerationProcessor` struct with DB connection
+2. Implement `should_process` - check for `template` field
+3. Implement table creation logic (call schema reflection)
+4. Implement dynamic JSON insertion with metadata
+5. Add proper error handling and logging
+
+**Phase 2d: Testing**
+1. Update processor test utilities
+2. Create content generation integration test
+3. Test template detection logic
+4. Test table creation and metadata insertion
+5. Test error cases (missing template, invalid JSON, etc.)
 
 ### Phase 3: Content Management CLI (Week 3-4)
 
@@ -333,6 +500,85 @@ The schema reflection module uses Diesel's `QueryableByName` to safely query Pos
 - Tutorial narratives
 
 ## Technical Considerations
+
+### Processor Architecture: Context vs Act-Only
+
+**Decision: Extend ActProcessor to include narrative context via ProcessorContext struct**
+
+#### Rationale
+
+Content generation fundamentally differs from existing Discord processors:
+
+| Aspect | Discord Processors | Content Generation |
+|--------|-------------------|-------------------|
+| **Scope** | Process act output | Process act output **in context of narrative** |
+| **Routing** | Based on act name or response content | Based on **narrative metadata** (`template` field) |
+| **Metadata** | None needed | Requires narrative name, template, description |
+| **Table Target** | Fixed Discord tables | **Dynamic** table based on narrative name |
+
+The existing processor trait was designed for act-scoped operations. Content generation is narrative-scoped but still operates per-act (each act generates content to insert).
+
+#### Why Not Alternative Approaches?
+
+**Option 1: Store template in act names**
+```toml
+[acts]
+"@template:discord_messages:post1" = "Generate a post..."
+```
+- ❌ Pollutes act names with implementation details
+- ❌ Violates separation of concerns
+- ❌ Doesn't provide narrative name or description
+- ❌ Hard to validate and error-prone
+
+**Option 2: New narrative-scoped processor trait**
+```rust
+trait NarrativeProcessor {
+    fn process(&self, execution: &NarrativeExecution) -> BoticelliResult<()>;
+}
+```
+- ❌ Can't react to individual acts (loses granularity)
+- ❌ Requires buffering all acts before processing
+- ❌ Doesn't fit the act-by-act execution model
+- ❌ Creates two parallel processor systems
+
+**Option 3: Global processor state/registry**
+```rust
+impl ContentGenerationProcessor {
+    fn set_current_narrative(&mut self, metadata: &NarrativeMetadata);
+}
+```
+- ❌ Mutable shared state (breaks Send/Sync)
+- ❌ Thread-unsafe
+- ❌ Requires careful lifecycle management
+- ❌ Error-prone with concurrent executions
+
+**Option 4: Pass narrative via thread-local storage**
+- ❌ Hidden dependencies (magic context)
+- ❌ Hard to test
+- ❌ Doesn't work with async (task-local needed)
+- ❌ Implicit rather than explicit
+
+#### Why ProcessorContext Wins
+
+✅ **Explicit**: All data dependencies are clear in the signature  
+✅ **Type-safe**: Borrowing enforced by the compiler  
+✅ **Efficient**: No cloning, just references  
+✅ **Testable**: Easy to construct context for tests  
+✅ **Extensible**: Can add more context fields without breaking changes  
+✅ **Idiomatic**: Follows Rust patterns (ctx pattern common in std/ecosystem)
+
+#### Migration Path
+
+1. **Phase 2a**: Implement ProcessorContext and update trait
+2. **Phase 2b**: Update all Discord processors (mechanical change)
+3. **Phase 2c**: Implement ContentGenerationProcessor
+4. **Phase 2d**: Update tests
+
+The breaking change is justified because:
+- Processors are internal to boticelli (not a public API concern)
+- Only 6 existing processors to update (Discord guild/user/channel/member/role/emoji)
+- Migration is mechanical (wrap existing access in `context.execution.*`)
+- Enables critical new functionality
 
 ### Schema Reflection
 
