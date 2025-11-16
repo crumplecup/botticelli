@@ -1010,6 +1010,351 @@ impl ExecuteDiscordNarrative {
 }
 ```
 
+## Usage Guide
+
+This section demonstrates how to use the complete narrative processor system to generate and store Discord data via LLM narratives.
+
+### Quick Start Example
+
+Here's a complete example that generates a Discord server with channels:
+
+```rust
+use boticelli::{
+    // Core narrative types
+    Narrative, NarrativeExecutor, ProcessorRegistry,
+    // Discord processors
+    DiscordGuildProcessor, DiscordChannelProcessor, DiscordRepository,
+    // LLM driver
+    GeminiClient,
+    // Database
+    establish_connection,
+};
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 1. Load narrative from TOML file
+    let narrative = Narrative::from_str(&std::fs::read_to_string("create_server.toml")?)?;
+
+    // 2. Setup database connection
+    let conn = establish_connection()?;
+    let repository = Arc::new(DiscordRepository::new(conn));
+
+    // 3. Setup processor registry
+    let mut registry = ProcessorRegistry::new();
+    registry.register(Box::new(DiscordGuildProcessor::new(repository.clone())));
+    registry.register(Box::new(DiscordChannelProcessor::new(repository.clone())));
+
+    // 4. Setup LLM driver
+    let gemini = GeminiClient::new(
+        std::env::var("GEMINI_API_KEY")?,
+        "gemini-1.5-flash".to_string(),
+    )?;
+
+    // 5. Create executor with processors
+    let executor = NarrativeExecutor::with_processors(gemini, registry);
+
+    // 6. Execute narrative (this calls LLM and processes responses)
+    let result = executor.execute(&narrative).await?;
+
+    // 7. Review results
+    println!("✓ Narrative executed successfully!");
+    println!("  Acts completed: {}", result.act_executions.len());
+
+    for (i, act) in result.act_executions.iter().enumerate() {
+        println!("  Act {}: {} - {} chars", i + 1, act.act_name, act.response.len());
+    }
+
+    Ok(())
+}
+```
+
+### Example Narrative File
+
+Create `create_server.toml`:
+
+```toml
+name = "create_cozy_cafe_server"
+
+[metadata]
+description = "Generate a cozy café-themed Discord server"
+author = "narrative-system"
+version = "1.0.0"
+
+# Table of contents (execution order)
+toc = [
+    "create_guild",
+    "create_channels",
+]
+
+# Act 1: Create the guild
+[acts.create_guild]
+prompt = """
+You are helping create a Discord server for a cozy café community.
+
+**CRITICAL OUTPUT REQUIREMENTS:**
+- Output ONLY valid JSON with no additional text, explanations, or markdown
+- Do not use markdown code blocks (no ```json)
+- Start your response with { and end with }
+
+Create a guild (Discord server) with the following schema:
+
+{
+  "id": <snowflake_id>,         // Use 123456789012345678
+  "name": <string>,              // Max 100 chars
+  "owner_id": <snowflake_id>,    // Use 987654321098765432
+  "description": <string>,       // Optional
+  "member_count": <integer>,     // Optional
+  "verification_level": <0-4>,   // Optional (0=none, 4=highest)
+  "premium_tier": <0-3>,         // Optional (boost level)
+  "features": [<string>]         // Optional (e.g., ["COMMUNITY"])
+}
+
+Generate a warm, welcoming café server.
+"""
+
+# Act 2: Create channels
+[acts.create_channels]
+prompt = """
+You created a cozy café Discord server. Now create channels for it.
+
+**CRITICAL OUTPUT REQUIREMENTS:**
+- Output ONLY valid JSON array with no additional text
+- Do not use markdown code blocks
+- Start with [ and end with ]
+
+Create an array of channels with this schema for each:
+
+{
+  "id": <snowflake_id>,
+  "channel_type": <string>,  // "guild_text", "guild_voice", "guild_category"
+  "guild_id": 123456789012345678,  // Must match guild from Act 1
+  "name": <string>,
+  "topic": <string>,          // Optional description
+  "position": <integer>,      // Sort order
+  "parent_id": <snowflake_id> // Optional (for category organization)
+}
+
+Create 5-7 channels appropriate for a cozy café server:
+- A welcome category
+- General chat channels
+- Voice channels for hangouts
+- Topic-specific channels (books, games, etc.)
+"""
+```
+
+### Execution Flow
+
+When you run the example above, here's what happens:
+
+1. **Load Narrative**: Parses the TOML file into `Narrative` struct
+2. **Setup Processors**: Registers processors that will handle specific data types
+3. **Execute Act 1** (create_guild):
+   - Sends prompt to LLM
+   - Receives JSON response
+   - `DiscordGuildProcessor.should_process()` returns true (act name contains "guild")
+   - Processor extracts JSON, parses into `DiscordGuildJson`
+   - Converts to `NewGuild` via `try_into()`
+   - Stores in database via `repository.store_guild()`
+4. **Execute Act 2** (create_channels):
+   - Sends prompt to LLM (with Act 1's response in conversation history)
+   - Receives JSON array response
+   - `DiscordChannelProcessor.should_process()` returns true
+   - Processor extracts JSON array, parses into `Vec<DiscordChannelJson>`
+   - Converts each to `NewChannel`
+   - Stores all in database via `repository.store_channel()`
+5. **Return Results**: Complete execution history returned to caller
+
+### Registering Multiple Processors
+
+For a complete Discord narrative, register all processors:
+
+```rust
+let mut registry = ProcessorRegistry::new();
+
+// Register all Discord processors
+registry.register(Box::new(DiscordGuildProcessor::new(repository.clone())));
+registry.register(Box::new(DiscordUserProcessor::new(repository.clone())));
+registry.register(Box::new(DiscordChannelProcessor::new(repository.clone())));
+registry.register(Box::new(DiscordRoleProcessor::new(repository.clone())));
+registry.register(Box::new(DiscordGuildMemberProcessor::new(repository.clone())));
+registry.register(Box::new(DiscordMemberRoleProcessor::new(repository.clone())));
+
+// All processors will be checked for each act
+// Only matching processors execute (based on should_process())
+```
+
+### Database Setup
+
+Before running narratives, ensure your database is ready:
+
+```bash
+# Set database URL
+export DATABASE_URL="postgres://user:password@localhost/boticelli"
+
+# Run migrations
+diesel migration run
+
+# Verify tables exist
+psql $DATABASE_URL -c "\dt discord_*"
+```
+
+You should see these tables:
+- `discord_guilds`
+- `discord_users`
+- `discord_channels`
+- `discord_roles`
+- `discord_guild_members`
+- `discord_member_roles`
+
+### Querying Generated Data
+
+After narrative execution, query the results:
+
+```rust
+use boticelli::{DiscordRepository, establish_connection};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let conn = establish_connection()?;
+    let repo = DiscordRepository::new(conn);
+
+    // Get the guild we just created
+    let guild = repo.get_guild(123456789012345678).await?;
+
+    if let Some(g) = guild {
+        println!("Guild: {} ({})", g.name, g.id);
+        println!("Description: {:?}", g.description);
+        println!("Members: {:?}", g.member_count);
+    }
+
+    // Get all channels for this guild
+    let channels = repo.get_guild_channels(123456789012345678).await?;
+
+    println!("\nChannels ({}):", channels.len());
+    for channel in channels {
+        println!("  #{} ({:?})", channel.name.unwrap_or_default(), channel.channel_type);
+    }
+
+    Ok(())
+}
+```
+
+### Handling LLM Variability
+
+LLMs may return responses with extra text or markdown. The processors handle this automatically:
+
+**What the LLM might return:**
+
+```
+Here's your Discord guild data:
+
+```json
+{
+  "id": 123456789012345678,
+  "name": "Cozy Café",
+  "owner_id": 987654321098765432,
+  "description": "A warm community for coffee lovers"
+}
+```
+
+I've created a welcoming café server with...
+```
+
+**What the processor extracts:**
+
+```json
+{
+  "id": 123456789012345678,
+  "name": "Cozy Café",
+  "owner_id": 987654321098765432,
+  "description": "A warm community for coffee lovers"
+}
+```
+
+The `extract_json()` function:
+1. Removes markdown code blocks
+2. Extracts balanced JSON (handles nested objects)
+3. Strips leading/trailing text
+4. Returns clean JSON ready for parsing
+
+### Common Patterns
+
+#### Pattern 1: Generate → Review → Regenerate
+
+```rust
+// First execution (dry run mode could go here)
+let result1 = executor.execute(&narrative).await?;
+
+// Review the generated content
+println!("Review generated content:");
+for act in &result1.act_executions {
+    println!("\n{}:\n{}", act.act_name, act.response);
+}
+
+// If not satisfied, adjust narrative and re-execute
+// Processors will upsert (update existing records)
+```
+
+#### Pattern 2: Incremental Generation
+
+```toml
+# First narrative: Just the guild
+toc = ["create_guild"]
+
+# Second narrative: Add channels
+toc = ["create_channels"]  # Assumes guild exists
+
+# Third narrative: Add users and members
+toc = ["create_users", "create_members"]
+```
+
+Run each narrative separately:
+```bash
+./boticelli execute guild.toml
+./boticelli execute channels.toml
+./boticelli execute users.toml
+```
+
+#### Pattern 3: Multi-Community Generation
+
+Generate multiple servers in one narrative:
+
+```toml
+toc = [
+    "create_guild_1",
+    "create_channels_1",
+    "create_guild_2",
+    "create_channels_2",
+]
+```
+
+Each guild gets unique IDs, all processed automatically.
+
+### Debugging
+
+Enable detailed logging to see what's happening:
+
+```rust
+// Setup tracing subscriber
+use tracing_subscriber;
+
+tracing_subscriber::fmt()
+    .with_max_level(tracing::Level::DEBUG)
+    .init();
+
+// Now you'll see processor activity:
+// DEBUG discord_guild_processor: Storing Discord guild guild_id=123 guild_name="Cozy Café"
+// INFO  discord_guild_processor: Discord guilds stored successfully
+```
+
+### Next Steps
+
+1. **Explore DISCORD_NARRATIVE.md** - Complete schema reference and examples
+2. **Create custom narratives** - Use the preambles as starting points
+3. **Query the database** - Use DiscordRepository methods
+4. **Build Discord bot** - Use BoticelliBot to post content to real Discord servers
+
 ## Error Handling
 
 ### Graceful Degradation
