@@ -11,6 +11,7 @@ mod error;
 mod executor;
 mod extraction;
 mod in_memory_repository;
+mod processor;
 mod provider;
 mod repository;
 mod toml;
@@ -20,6 +21,7 @@ pub use error::{NarrativeError, NarrativeErrorKind};
 pub use executor::{ActExecution, NarrativeExecution, NarrativeExecutor};
 pub use extraction::{extract_json, extract_toml, parse_json, parse_toml};
 pub use in_memory_repository::InMemoryNarrativeRepository;
+pub use processor::{ActProcessor, ProcessorRegistry};
 pub use provider::{ActConfig, NarrativeProvider};
 pub use repository::{
     ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeRepository, VideoMetadata,

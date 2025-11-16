@@ -118,6 +118,8 @@ pub use narrative::{
     VideoMetadata,
     // Extraction utilities
     extract_json, extract_toml, parse_json, parse_toml,
+    // Processor infrastructure
+    ActProcessor, ProcessorRegistry,
 };
 
 // Re-export rate limiting types
