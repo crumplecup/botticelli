@@ -7,6 +7,7 @@
 //! - Acts containing prompts to be executed sequentially
 
 mod core;
+mod content_generation;
 mod error;
 mod executor;
 mod extraction;
@@ -16,6 +17,8 @@ mod provider;
 mod repository;
 mod toml;
 
+#[cfg(feature = "database")]
+pub use content_generation::ContentGenerationProcessor;
 pub use core::{Narrative, NarrativeMetadata, NarrativeToc};
 pub use error::{NarrativeError, NarrativeErrorKind};
 pub use executor::{ActExecution, NarrativeExecution, NarrativeExecutor};

@@ -70,6 +70,8 @@ pub use database::{
     // Connection and utility functions
     establish_connection, store_response, store_error, get_response_by_id,
     get_responses_by_model, get_recent_responses, delete_response, run_migrations,
+    // Content generation functions
+    create_content_table,
     // Database row types
     ActExecutionRow, ActInputRow, DatabaseError, DatabaseErrorKind, DatabaseResult,
     ModelResponse, NarrativeExecutionRow, NewActExecutionRow, NewActInputRow,
@@ -81,6 +83,10 @@ pub use database::{
     discord_channels, discord_guild_members, discord_guilds,
     discord_member_roles, discord_roles, discord_users,
 };
+
+// Re-export PgConnection for processor use
+#[cfg(feature = "database")]
+pub use diesel::pg::PgConnection;
 
 // Re-export error types
 pub use error::{
@@ -124,6 +130,9 @@ pub use narrative::{
     // Processor infrastructure
     ActProcessor, ProcessorContext, ProcessorRegistry,
 };
+
+#[cfg(feature = "database")]
+pub use narrative::ContentGenerationProcessor;
 
 // Re-export rate limiting types
 pub use rate_limit::{

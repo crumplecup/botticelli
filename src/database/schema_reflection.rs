@@ -95,13 +95,17 @@ pub fn generate_create_table_sql(
         .columns
         .iter()
         .map(|col| {
-            let mut def = format!("    {} {}", col.name, map_data_type(&col.data_type));
+            let mut def = format!("    {}", col.name);
 
-            // Add character length for varchar/char types
-            if let Some(max_len) = col.character_maximum_length {
-                if col.data_type == "character varying" {
-                    def = format!("{} VARCHAR({})", def.trim_end(), max_len);
+            // Handle varchar with length specially
+            if col.data_type == "character varying" {
+                if let Some(max_len) = col.character_maximum_length {
+                    def.push_str(&format!(" VARCHAR({})", max_len));
+                } else {
+                    def.push_str(" VARCHAR");
                 }
+            } else {
+                def.push_str(&format!(" {}", map_data_type(&col.data_type)));
             }
 
             // Make foreign keys nullable in content generation tables
@@ -112,11 +116,10 @@ pub fn generate_create_table_sql(
             }
 
             // Skip defaults that reference sequences (for serial columns)
-            if let Some(default) = &col.column_default {
-                if !default.contains("nextval") {
+            if let Some(default) = &col.column_default
+                && !default.contains("nextval") {
                     def.push_str(&format!(" DEFAULT {}", default));
                 }
-            }
 
             def
         })
