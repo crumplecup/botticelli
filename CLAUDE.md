@@ -12,7 +12,7 @@
 ## Linting
 
 - When running any linter (e.g. clippy or markdownlint), rather than deny all warnings, let them complete so you can fix them all in a single pass.
-- After editing a markdown file, run markdownlint and either fix the error or add an exception, as appropriate in the context.
+- After editing a markdown file, run `markdownlint-cli2` (not `markdownlint`) and either fix the error or add an exception, as appropriate in the context.
 - Do not run cargo clippy or cargo test after changes to markdown files, as they don't affect the Rust code.
 
 ## API structure

@@ -57,6 +57,9 @@ mod narrative;
 mod rate_limit;
 mod storage;
 
+#[cfg(feature = "discord")]
+mod social;
+
 // Re-export core types
 pub use core::{
     GenerateRequest, GenerateResponse, Input, MediaSource, Message, Output, Role, ToolCall,
@@ -123,3 +126,17 @@ pub use rate_limit::AnthropicTier;
 #[cfg(feature = "gemini")]
 pub use rate_limit::GeminiTier;
 pub use rate_limit::OpenAITier;
+
+// Re-export social media platform types
+#[cfg(feature = "discord")]
+pub use social::discord::{
+    // Models
+    ChannelRow, ChannelType, GuildMemberRow, GuildRow, NewChannel, NewGuild, NewGuildMember,
+    NewRole, NewUser, RoleRow, UserRow,
+    // Repository
+    DiscordRepository, DiscordResult,
+    // Error handling
+    DiscordError, DiscordErrorKind, DiscordErrorResult,
+    // Client and handler
+    BoticelliBot, BoticelliHandler,
+};

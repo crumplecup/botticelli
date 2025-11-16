@@ -2,6 +2,8 @@
 
 #[cfg(feature = "database")]
 use crate::DatabaseError;
+#[cfg(feature = "discord")]
+use crate::DiscordError;
 #[cfg(feature = "gemini")]
 use crate::GeminiError;
 use crate::{NarrativeError, StorageError};
@@ -206,6 +208,10 @@ pub enum BoticelliErrorKind {
     #[cfg(feature = "database")]
     #[from(DatabaseError)]
     Database(DatabaseError),
+    /// Discord integration error
+    #[cfg(feature = "discord")]
+    #[from(DiscordError)]
+    Discord(DiscordError),
     /// Narrative error
     #[from(NarrativeError)]
     Narrative(NarrativeError),
@@ -230,6 +236,8 @@ impl std::fmt::Display for BoticelliErrorKind {
             BoticelliErrorKind::Gemini(e) => write!(f, "{}", e),
             #[cfg(feature = "database")]
             BoticelliErrorKind::Database(e) => write!(f, "{}", e),
+            #[cfg(feature = "discord")]
+            BoticelliErrorKind::Discord(e) => write!(f, "{}", e),
             BoticelliErrorKind::Narrative(e) => write!(f, "{}", e),
             BoticelliErrorKind::Config(e) => write!(f, "{}", e),
             BoticelliErrorKind::NotImplemented(e) => write!(f, "{}", e),

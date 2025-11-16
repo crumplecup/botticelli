@@ -198,6 +198,24 @@ enum Commands {
         /// Execution ID
         id: i32,
     },
+
+    /// Discord bot commands
+    #[cfg(feature = "discord")]
+    Discord {
+        #[command(subcommand)]
+        command: DiscordCommands,
+    },
+}
+
+#[cfg(feature = "discord")]
+#[derive(Subcommand)]
+enum DiscordCommands {
+    /// Start the Discord bot
+    Start {
+        /// Discord bot token (or use DISCORD_TOKEN environment variable)
+        #[arg(short, long)]
+        token: Option<String>,
+    },
 }
 
 #[tokio::main]
@@ -261,6 +279,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Show { id } => {
             show_execution(id).await?;
         }
+
+        #[cfg(feature = "discord")]
+        Commands::Discord { command } => match command {
+            DiscordCommands::Start { token } => {
+                start_discord_bot(token).await?;
+            }
+        },
     }
 
     Ok(())
@@ -492,6 +517,32 @@ async fn show_execution(id: i32) -> Result<(), Box<dyn std::error::Error>> {
         println!("  Response: {}", act.response);
         println!();
     }
+
+    Ok(())
+}
+
+#[cfg(feature = "discord")]
+async fn start_discord_bot(token: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
+    // Get token from command line or environment
+    let token = token
+        .or_else(|| std::env::var("DISCORD_TOKEN").ok())
+        .ok_or("Discord token not provided. Use --token or set DISCORD_TOKEN environment variable")?;
+
+    println!("🤖 Starting Boticelli Discord bot...");
+
+    // Establish database connection
+    let conn = boticelli::establish_connection()?;
+
+    // Create and start the bot
+    let mut bot = boticelli::BoticelliBot::new(token, conn).await?;
+
+    println!("✓ Bot initialized successfully");
+    println!("🚀 Connecting to Discord...");
+    println!("   (Press Ctrl+C to stop)");
+    println!();
+
+    // Start the bot (this blocks until shutdown)
+    bot.start().await?;
 
     Ok(())
 }
