@@ -48,6 +48,7 @@
 mod client;
 mod error;
 mod handler;
+mod json_models;
 pub mod models;
 mod repository;
 // mod commands;
@@ -57,6 +58,10 @@ mod repository;
 pub use client::BoticelliBot;
 pub use error::{DiscordError, DiscordErrorKind, DiscordResult as DiscordErrorResult};
 pub use handler::BoticelliHandler;
+pub use json_models::{
+    DiscordChannelJson, DiscordGuildJson, DiscordGuildMemberJson, DiscordMemberRoleJson,
+    DiscordRoleJson, DiscordUserJson,
+};
 pub use models::{
     ChannelRow, ChannelType, GuildMemberRow, GuildRow, NewChannel, NewGuild, NewGuildMember,
     NewRole, NewUser, RoleRow, UserRow,

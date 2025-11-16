@@ -138,9 +138,12 @@ pub use rate_limit::OpenAITier;
 // Re-export social media platform types
 #[cfg(feature = "discord")]
 pub use social::discord::{
-    // Models
+    // Diesel models
     ChannelRow, ChannelType, GuildMemberRow, GuildRow, NewChannel, NewGuild, NewGuildMember,
     NewRole, NewUser, RoleRow, UserRow,
+    // JSON models (for narrative processors)
+    DiscordChannelJson, DiscordGuildJson, DiscordGuildMemberJson, DiscordMemberRoleJson,
+    DiscordRoleJson, DiscordUserJson,
     // Repository
     DiscordRepository, DiscordResult,
     // Error handling
