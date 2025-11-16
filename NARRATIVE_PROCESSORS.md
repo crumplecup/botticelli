@@ -3,16 +3,32 @@
 
 ## Implementation Status
 
-| Step | Component | Status | Files |
-|------|-----------|--------|-------|
-| 1 | JSON/TOML Extraction | ✅ Complete | `src/narrative/extraction.rs` |
-| 2 | ActProcessor Trait | ✅ Complete | `src/narrative/processor.rs` |
-| 3 | Enhanced Executor | ✅ Complete | `src/narrative/executor.rs` (updated) |
-| 4 | Discord JSON Models | ✅ Complete | `src/social/discord/json_models.rs` |
-| 5 | Discord Conversions | 🚧 Pending | `src/discord/conversions.rs` |
-| 6 | Discord Processors | 🚧 Pending | `src/discord/processors.rs` |
-| 7 | Module Exports | 🚧 Pending | `src/lib.rs`, `src/discord/mod.rs` |
-| 8 | Tests | 🚧 Pending | `tests/` directory |
+### Core Infrastructure (Complete)
+
+| Step | Component | Status | Files | Tests |
+|------|-----------|--------|-------|-------|
+| 1 | JSON/TOML Extraction | ✅ Complete | `src/narrative/extraction.rs` | 9 passing |
+| 2 | ActProcessor Trait | ✅ Complete | `src/narrative/processor.rs` | 6 passing |
+| 3 | Enhanced Executor | ✅ Complete | `src/narrative/executor.rs` | 4 passing |
+| 4 | Discord JSON Models | ✅ Complete | `src/social/discord/json_models.rs` | 9 passing |
+| 5 | Discord Conversions | ✅ Complete | `src/social/discord/conversions.rs` | 14 passing |
+| 6 | Discord Processors | ✅ Complete | `src/social/discord/processors.rs` | 7 passing |
+| 7 | Module Exports | ✅ Complete | `src/lib.rs`, `src/social/discord/mod.rs` | N/A |
+
+**Subtotal:** 49 unit tests passing
+
+### Integration & CLI (In Progress)
+
+| Step | Component | Status | Files | Priority |
+|------|-----------|--------|-------|----------|
+| 8a | CLI: Add Processor Flag | ✅ Complete | `src/main.rs` | HIGH |
+| 8b | CLI: Setup Repository | ✅ Complete | `src/main.rs` | HIGH |
+| 8c | CLI: Register Processors | ✅ Complete | `src/main.rs` | HIGH |
+| 8d | CLI: Execute with Pipeline | ✅ Complete | `src/main.rs` | HIGH |
+| 9a | Integration Tests: Setup | 🚧 Pending | `tests/narrative_processor_integration_test.rs` | MEDIUM |
+| 9b | Integration Tests: End-to-End | 🚧 Pending | `tests/narrative_processor_integration_test.rs` | MEDIUM |
+| 9c | Integration Tests: Error Handling | 🚧 Pending | `tests/narrative_processor_integration_test.rs` | MEDIUM |
+| 10 | Documentation: Update Status | 🚧 Pending | `NARRATIVE_PROCESSORS.md` | LOW |
 
 ## Overview
 
@@ -849,36 +865,476 @@ pub use social::discord::{
 };
 ```
 
-### Step 7: Module Exports
+### Step 7: Module Exports ✅
 
-Update `src/lib.rs`:
+**Status:** Complete
+
+All processor types, JSON models, and conversion utilities are exported at the crate level. See Step 6 completion notes for full export list.
+
+---
+
+## Step 8: CLI Integration ✅
+
+**Status:** Complete (commit: de354df)
+
+**Goal:** Enable users to execute narratives with automatic Discord data processing via command line.
+
+**Implementation:** All substeps (8a-8d) completed in `src/main.rs`
+
+**What was built:**
+
+### Step 8a: Add Processor Flag ✅
+
+Added `--process-discord` flag to the `run` command:
 
 ```rust
-// Add to existing module declarations
-mod narrative;
-#[cfg(feature = "discord")]
-mod discord;
+/// Execute a narrative from a TOML file
+Run {
+    /// Path to narrative TOML file
+    #[arg(short, long)]
+    narrative: PathBuf,
 
-// Export extraction utilities
-pub use narrative::extraction::{extract_json, extract_toml, parse_json, parse_toml};
+    // ... existing flags ...
 
-// Export processor types
-pub use narrative::processor::{ActProcessor, ProcessorRegistry};
+    /// Enable Discord data processing (extract JSON and insert to database)
+    #[arg(long)]
+    process_discord: bool,
+}
+```
 
-// Export Discord processors (if feature enabled)
-#[cfg(feature = "discord")]
-pub use discord::processors::{
-    DiscordChannelProcessor, DiscordGuildProcessor, DiscordRoleProcessor,
-    DiscordUserProcessor,
-};
+**Acceptance criteria:**
+- Flag appears in `--help` output
+- Flag is optional (default: false for backward compatibility)
+- Flag requires `database` and `discord` features
 
-// Export Discord JSON models
-#[cfg(feature = "discord")]
-pub use discord::json_models::{
-    DiscordChannelJson, DiscordGuildJson, DiscordGuildMemberJson, DiscordMemberRoleJson,
-    DiscordRoleJson, DiscordUserJson,
+---
+
+### Step 8b: Setup Discord Repository ✅
+
+When `--process-discord` is enabled, creates `DiscordRepository`:
+
+```rust
+async fn run_narrative(
+    narrative_path: PathBuf,
+    // ... other args ...
+    process_discord: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // ... existing narrative loading ...
+
+    #[cfg(all(feature = "database", feature = "discord"))]
+    let discord_repository = if process_discord {
+        let conn = boticelli::establish_connection()?;
+        Some(std::sync::Arc::new(boticelli::DiscordRepository::new(conn)))
+    } else {
+        None
+    };
+
+    // ...
+}
+```
+
+**Acceptance criteria:**
+- Repository created only when flag is set
+- Database connection established from `DATABASE_URL` env var
+- Clear error message if `DATABASE_URL` not set
+- Repository wrapped in Arc for sharing across processors
+
+---
+
+### Step 8c: Register Discord Processors ✅
+
+Registers all 6 Discord processors when repository is available:
+
+```rust
+#[cfg(all(feature = "database", feature = "discord"))]
+let executor = if let Some(repo) = discord_repository {
+    let mut registry = boticelli::ProcessorRegistry::new();
+
+    // Register all Discord processors
+    registry.register(Box::new(boticelli::DiscordGuildProcessor::new(repo.clone())));
+    registry.register(Box::new(boticelli::DiscordUserProcessor::new(repo.clone())));
+    registry.register(Box::new(boticelli::DiscordChannelProcessor::new(repo.clone())));
+    registry.register(Box::new(boticelli::DiscordRoleProcessor::new(repo.clone())));
+    registry.register(Box::new(boticelli::DiscordGuildMemberProcessor::new(repo.clone())));
+    registry.register(Box::new(boticelli::DiscordMemberRoleProcessor::new(repo.clone())));
+
+    boticelli::NarrativeExecutor::with_processors(driver, registry)
+} else {
+    boticelli::NarrativeExecutor::new(driver)
 };
 ```
+
+**Acceptance criteria:**
+- All 6 processors registered
+- Registry properly configured
+- Executor uses `with_processors()` constructor
+- Falls back to regular executor if flag not set
+
+---
+
+### Step 8d: Execute with Pipeline ✅
+
+Executes narrative with processors active (processor activity logged via tracing):
+
+```rust
+// Execute
+println!("🚀 Executing narrative...");
+let result = executor.execute(&narrative).await?;
+
+// Display results
+println!("\n✅ Narrative completed!");
+println!("   Acts executed: {}", result.act_executions.len());
+
+#[cfg(all(feature = "database", feature = "discord"))]
+if process_discord {
+    println!("   Discord data processed and stored in database");
+    println!("   Check database for inserted records");
+}
+
+// ... existing result display code ...
+```
+
+**Acceptance criteria:**
+- Execution completes successfully
+- User sees processing confirmation
+- Errors are caught and displayed clearly
+- Data appears in database
+
+---
+
+### Step 8 Testing
+
+**Manual test:**
+
+```bash
+# Set up database
+export DATABASE_URL="postgres://user:password@localhost/boticelli"
+diesel migration run
+
+# Create test narrative (see examples/discord_server.toml)
+cat > test_server.toml << 'EOF'
+name = "test_discord_generation"
+[metadata]
+description = "Test Discord data generation"
+author = "test"
+version = "1.0.0"
+toc = ["create_guild"]
+
+[acts.create_guild]
+prompt = """
+Create a Discord guild JSON (no markdown, just JSON):
+{
+  "id": 123456789012345678,
+  "name": "Test Server",
+  "owner_id": 987654321098765432,
+  "description": "Test server for CLI integration"
+}
+"""
+EOF
+
+# Run with processor
+cargo run --features database,discord,gemini -- run \
+    --narrative test_server.toml \
+    --backend gemini \
+    --process-discord
+
+# Verify data
+psql $DATABASE_URL -c "SELECT id, name FROM discord_guilds WHERE id = 123456789012345678;"
+```
+
+**Expected output:**
+```
+📖 Loading narrative from "test_server.toml"...
+✓ Loaded: test_discord_generation
+  Acts: 1
+🚀 Executing narrative...
+✅ Narrative completed!
+   Acts executed: 1
+   Discord data processed and stored in database
+```
+
+**Database should contain:**
+```sql
+        id         |    name
+-------------------+-------------
+ 123456789012345678 | Test Server
+```
+
+---
+
+## Step 9: Integration Tests 🚧
+
+**Goal:** Automated tests verifying end-to-end processor pipeline.
+
+### Step 9a: Test Setup Infrastructure
+
+Create `tests/narrative_processor_integration_test.rs`:
+
+```rust
+use boticelli::{
+    ActExecution, BoticelliDriver, DiscordChannelProcessor, DiscordGuildProcessor,
+    DiscordRepository, GenerateRequest, GenerateResponse, Input, Message, Narrative,
+    NarrativeExecutor, Output, ProcessorRegistry, Role,
+};
+use std::sync::Arc;
+
+/// Mock LLM driver that returns predefined responses
+struct MockDriver {
+    responses: Vec<String>,
+    call_count: std::sync::Mutex<usize>,
+}
+
+impl MockDriver {
+    fn new(responses: Vec<String>) -> Self {
+        Self {
+            responses,
+            call_count: std::sync::Mutex::new(0),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl BoticelliDriver for MockDriver {
+    async fn generate(&self, _request: &GenerateRequest) -> boticelli::BoticelliResult<GenerateResponse> {
+        let mut count = self.call_count.lock().unwrap();
+        let response = self.responses.get(*count).cloned().unwrap_or_default();
+        *count += 1;
+
+        Ok(GenerateResponse {
+            outputs: vec![Output::Text(response)],
+        })
+    }
+}
+
+/// Create test database connection
+fn create_test_db() -> diesel::PgConnection {
+    use diesel::Connection;
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .or_else(|_| std::env::var("DATABASE_URL"))
+        .expect("TEST_DATABASE_URL or DATABASE_URL must be set");
+
+    diesel::PgConnection::establish(&database_url)
+        .expect("Failed to connect to test database")
+}
+
+/// Clean up test data
+fn cleanup_test_data(conn: &mut diesel::PgConnection, guild_id: i64) {
+    use boticelli::database::schema::discord_guilds;
+    use diesel::prelude::*;
+
+    diesel::delete(discord_guilds::table.filter(discord_guilds::id.eq(guild_id)))
+        .execute(conn)
+        .ok();
+}
+```
+
+**Acceptance criteria:**
+- Mock driver returns predefined JSON responses
+- Test database connection helper
+- Cleanup function to avoid test pollution
+
+---
+
+### Step 9b: End-to-End Test
+
+Test complete pipeline from narrative execution to database insertion:
+
+```rust
+#[tokio::test]
+async fn test_discord_guild_processor_integration() {
+    // Setup
+    let mut conn = create_test_db();
+    let test_guild_id = 999888777666555444i64;
+    cleanup_test_data(&mut conn, test_guild_id);
+
+    // Create mock driver with guild JSON response
+    let mock_responses = vec![
+        r#"{
+            "id": 999888777666555444,
+            "name": "Integration Test Guild",
+            "owner_id": 111222333444555666,
+            "description": "Created by integration test",
+            "member_count": 42,
+            "verification_level": 2
+        }"#.to_string(),
+    ];
+    let driver = MockDriver::new(mock_responses);
+
+    // Setup repository and processor
+    let repository = Arc::new(DiscordRepository::new(
+        boticelli::establish_connection().unwrap()
+    ));
+    let mut registry = ProcessorRegistry::new();
+    registry.register(Box::new(DiscordGuildProcessor::new(repository.clone())));
+
+    // Create test narrative
+    let narrative_toml = r#"
+name = "integration_test"
+[metadata]
+description = "Test"
+author = "test"
+version = "1.0.0"
+toc = ["create_guild"]
+
+[acts.create_guild]
+prompt = "Generate guild JSON"
+"#;
+    let narrative: Narrative = narrative_toml.parse().unwrap();
+
+    // Execute
+    let executor = NarrativeExecutor::with_processors(driver, registry);
+    let result = executor.execute(&narrative).await.unwrap();
+
+    // Verify execution
+    assert_eq!(result.act_executions.len(), 1);
+    assert_eq!(result.act_executions[0].act_name, "create_guild");
+
+    // Verify database insertion
+    use boticelli::database::schema::discord_guilds;
+    use diesel::prelude::*;
+
+    let guild: boticelli::GuildRow = discord_guilds::table
+        .filter(discord_guilds::id.eq(test_guild_id))
+        .first(&mut conn)
+        .expect("Guild should be inserted");
+
+    assert_eq!(guild.name, "Integration Test Guild");
+    assert_eq!(guild.owner_id, 111222333444555666);
+    assert_eq!(guild.description, Some("Created by integration test".to_string()));
+    assert_eq!(guild.member_count, Some(42));
+    assert_eq!(guild.verification_level, Some(2));
+
+    // Cleanup
+    cleanup_test_data(&mut conn, test_guild_id);
+}
+```
+
+**Acceptance criteria:**
+- Test creates realistic narrative
+- Mock driver provides valid JSON
+- Processor extracts and inserts data
+- Database contains expected records
+- Cleanup removes test data
+
+---
+
+### Step 9c: Error Handling Tests
+
+Test that processor errors don't fail narrative execution:
+
+```rust
+#[tokio::test]
+async fn test_processor_error_does_not_fail_narrative() {
+    // Mock driver returns invalid JSON
+    let mock_responses = vec![
+        "This is not JSON at all!".to_string(),
+    ];
+    let driver = MockDriver::new(mock_responses);
+
+    // Setup processor that will fail to parse
+    let repository = Arc::new(DiscordRepository::new(
+        boticelli::establish_connection().unwrap()
+    ));
+    let mut registry = ProcessorRegistry::new();
+    registry.register(Box::new(DiscordGuildProcessor::new(repository)));
+
+    // Execute narrative
+    let narrative_toml = r#"
+name = "error_test"
+[metadata]
+description = "Test"
+author = "test"
+version = "1.0.0"
+toc = ["bad_json"]
+
+[acts.bad_json]
+prompt = "Return invalid JSON"
+"#;
+    let narrative: Narrative = narrative_toml.parse().unwrap();
+
+    let executor = NarrativeExecutor::with_processors(driver, registry);
+    let result = executor.execute(&narrative).await;
+
+    // Narrative should SUCCEED even though processor failed
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap().act_executions.len(), 1);
+}
+
+#[tokio::test]
+async fn test_multiple_processors_with_partial_match() {
+    // Test that only matching processors execute
+    let mock_responses = vec![
+        r#"{"id": 111, "name": "Guild", "owner_id": 222}"#.to_string(),
+    ];
+    let driver = MockDriver::new(mock_responses);
+
+    let repository = Arc::new(DiscordRepository::new(
+        boticelli::establish_connection().unwrap()
+    ));
+
+    let mut registry = ProcessorRegistry::new();
+    // Register multiple processors - only guild should execute
+    registry.register(Box::new(DiscordGuildProcessor::new(repository.clone())));
+    registry.register(Box::new(DiscordChannelProcessor::new(repository.clone())));
+
+    let narrative_toml = r#"
+name = "test"
+[metadata]
+description = "Test"
+author = "test"
+version = "1.0.0"
+toc = ["create_guild"]  # Act name matches guild processor
+
+[acts.create_guild]
+prompt = "Generate guild"
+"#;
+    let narrative: Narrative = narrative_toml.parse().unwrap();
+
+    let executor = NarrativeExecutor::with_processors(driver, registry);
+    let result = executor.execute(&narrative).await.unwrap();
+
+    assert_eq!(result.act_executions.len(), 1);
+    // Verify guild was inserted (guild processor ran)
+    // Verify channel was NOT inserted (channel processor didn't run)
+}
+```
+
+**Acceptance criteria:**
+- Invalid JSON doesn't crash narrative
+- Processor errors are logged but don't propagate
+- Multiple processors can coexist
+- Only matching processors execute
+
+---
+
+## Step 10: Documentation Updates 🚧
+
+Update all documentation to reflect completed implementation:
+
+**Files to update:**
+
+1. **NARRATIVE_PROCESSORS.md** (this file)
+   - Update status table
+   - Mark all steps as ✅
+   - Add "Production Ready" badge
+   - Update migration timeline
+
+2. **README.md**
+   - Add processor feature to feature list
+   - Add example with `--process-discord`
+   - Link to NARRATIVE_PROCESSORS.md
+
+3. **DISCORD_NARRATIVE.md**
+   - Add note about automatic processing
+   - Reference CLI integration
+   - Show complete workflow
+
+4. **CHANGELOG.md** (if exists)
+   - Add entry for processor feature
+   - List all 6 processor types
+   - Note CLI integration
+
+---
 
 ## Testing Strategy
 
@@ -1499,25 +1955,25 @@ impl ActProcessor for InstrumentedProcessor {
 
 ## Migration Path
 
-### Phase 1: Foundation (Week 1)
-- Implement extraction utilities
-- Create ActProcessor trait
-- Add processor registry
+### Phase 1: Foundation ✅
+- ✅ Implement extraction utilities (Step 1)
+- ✅ Create ActProcessor trait (Step 2)
+- ✅ Add processor registry (Step 2)
 
-### Phase 2: Discord Processors (Week 2)
-- Implement JSON models
-- Create conversion functions
-- Build Discord processors
+### Phase 2: Discord Processors ✅
+- ✅ Implement JSON models (Step 4)
+- ✅ Create conversion functions (Step 5)
+- ✅ Build Discord processors (Step 6)
 
-### Phase 3: Integration (Week 3)
-- Update executor
-- Add CLI commands
-- Write tests
+### Phase 3: Integration (In Progress)
+- ✅ Update executor (Step 3)
+- ✅ Add CLI commands (Step 8)
+- 🚧 Write integration tests (Step 9 - pending)
 
-### Phase 4: Polish (Week 4)
-- Error handling improvements
-- Documentation
-- Performance optimization
+### Phase 4: Polish (Pending)
+- Error handling improvements (ongoing)
+- Documentation updates (Step 10 - pending)
+- Performance optimization (future)
 
 ## Conclusion
 
