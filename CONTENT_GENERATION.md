@@ -231,21 +231,46 @@ boticelli content promote \
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure (Week 1-2)
+### Phase 1: Core Infrastructure (Week 1-2) ✅ COMPLETE
 
 **Goals:**
 
-- [ ] Parse `template` field from TOML
-- [ ] Implement schema reflection for Discord tables
-- [ ] Create `content_generation_tables` metadata table
-- [ ] Generate dynamic table creation SQL
-- [ ] Basic Diesel model generation for custom tables
+- [x] Parse `template` field from TOML
+- [x] Implement schema reflection for Discord tables
+- [x] Create `content_generation_tables` metadata table
+- [x] Generate dynamic table creation SQL
+- [x] Basic Diesel model generation for custom tables
 
 **Deliverables:**
 
-- Schema reflection module
-- Dynamic table creation
-- Metadata tracking
+- Schema reflection module (`src/database/schema_reflection.rs`)
+- Dynamic table creation functions
+- Metadata tracking table and migration
+- Template field added to narrative TOML parsing
+
+**Implementation Notes:**
+
+The schema reflection module uses Diesel's `QueryableByName` to safely query PostgreSQL's `information_schema`. Key design decisions:
+
+1. **QueryableByName Pattern**: Required by Diesel's `sql_query` for type-safe deserialization
+2. **Foreign Key Handling**: FKs automatically made nullable in generated tables (e.g., `guild_id BIGINT NULL`)
+3. **Metadata Columns**: All generated tables include `generated_at`, `source_narrative`, `source_act`, `generation_model`, `review_status`, `tags`, `rating`
+4. **Error Handling**: New `TableNotFound` variant added to `DatabaseErrorKind`
+
+**Files Modified:**
+- `src/narrative/toml.rs` - Added `template` field to `TomlNarration`
+- `src/narrative/core.rs` - Added `template` field to `NarrativeMetadata`
+- `src/database/schema_reflection.rs` - New module (310 lines)
+- `src/database/error.rs` - Added `TableNotFound` error variant
+- `src/database/mod.rs` - Export schema reflection functions
+- `migrations/2025-11-16-193150-0000_create_content_generation_tables/` - New migration
+
+**Testing:**
+- All existing tests passing (66 tests total)
+- Schema reflection unit tests included
+- Zero clippy warnings
+
+**Next Steps:** Proceed to Phase 2 to implement the content generation processor.
 
 ### Phase 2: Processor Pipeline (Week 2-3)
 
