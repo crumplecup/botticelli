@@ -13,6 +13,7 @@ use diesel::pg::PgConnection;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use super::conversions::NewMemberRole;
 use super::models::{
     ChannelRow, GuildMemberRow, GuildRow, NewChannel, NewGuild, NewGuildMember, NewRole, NewUser,
     RoleRow, UserRow,
@@ -328,6 +329,30 @@ impl DiscordRepository {
             .order(discord_roles::position.desc())
             .load(&mut *conn)
             .map_err(DatabaseError::from)
+    }
+
+    /// Store a member role assignment in the database.
+    ///
+    /// Uses INSERT ... ON CONFLICT to upsert the role assignment.
+    pub async fn store_member_role(&self, member_role: &NewMemberRole) -> DiscordResult<()> {
+        let mut conn = self.conn.lock().await;
+
+        diesel::insert_into(discord_member_roles::table)
+            .values(member_role)
+            .on_conflict((
+                discord_member_roles::guild_id,
+                discord_member_roles::user_id,
+                discord_member_roles::role_id,
+            ))
+            .do_update()
+            .set((
+                discord_member_roles::assigned_at.eq(member_role.assigned_at),
+                discord_member_roles::assigned_by.eq(member_role.assigned_by),
+            ))
+            .execute(&mut *conn)
+            .map_err(DatabaseError::from)?;
+
+        Ok(())
     }
 
     /// Assign a role to a guild member.

@@ -51,6 +51,7 @@ mod error;
 mod handler;
 mod json_models;
 pub mod models;
+mod processors;
 mod repository;
 // mod commands;
 // mod poster;
@@ -67,6 +68,10 @@ pub use json_models::{
 pub use models::{
     ChannelRow, ChannelType, GuildMemberRow, GuildRow, NewChannel, NewGuild, NewGuildMember,
     NewRole, NewUser, RoleRow, UserRow,
+};
+pub use processors::{
+    DiscordChannelProcessor, DiscordGuildMemberProcessor, DiscordGuildProcessor,
+    DiscordMemberRoleProcessor, DiscordRoleProcessor, DiscordUserProcessor,
 };
 pub use repository::{DiscordRepository, DiscordResult};
 

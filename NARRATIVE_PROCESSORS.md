@@ -758,145 +758,95 @@ pub use social::discord::{
 };
 ```
 
-### Step 6: Discord Processors
+### Step 6: Discord Processors ✅
 
-Create `src/discord/processors.rs`:
+**Status:** Complete
 
+**Implementation:** `src/social/discord/processors.rs` (created)
+
+**What was built:**
+
+Created ActProcessor implementations for all 6 Discord entity types:
+1. DiscordGuildProcessor
+2. DiscordUserProcessor
+3. DiscordChannelProcessor
+4. DiscordRoleProcessor
+5. DiscordGuildMemberProcessor
+6. DiscordMemberRoleProcessor
+
+**Key features:**
+
+Each processor follows the same pattern:
+- **Extract** JSON from LLM response using `extract_json()`
+- **Parse** into JSON model using `parse_json<T>()`
+- **Convert** to Diesel model using `TryFrom` trait (`.try_into()`)
+- **Store** in database using `DiscordRepository`
+- **Smart routing** with `should_process()` checking act names and content
+
+**Array support:**
+All processors handle both single objects and arrays:
 ```rust
-//! Act processors for Discord data types.
-
-use crate::{
-    extract_json, parse_json, ActExecution, ActProcessor, BoticelliResult, DiscordChannelJson,
-    DiscordGuildJson, DiscordGuildMemberJson, DiscordMemberRoleJson, DiscordRoleJson,
-    DiscordUserJson,
+let entities: Vec<T> = if json_str.trim().starts_with('[') {
+    parse_json(&json_str)?
+} else {
+    vec![parse_json(&json_str)?]
 };
-use async_trait::async_trait;
-use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool};
+```
 
-type DbPool = Pool<ConnectionManager<PgConnection>>;
+**Logging:**
+Structured logging with tracing crate:
+```rust
+tracing::info!(
+    act = %execution.act_name,
+    count = entities.len(),
+    "Processing Discord entities"
+);
+```
 
-/// Processor for Discord guild data.
-pub struct DiscordGuildProcessor {
-    db_pool: DbPool,
-}
+**Smart routing examples:**
 
-impl DiscordGuildProcessor {
-    pub fn new(db_pool: DbPool) -> Self {
-        Self { db_pool }
-    }
-}
+- Guild: Checks for "guild"/"server" in act name, or "owner_id" in response
+- Channel: Checks for "channel" or "channel_type"
+- User: Checks for "user"/"member" or "username" (without "user_id")
+- Role: Checks for "role" or "permissions" + "position"
+- GuildMember: Checks for "member" + "guild_id" + "user_id" + "joined_at"
+- MemberRole: Checks for "member" + "role" + all IDs + "assigned_at"
 
-#[async_trait]
-impl ActProcessor for DiscordGuildProcessor {
-    async fn process(&self, execution: &ActExecution) -> BoticelliResult<()> {
-        // Extract and parse JSON
-        let json_str = extract_json(&execution.response)?;
-        let guild: DiscordGuildJson = parse_json(&json_str)?;
+**Repository enhancement:**
 
-        tracing::info!(
-            guild_id = guild.id,
-            guild_name = %guild.name,
-            "Inserting Discord guild"
-        );
+Added `store_member_role()` method to DiscordRepository:
+- Accepts `NewMemberRole` struct
+- Uses INSERT ... ON CONFLICT for upserts
+- Properly handles `assigned_at` timestamp from JSON
 
-        // Convert to database row
-        let row = crate::discord::guild_json_to_row(guild);
+**Tests:**
 
-        // Insert into database
-        let mut conn = self.db_pool.get().map_err(|e| {
-            crate::BoticelliError::new(format!("Database connection failed: {}", e))
-        })?;
+7 unit tests covering:
+- Guild processor routing by name and content
+- User processor routing
+- Channel processor routing
+- Role processor routing
+- Member processor routing (excludes member_role acts)
+- Member role processor routing
 
-        diesel::insert_into(crate::database::schema::discord_guilds::table)
-            .values(&row)
-            .on_conflict(crate::database::schema::discord_guilds::id)
-            .do_update()
-            .set(&row) // Update if already exists
-            .execute(&mut conn)
-            .map_err(|e| crate::BoticelliError::new(format!("Database insert failed: {}", e)))?;
+**Module exports:**
 
-        tracing::info!("Discord guild inserted successfully");
-        Ok(())
-    }
+Added to `src/social/discord/mod.rs`:
+```rust
+pub use processors::{
+    DiscordChannelProcessor, DiscordGuildMemberProcessor, DiscordGuildProcessor,
+    DiscordMemberRoleProcessor, DiscordRoleProcessor, DiscordUserProcessor,
+};
+```
 
-    fn should_process(&self, act_name: &str, response: &str) -> bool {
-        // Process if act name suggests guild data
-        let name_match = act_name.to_lowercase().contains("guild")
-            || act_name.to_lowercase().contains("server");
-
-        // Or if response looks like a single guild object
-        let content_match = response.contains("\"owner_id\"") && !response.trim().starts_with('[');
-
-        name_match || content_match
-    }
-
-    fn name(&self) -> &str {
-        "DiscordGuildProcessor"
-    }
-}
-
-/// Processor for Discord channel data (handles both single and array).
-pub struct DiscordChannelProcessor {
-    db_pool: DbPool,
-}
-
-impl DiscordChannelProcessor {
-    pub fn new(db_pool: DbPool) -> Self {
-        Self { db_pool }
-    }
-}
-
-#[async_trait]
-impl ActProcessor for DiscordChannelProcessor {
-    async fn process(&self, execution: &ActExecution) -> BoticelliResult<()> {
-        let json_str = extract_json(&execution.response)?;
-
-        // Try parsing as array first, then single object
-        let channels: Vec<DiscordChannelJson> = if json_str.trim().starts_with('[') {
-            parse_json(&json_str)?
-        } else {
-            vec![parse_json(&json_str)?]
-        };
-
-        tracing::info!(count = channels.len(), "Inserting Discord channels");
-
-        let mut conn = self.db_pool.get().map_err(|e| {
-            crate::BoticelliError::new(format!("Database connection failed: {}", e))
-        })?;
-
-        for channel in channels {
-            let row = crate::discord::channel_json_to_row(channel)?;
-
-            diesel::insert_into(crate::database::schema::discord_channels::table)
-                .values(&row)
-                .on_conflict(crate::database::schema::discord_channels::id)
-                .do_update()
-                .set(&row)
-                .execute(&mut conn)
-                .map_err(|e| {
-                    crate::BoticelliError::new(format!("Database insert failed: {}", e))
-                })?;
-        }
-
-        tracing::info!("Discord channels inserted successfully");
-        Ok(())
-    }
-
-    fn should_process(&self, act_name: &str, response: &str) -> bool {
-        let name_match = act_name.to_lowercase().contains("channel");
-        let content_match = response.contains("\"channel_type\"");
-
-        name_match || content_match
-    }
-
-    fn name(&self) -> &str {
-        "DiscordChannelProcessor"
-    }
-}
-
-// Similar processors for User, Role, GuildMember, MemberRole...
-// (Pattern is the same, just different types and tables)
+Added to `src/lib.rs` under discord feature:
+```rust
+pub use social::discord::{
+    // Processors
+    DiscordChannelProcessor, DiscordGuildMemberProcessor, DiscordGuildProcessor,
+    DiscordMemberRoleProcessor, DiscordRoleProcessor, DiscordUserProcessor,
+    // ... other Discord types
+};
 ```
 
 ### Step 7: Module Exports

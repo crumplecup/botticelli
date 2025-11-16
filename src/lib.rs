@@ -146,6 +146,9 @@ pub use social::discord::{
     DiscordRoleJson, DiscordUserJson,
     // Conversion utilities
     parse_channel_type, parse_iso_timestamp,
+    // Processors
+    DiscordChannelProcessor, DiscordGuildMemberProcessor, DiscordGuildProcessor,
+    DiscordMemberRoleProcessor, DiscordRoleProcessor, DiscordUserProcessor,
     // Repository
     DiscordRepository, DiscordResult,
     // Error handling
