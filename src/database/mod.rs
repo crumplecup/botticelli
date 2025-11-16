@@ -7,8 +7,13 @@ mod narrative_models;
 mod narrative_repository;
 pub(crate) mod schema;  // Make schema accessible within the crate for Discord models
 
-// Re-export schema tables for internal use by migration tools
-pub use schema::{act_inputs, media_references, narrative_executions};
+// Re-export schema tables for internal use by migration tools and tests
+pub use schema::{
+    act_inputs, media_references, narrative_executions,
+    // Discord schema tables
+    discord_channels, discord_guild_members, discord_guilds,
+    discord_member_roles, discord_roles, discord_users,
+};
 
 use diesel::pg::PgConnection;
 use diesel::prelude::*;

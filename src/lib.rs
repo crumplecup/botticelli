@@ -75,8 +75,11 @@ pub use database::{
     ModelResponse, NarrativeExecutionRow, NewActExecutionRow, NewActInputRow,
     NewModelResponse, NewNarrativeExecutionRow, PostgresNarrativeRepository,
     SerializableModelResponse,
-    // Re-export schema tables for migration tools
+    // Re-export schema tables for migration tools and tests
     act_inputs, media_references, narrative_executions,
+    // Discord schema tables
+    discord_channels, discord_guild_members, discord_guilds,
+    discord_member_roles, discord_roles, discord_users,
 };
 
 // Re-export error types
