@@ -122,7 +122,7 @@ pub use narrative::{
     // Extraction utilities
     extract_json, extract_toml, parse_json, parse_toml,
     // Processor infrastructure
-    ActProcessor, ProcessorRegistry,
+    ActProcessor, ProcessorContext, ProcessorRegistry,
 };
 
 // Re-export rate limiting types

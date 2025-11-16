@@ -4,7 +4,7 @@
 //! by calling LLM APIs in sequence, passing context between acts.
 
 use crate::{BoticelliDriver, GenerateRequest, Input, Message, Output, Role};
-use crate::{BoticelliResult, NarrativeProvider, ProcessorRegistry};
+use crate::{BoticelliResult, NarrativeProvider, ProcessorContext, ProcessorRegistry};
 use serde::{Deserialize, Serialize};
 
 /// Execution result for a single act in a narrative.
@@ -147,7 +147,14 @@ impl<D: BoticelliDriver> NarrativeExecutor<D> {
                     "Processing act with registered processors"
                 );
 
-                if let Err(e) = registry.process(&act_execution).await {
+                // Build processor context
+                let context = ProcessorContext {
+                    execution: &act_execution,
+                    narrative_metadata: narrative.metadata(),
+                    narrative_name: narrative.name(),
+                };
+
+                if let Err(e) = registry.process(&context).await {
                     tracing::error!(
                         act = %act_name,
                         error = %e,

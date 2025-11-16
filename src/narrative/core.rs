@@ -200,6 +200,10 @@ impl NarrativeProvider for Narrative {
         &self.metadata.name
     }
 
+    fn metadata(&self) -> &NarrativeMetadata {
+        &self.metadata
+    }
+
     fn act_names(&self) -> &[String] {
         &self.toc.order
     }

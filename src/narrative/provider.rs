@@ -3,7 +3,7 @@
 //! This module defines the `NarrativeProvider` trait, which decouples the
 //! narrative executor from specific configuration formats (TOML, YAML, JSON, etc.).
 
-use crate::Input;
+use crate::{Input, NarrativeMetadata};
 use serde::{Deserialize, Serialize};
 
 /// Configuration for a single act in a narrative.
@@ -96,6 +96,9 @@ impl ActConfig {
 pub trait NarrativeProvider {
     /// Name of the narrative for tracking and identification.
     fn name(&self) -> &str;
+
+    /// Narrative metadata including name, description, and template.
+    fn metadata(&self) -> &NarrativeMetadata;
 
     /// Ordered list of act names to execute in sequence.
     ///

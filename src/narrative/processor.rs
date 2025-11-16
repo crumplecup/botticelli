@@ -3,31 +3,51 @@
 //! Processors are invoked after an act completes to extract structured
 //! data and perform side effects (database insertion, file writing, etc.).
 
-use crate::{ActExecution, BoticelliResult};
+use crate::{ActExecution, BoticelliResult, NarrativeMetadata};
 use async_trait::async_trait;
 
-/// Trait for processing act execution results.
+/// Context provided to processors for act processing.
+///
+/// Contains both act-level and narrative-level information needed
+/// for processors to make routing decisions and access metadata.
+#[derive(Debug, Clone)]
+pub struct ProcessorContext<'a> {
+    /// The act execution result
+    pub execution: &'a ActExecution,
+    
+    /// Narrative metadata (name, description, template)
+    pub narrative_metadata: &'a NarrativeMetadata,
+    
+    /// Full narrative name for tracking
+    pub narrative_name: &'a str,
+}
+
+/// Trait for processing act execution results with narrative context.
 ///
 /// Processors are invoked after an act completes to extract structured
 /// data and perform side effects (database insertion, file writing, etc.).
 ///
+/// Processors receive a `ProcessorContext` containing both act-level data
+/// (execution results) and narrative-level metadata (name, description, template).
+///
 /// # Example
 ///
 /// ```rust,ignore
-/// use boticelli::{ActProcessor, ActExecution, BoticelliResult};
+/// use boticelli::{ActProcessor, ProcessorContext, BoticelliResult};
 /// use async_trait::async_trait;
 ///
 /// struct MyProcessor;
 ///
 /// #[async_trait]
 /// impl ActProcessor for MyProcessor {
-///     async fn process(&self, execution: &ActExecution) -> BoticelliResult<()> {
-///         // Extract and process data from execution.response
+///     async fn process(&self, context: &ProcessorContext<'_>) -> BoticelliResult<()> {
+///         // Extract and process data from context.execution.response
+///         // Access narrative metadata via context.narrative_metadata
 ///         Ok(())
 ///     }
 ///
-///     fn should_process(&self, act_name: &str, response: &str) -> bool {
-///         act_name.contains("my_data")
+///     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+///         context.execution.act_name.contains("my_data")
 ///     }
 ///
 ///     fn name(&self) -> &str {
@@ -37,33 +57,37 @@ use async_trait::async_trait;
 /// ```
 #[async_trait]
 pub trait ActProcessor: Send + Sync {
-    /// Process an act execution result.
+    /// Process an act execution result with narrative context.
     ///
     /// This method is called after an act completes successfully.
     /// Implementations should extract structured data from the response
     /// and perform any necessary side effects.
+    ///
+    /// The context provides access to:
+    /// - Act execution results (response, model, etc.)
+    /// - Narrative metadata (name, description, template)
+    /// - Narrative name for tracking
     ///
     /// # Errors
     ///
     /// Returns an error if processing fails. The error should be descriptive
     /// and include context about what went wrong. Note that processor errors
     /// do not fail the entire narrative execution.
-    async fn process(&self, execution: &ActExecution) -> BoticelliResult<()>;
+    async fn process(&self, context: &ProcessorContext<'_>) -> BoticelliResult<()>;
 
     /// Check if this processor should handle the given act.
     ///
-    /// Implementations can check act name, response content, metadata, etc.
+    /// Implementations can check act name, response content, narrative metadata, etc.
     /// to determine if this processor is appropriate for the act.
     ///
     /// # Arguments
     ///
-    /// * `act_name` - The name of the act from the narrative
-    /// * `response` - The LLM response text
+    /// * `context` - Full context including execution and narrative metadata
     ///
     /// # Returns
     ///
     /// `true` if this processor should process the act, `false` otherwise.
-    fn should_process(&self, act_name: &str, response: &str) -> bool;
+    fn should_process(&self, context: &ProcessorContext<'_>) -> bool;
 
     /// Return a human-readable name for this processor.
     ///
@@ -113,19 +137,23 @@ impl ProcessorRegistry {
     /// Calls each processor that returns `true` from `should_process`.
     /// Continues processing even if some processors fail, collecting all errors.
     ///
+    /// # Arguments
+    ///
+    /// * `context` - Context containing execution and narrative metadata
+    ///
     /// # Errors
     ///
     /// Returns an error if any processor fails. The error message includes
     /// all processor errors concatenated together.
-    pub async fn process(&self, execution: &ActExecution) -> BoticelliResult<()> {
+    pub async fn process(&self, context: &ProcessorContext<'_>) -> BoticelliResult<()> {
         let mut errors = Vec::new();
 
         for processor in &self.processors {
-            if processor.should_process(&execution.act_name, &execution.response) {
-                if let Err(e) = processor.process(execution).await {
+            if processor.should_process(context) {
+                if let Err(e) = processor.process(context).await {
                     tracing::warn!(
                         processor = processor.name(),
-                        act = %execution.act_name,
+                        act = %context.execution.act_name,
                         error = %e,
                         "Processor failed"
                     );
@@ -133,7 +161,7 @@ impl ProcessorRegistry {
                 } else {
                     tracing::debug!(
                         processor = processor.name(),
-                        act = %execution.act_name,
+                        act = %context.execution.act_name,
                         "Processor succeeded"
                     );
                 }
@@ -189,7 +217,7 @@ mod tests {
 
     #[async_trait]
     impl ActProcessor for TestProcessor {
-        async fn process(&self, _execution: &ActExecution) -> BoticelliResult<()> {
+        async fn process(&self, _context: &ProcessorContext<'_>) -> BoticelliResult<()> {
             if self.fail {
                 Err(crate::BackendError::new("Test error").into())
             } else {
@@ -197,7 +225,7 @@ mod tests {
             }
         }
 
-        fn should_process(&self, _act_name: &str, _response: &str) -> bool {
+        fn should_process(&self, _context: &ProcessorContext<'_>) -> bool {
             self.should_process
         }
 
@@ -218,6 +246,26 @@ mod tests {
         }
     }
 
+    fn create_test_context<'a>(
+        execution: &'a ActExecution,
+        metadata: &'a NarrativeMetadata,
+        narrative_name: &'a str,
+    ) -> ProcessorContext<'a> {
+        ProcessorContext {
+            execution,
+            narrative_metadata: metadata,
+            narrative_name,
+        }
+    }
+
+    fn create_test_metadata(name: &str) -> NarrativeMetadata {
+        NarrativeMetadata {
+            name: name.to_string(),
+            description: "Test narrative".to_string(),
+            template: None,
+        }
+    }
+
     #[tokio::test]
     async fn test_empty_registry() {
         let registry = ProcessorRegistry::new();
@@ -225,7 +273,9 @@ mod tests {
         assert!(registry.is_empty());
 
         let execution = create_test_execution("test", "test response");
-        registry.process(&execution).await.unwrap();
+        let metadata = create_test_metadata("test_narrative");
+        let context = create_test_context(&execution, &metadata, "test_narrative");
+        registry.process(&context).await.unwrap();
     }
 
     #[tokio::test]
@@ -241,7 +291,9 @@ mod tests {
         assert!(!registry.is_empty());
 
         let execution = create_test_execution("test", "test response");
-        registry.process(&execution).await.unwrap();
+        let metadata = create_test_metadata("test_narrative");
+        let context = create_test_context(&execution, &metadata, "test_narrative");
+        registry.process(&context).await.unwrap();
     }
 
     #[tokio::test]
@@ -259,7 +311,9 @@ mod tests {
         }));
 
         let execution = create_test_execution("test", "test response");
-        registry.process(&execution).await.unwrap();
+        let metadata = create_test_metadata("test_narrative");
+        let context = create_test_context(&execution, &metadata, "test_narrative");
+        registry.process(&context).await.unwrap();
     }
 
     #[tokio::test]
@@ -272,7 +326,9 @@ mod tests {
         }));
 
         let execution = create_test_execution("test", "test response");
-        let result = registry.process(&execution).await;
+        let metadata = create_test_metadata("test_narrative");
+        let context = create_test_context(&execution, &metadata, "test_narrative");
+        let result = registry.process(&context).await;
         assert!(result.is_err());
 
         let err_msg = result.unwrap_err().to_string();
@@ -297,7 +353,9 @@ mod tests {
         assert_eq!(registry.len(), 2);
 
         let execution = create_test_execution("test", "test response");
-        registry.process(&execution).await.unwrap();
+        let metadata = create_test_metadata("test_narrative");
+        let context = create_test_context(&execution, &metadata, "test_narrative");
+        registry.process(&context).await.unwrap();
     }
 
     #[tokio::test]
@@ -320,7 +378,9 @@ mod tests {
         }));
 
         let execution = create_test_execution("test", "test response");
-        let result = registry.process(&execution).await;
+        let metadata = create_test_metadata("test_narrative");
+        let context = create_test_context(&execution, &metadata, "test_narrative");
+        let result = registry.process(&context).await;
         assert!(result.is_err());
 
         let err_msg = result.unwrap_err().to_string();
