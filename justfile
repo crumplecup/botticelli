@@ -243,6 +243,10 @@ example-users:
 example-guilds:
     cargo run --features database,gemini -- run --narrative narratives/generate_guilds.toml
 
+# Run example narrative: generate guilds (simplified with prompt injection)
+example-guilds-simple:
+    cargo run --features database,gemini -- run --narrative narratives/generate_guilds_simple.toml
+
 # List content from a generation table
 content-list table:
     cargo run --features database,gemini -- content list {{table}}

@@ -145,12 +145,33 @@ async fn run_narrative(
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Load the narrative
     println!("📖 Loading narrative from {:?}...", narrative_path);
-    let content = std::fs::read_to_string(&narrative_path)?;
-    let narrative: Narrative = content.parse()?;
+    
+    #[cfg(feature = "database")]
+    let narrative = {
+        // Check if narrative has a template field by parsing metadata first
+        let content = std::fs::read_to_string(&narrative_path)?;
+        let has_template = content.contains("template =");
+        
+        if has_template {
+            // Load with database connection for prompt assembly
+            let mut conn = boticelli::establish_connection()?;
+            Narrative::from_file_with_db(&narrative_path, &mut conn)?
+        } else {
+            // Load normally without database
+            Narrative::from_file(&narrative_path)?
+        }
+    };
+    
+    #[cfg(not(feature = "database"))]
+    let narrative = Narrative::from_file(&narrative_path)?;
 
     println!("✓ Loaded: {}", narrative.metadata.name);
     println!("  Description: {}", narrative.metadata.description);
     println!("  Acts: {}", narrative.toc.order.len());
+    
+    if let Some(ref template) = narrative.metadata.template {
+        println!("  Template: {} (schema-based content generation)", template);
+    }
 
     // Build tier configuration from CLI options
     let tier = rate_limit_opts.build_tier(&backend)?;
@@ -208,47 +229,56 @@ async fn execute_with_driver<D: BoticelliDriver>(
     verbose: bool,
     #[cfg(all(feature = "database", feature = "discord"))] process_discord: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Step 8b: Setup DiscordRepository when flag is enabled
-    #[cfg(all(feature = "database", feature = "discord"))]
-    let discord_repository = if process_discord {
-        let conn = boticelli::establish_connection()?;
-        Some(std::sync::Arc::new(boticelli::DiscordRepository::new(conn)))
-    } else {
-        None
+    // Build processor registry based on enabled features and narrative configuration
+    #[cfg(feature = "database")]
+    let executor = {
+        let has_template = narrative.metadata.template.is_some();
+        
+        #[cfg(feature = "discord")]
+        let needs_discord = process_discord;
+        #[cfg(not(feature = "discord"))]
+        let needs_discord = false;
+        
+        if has_template || needs_discord {
+            let mut registry = boticelli::ProcessorRegistry::new();
+            
+            // Register content generation processor if template present
+            if has_template {
+                println!("🔧 Enabling content generation processing...");
+                let conn = boticelli::establish_connection()?;
+                let content_processor = boticelli::ContentGenerationProcessor::new(
+                    std::sync::Arc::new(std::sync::Mutex::new(conn))
+                );
+                registry.register(Box::new(content_processor));
+                println!("✓ Registered content generation processor");
+            }
+            
+            // Register Discord processors if requested
+            #[cfg(feature = "discord")]
+            if needs_discord {
+                println!("🔧 Enabling Discord data processing...");
+                let conn = boticelli::establish_connection()?;
+                let repo = std::sync::Arc::new(boticelli::DiscordRepository::new(conn));
+                
+                registry.register(Box::new(boticelli::DiscordGuildProcessor::new(repo.clone())));
+                registry.register(Box::new(boticelli::DiscordUserProcessor::new(repo.clone())));
+                registry.register(Box::new(boticelli::DiscordChannelProcessor::new(repo.clone())));
+                registry.register(Box::new(boticelli::DiscordRoleProcessor::new(repo.clone())));
+                registry.register(Box::new(boticelli::DiscordGuildMemberProcessor::new(repo.clone())));
+                registry.register(Box::new(boticelli::DiscordMemberRoleProcessor::new(repo.clone())));
+                
+                println!("✓ Registered 6 Discord processors");
+            }
+            
+            println!();
+            boticelli::NarrativeExecutor::with_processors(driver, registry)
+        } else {
+            boticelli::NarrativeExecutor::new(driver)
+        }
     };
-
-    // Step 8c: Register all 6 Discord processors
-    #[cfg(all(feature = "database", feature = "discord"))]
-    let executor = if let Some(repo) = discord_repository {
-        println!("🔧 Enabling Discord data processing...");
-        let mut registry = boticelli::ProcessorRegistry::new();
-
-        // Register all Discord processors
-        registry.register(Box::new(boticelli::DiscordGuildProcessor::new(
-            repo.clone(),
-        )));
-        registry.register(Box::new(boticelli::DiscordUserProcessor::new(repo.clone())));
-        registry.register(Box::new(boticelli::DiscordChannelProcessor::new(
-            repo.clone(),
-        )));
-        registry.register(Box::new(boticelli::DiscordRoleProcessor::new(repo.clone())));
-        registry.register(Box::new(boticelli::DiscordGuildMemberProcessor::new(
-            repo.clone(),
-        )));
-        registry.register(Box::new(boticelli::DiscordMemberRoleProcessor::new(
-            repo.clone(),
-        )));
-
-        println!("✓ Registered 6 Discord processors");
-        println!();
-
-        boticelli::NarrativeExecutor::with_processors(driver, registry)
-    } else {
-        boticelli::NarrativeExecutor::new(driver)
-    };
-
-    // Create executor (when discord feature not enabled)
-    #[cfg(not(all(feature = "database", feature = "discord")))]
+    
+    // Create executor (when database feature not enabled)
+    #[cfg(not(feature = "database"))]
     let executor = NarrativeExecutor::new(driver);
 
     // Execute the narrative

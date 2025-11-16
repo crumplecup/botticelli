@@ -18,6 +18,17 @@ pub enum NarrativeErrorKind {
     /// Act prompt is empty or contains only whitespace
     #[display("Act '{}' has an empty prompt", _0)]
     EmptyPrompt(String),
+    /// Template field required but not set
+    #[display("Template field is required for prompt assembly")]
+    MissingTemplate,
+    /// Failed to assemble prompt with schema injection
+    #[display("Failed to assemble prompt for act '{}': {}", act, message)]
+    PromptAssembly {
+        /// Name of the act that failed
+        act: String,
+        /// Error message from prompt assembly
+        message: String,
+    },
 }
 
 /// Error type for narrative operations.

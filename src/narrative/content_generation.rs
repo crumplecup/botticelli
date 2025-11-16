@@ -51,6 +51,14 @@ impl ContentGenerationProcessor {
             .lock()
             .map_err(|e| crate::BackendError::new(format!("Failed to lock connection: {}", e)))?;
 
+        // Query schema to get column types
+        let schema = crate::reflect_table_schema(&mut conn, table_name)?;
+        let column_types: std::collections::HashMap<_, _> = schema
+            .columns
+            .iter()
+            .map(|col| (col.name.as_str(), col.data_type.as_str()))
+            .collect();
+
         // Build INSERT statement dynamically
         // Extract fields from JSON and add metadata columns
         let obj = json_data
@@ -63,7 +71,8 @@ impl ContentGenerationProcessor {
         // Add content fields from JSON
         for (key, value) in obj {
             columns.push(key.clone());
-            values.push(json_value_to_sql(value));
+            let col_type = column_types.get(key.as_str()).copied().unwrap_or("text");
+            values.push(json_value_to_sql(value, col_type));
         }
 
         // Add metadata columns
@@ -182,13 +191,40 @@ impl ActProcessor for ContentGenerationProcessor {
 
 /// Convert a JSON value to SQL literal format.
 #[cfg(feature = "database")]
-fn json_value_to_sql(value: &JsonValue) -> String {
+/// Convert a JSON value to SQL literal with proper type casting.
+///
+/// Handles type conversions based on PostgreSQL column type:
+/// - text[] (PostgreSQL arrays) from JSON arrays
+/// - jsonb from JSON objects or arrays (when column is jsonb)
+/// - Primitives (string, number, bool, null)
+fn json_value_to_sql(value: &JsonValue, col_type: &str) -> String {
     match value {
         JsonValue::Null => "NULL".to_string(),
         JsonValue::Bool(b) => b.to_string(),
         JsonValue::Number(n) => n.to_string(),
         JsonValue::String(s) => format!("'{}'", s.replace('\'', "''")), // SQL escape
-        JsonValue::Array(_) | JsonValue::Object(_) => {
+        JsonValue::Array(arr) => {
+            // Check if target column is a PostgreSQL array type
+            if col_type == "ARRAY" || col_type.contains("[]") {
+                // Format as PostgreSQL array literal: ARRAY['val1', 'val2']
+                let elements: Vec<String> = arr
+                    .iter()
+                    .map(|v| match v {
+                        JsonValue::String(s) => format!("'{}'", s.replace('\'', "''")),
+                        JsonValue::Number(n) => n.to_string(),
+                        JsonValue::Bool(b) => b.to_string(),
+                        JsonValue::Null => "NULL".to_string(),
+                        _ => format!("'{}'", v.to_string().replace('\'', "''")),
+                    })
+                    .collect();
+                format!("ARRAY[{}]", elements.join(", "))
+            } else {
+                // Store as JSONB
+                format!("'{}'::jsonb", value.to_string().replace('\'', "''"))
+            }
+        }
+        JsonValue::Object(_) => {
+            // Objects always stored as JSONB
             format!("'{}'::jsonb", value.to_string().replace('\'', "''"))
         }
     }

@@ -88,6 +88,8 @@ pub use database::{
     act_inputs,
     // Schema documentation functions (Phase 5)
     assemble_prompt,
+    is_content_focus,
+    reflect_table_schema,
     // Content generation functions
     create_content_table,
     // Content management functions
@@ -107,7 +109,6 @@ pub use database::{
     get_recent_responses,
     get_response_by_id,
     get_responses_by_model,
-    is_content_focus,
     list_content,
     media_references,
     narrative_executions,

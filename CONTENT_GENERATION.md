@@ -1094,7 +1094,61 @@ The system recognizes Discord patterns and adds appropriate hints:
 - `src/lib.rs` - Re-export for public API
 - `CONTENT_GENERATION.md` - Phase 5 documentation
 
-**Next Steps:** Integrate prompt assembly into ContentGenerationProcessor
+**Next Steps:** Integrate prompt assembly into narrative loading
+
+**Phase 5b: Integrate Prompt Assembly into Narrative Loading** ✅ COMPLETE
+
+**Architecture Decision:**
+
+Prompt assembly happens at narrative **load time**, not during execution or processing:
+
+1. `NarrativeProvider::get_act_config()` returns ready-to-use configurations
+2. Fail fast if schema reflection fails (at load, not mid-execution)  
+3. Assemble prompts once (load time) vs repeatedly (each execution)
+4. Database connection available in CLI when loading narratives
+
+**Implementation Complete:**
+
+1. ✅ Added `Narrative::from_file_with_db(path, conn)` constructor
+2. ✅ Added `assemble_act_prompts(&mut self, conn)` helper that processes each act:
+   - Skips acts with explicit full prompts (detected via `is_content_focus`)
+   - For content focus acts, calls `assemble_prompt(conn, template, user_focus)`
+   - Replaces act's `Input::Text` with assembled prompt
+3. ✅ Updated CLI `run` command to use `from_file_with_db` when template present
+4. ✅ Fixed ContentGenerationProcessor to handle PostgreSQL array types (text[])
+5. ✅ Created simplified example: `narratives/generate_guilds_simple.toml`
+
+**Testing:**
+
+```bash
+# Run simplified narrative with automatic prompt injection
+just example-guilds-simple
+
+# Results: All 5 acts completed successfully
+# - creative_community → "The Creative Nexus"
+# - tech_learning_hub → "DevPath Academy"  
+# - gaming_squad → "Elite Gaming Nexus"
+# - indie_dev_collective → "Indie Dev Collective"
+# - study_group → "Academia Ascent: STEM Study Hub"
+```
+
+**Benefits Demonstrated:**
+
+- **Massive boilerplate reduction**: Acts went from ~40 lines to ~5 lines each
+- **Consistent schema documentation**: All acts use same template-generated schema
+- **Easier maintenance**: Update schema, all prompts update automatically
+- **Backward compatible**: Explicit prompts (like `generate_guilds.toml`) still work
+
+**Files Created/Modified:**
+
+- `src/narrative/core.rs` - Added `from_file_with_db`, `assemble_act_prompts`, new error variants
+- `src/narrative/error.rs` - Added `MissingTemplate`, `PromptAssembly` error kinds
+- `src/narrative/content_generation.rs` - Fixed array type handling in SQL inserts
+- `src/main.rs` - Updated `run_narrative` to use database-driven loading
+- `src/lib.rs` - Exported `reflect_table_schema` for content generation
+- `narratives/generate_guilds_simple.toml` - New simplified example (60% less code)
+- `justfile` - Added `example-guilds-simple` recipe
+- `CONTENT_GENERATION.md` - Documented Phase 5b completion
 
 ### Phase 6: UI and Polish (Week 6)
 

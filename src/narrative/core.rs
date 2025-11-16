@@ -2,9 +2,15 @@
 
 use crate::narrative::toml as toml_parsing;
 use crate::narrative::{ActConfig, NarrativeError, NarrativeErrorKind, NarrativeProvider};
+use crate::Input;
 use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
+
+#[cfg(feature = "database")]
+use crate::{assemble_prompt, is_content_focus};
+#[cfg(feature = "database")]
+use diesel::pg::PgConnection;
 
 /// Narrative metadata from the `[narration]` section.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
@@ -89,6 +95,106 @@ impl Narrative {
         })?;
 
         content.parse()
+    }
+
+    /// Loads a narrative from a TOML file with database-driven prompt assembly.
+    ///
+    /// If the narrative has a `template` field, this method will:
+    /// 1. Load the narrative from the TOML file
+    /// 2. For each act with a content focus (short-form prompt):
+    ///    - Query the template table schema
+    ///    - Generate schema documentation
+    ///    - Inject platform context and format requirements
+    ///    - Replace the act's prompt with the assembled version
+    ///
+    /// Acts with explicit full prompts (containing schema docs) are left unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The file cannot be read
+    /// - The TOML is invalid
+    /// - Validation fails
+    /// - Database schema reflection fails (if template specified)
+    /// - Prompt assembly fails
+    #[cfg(feature = "database")]
+    pub fn from_file_with_db<P: AsRef<Path>>(
+        path: P,
+        conn: &mut PgConnection,
+    ) -> Result<Self, NarrativeError> {
+        let mut narrative = Self::from_file(path)?;
+
+        // If template specified, assemble prompts with schema injection
+        if narrative.metadata.template.is_some() {
+            narrative.assemble_act_prompts(conn)?;
+        }
+
+        Ok(narrative)
+    }
+
+    /// Assembles prompts for all acts using template schema injection.
+    ///
+    /// For each act:
+    /// - Extracts the first text input (assumes simple text prompts)
+    /// - Checks if it's a content focus (short-form) or explicit prompt
+    /// - If content focus, assembles complete prompt with schema + format requirements
+    /// - If explicit, leaves unchanged (backward compatibility)
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Template field is not set
+    /// - Database schema reflection fails
+    /// - Prompt assembly fails
+    #[cfg(feature = "database")]
+    fn assemble_act_prompts(&mut self, conn: &mut PgConnection) -> Result<(), NarrativeError> {
+        let template = self
+            .metadata
+            .template
+            .as_ref()
+            .ok_or_else(|| {
+                NarrativeError::new(
+                    NarrativeErrorKind::MissingTemplate,
+                    line!(),
+                    file!(),
+                )
+            })?;
+
+        for (act_name, config) in &mut self.acts {
+            // Get the first text input (most common case)
+            if let Some(Input::Text(user_prompt)) = config.inputs.first() {
+                // Check if this is a content focus or explicit prompt
+                if is_content_focus(user_prompt) {
+                    // Assemble complete prompt with schema injection
+                    let assembled = assemble_prompt(conn, template, user_prompt).map_err(|e| {
+                        NarrativeError::new(
+                            NarrativeErrorKind::PromptAssembly {
+                                act: act_name.clone(),
+                                message: e.to_string(),
+                            },
+                            line!(),
+                            file!(),
+                        )
+                    })?;
+
+                    // Replace the first input with assembled prompt
+                    config.inputs[0] = Input::Text(assembled);
+
+                    tracing::debug!(
+                        act = %act_name,
+                        template = %template,
+                        "Assembled prompt with schema injection"
+                    );
+                } else {
+                    tracing::debug!(
+                        act = %act_name,
+                        "Skipping prompt assembly (explicit full prompt detected)"
+                    );
+                }
+            }
+        }
+
+        Ok(())
     }
 
     /// Validates the narrative structure.
