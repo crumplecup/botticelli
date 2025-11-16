@@ -4,7 +4,7 @@
 //! by calling LLM APIs in sequence, passing context between acts.
 
 use crate::{BoticelliDriver, GenerateRequest, Input, Message, Output, Role};
-use crate::{BoticelliResult, NarrativeProvider};
+use crate::{BoticelliResult, NarrativeProvider, ProcessorRegistry};
 use serde::{Deserialize, Serialize};
 
 /// Execution result for a single act in a narrative.
@@ -46,14 +46,43 @@ pub struct NarrativeExecution {
 ///
 /// The executor processes each act in the narrative's table of contents order,
 /// passing previous act outputs as context to subsequent acts.
+///
+/// Optionally, processors can be registered to extract and process structured
+/// data from act responses (e.g., JSON extraction, database insertion).
 pub struct NarrativeExecutor<D: BoticelliDriver> {
     driver: D,
+    processor_registry: Option<ProcessorRegistry>,
 }
 
 impl<D: BoticelliDriver> NarrativeExecutor<D> {
     /// Create a new narrative executor with the given LLM driver.
     pub fn new(driver: D) -> Self {
-        Self { driver }
+        Self {
+            driver,
+            processor_registry: None,
+        }
+    }
+
+    /// Create a new narrative executor with processors.
+    ///
+    /// Processors will be invoked after each act completes to extract
+    /// and process structured data from the response.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// use boticelli::{NarrativeExecutor, ProcessorRegistry};
+    ///
+    /// let mut registry = ProcessorRegistry::new();
+    /// registry.register(Box::new(MyProcessor::new()));
+    ///
+    /// let executor = NarrativeExecutor::with_processors(driver, registry);
+    /// ```
+    pub fn with_processors(driver: D, registry: ProcessorRegistry) -> Self {
+        Self {
+            driver,
+            processor_registry: Some(registry),
+        }
     }
 
     /// Execute a narrative, processing all acts in sequence.
@@ -99,8 +128,8 @@ impl<D: BoticelliDriver> NarrativeExecutor<D> {
             // Extract text from response
             let response_text = extract_text_from_outputs(&response.outputs)?;
 
-            // Store the act execution
-            act_executions.push(ActExecution {
+            // Create the act execution
+            let act_execution = ActExecution {
                 act_name: act_name.clone(),
                 inputs: config.inputs.clone(),
                 model: config.model,
@@ -108,7 +137,29 @@ impl<D: BoticelliDriver> NarrativeExecutor<D> {
                 max_tokens: config.max_tokens,
                 response: response_text.clone(),
                 sequence_number,
-            });
+            };
+
+            // Process with registered processors
+            if let Some(registry) = &self.processor_registry {
+                tracing::info!(
+                    act = %act_name,
+                    processors = registry.len(),
+                    "Processing act with registered processors"
+                );
+
+                if let Err(e) = registry.process(&act_execution).await {
+                    tracing::error!(
+                        act = %act_name,
+                        error = %e,
+                        "Act processing failed, continuing execution"
+                    );
+                    // Note: We don't fail the entire narrative on processor errors
+                    // The user still gets the execution results
+                }
+            }
+
+            // Store the act execution
+            act_executions.push(act_execution);
 
             // Add the assistant's response to conversation history for the next act
             conversation_history.push(Message {
