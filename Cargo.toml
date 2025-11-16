@@ -17,16 +17,6 @@ path = "src/lib.rs"
 name = "boticelli"
 path = "src/main.rs"
 
-[[bin]]
-name = "migrate_media"
-path = "src/bin/migrate_media.rs"
-required-features = ["database"]
-
-[[bin]]
-name = "validate_migration"
-path = "src/bin/validate_migration.rs"
-required-features = ["database"]
-
 
 [dependencies]
 # Common async + HTTP stack
@@ -43,7 +33,7 @@ async-trait = "0.1"
 futures-util = "0.3"
 
 # Rate limiting
-governor = "0.6"
+governor = "0.10"
 
 # Structured logging and tracing
 tracing = "0.1"
@@ -64,7 +54,7 @@ diesel = { version = "2.3", features = [
   "chrono",
   "uuid",
   "serde_json",
-  "64-column-tables",  # Needed for Discord tables with >32 columns
+  "64-column-tables", # Needed for Discord tables with >32 columns
 ], optional = true }
 diesel_migrations = { version = "2.3", optional = true }
 chrono = { version = "0.4", features = ["serde"], optional = true }
@@ -91,9 +81,9 @@ derive_more = { version = "2", features = ["display", "from"] }
 derive-new = "0.7"                                              # Derive new constructors
 anyhow = "1"                                                    # Internal utils
 toml = "0.9"                                                    # TOML parsing for narratives
-config = { version = "0.14", features = ["toml"] }              # Configuration management
+config = { version = "0.15", features = ["toml"] }              # Configuration management
 clap = { version = "4", features = ["derive"] }                 # CLI argument parsing
-dirs = "5"                                                      # Cross-platform directory paths
+dirs = "6"                                                      # Cross-platform directory paths
 
 [features]
 default = []
@@ -105,7 +95,10 @@ groq = ["dep:groqai"]
 perplexity = ["dep:perplexity"]
 database = ["dep:diesel", "dep:diesel_migrations", "dep:chrono"]
 # Social media platforms
-discord = ["dep:serenity", "database"]  # Discord requires database for state persistence
+discord = [
+  "dep:serenity",
+  "database",
+] # Discord requires database for state persistence
 # Enable tests that consume API tokens
 api = []
 

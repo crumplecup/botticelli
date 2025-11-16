@@ -62,74 +62,43 @@ pub fn act_execution_to_new_row(
 
 /// Convert Input to NewActInputRow.
 pub fn input_to_new_row(input: &Input, act_execution_id: i32, order: usize) -> BoticelliResult<NewActInputRow> {
-    let mut row = NewActInputRow {
-        act_execution_id,
-        input_order: order as i32,
-        input_type: input_type_string(input),
-        text_content: None,
-        mime_type: None,
-        source_type: None,
-        source_url: None,
-        source_base64: None,
-        source_binary: None,
-        source_size_bytes: None,
-        content_hash: None,
-        filename: None,
-        media_ref_id: None,  // Will be populated by Step 4
+    let row = match input {
+        Input::Text(text) => NewActInputRow {
+            act_execution_id,
+            input_order: order as i32,
+            input_type: "text".to_string(),
+            text_content: Some(text.clone()),
+            mime_type: None,
+            filename: None,
+            media_ref_id: None,
+        },
+        Input::Image { mime, .. } | Input::Audio { mime, .. } | Input::Video { mime, .. } => {
+            // Media inputs require special handling via media storage system
+            // media_ref_id should be populated by the caller after storing media
+            NewActInputRow {
+                act_execution_id,
+                input_order: order as i32,
+                input_type: input_type_string(input),
+                text_content: None,
+                mime_type: mime.clone(),
+                filename: None,
+                media_ref_id: None,  // Will be populated by caller
+            }
+        }
+        Input::Document { mime, filename, .. } => {
+            // Document inputs require special handling via media storage system
+            NewActInputRow {
+                act_execution_id,
+                input_order: order as i32,
+                input_type: "document".to_string(),
+                text_content: None,
+                mime_type: mime.clone(),
+                filename: filename.clone(),
+                media_ref_id: None,  // Will be populated by caller
+            }
+        }
     };
-
-    match input {
-        Input::Text(text) => {
-            row.text_content = Some(text.clone());
-        }
-        Input::Image { mime, source } => {
-            row.mime_type = mime.clone();
-            populate_media_source(&mut row, source)?;
-        }
-        Input::Audio { mime, source } => {
-            row.mime_type = mime.clone();
-            populate_media_source(&mut row, source)?;
-        }
-        Input::Video { mime, source } => {
-            row.mime_type = mime.clone();
-            populate_media_source(&mut row, source)?;
-        }
-        Input::Document {
-            mime,
-            source,
-            filename,
-        } => {
-            row.mime_type = mime.clone();
-            row.filename = filename.clone();
-            populate_media_source(&mut row, source)?;
-        }
-    }
-
     Ok(row)
-}
-
-/// Helper to populate media source fields in ActInputRow.
-fn populate_media_source(row: &mut NewActInputRow, source: &MediaSource) -> BoticelliResult<()> {
-    match source {
-        MediaSource::Url(url) => {
-            row.source_type = Some("url".to_string());
-            row.source_url = Some(url.clone());
-            row.source_size_bytes = Some(url.len() as i64);
-        }
-        MediaSource::Base64(base64) => {
-            row.source_type = Some("base64".to_string());
-            row.source_base64 = Some(base64.clone());
-            row.source_size_bytes = Some(base64.len() as i64);
-            // Could compute content hash here if needed
-        }
-        MediaSource::Binary(bytes) => {
-            row.source_type = Some("binary".to_string());
-            row.source_binary = Some(bytes.clone());
-            row.source_size_bytes = Some(bytes.len() as i64);
-            // Could compute content hash here if needed
-        }
-    }
-    Ok(())
 }
 
 /// Get input type string for database.
@@ -180,76 +149,17 @@ fn row_to_input(row: ActInputRow) -> BoticelliResult<Input> {
             })?;
             Ok(Input::Text(text))
         }
-        "image" => {
-            let source = row_to_media_source(&row)?;
-            Ok(Input::Image {
-                mime: row.mime_type,
-                source,
-            })
-        }
-        "audio" => {
-            let source = row_to_media_source(&row)?;
-            Ok(Input::Audio {
-                mime: row.mime_type,
-                source,
-            })
-        }
-        "video" => {
-            let source = row_to_media_source(&row)?;
-            Ok(Input::Video {
-                mime: row.mime_type,
-                source,
-            })
-        }
-        "document" => {
-            let source = row_to_media_source(&row)?;
-            Ok(Input::Document {
-                mime: row.mime_type,
-                source,
-                filename: row.filename,
-            })
+        "image" | "audio" | "video" | "document" => {
+            // Media inputs require loading via media_ref_id
+            Err(BoticelliError::from(BackendError::new(format!(
+                "Media input reconstruction not yet implemented for type: {} (use media_ref_id)",
+                row.input_type
+            ))))
         }
         _ => Err(BoticelliError::from(BackendError::new(format!(
             "Unknown input type: {}",
             row.input_type
         )))),
-    }
-}
-
-/// Reconstruct MediaSource from ActInputRow.
-fn row_to_media_source(row: &ActInputRow) -> BoticelliResult<MediaSource> {
-    match row.source_type.as_deref() {
-        Some("url") => {
-            let url = row.source_url.clone().ok_or_else(|| {
-                BoticelliError::from(BackendError::new(
-                    "URL source missing source_url".to_string(),
-                ))
-            })?;
-            Ok(MediaSource::Url(url))
-        }
-        Some("base64") => {
-            let base64 = row.source_base64.clone().ok_or_else(|| {
-                BoticelliError::from(BackendError::new(
-                    "Base64 source missing source_base64".to_string(),
-                ))
-            })?;
-            Ok(MediaSource::Base64(base64))
-        }
-        Some("binary") => {
-            let binary = row.source_binary.clone().ok_or_else(|| {
-                BoticelliError::from(BackendError::new(
-                    "Binary source missing source_binary".to_string(),
-                ))
-            })?;
-            Ok(MediaSource::Binary(binary))
-        }
-        Some(other) => Err(BoticelliError::from(BackendError::new(format!(
-            "Unknown source type: {}",
-            other
-        )))),
-        None => Err(BoticelliError::from(BackendError::new(
-            "Media source type not specified",
-        ))),
     }
 }
 
