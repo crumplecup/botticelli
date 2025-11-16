@@ -1,12 +1,14 @@
 #[cfg(feature = "database")]
 use boticelli::NarrativeRepository;
-use boticelli::cli::{Cli, Commands, ContentCommands, RateLimitOptions};
-use boticelli::{BoticelliDriver, Narrative, NarrativeExecutor};
+use boticelli::{BoticelliDriver, Cli, Commands, Narrative, NarrativeExecutor, RateLimitOptions};
 use clap::Parser;
 use std::path::PathBuf;
 
 #[cfg(feature = "discord")]
-use boticelli::cli::DiscordCommands;
+use boticelli::DiscordCommands;
+
+#[cfg(feature = "database")]
+use boticelli::ContentCommands;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -60,8 +60,8 @@ mod storage;
 #[cfg(feature = "discord")]
 mod social;
 
-// CLI module (public for binary usage)
-pub mod cli;
+// CLI module (private - exports re-exported at crate level)
+mod cli;
 
 // Re-export core types
 pub use core::{
@@ -171,3 +171,12 @@ pub use social::discord::{
     // Client and handler
     BoticelliBot, BoticelliHandler,
 };
+
+// Re-export CLI types
+pub use cli::{Cli, Commands, RateLimitOptions};
+
+#[cfg(feature = "discord")]
+pub use cli::DiscordCommands;
+
+#[cfg(feature = "database")]
+pub use cli::ContentCommands;
