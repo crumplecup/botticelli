@@ -831,14 +831,16 @@ boticelli content review potential_posts 123 approved
 boticelli content promote potential_posts 123 --target discord_channels
 ```
 
-### Phase 5: Template-Based Prompt Injection (Week 5)
+### Phase 5: Template-Based Prompt Injection (Week 5) 🔄 **IN PROGRESS**
+
+**Status:** Schema documentation infrastructure complete. Next: Integrate with ContentGenerationProcessor.
 
 **Goals:**
 
-- [ ] Auto-generate schema preamble from template
-- [ ] Inject JSON formatting requirements automatically
-- [ ] Allow users to write only content focus
-- [ ] Maintain backward compatibility with explicit prompts
+- [x] Auto-generate schema preamble from template
+- [x] Inject JSON formatting requirements automatically  
+- [ ] Integrate with ContentGenerationProcessor
+- [x] Maintain backward compatibility with explicit prompts
 
 **Problem:**
 
@@ -1024,11 +1026,75 @@ gaming_squad = "Create an energetic gaming community. Make it fun, competitive, 
 
 **Deliverables:**
 
-- Schema documentation generator module
-- Platform template system
-- Updated ContentGenerationProcessor with prompt injection
-- Converted example narratives (before/after comparison)
-- Developer documentation
+- ✅ Schema documentation generator module (`src/database/schema_docs.rs`)
+- ✅ Platform template system (Discord-specific context)
+- [ ] Updated ContentGenerationProcessor with prompt injection
+- [ ] Converted example narratives (before/after comparison)
+- [ ] Developer documentation
+
+**Phase 5a: Schema Documentation Infrastructure** ✅ COMPLETE
+
+**Implementation Complete:**
+
+Created `src/database/schema_docs.rs` with comprehensive prompt assembly system:
+
+1. ✅ **generate_schema_prompt(schema)** - Converts TableSchema to human-readable documentation
+   - Separates required vs optional fields
+   - Adds type hints and field descriptions
+   - Discord-specific patterns (snowflake IDs, roles, channels)
+   
+2. ✅ **assemble_prompt(conn, template, user_focus)** - Complete prompt assembly
+   - Queries database schema for template table
+   - Adds platform context (Discord-specific constraints)
+   - Injects user's content focus
+   - Appends JSON formatting requirements
+   
+3. ✅ **is_content_focus(prompt)** - Backward compatibility detection
+   - Detects explicit vs short-form prompts
+   - Checks for schema keywords ("required fields", "json object", etc.)
+   - Returns true for user-written content focus, false for explicit
+   
+4. ✅ **Constants** - Reusable prompt components
+   - `JSON_FORMAT_REQUIREMENTS` - Universal LLM output rules
+   - `DISCORD_PLATFORM_CONTEXT` - Platform-specific context
+
+**Key Code:**
+
+```rust
+// Generate schema documentation from table structure
+let schema = reflect_table_schema(conn, "discord_guilds")?;
+let docs = generate_schema_prompt(&schema);
+
+// Detect if user provided explicit or short-form prompt
+if is_content_focus(user_prompt) {
+    // Inject boilerplate
+    let complete = assemble_prompt(conn, template, user_prompt)?;
+} else {
+    // Use as-is (backward compatible)
+    let complete = user_prompt;
+}
+```
+
+**Field Documentation Patterns:**
+
+The system recognizes Discord patterns and adds appropriate hints:
+- `*_id` fields → "18-digit Discord snowflake ID"
+- `verification_level` → "Security/verification level (0-4)"
+- `premium_tier` → "Server boost level (0-3)"
+- `features` → "Array of feature flags"
+
+**Testing:**
+- 5 unit tests for detection and formatting logic
+- All 74 tests passing
+- Zero clippy warnings
+
+**Files Created/Modified:**
+- `src/database/schema_docs.rs` - New module (287 lines)
+- `src/database/mod.rs` - Export schema_docs functions
+- `src/lib.rs` - Re-export for public API
+- `CONTENT_GENERATION.md` - Phase 5 documentation
+
+**Next Steps:** Integrate prompt assembly into ContentGenerationProcessor
 
 ### Phase 6: UI and Polish (Week 6)
 
