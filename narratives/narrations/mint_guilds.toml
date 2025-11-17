@@ -1,0 +1,21 @@
+[narration]
+name = "mint_guilds"
+description = "Generates Discord guild configurations for MINT visibility and promotion."
+template = "discord_guilds"
+
+[toc]
+order = ["mint_guild"]
+
+[acts.mint_guild]
+model = "gemini-2.0-flash-lite"
+
+[[acts.mint_guild.input]]
+type = "text"
+content = """ MINT (Mobile Integrated Navigation Team) is the tip of the spear in serving houseless individuals in Grants Pass, Oregon. Our mission is to provide comprehensive support through mobile outreach, connecting individuals with essential resources such as food, shelter, healthcare, and social services. We believe in a compassionate, person-centered approach that respects the dignity and autonomy of every individual we serve.
+Generate a comprehensive MINT community guild configuration with:
+- A memorable name reflecting MINT values
+- Detailed description of the MINT's purpose and mission.
+- Appropriate icon URL (use open source png)
+- Realistic owner_id (use a large number like Discord IDs)
+- Current timestamp
+"""

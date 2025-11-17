@@ -77,7 +77,7 @@ impl GeminiErrorKind {
     /// - HTTP 429 (rate limit exceeded)
     /// - HTTP 500, 502, 503, 504 (server errors)
     /// - HTTP 408 (request timeout)
-    /// - WebSocket connection/stream errors
+    /// - WebSocket connection/handshake/stream errors
     ///
     /// Returns false for permanent errors that won't change with retry:
     /// - HTTP 400, 401, 403, 404 (client errors)
@@ -92,6 +92,7 @@ impl GeminiErrorKind {
                 )
             }
             GeminiErrorKind::WebSocketConnection(_) => true,
+            GeminiErrorKind::WebSocketHandshake(_) => true,
             GeminiErrorKind::StreamInterrupted(_) => true,
             // Most other errors are permanent
             _ => false,
@@ -116,6 +117,7 @@ impl GeminiErrorKind {
                 _ => (2000, 5, 60),   // Default
             },
             GeminiErrorKind::WebSocketConnection(_) => (2000, 5, 60),
+            GeminiErrorKind::WebSocketHandshake(_) => (2000, 5, 60),
             GeminiErrorKind::StreamInterrupted(_) => (1000, 3, 10),
             _ => (2000, 5, 60), // Default for retryable errors
         }

@@ -6,7 +6,50 @@ name = "Model Options Demo"
 description = "Demonstrate all available Gemini models with minimal token usage"
 
 [toc]
-order = ["flash_25", "flash_lite_25", "pro_25"]
+order = [
+  "flash_20_live",
+  "flash_25_live",
+  "flash_20",
+  "flash_lite_20",
+  "flash_25",
+  "flash_lite_25",
+]
+
+# Gemini 2.0 Flash Live
+[acts.flash_20_live]
+model = "gemini-2.0-flash-live"
+max_tokens = 20
+
+[[acts.flash_20_live.input]]
+type = "text"
+content = "Respond with exactly this text: 'hi from gemini-2.0-flash-live'"
+
+# Gemini 2.5 Flash Live
+[acts.flash_25_live]
+model = "gemini-2.5-flash-live"
+max_tokens = 20
+
+[[acts.flash_25_live.input]]
+type = "text"
+content = "Respond with exactly this text: 'hi from gemini-2.5-flash-live'"
+
+# Gemini 2.0 Flash
+[acts.flash_20]
+model = "gemini-2.0-flash"
+max_tokens = 20
+
+[[acts.flash_20.input]]
+type = "text"
+content = "Respond with exactly this text: 'hi from gemini-2.0-flash'"
+
+# Gemini 2.0 Flash Lite - Ultra-fast, minimal token model
+[acts.flash_lite_20]
+model = "gemini-2.0-flash-lite"
+max_tokens = 30
+
+[[acts.flash_lite_20.input]]
+type = "text"
+content = "Respond with exactly this text: 'hi from gemini-2.0-flash-lite'"
 
 # Gemini 2.5 Flash - Fast, efficient model
 [acts.flash_25]
@@ -26,7 +69,7 @@ max_tokens = 30
 type = "text"
 content = "Respond with exactly this text: 'hi from gemini-2.5-flash-lite'"
 
-# Gemini 2.5 Pro - Most capable model
+# Gemini 2.5 Pro - Most capable model (low rate limit)
 [acts.pro_25]
 model = "gemini-2.5-pro"
 max_tokens = 30
