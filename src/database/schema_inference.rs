@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_infer_column_type_float() {
-        let (pg_type, nullable) = infer_column_type(&json!(3.14));
+        let (pg_type, nullable) = infer_column_type(&json!(3.15)); // Not PI
         assert_eq!(pg_type, "DOUBLE PRECISION");
         assert!(!nullable);
     }
@@ -461,7 +461,7 @@ mod tests {
     fn test_infer_schema_type_conflict_bigint_to_double() {
         let json = json!([
             { "value": 42 },
-            { "value": 3.14 }
+            { "value": 3.15 } // Not PI
         ]);
         let schema = infer_schema(&json).unwrap();
         assert_eq!(schema.field_count(), 1);

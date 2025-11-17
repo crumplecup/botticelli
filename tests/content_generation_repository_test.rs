@@ -1,5 +1,7 @@
 //! Tests for content generation repository.
 
+#![cfg(feature = "database")]
+
 use boticelli::{
     ContentGenerationRepository, NewContentGenerationRow,
     PostgresContentGenerationRepository, UpdateContentGenerationRow, establish_connection, PgConnection,
@@ -211,14 +213,14 @@ fn test_list_generations() {
     let test_success: Vec<_> = successful.iter()
         .filter(|g| g.table_name.starts_with("test_list_"))
         .collect();
-    assert!(test_success.len() >= 1);
+    assert!(!test_success.is_empty());
     
     // List only failed
     let failed = repo.list_generations(Some("failed".to_string()), 10).unwrap();
     let test_failed: Vec<_> = failed.iter()
         .filter(|g| g.table_name.starts_with("test_list_"))
         .collect();
-    assert!(test_failed.len() >= 1);
+    assert!(!test_failed.is_empty());
     
     // Cleanup
     repo.delete_generation("test_list_1").unwrap();

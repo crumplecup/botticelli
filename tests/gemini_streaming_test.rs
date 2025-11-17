@@ -23,6 +23,7 @@ fn create_test_request(prompt: &str, model: Option<String>) -> GenerateRequest {
 }
 
 #[tokio::test]
+#[ignore] // Requires API key and uses quota
 async fn test_streaming_basic() {
     let _ = dotenvy::dotenv();
 
@@ -77,6 +78,7 @@ async fn test_streaming_basic() {
 }
 
 #[tokio::test]
+#[ignore] // Requires API key and uses quota
 async fn test_streaming_with_standard_model() {
     let _ = dotenvy::dotenv();
 
@@ -119,6 +121,7 @@ async fn test_streaming_with_standard_model() {
 }
 
 #[tokio::test]
+#[ignore] // Requires API key and uses quota - model may not exist yet
 async fn test_streaming_with_live_model() {
     let _ = dotenvy::dotenv();
 
@@ -161,6 +164,7 @@ async fn test_streaming_with_live_model() {
 }
 
 #[tokio::test]
+#[ignore] // Requires API key and uses quota
 async fn test_streaming_finish_reasons() {
     let _ = dotenvy::dotenv();
 
@@ -196,6 +200,7 @@ async fn test_streaming_finish_reasons() {
 }
 
 #[tokio::test]
+#[ignore] // Requires API key and uses quota
 async fn test_streaming_vs_non_streaming_consistency() {
     let _ = dotenvy::dotenv();
 
@@ -246,7 +251,7 @@ async fn test_streaming_vs_non_streaming_consistency() {
 }
 
 #[tokio::test]
-#[ignore] // Mark as expensive - only run when explicitly requested
+#[ignore] // Expensive test - requires API key and uses significant quota
 async fn test_rate_limit_comparison() {
     // This test is designed to verify that live models have better rate limits
     // Run with: cargo test test_rate_limit_comparison --features gemini -- --ignored
@@ -268,7 +273,7 @@ async fn test_rate_limit_comparison() {
         match client.generate_stream(&request).await {
             Ok(mut stream) => {
                 // Consume stream
-                while let Some(_) = stream.next().await {}
+                while stream.next().await.is_some() {}
                 standard_success += 1;
             }
             Err(e) => {
@@ -299,7 +304,7 @@ async fn test_rate_limit_comparison() {
         match client.generate_stream(&request).await {
             Ok(mut stream) => {
                 // Consume stream
-                while let Some(_) = stream.next().await {}
+                while stream.next().await.is_some() {}
                 live_success += 1;
             }
             Err(e) => {

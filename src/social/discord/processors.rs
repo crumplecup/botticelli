@@ -437,6 +437,7 @@ mod tests {
             name: "test_narrative".to_string(),
             description: "Test narrative".to_string(),
             template: None,
+            skip_content_generation: false,
         }
     }
 
