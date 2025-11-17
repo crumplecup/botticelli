@@ -1,0 +1,32 @@
+[package]
+name = "botticelli-database"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "PostgreSQL integration for Botticelli"
+
+[dependencies]
+botticelli-error = { workspace = true }
+botticelli-core = { workspace = true }
+
+# Database
+diesel = { workspace = true }
+diesel_migrations = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Time and IDs
+chrono = { workspace = true }
+uuid = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

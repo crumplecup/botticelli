@@ -433,6 +433,148 @@ impl RetryableError for GeminiError {
     }
 }
 
+/// Database error conditions.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum DatabaseErrorKind {
+    /// Connection failed
+    Connection(String),
+    /// Query execution failed
+    Query(String),
+    /// Serialization/deserialization error
+    Serialization(String),
+    /// Migration error
+    Migration(String),
+    /// Record not found
+    NotFound,
+    /// Table not found
+    TableNotFound(String),
+    /// Schema inference error
+    SchemaInference(String),
+}
+
+impl std::fmt::Display for DatabaseErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DatabaseErrorKind::Connection(msg) => write!(f, "Database connection error: {}", msg),
+            DatabaseErrorKind::Query(msg) => write!(f, "Database query error: {}", msg),
+            DatabaseErrorKind::Serialization(msg) => write!(f, "Serialization error: {}", msg),
+            DatabaseErrorKind::Migration(msg) => write!(f, "Migration error: {}", msg),
+            DatabaseErrorKind::NotFound => write!(f, "Record not found"),
+            DatabaseErrorKind::TableNotFound(table) => {
+                write!(f, "Table '{}' not found in database", table)
+            }
+            DatabaseErrorKind::SchemaInference(msg) => {
+                write!(f, "Schema inference error: {}", msg)
+            }
+        }
+    }
+}
+
+/// Database error with source location tracking.
+#[derive(Debug, Clone)]
+pub struct DatabaseError {
+    /// The kind of error that occurred
+    pub kind: DatabaseErrorKind,
+    /// Line number where error was created
+    pub line: u32,
+    /// File where error was created
+    pub file: &'static str,
+}
+
+impl DatabaseError {
+    /// Create a new DatabaseError with automatic location tracking.
+    #[track_caller]
+    pub fn new(kind: DatabaseErrorKind) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            kind,
+            line: location.line(),
+            file: location.file(),
+        }
+    }
+}
+
+impl std::fmt::Display for DatabaseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Database Error: {} at line {} in {}",
+            self.kind, self.line, self.file
+        )
+    }
+}
+
+impl std::error::Error for DatabaseError {}
+
+/// Specific error conditions for narrative operations.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum NarrativeErrorKind {
+    /// Failed to read narrative file
+    FileRead(String),
+    /// Failed to parse TOML content
+    TomlParse(String),
+    /// Table of contents is empty
+    EmptyToc,
+    /// Act referenced in table of contents does not exist in acts map
+    MissingAct(String),
+    /// Act prompt is empty or contains only whitespace
+    EmptyPrompt(String),
+    /// Template field required but not set
+    MissingTemplate,
+    /// Failed to assemble prompt with schema injection
+    PromptAssembly { act: String, message: String },
+}
+
+impl std::fmt::Display for NarrativeErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NarrativeErrorKind::FileRead(msg) => write!(f, "Failed to read narrative file: {}", msg),
+            NarrativeErrorKind::TomlParse(msg) => write!(f, "Failed to parse TOML: {}", msg),
+            NarrativeErrorKind::EmptyToc => write!(f, "Table of contents (toc.order) cannot be empty"),
+            NarrativeErrorKind::MissingAct(act) => write!(f, "Act '{}' referenced in toc.order does not exist in acts map", act),
+            NarrativeErrorKind::EmptyPrompt(act) => write!(f, "Act '{}' has an empty prompt", act),
+            NarrativeErrorKind::MissingTemplate => write!(f, "Template field is required for prompt assembly"),
+            NarrativeErrorKind::PromptAssembly { act, message } => write!(f, "Failed to assemble prompt for act '{}': {}", act, message),
+        }
+    }
+}
+
+/// Error type for narrative operations.
+#[derive(Debug, Clone)]
+pub struct NarrativeError {
+    /// The specific error condition
+    pub kind: NarrativeErrorKind,
+    /// Line number where the error occurred
+    pub line: u32,
+    /// Source file where the error occurred
+    pub file: &'static str,
+}
+
+impl NarrativeError {
+    /// Create a new NarrativeError with automatic location tracking.
+    #[track_caller]
+    pub fn new(kind: NarrativeErrorKind) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            kind,
+            line: location.line(),
+            file: location.file(),
+        }
+    }
+}
+
+impl std::fmt::Display for NarrativeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Narrative Error: {} at line {} in {}",
+            self.kind, self.line, self.file
+        )
+    }
+}
+
+impl std::error::Error for NarrativeError {}
+
 /// Crate-level error variants.
 ///
 /// This is the foundation error enum. Additional variants will be added
@@ -453,6 +595,10 @@ pub enum BotticelliErrorKind {
     Storage(StorageError),
     /// Gemini error (Phase 4)
     Gemini(GeminiError),
+    /// Database error (Phase 3.5)
+    Database(DatabaseError),
+    /// Narrative error (Phase 3.5)
+    Narrative(NarrativeError),
 }
 
 impl std::fmt::Display for BotticelliErrorKind {
@@ -465,6 +611,8 @@ impl std::fmt::Display for BotticelliErrorKind {
             BotticelliErrorKind::NotImplemented(e) => write!(f, "{}", e),
             BotticelliErrorKind::Storage(e) => write!(f, "{}", e),
             BotticelliErrorKind::Gemini(e) => write!(f, "{}", e),
+            BotticelliErrorKind::Database(e) => write!(f, "{}", e),
+            BotticelliErrorKind::Narrative(e) => write!(f, "{}", e),
         }
     }
 }
