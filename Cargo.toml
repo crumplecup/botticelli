@@ -4,6 +4,7 @@ members = [
     "crates/botticelli-core",
     "crates/botticelli-interface",
     "crates/botticelli-rate-limit",
+    "crates/botticelli-storage",
 ]
 resolver = "2"
 
@@ -25,6 +26,9 @@ botticelli-interface = { path = "crates/botticelli-interface", version = "0.2.0"
 # Internal crates (Phase 2 rate limiting)
 botticelli-rate-limit = { path = "crates/botticelli-rate-limit", version = "0.2.0" }
 
+# Internal crates (Phase 3 storage)
+botticelli-storage = { path = "crates/botticelli-storage", version = "0.2.0" }
+
 # Common external dependencies (shared versions)
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
@@ -43,3 +47,7 @@ tracing = "0.1"
 config = { version = "0.15", features = ["toml"] }
 reqwest = { version = "0.12", features = ["json", "gzip", "stream", "rustls-tls"] }
 dirs = "6"
+
+# Storage and hashing
+sha2 = "0.10"
+uuid = { version = "1", features = ["v4"] }

@@ -50,14 +50,19 @@ This document outlines a two-phase strategy:
   - Automatic retry with exponential backoff
   - 8 files changed, 1388 insertions
 
+- ✅ **Phase 3: Storage & Media Management** (Commit: TBD on workspace branch)
+  - Created `botticelli-storage` crate with content-addressable storage
+  - Implemented `MediaStorage` trait and `FileSystemStorage`
+  - Moved `StorageError` and `StorageErrorKind` to `botticelli-error`
+  - All tests passing, zero clippy warnings
+  - 3 files changed in storage crate, StorageError added to error crate
+
 ### In Progress
 
-- ⏳ **Phase 3: Storage & Media Management**
+- ⏳ **Phase 4: Provider Implementations** (Models crate)
   - Not yet started
 
 ### Remaining Phases
-
-- ⏳ Phase 4: Provider Implementations
 - ⏳ Phase 5: Narrative System
 - ⏳ Phase 6: Integration Layers
 - ⏳ Phase 7: Unified Facade
@@ -69,8 +74,8 @@ This document outlines a two-phase strategy:
 
 1. **Checkout workspace branch:** `git checkout workspace`
 2. **Review completed phases:** See commits `c0c0981` and `367c8f4`
-3. **Continue with Phase 3:** Create `botticelli-storage` crate
-4. **Follow this document:** Phase 3 details start at line 552
+3. **Continue with Phase 4:** Create `botticelli-models` crate
+4. **Follow this document:** Phase 4 details for provider implementations
 
 ### Reference Files
 
@@ -80,6 +85,7 @@ If you need to reference the original monorepo structure:
 - **Workspace Cargo.toml** (current): `Cargo.toml` on workspace branch
 - **Phase 1 commit** (foundation crates): `git show c0c0981`
 - **Phase 2 commit** (rate limiting): `git show 367c8f4`
+- **Phase 3 commit** (storage): On workspace branch (current work)
 
 All workspace dependencies are defined in the root `Cargo.toml` under `[workspace.dependencies]`.
 
@@ -111,7 +117,7 @@ src/                           # Original monorepo (to be migrated in Phases 3-7
 ├── error.rs                   # → Migrated to botticelli-error ✅
 ├── interface.rs               # → Migrated to botticelli-interface ✅
 ├── rate_limit/                # → Migrated to botticelli-rate-limit ✅
-├── storage/                   # → Phase 3: botticelli-storage
+├── storage/                   # → Migrated to botticelli-storage ✅
 ├── models/                    # → Phase 4: botticelli-models (per-provider)
 ├── narrative/                 # → Phase 5: botticelli-narrative
 ├── database/                  # → Phase 3: botticelli-storage
@@ -120,7 +126,7 @@ src/                           # Original monorepo (to be migrated in Phases 3-7
 └── cli.rs                     # → Phase 7: botticelli-cli
 ```
 
-**Next to migrate:** `src/storage/` and `src/database/` → `botticelli-storage` (Phase 3)
+**Next to migrate:** `src/models/` → `botticelli-models` (Phase 4)
 
 ---
 

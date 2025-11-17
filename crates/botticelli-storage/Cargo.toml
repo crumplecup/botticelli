@@ -1,0 +1,28 @@
+[package]
+name = "botticelli-storage"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Content-addressable media storage for Botticelli"
+
+[dependencies]
+botticelli-error = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Hashing and UUID
+sha2 = "0.10"
+uuid = { version = "1", features = ["v4"] }
+
+# Logging
+tracing = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tempfile = "3"
