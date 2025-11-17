@@ -676,26 +676,25 @@ fn test_failed_generation_records_error() {
 
 **Implementation Status:**
 - [x] **Sprint 1 (Database): Complete ✅**
-  - [x] Step 1: Migration created and run successfully ✅ Committed: 883709e
-  - [x] Step 2: Diesel models created ✅ Committed: 883709e  
-  - [x] Step 3: Repository trait and implementation ✅ Committed: fb5beba
-  - [x] Step 4: Unit tests ✅ Committed: 4992f39
 - [x] **Sprint 2 (Executor): Complete ✅**
-  - [x] Integrated tracking into ContentGenerationProcessor ✅ Committed: 9694489
-    - Records start with status='running'
-    - Updates on completion with row count and duration
-    - Records failures with error messages
-    - Graceful error handling (continues generation if tracking fails)
-- [ ] Sprint 3 (CLI): Not started
-- [ ] Sprint 4 (Justfile): Not started
+- [x] **Sprint 3 (CLI): Complete ✅**
+  - [x] Added 4 new CLI commands ✅ Committed: 4c817f4
+    - `content generations` - List all generations with filtering
+    - `content last` - Get most recent (critical for justfile)
+    - `content info` - Show detailed generation metadata
+    - `content clean` - Delete old generation records
+  - [x] Multiple output formats (human, json, table-name-only)
+  - [x] Interactive confirmations for destructive operations
+- [ ] Sprint 4 (Justfile): Not started (NEXT)
 - [ ] Sprint 5 (Polish): Not started
 
-**Sprint 2 Summary:**
-- ✅ Modified ContentGenerationProcessor to track lifecycle
-- ✅ Start tracking before table creation
-- ✅ Complete tracking after items inserted
-- ✅ Handles both success and failure cases
-- ✅ Graceful degradation (tracking failures don't break generation)
+**Sprint 3 Summary:**
+- ✅ 4 new ContentCommands variants added to CLI
+- ✅ Handler functions implemented in main.rs
+- ✅ Three output formats (human, json, table-name-only)
+- ✅ Status filtering for list command
+- ✅ Date-based cleanup with confirmation
+- ✅ `content last --format=table-name-only` ready for justfile
 - ✅ All tests passing (52 passed)
 - ✅ Zero clippy warnings
 
@@ -710,15 +709,17 @@ fn test_failed_generation_records_error() {
 - ✅ `tests/content_generation_repository_test.rs` - 9 passing tests
 - ✅ `tests/narrative_processor_integration_test.rs` - Fixed regression
 - ✅ `src/narrative/content_generation.rs` - Integrated tracking
+- ✅ `src/cli.rs` - Added new ContentCommands
+- ✅ `src/main.rs` - Implemented CLI handlers
 - ✅ `TUI_TROUBLESHOOTING.md` (this file - tracking progress)
 
 **Files Pending:**
-- ⚠️ `justfile` - Partially updated TUI recipes (will be properly updated in Sprint 4)
+- ⚠️ `justfile` - Will be updated in Sprint 4
 - ✅ `narratives/generate_*.toml` - Workflow comments updated
 
 **Ready to Push:**
-- Commits 883709e, fb5beba, bd2e015, 4992f39, 21ee1b5, 9694489
-- Sprints 1-2 complete and tested
+- Commits 883709e, fb5beba, bd2e015, 4992f39, 21ee1b5, 9694489, 3a5e352, 4c817f4
+- Sprints 1-3 complete and tested
 
 **Files To Create:**
 - `migrations/YYYYMMDDHHMMSS_create_content_generations/up.sql`
