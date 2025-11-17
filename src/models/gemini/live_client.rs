@@ -39,7 +39,9 @@ use tracing::{debug, error, info, trace, warn};
 use crate::models::gemini::{
     error::{GeminiError, GeminiErrorKind, GeminiResult},
     live_protocol::*,
+    live_rate_limit::LiveRateLimiter,
 };
+use std::sync::Arc;
 
 /// WebSocket endpoint for Gemini Live API.
 const LIVE_API_ENDPOINT: &str = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
@@ -50,6 +52,7 @@ const LIVE_API_ENDPOINT: &str = "wss://generativelanguage.googleapis.com/ws/goog
 /// to the Gemini Live API.
 pub struct GeminiLiveClient {
     api_key: String,
+    rate_limiter: Option<Arc<LiveRateLimiter>>,
 }
 
 impl GeminiLiveClient {
@@ -68,13 +71,38 @@ impl GeminiLiveClient {
     /// # }
     /// ```
     pub fn new() -> GeminiResult<Self> {
+        Self::new_with_rate_limit(None)
+    }
+
+    /// Create a new Live API client with rate limiting.
+    ///
+    /// # Arguments
+    ///
+    /// * `max_messages_per_minute` - Optional RPM limit. If None, no rate limiting is applied.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use boticelli::gemini::GeminiLiveClient;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// // With rate limiting (10 messages per minute)
+    /// let client = GeminiLiveClient::new_with_rate_limit(Some(10))?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn new_with_rate_limit(max_messages_per_minute: Option<u32>) -> GeminiResult<Self> {
         // Load .env file if present
         let _ = dotenvy::dotenv();
 
         let api_key = env::var("GEMINI_API_KEY")
             .map_err(|_| GeminiError::new(GeminiErrorKind::MissingApiKey))?;
 
-        Ok(Self { api_key })
+        let rate_limiter = max_messages_per_minute.map(|rpm| {
+            Arc::new(LiveRateLimiter::new(rpm))
+        });
+
+        Ok(Self { api_key, rate_limiter })
     }
 
     /// Connect to the Live API and perform setup handshake.
@@ -99,7 +127,7 @@ impl GeminiLiveClient {
     /// # }
     /// ```
     pub async fn connect(&self, model: &str) -> GeminiResult<LiveSession> {
-        LiveSession::new(&self.api_key, model, None).await
+        LiveSession::new(&self.api_key, model, None, self.rate_limiter.clone()).await
     }
 
     /// Connect with custom generation config.
@@ -113,7 +141,7 @@ impl GeminiLiveClient {
         model: &str,
         generation_config: GenerationConfig,
     ) -> GeminiResult<LiveSession> {
-        LiveSession::new(&self.api_key, model, Some(generation_config)).await
+        LiveSession::new(&self.api_key, model, Some(generation_config), self.rate_limiter.clone()).await
     }
 }
 
@@ -124,6 +152,7 @@ impl GeminiLiveClient {
 pub struct LiveSession {
     ws_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
     model: String,
+    rate_limiter: Option<Arc<LiveRateLimiter>>,
 }
 
 impl LiveSession {
@@ -134,6 +163,7 @@ impl LiveSession {
         api_key: &str,
         model: &str,
         generation_config: Option<GenerationConfig>,
+        rate_limiter: Option<Arc<LiveRateLimiter>>,
     ) -> GeminiResult<Self> {
         info!("Connecting to Gemini Live API for model: {}", model);
 
@@ -153,6 +183,7 @@ impl LiveSession {
         let mut session = Self {
             ws_stream,
             model: model.to_string(),
+            rate_limiter,
         };
 
         // Perform setup handshake
@@ -274,6 +305,11 @@ impl LiveSession {
     pub async fn send_text(&mut self, text: &str) -> GeminiResult<String> {
         debug!("Sending text message: {}", text);
 
+        // Check rate limit before sending
+        if let Some(limiter) = &self.rate_limiter {
+            limiter.acquire().await;
+        }
+
         // Build client content message
         let message = ClientContentMessage {
             client_content: ClientContent {
@@ -304,6 +340,11 @@ impl LiveSession {
                 error!("Failed to send message: {}", e);
                 GeminiError::new(GeminiErrorKind::ApiRequest(format!("Send error: {}", e)))
             })?;
+
+        // Record message sent for rate limiting
+        if let Some(limiter) = &self.rate_limiter {
+            limiter.record();
+        }
 
         debug!("Message sent, waiting for response");
 
@@ -394,6 +435,11 @@ impl LiveSession {
 
         debug!("Sending text message for streaming: {}", text);
 
+        // Check rate limit before sending
+        if let Some(limiter) = &self.rate_limiter {
+            limiter.acquire().await;
+        }
+
         // Build client content message
         let message = ClientContentMessage {
             client_content: ClientContent {
@@ -424,6 +470,11 @@ impl LiveSession {
                 error!("Failed to send message: {}", e);
                 GeminiError::new(GeminiErrorKind::ApiRequest(format!("Send error: {}", e)))
             })?;
+
+        // Record message sent for rate limiting
+        if let Some(limiter) = &self.rate_limiter {
+            limiter.record();
+        }
 
         debug!("Message sent, returning stream");
 

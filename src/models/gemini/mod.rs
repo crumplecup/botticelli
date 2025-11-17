@@ -46,8 +46,10 @@ mod error;
 mod client;
 pub mod live_protocol;
 mod live_client;
+mod live_rate_limit;
 
 pub use error::{GeminiError, GeminiErrorKind};
 pub use client::{GeminiClient, TieredGemini};
 pub use live_client::{GeminiLiveClient, LiveSession};
 pub use live_protocol::GenerationConfig;
+pub use live_rate_limit::LiveRateLimiter;

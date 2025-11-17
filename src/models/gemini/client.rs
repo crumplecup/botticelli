@@ -301,8 +301,11 @@ impl GeminiClient {
             }
         });
 
-        // Try to create Live API client (optional - may fail if API key not set)
-        let live_client = super::live_client::GeminiLiveClient::new().ok();
+        // Create Live API client with rate limiting from tier config
+        let live_client = {
+            let rpm = base_tier.rpm();
+            super::live_client::GeminiLiveClient::new_with_rate_limit(rpm).ok()
+        };
 
         Ok(Self {
             clients: Arc::new(Mutex::new(HashMap::new())),
@@ -354,8 +357,11 @@ impl GeminiClient {
             }
         };
 
-        // Try to create Live API client (optional - may fail if API key not set)
-        let live_client = super::live_client::GeminiLiveClient::new().ok();
+        // Create Live API client with rate limiting from tier config
+        let live_client = {
+            let rpm = base_tier.rpm();
+            super::live_client::GeminiLiveClient::new_with_rate_limit(rpm).ok()
+        };
 
         Ok(Self {
             clients: Arc::new(Mutex::new(HashMap::new())),
