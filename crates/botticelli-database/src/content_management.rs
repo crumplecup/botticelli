@@ -4,7 +4,7 @@
 //! in dynamically created generation tables.
 
 use crate::schema_reflection::reflect_table_schema;
-use crate::{BotticelliResult, DatabaseError, DatabaseErrorKind};
+use botticelli_error::{BotticelliResult, DatabaseError, DatabaseErrorKind};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use serde_json::Value as JsonValue;

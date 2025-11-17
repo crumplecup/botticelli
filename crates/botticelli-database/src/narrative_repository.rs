@@ -5,11 +5,15 @@ use crate::narrative_conversions::{
     rows_to_narrative_execution, status_to_string, string_to_status,
 };
 use crate::schema::{act_executions, act_inputs, narrative_executions};
-use crate::{
-    ActExecutionRow, ActInputRow, BackendError, BotticelliError, BotticelliResult, ExecutionFilter,
-    ExecutionStatus, ExecutionSummary, NarrativeExecution, NarrativeExecutionRow,
-    NarrativeRepository,
+use crate::{ActExecutionRow, ActInputRow, NarrativeExecutionRow};
+
+use botticelli_interface::{
+    ExecutionFilter, ExecutionStatus, ExecutionSummary, 
+    NarrativeExecution, NarrativeRepository,
 };
+use botticelli_storage::{MediaMetadata, MediaReference};
+use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+
 use async_trait::async_trait;
 use chrono::Utc;
 use diesel::pg::PgConnection;
@@ -43,7 +47,7 @@ pub struct PostgresNarrativeRepository {
     /// a connection pool like r2d2 or deadpool.
     conn: Arc<Mutex<PgConnection>>,
     /// Media storage backend for binary content
-    storage: Arc<dyn crate::MediaStorage>,
+    storage: Arc<dyn botticelli_storage::MediaStorage>,
 }
 
 impl PostgresNarrativeRepository {
@@ -56,7 +60,7 @@ impl PostgresNarrativeRepository {
     /// # Note
     /// The connection is wrapped in Arc<Mutex> to allow async access.
     /// For better performance with concurrent access, consider using a connection pool.
-    pub fn new(conn: PgConnection, storage: Arc<dyn crate::MediaStorage>) -> Self {
+    pub fn new(conn: PgConnection, storage: Arc<dyn botticelli_storage::MediaStorage>) -> Self {
         Self {
             conn: Arc::new(Mutex::new(conn)),
             storage,
@@ -64,7 +68,7 @@ impl PostgresNarrativeRepository {
     }
 
     /// Create a repository from an Arc<Mutex<PgConnection>> (for sharing connections).
-    pub fn from_arc(conn: Arc<Mutex<PgConnection>>, storage: Arc<dyn crate::MediaStorage>) -> Self {
+    pub fn from_arc(conn: Arc<Mutex<PgConnection>>, storage: Arc<dyn botticelli_storage::MediaStorage>) -> Self {
         Self { conn, storage }
     }
 }
@@ -299,7 +303,7 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         &self,
         data: &[u8],
         metadata: &crate::MediaMetadata,
-    ) -> BotticelliResult<crate::MediaReference> {
+    ) -> BotticelliResult<botticelli_storage::MediaReference> {
         use crate::schema::media_references;
         use sha2::{Digest, Sha256};
 
@@ -373,14 +377,14 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         Ok(reference)
     }
 
-    async fn load_media(&self, reference: &crate::MediaReference) -> BotticelliResult<Vec<u8>> {
+    async fn load_media(&self, reference: &botticelli_storage::MediaReference) -> BotticelliResult<Vec<u8>> {
         self.storage.retrieve(reference).await
     }
 
     async fn get_media_by_hash(
         &self,
         content_hash: &str,
-    ) -> BotticelliResult<Option<crate::MediaReference>> {
+    ) -> BotticelliResult<Option<botticelli_storage::MediaReference>> {
         use crate::schema::media_references;
 
         let mut conn = self.conn.lock().await;
@@ -408,9 +412,9 @@ impl NarrativeRepository for PostgresNarrativeRepository {
 
         Ok(result.map(
             |(id, media_type_str, mime_type, size_bytes, hash, backend, path)| {
-                crate::MediaReference {
+                botticelli_storage::MediaReference {
                     id,
-                    media_type: media_type_str.parse().unwrap_or(crate::MediaType::Image),
+                    media_type: media_type_str.parse().unwrap_or(botticelli_storage::MediaType::Image),
                     mime_type,
                     size_bytes,
                     content_hash: hash,

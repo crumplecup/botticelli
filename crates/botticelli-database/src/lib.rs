@@ -64,3 +64,25 @@ pub fn establish_connection() -> DatabaseResult<PgConnection> {
     PgConnection::establish(&database_url)
         .map_err(|e| DatabaseError::new(DatabaseErrorKind::Connection(e.to_string())))
 }
+
+// Diesel error conversions
+impl From<diesel::result::Error> for DatabaseError {
+    fn from(err: diesel::result::Error) -> Self {
+        match err {
+            diesel::result::Error::NotFound => DatabaseError::new(DatabaseErrorKind::NotFound),
+            _ => DatabaseError::new(DatabaseErrorKind::Query(err.to_string())),
+        }
+    }
+}
+
+impl From<diesel::ConnectionError> for DatabaseError {
+    fn from(err: diesel::ConnectionError) -> Self {
+        DatabaseError::new(DatabaseErrorKind::Connection(err.to_string()))
+    }
+}
+
+impl From<serde_json::Error> for DatabaseError {
+    fn from(err: serde_json::Error) -> Self {
+        DatabaseError::new(DatabaseErrorKind::Serialization(err.to_string()))
+    }
+}

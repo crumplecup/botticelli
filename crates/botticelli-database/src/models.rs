@@ -5,7 +5,7 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{GenerateRequest, GenerateResponse};
+use botticelli_core::{GenerateRequest, GenerateResponse};
 
 use super::schema::model_responses;
 

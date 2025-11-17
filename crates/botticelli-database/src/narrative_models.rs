@@ -5,7 +5,7 @@ use diesel::prelude::*;
 
 /// Database row for narrative_executions table.
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable)]
-#[diesel(table_name = crate::database::schema::narrative_executions)]
+#[diesel(table_name = crate::schema::narrative_executions)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NarrativeExecutionRow {
     pub id: i32,
@@ -20,7 +20,7 @@ pub struct NarrativeExecutionRow {
 
 /// Insertable struct for narrative_executions table.
 #[derive(Debug, Clone, Insertable)]
-#[diesel(table_name = crate::database::schema::narrative_executions)]
+#[diesel(table_name = crate::schema::narrative_executions)]
 pub struct NewNarrativeExecutionRow {
     pub narrative_name: String,
     pub narrative_description: Option<String>,
@@ -33,7 +33,7 @@ pub struct NewNarrativeExecutionRow {
 /// Database row for act_executions table.
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Associations)]
 #[diesel(belongs_to(NarrativeExecutionRow, foreign_key = execution_id))]
-#[diesel(table_name = crate::database::schema::act_executions)]
+#[diesel(table_name = crate::schema::act_executions)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ActExecutionRow {
     pub id: i32,
@@ -49,7 +49,7 @@ pub struct ActExecutionRow {
 
 /// Insertable struct for act_executions table.
 #[derive(Debug, Clone, Insertable)]
-#[diesel(table_name = crate::database::schema::act_executions)]
+#[diesel(table_name = crate::schema::act_executions)]
 pub struct NewActExecutionRow {
     pub execution_id: i32,
     pub act_name: String,
@@ -63,7 +63,7 @@ pub struct NewActExecutionRow {
 /// Database row for act_inputs table.
 #[derive(Debug, Clone, Queryable, Identifiable, Selectable, Associations)]
 #[diesel(belongs_to(ActExecutionRow, foreign_key = act_execution_id))]
-#[diesel(table_name = crate::database::schema::act_inputs)]
+#[diesel(table_name = crate::schema::act_inputs)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ActInputRow {
     pub id: i32,
@@ -79,7 +79,7 @@ pub struct ActInputRow {
 
 /// Insertable struct for act_inputs table.
 #[derive(Debug, Clone, Insertable)]
-#[diesel(table_name = crate::database::schema::act_inputs)]
+#[diesel(table_name = crate::schema::act_inputs)]
 pub struct NewActInputRow {
     pub act_execution_id: i32,
     pub input_order: i32,
