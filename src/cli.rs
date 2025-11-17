@@ -271,6 +271,13 @@ pub enum Commands {
         #[command(subcommand)]
         command: ContentCommands,
     },
+
+    /// Launch TUI for content review
+    #[cfg(feature = "tui")]
+    Tui {
+        /// Table name to review
+        table: String,
+    },
 }
 
 /// Discord bot subcommands.

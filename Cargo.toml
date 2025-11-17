@@ -77,6 +77,10 @@ serenity = { version = "0.12", default-features = false, features = [
   "cache",
 ], optional = true }
 
+# Terminal UI
+ratatui = { version = "0.29", optional = true }
+crossterm = { version = "0.28", optional = true }
+
 derive_more = { version = "2", features = ["display", "from"] }
 derive-new = "0.7"                                              # Derive new constructors
 anyhow = "1"                                                    # Internal utils
@@ -87,7 +91,7 @@ dirs = "6"                                                      # Cross-platform
 
 [features]
 default = []
-dev = ["gemini", "anthropic", "huggingface", "groq", "perplexity", "database"]
+dev = ["gemini", "anthropic", "huggingface", "groq", "perplexity", "database", "tui"]
 gemini = ["dep:gemini-rust"]
 anthropic = ["dep:anthropic-sdk"]
 huggingface = ["dep:huggingface_inference_rs"]
@@ -99,6 +103,8 @@ discord = [
   "dep:serenity",
   "database",
 ] # Discord requires database for state persistence
+# Terminal UI
+tui = ["dep:ratatui", "dep:crossterm", "database"]
 # Enable tests that consume API tokens
 api = []
 

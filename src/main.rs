@@ -116,6 +116,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 promote_content(&table, id, target.as_deref()).await?;
             }
         },
+
+        #[cfg(feature = "tui")]
+        Commands::Tui { table } => {
+            run_tui_app(table).await?;
+        }
     }
 
     Ok(())
@@ -626,5 +631,12 @@ async fn promote_content(
     println!("  Source: {} (ID: {})", table, id);
     println!("  Target: {} (ID: {})", target_table, new_id);
 
+    Ok(())
+}
+
+#[cfg(feature = "tui")]
+async fn run_tui_app(table: String) -> Result<(), Box<dyn std::error::Error>> {
+    let conn = boticelli::establish_connection()?;
+    boticelli::run_tui(table, conn)?;
     Ok(())
 }

@@ -60,6 +60,9 @@ mod storage;
 #[cfg(feature = "discord")]
 mod social;
 
+#[cfg(feature = "tui")]
+mod tui;
+
 // CLI module (private - exports re-exported at crate level)
 mod cli;
 
@@ -255,3 +258,7 @@ pub use cli::DiscordCommands;
 
 #[cfg(feature = "database")]
 pub use cli::ContentCommands;
+
+// Re-export TUI types
+#[cfg(feature = "tui")]
+pub use tui::{run_tui, App, AppMode};
