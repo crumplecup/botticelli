@@ -376,124 +376,34 @@ pub struct Cli {
 - ✅ Test `--max-retries` limits retries
 - ✅ Verify logs show clear retry progress with all configuration details
 
-### Phase 4: Live API Retry Support (High Priority)
+### Phase 4: Live API Retry Support ✅ COMPLETE
 
-**Current Issue:**
-Live API models (`gemini-2.0-flash-live`, `gemini-2.5-flash-live`) don't benefit from automatic retry because they bypass the `RateLimiter::execute()` code path. WebSocket connections fail immediately on transient errors.
+**Issue Resolved:**
+Live API models (`gemini-2.0-flash-live`, `gemini-2.5-flash-live`) now retry automatically on transient WebSocket errors with exponential backoff.
 
-**Architecture Problem:**
-```rust
-// Current flow - NO RETRY
-GeminiClient::generate()
-  └─ generate_via_live_api()
-      └─ live_client.connect_with_config()  // ❌ Fails immediately on error
-          └─ WebSocket handshake
+**Implementation:**
+- Wrapped Live API connection in retry logic within `generate_via_live_api()`
+- Added Clone derive to `GeminiLiveClient` for use in retry closure
+- Respects all CLI flags (--no-retry, --max-retries, --retry-backoff-ms)
+- Uses same error-specific strategies as REST API
+- Structured logging shows retry progress and strategy parameters
 
-// Desired flow - WITH RETRY  
-GeminiClient::generate()
-  └─ generate_via_live_api()
-      └─ RateLimiter::execute()  // ✅ Automatic retry with backoff
-          └─ live_client.connect_with_config()
-              └─ WebSocket handshake
-```
-
-**Implementation Plan:**
-
-1. **Wrap Live API operations in RateLimiter::execute()**
-   - Create a rate-limited wrapper for Live API client
-   - Store `RateLimiter<GeminiLiveClient>` in GeminiClient
-   - Pass retry config when creating Live API rate limiter
-   - Use `execute()` for connection establishment
-
-2. **Make Live API operations compatible with execute()**
-   - Connection: `connect_with_config()` should be retryable
-   - Message sending: `send_text()` already retryable
-   - Error handling: Ensure WebSocket errors surface correctly
-
-3. **Test Live API retry behavior**
-   - Test WebSocket handshake failures retry automatically
-   - Test WebSocket connection failures retry
-   - Test rate limit (429) during Live API session
-   - Verify retry respects CLI flags (--no-retry, --max-retries)
-
-**Code Changes Needed:**
-
-```rust
-// In GeminiClient struct
-pub struct GeminiClient {
-    clients: Arc<Mutex<HashMap<String, RateLimiter<TieredGemini<TierConfig>>>>>,
-    
-    // Change from Option<GeminiLiveClient> to rate-limited wrapper
-    live_client: Option<RateLimiter<GeminiLiveClient>>,
-    
-    // ... existing fields
-}
-
-// In new_internal()
-let live_client = {
-    let rpm = base_tier.rpm();
-    super::live_client::GeminiLiveClient::new_with_rate_limit(rpm)
-        .map(|client| {
-            RateLimiter::new_with_retry(
-                client,
-                no_retry,
-                max_retries,
-                retry_backoff_ms,
-            )
-        })
-        .ok()
-};
-
-// In generate_via_live_api()
-async fn generate_via_live_api(
-    &self,
-    req: &GenerateRequest,
-    model_name: &str,
-) -> GeminiResult<GenerateResponse> {
-    let live_limiter = self.live_client.as_ref()
-        .ok_or_else(|| GeminiError::new(GeminiErrorKind::ClientCreation(
-            "Live API client not available".to_string()
-        )))?;
-
-    // Build config
-    let config = super::live_protocol::GenerationConfig {
-        max_output_tokens: req.max_tokens.map(|t| t as i32),
-        temperature: req.temperature.map(|t| t as f64),
-        ..Default::default()
-    };
-
-    // Capture model_name and config for the closure
-    let model = model_name.to_string();
-    let gen_config = config.clone();
-    
-    // Use execute() to get automatic retry on connection failures
-    let mut session = live_limiter.execute(0, || {
-        let m = model.clone();
-        let c = gen_config.clone();
-        async move {
-            live_limiter.inner().connect_with_config(&m, c).await
-        }
-    }).await?;
-
-    // Rest of implementation...
-}
-```
-
-**Benefits:**
-- ✅ WebSocket handshake failures retry automatically
-- ✅ Connection errors get exponential backoff
-- ✅ Live API respects --no-retry and --max-retries flags
-- ✅ Consistent retry behavior across REST and Live APIs
-- ✅ Structured logging for Live API retries
+**Results:**
+✅ WebSocket handshake failures retry automatically (2s initial, 5 retries, 60s cap)
+✅ Exponential backoff with jitter prevents thundering herd  
+✅ Clear visibility into retry attempts via logs
+✅ Clean error messages after exhausting retries
+✅ Consistent retry behavior across REST and Live APIs
 
 **Testing:**
-- Test with model_options.toml (includes live models)
-- Verify retry on connection failures
-- Test CLI flags work with Live API
-- Verify logging shows retry attempts
+- Tested with `model_options.toml` including live models
+- Verified 5 retry attempts with proper exponential backoff
+- Confirmed CLI flags control Live API retry behavior
+- Validated structured logging shows attempt details
 
-**Goal:** Live API models work reliably with automatic retry, just like REST API models.
+**Goal:** Live API models work reliably with automatic retry ✅
 
+---
 ---
 
 ### Phase 5: Advanced Features (Future Enhancements)
