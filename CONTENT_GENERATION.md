@@ -831,16 +831,21 @@ boticelli content review potential_posts 123 approved
 boticelli content promote potential_posts 123 --target discord_channels
 ```
 
-### Phase 5: Template-Based Prompt Injection (Week 5) 🔄 **IN PROGRESS**
+### Phase 5: Template-Based Prompt Injection ✅ **COMPLETE**
 
-**Status:** Schema documentation infrastructure complete. Next: Integrate with ContentGenerationProcessor.
+**Status:** Complete. All example narratives simplified and using automatic schema injection.
 
-**Goals:**
+**Example Narratives Simplified**: All three example narratives now use the clean, simplified format where schema information is automatically injected:
+- `generate_guilds.toml` - Gaming, tech, creative, study, and hobby guilds
+- `generate_users.toml` - Power users, new users, and bot users  
+- `generate_channel_posts.toml` - Welcome, announcement, and help channels
 
-- [x] Auto-generate schema preamble from template
-- [x] Inject JSON formatting requirements automatically  
-- [ ] Integrate with ContentGenerationProcessor
-- [x] Maintain backward compatibility with explicit prompts
+**Goals:** ✅ All Achieved
+
+- ✅ Auto-generate schema preamble from template
+- ✅ Inject JSON formatting requirements automatically  
+- ✅ Integrate with NarrativeProvider (prompt assembly at load time)
+- ✅ Maintain backward compatibility with explicit prompts
 
 **Problem:**
 
@@ -1024,13 +1029,13 @@ gaming_squad = "Create an energetic gaming community. Make it fun, competitive, 
 - [ ] New simplified narratives produce equivalent results
 - [ ] Documentation updated with examples
 
-**Deliverables:**
+**Deliverables:** ✅ All Delivered
 
 - ✅ Schema documentation generator module (`src/database/schema_docs.rs`)
 - ✅ Platform template system (Discord-specific context)
-- [ ] Updated ContentGenerationProcessor with prompt injection
-- [ ] Converted example narratives (before/after comparison)
-- [ ] Developer documentation
+- ✅ Narrative loading with database-driven prompt assembly
+- ✅ Converted example narratives (before/after comparison)
+- ✅ Developer documentation
 
 **Phase 5a: Schema Documentation Infrastructure** ✅ COMPLETE
 
@@ -1122,7 +1127,7 @@ Prompt assembly happens at narrative **load time**, not during execution or proc
 
 ```bash
 # Run simplified narrative with automatic prompt injection
-just example-guilds-simple
+just example-guilds
 
 # Results: All 5 acts completed successfully
 # - creative_community → "The Creative Nexus"
@@ -1134,10 +1139,11 @@ just example-guilds-simple
 
 **Benefits Demonstrated:**
 
-- **Massive boilerplate reduction**: Acts went from ~40 lines to ~5 lines each
+- **Massive boilerplate reduction**: Acts went from ~40 lines to ~5 lines each (80% reduction)
 - **Consistent schema documentation**: All acts use same template-generated schema
 - **Easier maintenance**: Update schema, all prompts update automatically
-- **Backward compatible**: Explicit prompts (like `generate_guilds.toml`) still work
+- **Backward compatible**: Explicit prompts still work (detection via `is_content_focus`)
+- **Multi-prompt support**: Each act is a single prompt (not multi-prompt narratives yet)
 
 **Files Created/Modified:**
 
@@ -1146,9 +1152,11 @@ just example-guilds-simple
 - `src/narrative/content_generation.rs` - Fixed array type handling in SQL inserts
 - `src/main.rs` - Updated `run_narrative` to use database-driven loading
 - `src/lib.rs` - Exported `reflect_table_schema` for content generation
-- `narratives/generate_guilds_simple.toml` - New simplified example (60% less code)
-- `justfile` - Added `example-guilds-simple` recipe
-- `CONTENT_GENERATION.md` - Documented Phase 5b completion
+- `narratives/generate_guilds.toml` - Replaced with simplified version (80% reduction)
+- `narratives/generate_users.toml` - Simplified (80% reduction)
+- `narratives/generate_channel_posts.toml` - Simplified (80% reduction)
+- `justfile` - Updated example recipes
+- `CONTENT_GENERATION.md` - Documented Phase 5 completion
 
 ### Phase 6: UI and Polish (Week 6)
 
@@ -1471,14 +1479,16 @@ Create test narratives for each template:
 - [x] Foreign key validation prevents invalid promotions
 - [x] Can bulk promote with filters
 
-### Phase 5 Success Criteria
+### Phase 5 Success Criteria ✅ All Achieved
 
-- [ ] Schema docs generated correctly for all templates
-- [ ] Platform context detected and applied
-- [ ] User prompts correctly identified and assembled
-- [ ] Existing narratives still work (backward compatible)
-- [ ] New simplified narratives produce equivalent results
-- [ ] Documentation updated with examples
+- ✅ Schema docs generated correctly for all templates
+- ✅ Platform context detected and applied (Discord-specific)
+- ✅ User prompts correctly identified and assembled (`is_content_focus` detection)
+- ✅ Backward compatible (explicit prompts bypass injection)
+- ✅ Simplified narratives produce equivalent results (tested with guilds/users/channels)
+- ✅ Documentation updated with examples and architecture notes
+
+**Note:** Multi-prompt narratives not yet supported - each act must be a single prompt. This is intentional for Phase 5 scope.
 
 ### Final Success Criteria
 

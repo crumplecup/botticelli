@@ -1,190 +1,72 @@
 # Content Generation: Potential Discord Guilds
 #
 # This narrative generates potential Discord guild (server) configurations.
-# Guilds are stored in a "potential_guilds" table for review and refinement.
-#
-# This is useful for:
-# - Planning new server configurations
-# - Testing guild-related features
-# - Generating diverse server examples for documentation
-# - Brainstorming community themes
+# The schema is automatically injected based on the template field.
 #
 # Workflow:
 # 1. Run: boticelli run --narrative narratives/generate_guilds.toml
 # 2. Review: boticelli content list potential_guilds
-# 3. Rate servers: boticelli content tag potential_guilds 1 --rating 5 --tags "gaming,active"
-# 4. Approve favorite: boticelli content review potential_guilds 1 approved
-# 5. Promote to production: boticelli content promote potential_guilds 1 --target discord_guilds
-#
-# Run with: boticelli run --narrative narratives/generate_guilds.toml
+# 3. Promote: boticelli content promote potential_guilds 1 --target discord_guilds
 
-[narration]
+[narrative]
 name = "potential_guilds"
-template = "discord_guilds"
 description = "Generates diverse Discord guild configurations for planning and testing"
+template = "discord_guild"
 
-[toc]
-order = [
-    "creative_community",
-    "tech_learning_hub",
-    "gaming_squad",
-    "indie_dev_collective",
-    "study_group"
-]
+[narrative.rate_limiting]
+tier = "Free"
 
-[acts]
-creative_community = """
-You are generating data for a Discord guild (server) focused on creative arts.
+[[act]]
+name = "gaming_guild"
+user = """Generate a comprehensive gaming community guild configuration with:
+- A memorable name reflecting gaming culture
+- Detailed description of the community's purpose and vibe
+- Appropriate icon URL (use placeholder like https://example.com/icons/gaming.png)
+- Realistic owner_id (use a large number like Discord IDs)
+- Current timestamp"""
 
-Create a JSON object for a creative community guild with the following schema:
+processors = ["content_generation"]
 
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (e.g., 3123456789012345678)
-- name: Server name (max 100 characters, creative and welcoming)
-- owner_id: Discord user ID of the server owner (18-digit snowflake)
+[[act]]
+name = "tech_guild"
+user = """Generate a technology and programming community guild with:
+- A professional yet friendly name
+- Description emphasizing learning, collaboration, and tech discussion
+- Tech-themed icon URL placeholder
+- Realistic owner_id
+- Current timestamp"""
 
-**Optional Fields:**
-- icon: Icon hash (32-char hex string or null)
-- description: Server description (max 1000 chars, compelling pitch)
-- member_count: Total members (integer, realistic for a growing community: 50-5000)
-- verification_level: Security level 0-4 (1-2 for welcoming communities)
-- premium_tier: Boost level 0-3 (0-2 for active communities)
-- features: Array of feature flags like ["COMMUNITY", "DISCOVERABLE", "WELCOME_SCREEN_ENABLED"]
+processors = ["content_generation"]
 
-Create a welcoming creative community for artists, writers, musicians, and other creators.
-Make it feel inclusive and inspiring. Include a compelling description that would attract
-creative people.
+[[act]]
+name = "creative_guild"
+user = """Generate an arts and creative community guild featuring:
+- An inspiring, artistic name
+- Description welcoming artists, writers, musicians, and creators
+- Creative/artistic icon URL placeholder
+- Realistic owner_id
+- Current timestamp"""
 
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks (no ```json)
-- Start your response with { and end with }
-- Use realistic, attractive values
-- Example valid format:
-{
-  "id": 3123456789012345001,
-  "name": "The Creative Collective",
-  "owner_id": 2234567890123456789,
-  "description": "A thriving community for artists, writers, and creators of all kinds. Share your work, get feedback, collaborate on projects, and find inspiration.",
-  "member_count": 1250,
-  "verification_level": 2,
-  "premium_tier": 2,
-  "features": ["COMMUNITY", "DISCOVERABLE", "WELCOME_SCREEN_ENABLED"]
-}
-"""
+processors = ["content_generation"]
 
-tech_learning_hub = """
-You are generating data for a Discord guild focused on learning technology and programming.
+[[act]]
+name = "study_guild"
+user = """Generate an educational study group guild with:
+- An academic-focused name
+- Description promoting study groups, homework help, and academic support
+- Education-themed icon URL placeholder
+- Realistic owner_id
+- Current timestamp"""
 
-Create a JSON object for a tech learning guild with the following schema:
+processors = ["content_generation"]
 
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (unique from previous)
-- name: Server name (tech/learning focused, professional but friendly)
-- owner_id: Discord user ID (18-digit snowflake)
+[[act]]
+name = "hobby_guild"
+user = """Generate a hobby enthusiast guild (choose: gardening, cooking, photography, or fitness) with:
+- A niche-specific name that attracts enthusiasts
+- Description of the hobby focus and community values
+- Hobby-relevant icon URL placeholder
+- Realistic owner_id
+- Current timestamp"""
 
-**Optional Fields:**
-- icon: Icon hash or null
-- description: Server description (educational value proposition)
-- member_count: Integer (500-10000 for a successful learning community)
-- verification_level: 1-3 (higher for quality control)
-- premium_tier: 0-2
-- features: Array like ["COMMUNITY", "DISCOVERABLE", "NEWS"]
-
-Create a professional yet welcoming tech learning hub where people can learn programming,
-get help with code, and advance their careers. Make the description appealing to learners
-of all levels.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks
-- Start your response with { and end with }
-- Make the ID unique and different from the creative community
-"""
-
-gaming_squad = """
-You are generating data for a Discord guild focused on gaming and esports.
-
-Create a JSON object for a gaming guild with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (unique)
-- name: Server name (gaming-themed, energetic)
-- owner_id: Discord user ID (18-digit snowflake)
-
-**Optional Fields:**
-- icon: Icon hash or null
-- description: Server description (what games, playstyle, community vibe)
-- member_count: Integer (100-3000 for an active gaming community)
-- verification_level: 1-2 (easy to join)
-- premium_tier: 1-3 (gamers often boost their servers)
-- features: Array like ["COMMUNITY", "WELCOME_SCREEN_ENABLED", "BANNER"]
-
-Create an energetic gaming community for a specific game or multi-game squad.
-Make it feel fun, competitive, and social. Include details about what they play
-and their community culture.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks
-- Start your response with { and end with }
-- Make the ID unique
-"""
-
-indie_dev_collective = """
-You are generating data for a Discord guild focused on indie game development.
-
-Create a JSON object for an indie dev guild with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (unique)
-- name: Server name (indie/gamedev focused)
-- owner_id: Discord user ID (18-digit snowflake)
-
-**Optional Fields:**
-- icon: Icon hash or null
-- description: Server description (collaboration, learning, support for indie devs)
-- member_count: Integer (200-2000 for a niche professional community)
-- verification_level: 2-3 (quality control for professionals)
-- premium_tier: 1-2
-- features: Array like ["COMMUNITY", "DISCOVERABLE", "PARTNERED"]
-
-Create a supportive indie game dev community where developers collaborate, share
-resources, get feedback, and support each other's games. Make it feel professional
-yet supportive and collaborative.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks
-- Start your response with { and end with }
-- Make the ID unique
-"""
-
-study_group = """
-You are generating data for a Discord guild focused on study and academic support.
-
-Create a JSON object for a study group guild with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (unique)
-- name: Server name (academic/study focused)
-- owner_id: Discord user ID (18-digit snowflake)
-
-**Optional Fields:**
-- icon: Icon hash or null
-- description: Server description (subjects covered, study methods, community values)
-- member_count: Integer (300-5000 for an educational community)
-- verification_level: 2-3 (maintain quality)
-- premium_tier: 0-2
-- features: Array like ["COMMUNITY", "WELCOME_SCREEN_ENABLED", "THREADS"]
-
-Create a supportive study community for students helping each other succeed.
-Could be for specific subjects (math, science) or general academics. Make it
-feel encouraging and productive.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks
-- Start your response with { and end with }
-- Make the ID unique
-"""
+processors = ["content_generation"]

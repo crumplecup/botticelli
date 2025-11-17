@@ -1,182 +1,50 @@
 # Content Generation: Potential Discord Channel Posts
 #
 # This narrative generates potential post content for Discord channels.
-# Posts are stored in a "potential_channel_posts" table for review before publishing.
-#
-# The template field tells the system to base the table schema on discord_channels,
-# adding metadata columns for review workflow.
+# The schema is automatically injected based on the template field.
 #
 # Workflow:
 # 1. Run: boticelli run --narrative narratives/generate_channel_posts.toml
-# 2. Review: boticelli content list potential_channel_posts
-# 3. Rate: boticelli content tag potential_channel_posts 1 --rating 5
-# 4. Approve: boticelli content review potential_channel_posts 1 approved
-# 5. Promote: boticelli content promote potential_channel_posts 1 --target discord_channels
-#
-# Run with: boticelli run --narrative narratives/generate_channel_posts.toml
+# 2. Review: boticelli content list potential_posts
+# 3. Promote: boticelli content promote potential_posts 1 --target discord_channels
 
-[narration]
-name = "potential_channel_posts"
-template = "discord_channels"
-description = "Generates potential Discord channel configurations for review"
+[narrative]
+name = "potential_posts"
+description = "Generates engaging Discord channel post content for review and scheduling"
+template = "discord_channel"
 
-[toc]
-order = [
-    "announcements_channel",
-    "general_chat_channel",
-    "tech_support_channel",
-    "showcase_channel",
-    "off_topic_channel"
-]
+[narrative.rate_limiting]
+tier = "Free"
 
-[acts]
-announcements_channel = """
-You are generating data for a Discord text channel focused on announcements.
+[[act]]
+name = "welcome_post"
+user = """Generate a welcoming general chat channel:
+- Channel for a gaming community guild
+- Warm, friendly topic that encourages interaction
+- Type: "text"
+- Position 0 (first channel)
+- Recent timestamp"""
 
-Create a JSON object for an announcements channel with the following schema:
+processors = ["content_generation"]
 
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (use format: 11234567890XXXXXXXX)
-- guild_id: The guild/server ID (use: 1123456789012345678)
-- name: Channel name (must be lowercase, use hyphens, e.g., "announcements")
-- channel_type: Must be "text"
+[[act]]
+name = "announcement_post"
+user = """Generate an announcements channel:
+- Professional announcement channel
+- Topic describing what announcements will be posted
+- Type: "text"
+- Position 1
+- Recent timestamp"""
 
-**Optional Fields:**
-- topic: Channel description/topic (max 1024 characters)
-- position: Sort position in channel list (integer, 0-based)
-- nsfw: Boolean, false for announcements
-- parent_id: Category ID (can be null)
-- rate_limit_per_user: Slowmode in seconds (0-21600)
+processors = ["content_generation"]
 
-Create an announcements channel suitable for important community updates.
-Make it welcoming and professional.
+[[act]]
+name = "help_post"
+user = """Generate a help/support channel:
+- Helpful, encouraging name
+- Topic explaining how to get help and guidelines
+- Type: "text"
+- Position 2
+- Recent timestamp"""
 
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks (no ```json)
-- Start your response with { and end with }
-- Use "text" for channel_type (not 0 or "GUILD_TEXT")
-- Example valid format:
-{
-  "id": 1123456789012345001,
-  "guild_id": 1123456789012345678,
-  "name": "announcements",
-  "channel_type": "text",
-  "topic": "Important community announcements and updates",
-  "position": 0,
-  "nsfw": false,
-  "rate_limit_per_user": 300
-}
-"""
-
-general_chat_channel = """
-You are generating data for a Discord text channel for general conversation.
-
-Create a JSON object for a general chat channel with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (use format: 11234567890XXXXXXXX, different from previous)
-- guild_id: The guild/server ID (use: 1123456789012345678)
-- name: Channel name (must be lowercase, use hyphens, e.g., "general")
-- channel_type: Must be "text"
-
-**Optional Fields:**
-- topic: Channel description/topic (max 1024 characters)
-- position: Sort position in channel list (integer)
-- nsfw: Boolean, false for general chat
-- parent_id: Category ID (can be null)
-- rate_limit_per_user: Slowmode in seconds (0 for none)
-
-Create a welcoming general chat channel for casual community conversation.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks (no ```json)
-- Start your response with { and end with }
-- Use "text" for channel_type
-- Make the ID unique and different from the announcements channel
-"""
-
-tech_support_channel = """
-You are generating data for a Discord text channel for technical support.
-
-Create a JSON object for a tech support channel with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (use format: 11234567890XXXXXXXX, unique)
-- guild_id: The guild/server ID (use: 1123456789012345678)
-- name: Channel name (must be lowercase, use hyphens, e.g., "tech-support")
-- channel_type: Must be "text"
-
-**Optional Fields:**
-- topic: Channel description/topic (helpful guidelines for getting support)
-- position: Sort position in channel list (integer)
-- nsfw: Boolean
-- parent_id: Category ID (can be null)
-- rate_limit_per_user: Slowmode in seconds (recommend 10-30 to prevent spam)
-
-Create a helpful tech support channel with clear guidelines in the topic.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks (no ```json)
-- Start your response with { and end with }
-- Use "text" for channel_type
-- Make the ID unique
-"""
-
-showcase_channel = """
-You are generating data for a Discord text channel for community showcases.
-
-Create a JSON object for a showcase channel with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (use format: 11234567890XXXXXXXX, unique)
-- guild_id: The guild/server ID (use: 1123456789012345678)
-- name: Channel name (must be lowercase, use hyphens, e.g., "showcase")
-- channel_type: Must be "text"
-
-**Optional Fields:**
-- topic: Channel description encouraging members to share their work
-- position: Sort position in channel list (integer)
-- nsfw: Boolean
-- parent_id: Category ID (can be null)
-- rate_limit_per_user: Slowmode to prevent spam (recommend 60-120)
-
-Create an inspiring showcase channel where members can share projects, art, and achievements.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks (no ```json)
-- Start your response with { and end with }
-- Use "text" for channel_type
-- Make the ID unique
-"""
-
-off_topic_channel = """
-You are generating data for a Discord text channel for off-topic discussion.
-
-Create a JSON object for an off-topic channel with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (use format: 11234567890XXXXXXXX, unique)
-- guild_id: The guild/server ID (use: 1123456789012345678)
-- name: Channel name (must be lowercase, use hyphens, e.g., "off-topic")
-- channel_type: Must be "text"
-
-**Optional Fields:**
-- topic: Channel description for casual, non-topic conversation
-- position: Sort position (usually lower priority)
-- nsfw: Boolean
-- parent_id: Category ID (can be null)
-- rate_limit_per_user: Slowmode in seconds (optional, 0 for none)
-
-Create a casual off-topic channel for fun, relaxed conversation.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks (no ```json)
-- Start your response with { and end with }
-- Use "text" for channel_type
-- Make the ID unique
-"""
+processors = ["content_generation"]

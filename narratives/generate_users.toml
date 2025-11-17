@@ -1,176 +1,50 @@
 # Content Generation: Potential Discord Users
 #
 # This narrative generates potential user profiles for a Discord bot's database.
-# Users are stored in a "potential_users" table for review before being used.
-#
-# This demonstrates generating diverse, realistic user profiles that could be
-# used for testing, demonstrations, or bot interactions.
+# The schema is automatically injected based on the template field.
 #
 # Workflow:
 # 1. Run: boticelli run --narrative narratives/generate_users.toml
 # 2. Review: boticelli content list potential_users
-# 3. Show details: boticelli content show potential_users 1
-# 4. Tag interesting ones: boticelli content tag potential_users 1 --tags "active,helpful"
-# 5. Approve: boticelli content review potential_users 1 approved
-# 6. Promote: boticelli content promote potential_users 1 --target discord_users
-#
-# Run with: boticelli run --narrative narratives/generate_users.toml
+# 3. Promote: boticelli content promote potential_users 1 --target discord_users
 
-[narration]
+[narrative]
 name = "potential_users"
-template = "discord_users"
-description = "Generates diverse user profiles for testing and demonstration"
+description = "Generates diverse Discord user profiles for testing and development"
+template = "discord_user"
 
-[toc]
-order = [
-    "active_developer",
-    "helpful_moderator",
-    "creative_artist",
-    "enthusiastic_gamer",
-    "community_builder"
-]
+[narrative.rate_limiting]
+tier = "Free"
 
-[acts]
-active_developer = """
-You are generating data for a Discord user profile - specifically an active developer.
+[[act]]
+name = "power_user"
+user = """Generate a power user profile:
+- Unique username reflecting an active community member
+- 4-digit discriminator
+- Avatar URL placeholder
+- Not a bot (false)
+- Account created 2-3 years ago"""
 
-Create a JSON object for a user with the following schema:
+processors = ["content_generation"]
 
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (e.g., 2234567890123456789)
-- username: Discord username (2-32 chars, no @ or #)
-- discriminator: 4-digit user tag (e.g., "0001")
+[[act]]
+name = "new_user"
+user = """Generate a new user profile:
+- Fresh, simple username
+- 4-digit discriminator
+- No avatar (null)
+- Not a bot (false)
+- Account created within last month"""
 
-**Optional Fields:**
-- global_name: Display name (can include spaces, unicode)
-- avatar: Avatar hash (hex string or null)
-- bot: Boolean (false for real users)
-- system: Boolean (false for regular users)
-- accent_color: Integer color value (optional)
+processors = ["content_generation"]
 
-Create a profile for an active, helpful developer who contributes to the community.
-Make them feel authentic with realistic details.
+[[act]]
+name = "bot_user"
+user = """Generate a bot user profile:
+- Bot-style username (ends with "Bot" or similar)
+- 4-digit discriminator
+- Bot-themed avatar URL
+- Is a bot (true)
+- Account created 1 year ago"""
 
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks (no ```json)
-- Start your response with { and end with }
-- Use realistic values that feel authentic
-- Example valid format:
-{
-  "id": 2234567890123456001,
-  "username": "codewizard",
-  "discriminator": "4521",
-  "global_name": "Code Wizard",
-  "bot": false,
-  "system": false
-}
-"""
-
-helpful_moderator = """
-You are generating data for a Discord user profile - specifically a helpful moderator.
-
-Create a JSON object for a user with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (different from previous)
-- username: Discord username (2-32 chars, no @ or #)
-- discriminator: 4-digit user tag (e.g., "0002")
-
-**Optional Fields:**
-- global_name: Display name
-- avatar: Avatar hash (hex string or null)
-- bot: Boolean (false for moderators)
-- system: Boolean (false)
-- accent_color: Integer color value
-
-Create a profile for a trusted, approachable moderator who keeps the community safe and welcoming.
-Make the username and display name reflect their role subtly.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks
-- Start your response with { and end with }
-- Make the ID unique and different from the developer
-"""
-
-creative_artist = """
-You are generating data for a Discord user profile - specifically a creative artist.
-
-Create a JSON object for a user with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (unique)
-- username: Discord username (creative, artistic)
-- discriminator: 4-digit user tag
-
-**Optional Fields:**
-- global_name: Display name (can be more expressive)
-- avatar: Avatar hash or null
-- bot: Boolean (false)
-- system: Boolean (false)
-- accent_color: Integer color value (artists often customize this)
-
-Create a profile for an active artist who shares their work and encourages others.
-Make them feel creative and expressive.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks
-- Start your response with { and end with }
-- Make the ID unique
-"""
-
-enthusiastic_gamer = """
-You are generating data for a Discord user profile - specifically an enthusiastic gamer.
-
-Create a JSON object for a user with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (unique)
-- username: Discord username (gaming-related)
-- discriminator: 4-digit user tag
-
-**Optional Fields:**
-- global_name: Display name
-- avatar: Avatar hash or null
-- bot: Boolean (false)
-- system: Boolean (false)
-- accent_color: Integer color value
-
-Create a profile for an active gamer who loves to play with others and discuss games.
-Make them feel enthusiastic and social.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks
-- Start your response with { and end with }
-- Make the ID unique
-"""
-
-community_builder = """
-You are generating data for a Discord user profile - specifically a community builder.
-
-Create a JSON object for a user with the following schema:
-
-**Required Fields:**
-- id: A unique 18-digit Discord snowflake ID (unique)
-- username: Discord username (welcoming, friendly)
-- discriminator: 4-digit user tag
-
-**Optional Fields:**
-- global_name: Display name (warm and approachable)
-- avatar: Avatar hash or null
-- bot: Boolean (false)
-- system: Boolean (false)
-- accent_color: Integer color value
-
-Create a profile for someone who brings people together, organizes events, and makes
-everyone feel welcome. Make them feel warm and inclusive.
-
-**CRITICAL OUTPUT REQUIREMENTS:**
-- Output ONLY valid JSON with no additional text, explanations, or markdown
-- Do not use markdown code blocks
-- Start your response with { and end with }
-- Make the ID unique
-"""
+processors = ["content_generation"]
