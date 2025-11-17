@@ -83,6 +83,7 @@ async fn test_live_api_streaming() {
         .expect("Failed to connect");
 
     // Send a message that should generate streaming response
+    // Note: send_text_stream now consumes the session, so we can't close it afterward
     let mut stream = session
         .send_text_stream("Count from 1 to 5")
         .await
@@ -116,11 +117,7 @@ async fn test_live_api_streaming() {
         "Final chunk should have finish reason"
     );
 
-    // Drop stream before closing session (stream borrows session mutably)
-    drop(stream);
-
-    // Close session
-    session.close().await.expect("Failed to close session");
+    // Stream is dropped here, which closes the WebSocket session
 }
 
 #[tokio::test]

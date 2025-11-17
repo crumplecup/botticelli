@@ -387,9 +387,9 @@ impl LiveSession {
     /// # }
     /// ```
     pub async fn send_text_stream(
-        &mut self,
+        mut self,
         text: &str,
-    ) -> GeminiResult<std::pin::Pin<Box<dyn futures_util::stream::Stream<Item = GeminiResult<crate::StreamChunk>> + Send + '_>>> {
+    ) -> GeminiResult<std::pin::Pin<Box<dyn futures_util::stream::Stream<Item = GeminiResult<crate::StreamChunk>> + Send>>> {
         use futures_util::stream;
 
         debug!("Sending text message for streaming: {}", text);
@@ -428,7 +428,8 @@ impl LiveSession {
         debug!("Message sent, returning stream");
 
         // Create a stream that yields chunks as they arrive
-        let stream = stream::try_unfold((&mut self.ws_stream, false), |(ws, done)| async move {
+        // The stream owns the WebSocket, so it will be dropped when the stream ends
+        let stream = stream::try_unfold((self.ws_stream, false), |(mut ws, done)| async move {
             if done {
                 return Ok(None);
             }

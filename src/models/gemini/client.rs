@@ -152,8 +152,10 @@ impl<T: Tier> Tier for TieredGemini<T> {
 /// - **Model-Specific Rate Limiting**: Each model gets its own rate limits from config
 /// - **Thread-Safe**: Uses `Arc<Mutex<HashMap>>` for concurrent access
 pub struct GeminiClient {
-    /// Cache of model-specific clients with rate limiting
+    /// Cache of model-specific REST API clients with rate limiting
     clients: Arc<Mutex<HashMap<String, RateLimiter<TieredGemini<TierConfig>>>>>,
+    /// WebSocket Live API client (for live models)
+    live_client: Option<super::live_client::GeminiLiveClient>,
     /// API key for creating new clients
     api_key: String,
     /// Default model name when req.model is None
@@ -299,8 +301,12 @@ impl GeminiClient {
             }
         });
 
+        // Try to create Live API client (optional - may fail if API key not set)
+        let live_client = super::live_client::GeminiLiveClient::new().ok();
+
         Ok(Self {
             clients: Arc::new(Mutex::new(HashMap::new())),
+            live_client,
             api_key,
             model_name: "gemini-2.5-flash".to_string(),
             base_tier,
@@ -348,12 +354,25 @@ impl GeminiClient {
             }
         };
 
+        // Try to create Live API client (optional - may fail if API key not set)
+        let live_client = super::live_client::GeminiLiveClient::new().ok();
+
         Ok(Self {
             clients: Arc::new(Mutex::new(HashMap::new())),
+            live_client,
             api_key,
             model_name: "gemini-2.5-flash".to_string(),
             base_tier,
         })
+    }
+
+    /// Check if a model name indicates a Live API model (requires WebSocket).
+    ///
+    /// Live API models include:
+    /// - Models with "-live" in the name (e.g., "gemini-2.0-flash-live")
+    /// - Experimental models with "bidiGenerateContent" support (e.g., "gemini-2.0-flash-exp")
+    fn is_live_model(model_name: &str) -> bool {
+        model_name.contains("-live") || model_name.contains("-exp")
     }
 
     /// Extract text content from an input
@@ -376,12 +395,71 @@ impl GeminiClient {
         (text.len() / 4).max(1) as u64
     }
 
+    /// Generate response using Live API (WebSocket).
+    ///
+    /// This method is used for models that require WebSocket connections (live models, exp models).
+    async fn generate_via_live_api(
+        &self,
+        req: &GenerateRequest,
+        model_name: &str,
+    ) -> GeminiResult<GenerateResponse> {
+        use futures_util::StreamExt;
+
+        // Ensure we have a Live API client
+        let live_client = self
+            .live_client
+            .as_ref()
+            .ok_or_else(|| GeminiError::new(GeminiErrorKind::ClientCreation(
+                "Live API client not available".to_string()
+            )))?;
+
+        // Build generation config from request
+        let config = super::live_protocol::GenerationConfig {
+            max_output_tokens: req.max_tokens.map(|t| t as i32),
+            temperature: req.temperature.map(|t| t as f64),
+            ..Default::default()
+        };
+
+        // Connect to Live API
+        let mut session = live_client
+            .connect_with_config(model_name, config)
+            .await?;
+
+        // Combine all user messages into a single text
+        // Note: Live API currently only supports single-turn text (no multi-turn or multimodal yet)
+        let mut combined_text = String::new();
+        for msg in &req.messages {
+            for input in &msg.content {
+                if let Some(text) = Self::extract_text(input) {
+                    combined_text.push_str(&text);
+                    combined_text.push('\n');
+                }
+            }
+        }
+
+        // Send message and collect complete response
+        let response_text = session.send_text(&combined_text).await?;
+
+        // Close session
+        let _ = session.close().await; // Ignore close errors
+
+        // Return response in GenerateResponse format
+        Ok(GenerateResponse {
+            outputs: vec![Output::Text(response_text)],
+        })
+    }
+
     /// Internal generate method that returns Gemini-specific errors.
     async fn generate_internal(&self, req: &GenerateRequest) -> GeminiResult<GenerateResponse> {
         // Determine which model to use
         let model_name = req.model.as_ref().unwrap_or(&self.model_name);
 
-        // Get or create rate-limited client for this model
+        // Check if this is a live model (requires WebSocket Live API)
+        if Self::is_live_model(model_name) {
+            return self.generate_via_live_api(req, model_name).await;
+        }
+
+        // Get or create rate-limited client for this model (REST API)
         let rate_limited_client = {
             let mut clients = self.clients.lock().unwrap();
             clients
@@ -514,6 +592,67 @@ impl BoticelliDriver for GeminiClient {
     }
 }
 
+impl GeminiClient {
+    /// Generate streaming response using Live API (WebSocket).
+    ///
+    /// This method is used for models that require WebSocket connections (live models, exp models).
+    async fn generate_stream_via_live_api(
+        &self,
+        req: &GenerateRequest,
+        model_name: &str,
+    ) -> BoticelliResult<std::pin::Pin<Box<dyn futures_util::stream::Stream<Item = BoticelliResult<crate::StreamChunk>> + Send>>>
+    {
+        use futures_util::stream::{self, StreamExt};
+
+        // Ensure we have a Live API client
+        let live_client = self
+            .live_client
+            .as_ref()
+            .ok_or_else(|| {
+                BoticelliError::from(GeminiError::new(GeminiErrorKind::ClientCreation(
+                    "Live API client not available".to_string()
+                )))
+            })?;
+
+        // Build generation config from request
+        let config = super::live_protocol::GenerationConfig {
+            max_output_tokens: req.max_tokens.map(|t| t as i32),
+            temperature: req.temperature.map(|t| t as f64),
+            ..Default::default()
+        };
+
+        // Connect to Live API
+        let mut session = live_client
+            .connect_with_config(model_name, config)
+            .await
+            .map_err(BoticelliError::from)?;
+
+        // Combine all user messages into a single text
+        let mut combined_text = String::new();
+        for msg in &req.messages {
+            for input in &msg.content {
+                if let Some(text) = Self::extract_text(input) {
+                    combined_text.push_str(&text);
+                    combined_text.push('\n');
+                }
+            }
+        }
+
+        // Get stream from Live API (consumes session, stream owns it)
+        let live_stream = session
+            .send_text_stream(&combined_text)
+            .await
+            .map_err(BoticelliError::from)?;
+
+        // Convert Live API stream to BoticelliResult stream
+        let converted_stream = live_stream.map(|result| {
+            result.map_err(BoticelliError::from)
+        });
+
+        Ok(Box::pin(converted_stream))
+    }
+}
+
 #[async_trait]
 impl crate::Streaming for GeminiClient {
     async fn generate_stream(
@@ -526,7 +665,12 @@ impl crate::Streaming for GeminiClient {
         // Determine which model to use
         let model_name = req.model.as_ref().unwrap_or(&self.model_name);
 
-        // Get or create rate-limited client for this model
+        // Check if this is a live model (requires WebSocket Live API)
+        if Self::is_live_model(&model_name) {
+            return self.generate_stream_via_live_api(req, &model_name).await;
+        }
+
+        // Get or create rate-limited client for this model (REST API)
         let rate_limited_client = {
             let mut clients = self.clients.lock().unwrap();
             clients
