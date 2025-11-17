@@ -59,9 +59,8 @@ use std::sync::{Arc, Mutex};
 use gemini_rust::{Gemini, client::Model};
 
 use crate::{
-    BoticelliConfig, BoticelliDriver, BoticelliError, BoticelliResult, GenerateRequest,
-    GenerateResponse, Input, Metadata, ModelMetadata, Output, RateLimiter, Role, Tier, TierConfig,
-    Vision,
+    BoticelliConfig, BoticelliDriver, BoticelliError, BoticelliResult,
+    GenerateRequest, GenerateResponse, Input, Metadata, ModelMetadata, Output, RateLimiter, Role, Tier, TierConfig, Vision,
 };
 
 //
@@ -589,6 +588,173 @@ impl BoticelliDriver for GeminiClient {
     /// Individual requests may use different models by specifying `GenerateRequest.model`.
     fn model_name(&self) -> &str {
         &self.model_name
+    }
+}
+
+#[async_trait]
+impl crate::Streaming for GeminiClient {
+    async fn generate_stream(
+        &self,
+        req: &GenerateRequest,
+    ) -> BoticelliResult<std::pin::Pin<Box<dyn futures_util::stream::Stream<Item = BoticelliResult<crate::StreamChunk>> + Send>>>
+    {
+        use futures_util::{StreamExt, TryStreamExt};
+
+        // Determine which model to use
+        let model_name = req.model.as_ref().unwrap_or(&self.model_name);
+
+        // Get or create rate-limited client for this model
+        let rate_limited_client = {
+            let mut clients = self.clients.lock().unwrap();
+            clients
+                .entry(model_name.clone())
+                .or_insert_with(|| {
+                    let model_enum = Self::model_name_to_enum(model_name);
+                    let client = Gemini::with_model(&self.api_key, model_enum)
+                        .expect("Failed to create Gemini client for model");
+                    let model_tier = self.base_tier.for_model(model_name);
+                    let tiered = TieredGemini {
+                        client,
+                        tier: model_tier,
+                    };
+                    RateLimiter::new(tiered)
+                })
+                .clone()
+        };
+
+        // Estimate tokens for rate limiting
+        let estimated_tokens: u64 = req
+            .messages
+            .iter()
+            .flat_map(|msg| &msg.content)
+            .filter_map(Self::extract_text)
+            .map(|text| Self::estimate_tokens(&text))
+            .sum();
+
+        let total_estimate = estimated_tokens + req.max_tokens.unwrap_or(1000) as u64;
+
+        // Acquire rate limit permission (counts stream as single request)
+        let _guard = rate_limited_client.acquire(total_estimate).await;
+
+        // Access the client through the rate limiter
+        let client = &rate_limited_client.inner().client;
+
+        // Build request using builder API (same as generate_internal)
+        let mut builder = client.generate_content();
+        let mut system_prompt = None;
+
+        for msg in &req.messages {
+            match msg.role {
+                Role::System => {
+                    if let Some(text) = msg.content.iter().find_map(Self::extract_text) {
+                        system_prompt = Some(text);
+                    }
+                }
+                Role::User => {
+                    for input in &msg.content {
+                        if let Some(text) = Self::extract_text(input) {
+                            builder = builder.with_user_message(&text);
+                        }
+                    }
+                    if Self::has_media(&msg.content) {
+                        return Err(GeminiError::new(GeminiErrorKind::MultimodalNotSupported).into());
+                    }
+                }
+                Role::Assistant => {
+                    if let Some(text) = msg.content.iter().find_map(Self::extract_text) {
+                        builder = builder.with_model_message(&text);
+                    }
+                }
+            }
+        }
+
+        if let Some(prompt) = system_prompt {
+            builder = builder.with_system_prompt(&prompt);
+        }
+
+        if let Some(temp) = req.temperature {
+            builder = builder.with_temperature(temp);
+        }
+
+        if let Some(max_tokens) = req.max_tokens {
+            builder = builder.with_max_output_tokens(max_tokens as i32);
+        }
+
+        // Execute as stream
+        let gemini_stream = builder
+            .execute_stream()
+            .await
+            .map_err(|e| GeminiError::new(GeminiErrorKind::ApiRequest(e.to_string())))?;
+
+        // Transform gemini TryStream to Stream<Result>
+        // TryStream yields Ok/Err directly, need to map to Result<StreamChunk, Error>
+        let chunk_stream = gemini_stream
+            .into_stream()  // Convert TryStream to Stream
+            .map(move |result| {
+                match result {
+                    Ok(response) => Self::convert_to_stream_chunk(response),
+                    Err(e) => {
+                        let gemini_err =
+                            GeminiError::new(GeminiErrorKind::ApiRequest(e.to_string()));
+                        Err(BoticelliError::from(gemini_err))
+                    }
+                }
+            });
+
+        Ok(Box::pin(chunk_stream))
+    }
+}
+
+impl GeminiClient {
+    /// Convert gemini_rust GenerationResponse to our StreamChunk.
+    fn convert_to_stream_chunk(
+        response: gemini_rust::generation::model::GenerationResponse,
+    ) -> BoticelliResult<crate::StreamChunk> {
+        // Extract text from response
+        let text = response.text();
+
+        // Check if this is the final chunk
+        let is_final = response
+            .candidates
+            .first()
+            .and_then(|c| c.finish_reason.as_ref())
+            .is_some();
+
+        // Determine finish reason
+        let finish_reason = if is_final {
+            response
+                .candidates
+                .first()
+                .and_then(|c| c.finish_reason.as_ref())
+                .map(|reason| match reason {
+                    gemini_rust::generation::model::FinishReason::Stop => {
+                        crate::FinishReason::Stop
+                    }
+                    gemini_rust::generation::model::FinishReason::MaxTokens => {
+                        crate::FinishReason::Length
+                    }
+                    gemini_rust::generation::model::FinishReason::Safety
+                    | gemini_rust::generation::model::FinishReason::Recitation
+                    | gemini_rust::generation::model::FinishReason::Blocklist
+                    | gemini_rust::generation::model::FinishReason::ProhibitedContent
+                    | gemini_rust::generation::model::FinishReason::Spii
+                    | gemini_rust::generation::model::FinishReason::ImageSafety => {
+                        crate::FinishReason::ContentFilter
+                    }
+                    gemini_rust::generation::model::FinishReason::MalformedFunctionCall => {
+                        crate::FinishReason::ToolUse
+                    }
+                    _ => crate::FinishReason::Other,
+                })
+        } else {
+            None
+        };
+
+        Ok(crate::StreamChunk {
+            content: Output::Text(text),
+            is_final,
+            finish_reason,
+        })
     }
 }
 
