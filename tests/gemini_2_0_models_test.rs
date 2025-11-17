@@ -9,7 +9,7 @@ use boticelli::{BoticelliDriver, GeminiClient, GenerateRequest, Input, Message, 
 
 /// Test that Gemini 2.0 Flash works via Model::Custom with "models/" prefix.
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_gemini_2_0_flash() {
     let client = GeminiClient::new().expect("Failed to create client");
 
@@ -33,7 +33,7 @@ async fn test_gemini_2_0_flash() {
 
 /// Test that Gemini 2.0 Flash Lite works via Model::Custom.
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_gemini_2_0_flash_lite() {
     let client = GeminiClient::new().expect("Failed to create client");
 
@@ -57,7 +57,7 @@ async fn test_gemini_2_0_flash_lite() {
 
 /// Test that multiple requests with mixed 2.0 and 2.5 models work correctly.
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_mixed_2_0_and_2_5_models() {
     let client = GeminiClient::new().expect("Failed to create client");
 
@@ -106,7 +106,7 @@ async fn test_mixed_2_0_and_2_5_models() {
 
 /// Test that explicit "models/" prefix is preserved.
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_explicit_models_prefix() {
     let client = GeminiClient::new().expect("Failed to create client");
 

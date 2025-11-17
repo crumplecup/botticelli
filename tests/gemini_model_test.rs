@@ -12,7 +12,7 @@ use boticelli::{BoticelliDriver, GeminiClient, GenerateRequest, Input, Message, 
 
 /// Test that GeminiClient uses the default model when no model is specified.
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_default_model_usage() {
     let client = GeminiClient::new().expect("Failed to create client");
 
@@ -39,7 +39,7 @@ async fn test_default_model_usage() {
 ///
 /// This validates that per-request model selection works correctly.
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_model_override_in_request() {
     let client = GeminiClient::new().expect("Failed to create client");
 
@@ -69,7 +69,7 @@ async fn test_model_override_in_request() {
 
 /// Test model override with different Gemini 2.5 model.
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_gemini_2_5_model_override() {
     let client = GeminiClient::new().expect("Failed to create client");
 
@@ -92,7 +92,7 @@ async fn test_gemini_2_5_model_override() {
 ///
 /// This simulates what happens in narrative execution with per-act model overrides.
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_multiple_model_requests() {
     let client = GeminiClient::new().expect("Failed to create client");
 
@@ -155,7 +155,7 @@ fn test_model_name_method() {
 ///
 /// This test exercises the full narrative executor with different models per act.
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY and narrative file
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY and narrative file
 async fn test_narrative_multi_model_execution() {
     use boticelli::{Narrative, NarrativeExecutor};
     use std::path::Path;

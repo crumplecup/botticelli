@@ -109,8 +109,14 @@
   - **Tokens**: Use minimal prompts and low max_tokens (e.g., 10)
   - **Requests**: Use fewest API calls possible (e.g., 1-3 requests, not 20+)
   - **Time**: Keep test duration short to avoid extended quota usage
-- Mark API tests with `#[ignore]` and require explicit opt-in via `cargo test -- --ignored`
-- Follow existing patterns in the codebase (see `gemini_model_test.rs` for examples)
+- Mark API-consuming tests with `#[cfg_attr(not(feature = "api"), ignore)]` to require explicit opt-in
+  - Run with: `cargo test --features gemini,api` (or other provider + api)
+  - The `api` feature is an empty marker flag (`api = []`) that gates tests consuming API tokens
+- **Do NOT use `#[ignore]` for API tests** - `#[ignore]` is reserved for:
+  - Tests for features not yet implemented
+  - Broken tests that need fixing
+  - Tests temporarily disabled during refactoring
+- Follow existing patterns in the codebase (see `gemini_streaming_test.rs` for examples)
 - If extensive testing is needed, consider:
   - Mocking API responses instead of real calls
   - Creating separate "expensive" test suite with clear warnings

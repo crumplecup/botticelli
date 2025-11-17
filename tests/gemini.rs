@@ -144,7 +144,7 @@ fn test_error_kind_equality() {
 /// Note: This test requires the GEMINI_API_KEY environment variable to be set
 /// with a valid API key before running.
 #[test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 fn test_real_api_call() {
     // This test relies on GEMINI_API_KEY being set before the test runs
     // Do not manipulate environment variables in the test itself
@@ -189,7 +189,7 @@ fn test_real_api_call() {
 /// This test checks that client creation succeeds when GEMINI_API_KEY is set.
 /// Run with: `cargo test --features gemini -- --ignored`
 #[test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 fn test_client_creation() {
     // Assumes GEMINI_API_KEY is already set in environment
     let result = GeminiClient::new();

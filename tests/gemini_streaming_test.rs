@@ -23,7 +23,7 @@ fn create_test_request(prompt: &str, model: Option<String>) -> GenerateRequest {
 }
 
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_streaming_basic() {
     let _ = dotenvy::dotenv();
 
@@ -75,7 +75,7 @@ async fn test_streaming_basic() {
 }
 
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_streaming_with_standard_model() {
     let _ = dotenvy::dotenv();
 
@@ -118,7 +118,7 @@ async fn test_streaming_with_standard_model() {
 }
 
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY - model may not exist yet
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY - model may not exist yet
 async fn test_streaming_with_live_model() {
     let _ = dotenvy::dotenv();
 
@@ -161,7 +161,7 @@ async fn test_streaming_with_live_model() {
 }
 
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_streaming_finish_reasons() {
     let _ = dotenvy::dotenv();
 
@@ -197,7 +197,7 @@ async fn test_streaming_finish_reasons() {
 }
 
 #[tokio::test]
-#[ignore] // Requires GEMINI_API_KEY
+#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_streaming_vs_non_streaming_consistency() {
     let _ = dotenvy::dotenv();
 
@@ -248,7 +248,7 @@ async fn test_streaming_vs_non_streaming_consistency() {
 }
 
 #[tokio::test]
-#[ignore] // Expensive - requires GEMINI_API_KEY and uses significant quota
+#[cfg_attr(not(feature = "api"), ignore)] // Expensive - uses significant quota
 async fn test_rate_limit_comparison() {
     // This test verifies that live models have better rate limits.
     // Uses minimal requests (3 each) to conserve quota.
