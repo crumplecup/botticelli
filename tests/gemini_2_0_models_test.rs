@@ -16,9 +16,9 @@ async fn test_gemini_2_0_flash() {
     let request = GenerateRequest {
         messages: vec![Message {
             role: Role::User,
-            content: vec![Input::Text("Say 'hello from gemini 2.0 flash'".to_string())],
+            content: vec![Input::Text("Say 'ok'".to_string())],
         }],
-        max_tokens: Some(20),
+        max_tokens: Some(10),
         temperature: None,
         model: Some("gemini-2.0-flash".to_string()),
     };
@@ -40,9 +40,9 @@ async fn test_gemini_2_0_flash_lite() {
     let request = GenerateRequest {
         messages: vec![Message {
             role: Role::User,
-            content: vec![Input::Text("Count from 1 to 3".to_string())],
+            content: vec![Input::Text("Say 'ok'".to_string())],
         }],
-        max_tokens: Some(20),
+        max_tokens: Some(10),
         temperature: None,
         model: Some("gemini-2.0-flash-lite".to_string()),
     };

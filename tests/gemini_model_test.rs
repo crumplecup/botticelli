@@ -22,7 +22,7 @@ async fn test_default_model_usage() {
     let request = GenerateRequest {
         messages: vec![Message {
             role: Role::User,
-            content: vec![Input::Text("Say 'test response'".to_string())],
+            content: vec![Input::Text("Say 'ok'".to_string())],
         }],
         max_tokens: Some(10),
         temperature: None,
@@ -47,11 +47,9 @@ async fn test_model_override_in_request() {
     let request = GenerateRequest {
         messages: vec![Message {
             role: Role::User,
-            content: vec![Input::Text(
-                "What model are you? Respond with just your model name.".to_string(),
-            )],
+            content: vec![Input::Text("Say 'ok'".to_string())],
         }],
-        max_tokens: Some(50),
+        max_tokens: Some(10),
         temperature: None,
         model: Some("gemini-2.5-flash-lite".to_string()), // Override default
     };
@@ -78,9 +76,9 @@ async fn test_gemini_2_5_model_override() {
     let request = GenerateRequest {
         messages: vec![Message {
             role: Role::User,
-            content: vec![Input::Text("Count from 1 to 3.".to_string())],
+            content: vec![Input::Text("Say 'ok'".to_string())],
         }],
-        max_tokens: Some(20),
+        max_tokens: Some(10),
         temperature: None,
         model: Some("gemini-2.5-flash".to_string()),
     };
