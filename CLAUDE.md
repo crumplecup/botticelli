@@ -126,7 +126,7 @@ In Cargo.toml:
 - If the crate is >=1.0, use just the major version number "x".
 - If >=0.1.0, use the major and minor "x.y".
 - If <0.1.0, use the full "x.y.z".
-- Before committing, run `cargo update` to update Cargo.lock with the latest compatible versions.
+- Before testing, run `cargo update` to update Cargo.lock with the latest compatible versions.
 
 ## Documentation
 
