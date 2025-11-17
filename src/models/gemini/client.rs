@@ -409,8 +409,6 @@ impl GeminiClient {
         req: &GenerateRequest,
         model_name: &str,
     ) -> GeminiResult<GenerateResponse> {
-        use futures_util::StreamExt;
-
         // Ensure we have a Live API client
         let live_client = self
             .live_client
@@ -608,7 +606,7 @@ impl GeminiClient {
         model_name: &str,
     ) -> BoticelliResult<std::pin::Pin<Box<dyn futures_util::stream::Stream<Item = BoticelliResult<crate::StreamChunk>> + Send>>>
     {
-        use futures_util::stream::{self, StreamExt};
+        use futures_util::stream::StreamExt;
 
         // Ensure we have a Live API client
         let live_client = self
@@ -628,7 +626,7 @@ impl GeminiClient {
         };
 
         // Connect to Live API
-        let mut session = live_client
+        let session = live_client
             .connect_with_config(model_name, config)
             .await
             .map_err(BoticelliError::from)?;
@@ -672,8 +670,8 @@ impl crate::Streaming for GeminiClient {
         let model_name = req.model.as_ref().unwrap_or(&self.model_name);
 
         // Check if this is a live model (requires WebSocket Live API)
-        if Self::is_live_model(&model_name) {
-            return self.generate_stream_via_live_api(req, &model_name).await;
+        if Self::is_live_model(model_name) {
+            return self.generate_stream_via_live_api(req, model_name).await;
         }
 
         // Get or create rate-limited client for this model (REST API)

@@ -204,6 +204,9 @@ pub struct InlineData {
 }
 
 /// Realtime input message for streaming audio/video.
+///
+/// Not yet used - reserved for future realtime input feature.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeInputMessage {
@@ -211,6 +214,9 @@ pub struct RealtimeInputMessage {
 }
 
 /// Realtime input data.
+///
+/// Not yet used - reserved for future realtime input feature.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeInput {
@@ -218,6 +224,9 @@ pub struct RealtimeInput {
 }
 
 /// Media chunk for streaming.
+///
+/// Not yet used - reserved for future realtime input feature.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaChunk {
@@ -226,6 +235,9 @@ pub struct MediaChunk {
 }
 
 /// Tool response message.
+///
+/// Not yet used - reserved for future tool calling feature.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolResponseMessage {
@@ -233,6 +245,9 @@ pub struct ToolResponseMessage {
 }
 
 /// Tool response data.
+///
+/// Not yet used - reserved for future tool calling feature.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolResponse {
@@ -240,6 +255,9 @@ pub struct ToolResponse {
 }
 
 /// Function call response.
+///
+/// Not yet used - reserved for future tool calling feature.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionResponse {
@@ -385,11 +403,17 @@ impl ServerMessage {
     }
 
     /// Check if this is a server content message.
+    ///
+    /// Not yet used - reserved for future features.
+    #[allow(dead_code)]
     pub fn is_server_content(&self) -> bool {
         self.server_content.is_some()
     }
 
     /// Check if this is a tool call message.
+    ///
+    /// Not yet used - reserved for future tool calling feature.
+    #[allow(dead_code)]
     pub fn is_tool_call(&self) -> bool {
         self.tool_call.is_some()
     }
