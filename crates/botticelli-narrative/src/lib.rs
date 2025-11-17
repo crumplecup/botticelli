@@ -48,13 +48,14 @@ pub mod extraction;
 
 // Re-export key types
 pub use core::{Narrative, NarrativeMetadata, NarrativeToc};
-pub use executor::{NarrativeExecutor, ActExecution, NarrativeExecution};
+pub use executor::NarrativeExecutor;
 pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
 pub use provider::{ActConfig, NarrativeProvider};
 pub use in_memory_repository::InMemoryNarrativeRepository;
 
 // Re-export from interface
 pub use botticelli_interface::{
+    ActExecution, NarrativeExecution,
     NarrativeRepository, ExecutionFilter, ExecutionStatus, ExecutionSummary,
 };
 
