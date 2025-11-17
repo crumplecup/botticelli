@@ -57,10 +57,21 @@ This document outlines a two-phase strategy:
   - All tests passing, zero clippy warnings
   - 3 files changed in storage crate, StorageError added to error crate
 
+- ✅ **Phase 4: Provider Implementations** (Commit: `963eac1` on workspace branch)
+  - Created `botticelli-models` crate with feature-gated provider integrations
+  - Migrated Gemini client (REST API + Live API ~2,700 LOC)
+  - Moved `GeminiError` and `GeminiErrorKind` to `botticelli-error`
+  - Moved `RetryableError` trait to `botticelli-error` foundation
+  - Updated `botticelli-rate-limit` to use `RetryableError` from foundation
+  - All code compiles, zero clippy warnings
+  - Doctests deferred (need main facade crate for imports)
+  - 11 files changed: 7 new in models, 4 updated in error/rate-limit
+
 ### In Progress
 
-- ⏳ **Phase 4: Provider Implementations** (Models crate)
+- ⏳ **Phase 5: Narrative System** 
   - Not yet started
+  - Note: Depends on Phase 3.5 (database crate) which wasn't in original plan
 
 ### Remaining Phases
 - ⏳ Phase 5: Narrative System

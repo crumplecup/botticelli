@@ -20,7 +20,7 @@
 //! # Example
 //!
 //! ```no_run
-//! use botticelli::{BotticelliDriver, GeminiClient, GenerateRequest, Message, Role, Input};
+//! use botticelli_models::gemini::{BotticelliDriver, GeminiClient, GenerateRequest, Message, Role, Input};
 //!
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -85,7 +85,7 @@ use super::{GeminiResult};
 /// # Example
 ///
 /// ```rust,ignore
-/// use botticelli::{TieredGemini, GeminiTier};
+/// use botticelli_models::gemini::{TieredGemini, GeminiTier};
 /// use gemini_rust::Gemini;
 ///
 /// let client = Gemini::with_model(api_key, "gemini-2.0-flash")?;
@@ -217,7 +217,7 @@ impl GeminiClient {
     /// # Example
     ///
     /// ```no_run
-    /// use botticelli::GeminiClient;
+    /// use botticelli_models::gemini::GeminiClient;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = GeminiClient::new()?;
@@ -239,7 +239,7 @@ impl GeminiClient {
     /// # Example
     ///
     /// ```no_run
-    /// use botticelli::{GeminiClient, GeminiTier};
+    /// use botticelli_models::gemini::{GeminiClient, GeminiTier};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// // Using GeminiTier directly is preferred
@@ -263,7 +263,7 @@ impl GeminiClient {
     /// # Example
     ///
     /// ```no_run
-    /// use botticelli::GeminiClient;
+    /// use botticelli_models::gemini::GeminiClient;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// // Create client with retry disabled
@@ -296,7 +296,7 @@ impl GeminiClient {
     /// # Example
     ///
     /// ```no_run
-    /// use botticelli::GeminiClient;
+    /// use botticelli_models::gemini::GeminiClient;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// // Use default tier from config (includes model-specific limits)
