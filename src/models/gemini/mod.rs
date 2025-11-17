@@ -50,3 +50,4 @@ mod live_client;
 pub use error::{GeminiError, GeminiErrorKind};
 pub use client::{GeminiClient, TieredGemini};
 pub use live_client::{GeminiLiveClient, LiveSession};
+pub use live_protocol::GenerationConfig;

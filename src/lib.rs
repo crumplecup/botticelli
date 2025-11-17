@@ -158,6 +158,7 @@ pub use storage::{
 #[cfg(feature = "gemini")]
 pub use models::{
     GeminiClient, GeminiError, GeminiErrorKind, GeminiLiveClient, LiveSession, TieredGemini,
+    GenerationConfig,
 };
 
 // Re-export core trait

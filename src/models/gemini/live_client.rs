@@ -356,6 +356,143 @@ impl LiveSession {
         Ok(full_response)
     }
 
+    /// Send a text message and stream responses incrementally.
+    ///
+    /// Returns a stream of `StreamChunk` values as the model generates the response.
+    /// The final chunk will have `is_final: true`.
+    ///
+    /// # Arguments
+    ///
+    /// * `text` - The user message text
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use boticelli::gemini::GeminiLiveClient;
+    /// # use futures_util::StreamExt;
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let client = GeminiLiveClient::new()?;
+    /// # let mut session = client.connect("models/gemini-2.0-flash-exp").await?;
+    /// let mut stream = session.send_text_stream("Tell me a story").await?;
+    ///
+    /// while let Some(chunk_result) = stream.next().await {
+    ///     let chunk = chunk_result?;
+    ///     print!("{}", chunk.content);
+    ///     if chunk.is_final {
+    ///         break;
+    ///     }
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn send_text_stream(
+        &mut self,
+        text: &str,
+    ) -> GeminiResult<std::pin::Pin<Box<dyn futures_util::stream::Stream<Item = GeminiResult<crate::StreamChunk>> + Send + '_>>> {
+        use futures_util::stream;
+
+        debug!("Sending text message for streaming: {}", text);
+
+        // Build client content message
+        let message = ClientContentMessage {
+            client_content: ClientContent {
+                turns: vec![Turn {
+                    role: "user".to_string(),
+                    parts: vec![Part::text(text)],
+                }],
+                turn_complete: true,
+            },
+        };
+
+        // Serialize to JSON
+        let json = serde_json::to_string(&message).map_err(|e| {
+            error!("Failed to serialize message: {}", e);
+            GeminiError::new(GeminiErrorKind::ApiRequest(format!(
+                "Serialization error: {}",
+                e
+            )))
+        })?;
+
+        trace!("Message JSON: {}", json);
+
+        // Send message
+        self.ws_stream
+            .send(Message::Text(json))
+            .await
+            .map_err(|e| {
+                error!("Failed to send message: {}", e);
+                GeminiError::new(GeminiErrorKind::ApiRequest(format!("Send error: {}", e)))
+            })?;
+
+        debug!("Message sent, returning stream");
+
+        // Create a stream that yields chunks as they arrive
+        let stream = stream::try_unfold((&mut self.ws_stream, false), |(ws, done)| async move {
+            if done {
+                return Ok(None);
+            }
+
+            while let Some(msg_result) = ws.next().await {
+                let msg = msg_result.map_err(|e| {
+                    error!("Error receiving response: {}", e);
+                    GeminiError::new(GeminiErrorKind::StreamInterrupted(e.to_string()))
+                })?;
+
+                if let Message::Text(text) = msg {
+                    trace!("Received response chunk: {}", text);
+
+                    let server_msg: ServerMessage = serde_json::from_str(&text).map_err(|e| {
+                        error!("Failed to parse server message: {}", e);
+                        GeminiError::new(GeminiErrorKind::InvalidServerMessage(format!(
+                            "Parse error: {}",
+                            e
+                        )))
+                    })?;
+
+                    // Check for disconnect
+                    if server_msg.is_go_away() {
+                        let reason = server_msg
+                            .go_away
+                            .map(|ga| ga.reason)
+                            .unwrap_or_else(|| "unknown".to_string());
+                        error!("Server disconnecting: {}", reason);
+                        return Err(GeminiError::new(GeminiErrorKind::ServerDisconnect(reason)));
+                    }
+
+                    // Extract text from response
+                    if let Some(text) = server_msg.extract_text() {
+                        let is_final = server_msg.is_turn_complete();
+
+                        let chunk = crate::StreamChunk {
+                            content: crate::Output::Text(text),
+                            is_final,
+                            finish_reason: if is_final {
+                                Some(crate::FinishReason::Stop)
+                            } else {
+                                None
+                            },
+                        };
+
+                        return Ok(Some((chunk, (ws, is_final))));
+                    }
+
+                    // If no text but turn complete, we're done
+                    if server_msg.is_turn_complete() {
+                        return Ok(None);
+                    }
+                } else if let Message::Close(_) = msg {
+                    warn!("WebSocket closed during streaming");
+                    return Ok(None);
+                }
+            }
+
+            Ok(None)
+        });
+
+        Ok(Box::pin(stream))
+    }
+
     /// Close the WebSocket session gracefully.
     ///
     /// # Example
