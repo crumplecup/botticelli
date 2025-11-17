@@ -16,3 +16,4 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 botticelli-core = { workspace = true }
 botticelli-error = { workspace = true }
+botticelli-storage = { workspace = true }

@@ -403,3 +403,13 @@ pub trait Health: BotticelliDriver {
     /// Check if the backend is available and functioning.
     async fn health(&self) -> BotticelliResult<HealthStatus>;
 }
+
+//
+// ─── NARRATIVE SUPPORT ──────────────────────────────────────────────────────────
+//
+
+pub mod narrative;
+pub use narrative::{
+    ActExecution, ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution,
+    NarrativeRepository,
+};
