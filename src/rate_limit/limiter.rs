@@ -235,6 +235,82 @@ impl<T: Tier> RateLimiter<T> {
 
         Some(RateLimiterGuard { _permit: permit })
     }
+
+    /// Execute an operation with rate limiting and automatic retry.
+    ///
+    /// This method combines rate limiting with exponential backoff retry for
+    /// transient errors. For each attempt:
+    /// 1. Acquires rate limit permission (waits if needed)
+    /// 2. Executes the operation
+    /// 3. If it fails with a transient error (503, 429, etc.), retries with exponential backoff
+    /// 4. If it fails with a permanent error (401, 400, etc.), returns immediately
+    ///
+    /// The retry strategy uses:
+    /// - Initial backoff: 2 seconds
+    /// - Backoff multiplier: 2x per attempt
+    /// - Maximum backoff: 60 seconds
+    /// - Jitter: Random variation to prevent thundering herd
+    /// - Maximum retries: 5 attempts
+    ///
+    /// # Arguments
+    ///
+    /// * `estimated_tokens` - Estimated tokens for TPM limiting
+    /// * `operation` - Async function to execute (typically an API call)
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// let result = rate_limiter.execute(1000, || async {
+    ///     client.generate(&request).await
+    /// }).await?;
+    /// ```
+    pub async fn execute<F, Fut, R, E>(
+        &self,
+        estimated_tokens: u64,
+        operation: F,
+    ) -> Result<R, E>
+    where
+        F: Fn() -> Fut,
+        Fut: std::future::Future<Output = Result<R, E>>,
+        E: crate::rate_limit::RetryableError + std::fmt::Display,
+    {
+        use tokio_retry2::{strategy::ExponentialBackoff, strategy::jitter, Retry, RetryError};
+        use tracing::warn;
+
+        // Configure retry strategy
+        let retry_strategy = ExponentialBackoff::from_millis(2000)
+            .factor(2)
+            .max_delay(std::time::Duration::from_secs(60))
+            .map(jitter)
+            .take(5);
+
+        // Wrap the operation with rate limiting + retry
+        Retry::spawn(retry_strategy, || async {
+            // Acquire rate limit permission before each attempt
+            let _guard = self.acquire(estimated_tokens).await;
+
+            // Execute the operation
+            let result = operation().await;
+
+            // Convert to RetryError based on error type
+            match result {
+                Ok(value) => Ok(value),
+                Err(e) => {
+                    if e.is_retryable() {
+                        warn!("Transient error, will retry: {}", e);
+                        Err(RetryError::Transient {
+                            err: e,
+                            retry_after: None,
+                        })
+                    } else {
+                        warn!("Permanent error, failing immediately: {}", e);
+                        Err(RetryError::Permanent(e))
+                    }
+                }
+            }
+        })
+        .await
+    }
 }
 
 /// RAII guard for rate limiter.

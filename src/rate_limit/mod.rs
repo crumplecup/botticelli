@@ -21,3 +21,32 @@ pub use tiers::AnthropicTier;
 #[cfg(feature = "gemini")]
 pub use tiers::GeminiTier;
 pub use tiers::OpenAITier;
+
+/// Trait for errors that can be classified as retryable or permanent.
+///
+/// This trait allows the RateLimiter to determine whether an error should
+/// trigger a retry with exponential backoff, or fail immediately.
+///
+/// # Example
+///
+/// ```rust,ignore
+/// impl RetryableError for MyError {
+///     fn is_retryable(&self) -> bool {
+///         match self {
+///             MyError::NetworkTimeout => true,
+///             MyError::ServerOverload => true,
+///             MyError::RateLimit => true,
+///             MyError::InvalidApiKey => false,
+///             MyError::BadRequest => false,
+///         }
+///     }
+/// }
+/// ```
+pub trait RetryableError {
+    /// Returns true if this error should trigger a retry.
+    ///
+    /// Transient errors like 503 (service unavailable), 429 (rate limit),
+    /// or network timeouts should return true. Permanent errors like 401
+    /// (unauthorized) or 400 (bad request) should return false.
+    fn is_retryable(&self) -> bool;
+}

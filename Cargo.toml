@@ -35,8 +35,9 @@ futures-util = "0.3"
 # WebSocket support for Gemini Live API
 tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
 
-# Rate limiting
+# Rate limiting and retry
 governor = "0.10"
+tokio-retry2 = { version = "0.6", features = ["jitter"] }
 
 # Structured logging and tracing
 tracing = "0.1"

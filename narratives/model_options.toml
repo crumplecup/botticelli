@@ -1,0 +1,36 @@
+# Model options demonstration narrative
+# Shows all unlocked Gemini models, each identifying itself
+
+[narration]
+name = "Model Options Demo"
+description = "Demonstrate all available Gemini models with minimal token usage"
+
+[toc]
+order = ["flash_25", "flash_lite_25", "pro_25"]
+
+# Gemini 2.5 Flash - Fast, efficient model
+[acts.flash_25]
+model = "gemini-2.5-flash"
+max_tokens = 20
+
+[[acts.flash_25.input]]
+type = "text"
+content = "Respond with exactly this text: 'hi from gemini-2.5-flash'"
+
+# Gemini 2.5 Flash Lite - Ultra-fast, minimal token model
+[acts.flash_lite_25]
+model = "gemini-2.5-flash-lite"
+max_tokens = 30
+
+[[acts.flash_lite_25.input]]
+type = "text"
+content = "Respond with exactly this text: 'hi from gemini-2.5-flash-lite'"
+
+# Gemini 2.5 Pro - Most capable model
+[acts.pro_25]
+model = "gemini-2.5-pro"
+max_tokens = 30
+
+[[acts.pro_25.input]]
+type = "text"
+content = "Respond with exactly this text: 'hi from gemini-2.5-pro'"

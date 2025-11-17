@@ -504,69 +504,77 @@ impl GeminiClient {
         // Add max_tokens if specified (output token estimate)
         let total_estimate = estimated_tokens + req.max_tokens.unwrap_or(1000) as u64;
 
-        // Acquire rate limit permission
-        let _guard = rate_limited_client.acquire(total_estimate).await;
+        // Clone data needed in the closure
+        let messages = req.messages.clone();
+        let temperature = req.temperature;
+        let max_tokens = req.max_tokens;
 
-        // Access the client through the rate limiter
-        let client = &rate_limited_client.inner().client;
+        // Execute with rate limiting and automatic retry
+        let response = rate_limited_client
+            .execute(total_estimate, || async {
+                // Access the client through the rate limiter
+                let client = &rate_limited_client.inner().client;
 
-        // Start building the request
-        let mut builder = client.generate_content();
+                // Start building the request
+                let mut builder = client.generate_content();
 
-        // Process messages in order
-        let mut system_prompt = None;
+                // Process messages in order
+                let mut system_prompt = None;
 
-        for msg in &req.messages {
-            match msg.role {
-                Role::System => {
-                    // Gemini uses a separate system prompt
-                    if let Some(text) = msg.content.iter().find_map(Self::extract_text) {
-                        system_prompt = Some(text);
-                    }
-                }
-                Role::User => {
-                    // Add user message(s)
-                    for input in &msg.content {
-                        if let Some(text) = Self::extract_text(input) {
-                            builder = builder.with_user_message(&text);
+                for msg in &messages {
+                    match msg.role {
+                        Role::System => {
+                            // Gemini uses a separate system prompt
+                            if let Some(text) = msg.content.iter().find_map(Self::extract_text) {
+                                system_prompt = Some(text);
+                            }
+                        }
+                        Role::User => {
+                            // Add user message(s)
+                            for input in &msg.content {
+                                if let Some(text) = Self::extract_text(input) {
+                                    builder = builder.with_user_message(&text);
+                                }
+                            }
+
+                            // Note: gemini-rust's simple API doesn't directly support
+                            // multimodal inputs through the builder pattern.
+                            if Self::has_media(&msg.content) {
+                                return Err(GeminiError::new(
+                                    GeminiErrorKind::MultimodalNotSupported,
+                                ));
+                            }
+                        }
+                        Role::Assistant => {
+                            // Add model/assistant message
+                            if let Some(text) = msg.content.iter().find_map(Self::extract_text) {
+                                builder = builder.with_model_message(&text);
+                            }
                         }
                     }
-
-                    // Note: gemini-rust's simple API doesn't directly support
-                    // multimodal inputs through the builder pattern.
-                    // For full multimodal support, we'd need to use the lower-level API.
-                    if Self::has_media(&msg.content) {
-                        return Err(GeminiError::new(GeminiErrorKind::MultimodalNotSupported));
-                    }
                 }
-                Role::Assistant => {
-                    // Add model/assistant message
-                    if let Some(text) = msg.content.iter().find_map(Self::extract_text) {
-                        builder = builder.with_model_message(&text);
-                    }
+
+                // Add system prompt if present
+                if let Some(prompt) = system_prompt {
+                    builder = builder.with_system_prompt(&prompt);
                 }
-            }
-        }
 
-        // Add system prompt if present
-        if let Some(prompt) = system_prompt {
-            builder = builder.with_system_prompt(&prompt);
-        }
+                // Apply optional parameters
+                if let Some(temp) = temperature {
+                    builder = builder.with_temperature(temp);
+                }
 
-        // Apply optional parameters
-        if let Some(temp) = req.temperature {
-            builder = builder.with_temperature(temp);
-        }
+                if let Some(max_tok) = max_tokens {
+                    builder = builder.with_max_output_tokens(max_tok as i32);
+                }
 
-        if let Some(max_tokens) = req.max_tokens {
-            builder = builder.with_max_output_tokens(max_tokens as i32);
-        }
-
-        // Execute the request
-        let response = builder
-            .execute()
-            .await
-            .map_err(|e| GeminiError::new(GeminiErrorKind::ApiRequest(e.to_string())))?;
+                // Execute the request and parse errors
+                builder
+                    .execute()
+                    .await
+                    .map_err(Self::parse_gemini_error)
+            })
+            .await?;
 
         // Extract text from response
         let text = response.text();
@@ -574,6 +582,39 @@ impl GeminiClient {
         Ok(GenerateResponse {
             outputs: vec![Output::Text(text)],
         })
+    }
+
+    /// Parse gemini-rust errors to extract HTTP status codes.
+    ///
+    /// Converts generic API error strings into structured GeminiError
+    /// with HTTP status codes when available.
+    fn parse_gemini_error(err: impl std::fmt::Display) -> GeminiError {
+        let err_msg = err.to_string();
+
+        // Try to extract HTTP status code from error message
+        // Example: "bad response from server; code 503; description: ..."
+        if let Some(status_code) = Self::extract_status_code(&err_msg) {
+            GeminiError::new(GeminiErrorKind::HttpError {
+                status_code,
+                message: err_msg,
+            })
+        } else {
+            GeminiError::new(GeminiErrorKind::ApiRequest(err_msg))
+        }
+    }
+
+    /// Extract HTTP status code from error message string.
+    ///
+    /// Parses strings like "bad response from server; code 503; description: ..."
+    /// and extracts the numeric status code.
+    fn extract_status_code(error_msg: &str) -> Option<u16> {
+        if let Some(code_start) = error_msg.find("code ") {
+            let code_str = &error_msg[code_start + 5..];
+            if let Some(end) = code_str.find(|c: char| !c.is_numeric()) {
+                return code_str[..end].parse().ok();
+            }
+        }
+        None
     }
 }
 
