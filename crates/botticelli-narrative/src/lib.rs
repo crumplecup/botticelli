@@ -1,0 +1,62 @@
+//! Narrative execution engine for Botticelli.
+//!
+//! This crate provides the narrative execution system that orchestrates
+//! multi-step LLM interactions based on TOML-defined narratives.
+//!
+//! # Features
+//!
+//! - **TOML-based narratives**: Define complex multi-act interactions
+//! - **Processor system**: Extract and process structured data from responses
+//! - **Repository abstraction**: Persist executions with pluggable backends
+//! - **In-memory execution**: Run narratives without persistence
+//! - **Database integration**: Optional PostgreSQL persistence (with `database` feature)
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use botticelli_narrative::{Narrative, NarrativeExecutor, InMemoryNarrativeRepository};
+//! use botticelli_models::GeminiClient;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! // Load narrative from TOML
+//! let narrative = Narrative::from_file("narrative.toml")?;
+//!
+//! // Create executor with Gemini driver
+//! let client = GeminiClient::new("api-key")?;
+//! let executor = NarrativeExecutor::new(client);
+//!
+//! // Execute narrative
+//! let execution = executor.execute(&narrative).await?;
+//! println!("Completed {} acts", execution.act_executions.len());
+//! # Ok(())
+//! # }
+//! ```
+
+pub mod core;
+pub mod executor;
+pub mod processor;
+pub mod provider;
+pub mod toml_parser;
+pub mod in_memory_repository;
+
+// Optional content generation (feature-gated for database)
+#[cfg(feature = "database")]
+pub mod content_generation;
+
+#[cfg(feature = "database")]
+pub mod extraction;
+
+// Re-export key types
+pub use core::{Narrative, NarrativeMetadata, NarrativeToc};
+pub use executor::{NarrativeExecutor, ActExecution, NarrativeExecution};
+pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
+pub use provider::{ActConfig, NarrativeProvider};
+pub use in_memory_repository::InMemoryNarrativeRepository;
+
+// Re-export from interface
+pub use botticelli_interface::{
+    NarrativeRepository, ExecutionFilter, ExecutionStatus, ExecutionSummary,
+};
+
+// Re-export errors
+pub use botticelli_error::{NarrativeError, NarrativeErrorKind};

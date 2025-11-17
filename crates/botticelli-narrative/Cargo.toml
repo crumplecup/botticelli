@@ -1,0 +1,38 @@
+[package]
+name = "botticelli-narrative"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Narrative execution engine for Botticelli"
+
+[dependencies]
+botticelli-error = { workspace = true }
+botticelli-core = { workspace = true }
+botticelli-interface = { workspace = true }
+botticelli-storage = { workspace = true }
+
+# Optional database support
+botticelli-database = { workspace = true, optional = true }
+
+# Async
+async-trait = { workspace = true }
+tokio = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[features]
+default = []
+database = ["dep:botticelli-database"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
