@@ -1,0 +1,22 @@
+[package]
+name = "botticelli-rate-limit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Rate limiting and error recovery for the Botticelli LLM API library"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+botticelli-error = { workspace = true }
+tokio = { workspace = true }
+governor = { workspace = true }
+tokio-retry2 = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+config = { workspace = true }
+reqwest = { workspace = true }
+dirs = { workspace = true }

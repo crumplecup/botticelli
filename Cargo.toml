@@ -3,6 +3,7 @@ members = [
     "crates/botticelli-error",
     "crates/botticelli-core",
     "crates/botticelli-interface",
+    "crates/botticelli-rate-limit",
 ]
 resolver = "2"
 
@@ -21,6 +22,9 @@ botticelli-error = { path = "crates/botticelli-error", version = "0.2.0" }
 botticelli-core = { path = "crates/botticelli-core", version = "0.2.0" }
 botticelli-interface = { path = "crates/botticelli-interface", version = "0.2.0" }
 
+# Internal crates (Phase 2 rate limiting)
+botticelli-rate-limit = { path = "crates/botticelli-rate-limit", version = "0.2.0" }
+
 # Common external dependencies (shared versions)
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
@@ -29,3 +33,13 @@ async-trait = "0.1"
 futures-util = "0.3"
 derive_more = { version = "2", features = ["display", "from"] }
 derive-new = "0.7"
+
+# Rate limiting and retry
+governor = "0.10"
+tokio-retry2 = { version = "0.6", features = ["jitter"] }
+tracing = "0.1"
+
+# Configuration and HTTP
+config = { version = "0.15", features = ["toml"] }
+reqwest = { version = "0.12", features = ["json", "gzip", "stream", "rustls-tls"] }
+dirs = "6"
