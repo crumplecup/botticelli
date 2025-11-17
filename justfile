@@ -255,6 +255,87 @@ content-list table:
 content-show table id:
     cargo run --features database,gemini -- content show {{table}} {{id}}
 
+# TUI (Terminal User Interface)
+# ==============================
+
+# Launch TUI for a specific table
+tui table:
+    cargo run --features tui -- tui {{table}}
+
+# Launch TUI for a table with all features enabled
+tui-all table:
+    cargo run --all-features -- tui {{table}}
+
+# Generate test guilds and launch TUI (full workflow)
+tui-test-guilds:
+    #!/usr/bin/env bash
+    echo "🎲 Generating test guilds..."
+    TABLE=$(cargo run --all-features -- run --narrative narratives/generate_guilds.toml 2>&1 | grep -o "guilds_gen_[0-9]*" | head -1)
+    if [ -z "$TABLE" ]; then
+        echo "❌ Failed to generate content or extract table name"
+        echo "💡 Trying with default table name..."
+        TABLE="guilds_gen_001"
+    fi
+    echo "✅ Content generated in table: $TABLE"
+    echo "🖥️  Launching TUI..."
+    cargo run --all-features -- tui "$TABLE"
+
+# Generate test channels and launch TUI (full workflow)
+tui-test-channels:
+    #!/usr/bin/env bash
+    echo "🎲 Generating test channels..."
+    TABLE=$(cargo run --all-features -- run --narrative narratives/generate_channel_posts.toml 2>&1 | grep -o "channel_posts_[0-9]*" | head -1)
+    if [ -z "$TABLE" ]; then
+        echo "❌ Failed to generate content or extract table name"
+        echo "💡 Trying with default table name..."
+        TABLE="channel_posts_001"
+    fi
+    echo "✅ Content generated in table: $TABLE"
+    echo "🖥️  Launching TUI..."
+    cargo run --all-features -- tui "$TABLE"
+
+# Generate test users and launch TUI (full workflow)
+tui-test-users:
+    #!/usr/bin/env bash
+    echo "🎲 Generating test users..."
+    TABLE=$(cargo run --all-features -- run --narrative narratives/generate_users.toml 2>&1 | grep -o "users_gen_[0-9]*" | head -1)
+    if [ -z "$TABLE" ]; then
+        echo "❌ Failed to generate content or extract table name"
+        echo "💡 Trying with default table name..."
+        TABLE="users_gen_001"
+    fi
+    echo "✅ Content generated in table: $TABLE"
+    echo "🖥️  Launching TUI..."
+    cargo run --all-features -- tui "$TABLE"
+
+# Generate Discord infrastructure and launch TUI for review
+tui-test-discord:
+    #!/usr/bin/env bash
+    echo "🎲 Generating Discord infrastructure..."
+    cargo run --all-features -- run --narrative narratives/discord_infrastructure.toml --process-discord
+    echo "✅ Discord infrastructure generated"
+    echo "💡 Note: Discord infrastructure uses fixed IDs, check discord_guilds table directly"
+    echo "🖥️  To review generated content, use:"
+    echo "   just content-list discord_guilds"
+
+# List all content generation tables in database
+tui-list-tables:
+    #!/usr/bin/env bash
+    echo "📋 Content Generation Tables:"
+    echo "============================="
+    psql "${DATABASE_URL}" -c "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE '%_gen_%' OR tablename LIKE '%_generation_%' ORDER BY tablename;" -t
+
+# Quick TUI demo with sample data (uses example guilds)
+tui-demo: example-guilds
+    @echo "🖥️  Launching TUI demo..."
+    @TABLE=$(psql "${DATABASE_URL}" -t -c "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'guilds_gen%' ORDER BY tablename DESC LIMIT 1;" | tr -d ' ')
+    @if [ -z "$$TABLE" ]; then \
+        echo "❌ No guilds tables found. Run: just example-guilds"; \
+        exit 1; \
+    fi
+    @echo "   Table: $$TABLE"
+    @cargo run --all-features -- tui "$$TABLE"
+
 # Full Workflow (CI/CD)
 # ====================
 
