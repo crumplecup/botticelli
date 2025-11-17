@@ -76,7 +76,7 @@ pub fn extract_json(response: &str) -> BotticelliResult<String> {
         "No JSON found in LLM response"
     );
 
-    Err(crate::BackendError::new(format!(
+    Err(botticelli_error::BackendError::new(format!(
         "No JSON found in response (length: {}). Hint: Ensure your prompt explicitly requests JSON output and includes 'Output ONLY valid JSON'.",
         response.len()
     ))
@@ -122,7 +122,7 @@ pub fn extract_toml(response: &str) -> BotticelliResult<String> {
         }
     }
 
-    Err(crate::BackendError::new(format!(
+    Err(botticelli_error::BackendError::new(format!(
         "No TOML found in response (length: {})",
         response.len()
     ))
@@ -230,7 +230,7 @@ where
             "JSON parsing failed"
         );
 
-        crate::BackendError::new(format!(
+        botticelli_error::BackendError::new(format!(
             "Failed to parse JSON: {} (JSON: {}...). Hint: Ensure the LLM outputs valid JSON without syntax errors.",
             e,
             &json_str[..json_str.len().min(100)]
@@ -265,7 +265,7 @@ where
     T: serde::de::DeserializeOwned,
 {
     toml::from_str(toml_str).map_err(|e| {
-        crate::BackendError::new(format!(
+        botticelli_error::BackendError::new(format!(
             "Failed to parse TOML: {} (TOML: {}...)",
             e,
             &toml_str[..toml_str.len().min(100)]

@@ -69,7 +69,7 @@ impl ContentGenerationProcessor {
         let mut conn = self
             .connection
             .lock()
-            .map_err(|e| crate::BackendError::new(format!("Failed to lock connection: {}", e)))?;
+            .map_err(|e| botticelli_error::BackendError::new(format!("Failed to lock connection: {}", e)))?;
 
         // Query schema to get column types
         let schema = crate::reflect_table_schema(&mut conn, table_name)?;
@@ -83,7 +83,7 @@ impl ContentGenerationProcessor {
         // Extract fields from JSON and add metadata columns
         let obj = json_data
             .as_object()
-            .ok_or_else(|| crate::BackendError::new("JSON must be an object"))?;
+            .ok_or_else(|| botticelli_error::BackendError::new("JSON must be an object"))?;
 
         let mut columns = Vec::new();
         let mut values = Vec::new();
@@ -118,7 +118,7 @@ impl ContentGenerationProcessor {
 
         diesel::sql_query(&insert_sql)
             .execute(&mut *conn)
-            .map_err(|e| crate::BackendError::new(format!("Failed to insert content: {}", e)))?;
+            .map_err(|e| botticelli_error::BackendError::new(format!("Failed to insert content: {}", e)))?;
 
         Ok(())
     }
@@ -149,7 +149,7 @@ impl ActProcessor for ContentGenerationProcessor {
         // Track generation start
         {
             let mut conn = self.connection.lock().map_err(|e| {
-                crate::BackendError::new(format!("Failed to lock connection: {}", e))
+                botticelli_error::BackendError::new(format!("Failed to lock connection: {}", e))
             })?;
 
             let mut repo = PostgresContentGenerationRepository::new(&mut conn);
@@ -175,7 +175,7 @@ impl ActProcessor for ContentGenerationProcessor {
         }
 
         // Execute content generation
-        let generation_result: Result<usize, crate::BotticelliError> = (|| {
+        let generation_result: Result<usize, botticelli_error::BotticelliError> = (|| {
             // Extract JSON from response first (needed for both modes)
             let json_str = extract_json(&context.execution.response)?;
 
@@ -193,7 +193,7 @@ impl ActProcessor for ContentGenerationProcessor {
             // Create table based on processing mode
             {
                 let mut conn = self.connection.lock().map_err(|e| {
-                    crate::BackendError::new(format!("Failed to lock connection: {}", e))
+                    botticelli_error::BackendError::new(format!("Failed to lock connection: {}", e))
                 })?;
 
                 match &processing_mode {
@@ -257,7 +257,7 @@ impl ActProcessor for ContentGenerationProcessor {
 
         {
             let mut conn = self.connection.lock().map_err(|e| {
-                crate::BackendError::new(format!("Failed to lock connection: {}", e))
+                botticelli_error::BackendError::new(format!("Failed to lock connection: {}", e))
             })?;
 
             let mut repo = PostgresContentGenerationRepository::new(&mut conn);

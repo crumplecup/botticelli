@@ -3,7 +3,8 @@
 //! This module provides intermediate structures for deserializing TOML
 //! into our domain types (ActConfig, Input, etc.).
 
-use crate::{ActConfig, Input, MediaSource};
+use botticelli_core::{Input, MediaSource};
+use crate::ActConfig;
 use serde::Deserialize;
 use std::collections::HashMap;
 

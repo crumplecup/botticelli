@@ -3,8 +3,10 @@
 //! This module provides the executor that processes multi-act narratives
 //! by calling LLM APIs in sequence, passing context between acts.
 
-use crate::{BotticelliDriver, GenerateRequest, Input, Message, Output, Role};
-use crate::{BotticelliResult, NarrativeProvider, ProcessorContext, ProcessorRegistry};
+use botticelli_interface::BotticelliDriver;
+use botticelli_core::{GenerateRequest, Input, Message, Output, Role};
+use botticelli_error::BotticelliResult;
+use crate::{NarrativeProvider, ProcessorContext, ProcessorRegistry};
 use serde::{Deserialize, Serialize};
 
 /// Execution result for a single act in a narrative.

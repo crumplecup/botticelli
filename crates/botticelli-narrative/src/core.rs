@@ -1,13 +1,14 @@
 //! Core data structures for narratives.
 
-use crate::narrative::toml as toml_parsing;
-use crate::narrative::{ActConfig, NarrativeError, NarrativeErrorKind, NarrativeProvider};
+use crate::toml_parser as toml_parsing;
+use crate::{ActConfig, NarrativeProvider};
+use botticelli_error::{NarrativeError, NarrativeErrorKind};
 use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
 
 #[cfg(feature = "database")]
-use crate::{Input, assemble_prompt, is_content_focus};
+use botticelli_core::Input;
 #[cfg(feature = "database")]
 use diesel::pg::PgConnection;
 
@@ -89,11 +90,7 @@ impl Narrative {
     /// - Validation fails (missing acts, empty order, etc.)
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, NarrativeError> {
         let content = std::fs::read_to_string(path.as_ref()).map_err(|e| {
-            NarrativeError::new(
-                NarrativeErrorKind::FileRead(e.to_string()),
-                line!(),
-                file!(),
-            )
+            NarrativeError::new(NarrativeErrorKind::FileRead(e.to_string()))
         })?;
 
         content.parse()
@@ -151,7 +148,7 @@ impl Narrative {
     #[cfg(feature = "database")]
     fn assemble_act_prompts(&mut self, conn: &mut PgConnection) -> Result<(), NarrativeError> {
         let template = self.metadata.template.as_ref().ok_or_else(|| {
-            NarrativeError::new(NarrativeErrorKind::MissingTemplate, line!(), file!())
+            NarrativeError::new(NarrativeErrorKind::MissingTemplate)
         })?;
 
         for (act_name, config) in &mut self.acts {

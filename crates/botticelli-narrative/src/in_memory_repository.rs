@@ -3,10 +3,12 @@
 //! This module provides a simple HashMap-based repository that stores executions
 //! in memory. Useful for unit tests and demonstrating the trait interface.
 
-use crate::{
-    BackendError, BotticelliError, BotticelliResult, ExecutionFilter, ExecutionStatus,
-    ExecutionSummary, NarrativeExecution, NarrativeRepository,
+use botticelli_interface::{
+    ExecutionFilter, ExecutionStatus, ExecutionSummary, 
+    NarrativeExecution, NarrativeRepository,
 };
+use botticelli_storage::{MediaMetadata, MediaReference};
+use botticelli_error::{BackendError, BotticelliError, BotticelliResult, NotImplementedError};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -215,8 +217,8 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
     async fn store_media(
         &self,
         _data: &[u8],
-        _metadata: &crate::MediaMetadata,
-    ) -> BotticelliResult<crate::MediaReference> {
+        _metadata: &botticelli_storage::MediaMetadata,
+    ) -> BotticelliResult<botticelli_storage::MediaReference> {
         Err(crate::BotticelliError::from(
             crate::NotImplementedError::new(
                 "Media storage not yet implemented for in-memory repository",
@@ -224,7 +226,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         ))
     }
 
-    async fn load_media(&self, _reference: &crate::MediaReference) -> BotticelliResult<Vec<u8>> {
+    async fn load_media(&self, _reference: &botticelli_storage::MediaReference) -> BotticelliResult<Vec<u8>> {
         Err(crate::BotticelliError::from(
             crate::NotImplementedError::new(
                 "Media loading not yet implemented for in-memory repository",
@@ -235,7 +237,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
     async fn get_media_by_hash(
         &self,
         _content_hash: &str,
-    ) -> BotticelliResult<Option<crate::MediaReference>> {
+    ) -> BotticelliResult<Option<botticelli_storage::MediaReference>> {
         Ok(None)
     }
 

@@ -3,7 +3,9 @@
 //! Processors are invoked after an act completes to extract structured
 //! data and perform side effects (database insertion, file writing, etc.).
 
-use crate::{ActExecution, BotticelliResult, NarrativeMetadata};
+use botticelli_interface::ActExecution;
+use botticelli_error::BotticelliResult;
+use crate::NarrativeMetadata;
 use async_trait::async_trait;
 
 /// Context provided to processors for act processing.
@@ -207,7 +209,7 @@ impl Default for ProcessorRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Input;
+    use botticelli_core::Input;
 
     struct TestProcessor {
         name: String,
