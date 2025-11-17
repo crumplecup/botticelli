@@ -5,46 +5,35 @@
 #
 # Workflow:
 # 1. Run: boticelli run --narrative narratives/generate_users.toml
-# 2. Review: boticelli content list potential_users
-# 3. Promote: boticelli content promote potential_users 1 --target discord_users
+# 2. Review: boticelli content list users_gen_001
+# 3. Promote: boticelli content promote users_gen_001 1 --target discord_users
 
-[narrative]
+[narration]
 name = "potential_users"
 description = "Generates diverse Discord user profiles for testing and development"
 template = "discord_user"
 
-[narrative.rate_limiting]
-tier = "Free"
+[toc]
+order = ["power_user", "new_user", "bot_user"]
 
-[[act]]
-name = "power_user"
-user = """Generate a power user profile:
+[acts]
+power_user = """Generate a power user profile:
 - Unique username reflecting an active community member
 - 4-digit discriminator
 - Avatar URL placeholder
 - Not a bot (false)
 - Account created 2-3 years ago"""
 
-processors = ["content_generation"]
-
-[[act]]
-name = "new_user"
-user = """Generate a new user profile:
+new_user = """Generate a new user profile:
 - Fresh, simple username
 - 4-digit discriminator
 - No avatar (null)
 - Not a bot (false)
 - Account created within last month"""
 
-processors = ["content_generation"]
-
-[[act]]
-name = "bot_user"
-user = """Generate a bot user profile:
+bot_user = """Generate a bot user profile:
 - Bot-style username (ends with "Bot" or similar)
 - 4-digit discriminator
 - Bot-themed avatar URL
 - Is a bot (true)
 - Account created 1 year ago"""
-
-processors = ["content_generation"]

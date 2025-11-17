@@ -5,68 +5,49 @@
 #
 # Workflow:
 # 1. Run: boticelli run --narrative narratives/generate_guilds.toml
-# 2. Review: boticelli content list potential_guilds
-# 3. Promote: boticelli content promote potential_guilds 1 --target discord_guilds
+# 2. Review: boticelli content list guilds_gen_001
+# 3. Promote: boticelli content promote guilds_gen_001 1 --target discord_guilds
 
-[narrative]
+[narration]
 name = "potential_guilds"
 description = "Generates diverse Discord guild configurations for planning and testing"
 template = "discord_guild"
 
-[narrative.rate_limiting]
-tier = "Free"
+[toc]
+order = ["gaming_guild", "tech_guild", "creative_guild", "study_guild", "hobby_guild"]
 
-[[act]]
-name = "gaming_guild"
-user = """Generate a comprehensive gaming community guild configuration with:
+[acts]
+gaming_guild = """Generate a comprehensive gaming community guild configuration with:
 - A memorable name reflecting gaming culture
 - Detailed description of the community's purpose and vibe
 - Appropriate icon URL (use placeholder like https://example.com/icons/gaming.png)
 - Realistic owner_id (use a large number like Discord IDs)
 - Current timestamp"""
 
-processors = ["content_generation"]
-
-[[act]]
-name = "tech_guild"
-user = """Generate a technology and programming community guild with:
+tech_guild = """Generate a technology and programming community guild with:
 - A professional yet friendly name
 - Description emphasizing learning, collaboration, and tech discussion
 - Tech-themed icon URL placeholder
 - Realistic owner_id
 - Current timestamp"""
 
-processors = ["content_generation"]
-
-[[act]]
-name = "creative_guild"
-user = """Generate an arts and creative community guild featuring:
+creative_guild = """Generate an arts and creative community guild featuring:
 - An inspiring, artistic name
 - Description welcoming artists, writers, musicians, and creators
 - Creative/artistic icon URL placeholder
 - Realistic owner_id
 - Current timestamp"""
 
-processors = ["content_generation"]
-
-[[act]]
-name = "study_guild"
-user = """Generate an educational study group guild with:
+study_guild = """Generate an educational study group guild with:
 - An academic-focused name
 - Description promoting study groups, homework help, and academic support
 - Education-themed icon URL placeholder
 - Realistic owner_id
 - Current timestamp"""
 
-processors = ["content_generation"]
-
-[[act]]
-name = "hobby_guild"
-user = """Generate a hobby enthusiast guild (choose: gardening, cooking, photography, or fitness) with:
+hobby_guild = """Generate a hobby enthusiast guild (choose: gardening, cooking, photography, or fitness) with:
 - A niche-specific name that attracts enthusiasts
 - Description of the hobby focus and community values
 - Hobby-relevant icon URL placeholder
 - Realistic owner_id
 - Current timestamp"""
-
-processors = ["content_generation"]

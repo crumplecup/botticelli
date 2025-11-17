@@ -5,46 +5,35 @@
 #
 # Workflow:
 # 1. Run: boticelli run --narrative narratives/generate_channel_posts.toml
-# 2. Review: boticelli content list potential_posts
-# 3. Promote: boticelli content promote potential_posts 1 --target discord_channels
+# 2. Review: boticelli content list channel_posts_001
+# 3. Promote: boticelli content promote channel_posts_001 1 --target discord_channels
 
-[narrative]
+[narration]
 name = "potential_posts"
 description = "Generates engaging Discord channel post content for review and scheduling"
 template = "discord_channel"
 
-[narrative.rate_limiting]
-tier = "Free"
+[toc]
+order = ["welcome_post", "announcement_post", "help_post"]
 
-[[act]]
-name = "welcome_post"
-user = """Generate a welcoming general chat channel:
+[acts]
+welcome_post = """Generate a welcoming general chat channel:
 - Channel for a gaming community guild
 - Warm, friendly topic that encourages interaction
 - Type: "text"
 - Position 0 (first channel)
 - Recent timestamp"""
 
-processors = ["content_generation"]
-
-[[act]]
-name = "announcement_post"
-user = """Generate an announcements channel:
+announcement_post = """Generate an announcements channel:
 - Professional announcement channel
 - Topic describing what announcements will be posted
 - Type: "text"
 - Position 1
 - Recent timestamp"""
 
-processors = ["content_generation"]
-
-[[act]]
-name = "help_post"
-user = """Generate a help/support channel:
+help_post = """Generate a help/support channel:
 - Helpful, encouraging name
 - Topic explaining how to get help and guidelines
 - Type: "text"
 - Position 2
 - Recent timestamp"""
-
-processors = ["content_generation"]
