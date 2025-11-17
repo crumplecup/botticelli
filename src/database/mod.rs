@@ -66,6 +66,8 @@ pub use schema_docs::{
 pub use schema_inference::{
     infer_column_type, infer_schema, resolve_type_conflict, ColumnDefinition, InferredSchema,
 };
+#[cfg(feature = "database")]
+pub use schema_inference::create_inferred_table;
 
 use crate::{GenerateRequest, GenerateResponse};
 

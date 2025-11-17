@@ -1,7 +1,8 @@
 //! Content generation processor for creating reviewable content.
 //!
 //! This processor detects narratives with a `template` field and generates
-//! content into custom tables based on Discord schema templates.
+//! content into custom tables based on Discord schema templates, OR infers
+//! schema automatically from JSON responses when no template is provided.
 
 use crate::{ActProcessor, BoticelliResult, ProcessorContext, extract_json, parse_json};
 use async_trait::async_trait;
@@ -9,8 +10,9 @@ use serde_json::Value as JsonValue;
 
 #[cfg(feature = "database")]
 use crate::{
-    ContentGenerationRepository, NewContentGenerationRow, PgConnection, 
+    ContentGenerationRepository, NewContentGenerationRow, PgConnection,
     PostgresContentGenerationRepository, UpdateContentGenerationRow, create_content_table,
+    create_inferred_table, infer_schema,
 };
 #[cfg(feature = "database")]
 use chrono::Utc;
@@ -18,6 +20,16 @@ use chrono::Utc;
 use diesel::prelude::*;
 #[cfg(feature = "database")]
 use std::sync::{Arc, Mutex};
+
+/// Content generation processing mode
+#[cfg(feature = "database")]
+#[derive(Debug, Clone, PartialEq)]
+enum ProcessingMode {
+    /// Use an explicit template to define table schema
+    Template(String),
+    /// Infer schema automatically from JSON response
+    Inference,
+}
 
 /// Processor for content generation into custom tables.
 ///
@@ -115,18 +127,19 @@ impl ContentGenerationProcessor {
 #[async_trait]
 impl ActProcessor for ContentGenerationProcessor {
     async fn process(&self, context: &ProcessorContext<'_>) -> BoticelliResult<()> {
-        let template = context
-            .narrative_metadata
-            .template
-            .as_ref()
-            .expect("should_process ensures template exists");
-
         let table_name = &context.narrative_metadata.name;
+
+        // Determine processing mode: Template or Inference
+        let processing_mode = if let Some(template) = &context.narrative_metadata.template {
+            ProcessingMode::Template(template.clone())
+        } else {
+            ProcessingMode::Inference
+        };
 
         tracing::info!(
             act = %context.execution.act_name,
             table = %table_name,
-            template = %template,
+            mode = ?processing_mode,
             "Processing content generation"
         );
 
@@ -162,32 +175,59 @@ impl ActProcessor for ContentGenerationProcessor {
 
         // Execute content generation
         let generation_result: Result<usize, crate::BoticelliError> = (|| {
-            // Create table if needed
-            {
-                let mut conn = self.connection.lock().map_err(|e| {
-                    crate::BackendError::new(format!("Failed to lock connection: {}", e))
-                })?;
-
-                create_content_table(
-                    &mut conn,
-                    table_name,
-                    template,
-                    Some(context.narrative_name),
-                    Some(&context.narrative_metadata.description),
-                )?;
-            }
-
-            // Extract JSON from response
+            // Extract JSON from response first (needed for both modes)
             let json_str = extract_json(&context.execution.response)?;
 
             tracing::debug!(json_length = json_str.len(), "Extracted JSON from response");
 
             // Parse JSON - could be single object or array
-            let items: Vec<JsonValue> = if json_str.trim().starts_with('[') {
-                parse_json(&json_str)?
+            let parsed_json: JsonValue = parse_json(&json_str)?;
+
+            let items: Vec<JsonValue> = if parsed_json.is_array() {
+                parsed_json.as_array().unwrap().to_vec()
             } else {
-                vec![parse_json(&json_str)?]
+                vec![parsed_json.clone()]
             };
+
+            // Create table based on processing mode
+            {
+                let mut conn = self.connection.lock().map_err(|e| {
+                    crate::BackendError::new(format!("Failed to lock connection: {}", e))
+                })?;
+
+                match &processing_mode {
+                    ProcessingMode::Template(template) => {
+                        tracing::debug!(template = %template, "Creating table from template");
+
+                        create_content_table(
+                            &mut conn,
+                            table_name,
+                            template,
+                            Some(context.narrative_name),
+                            Some(&context.narrative_metadata.description),
+                        )?;
+                    }
+                    ProcessingMode::Inference => {
+                        tracing::debug!("Inferring schema from JSON response");
+
+                        // Infer schema from parsed JSON
+                        let schema = infer_schema(&parsed_json)?;
+
+                        tracing::info!(
+                            field_count = schema.field_count(),
+                            "Inferred schema from JSON"
+                        );
+
+                        create_inferred_table(
+                            &mut conn,
+                            table_name,
+                            &schema,
+                            Some(context.narrative_name),
+                            Some(&context.narrative_metadata.description),
+                        )?;
+                    }
+                }
+            }
 
             tracing::info!(count = items.len(), "Parsed JSON items for insertion");
 
@@ -284,9 +324,11 @@ impl ActProcessor for ContentGenerationProcessor {
         })
     }
 
-    fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
-        // Process if narration has a template field
-        context.narrative_metadata.template.is_some()
+    fn should_process(&self, _context: &ProcessorContext<'_>) -> bool {
+        // Process if narration has a template field OR no template (inference mode)
+        // For now, we always process. In the future, we might add an explicit flag
+        // to disable content generation even when template is absent.
+        true
     }
 
     fn name(&self) -> &str {

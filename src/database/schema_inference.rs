@@ -202,6 +202,80 @@ pub fn infer_schema(json: &JsonValue) -> DatabaseResult<InferredSchema> {
     Ok(schema)
 }
 
+/// Create a table with inferred schema from JSON structure
+///
+/// This function creates a PostgreSQL table based on an inferred schema,
+/// adding standard metadata columns for content generation tracking.
+///
+/// # Arguments
+///
+/// * `conn` - Database connection
+/// * `table_name` - Name of the table to create
+/// * `schema` - Inferred schema with column definitions
+/// * `narrative_name` - Optional narrative file name for tracking
+/// * `description` - Optional table description
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the table was created successfully, or an error if creation failed.
+#[cfg(feature = "database")]
+pub fn create_inferred_table(
+    conn: &mut diesel::pg::PgConnection,
+    table_name: &str,
+    schema: &InferredSchema,
+    narrative_name: Option<&str>,
+    description: Option<&str>,
+) -> DatabaseResult<()> {
+    use diesel::prelude::*;
+
+    // Build column definitions
+    let mut columns = Vec::new();
+
+    for (name, def) in &schema.fields {
+        let nullable = if def.nullable { "NULL" } else { "NOT NULL" };
+        columns.push(format!("{} {} {}", name, def.pg_type, nullable));
+    }
+
+    // Add metadata columns (same as template-based tables)
+    columns.push("generated_at TIMESTAMP NOT NULL DEFAULT NOW()".to_string());
+    columns.push("source_narrative TEXT".to_string());
+    columns.push("source_act TEXT".to_string());
+    columns.push("generation_model TEXT".to_string());
+    columns.push("review_status TEXT DEFAULT 'pending'".to_string());
+    columns.push("tags TEXT[]".to_string());
+    columns.push("rating INTEGER".to_string());
+
+    let create_sql = format!(
+        "CREATE TABLE IF NOT EXISTS {} ({})",
+        table_name,
+        columns.join(", ")
+    );
+
+    diesel::sql_query(&create_sql).execute(conn)?;
+
+    // Track in metadata table
+    let narrative_value = narrative_name
+        .map(|n| format!("'{}'", n.replace('\'', "''")))
+        .unwrap_or_else(|| "NULL".to_string());
+
+    let description_value = description
+        .map(|d| format!("'{}'", d.replace('\'', "''")))
+        .unwrap_or_else(|| "NULL".to_string());
+
+    let insert_metadata = format!(
+        "INSERT INTO content_generation_tables (table_name, template_source, narrative_file, description)
+         VALUES ('{}', 'inferred', {}, {})
+         ON CONFLICT (table_name) DO NOTHING",
+        table_name.replace('\'', "''"),
+        narrative_value,
+        description_value,
+    );
+
+    diesel::sql_query(&insert_metadata).execute(conn)?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

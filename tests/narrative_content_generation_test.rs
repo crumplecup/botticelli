@@ -55,14 +55,15 @@ fn test_should_process_with_template() {
 }
 
 #[test]
-fn test_should_not_process_without_template() {
+fn test_should_process_without_template_for_inference() {
     let execution = create_test_execution("test", "test response");
     let metadata = create_test_metadata("test_table", None);
     let context = create_test_context(&execution, &metadata, "test_narrative");
 
     let processor = create_test_processor();
 
-    assert!(!processor.should_process(&context));
+    // Now processes even without template (inference mode)
+    assert!(processor.should_process(&context));
 }
 
 #[test]

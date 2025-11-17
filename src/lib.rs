@@ -102,6 +102,7 @@ pub use database::{
     infer_column_type,
     infer_schema,
     resolve_type_conflict,
+    create_inferred_table,
     ColumnDefinition,
     InferredSchema,
     // Content generation functions
