@@ -10,6 +10,389 @@ This document outlines a strategy for migrating the Boticelli monorepo into a Ca
 - **Flexible builds** - Users can depend on only what they need
 - **Maintainability** - Easier to test, version, and maintain individual components
 - **Backward compatibility** - Existing code continues to work via re-exports
+- **Proper naming** - Embrace the Botticelli (artist) connection with correct spelling
+
+---
+
+## Name Change Strategy: boticelli → Botticelli
+
+**Rationale:** The current spelling "boticelli" (one 't') was intended to differentiate from the Renaissance artist Sandro Botticelli. However, we've decided to lean into the connection and adopt the correct historical spelling "Botticelli" (two 't's) throughout the project.
+
+**Scope:** This is a comprehensive rename affecting:
+- Repository name (GitHub)
+- All crate names in the workspace
+- All code (types, traits, functions, variables)
+- All documentation files
+- Configuration files
+- File paths and directories
+- Database schema (carefully - see migration notes)
+
+### Rename Checklist
+
+#### 1. Repository & GitHub (First Step)
+
+**Actions:**
+1. Rename GitHub repository: `crumplecup/boticelli` → `crumplecup/botticelli`
+   - Settings → Repository name → Rename
+   - GitHub automatically creates redirect from old URL
+   - Update local remote: `git remote set-url origin git@github.com:crumplecup/botticelli.git`
+
+2. Update repository metadata:
+   - Repository description
+   - Topics/tags
+   - About section
+
+**Impact:** Low risk - GitHub handles redirects, existing clones continue working
+
+#### 2. Workspace & Crate Names
+
+**Pattern:** `botticelli-*` → `botticelli-*`
+
+```toml
+# Before
+[workspace]
+members = [
+    "crates/boticelli-error",
+    "crates/boticelli-core",
+    ...
+]
+
+# After
+[workspace]
+members = [
+    "crates/botticelli-error",
+    "crates/botticelli-core",
+    ...
+]
+```
+
+**Affected crates:**
+- `botticelli-error` → `botticelli-error`
+- `botticelli-core` → `botticelli-core`
+- `botticelli-interface` → `botticelli-interface`
+- `botticelli-rate-limit` → `botticelli-rate-limit`
+- `botticelli-storage` → `botticelli-storage`
+- `botticelli-models` → `botticelli-models`
+- `botticelli-database` → `botticelli-database`
+- `botticelli-narrative` → `botticelli-narrative`
+- `botticelli-social` → `botticelli-social`
+- `botticelli-tui` → `botticelli-tui`
+- `botticelli-cli` → `botticelli-cli`
+- `boticelli` → `botticelli` (main facade crate)
+
+#### 3. Directory Structure
+
+**Rename operations:**
+```bash
+# Workspace root (can stay as-is or rename)
+mv boticelli botticelli  # Optional: rename directory
+
+# Within workspace
+mv crates/boticelli-error crates/botticelli-error
+mv crates/boticelli-core crates/botticelli-core
+mv crates/boticelli-interface crates/botticelli-interface
+# ... etc for all crates
+mv crates/boticelli crates/botticelli
+```
+
+**Configuration files:**
+- `boticelli.toml` → `botticelli.toml`
+- References in `.gitignore`, `diesel.toml`, etc.
+
+#### 4. Code Changes
+
+**Type names:**
+```rust
+// Before
+pub struct BoticelliDriver;
+pub struct BoticelliError;
+pub struct BoticelliConfig;
+pub type BoticelliResult<T> = Result<T, BoticelliError>;
+
+// After
+pub struct BotticelliDriver;
+pub struct BotticelliError;
+pub struct BotticelliConfig;
+pub type BotticelliResult<T> = Result<T, BotticelliError>;
+```
+
+**Trait names:**
+```rust
+// Before
+pub trait BoticelliDriver { ... }
+
+// After
+pub trait BotticelliDriver { ... }
+```
+
+**Import statements:**
+```rust
+// Before
+use boticelli::{BoticelliDriver, BoticelliConfig};
+use boticelli_core::{Input, Output};
+
+// After
+use botticelli::{BotticelliDriver, BotticelliConfig};
+use botticelli_core::{Input, Output};
+```
+
+**String literals:**
+```rust
+// Before
+fn provider_name(&self) -> &'static str { "boticelli" }
+const CONFIG_FILE: &str = "boticelli.toml";
+
+// After
+fn provider_name(&self) -> &'static str { "botticelli" }
+const CONFIG_FILE: &str = "botticelli.toml";
+```
+
+#### 5. Documentation Files
+
+**Markdown files to update:**
+- `README.md` - All references to project name
+- `CLAUDE.md` - Examples and documentation
+- `ERROR_RECOVERY.md`
+- `GEMINI.md`, `GEMINI_STREAMING.md`
+- `DISCORD_*.md`
+- `NARRATIVE_PROCESSORS.md`
+- `CONTENT_GENERATION.md`
+- `TUI_GUIDE.md`, `TUI_TROUBLESHOOTING.md`
+- `MEDIA_STORAGE.md`
+- `SCHEMA_INFERENCE.md`
+- `SOCIAL_MEDIA.md`
+- `WORKSPACE_MIGRATION.md` (this file)
+
+**Search patterns:**
+```bash
+# Find all occurrences (case-insensitive)
+rg -i "boticelli" --type md
+
+# Find exact case matches
+rg "boticelli" --type md      # lowercase (most common)
+rg "Boticelli" --type md      # capitalized (some docs)
+rg "BOTICELLI" --type md      # uppercase (rare)
+```
+
+#### 6. Configuration Files
+
+**Files to update:**
+- `Cargo.toml` (workspace and all crate manifests)
+  - Package names
+  - Dependency references
+  - Binary names
+  - Repository URLs
+  - Keywords, categories
+- `boticelli.toml` → `botticelli.toml`
+  - Rename file
+  - Update internal references
+- `diesel.toml` - Database config paths
+- `justfile` - Build commands and paths
+- `.github/workflows/*.yml` - CI/CD configuration
+
+#### 7. Database Considerations
+
+**Schema tables:** Database table names typically should NOT change to avoid migration complexity.
+
+**Approach:**
+- Keep existing table names as-is (e.g., `narratives`, `act_executions`)
+- Only rename if table names explicitly contain "boticelli" (unlikely)
+- Document any database-level names that differ from code names
+
+**Migration strategy (if needed):**
+```sql
+-- Only if tables explicitly named with old spelling
+ALTER TABLE boticelli_metadata RENAME TO botticelli_metadata;
+```
+
+**Risk mitigation:**
+- Keep table names generic (already done: `narratives`, not `boticelli_narratives`)
+- Document in code that DB names may differ from crate names
+- No breaking changes for existing databases
+
+#### 8. File Paths & Directories
+
+**Paths that reference the project:**
+```bash
+# Default config directory
+~/.config/botticelli/     → ~/.config/botticelli/
+~/.local/share/botticelli/ → ~/.local/share/botticelli/
+
+# Storage directories (if hardcoded)
+./storage/botticelli/     → ./storage/botticelli/
+```
+
+**Migration support:**
+- Check both old and new paths
+- Create symlinks for backwards compatibility (optional)
+- Document migration in release notes
+
+### Integration with Workspace Migration
+
+**Recommended approach:** Combine rename with workspace migration for efficiency.
+
+**Timeline:**
+1. **Phase 0 (Pre-migration): Repository Rename** (1 day)
+   - Rename GitHub repository
+   - Update local git remotes
+   - Update all documentation files
+   - Commit and push as single "Rename project to Botticelli" commit
+
+2. **Phase 1-10: Workspace Migration with New Names** (3-4 weeks)
+   - Create workspace with `botticelli-*` crate names (not `botticelli-*`)
+   - Move code into properly named crates
+   - All new code uses `Botticelli*` naming
+
+**Benefit:** Do the rename once during migration, not twice.
+
+### Automated Rename Tools
+
+**Use `cargo-workspace` or scripts:**
+
+```bash
+#!/bin/bash
+# rename_project.sh
+
+# 1. Rename all crate directories
+for dir in crates/boticelli-*; do
+  new_dir="${dir/botticelli/botticelli}"
+  git mv "$dir" "$new_dir"
+done
+
+# 2. Update Cargo.toml files
+find . -name "Cargo.toml" -exec sed -i 's/botticelli/botticelli/g' {} +
+
+# 3. Update Rust source files
+find src -name "*.rs" -exec sed -i 's/Boticelli/Botticelli/g' {} +
+find src -name "*.rs" -exec sed -i 's/botticelli/botticelli/g' {} +
+
+# 4. Update documentation
+find . -name "*.md" -exec sed -i 's/botticelli/botticelli/g' {} +
+find . -name "*.md" -exec sed -i 's/Boticelli/Botticelli/g' {} +
+
+# 5. Rename config file
+git mv boticelli.toml botticelli.toml
+
+# 6. Update test files
+find tests -name "*.rs" -exec sed -i 's/botticelli/botticelli/g' {} +
+```
+
+**Important:** Test thoroughly after automated rename!
+
+### Testing After Rename
+
+**Verification checklist:**
+```bash
+# 1. Clean build
+cargo clean
+cargo build --all-features
+
+# 2. Run all tests
+cargo test --all-features
+
+# 3. Run clippy
+cargo clippy --all-features --all-targets
+
+# 4. Check documentation builds
+cargo doc --all-features --no-deps
+
+# 5. Verify binary names
+cargo build --release --bins
+ls target/release/
+
+# 6. Test CLI
+./target/release/botticelli --help  # Not 'boticelli'
+
+# 7. Check config loading
+# Ensure it looks for botticelli.toml, not boticelli.toml
+```
+
+### Breaking Changes & Migration Guide
+
+**For users upgrading from 0.1.x → 0.2.0:**
+
+```markdown
+## Breaking Changes in 0.2.0
+
+### Project Renamed to Botticelli (Two T's)
+
+The project has been renamed from "Boticelli" to "Botticelli" to properly honor
+the Renaissance artist Sandro Botticelli.
+
+**Cargo.toml changes:**
+```toml
+# Before (0.1.x)
+[dependencies]
+boticelli = "0.1"
+
+# After (0.2.x)
+[dependencies]
+botticelli = "0.2"
+```
+
+**Import changes:**
+```rust
+// Before (0.1.x)
+use boticelli::{BoticelliDriver, BoticelliConfig};
+
+// After (0.2.x)
+use botticelli::{BotticelliDriver, BotticelliConfig};
+```
+
+**Config file:**
+- Rename `boticelli.toml` → `botticelli.toml`
+- Update config directory: `~/.config/botticelli/` → `~/.config/botticelli/`
+
+**No database changes required** - database schema is unaffected.
+```
+
+### Risks & Mitigation
+
+**Risk 1: Typos during bulk rename**
+- **Mitigation:** Use automated tools, then manual review
+- **Test:** Comprehensive test suite after rename
+
+**Risk 2: Missed references**
+- **Mitigation:** Use `rg "boticelli"` to find all occurrences
+- **Test:** Search for old spelling in build artifacts
+
+**Risk 3: User confusion**
+- **Mitigation:** Clear migration guide in release notes
+- **Communication:** Blog post explaining the rename
+
+**Risk 4: Broken external links**
+- **Mitigation:** GitHub redirect handles old repo URLs
+- **Documentation:** Update links in README badges, etc.
+
+**Risk 5: Database incompatibility**
+- **Mitigation:** Keep DB schema unchanged
+- **Test:** Verify existing databases work with new code
+
+### Success Criteria
+
+✅ **Repository:**
+- GitHub repo renamed to `botticelli`
+- All GitHub metadata updated
+
+✅ **Code:**
+- All crate names use `botticelli-*` pattern
+- All types/traits use `Botticelli*` naming
+- All imports use new spelling
+- Zero references to old spelling in code
+
+✅ **Documentation:**
+- All `.md` files updated
+- README reflects new name
+- Migration guide published
+
+✅ **Functionality:**
+- All tests pass with new names
+- Binary named `botticelli` (not `boticelli`)
+- Config file is `botticelli.toml`
+
+✅ **Publishing:**
+- Crates published to crates.io with new names
+- Old crates marked as deprecated with migration notice
 
 ---
 
@@ -18,11 +401,11 @@ This document outlines a strategy for migrating the Boticelli monorepo into a Ca
 ### Module Structure (8,557 LOC)
 
 ```
-boticelli/
+botticelli/
 ├── src/
 │   ├── core.rs              # Core types and traits (~200 LOC)
 │   ├── error.rs             # Error types (~300 LOC)
-│   ├── interface.rs         # BoticelliDriver trait (~150 LOC)
+│   ├── interface.rs         # BotticelliDriver trait (~150 LOC)
 │   ├── models/              # LLM provider integrations (~1800 LOC)
 │   │   └── gemini/          # Gemini client, Live API, errors
 │   ├── narrative/           # Narrative system (~1500 LOC)
@@ -54,27 +437,27 @@ boticelli/
 
 ```mermaid
 graph TD
-    Core[boticelli-core] --> Error[boticelli-error]
-    Interface[boticelli-interface] --> Core
+    Core[botticelli-core] --> Error[botticelli-error]
+    Interface[botticelli-interface] --> Core
     Interface --> Error
-    
-    Models[boticelli-models] --> Interface
-    Models --> RateLimit[boticelli-rate-limit]
-    
-    Narrative[boticelli-narrative] --> Interface
-    Narrative --> Storage[boticelli-storage]
-    Narrative --> Database[boticelli-database]
-    
+
+    Models[botticelli-models] --> Interface
+    Models --> RateLimit[botticelli-rate-limit]
+
+    Narrative[botticelli-narrative] --> Interface
+    Narrative --> Storage[botticelli-storage]
+    Narrative --> Database[botticelli-database]
+
     Database --> Core
     Database --> Error
-    
-    Social[boticelli-social] --> Interface
+
+    Social[botticelli-social] --> Interface
     Social --> Database
-    
-    TUI[boticelli-tui] --> Database
+
+    TUI[botticelli-tui] --> Database
     TUI --> Narrative
-    
-    CLI[boticelli-cli] --> Models
+
+    CLI[botticelli-cli] --> Models
     CLI --> Narrative
     CLI --> Database
     CLI --> Social
@@ -97,7 +480,7 @@ graph TD
 
 Create the foundation that other crates depend on:
 
-#### 1. `boticelli-error`
+#### 1. `botticelli-error`
 **Purpose:** Error types and trait definitions  
 **Dependencies:** None (foundation crate)  
 **Exports:**
@@ -107,9 +490,9 @@ Create the foundation that other crates depend on:
 
 **Why first:** Zero dependencies, needed by everything
 
-#### 2. `boticelli-core`
+#### 2. `botticelli-core`
 **Purpose:** Core types, traits, and abstractions  
-**Dependencies:** `boticelli-error`  
+**Dependencies:** `botticelli-error`  
 **Exports:**
 - `Input` / `Output` enums
 - `Message` / `MessageRole`
@@ -118,9 +501,9 @@ Create the foundation that other crates depend on:
 
 **Why second:** Foundation types, minimal dependencies
 
-#### 3. `boticelli-interface`
+#### 3. `botticelli-interface`
 **Purpose:** The `BoticelliDriver` trait  
-**Dependencies:** `boticelli-core`, `boticelli-error`  
+**Dependencies:** `botticelli-core`, `botticelli-error`  
 **Exports:**
 - `BoticelliDriver` trait
 - Integration test utilities
@@ -131,10 +514,10 @@ Create the foundation that other crates depend on:
 
 ### Phase 2: Rate Limiting & Retry
 
-#### 4. `boticelli-rate-limit`
+#### 4. `botticelli-rate-limit`
 **Purpose:** Rate limiting and error recovery  
 **Dependencies:** 
-- `boticelli-error`
+- `botticelli-error`
 - External: `governor`, `tokio`, `tokio-retry2`, `tracing`
 
 **Exports:**
@@ -150,12 +533,12 @@ Create the foundation that other crates depend on:
 
 ### Phase 3: Provider Implementations
 
-#### 5. `boticelli-models`
+#### 5. `botticelli-models`
 **Purpose:** LLM provider integrations  
 **Dependencies:**
-- `boticelli-interface`
-- `boticelli-rate-limit`
-- `boticelli-error`
+- `botticelli-interface`
+- `botticelli-rate-limit`
+- `botticelli-error`
 - External: `reqwest`, `serde`, `tokio`, `tracing`
 
 **Features:**
@@ -177,10 +560,10 @@ Create the foundation that other crates depend on:
 
 ### Phase 4: Storage & Database
 
-#### 6. `boticelli-storage`
+#### 6. `botticelli-storage`
 **Purpose:** Content-addressable storage  
 **Dependencies:**
-- `boticelli-error`
+- `botticelli-error`
 - External: `sha2`, `tokio`, `serde`
 
 **Exports:**
@@ -190,11 +573,11 @@ Create the foundation that other crates depend on:
 
 **Features:** None
 
-#### 7. `boticelli-database`
+#### 7. `botticelli-database`
 **Purpose:** PostgreSQL integration  
 **Dependencies:**
-- `boticelli-core`
-- `boticelli-error`
+- `botticelli-core`
+- `botticelli-error`
 - External: `diesel`, `chrono`, `uuid`
 
 **Features:**
@@ -213,13 +596,13 @@ Create the foundation that other crates depend on:
 
 ### Phase 5: Narrative System
 
-#### 8. `boticelli-narrative`
+#### 8. `botticelli-narrative`
 **Purpose:** Narrative execution engine  
 **Dependencies:**
-- `boticelli-interface`
-- `boticelli-storage`
-- `boticelli-error`
-- Optional: `boticelli-database`
+- `botticelli-interface`
+- `botticelli-storage`
+- `botticelli-error`
+- Optional: `botticelli-database`
 
 **Features:**
 - `database` (default off) - Database persistence
@@ -239,11 +622,11 @@ Create the foundation that other crates depend on:
 
 ### Phase 6: Integration Layers
 
-#### 9. `boticelli-social`
+#### 9. `botticelli-social`
 **Purpose:** Social platform integrations  
 **Dependencies:**
-- `boticelli-interface`
-- `boticelli-database`
+- `botticelli-interface`
+- `botticelli-database`
 - External: Platform SDKs
 
 **Features:**
@@ -255,11 +638,11 @@ Create the foundation that other crates depend on:
 
 **Why separate:** Heavy platform dependencies, optional
 
-#### 10. `boticelli-tui`
+#### 10. `botticelli-tui`
 **Purpose:** Terminal UI for content review  
 **Dependencies:**
-- `boticelli-database`
-- `boticelli-narrative`
+- `botticelli-database`
+- `botticelli-narrative`
 - External: `ratatui`, `crossterm`
 
 **Features:** None (TUI or nothing)
@@ -271,14 +654,14 @@ Create the foundation that other crates depend on:
 
 **Why separate:** Heavy UI dependencies, optional tool
 
-#### 11. `boticelli-cli`
+#### 11. `botticelli-cli`
 **Purpose:** Command-line interface  
 **Dependencies:**
-- `boticelli-models`
-- `boticelli-narrative`
-- `boticelli-database`
-- `boticelli-social`
-- `boticelli-tui`
+- `botticelli-models`
+- `botticelli-narrative`
+- `botticelli-database`
+- `botticelli-social`
+- `botticelli-tui`
 - External: `clap`
 
 **Features:** Inherits from dependencies
@@ -360,14 +743,14 @@ pub use boticelli_cli::*;
 ## Directory Structure
 
 ```
-boticelli/
+botticelli/
 ├── Cargo.toml                    # Workspace manifest
 ├── README.md
 ├── LICENSE-MIT
 ├── LICENSE-APACHE
 │
 ├── crates/
-│   ├── boticelli/                # Main facade crate
+│   ├── botticelli/                # Main facade crate
 │   │   ├── Cargo.toml
 │   │   ├── src/
 │   │   │   └── lib.rs            # Re-exports
@@ -555,17 +938,17 @@ clap = { version = "4", features = ["derive", "env"] }
 
 2. Create workspace `Cargo.toml`
 
-3. **Migrate `boticelli-error`:**
+3. **Migrate `botticelli-error`:**
    - Move `src/error.rs` → `crates/boticelli-error/src/lib.rs`
    - Create `crates/boticelli-error/Cargo.toml`
    - Test: `cargo build -p boticelli-error`
 
-4. **Migrate `boticelli-core`:**
+4. **Migrate `botticelli-core`:**
    - Move `src/core.rs` → `crates/boticelli-core/src/lib.rs`
-   - Update imports to use `boticelli-error`
+   - Update imports to use `botticelli-error`
    - Test: `cargo build -p boticelli-core`
 
-5. **Migrate `boticelli-interface`:**
+5. **Migrate `botticelli-interface`:**
    - Move `src/interface.rs` → `crates/boticelli-interface/src/lib.rs`
    - Update imports
    - Test: `cargo build -p boticelli-interface`
@@ -576,7 +959,7 @@ clap = { version = "4", features = ["derive", "env"] }
 1. Create `crates/boticelli-rate-limit/`
 2. Move `src/rate_limit/*` → `crates/boticelli-rate-limit/src/`
 3. Update `Cargo.toml` with dependencies
-4. Fix imports to use `boticelli-error`
+4. Fix imports to use `botticelli-error`
 5. Test: `cargo test -p boticelli-rate-limit`
 
 #### Phase 3: Storage (1 day)
@@ -590,9 +973,9 @@ clap = { version = "4", features = ["derive", "env"] }
 2. Move `src/models/*` → `crates/boticelli-models/src/`
 3. Set up feature flags for each provider
 4. Update imports to use:
-   - `boticelli-interface`
-   - `boticelli-rate-limit`
-   - `boticelli-error`
+   - `botticelli-interface`
+   - `botticelli-rate-limit`
+   - `botticelli-error`
 5. Test each feature:
    ```bash
    cargo test -p boticelli-models --features gemini
@@ -616,9 +999,9 @@ clap = { version = "4", features = ["derive", "env"] }
 2. Move `src/narrative/*` → `crates/boticelli-narrative/src/`
 3. Set up `database` and `content-generation` features
 4. Update imports to use:
-   - `boticelli-interface`
-   - `boticelli-storage`
-   - `boticelli-database` (optional)
+   - `botticelli-interface`
+   - `botticelli-storage`
+   - `botticelli-database` (optional)
 5. Test with and without database feature:
    ```bash
    cargo test -p boticelli-narrative
@@ -649,7 +1032,7 @@ clap = { version = "4", features = ["derive", "env"] }
    - Test: `cargo run -p boticelli-cli -- --help`
 
 2. **Main facade:**
-   - Create `crates/boticelli/`
+   - Create `crates/botticelli/`
    - Create re-export facade in `src/lib.rs`
    - Set up all features
    - Move integration tests to workspace `tests/`
@@ -751,7 +1134,7 @@ boticelli = { version = "0.2", features = ["gemini", "database", "tui"] }
 - Obvious dependency relationships
 
 **Independent versioning:**
-- Can bump `boticelli-models` without changing core
+- Can bump `botticelli-models` without changing core
 - Semver violations isolated to affected crates
 - Easier to maintain compatibility
 
@@ -848,10 +1231,10 @@ Add section on workspace structure:
 Boticelli is organized as a Cargo workspace with focused crates:
 
 - `boticelli` - Main crate with re-exports (use this for simplicity)
-- `boticelli-models` - LLM provider integrations
-- `boticelli-narrative` - Narrative execution engine
-- `boticelli-database` - PostgreSQL integration
-- `boticelli-rate-limit` - Rate limiting and retry
+- `botticelli-models` - LLM provider integrations
+- `botticelli-narrative` - Narrative execution engine
+- `botticelli-database` - PostgreSQL integration
+- `botticelli-rate-limit` - Rate limiting and retry
 - ... (list all crates)
 
 For most users, just depend on `boticelli` with desired features.
@@ -943,7 +1326,7 @@ Can be parallelized with multiple contributors working on independent crates.
 Once workspace migration is complete:
 
 1. **Independent crate releases**
-   - Update `boticelli-models` without changing core
+   - Update `botticelli-models` without changing core
    - Fix bugs in specific crates
    - Add new providers without touching narrative system
 
