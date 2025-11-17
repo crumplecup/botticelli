@@ -678,48 +678,59 @@ fn test_failed_generation_records_error() {
 - [x] **Sprint 1 (Database): Complete ✅**
 - [x] **Sprint 2 (Executor): Complete ✅**
 - [x] **Sprint 3 (CLI): Complete ✅**
-  - [x] Added 4 new CLI commands ✅ Committed: 4c817f4
-    - `content generations` - List all generations with filtering
-    - `content last` - Get most recent (critical for justfile)
-    - `content info` - Show detailed generation metadata
-    - `content clean` - Delete old generation records
-  - [x] Multiple output formats (human, json, table-name-only)
-  - [x] Interactive confirmations for destructive operations
-- [ ] Sprint 4 (Justfile): Not started (NEXT)
-- [ ] Sprint 5 (Polish): Not started
+- [x] **Sprint 4 (Justfile): Complete ✅**
+  - [x] Updated tui-demo to use content tracking ✅ Committed: a963f7d
+  - [x] Added content-generations helper recipe
+  - [x] Added content-last helper recipe
+  - [x] Added tui-last helper recipe
+  - [x] Removed hardcoded table name dependencies
+- [ ] Sprint 5 (Polish): Optional enhancements
 
-**Sprint 3 Summary:**
-- ✅ 4 new ContentCommands variants added to CLI
-- ✅ Handler functions implemented in main.rs
-- ✅ Three output formats (human, json, table-name-only)
-- ✅ Status filtering for list command
-- ✅ Date-based cleanup with confirmation
-- ✅ `content last --format=table-name-only` ready for justfile
-- ✅ All tests passing (52 passed)
-- ✅ Zero clippy warnings
+**Sprint 4 Summary:**
+- ✅ Updated tui-demo to dynamically discover latest table
+- ✅ Uses `content last --format=table-name-only` for automation
+- ✅ Added 3 new justfile recipes for content management
+- ✅ Robust error handling and user-friendly messages
+- ✅ No more hardcoded "guilds_gen_001" table names
+- ✅ Works with any content generation narrative
+- ✅ All tests passing
+
+**✅ ORIGINAL ISSUE RESOLVED:**
+
+The TUI hardcoded table name issue is now fixed! The workflow is:
+
+1. **Generate content**: `just example-guilds` or any content narrative
+2. **Review with TUI**: `just tui-demo` or `just tui-last`
+   - Automatically finds the most recent generation
+   - No hardcoded table names
+   - Works reliably every time
+
+**New Commands Available:**
+- `just tui-demo` - Generate guilds and launch TUI (all-in-one)
+- `just tui-last` - Launch TUI on most recent generation
+- `just content-last` - Show details of last generation
+- `just content-generations` - List all tracked generations
 
 **Completed Files:**
 - ✅ `migrations/2025-11-17-022706-0000_create_content_generations/up.sql`
 - ✅ `migrations/2025-11-17-022706-0000_create_content_generations/down.sql`
 - ✅ `src/database/content_generation_models.rs`
 - ✅ `src/database/content_generation_repository.rs`
-- ✅ `src/database/schema.rs` - Added content_generations table
-- ✅ `src/database/mod.rs` - Exported models and repository
-- ✅ `src/lib.rs` - Exported types at crate level
-- ✅ `tests/content_generation_repository_test.rs` - 9 passing tests
-- ✅ `tests/narrative_processor_integration_test.rs` - Fixed regression
-- ✅ `src/narrative/content_generation.rs` - Integrated tracking
-- ✅ `src/cli.rs` - Added new ContentCommands
-- ✅ `src/main.rs` - Implemented CLI handlers
-- ✅ `TUI_TROUBLESHOOTING.md` (this file - tracking progress)
-
-**Files Pending:**
-- ⚠️ `justfile` - Will be updated in Sprint 4
-- ✅ `narratives/generate_*.toml` - Workflow comments updated
+- ✅ `src/database/schema.rs`
+- ✅ `src/database/mod.rs`
+- ✅ `src/lib.rs`
+- ✅ `tests/content_generation_repository_test.rs`
+- ✅ `tests/narrative_processor_integration_test.rs`
+- ✅ `src/narrative/content_generation.rs`
+- ✅ `src/cli.rs`
+- ✅ `src/main.rs`
+- ✅ `justfile` - Updated with content tracking
+- ✅ `TUI_TROUBLESHOOTING.md` (this file)
 
 **Ready to Push:**
-- Commits 883709e, fb5beba, bd2e015, 4992f39, 21ee1b5, 9694489, 3a5e352, 4c817f4
-- Sprints 1-3 complete and tested
+- Commits: 883709e, fb5beba, bd2e015, 4992f39, 21ee1b5, 9694489, 3a5e352, 4c817f4, c84563d, a963f7d
+- All 4 sprints complete and tested
+- Issue resolved and production-ready
 
 **Files To Create:**
 - `migrations/YYYYMMDDHHMMSS_create_content_generations/up.sql`
