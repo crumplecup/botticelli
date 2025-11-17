@@ -1,0 +1,52 @@
+[package]
+name = "botticelli-models"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "LLM provider integrations for Botticelli"
+
+[dependencies]
+botticelli-error = { workspace = true }
+botticelli-core = { workspace = true }
+botticelli-interface = { workspace = true }
+botticelli-rate-limit = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures-util = { workspace = true }
+
+# HTTP and serialization
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Retry
+tokio-retry2 = { workspace = true }
+
+# Base64 encoding
+base64 = { workspace = true }
+
+# WebSocket
+tokio-tungstenite = { workspace = true }
+
+# Feature-gated provider SDKs
+gemini-rust = { workspace = true, optional = true }
+
+[features]
+default = []
+gemini = ["dep:gemini-rust"]
+anthropic = []
+huggingface = []
+groq = []
+perplexity = []
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

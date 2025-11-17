@@ -5,6 +5,7 @@ members = [
     "crates/botticelli-interface",
     "crates/botticelli-rate-limit",
     "crates/botticelli-storage",
+    "crates/botticelli-models",
 ]
 resolver = "2"
 
@@ -29,6 +30,9 @@ botticelli-rate-limit = { path = "crates/botticelli-rate-limit", version = "0.2.
 # Internal crates (Phase 3 storage)
 botticelli-storage = { path = "crates/botticelli-storage", version = "0.2.0" }
 
+# Internal crates (Phase 4 models)
+botticelli-models = { path = "crates/botticelli-models", version = "0.2.0" }
+
 # Common external dependencies (shared versions)
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
@@ -51,3 +55,10 @@ dirs = "6"
 # Storage and hashing
 sha2 = "0.10"
 uuid = { version = "1", features = ["v4"] }
+
+# LLM provider SDKs
+gemini-rust = "1.5"
+base64 = "0.22"
+
+# WebSocket for live APIs
+tokio-tungstenite = "0.27"

@@ -309,7 +309,7 @@ impl<T: Tier> RateLimiter<T> {
     where
         F: Fn() -> Fut,
         Fut: std::future::Future<Output = Result<R, E>>,
-        E: crate::RetryableError + std::fmt::Display,
+        E: botticelli_error::RetryableError + std::fmt::Display,
     {
         use tokio_retry2::{Retry, RetryError, strategy::ExponentialBackoff, strategy::jitter};
         use tracing::{info, warn};
