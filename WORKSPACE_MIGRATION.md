@@ -22,6 +22,58 @@ This document outlines a two-phase strategy:
 
 ---
 
+## Migration Progress
+
+**Current Branch:** `workspace`
+
+### Completed Phases
+
+- ✅ **Phase 0: Monorepo Rename** (Commit: `965b7bc` on main branch)
+  - Renamed entire project from "boticelli" to "Botticelli" (91 files)
+  - Updated all code, docs, config files
+  - All tests passing, zero new clippy warnings
+  - Branch: Completed on `gemini`, merged to `main`
+
+- ✅ **Phase 1: Core Foundation Crates** (Commit: `c0c0981` on workspace branch)
+  - Created `botticelli-error` crate with foundation error types
+  - Created `botticelli-core` crate with multimodal data types
+  - Created `botticelli-interface` crate with trait definitions
+  - All crates compile successfully with zero warnings
+  - 7 files changed, 867 insertions
+
+- ✅ **Phase 2: Rate Limiting & Retry** (Commit: `367c8f4` on workspace branch)
+  - Created `botticelli-rate-limit` crate with comprehensive rate limiting
+  - Implemented Tier trait and provider-specific tiers (Gemini, Anthropic, OpenAI)
+  - RateLimiter with RPM, TPM, RPD, concurrent request limits
+  - TOML configuration system with model-specific overrides
+  - HTTP header-based rate limit detection
+  - Automatic retry with exponential backoff
+  - 8 files changed, 1388 insertions
+
+### In Progress
+
+- ⏳ **Phase 3: Storage & Media Management**
+  - Not yet started
+
+### Remaining Phases
+
+- ⏳ Phase 4: Provider Implementations
+- ⏳ Phase 5: Narrative System
+- ⏳ Phase 6: Integration Layers
+- ⏳ Phase 7: Unified Facade
+- ⏳ Phase 8: Validation & Testing
+- ⏳ Phase 9: Documentation & Examples
+- ⏳ Phase 10: Merge & Publish
+
+### How to Resume
+
+1. **Checkout workspace branch:** `git checkout workspace`
+2. **Review completed phases:** See commits `c0c0981` and `367c8f4`
+3. **Continue with Phase 3:** Create `botticelli-storage` crate
+4. **Follow this document:** Phase 3 details start at line 552
+
+---
+
 ## Name Change Strategy: boticelli → Botticelli
 
 **Rationale:** The current spelling "boticelli" (one 't') was intended to differentiate from the Renaissance artist Sandro Botticelli. However, we've decided to lean into the connection and adopt the correct historical spelling "Botticelli" (two 't's) throughout the project.
