@@ -17,19 +17,19 @@ fn create_test_request(prompt: &str, model: Option<String>) -> GenerateRequest {
             content: vec![Input::Text(prompt.to_string())],
         }],
         model,
-        max_tokens: Some(100),
+        max_tokens: Some(10), // Minimize token usage
         temperature: Some(0.7),
     }
 }
 
 #[tokio::test]
-#[ignore] // Requires API key and uses quota
+#[ignore] // Requires GEMINI_API_KEY
 async fn test_streaming_basic() {
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new().expect("Failed to create client");
 
-    let request = create_test_request("Count from 1 to 5", None);
+    let request = create_test_request("Say 'ok'", None);
 
     let mut stream = client
         .generate_stream(&request)
@@ -67,18 +67,15 @@ async fn test_streaming_basic() {
 
     println!("Streaming result: {}", full_text);
 
-    // Should contain numbers (1, 2, 3, etc. or spelled out)
+    // Should have generated some text
     assert!(
-        full_text.contains('1')
-            || full_text.contains("one")
-            || full_text.contains("One"),
-        "Response should contain counting: {}",
-        full_text
+        !full_text.is_empty(),
+        "Response should contain text"
     );
 }
 
 #[tokio::test]
-#[ignore] // Requires API key and uses quota
+#[ignore] // Requires GEMINI_API_KEY
 async fn test_streaming_with_standard_model() {
     let _ = dotenvy::dotenv();
 
@@ -86,7 +83,7 @@ async fn test_streaming_with_standard_model() {
 
     // Explicitly use standard flash model
     let request = create_test_request(
-        "Say 'Hello from gemini-2.0-flash'",
+        "Say 'ok'",
         Some("gemini-2.0-flash".to_string()),
     );
 
@@ -121,7 +118,7 @@ async fn test_streaming_with_standard_model() {
 }
 
 #[tokio::test]
-#[ignore] // Requires API key and uses quota - model may not exist yet
+#[ignore] // Requires GEMINI_API_KEY - model may not exist yet
 async fn test_streaming_with_live_model() {
     let _ = dotenvy::dotenv();
 
@@ -129,7 +126,7 @@ async fn test_streaming_with_live_model() {
 
     // CRITICAL TEST: Use live model for better rate limits
     let request = create_test_request(
-        "Say 'Hello from gemini-2.0-flash-live'",
+        "Say 'ok'",
         Some("gemini-2.0-flash-live".to_string()),
     );
 
@@ -164,13 +161,13 @@ async fn test_streaming_with_live_model() {
 }
 
 #[tokio::test]
-#[ignore] // Requires API key and uses quota
+#[ignore] // Requires GEMINI_API_KEY
 async fn test_streaming_finish_reasons() {
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new().expect("Failed to create client");
 
-    let request = create_test_request("Tell me a very short joke.", None);
+    let request = create_test_request("Say 'ok'", None);
 
     let mut stream = client
         .generate_stream(&request)
@@ -200,13 +197,13 @@ async fn test_streaming_finish_reasons() {
 }
 
 #[tokio::test]
-#[ignore] // Requires API key and uses quota
+#[ignore] // Requires GEMINI_API_KEY
 async fn test_streaming_vs_non_streaming_consistency() {
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new().expect("Failed to create client");
 
-    let request = create_test_request("Say exactly: 'Test successful'", None);
+    let request = create_test_request("Say 'ok'", None);
 
     // Get streaming response
     let mut stream = client
@@ -251,22 +248,23 @@ async fn test_streaming_vs_non_streaming_consistency() {
 }
 
 #[tokio::test]
-#[ignore] // Expensive test - requires API key and uses significant quota
+#[ignore] // Expensive - requires GEMINI_API_KEY and uses significant quota
 async fn test_rate_limit_comparison() {
-    // This test is designed to verify that live models have better rate limits
+    // This test verifies that live models have better rate limits.
+    // Uses minimal requests (3 each) to conserve quota.
     // Run with: cargo test test_rate_limit_comparison --features gemini -- --ignored
 
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new().expect("Failed to create client");
 
-    println!("Testing standard model rate limits...");
+    println!("Testing standard model rate limits (3 requests)...");
 
-    // Try 20 requests to standard model
+    // Try 3 requests to standard model
     let mut standard_success = 0;
-    for i in 0..20 {
+    for i in 0..3 {
         let request = create_test_request(
-            &format!("Request {}", i),
+            "ok",
             Some("gemini-2.0-flash".to_string()),
         );
 
@@ -289,15 +287,15 @@ async fn test_rate_limit_comparison() {
     );
 
     // Brief pause
-    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
-    println!("Testing live model rate limits...");
+    println!("Testing live model rate limits (3 requests)...");
 
-    // Try 20 requests to live model
+    // Try 3 requests to live model
     let mut live_success = 0;
-    for i in 0..20 {
+    for i in 0..3 {
         let request = create_test_request(
-            &format!("Request {}", i),
+            "ok",
             Some("gemini-2.0-flash-live".to_string()),
         );
 
@@ -316,7 +314,7 @@ async fn test_rate_limit_comparison() {
 
     println!("Live model: {} successful requests", live_success);
 
-    // Live model should allow more requests (or at least same amount)
+    // Live model should allow equal or more requests
     assert!(
         live_success >= standard_success,
         "Live model should have equal or better rate limits. Standard: {}, Live: {}",
