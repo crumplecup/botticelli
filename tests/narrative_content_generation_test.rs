@@ -1,3 +1,5 @@
+#![cfg(feature = "database")]
+
 use boticelli::{
     ActExecution, ActProcessor, ContentGenerationProcessor, Input, NarrativeMetadata,
     ProcessorContext, establish_connection,

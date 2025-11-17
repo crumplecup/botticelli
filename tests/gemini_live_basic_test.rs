@@ -77,7 +77,7 @@ async fn test_live_api_streaming() {
         ..Default::default()
     };
 
-    let mut session = client
+    let session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
         .await
         .expect("Failed to connect");

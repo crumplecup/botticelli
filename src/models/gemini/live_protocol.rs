@@ -29,7 +29,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use boticelli::gemini::live_protocol::*;
+//! use boticelli::{SetupMessage, SetupConfig, GenerationConfig, ClientContentMessage,
+//!                  ClientContent, Turn, Part, TextPart};
 //!
 //! // Setup message (first message after WebSocket connection)
 //! let setup = SetupMessage {
@@ -42,6 +43,7 @@
 //!             ..Default::default()
 //!         }),
 //!         system_instruction: None,
+//!         tools: None,
 //!     }
 //! };
 //!
@@ -286,11 +288,11 @@ pub struct ServerMessage {
 
     /// Tool call request
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_call: Option<ToolCall>,
+    pub tool_call: Option<LiveToolCall>,
 
     /// Tool call cancellation
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_call_cancellation: Option<ToolCallCancellation>,
+    pub tool_call_cancellation: Option<LiveToolCallCancellation>,
 
     /// Disconnect warning
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -331,7 +333,7 @@ pub struct ModelTurn {
 /// Tool call request from model.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ToolCall {
+pub struct LiveToolCall {
     pub function_calls: Vec<FunctionCall>,
 }
 
@@ -347,7 +349,7 @@ pub struct FunctionCall {
 /// Tool call cancellation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ToolCallCancellation {
+pub struct LiveToolCallCancellation {
     pub ids: Vec<String>,
 }
 

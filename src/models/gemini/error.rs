@@ -97,6 +97,29 @@ impl GeminiErrorKind {
             _ => false,
         }
     }
+
+    /// Get retry strategy parameters for this error type.
+    ///
+    /// Returns (initial_backoff_ms, max_retries, max_delay_secs) tuned for the error.
+    ///
+    /// Different error types need different strategies:
+    /// - 429 (rate limit): Longer initial delay, fewer retries
+    /// - 503 (overload): Standard delay, more patient retries
+    /// - 500/502/504: Quick retries, fail fast
+    pub fn retry_strategy_params(&self) -> (u64, usize, u64) {
+        match self {
+            GeminiErrorKind::HttpError { status_code, .. } => match *status_code {
+                429 => (5000, 3, 40), // Rate limit: start at 5s, 3 retries, cap at 40s
+                503 => (2000, 5, 60), // Overload: start at 2s, 5 retries, cap at 60s
+                500 | 502 | 504 => (1000, 3, 8), // Server error: start at 1s, 3 retries, cap at 8s
+                408 => (2000, 4, 30), // Timeout: start at 2s, 4 retries, cap at 30s
+                _ => (2000, 5, 60),   // Default
+            },
+            GeminiErrorKind::WebSocketConnection(_) => (2000, 5, 60),
+            GeminiErrorKind::StreamInterrupted(_) => (1000, 3, 10),
+            _ => (2000, 5, 60), // Default for retryable errors
+        }
+    }
 }
 
 /// Gemini error with source location tracking.
@@ -135,6 +158,10 @@ impl std::error::Error for GeminiError {}
 impl crate::rate_limit::RetryableError for GeminiError {
     fn is_retryable(&self) -> bool {
         self.kind.is_retryable()
+    }
+
+    fn retry_strategy_params(&self) -> (u64, usize, u64) {
+        self.kind.retry_strategy_params()
     }
 }
 

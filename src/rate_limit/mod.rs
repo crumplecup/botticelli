@@ -49,4 +49,17 @@ pub trait RetryableError {
     /// or network timeouts should return true. Permanent errors like 401
     /// (unauthorized) or 400 (bad request) should return false.
     fn is_retryable(&self) -> bool;
+
+    /// Get retry strategy parameters for this error.
+    ///
+    /// Returns (initial_backoff_ms, max_retries, max_delay_secs).
+    /// Default implementation returns standard parameters.
+    ///
+    /// Override this to provide error-specific retry strategies:
+    /// - Rate limit errors (429): Longer delays, fewer retries
+    /// - Server overload (503): Standard delays, more patient
+    /// - Server errors (500): Quick retries, fail fast
+    fn retry_strategy_params(&self) -> (u64, usize, u64) {
+        (2000, 5, 60) // Default: 2s initial, 5 retries, 60s cap
+    }
 }

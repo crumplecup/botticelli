@@ -157,8 +157,12 @@ pub use storage::{
 // Re-export model implementations
 #[cfg(feature = "gemini")]
 pub use models::{
-    GeminiClient, GeminiError, GeminiErrorKind, GeminiLiveClient, LiveSession, TieredGemini,
-    GenerationConfig, LiveRateLimiter,
+    ClientContent, ClientContentMessage, FunctionCall, FunctionResponse, GenerationConfig,
+    GeminiClient, GeminiError, GeminiErrorKind, GeminiLiveClient, GoAway, InlineData,
+    InlineDataPart, LiveRateLimiter, LiveSession, LiveToolCall, LiveToolCallCancellation,
+    MediaChunk, ModelTurn, Part, RealtimeInput, RealtimeInputMessage, ServerContent,
+    ServerMessage, SetupComplete, SetupConfig, SetupMessage, SystemInstruction, TextPart,
+    TieredGemini, Tool, ToolResponse, ToolResponseMessage, Turn, UsageMetadata,
 };
 
 // Re-export core trait
@@ -209,8 +213,8 @@ pub use narrative::ContentGenerationProcessor;
 
 // Re-export rate limiting types
 pub use rate_limit::{
-    BoticelliConfig, HeaderRateLimitDetector, ProviderConfig, RateLimiter, RateLimiterGuard, Tier,
-    TierConfig,
+    BoticelliConfig, HeaderRateLimitDetector, ProviderConfig, RateLimiter, RateLimiterGuard,
+    RetryableError, Tier, TierConfig,
 };
 
 // Re-export provider-specific tier enums

@@ -275,41 +275,73 @@ impl<T: Tier> RateLimiter<T> {
         E: crate::rate_limit::RetryableError + std::fmt::Display,
     {
         use tokio_retry2::{strategy::ExponentialBackoff, strategy::jitter, Retry, RetryError};
-        use tracing::warn;
+        use tracing::{info, warn};
 
-        // Configure retry strategy
-        let retry_strategy = ExponentialBackoff::from_millis(2000)
-            .factor(2)
-            .max_delay(std::time::Duration::from_secs(60))
-            .map(jitter)
-            .take(5);
+        // Track error-specific strategy on first failure
+        let strategy_params = std::sync::Arc::new(std::sync::Mutex::new(None));
 
-        // Wrap the operation with rate limiting + retry
-        Retry::spawn(retry_strategy, || async {
-            // Acquire rate limit permission before each attempt
-            let _guard = self.acquire(estimated_tokens).await;
+        // Try the operation once to potentially get error-specific parameters
+        let _guard = self.acquire(estimated_tokens).await;
+        let first_result = operation().await;
+        drop(_guard);
 
-            // Execute the operation
-            let result = operation().await;
-
-            // Convert to RetryError based on error type
-            match result {
-                Ok(value) => Ok(value),
-                Err(e) => {
-                    if e.is_retryable() {
-                        warn!("Transient error, will retry: {}", e);
-                        Err(RetryError::Transient {
-                            err: e,
-                            retry_after: None,
-                        })
-                    } else {
-                        warn!("Permanent error, failing immediately: {}", e);
-                        Err(RetryError::Permanent(e))
-                    }
+        // Check if we need to retry
+        match first_result {
+            Ok(value) => Ok(value),
+            Err(e) => {
+                if !e.is_retryable() {
+                    warn!(error = %e, "Permanent error, failing immediately");
+                    return Err(e);
                 }
+
+                // Get error-specific strategy parameters
+                let (initial_ms, max_retries, max_delay_secs) = e.retry_strategy_params();
+                *strategy_params.lock().unwrap() = Some((initial_ms, max_retries, max_delay_secs));
+
+                info!(
+                    error = %e,
+                    error_type = std::any::type_name::<E>(),
+                    initial_backoff_ms = initial_ms,
+                    max_retries = max_retries,
+                    max_delay_secs = max_delay_secs,
+                    "Transient error detected, will retry with error-specific strategy"
+                );
+
+                // Configure error-specific retry strategy
+                let retry_strategy = ExponentialBackoff::from_millis(initial_ms)
+                    .factor(2)
+                    .max_delay(std::time::Duration::from_secs(max_delay_secs))
+                    .map(jitter)
+                    .take(max_retries);
+
+                // Retry with the error-specific strategy
+                Retry::spawn(retry_strategy, || async {
+                    // Acquire rate limit permission before each attempt
+                    let _guard = self.acquire(estimated_tokens).await;
+
+                    // Execute the operation
+                    let result = operation().await;
+
+                    // Convert to RetryError based on error type
+                    match result {
+                        Ok(value) => Ok(value),
+                        Err(e) => {
+                            if e.is_retryable() {
+                                warn!(error = %e, "Transient error, will retry");
+                                Err(RetryError::Transient {
+                                    err: e,
+                                    retry_after: None,
+                                })
+                            } else {
+                                warn!(error = %e, "Permanent error, failing immediately");
+                                Err(RetryError::Permanent(e))
+                            }
+                        }
+                    }
+                })
+                .await
             }
-        })
-        .await
+        }
     }
 }
 

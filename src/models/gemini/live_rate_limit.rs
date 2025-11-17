@@ -24,7 +24,7 @@ use tracing::{debug, trace, warn};
 /// # Example
 ///
 /// ```no_run
-/// use boticelli::gemini::live_rate_limit::LiveRateLimiter;
+/// use boticelli::LiveRateLimiter;
 ///
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -57,7 +57,7 @@ impl LiveRateLimiter {
     /// # Example
     ///
     /// ```
-    /// use boticelli::gemini::live_rate_limit::LiveRateLimiter;
+    /// use boticelli::LiveRateLimiter;
     ///
     /// let limiter = LiveRateLimiter::new(10); // 10 messages per minute
     /// ```
@@ -82,7 +82,7 @@ impl LiveRateLimiter {
     /// # Example
     ///
     /// ```no_run
-    /// # use boticelli::gemini::live_rate_limit::LiveRateLimiter;
+    /// # use boticelli::LiveRateLimiter;
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let limiter = LiveRateLimiter::new(10);
@@ -133,7 +133,7 @@ impl LiveRateLimiter {
     /// # Example
     ///
     /// ```no_run
-    /// # use boticelli::gemini::live_rate_limit::LiveRateLimiter;
+    /// # use boticelli::LiveRateLimiter;
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let limiter = LiveRateLimiter::new(10);
