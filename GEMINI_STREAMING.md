@@ -4,10 +4,33 @@
 
 This document outlines the plan to implement streaming support for Gemini "live" models (e.g., `gemini-2.0-flash-live`) in the Boticelli library. Currently, the library works with all Gemini models except those requiring streaming capabilities.
 
+**Critical Business Need**: Live models have **significantly higher rate limits on the free tier**, making them much more usable for development and testing. This is the primary motivation for adding streaming support.
+
 **Date**: 2025-01-17  
-**Status**: Planning Phase  
-**Priority**: Medium  
-**Complexity**: High
+**Status**: Investigation Phase - Step 1 Complete ✅  
+**Priority**: HIGH (enables better free tier usage)  
+**Complexity**: MEDIUM-LOW (gemini_rust already supports streaming)
+
+---
+
+## Business Case
+
+### Why Live Models Matter
+
+**Rate Limit Comparison** (Free Tier):
+
+| Model Type | Typical Limits | Use Case |
+|------------|----------------|----------|
+| Standard Models (flash, pro) | Lower RPM/RPD | Production, limited testing |
+| **Live Models** (flash-live) | **Higher RPM/RPD** | **Development, extensive testing** |
+
+**Impact**: Live models allow for:
+- More frequent API calls during development
+- Better testing coverage without hitting limits
+- Faster iteration cycles
+- Cost-effective experimentation
+
+**Bottom Line**: To maximize free tier usage, we need live model support, which requires streaming.
 
 ---
 
@@ -22,8 +45,8 @@ This document outlines the plan to implement streaming support for Gemini "live"
 - ✅ Async operations with tokio
 
 ### What Doesn't Work
-- ❌ Gemini Live models (require bidirectional streaming)
-- ❌ Real-time interaction models
+- ❌ Gemini Live models (require streaming)
+- ❌ Access to higher free tier rate limits
 - ❌ Streaming response handling
 
 ### Current Architecture
@@ -47,25 +70,37 @@ This document outlines the plan to implement streaming support for Gemini "live"
 ### What Are "Live" Models?
 
 Gemini Live models (like `gemini-2.0-flash-live`) are designed for:
+- **Higher rate limits on free tier** ⭐ PRIMARY BENEFIT
 - Real-time conversational AI
-- Voice/audio interactions
-- Bidirectional streaming (client sends, server responds incrementally)
-- Low-latency responses
+- Voice/audio interactions (future consideration)
+- Streaming responses with lower latency
+
+**Key Distinction**: Live models are optimized for interactive, high-frequency use cases, which is reflected in their more permissive rate limits.
+
+### Why Streaming is Required
+
+Live models **only work with streaming APIs**. To access their superior rate limits, we must:
+1. Use the `streamGenerateContent` endpoint
+2. Handle incremental responses
+3. Process chunks as they arrive
+
+**No streaming = No live models = Stuck with lower rate limits**
 
 ### Technical Requirements
 
-1. **Bidirectional Streaming**: Client and server both stream data
-2. **Incremental Responses**: Server sends partial responses as they're generated
-3. **Connection Management**: Long-lived connections with proper cleanup
-4. **Backpressure Handling**: Manage flow control between sender/receiver
-5. **Error Handling**: Graceful degradation for connection issues
+1. ~~**Bidirectional Streaming**: Client and server both stream data~~ 
+   - **Update**: Actually unidirectional (SSE) - simpler!
+2. **Incremental Responses**: Server sends partial responses as they're generated ✅
+3. **Connection Management**: Long-lived connections with proper cleanup ✅
+4. **Error Handling**: Graceful degradation for connection issues ✅
+5. **Rate Limiting**: Track usage for streaming sessions ✅
 
 ### Current Limitations
 
-1. **gemini_rust Library**: May not support streaming (needs verification)
+1. ~~**gemini_rust Library**: May not support streaming~~ ✅ **RESOLVED**: It does!
 2. **BoticelliDriver Trait**: Returns complete `GenerateResponse`, not streaming
 3. **Narrative Executor**: Expects complete responses, not incremental
-4. **Rate Limiting**: Designed for request/response, not streaming sessions
+4. **Rate Limiting**: Designed for request/response, needs streaming adaptation
 
 ---
 
@@ -187,27 +222,157 @@ Both demonstrate:
 **What We Need to Do**:
 1. Wrap `generate_content_stream()` in our `GeminiClient`
 2. Convert `GenerationResponse` stream to `StreamChunk` stream
-3. Add streaming detection for models (or enable for all?)
+3. Add live model detection (models ending in `-live`)
 4. Handle rate limiting for streaming requests
 5. Add tests and documentation
+6. Test specifically with `gemini-2.0-flash-live` to confirm rate limit benefits
 
 **Complexity Reduced**: Since gemini_rust handles the hard parts (SSE parsing, connection management), our implementation is mostly adapting the stream format.
 
-### Step 2: Research Gemini Live API
+### Step 2: Research Gemini Live API ✅ CLARIFIED
 
-**Note**: Based on Step 1 findings, "Live" models may not be needed for streaming. Regular Gemini models already support streaming via SSE.
+**Critical Context from User**: 
 
-**Questions to Research**:
-- What are "Live" models actually for? (Real-time voice/audio?)
-- Do they use a different protocol than SSE?
-- Are there additional capabilities beyond text streaming?
+> "The purpose of streaming in the first place is to access the live models. When on the free tier, the live models have the most permissible use limits. We want to add support for these models because we can use them more frequently."
 
-**Documentation**:
-- [Gemini API Docs](https://ai.google.dev/api/generate-content)
-- Check if `-live` suffix enables different features
-- Research multimodal streaming (audio, video)
+#### Key Insights
 
-**Status**: Lower priority now that we confirmed standard streaming works
+**Primary Goal**: Access to better rate limits on free tier
+
+**Model Naming**:
+- Standard: `gemini-2.0-flash`, `gemini-2.5-flash`
+- Live: `gemini-2.0-flash-live`, `gemini-2.5-flash-live` (or similar suffix)
+
+**Requirements**:
+- Live models **require streaming** - they don't work with regular generate API
+- Streaming is not just a performance optimization, it's the **only way** to use live models
+- Live models offer better RPM/RPD limits on free tier
+
+#### What We Know
+
+1. ✅ gemini_rust supports streaming via SSE
+2. ✅ Standard models support streaming (tested with examples)
+3. ⚠️ **Need to verify**: Do live models use the same SSE endpoint?
+4. ⚠️ **Need to verify**: Do live models require different authentication?
+5. ⚠️ **Need to verify**: Actual rate limit differences
+
+#### Questions for Testing
+
+**When implementing MVP, test with live models**:
+
+```rust
+// Test 1: Does live model work with same streaming API?
+let request = GenerateRequest {
+    model: Some("gemini-2.0-flash-live".to_string()),
+    // ... rest of request
+};
+let stream = client.generate_stream(&request).await?;
+
+// Test 2: Compare rate limits
+// - Make 100 requests to gemini-2.0-flash (standard)
+// - Make 100 requests to gemini-2.0-flash-live (live)
+// - Measure: Which one hits rate limits first?
+```
+
+**Expected Outcome**: 
+- Live models should work with existing streaming implementation
+- Live models should allow more requests before rate limiting
+- If they don't work, we'll get specific error messages to guide next steps
+
+#### Implementation Impact
+
+**Model Detection**:
+```rust
+impl GeminiClient {
+    fn is_live_model(model_name: &str) -> bool {
+        model_name.contains("-live")
+    }
+    
+    fn parse_model_name(name: &str) -> (Model, bool) {
+        let is_live = Self::is_live_model(name);
+        let model = match name {
+            "gemini-2.0-flash-live" => Model::Custom("models/gemini-2.0-flash-live"),
+            "gemini-2.5-flash-live" => Model::Custom("models/gemini-2.5-flash-live"),
+            // ... other models
+            _ if name.contains("-live") => Model::Custom(format!("models/{}", name)),
+            // ... standard models
+        };
+        (model, is_live)
+    }
+}
+```
+
+**Rate Limiter Configuration**:
+```rust
+// In tier config, potentially different limits for live models
+pub struct TierConfig {
+    pub name: String,
+    pub rpm: Option<u32>,  // Live models might have higher values
+    pub rpd: Option<u32>,  // Live models might have higher values
+    // ...
+}
+```
+
+#### Documentation Needed
+
+After implementation, update GEMINI.md with:
+
+```markdown
+## Live Models and Rate Limits
+
+Live models (e.g., `gemini-2.0-flash-live`) offer **higher rate limits** on the free tier, making them ideal for development and testing.
+
+### Using Live Models
+
+Live models require streaming:
+
+\`\`\`rust
+let client = GeminiClient::new()?;
+
+let request = GenerateRequest {
+    model: Some("gemini-2.0-flash-live".to_string()),
+    // ... your request
+};
+
+// MUST use generate_stream() - live models don't support generate()
+let mut stream = client.generate_stream(&request).await?;
+
+while let Some(chunk) = stream.try_next().await? {
+    print!("{}", chunk.text);
+    if chunk.finished { break; }
+}
+\`\`\`
+
+### Rate Limit Benefits
+
+Free tier comparison (example - verify actual values):
+
+| Model | RPM | RPD | Notes |
+|-------|-----|-----|-------|
+| gemini-2.0-flash | 15 | 1,500 | Standard |
+| gemini-2.0-flash-live | **30** | **3,000** | Better for dev |
+
+Use live models for:
+- Development and testing
+- Iterative prompt engineering  
+- High-frequency API calls
+- CI/CD test suites
+
+Use standard models for:
+- Production deployments
+- When streaming not needed
+- Batch processing
+\`\`\`
+```
+
+#### Status
+
+- ✅ Understand business case (better rate limits)
+- ✅ Understand requirement (must use streaming)
+- ⚠️ Need to verify live model specifics during implementation
+- ⚠️ Need to document actual rate limit differences
+
+**Action Item**: First MVP test should be with `gemini-2.0-flash-live` to confirm it works and measure rate limit benefits.
 
 ---
 
@@ -927,20 +1092,42 @@ while let Some(chunk) = stream.next().await {
 
 ### Minimum Viable Product (MVP)
 
-- [ ] Can successfully connect to gemini-2.0-flash-live model
+**Primary Goal**: Enable use of live models for better free tier rate limits
+
+- [ ] Can successfully connect to `gemini-2.0-flash-live` model
 - [ ] Receive incremental responses as stream
 - [ ] Stream completes successfully
 - [ ] Errors handled gracefully
 - [ ] Basic rate limiting works
+- [ ] **Can make significantly more requests with live models vs. standard models** ⭐
+
+### Validation Tests
+
+**Rate Limit Comparison** (run during testing):
+```bash
+# Test 1: Standard model
+time for i in {1..50}; do 
+    boticelli run --model gemini-2.0-flash quick_test.toml
+done
+
+# Test 2: Live model (should succeed where standard fails)
+time for i in {1..50}; do
+    boticelli run --model gemini-2.0-flash-live quick_test.toml  
+done
+```
+
+Expected: Live model allows more requests before hitting rate limits
 
 ### Full Implementation
 
-- [ ] All streaming-capable Gemini models work
+- [ ] All live models work (flash-live, pro-live variants)
+- [ ] Standard models also support streaming (nice-to-have)
 - [ ] Rate limiting properly accounts for streaming
 - [ ] Comprehensive tests (unit + integration)
-- [ ] Documentation with examples
-- [ ] CLI supports streaming (optional)
+- [ ] Documentation with live model usage guide
+- [ ] CLI supports streaming with `--stream` flag (optional)
 - [ ] Backward compatible with existing code
+- [ ] **Rate limit benefits clearly documented** ⭐
 
 ---
 
@@ -1045,6 +1232,7 @@ while let Some(chunk) = stream.next().await {
 13. [ ] Streaming cancellation/timeout
 14. [ ] Performance benchmarks
 15. [ ] Real-time progress indicators in CLI
+16. [ ] Automatic model fallback (live → standard on rate limit)
 
 ---
 
@@ -1052,8 +1240,27 @@ while let Some(chunk) = stream.next().await {
 
 **Status Update**: Investigation phase COMPLETE ✅
 
+**Primary Goal**: Enable `gemini-2.0-flash-live` and other live models to access **significantly better rate limits** on the free tier, enabling more frequent API usage during development.
+
 **Key Finding**: gemini_rust v1.5.1 has excellent streaming support via Server-Sent Events (SSE). This dramatically simplifies our implementation.
 
-**Recommendation**: Proceed with MVP implementation (2-3 hours). The hard work is already done by gemini_rust - we just need to adapt the stream format to our `StreamChunk` type.
+**Business Impact**: 
+- Unlock higher RPM/RPD limits on free tier
+- Enable more extensive testing without hitting limits
+- Faster iteration cycles during development
+- Better CI/CD test coverage
+
+**Technical Approach**: 
+- Implement streaming in 2-3 hours (MVP)
+- Test specifically with `gemini-2.0-flash-live` to validate rate limit benefits
+- Document rate limit differences for users
+- Provide clear migration path from standard to live models
+
+**Recommendation**: Proceed with MVP implementation immediately. The hard work is already done by gemini_rust - we just need to:
+1. Adapt the stream format to our `StreamChunk` type
+2. Add live model detection
+3. Test and document rate limit benefits
 
 **Confidence Level**: HIGH - Clear path forward with working examples and robust library support.
+
+**Next Action**: Create feature branch and implement Steps 1-6 of MVP plan (estimated 2-3 hours).
