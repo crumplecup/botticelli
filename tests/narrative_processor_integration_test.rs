@@ -54,6 +54,10 @@ impl BoticelliDriver for MockDriver {
 /// Create test database connection.
 fn create_test_db() -> diesel::PgConnection {
     use diesel::Connection;
+    
+    // Load .env file
+    let _ = dotenvy::dotenv();
+    
     let database_url = std::env::var("TEST_DATABASE_URL")
         .or_else(|_| std::env::var("DATABASE_URL"))
         .expect("TEST_DATABASE_URL or DATABASE_URL must be set");
