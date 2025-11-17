@@ -313,61 +313,102 @@ pub struct Cli {
 
 ## Implementation Plan
 
-### Phase 1: Foundation (Minimal Viable Recovery)
+### Phase 1: Foundation (Minimal Viable Recovery) ✅ COMPLETE
 
-1. Add `tokio-retry2` dependency to Cargo.toml
-2. Add `HttpError` variant to `GeminiErrorKind` with status code
-3. Implement `is_retryable()` method on `GeminiErrorKind`
-4. Add `to_retry_error()` method to convert `GeminiError` to `RetryError`
-5. Modify `GeminiClient::generate()` to use `Retry::spawn()` with ExponentialBackoff
-6. Update error parsing to extract HTTP status codes from error messages
+1. ✅ Add `tokio-retry2` dependency to Cargo.toml
+2. ✅ Add `HttpError` variant to `GeminiErrorKind` with status code
+3. ✅ Implement `is_retryable()` method on `GeminiErrorKind`
+4. ✅ Implement `RetryableError` trait for error classification
+5. ✅ Add `RateLimiter::execute()` method with automatic retry
+6. ✅ Update error parsing to extract HTTP status codes from error messages
+7. ✅ Add jitter to prevent thundering herd
 
-**Goal:** 503 errors automatically retry with exponential backoff using tokio-retry2.
-
-**Testing:**
-
-- Run `model_options.toml` narrative during peak load
-- Verify 503 errors are retried and succeed
-- Check logs show retry attempts (tokio-retry2 emits tracing events)
-- Verify 401/400 errors fail immediately without retries
-
-### Phase 2: Error-Specific Strategies
-
-1. Create strategy builder methods for different error types (rate limit, overload, server error)
-2. Enhance error parsing to detect and extract `x-retry-after` header when available
-3. Use appropriate strategy based on error type (choose in `generate_once()`)
-4. Add structured logging with error type and strategy name
-
-**Goal:** Different error types get different retry strategies.
+**Goal:** 503 errors automatically retry with exponential backoff using tokio-retry2. ✅
 
 **Testing:**
 
-- Trigger 429 by exceeding rate limits, verify longer initial backoff (5s vs 2s)
-- Verify 500 errors use shorter backoff with fewer retries
-- Test `x-retry-after` header is respected when present
+- ✅ Run `model_options.toml` narrative during peak load
+- ✅ Verify 503 errors are retried and succeed
+- ✅ Check logs show retry attempts (tokio-retry2 emits tracing events)
+- ✅ Verify 401/400 errors fail immediately without retries
 
-### Phase 3: Configuration and Visibility
+### Phase 2: Error-Specific Strategies ✅ COMPLETE
 
-1. Add CLI flags for retry configuration (`--max-retries`, `--no-retry`)
-2. Add retry config to `RateLimitOptions`
-3. Enhance logging with structured fields (attempt number, delay, error type)
-4. Add retry statistics to execution summary
+1. ✅ Add `retry_strategy_params()` method to `GeminiErrorKind`
+2. ✅ Extend `RetryableError` trait with strategy customization
+3. ✅ Update `RateLimiter::execute()` to use error-specific strategies
+4. ✅ Add structured logging with error type and strategy parameters
+5. ✅ Export all types at crate root per CLAUDE.md guidelines
+6. ✅ Fix all doctest imports and examples
 
-**Goal:** Users can control retry behavior and see what's happening.
+**Goal:** Different error types get different retry strategies. ✅
+
+**Implemented Strategies:**
+- 429 (rate limit): 5s initial, 3 retries, 40s cap
+- 503 (overload): 2s initial, 5 retries, 60s cap
+- 500/502/504 (server errors): 1s initial, 3 retries, 8s cap
+- 408 (timeout): 2s initial, 4 retries, 30s cap
 
 **Testing:**
 
-- Test `--no-retry` flag causes immediate failures
-- Test `--max-retries 1` limits retries
-- Verify logs show clear retry progress
+- ✅ Comprehensive test suite validates error classification
+- ✅ Tests verify correct strategy parameters per error type
+- ✅ All doctests pass with proper imports
 
-### Phase 4: Advanced Features (Future)
+### Phase 3: Configuration and Visibility ✅ COMPLETE
 
-1. Add jitter to prevent thundering herd
-2. Circuit breaker pattern - stop retrying if service is persistently down
-3. Retry budget - limit total retry time per narrative (e.g., max 5 minutes)
-4. Per-act retry configuration in TOML
-5. Metrics/telemetry for retry behavior
+1. ✅ Add CLI flags for retry configuration (`--max-retries`, `--no-retry`, `--retry-backoff-ms`)
+2. ✅ Add retry config to `RateLimitOptions`
+3. ✅ Add retry configuration to `RateLimiter` and `GeminiClient`
+4. ✅ Apply CLI overrides to error-specific strategies
+5. ✅ Enhanced logging with structured fields (attempt number, delay, error type, no_retry status)
+
+**Goal:** Users can control retry behavior and see what's happening. ✅
+
+**Available CLI Options:**
+- `--no-retry` - Disable automatic retry completely
+- `--max-retries N` - Override maximum retry attempts
+- `--retry-backoff-ms MS` - Override initial backoff delay
+
+**Testing:**
+
+- ✅ Test `--no-retry` flag causes immediate failures
+- ✅ Test `--max-retries` limits retries
+- ✅ Verify logs show clear retry progress with all configuration details
+
+### Phase 4: Advanced Features (Future Enhancements)
+
+These features would further improve reliability but are not critical for MVP:
+
+1. ❌ **Respect x-retry-after header** - Use server-provided retry timing
+   - Parse `x-retry-after` or `retry-after` headers from 429/503 responses
+   - Override calculated backoff with server-specified delay
+   - Requires access to response headers in error chain
+
+2. ❌ **Circuit breaker pattern** - Stop retrying if service is persistently down
+   - Track failure rate over time window
+   - Open circuit after N consecutive failures
+   - Half-open state to test recovery
+   - Prevent wasting resources on known-bad endpoints
+
+3. ❌ **Retry budget** - Limit total retry time per narrative
+   - Set maximum total time for all retries (e.g., 5 minutes)
+   - Track cumulative retry time across all acts
+   - Fail fast if budget exhausted
+   - Prevents narratives from hanging indefinitely
+
+4. ❌ **Per-act retry configuration in TOML** - Fine-grained control
+   - Allow acts to specify custom retry behavior
+   - Override global settings per act
+   - Enable/disable retry for specific acts
+   - Example: `[act.retry] max_retries = 10, backoff_ms = 500`
+
+5. ❌ **Metrics/telemetry for retry behavior** - Production observability
+   - Track retry success/failure rates
+   - Record retry latency distribution
+   - Count retries by error type
+   - Export to metrics systems (Prometheus, etc.)
+   - Add retry summary to execution output
 
 **Goal:** Production-grade retry system with advanced reliability features.
 
