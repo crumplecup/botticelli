@@ -3,46 +3,10 @@
 //! This module provides the executor that processes multi-act narratives
 //! by calling LLM APIs in sequence, passing context between acts.
 
-use botticelli_interface::BotticelliDriver;
+use botticelli_interface::{BotticelliDriver, ActExecution, NarrativeExecution};
 use botticelli_core::{GenerateRequest, Input, Message, Output, Role};
 use botticelli_error::BotticelliResult;
 use crate::{NarrativeProvider, ProcessorContext, ProcessorRegistry};
-use serde::{Deserialize, Serialize};
-
-/// Execution result for a single act in a narrative.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ActExecution {
-    /// Name of the act (from the narrative).
-    pub act_name: String,
-
-    /// The multimodal inputs that were sent to the LLM.
-    pub inputs: Vec<Input>,
-
-    /// The model used for this act (if overridden).
-    pub model: Option<String>,
-
-    /// The temperature used for this act (if overridden).
-    pub temperature: Option<f32>,
-
-    /// The max_tokens used for this act (if overridden).
-    pub max_tokens: Option<u32>,
-
-    /// The text response from the LLM.
-    pub response: String,
-
-    /// Position in the execution sequence (0-indexed).
-    pub sequence_number: usize,
-}
-
-/// Complete execution result for a narrative.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct NarrativeExecution {
-    /// Name of the narrative that was executed.
-    pub narrative_name: String,
-
-    /// Ordered list of act executions.
-    pub act_executions: Vec<ActExecution>,
-}
 
 /// Executes narratives by calling LLM APIs in sequence.
 ///

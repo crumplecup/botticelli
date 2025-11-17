@@ -3,7 +3,8 @@
 //! This module defines the `NarrativeProvider` trait, which decouples the
 //! narrative executor from specific configuration formats (TOML, YAML, JSON, etc.).
 
-use crate::{Input, NarrativeMetadata};
+use botticelli_core::Input;
+use crate::NarrativeMetadata;
 use serde::{Deserialize, Serialize};
 
 /// Configuration for a single act in a narrative.

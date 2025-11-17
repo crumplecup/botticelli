@@ -219,16 +219,16 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         _data: &[u8],
         _metadata: &botticelli_storage::MediaMetadata,
     ) -> BotticelliResult<botticelli_storage::MediaReference> {
-        Err(crate::BotticelliError::from(
-            crate::NotImplementedError::new(
+        Err(botticelli_error::BotticelliError::from(
+            botticelli_error::NotImplementedError::new(
                 "Media storage not yet implemented for in-memory repository",
             ),
         ))
     }
 
     async fn load_media(&self, _reference: &botticelli_storage::MediaReference) -> BotticelliResult<Vec<u8>> {
-        Err(crate::BotticelliError::from(
-            crate::NotImplementedError::new(
+        Err(botticelli_error::BotticelliError::from(
+            botticelli_error::NotImplementedError::new(
                 "Media loading not yet implemented for in-memory repository",
             ),
         ))

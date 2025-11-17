@@ -5,7 +5,7 @@
 //! (in botticelli-database).
 
 use serde::{Deserialize, Serialize};
-use crate::Input;
+use botticelli_core::Input;
 
 /// Execution result for a single act in a narrative.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

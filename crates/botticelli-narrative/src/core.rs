@@ -158,14 +158,10 @@ impl Narrative {
                 if is_content_focus(user_prompt) {
                     // Assemble complete prompt with schema injection
                     let assembled = assemble_prompt(conn, template, user_prompt).map_err(|e| {
-                        NarrativeError::new(
-                            NarrativeErrorKind::PromptAssembly {
-                                act: act_name.clone(),
-                                message: e.to_string(),
-                            },
-                            line!(),
-                            file!(),
-                        )
+                        NarrativeError::new(NarrativeErrorKind::PromptAssembly {
+                            act: act_name.clone(),
+                            message: e.to_string(),
+                        })
                     })?;
 
                     // Replace the first input with assembled prompt
@@ -201,20 +197,14 @@ impl Narrative {
     pub fn validate(&self) -> Result<(), NarrativeError> {
         // Check that toc.order is not empty
         if self.toc.order.is_empty() {
-            return Err(NarrativeError::new(
-                NarrativeErrorKind::EmptyToc,
-                line!(),
-                file!(),
-            ));
+            return Err(NarrativeError::new(NarrativeErrorKind::EmptyToc));
         }
 
         // Check that all acts in toc.order exist in acts map
         for act_name in &self.toc.order {
             if !self.acts.contains_key(act_name) {
                 return Err(NarrativeError::new(
-                    NarrativeErrorKind::MissingAct(act_name.clone()),
-                    line!(),
-                    file!(),
+                    NarrativeErrorKind::MissingAct(act_name.clone())
                 ));
             }
         }
@@ -223,9 +213,7 @@ impl Narrative {
         for (act_name, config) in &self.acts {
             if config.inputs.is_empty() {
                 return Err(NarrativeError::new(
-                    NarrativeErrorKind::EmptyPrompt(act_name.clone()),
-                    line!(),
-                    file!(),
+                    NarrativeErrorKind::EmptyPrompt(act_name.clone())
                 ));
             }
         }
@@ -253,8 +241,6 @@ impl FromStr for Narrative {
         let toml_narrative: toml_parsing::TomlNarrative = toml::from_str(s).map_err(|e| {
             NarrativeError::new(
                 NarrativeErrorKind::TomlParse(e.to_string()),
-                line!(),
-                file!(),
             )
         })?;
 
@@ -277,14 +263,10 @@ impl FromStr for Narrative {
                 if e.contains("empty") || e.contains("whitespace") {
                     NarrativeError::new(
                         NarrativeErrorKind::EmptyPrompt(act_name.clone()),
-                        line!(),
-                        file!(),
                     )
                 } else {
                     NarrativeError::new(
                         NarrativeErrorKind::TomlParse(format!("Act '{}': {}", act_name, e)),
-                        line!(),
-                        file!(),
                     )
                 }
             })?;

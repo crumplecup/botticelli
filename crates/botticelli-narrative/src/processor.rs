@@ -171,7 +171,7 @@ impl ProcessorRegistry {
         }
 
         if !errors.is_empty() {
-            return Err(crate::BackendError::new(format!(
+            return Err(botticelli_error::BackendError::new(format!(
                 "Processor errors: {}",
                 errors.join("; ")
             ))
@@ -221,7 +221,7 @@ mod tests {
     impl ActProcessor for TestProcessor {
         async fn process(&self, _context: &ProcessorContext<'_>) -> BotticelliResult<()> {
             if self.fail {
-                Err(crate::BackendError::new("Test error").into())
+                Err(botticelli_error::BackendError::new("Test error").into())
             } else {
                 Ok(())
             }
