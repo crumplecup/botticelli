@@ -71,40 +71,143 @@ Gemini Live models (like `gemini-2.0-flash-live`) are designed for:
 
 ## Investigation Phase
 
-### Step 1: Assess gemini_rust Library (PRIORITY)
+### Step 1: Assess gemini_rust Library ✅ COMPLETE
 
-**Task**: Determine if `gemini_rust` supports streaming
+**Investigation Date**: 2025-01-17
 
-```bash
-# Check gemini_rust source/docs
-cd ~/.cargo/registry/src/
-find . -name "gemini_rust*" -type d
-# Review streaming capabilities
+#### Findings: gemini_rust DOES Support Streaming! 🎉
+
+**Version**: gemini-rust 1.5.1 (used by Boticelli)
+
+**Location**: `~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gemini-rust-1.5.1`
+
+#### Streaming API Summary
+
+**Method**: `generate_content_stream()`
+
+```rust
+pub(crate) async fn generate_content_stream(
+    &self,
+    request: GenerateContentRequest,
+) -> Result<impl TryStreamExt<Ok = GenerationResponse, Error = Error> + Send + use<>, Error>
 ```
 
-**Questions to Answer**:
-- Does `gemini_rust` expose streaming APIs?
-- What format does it use? (AsyncStream, Stream trait, channels?)
-- Does it support bidirectional streaming?
-- What's the API surface?
+**Key Points**:
+1. ✅ **Protocol**: Server-Sent Events (SSE) via `alt=sse` query parameter
+2. ✅ **Stream Type**: Uses `futures::Stream` with `TryStreamExt`
+3. ✅ **Library**: `eventsource_stream` crate for SSE parsing
+4. ✅ **Response Format**: JSON chunks as `GenerationResponse` structs
+5. ✅ **Builder API**: `execute_stream()` on generation builder
 
-**Outcomes**:
-- **If YES**: Proceed with Phase 2 (implement streaming in Boticelli)
-- **If NO**: Need to fork/extend gemini_rust OR use direct HTTP/gRPC
+#### Code Example from gemini_rust
+
+```rust
+// From examples/basic_streaming.rs
+let mut stream = client
+    .generate_content()
+    .with_user_message("Tell me a story")
+    .execute_stream()
+    .await?;
+
+// Process chunks as they arrive
+while let Some(chunk) = stream.try_next().await? {
+    let text = chunk.text();
+    println!("{}", text);
+}
+```
+
+#### API Structure
+
+**Dependencies**:
+- `futures` crate: `Stream`, `StreamExt`, `TryStreamExt` traits
+- `eventsource_stream`: SSE event parsing
+- `async_stream` macro: For creating custom streams
+
+**GenerationResponse** (per chunk):
+```rust
+pub struct GenerationResponse {
+    pub candidates: Vec<Candidate>,
+    pub prompt_feedback: Option<PromptFeedback>,
+    pub usage_metadata: Option<UsageMetadata>,
+    pub model_version: Option<String>,
+}
+```
+
+Each chunk contains:
+- Text content (via `chunk.text()` helper)
+- Finish reason (when complete)
+- Usage metadata (tokens consumed)
+
+#### URL Pattern
+
+```
+POST https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse
+```
+
+The `streamGenerateContent` endpoint with `alt=sse` enables streaming.
+
+#### Examples Available
+
+gemini_rust includes two streaming examples:
+1. **`basic_streaming.rs`**: Simple streaming with real-time output
+2. **`streaming.rs`**: More advanced streaming features
+
+Both demonstrate:
+- Creating streaming requests
+- Processing chunks incrementally
+- Handling completion
+- Error handling
+
+#### Key Insights
+
+1. **No "Live" Model Needed**: Regular models (gemini-2.0-flash, gemini-2.5-flash) already support streaming
+2. **SSE Protocol**: Uses standard Server-Sent Events, not WebSocket
+3. **Unidirectional**: Client sends request once, server streams response (not bidirectional)
+4. **Same Authentication**: Uses same API key as non-streaming requests
+5. **Incremental Text**: Each chunk contains partial text that should be concatenated
+
+#### Questions Resolved
+
+| Question | Answer |
+|----------|--------|
+| Does gemini_rust support streaming? | ✅ YES |
+| What format? | `futures::Stream` with `TryStreamExt` |
+| Protocol? | Server-Sent Events (SSE) |
+| Bidirectional? | No - unidirectional (server → client) |
+| API surface? | `execute_stream()` on builder, returns stream of `GenerationResponse` |
+
+#### Implications for Boticelli
+
+**Good News**:
+- gemini_rust already has robust streaming support
+- We don't need to fork or implement HTTP directly
+- API is clean and idiomatic (futures-based streams)
+- Examples exist for reference
+
+**What We Need to Do**:
+1. Wrap `generate_content_stream()` in our `GeminiClient`
+2. Convert `GenerationResponse` stream to `StreamChunk` stream
+3. Add streaming detection for models (or enable for all?)
+4. Handle rate limiting for streaming requests
+5. Add tests and documentation
+
+**Complexity Reduced**: Since gemini_rust handles the hard parts (SSE parsing, connection management), our implementation is mostly adapting the stream format.
 
 ### Step 2: Research Gemini Live API
 
+**Note**: Based on Step 1 findings, "Live" models may not be needed for streaming. Regular Gemini models already support streaming via SSE.
+
+**Questions to Research**:
+- What are "Live" models actually for? (Real-time voice/audio?)
+- Do they use a different protocol than SSE?
+- Are there additional capabilities beyond text streaming?
+
 **Documentation**:
 - [Gemini API Docs](https://ai.google.dev/api/generate-content)
-- WebSocket or Server-Sent Events (SSE)?
-- Authentication with streaming
-- Message format (Protocol Buffers? JSON?)
+- Check if `-live` suffix enables different features
+- Research multimodal streaming (audio, video)
 
-**Key Questions**:
-- What protocol does Gemini Live use? (WebSocket, SSE, gRPC)
-- What's the message format?
-- How is authentication handled?
-- What are rate limits for streaming vs. non-streaming?
+**Status**: Lower priority now that we confirmed standard streaming works
 
 ---
 
@@ -267,6 +370,311 @@ impl BoticelliDriver for GeminiClient {
     }
 }
 ```
+
+---
+
+## Concrete Implementation Plan (Based on Findings)
+
+### Quick Win: Minimal Streaming Implementation
+
+Based on our investigation, here's a **minimal viable implementation** that could be done in 1-2 days:
+
+#### Step 1: Add StreamChunk Type (5 minutes)
+
+```rust
+// In src/models/mod.rs or src/driver.rs
+
+/// Incremental response chunk from streaming API
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreamChunk {
+    /// Text content in this chunk
+    pub text: String,
+    
+    /// Whether this is the final chunk
+    pub finished: bool,
+    
+    /// Optional metadata about this chunk
+    pub metadata: Option<ChunkMetadata>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChunkMetadata {
+    /// Tokens generated so far
+    pub tokens_generated: Option<u32>,
+    
+    /// Why generation stopped (if finished)
+    pub finish_reason: Option<String>,
+}
+```
+
+#### Step 2: Extend BoticelliDriver Trait (10 minutes)
+
+```rust
+// In src/driver.rs
+
+use futures::stream::Stream;
+use std::pin::Pin;
+
+#[async_trait]
+pub trait BoticelliDriver: Send + Sync {
+    // Existing method (unchanged)
+    async fn generate(&self, request: &GenerateRequest) -> BoticelliResult<GenerateResponse>;
+    
+    // New streaming method with default implementation
+    async fn generate_stream(
+        &self,
+        request: &GenerateRequest,
+    ) -> BoticelliResult<Pin<Box<dyn Stream<Item = BoticelliResult<StreamChunk>> + Send>>> {
+        // Default: not supported
+        Err(BackendError::new("Streaming not supported by this driver").into())
+    }
+    
+    // Check if driver supports streaming
+    fn supports_streaming(&self) -> bool {
+        false  // Default: no streaming
+    }
+}
+```
+
+#### Step 3: Implement in GeminiClient (30 minutes)
+
+```rust
+// In src/models/gemini.rs
+
+use futures::{Stream, StreamExt, TryStreamExt};
+use std::pin::Pin;
+
+#[async_trait]
+impl BoticelliDriver for GeminiClient {
+    // ... existing generate() implementation unchanged ...
+    
+    async fn generate_stream(
+        &self,
+        request: &GenerateRequest,
+    ) -> BoticelliResult<Pin<Box<dyn Stream<Item = BoticelliResult<StreamChunk>> + Send>>> {
+        let model_name = self.resolve_model_name(request);
+        let wrapper = self.get_or_create_client(&model_name).await?;
+        
+        // Apply rate limiting (count as single request)
+        if let Some(limiter) = &wrapper.rate_limiter {
+            limiter.acquire().await?;
+        }
+        
+        // Build gemini_rust request (reuse existing conversion)
+        let gemini_request = self.build_gemini_request(request)?;
+        
+        // Call gemini_rust streaming API
+        let gemini_stream = wrapper.client
+            .generate_content_stream(gemini_request)
+            .await
+            .map_err(|e| GeminiError::new(GeminiErrorKind::ApiRequest(e.to_string())))?;
+        
+        // Transform gemini GenerationResponse stream to our StreamChunk stream
+        let chunk_stream = gemini_stream
+            .map(|result| {
+                result
+                    .map_err(|e| GeminiError::new(GeminiErrorKind::ApiRequest(e.to_string())).into())
+                    .and_then(|response| convert_to_stream_chunk(response))
+            });
+        
+        Ok(Box::pin(chunk_stream))
+    }
+    
+    fn supports_streaming(&self) -> bool {
+        true  // Gemini supports streaming
+    }
+}
+
+/// Convert gemini_rust GenerationResponse to our StreamChunk
+fn convert_to_stream_chunk(response: gemini_rust::GenerationResponse) -> BoticelliResult<StreamChunk> {
+    let text = response.text();  // gemini_rust helper method
+    
+    let finished = response
+        .candidates
+        .first()
+        .and_then(|c| c.finish_reason.as_ref())
+        .is_some();
+    
+    let metadata = response.usage_metadata.map(|usage| ChunkMetadata {
+        tokens_generated: Some(usage.total_token_count),
+        finish_reason: response.candidates
+            .first()
+            .and_then(|c| c.finish_reason.as_ref())
+            .map(|r| format!("{:?}", r)),
+    });
+    
+    Ok(StreamChunk {
+        text,
+        finished,
+        metadata,
+    })
+}
+```
+
+#### Step 4: Add Basic Test (20 minutes)
+
+```rust
+// In tests/gemini_streaming_test.rs
+
+#![cfg(feature = "gemini")]
+
+use boticelli::{BoticelliDriver, GeminiClient, GenerateRequest, Message, Role, Input};
+use futures::StreamExt;
+
+#[tokio::test]
+async fn test_basic_streaming() {
+    let _ = dotenvy::dotenv();
+    
+    let client = GeminiClient::new().expect("Failed to create client");
+    
+    assert!(client.supports_streaming(), "Gemini should support streaming");
+    
+    let request = GenerateRequest {
+        messages: vec![Message {
+            role: Role::User,
+            content: vec![Input::Text("Count from 1 to 5".to_string())],
+        }],
+        model: Some("gemini-2.0-flash".to_string()),
+        ..Default::default()
+    };
+    
+    let mut stream = client.generate_stream(&request).await.expect("Stream creation failed");
+    
+    let mut chunks = Vec::new();
+    while let Some(chunk_result) = stream.next().await {
+        let chunk = chunk_result.expect("Chunk error");
+        chunks.push(chunk.text.clone());
+        
+        if chunk.finished {
+            break;
+        }
+    }
+    
+    assert!(!chunks.is_empty(), "Should receive at least one chunk");
+    
+    let full_text = chunks.join("");
+    println!("Streaming result: {}", full_text);
+    
+    // Should contain numbers
+    assert!(full_text.contains('1') || full_text.contains("one"), 
+        "Response should contain counting");
+}
+
+#[tokio::test]
+async fn test_streaming_matches_non_streaming() {
+    let _ = dotenvy::dotenv();
+    
+    let client = GeminiClient::new().expect("Failed to create client");
+    
+    let request = GenerateRequest {
+        messages: vec![Message {
+            role: Role::User,
+            content: vec![Input::Text("Say 'Hello World' exactly".to_string())],
+        }],
+        model: Some("gemini-2.0-flash".to_string()),
+        ..Default::default()
+    };
+    
+    // Get streaming response
+    let mut stream = client.generate_stream(&request).await.expect("Stream failed");
+    let mut streaming_text = String::new();
+    while let Some(chunk_result) = stream.next().await {
+        let chunk = chunk_result.expect("Chunk error");
+        streaming_text.push_str(&chunk.text);
+        if chunk.finished {
+            break;
+        }
+    }
+    
+    // Get non-streaming response  
+    let response = client.generate(&request).await.expect("Generate failed");
+    let non_streaming_text = response.outputs.iter()
+        .filter_map(|o| match o {
+            boticelli::Output::Text(t) => Some(t.clone()),
+            _ => None,
+        })
+        .collect::<String>();
+    
+    // They should be similar (may have minor formatting differences)
+    assert!(!streaming_text.is_empty());
+    assert!(!non_streaming_text.is_empty());
+    
+    println!("Streaming: {}", streaming_text);
+    println!("Non-streaming: {}", non_streaming_text);
+}
+```
+
+#### Step 5: Update Dependencies (if needed)
+
+Check if we need to add to `Cargo.toml`:
+
+```toml
+[dependencies]
+# These might already be present for gemini_rust
+futures = "0.3"
+```
+
+#### Step 6: Documentation (15 minutes)
+
+Add to GEMINI.md:
+
+```markdown
+## Streaming Support
+
+Gemini models support streaming responses for real-time content generation:
+
+\`\`\`rust
+use boticelli::{BoticelliDriver, GeminiClient, GenerateRequest};
+use futures::StreamExt;
+
+let client = GeminiClient::new()?;
+
+let request = GenerateRequest {
+    // ... your request
+};
+
+let mut stream = client.generate_stream(&request).await?;
+
+while let Some(chunk_result) = stream.next().await {
+    let chunk = chunk_result?;
+    print!("{}", chunk.text);
+    
+    if chunk.finished {
+        break;
+    }
+}
+\`\`\`
+
+### When to Use Streaming
+
+- **Real-time UI updates**: Show content as it's generated
+- **Long responses**: Display progress during generation
+- **Interactive applications**: Provide faster perceived responsiveness
+
+### Limitations
+
+- Rate limiting counts the entire stream as one request
+- Cannot partially cancel a stream (yet)
+- Narratives don't support streaming (use `generate()` instead)
+```
+
+### Total Time Estimate: 2-3 hours for MVP
+
+This gets you:
+- ✅ Working streaming support in GeminiClient
+- ✅ Backward compatible (no breaking changes)
+- ✅ Basic tests
+- ✅ Documentation
+
+### What's NOT Included in MVP
+
+- Streaming in narrative executor
+- Advanced rate limiting (per-chunk)
+- Cancellation support
+- CLI streaming output
+- Multiple simultaneous streams
+
+These can be added incrementally later.
 
 ---
 
@@ -568,10 +976,84 @@ while let Some(chunk) = stream.next().await {
 
 ## Timeline Estimate
 
+### Original Estimate (Before Investigation)
+
 - **Investigation**: 1-2 weeks
-- **Design & Prototyping**: 1-2 weeks
+- **Design & Prototyping**: 1-2 weeks  
 - **Implementation**: 2-3 weeks
 - **Testing & Documentation**: 1 week
 - **Total**: 5-8 weeks for full implementation
 
-**Fast Track** (MVP only): 3-4 weeks
+### Revised Estimate (After Investigation)
+
+**Major Discovery**: gemini_rust already has complete streaming support via SSE!
+
+#### Fast Track MVP: 2-3 hours ⚡
+
+- [ ] Add StreamChunk type (5 min)
+- [ ] Extend BoticelliDriver trait (10 min)
+- [ ] Implement in GeminiClient (30 min)
+- [ ] Add basic tests (20 min)
+- [ ] Update dependencies if needed (5 min)
+- [ ] Write documentation (15 min)
+- [ ] Test end-to-end (30 min)
+
+**Result**: Working streaming for all Gemini models
+
+#### Full Implementation: 1-2 weeks
+
+**Week 1**:
+- [ ] MVP implementation (Day 1)
+- [ ] Comprehensive tests (Day 2)
+- [ ] Rate limiting refinements (Day 3)
+- [ ] Error handling edge cases (Day 4)
+- [ ] Documentation and examples (Day 5)
+
+**Week 2** (Optional enhancements):
+- [ ] CLI streaming support
+- [ ] Narrative executor streaming (if desired)
+- [ ] Cancellation support
+- [ ] Performance optimization
+- [ ] Advanced rate limiting (per-chunk)
+
+**Complexity**: Reduced from HIGH to MEDIUM-LOW due to gemini_rust's existing support
+
+---
+
+## Next Steps
+
+### Immediate (Day 1)
+
+1. ✅ **Investigation Complete** - gemini_rust supports streaming via SSE
+2. [ ] Create feature branch: `git checkout -b feature/gemini-streaming`
+3. [ ] Implement MVP (Steps 1-6 above)
+4. [ ] Run tests: `cargo test --features gemini`
+5. [ ] Commit: "Add streaming support to GeminiClient (MVP)"
+
+### Short Term (Week 1)
+
+6. [ ] Add integration tests
+7. [ ] Test with different models (gemini-2.0-flash, gemini-2.5-flash, etc.)
+8. [ ] Add CLI example: `boticelli run --stream narrative.toml`
+9. [ ] Update GEMINI.md with streaming guide
+10. [ ] PR review and merge
+
+### Future Enhancements (Week 2+)
+
+11. [ ] Narrative executor streaming support (if needed)
+12. [ ] Advanced rate limiting for long streams
+13. [ ] Streaming cancellation/timeout
+14. [ ] Performance benchmarks
+15. [ ] Real-time progress indicators in CLI
+
+---
+
+## Conclusion
+
+**Status Update**: Investigation phase COMPLETE ✅
+
+**Key Finding**: gemini_rust v1.5.1 has excellent streaming support via Server-Sent Events (SSE). This dramatically simplifies our implementation.
+
+**Recommendation**: Proceed with MVP implementation (2-3 hours). The hard work is already done by gemini_rust - we just need to adapt the stream format to our `StreamChunk` type.
+
+**Confidence Level**: HIGH - Clear path forward with working examples and robust library support.
