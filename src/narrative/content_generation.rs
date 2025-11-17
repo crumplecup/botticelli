@@ -8,7 +8,12 @@ use async_trait::async_trait;
 use serde_json::Value as JsonValue;
 
 #[cfg(feature = "database")]
-use crate::{PgConnection, create_content_table};
+use crate::{
+    ContentGenerationRepository, NewContentGenerationRow, PgConnection, 
+    PostgresContentGenerationRepository, UpdateContentGenerationRow, create_content_table,
+};
+#[cfg(feature = "database")]
+use chrono::Utc;
 #[cfg(feature = "database")]
 use diesel::prelude::*;
 #[cfg(feature = "database")]
@@ -18,8 +23,10 @@ use std::sync::{Arc, Mutex};
 ///
 /// Detects narratives with a `template` field and:
 /// 1. Creates a custom table if it doesn't exist (based on template schema)
-/// 2. Extracts JSON from LLM responses
-/// 3. Inserts generated content with metadata columns
+/// 2. Tracks generation start in content_generations table
+/// 3. Extracts JSON from LLM responses
+/// 4. Inserts generated content with metadata columns
+/// 5. Updates tracking record with success/failure
 #[cfg(feature = "database")]
 pub struct ContentGenerationProcessor {
     /// Database connection wrapped in Arc<Mutex> for thread safety
@@ -123,60 +130,158 @@ impl ActProcessor for ContentGenerationProcessor {
             "Processing content generation"
         );
 
-        // Create table if needed
+        let start_time = std::time::Instant::now();
+        
+        // Track generation start
         {
             let mut conn = self.connection.lock().map_err(|e| {
                 crate::BackendError::new(format!("Failed to lock connection: {}", e))
             })?;
-
-            create_content_table(
-                &mut conn,
-                table_name,
-                template,
-                Some(context.narrative_name),
-                Some(&context.narrative_metadata.description),
-            )?;
+            
+            let mut repo = PostgresContentGenerationRepository::new(&mut conn);
+            
+            // Try to start tracking (ignore unique constraint violations if already exists)
+            let new_gen = NewContentGenerationRow {
+                table_name: table_name.clone(),
+                narrative_file: format!("{} (from processor)", context.narrative_name),
+                narrative_name: context.narrative_name.to_string(),
+                status: "running".to_string(),
+                created_by: None,
+            };
+            
+            if let Err(e) = repo.start_generation(new_gen) {
+                tracing::debug!(
+                    error = %e,
+                    table = %table_name,
+                    "Could not start tracking (may already exist, continuing)"
+                );
+            } else {
+                tracing::info!(table = %table_name, "Started tracking content generation");
+            }
         }
 
-        // Extract JSON from response
-        let json_str = extract_json(&context.execution.response)?;
+        // Execute content generation
+        let generation_result: Result<usize, crate::BoticelliError> = (|| {
+            // Create table if needed
+            {
+                let mut conn = self.connection.lock().map_err(|e| {
+                    crate::BackendError::new(format!("Failed to lock connection: {}", e))
+                })?;
 
-        tracing::debug!(json_length = json_str.len(), "Extracted JSON from response");
+                create_content_table(
+                    &mut conn,
+                    table_name,
+                    template,
+                    Some(context.narrative_name),
+                    Some(&context.narrative_metadata.description),
+                )?;
+            }
 
-        // Parse JSON - could be single object or array
-        let items: Vec<JsonValue> = if json_str.trim().starts_with('[') {
-            parse_json(&json_str)?
-        } else {
-            vec![parse_json(&json_str)?]
-        };
+            // Extract JSON from response
+            let json_str = extract_json(&context.execution.response)?;
 
-        tracing::info!(count = items.len(), "Parsed JSON items for insertion");
+            tracing::debug!(json_length = json_str.len(), "Extracted JSON from response");
 
-        // Insert each item
-        for (idx, item) in items.iter().enumerate() {
-            tracing::debug!(
-                index = idx,
+            // Parse JSON - could be single object or array
+            let items: Vec<JsonValue> = if json_str.trim().starts_with('[') {
+                parse_json(&json_str)?
+            } else {
+                vec![parse_json(&json_str)?]
+            };
+
+            tracing::info!(count = items.len(), "Parsed JSON items for insertion");
+
+            // Insert each item
+            for (idx, item) in items.iter().enumerate() {
+                tracing::debug!(
+                    index = idx,
+                    act = %context.execution.act_name,
+                    "Inserting content item"
+                );
+
+                self.insert_content(
+                    table_name,
+                    item,
+                    context.narrative_name,
+                    &context.execution.act_name,
+                    context.execution.model.as_deref(),
+                )?;
+            }
+
+            Ok(items.len())
+        })();
+
+        // Update tracking record with result
+        let duration_ms = start_time.elapsed().as_millis() as i32;
+        
+        {
+            let mut conn = self.connection.lock().map_err(|e| {
+                crate::BackendError::new(format!("Failed to lock connection: {}", e))
+            })?;
+            
+            let mut repo = PostgresContentGenerationRepository::new(&mut conn);
+            
+            match generation_result {
+                Ok(row_count) => {
+                    let update = UpdateContentGenerationRow {
+                        completed_at: Some(Utc::now()),
+                        row_count: Some(row_count as i32),
+                        generation_duration_ms: Some(duration_ms),
+                        status: Some("success".to_string()),
+                        error_message: None,
+                    };
+                    
+                    if let Err(e) = repo.complete_generation(table_name, update) {
+                        tracing::warn!(
+                            error = %e,
+                            table = %table_name,
+                            "Failed to update tracking record"
+                        );
+                    } else {
+                        tracing::info!(
+                            table = %table_name,
+                            row_count,
+                            duration_ms,
+                            "Updated tracking: generation successful"
+                        );
+                    }
+                }
+                Err(ref e) => {
+                    let update = UpdateContentGenerationRow {
+                        completed_at: Some(Utc::now()),
+                        row_count: None,
+                        generation_duration_ms: Some(duration_ms),
+                        status: Some("failed".to_string()),
+                        error_message: Some(e.to_string()),
+                    };
+                    
+                    if let Err(update_err) = repo.complete_generation(table_name, update) {
+                        tracing::warn!(
+                            error = %update_err,
+                            table = %table_name,
+                            "Failed to update tracking record with failure"
+                        );
+                    } else {
+                        tracing::info!(
+                            table = %table_name,
+                            error = %e,
+                            duration_ms,
+                            "Updated tracking: generation failed"
+                        );
+                    }
+                }
+            }
+        }
+
+        // Return the original result
+        generation_result.map(|row_count| {
+            tracing::info!(
                 act = %context.execution.act_name,
-                "Inserting content item"
+                table = %table_name,
+                count = row_count,
+                "Content generation completed successfully"
             );
-
-            self.insert_content(
-                table_name,
-                item,
-                context.narrative_name,
-                &context.execution.act_name,
-                context.execution.model.as_deref(),
-            )?;
-        }
-
-        tracing::info!(
-            act = %context.execution.act_name,
-            table = %table_name,
-            count = items.len(),
-            "Content generation completed successfully"
-        );
-
-        Ok(())
+        })
     }
 
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
