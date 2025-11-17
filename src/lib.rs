@@ -261,4 +261,4 @@ pub use cli::ContentCommands;
 
 // Re-export TUI types
 #[cfg(feature = "tui")]
-pub use tui::{run_tui, App, AppMode};
+pub use tui::{run_tui, App, AppMode, TuiError, TuiErrorKind};

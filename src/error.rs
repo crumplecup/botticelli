@@ -6,6 +6,8 @@ use crate::DatabaseError;
 use crate::DiscordError;
 #[cfg(feature = "gemini")]
 use crate::GeminiError;
+#[cfg(feature = "tui")]
+use crate::TuiError;
 use crate::{NarrativeError, StorageError};
 
 /// HTTP error wrapping reqwest errors with source location.
@@ -224,6 +226,10 @@ pub enum BoticelliErrorKind {
     /// Storage error
     #[from(StorageError)]
     Storage(StorageError),
+    /// TUI error
+    #[cfg(feature = "tui")]
+    #[from(TuiError)]
+    Tui(TuiError),
 }
 
 impl std::fmt::Display for BoticelliErrorKind {
@@ -242,6 +248,8 @@ impl std::fmt::Display for BoticelliErrorKind {
             BoticelliErrorKind::Config(e) => write!(f, "{}", e),
             BoticelliErrorKind::NotImplemented(e) => write!(f, "{}", e),
             BoticelliErrorKind::Storage(e) => write!(f, "{}", e),
+            #[cfg(feature = "tui")]
+            BoticelliErrorKind::Tui(e) => write!(f, "{}", e),
         }
     }
 }

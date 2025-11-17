@@ -1,6 +1,6 @@
 //! UI rendering for TUI.
 
-use super::app::{App, AppMode};
+use crate::tui::app::{App, AppMode};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Modifier, Style},

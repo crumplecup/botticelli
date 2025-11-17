@@ -1,6 +1,7 @@
 //! Application state and main TUI entry point.
 
-use crate::{BoticelliError, BoticelliResult, ConfigError};
+use crate::{BoticelliError, BoticelliResult, TuiError, TuiErrorKind};
+use crate::tui::{events::EventHandler, ui};
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
@@ -9,8 +10,6 @@ use crossterm::{
 use diesel::PgConnection;
 use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
-
-use super::{events::EventHandler, ui};
 
 /// Application mode determines which view is displayed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -297,26 +296,26 @@ impl App {
 pub fn run_tui(table_name: String, conn: PgConnection) -> BoticelliResult<()> {
     // Setup terminal
     enable_raw_mode().map_err(|e| {
-        BoticelliError::from(ConfigError::new(format!(
-            "Failed to enable raw mode: {}",
+        BoticelliError::from(TuiError::new(TuiErrorKind::TerminalSetup(format!(
+            "enable raw mode: {}",
             e
-        )))
+        ))))
     })?;
 
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture).map_err(|e| {
-        BoticelliError::from(ConfigError::new(format!(
-            "Failed to setup terminal: {}",
+        BoticelliError::from(TuiError::new(TuiErrorKind::TerminalSetup(format!(
+            "alternate screen/mouse capture: {}",
             e
-        )))
+        ))))
     })?;
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend).map_err(|e| {
-        BoticelliError::from(ConfigError::new(format!(
-            "Failed to create terminal: {}",
+        BoticelliError::from(TuiError::new(TuiErrorKind::TerminalSetup(format!(
+            "create terminal: {}",
             e
-        )))
+        ))))
     })?;
 
     // Create app state
@@ -328,10 +327,10 @@ pub fn run_tui(table_name: String, conn: PgConnection) -> BoticelliResult<()> {
 
     // Restore terminal
     disable_raw_mode().map_err(|e| {
-        BoticelliError::from(ConfigError::new(format!(
-            "Failed to disable raw mode: {}",
+        BoticelliError::from(TuiError::new(TuiErrorKind::TerminalRestore(format!(
+            "disable raw mode: {}",
             e
-        )))
+        ))))
     })?;
 
     execute!(
@@ -340,17 +339,17 @@ pub fn run_tui(table_name: String, conn: PgConnection) -> BoticelliResult<()> {
         DisableMouseCapture
     )
     .map_err(|e| {
-        BoticelliError::from(ConfigError::new(format!(
-            "Failed to restore terminal: {}",
+        BoticelliError::from(TuiError::new(TuiErrorKind::TerminalRestore(format!(
+            "leave alternate screen: {}",
             e
-        )))
+        ))))
     })?;
 
     terminal.show_cursor().map_err(|e| {
-        BoticelliError::from(ConfigError::new(format!(
-            "Failed to show cursor: {}",
+        BoticelliError::from(TuiError::new(TuiErrorKind::TerminalRestore(format!(
+            "show cursor: {}",
             e
-        )))
+        ))))
     })?;
 
     result
@@ -366,14 +365,11 @@ fn run_app<B: ratatui::backend::Backend>(
         terminal
             .draw(|f| ui::draw(f, app))
             .map_err(|e| {
-                BoticelliError::from(ConfigError::new(format!(
-                    "Failed to draw: {}",
-                    e
-                )))
+                BoticelliError::from(TuiError::new(TuiErrorKind::Rendering(e.to_string())))
             })?;
 
         if let Some(event) = events.next()? {
-            use super::events::Event;
+            use crate::tui::events::Event;
             match event {
                 Event::Tick => {}
                 Event::Key(key) => handle_key_event(app, key)?,
