@@ -24,6 +24,14 @@ botticelli_database = { workspace = true, optional = true }
 botticelli_social = { workspace = true, optional = true }
 botticelli_tui = { workspace = true, optional = true }
 
+# Binary dependencies
+clap = { version = "4", features = ["derive"] }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde_json = { workspace = true }
+dirs = { workspace = true }
+
 [features]
 default = []
 
@@ -44,3 +52,7 @@ all-providers = ["gemini"]
 
 # Convenience feature for all optional features
 all = ["gemini", "database", "discord", "tui"]
+
+[[bin]]
+name = "botticelli"
+path = "src/main.rs"
