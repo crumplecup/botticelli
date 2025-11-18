@@ -16,11 +16,22 @@ pub async fn run_narrative(
     save: bool,
     process_discord: bool,
 ) -> BotticelliResult<()> {
-    use botticelli::{GeminiClient, NarrativeExecutor, Narrative};
+    use botticelli::{GeminiClient, NarrativeExecutor};
+
+    #[cfg(not(feature = "database"))]
+    use botticelli::Narrative;
 
     tracing::info!(path = %narrative_path.display(), "Loading narrative");
 
     // Load and parse the narrative TOML file
+    // If database feature is enabled, use from_file_with_db to inject schema docs
+    #[cfg(feature = "database")]
+    let narrative = {
+        let mut conn = botticelli::establish_connection()?;
+        botticelli::Narrative::from_file_with_db(narrative_path, &mut conn)?
+    };
+
+    #[cfg(not(feature = "database"))]
     let narrative = Narrative::from_file(narrative_path)?;
 
     tracing::info!(
