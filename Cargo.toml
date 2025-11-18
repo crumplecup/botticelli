@@ -8,6 +8,7 @@ members = [
     "crates/botticelli-models",
     "crates/botticelli-database",
     "crates/botticelli-narrative",
+    "crates/botticelli-social",
 ]
 resolver = "2"
 
@@ -40,6 +41,9 @@ botticelli-database = { path = "crates/botticelli-database", version = "0.2.0" }
 
 # Internal crates (Phase 5 narrative)
 botticelli-narrative = { path = "crates/botticelli-narrative", version = "0.2.0" }
+
+# Internal crates (Phase 6 social)
+botticelli-social = { path = "crates/botticelli-social", version = "0.2.0" }
 
 # Common external dependencies (shared versions)
 tokio = { version = "1", features = ["full"] }

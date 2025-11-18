@@ -1,0 +1,39 @@
+[package]
+name = "botticelli-social"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Social media platform integrations for Botticelli LLM framework"
+
+[dependencies]
+# Internal workspace crates
+botticelli-error = { workspace = true }
+botticelli-interface = { workspace = true }
+botticelli-database = { workspace = true }
+botticelli-narrative = { workspace = true }
+
+# Database
+diesel = { workspace = true }
+chrono = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Discord integration (optional)
+serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"], optional = true }
+
+[features]
+default = []
+discord = ["serenity"]
