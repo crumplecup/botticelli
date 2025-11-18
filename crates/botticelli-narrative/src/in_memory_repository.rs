@@ -13,9 +13,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-#[cfg(feature = "database")]
-use chrono::Utc;
-
 /// In-memory repository for narrative executions.
 ///
 /// Stores executions in a HashMap protected by an RwLock for thread-safe access.
@@ -46,10 +43,6 @@ struct StoredExecution {
     narrative_name: String,
     narrative_description: Option<String>,
     status: ExecutionStatus,
-    #[cfg(feature = "database")]
-    started_at: chrono::DateTime<Utc>,
-    #[cfg(feature = "database")]
-    completed_at: Option<chrono::DateTime<Utc>>,
     execution: NarrativeExecution,
     error_message: Option<String>,
 }
@@ -99,10 +92,6 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
             narrative_name: execution.narrative_name.clone(),
             narrative_description: None, // Not available in current NarrativeExecution
             status: ExecutionStatus::Completed,
-            #[cfg(feature = "database")]
-            started_at: Utc::now(),
-            #[cfg(feature = "database")]
-            completed_at: Some(Utc::now()),
             execution: execution.clone(),
             error_message: None,
         };
@@ -143,22 +132,6 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
                     return false;
                 }
 
-                // Apply date range filters (only with database feature)
-                #[cfg(feature = "database")]
-                {
-                    if let Some(ref after) = filter.started_after
-                        && &stored.started_at < after
-                    {
-                        return false;
-                    }
-
-                    if let Some(ref before) = filter.started_before
-                        && &stored.started_at > before
-                    {
-                        return false;
-                    }
-                }
-
                 true
             })
             .map(|stored| ExecutionSummary {
@@ -166,10 +139,6 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
                 narrative_name: stored.narrative_name.clone(),
                 narrative_description: stored.narrative_description.clone(),
                 status: stored.status,
-                #[cfg(feature = "database")]
-                started_at: stored.started_at,
-                #[cfg(feature = "database")]
-                completed_at: stored.completed_at,
                 act_count: stored.execution.act_executions.len(),
                 error_message: stored.error_message.clone(),
             })
@@ -191,10 +160,6 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
             .get_mut(&id)
             .map(|stored| {
                 stored.status = status;
-                #[cfg(feature = "database")]
-                if matches!(status, ExecutionStatus::Completed | ExecutionStatus::Failed) {
-                    stored.completed_at = Some(Utc::now());
-                }
             })
             .ok_or_else(|| {
                 BotticelliError::from(BackendError::new(format!("Execution {} not found", id)))

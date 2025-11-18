@@ -4,7 +4,7 @@
 //! or mixed with explanatory text. This module provides robust extraction
 //! utilities that handle common LLM response patterns.
 
-use crate::BotticelliResult;
+use botticelli_error::BotticelliResult;
 
 /// Extract JSON from a response that may contain markdown or extra text.
 ///

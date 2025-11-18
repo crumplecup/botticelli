@@ -5,14 +5,18 @@
 //! schema automatically from JSON responses when no template is provided.
 
 #[cfg(feature = "database")]
-use crate::{
-    ActProcessor, BotticelliResult, ContentGenerationRepository, NewContentGenerationRow,
-    PgConnection, PostgresContentGenerationRepository, ProcessorContext,
-    UpdateContentGenerationRow, create_content_table, create_inferred_table, extract_json,
-    infer_schema, parse_json,
-};
+use crate::{extraction::extract_json, extraction::parse_json, ActProcessor, ProcessorContext};
 #[cfg(feature = "database")]
 use async_trait::async_trait;
+#[cfg(feature = "database")]
+use botticelli_database::{
+    schema_inference::{create_inferred_table, infer_schema},
+    schema_reflection::{create_content_table, reflect_table_schema},
+    ContentGenerationRepository, NewContentGenerationRow, PostgresContentGenerationRepository,
+    UpdateContentGenerationRow,
+};
+#[cfg(feature = "database")]
+use botticelli_error::BotticelliResult;
 #[cfg(feature = "database")]
 use chrono::Utc;
 #[cfg(feature = "database")]
@@ -72,7 +76,7 @@ impl ContentGenerationProcessor {
             .map_err(|e| botticelli_error::BackendError::new(format!("Failed to lock connection: {}", e)))?;
 
         // Query schema to get column types
-        let schema = crate::reflect_table_schema(&mut conn, table_name)?;
+        let schema = reflect_table_schema(&mut conn, table_name)?;
         let column_types: std::collections::HashMap<_, _> = schema
             .columns
             .iter()

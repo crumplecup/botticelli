@@ -17,6 +17,8 @@ botticelli-storage = { workspace = true }
 
 # Optional database support
 botticelli-database = { workspace = true, optional = true }
+diesel = { workspace = true, optional = true }
+chrono = { workspace = true, optional = true }
 
 # Async
 async-trait = { workspace = true }
@@ -32,7 +34,7 @@ tracing = { workspace = true }
 
 [features]
 default = []
-database = ["dep:botticelli-database"]
+database = ["dep:botticelli-database", "dep:diesel", "dep:chrono"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
