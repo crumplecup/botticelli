@@ -1,6 +1,6 @@
-# Boticelli Development Justfile
+# Botticelli Development Justfile
 #
-# Common tasks for building, testing, and maintaining the Boticelli project.
+# Common tasks for building, testing, and maintaining the Botticelli project.
 # Run `just` or `just --list` to see all available commands.
 
 # Load environment variables from .env file
@@ -85,15 +85,9 @@ test:
     set +u
     if [ -z "${DATABASE_URL}" ]; then \
         echo "⚠️  Skipping database integration tests (DATABASE_URL not set)"; \
-        cargo test --all-features --lib; \
-        cargo test --all-features --bins; \
-        cargo test --all-features --test discord_processor_test; \
-        cargo test --all-features --test narrative_test; \
-        cargo test --all-features --test rate_limit_integration_test; \
-        cargo test --all-features --test rate_limit_tier_test; \
-        cargo test --all-features --test storage_test; \
+        cargo test --workspace --all-features --lib; \
     else \
-        cargo test --all-features; \
+        cargo test --workspace --all-features; \
     fi
 
 # Run all tests including database integration (requires DATABASE_URL)
@@ -101,11 +95,11 @@ test-all:
     #!/usr/bin/env bash
     set +u
     test -n "${DATABASE_URL}" || (echo "❌ DATABASE_URL not set. These tests require a PostgreSQL database." && exit 1)
-    cargo test --all-features
+    cargo test --workspace --all-features
 
 # Run tests with output
 test-verbose:
-    cargo test --all-features -- --nocapture
+    cargo test --workspace --all-features -- --nocapture
 
 # Run tests for specific feature
 test-feature feature:
@@ -117,23 +111,23 @@ test-db:
 
 # Run a specific test by name
 test-one name:
-    cargo test --all-features {{name}} -- --nocapture
+    cargo test --workspace --all-features {{name}} -- --nocapture
 
 # Run tests and show coverage (requires cargo-tarpaulin)
 test-coverage:
     @command -v cargo-tarpaulin >/dev/null 2>&1 || (echo "Installing cargo-tarpaulin..." && cargo install cargo-tarpaulin)
-    cargo tarpaulin --all-features --out Html --output-dir coverage
+    cargo tarpaulin --workspace --all-features --out Html --output-dir coverage
 
 # Code Quality
 # ============
 
 # Run clippy linter (no warnings allowed)
 lint:
-    cargo clippy --all-features --all-targets
+    cargo clippy --workspace --all-features --all-targets
 
 # Run clippy and fix issues automatically
 lint-fix:
-    cargo clippy --all-features --all-targets --fix --allow-dirty --allow-staged
+    cargo clippy --workspace --all-features --all-targets --fix --allow-dirty --allow-staged
 
 # Check code formatting
 fmt-check:
@@ -209,7 +203,7 @@ db-setup:
 # Watch for changes and run tests
 watch:
     @command -v cargo-watch >/dev/null 2>&1 || (echo "Installing cargo-watch..." && cargo install cargo-watch)
-    cargo watch -x 'test --all-features'
+    cargo watch -x 'test --workspace --all-features'
 
 # Watch and run specific command on changes
 watch-cmd cmd:
@@ -218,15 +212,15 @@ watch-cmd cmd:
 
 # Run the binary in development mode
 run *args:
-    cargo run -- {{args}}
+    cargo run -p botticelli -- {{args}}
 
 # Run with database features enabled
 run-db *args:
-    cargo run --features database -- {{args}}
+    cargo run -p botticelli --features database -- {{args}}
 
 # Run with all features
 run-all *args:
-    cargo run --all-features -- {{args}}
+    cargo run -p botticelli --all-features -- {{args}}
 
 # Content Generation Examples
 # ===========================
@@ -245,7 +239,7 @@ narrate name:
         echo "❌ No narrative found matching '{{name}}'"
         echo ""
         echo "📂 Available narratives:"
-        find narratives -type f -name "*.toml" 2>/dev/null | sed 's/narratives\//  /' | sed 's/\.toml$//' | sort || echo "  (no narratives/ directory)"
+        find crates/botticelli_narrative/narratives -type f -name "*.toml" 2>/dev/null | sed 's|crates/botticelli_narrative/narratives/||' | sed 's/\.toml$//' | sort || echo "  (no narratives directory)"
         exit 1
     fi
     
@@ -257,7 +251,7 @@ narrate name:
         echo "✓ Found: $NARRATIVE"
         echo ""
         echo "🚀 Executing narrative..."
-        cargo run --release --features gemini,database -- run --narrative "$NARRATIVE" --save --verbose
+        cargo run -p botticelli --release --features gemini,database -- run --narrative "$NARRATIVE" --save --verbose
     else
         echo "❌ Multiple narratives found matching '{{name}}':"
         echo "$MATCHES" | sed 's/^/  /'
@@ -268,71 +262,71 @@ narrate name:
 
 # Run example narrative: generate channel posts
 example-channels:
-    cargo run --release --features database,gemini -- run --narrative narratives/generate_channel_posts.toml
+    cargo run -p botticelli --release --features database,gemini -- run --narrative crates/botticelli_narrative/narratives/generate_channel_posts.toml
 
 # Run example narrative: generate users
 example-users:
-    cargo run --release --features database,gemini -- run --narrative narratives/generate_users.toml
+    cargo run -p botticelli --release --features database,gemini -- run --narrative crates/botticelli_narrative/narratives/generate_users.toml
 
 # Run example narrative: generate guilds
 example-guilds:
-    cargo run --release --features database,gemini -- run --narrative narratives/generate_guilds.toml
+    cargo run -p botticelli --release --features database,gemini -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
 
 # Run example narrative: generate guilds (simplified with prompt injection)
 example-guilds-simple:
-    cargo run --release --features database,gemini -- run --narrative narratives/generate_guilds_simple.toml
+    cargo run -p botticelli --release --features database,gemini -- run --narrative crates/botticelli_narrative/narratives/generate_guilds_simple.toml
 
 # List content from a generation table
 content-list table:
-    cargo run --release --features database,gemini -- content list {{table}}
+    cargo run -p botticelli --release --features database,gemini -- content list {{table}}
 
 # Show specific content item
 content-show table id:
-    cargo run --release --features database,gemini -- content show {{table}} {{id}}
+    cargo run -p botticelli --release --features database,gemini -- content show {{table}} {{id}}
 
 # TUI (Terminal User Interface)
 # ==============================
 
 # Launch TUI for a specific table
 tui table:
-    cargo run --release --features tui -- tui {{table}}
+    cargo run -p botticelli --release --features tui -- tui {{table}}
 
 # Launch TUI for a table with all features enabled
 tui-all table:
-    cargo run --release --all-features -- tui {{table}}
+    cargo run -p botticelli --release --all-features -- tui {{table}}
 
 # Generate test guilds and launch TUI (full workflow)
 tui-test-guilds:
     #!/usr/bin/env bash
     echo "🎲 Generating test guilds..."
-    cargo run --release --all-features -- run --narrative narratives/generate_guilds.toml
+    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
     echo "✅ Content generated in table: potential_guilds"
     echo "🖥️  Launching TUI..."
-    cargo run --release --all-features -- tui "potential_guilds"
+    cargo run -p botticelli --release --all-features -- tui "potential_guilds"
 
 # Generate test channels and launch TUI (full workflow)
 tui-test-channels:
     #!/usr/bin/env bash
     echo "🎲 Generating test channels..."
-    cargo run --release --all-features -- run --narrative narratives/generate_channel_posts.toml
+    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/generate_channel_posts.toml
     echo "✅ Content generated in table: potential_posts"
     echo "🖥️  Launching TUI..."
-    cargo run --release --all-features -- tui "potential_posts"
+    cargo run -p botticelli --release --all-features -- tui "potential_posts"
 
 # Generate test users and launch TUI (full workflow)
 tui-test-users:
     #!/usr/bin/env bash
     echo "🎲 Generating test users..."
-    cargo run --release --all-features -- run --narrative narratives/generate_users.toml
+    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/generate_users.toml
     echo "✅ Content generated in table: potential_users"
     echo "🖥️  Launching TUI..."
-    cargo run --release --all-features -- tui "potential_users"
+    cargo run -p botticelli --release --all-features -- tui "potential_users"
 
 # Generate Discord infrastructure and launch TUI for review
 tui-test-discord:
     #!/usr/bin/env bash
     echo "🎲 Generating Discord infrastructure..."
-    cargo run --release --all-features -- run --narrative narratives/discord_infrastructure.toml --process-discord
+    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/discord_infrastructure.toml --process-discord
     echo "✅ Discord infrastructure generated"
     echo "💡 Note: Discord infrastructure uses fixed IDs, check discord_guilds table directly"
     echo "🖥️  To review generated content, use:"
@@ -347,18 +341,18 @@ tui-list-tables:
 
 # List all content generations with tracking metadata
 content-generations:
-    cargo run --release --all-features -- content generations
+    cargo run -p botticelli --release --all-features -- content generations
 
 # Show details of the last generation
 content-last:
-    cargo run --release --all-features -- content last
+    cargo run -p botticelli --release --all-features -- content last
 
 # Launch TUI on the most recently generated table
 tui-last:
     #!/usr/bin/env bash
     set -e
     echo "📊 Getting latest generation..."
-    TABLE=$(cargo run --release --all-features -- content last --format=table-name-only 2>/dev/null || echo "")
+    TABLE=$(cargo run -p botticelli --release --all-features -- content last --format=table-name-only 2>/dev/null || echo "")
     if [ -z "$TABLE" ]; then
         echo "❌ No content generations found"
         echo "💡 Generate content first with: just example-guilds"
@@ -367,18 +361,18 @@ tui-last:
     echo "   Table: $TABLE"
     echo ""
     echo "🖥️  Launching TUI..."
-    cargo run --release --all-features -- tui "$TABLE"
+    cargo run -p botticelli --release --all-features -- tui "$TABLE"
 
 # Quick TUI demo with sample data
 tui-demo:
     #!/usr/bin/env bash
     set -e
     echo "🎲 Generating sample content..."
-    cargo run --release --all-features -- run --narrative narratives/generate_guilds.toml
+    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
     echo "✅ Content generated"
     echo ""
     echo "📊 Getting latest generation..."
-    TABLE=$(cargo run --release --all-features -- content last --format=table-name-only 2>/dev/null || echo "")
+    TABLE=$(cargo run -p botticelli --release --all-features -- content last --format=table-name-only 2>/dev/null || echo "")
     if [ -z "$TABLE" ]; then
         echo "❌ No content generations found"
         exit 1
@@ -386,7 +380,7 @@ tui-demo:
     echo "   Table: $TABLE"
     echo ""
     echo "🖥️  Launching TUI..."
-    cargo run --release --all-features -- tui "$TABLE"
+    cargo run -p botticelli --release --all-features -- tui "$TABLE"
 
 # Full Workflow (CI/CD)
 # ====================
@@ -425,11 +419,11 @@ push msg:
 
 # Generate and open Rust documentation
 docs:
-    cargo doc --all-features --no-deps --open
+    cargo doc --workspace --all-features --no-deps --open
 
 # Check documentation for issues
 docs-check:
-    cargo doc --all-features --no-deps
+    cargo doc --workspace --all-features --no-deps
 
 # Build and view documentation for a specific crate
 docs-crate crate:
@@ -443,14 +437,17 @@ stats:
     @echo "📊 Project Statistics"
     @echo "===================="
     @echo ""
-    @echo "Lines of Rust code:"
-    @find src -name '*.rs' -exec wc -l {} + | tail -1
+    @echo "Workspace crates:"
+    @ls -1d crates/*/ | wc -l
+    @echo ""
+    @echo "Lines of Rust code (all crates):"
+    @find crates -name '*.rs' -not -path '*/target/*' -exec wc -l {} + 2>/dev/null | tail -1 || echo "  0"
     @echo ""
     @echo "Lines of test code:"
-    @find tests -name '*.rs' -exec wc -l {} + 2>/dev/null | tail -1 || echo "  0 tests (no tests/ directory)"
+    @find crates/*/tests tests -name '*.rs' 2>/dev/null -exec wc -l {} + 2>/dev/null | tail -1 || echo "  0"
     @echo ""
     @echo "Number of dependencies:"
-    @grep -c "^name =" Cargo.lock
+    @grep -c "^name =" Cargo.lock 2>/dev/null || echo "  0"
     @echo ""
     @echo "Database migrations:"
     @ls migrations/ 2>/dev/null | grep -v "^total" | wc -l || echo "  0 migrations"
@@ -481,7 +478,9 @@ env:
 features:
     @echo "🎛️  Available Features"
     @echo "===================="
-    @grep '^\[features\]' -A 20 Cargo.toml | grep -v '^\[' | grep '='
+    @echo ""
+    @echo "Main crate features:"
+    @grep '^\[features\]' -A 20 crates/botticelli/Cargo.toml | grep -v '^\[' | grep '='
 
 # Utility
 # =======
