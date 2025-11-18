@@ -1,3 +1,5 @@
+use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, MessageRole as Role, FinishReason};
+use botticelli_interface::{BotticelliDriver, Streaming};
 //! Tests for Gemini streaming support.
 //!
 //! These tests verify that streaming works with both standard and live models.
@@ -6,7 +8,7 @@
 
 #![cfg(feature = "gemini")]
 
-use botticelli::{BotticelliDriver, GeminiClient, GenerateRequest, Input, Message, Role, Streaming};
+use botticelli_models::{BotticelliDriver, GeminiClient, GenerateRequest, Input, Message, Role, Streaming};
 use futures_util::StreamExt;
 
 /// Helper to create a simple test request.

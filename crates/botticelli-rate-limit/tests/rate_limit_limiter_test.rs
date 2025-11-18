@@ -1,6 +1,6 @@
 //! Tests for rate limiter implementation.
 
-use botticelli::{RateLimiter, TierConfig};
+use botticelli_rate_limit::{RateLimiter, TierConfig};
 use std::collections::HashMap;
 use std::sync::Arc;
 

@@ -1,3 +1,5 @@
+use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, MessageRole as Role, FinishReason};
+use botticelli_interface::{BotticelliDriver, Streaming};
 //! Error handling tests for Gemini Live API.
 //!
 //! Tests various error conditions including invalid models, connection issues,
@@ -14,7 +16,7 @@
 
 #![cfg(feature = "gemini")]
 
-use botticelli::{
+use botticelli_models::{
     BotticelliDriver, GeminiClient, GeminiLiveClient, GenerateRequest, GenerationConfig, Input,
     LiveRateLimiter, Message, Role, Streaming,
 };

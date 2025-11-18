@@ -1,3 +1,5 @@
+use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, MessageRole as Role, FinishReason};
+use botticelli_interface::{BotticelliDriver, Streaming};
 //! Integration tests for unified GeminiClient with Live API routing.
 //!
 //! These tests verify that GeminiClient correctly routes live models to the Live API
@@ -14,7 +16,7 @@
 
 #![cfg(feature = "gemini")]
 
-use botticelli::{BotticelliDriver, GeminiClient, GenerateRequest, Input, Message, Role, Streaming};
+use botticelli_models::{BotticelliDriver, GeminiClient, GenerateRequest, Input, Message, Role, Streaming};
 use futures_util::StreamExt;
 
 #[tokio::test]

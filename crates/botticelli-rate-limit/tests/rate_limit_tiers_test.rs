@@ -1,14 +1,14 @@
 //! Tests for rate limit tiers.
 
-use botticelli::Tier;
+use botticelli_rate_limit::Tier;
 
 #[cfg(feature = "gemini")]
-use botticelli::GeminiTier;
+use botticelli_rate_limit::GeminiTier;
 
 #[cfg(feature = "anthropic")]
-use botticelli::AnthropicTier;
+use botticelli_rate_limit::AnthropicTier;
 
-use botticelli::OpenAITier;
+use botticelli_rate_limit::OpenAITier;
 
 #[cfg(feature = "gemini")]
 #[test]

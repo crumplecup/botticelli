@@ -1,6 +1,6 @@
 //! Tests for rate limit configuration system.
 
-use botticelli::{BotticelliConfig, Tier, TierConfig};
+use botticelli_rate_limit::{BotticelliConfig, Tier, TierConfig};
 use std::collections::HashMap;
 
 #[test]

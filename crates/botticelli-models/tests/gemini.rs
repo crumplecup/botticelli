@@ -1,8 +1,10 @@
+use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, MessageRole as Role, FinishReason};
+use botticelli_interface::{BotticelliDriver, Streaming};
 //! Tests for the Gemini client implementation.
 
 #![cfg(feature = "gemini")]
 
-use botticelli::{
+use botticelli_models::{
     BotticelliDriver, GeminiClient, GeminiError, GeminiErrorKind, GenerateRequest, Input, Message,
     Metadata, Role, Vision,
 };
