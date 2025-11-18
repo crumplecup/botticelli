@@ -4,30 +4,21 @@
 //! content into custom tables based on Discord schema templates, OR infers
 //! schema automatically from JSON responses when no template is provided.
 
-#[cfg(feature = "database")]
 use crate::{extraction::extract_json, extraction::parse_json, ActProcessor, ProcessorContext};
-#[cfg(feature = "database")]
 use async_trait::async_trait;
-#[cfg(feature = "database")]
 use botticelli_database::{
     schema_inference::{create_inferred_table, infer_schema},
     schema_reflection::{create_content_table, reflect_table_schema},
     ContentGenerationRepository, NewContentGenerationRow, PostgresContentGenerationRepository,
     UpdateContentGenerationRow,
 };
-#[cfg(feature = "database")]
 use botticelli_error::BotticelliResult;
-#[cfg(feature = "database")]
 use chrono::Utc;
-#[cfg(feature = "database")]
 use diesel::prelude::*;
-#[cfg(feature = "database")]
 use serde_json::Value as JsonValue;
-#[cfg(feature = "database")]
 use std::sync::{Arc, Mutex};
 
 /// Content generation processing mode
-#[cfg(feature = "database")]
 #[derive(Debug, Clone, PartialEq)]
 enum ProcessingMode {
     /// Use an explicit template to define table schema
@@ -44,13 +35,11 @@ enum ProcessingMode {
 /// 3. Extracts JSON from LLM responses
 /// 4. Inserts generated content with metadata columns
 /// 5. Updates tracking record with success/failure
-#[cfg(feature = "database")]
 pub struct ContentGenerationProcessor {
     /// Database connection wrapped in Arc<Mutex> for thread safety
     connection: Arc<Mutex<PgConnection>>,
 }
 
-#[cfg(feature = "database")]
 impl ContentGenerationProcessor {
     /// Create a new content generation processor.
     ///
@@ -128,7 +117,6 @@ impl ContentGenerationProcessor {
     }
 }
 
-#[cfg(feature = "database")]
 #[async_trait]
 impl ActProcessor for ContentGenerationProcessor {
     async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {

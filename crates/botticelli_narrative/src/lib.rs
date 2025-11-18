@@ -53,6 +53,10 @@ pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
 pub use provider::{ActConfig, NarrativeProvider};
 pub use in_memory_repository::InMemoryNarrativeRepository;
 
+// Re-export content generation processor (database feature only)
+#[cfg(feature = "database")]
+pub use content_generation::ContentGenerationProcessor;
+
 // Re-export from interface
 pub use botticelli_interface::{
     ActExecution, NarrativeExecution,

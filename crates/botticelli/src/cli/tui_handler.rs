@@ -8,7 +8,7 @@ pub async fn launch_tui(table: &str) -> BotticelliResult<()> {
     use botticelli::establish_connection;
     use botticelli_tui::run_tui;
 
-    eprintln!("Launching TUI for table: {}", table);
+    tracing::info!(table = %table, "Launching TUI");
 
     let conn = establish_connection()?;
     run_tui(table.to_string(), conn)?;

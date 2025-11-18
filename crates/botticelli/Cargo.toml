@@ -39,7 +39,7 @@ default = []
 gemini = ["botticelli_models", "botticelli_models/gemini"]
 
 # Database feature
-database = ["botticelli_database"]
+database = ["botticelli_database", "botticelli_narrative/database"]
 
 # Social platform features
 discord = ["botticelli_social", "botticelli_social/discord"]

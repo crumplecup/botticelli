@@ -18,29 +18,59 @@ pub async fn run_narrative(
 ) -> BotticelliResult<()> {
     use botticelli::{GeminiClient, NarrativeExecutor, Narrative};
 
-    eprintln!("Loading narrative from: {}", narrative_path.display());
+    tracing::info!(path = %narrative_path.display(), "Loading narrative");
 
     // Load and parse the narrative TOML file
     let narrative = Narrative::from_file(narrative_path)?;
 
-    eprintln!("Narrative '{}' loaded with {} acts", narrative.metadata.name, narrative.toc.order.len());
+    tracing::info!(
+        name = %narrative.metadata.name,
+        acts = narrative.toc.order.len(),
+        "Narrative loaded"
+    );
 
     // Create Gemini client (reads API key from GEMINI_API_KEY environment variable)
     let client = GeminiClient::new()?;
 
-    // Create executor (Discord processors not yet available)
-    let executor = if process_discord {
-        eprintln!("Warning: Discord processors not yet implemented, executing without processors");
-        NarrativeExecutor::new(client)
-    } else {
-        NarrativeExecutor::new(client)
+    // Create executor with content generation processor
+    let executor = {
+        #[cfg(feature = "database")]
+        {
+            use botticelli::ProcessorRegistry;
+            use botticelli_narrative::ContentGenerationProcessor;
+            use std::sync::{Arc, Mutex};
+
+            // Create content generation processor if database feature is enabled
+            let conn = botticelli::establish_connection()?;
+            let processor = ContentGenerationProcessor::new(Arc::new(Mutex::new(conn)));
+
+            let mut registry = ProcessorRegistry::new();
+            registry.register(Box::new(processor));
+
+            if process_discord {
+                tracing::warn!("Discord-specific processors not yet implemented");
+            }
+
+            NarrativeExecutor::with_processors(client, registry)
+        }
+
+        #[cfg(not(feature = "database"))]
+        {
+            if process_discord {
+                tracing::warn!("Discord processing requires database feature");
+            }
+            NarrativeExecutor::new(client)
+        }
     };
 
     // Execute the narrative
-    eprintln!("Executing narrative...");
+    tracing::info!("Executing narrative");
     let execution = executor.execute(&narrative).await?;
 
-    eprintln!("Narrative execution completed: {} acts", execution.act_executions.len());
+    tracing::info!(
+        acts_completed = execution.act_executions.len(),
+        "Narrative execution completed"
+    );
 
     // Save to database if requested
     if save {
@@ -59,12 +89,12 @@ pub async fn run_narrative(
             let repo = PostgresNarrativeRepository::new(conn, storage);
 
             let exec_id = repo.save_execution(&execution).await?;
-            eprintln!("Execution saved with ID: {}", exec_id);
+            tracing::info!(execution_id = exec_id, "Execution saved to database");
         }
 
         #[cfg(not(feature = "database"))]
         {
-            eprintln!("Warning: Database feature not enabled, ignoring --save flag");
+            tracing::warn!("Database feature not enabled, ignoring --save flag");
         }
     }
 
