@@ -602,28 +602,103 @@ impl std::error::Error for NarrativeError {}
 
 /// Crate-level error variants.
 ///
+/// TUI error kind variants.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TuiErrorKind {
+    /// Failed to set up terminal (enable raw mode, alternate screen, etc.)
+    TerminalSetup(String),
+    /// Failed to restore terminal to original state
+    TerminalRestore(String),
+    /// Failed to poll for terminal events
+    EventPoll(String),
+    /// Failed to read terminal event
+    EventRead(String),
+    /// Failed to render TUI frame
+    Rendering(String),
+}
+
+impl std::fmt::Display for TuiErrorKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TuiErrorKind::TerminalSetup(msg) => write!(f, "Failed to set up terminal: {}", msg),
+            TuiErrorKind::TerminalRestore(msg) => write!(f, "Failed to restore terminal: {}", msg),
+            TuiErrorKind::EventPoll(msg) => write!(f, "Failed to poll for events: {}", msg),
+            TuiErrorKind::EventRead(msg) => write!(f, "Failed to read event: {}", msg),
+            TuiErrorKind::Rendering(msg) => write!(f, "Failed to render: {}", msg),
+        }
+    }
+}
+
+/// TUI error with source location tracking.
+#[derive(Debug, Clone)]
+pub struct TuiError {
+    /// Error kind
+    pub kind: TuiErrorKind,
+    /// Line number where error occurred
+    pub line: u32,
+    /// File where error occurred
+    pub file: &'static str,
+}
+
+impl TuiError {
+    /// Create a new TuiError with automatic location tracking.
+    #[track_caller]
+    pub fn new(kind: TuiErrorKind) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            kind,
+            line: location.line(),
+            file: location.file(),
+        }
+    }
+}
+
+impl std::fmt::Display for TuiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "TUI Error: {} at line {} in {}",
+            self.kind, self.line, self.file
+        )
+    }
+}
+
+impl std::error::Error for TuiError {}
+
 /// This is the foundation error enum. Additional variants will be added
 /// by other botticelli crates during the workspace migration.
 #[derive(Debug, derive_more::From)]
 pub enum BotticelliErrorKind {
     /// HTTP error
+    #[from(HttpError)]
     Http(HttpError),
     /// JSON serialization/deserialization error
+    #[from(JsonError)]
     Json(JsonError),
     /// Generic backend error
+    #[from(BackendError)]
     Backend(BackendError),
     /// Configuration error
+    #[from(ConfigError)]
     Config(ConfigError),
     /// Feature not yet implemented
+    #[from(NotImplementedError)]
     NotImplemented(NotImplementedError),
     /// Storage error (Phase 3)
+    #[from(StorageError)]
     Storage(StorageError),
     /// Gemini error (Phase 4)
+    #[from(GeminiError)]
     Gemini(GeminiError),
     /// Database error (Phase 3.5)
+    #[from(DatabaseError)]
     Database(DatabaseError),
     /// Narrative error (Phase 3.5)
+    #[from(NarrativeError)]
     Narrative(NarrativeError),
+    /// TUI error (Phase 6)
+    #[from(TuiError)]
+    Tui(TuiError),
 }
 
 impl std::fmt::Display for BotticelliErrorKind {
@@ -638,6 +713,7 @@ impl std::fmt::Display for BotticelliErrorKind {
             BotticelliErrorKind::Gemini(e) => write!(f, "{}", e),
             BotticelliErrorKind::Database(e) => write!(f, "{}", e),
             BotticelliErrorKind::Narrative(e) => write!(f, "{}", e),
+            BotticelliErrorKind::Tui(e) => write!(f, "{}", e),
         }
     }
 }

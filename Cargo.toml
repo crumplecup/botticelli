@@ -9,6 +9,7 @@ members = [
     "crates/botticelli-database",
     "crates/botticelli-narrative",
     "crates/botticelli-social",
+    "crates/botticelli-tui",
 ]
 resolver = "2"
 
@@ -45,6 +46,9 @@ botticelli-narrative = { path = "crates/botticelli-narrative", version = "0.2.0"
 # Internal crates (Phase 6 social)
 botticelli-social = { path = "crates/botticelli-social", version = "0.2.0" }
 
+# Internal crates (Phase 6 tui)
+botticelli-tui = { path = "crates/botticelli-tui", version = "0.2.0" }
+
 # Common external dependencies (shared versions)
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
@@ -80,3 +84,7 @@ tokio-tungstenite = "0.27"
 diesel = { version = "2.2", features = ["postgres", "chrono", "uuid", "serde_json", "64-column-tables"] }
 diesel_migrations = "2.2"
 chrono = { version = "0.4", features = ["serde"] }
+
+# TUI
+ratatui = "0.29"
+crossterm = "0.28"

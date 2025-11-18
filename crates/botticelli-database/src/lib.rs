@@ -42,6 +42,9 @@ pub use narrative_models::*;
 pub use narrative_repository::*;
 pub use content_generation_models::*;
 pub use content_generation_repository::*;
+pub use content_management::{
+    list_content, update_content_metadata, update_review_status, delete_content, promote_content,
+};
 
 // Re-export error types from botticelli-error
 pub use botticelli_error::{DatabaseError, DatabaseErrorKind};

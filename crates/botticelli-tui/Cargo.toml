@@ -1,0 +1,36 @@
+[package]
+name = "botticelli-tui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Terminal UI for reviewing and managing Botticelli-generated content"
+
+[dependencies]
+# Internal workspace crates
+botticelli-error = { workspace = true }
+botticelli-database = { workspace = true }
+botticelli-narrative = { workspace = true }
+
+# Database
+diesel = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# TUI libraries
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+
+[features]
+default = []
