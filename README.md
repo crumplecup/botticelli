@@ -28,24 +28,24 @@ Botticelli is organized as a Cargo workspace with focused, independent crates:
 
 ### Foundation Crates
 
-- **botticelli-error** - Error types with location tracking
-- **botticelli-core** - Core data structures (Input, Output, Message)
-- **botticelli-interface** - Trait definitions (BotticelliDriver, NarrativeRepository)
+- **botticelli_error** - Error types with location tracking
+- **botticelli_core** - Core data structures (Input, Output, Message)
+- **botticelli_interface** - Trait definitions (BotticelliDriver, NarrativeRepository)
 
 ### Core Feature Crates
 
-- **botticelli-rate-limit** - Rate limiting and automatic retry logic
-- **botticelli-storage** - Content-addressable file storage
-- **botticelli-narrative** - Narrative execution engine
+- **botticelli_rate_limit** - Rate limiting and automatic retry logic
+- **botticelli_storage** - Content-addressable file storage
+- **botticelli_narrative** - Narrative execution engine
 
 ### Optional Feature Crates
 
-- **botticelli-models** - LLM provider implementations (feature-gated)
+- **botticelli_models** - LLM provider implementations (feature-gated)
   - `gemini` - Google Gemini models
   - More providers coming soon
-- **botticelli-database** - PostgreSQL persistence layer
-- **botticelli-social** - Social platform integrations (Discord)
-- **botticelli-tui** - Terminal UI for content review
+- **botticelli_database** - PostgreSQL persistence layer
+- **botticelli_social** - Social platform integrations (Discord)
+- **botticelli_tui** - Terminal UI for content review
 
 ### Facade Crate
 
@@ -64,9 +64,9 @@ botticelli = { version = "0.2", features = ["gemini", "database"] }
 
 ```toml
 [dependencies]
-botticelli-interface = "0.2"
-botticelli-models = { version = "0.2", features = ["gemini"] }
-botticelli-narrative = "0.2"
+botticelli_interface = "0.2"
+botticelli_models = { version = "0.2", features = ["gemini"] }
+botticelli_narrative = "0.2"
 # Smaller dependency tree, faster compile times
 ```
 

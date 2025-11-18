@@ -1,4 +1,4 @@
-# botticelli-core
+# botticelli_core
 
 Core data structures and types for the Botticelli ecosystem.
 

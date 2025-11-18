@@ -1,4 +1,4 @@
-# botticelli-models
+# botticelli_models
 
 LLM provider implementations for the Botticelli ecosystem.
 
@@ -12,7 +12,7 @@ This crate provides implementations of the `BotticelliDriver` trait for various 
 
 ```toml
 [dependencies]
-botticelli-models = { version = "0.2", features = ["gemini"] }
+botticelli_models = { version = "0.2", features = ["gemini"] }
 ```
 
 ```rust
@@ -59,7 +59,7 @@ while let Some(chunk) = client.receive().await? {
 
 ## Rate Limiting
 
-All clients integrate with `botticelli-rate-limit`:
+All clients integrate with `botticelli_rate_limit`:
 
 ```rust
 use botticelli_rate_limit::{RateLimiter, GeminiTier};
@@ -95,9 +95,9 @@ match client.generate(request).await {
 
 ## Dependencies
 
-- `botticelli-interface` - Driver trait
-- `botticelli-rate-limit` - Rate limiting
-- `botticelli-error` - Error types
+- `botticelli_interface` - Driver trait
+- `botticelli_rate_limit` - Rate limiting
+- `botticelli_error` - Error types
 - `gemini-rust` (optional) - Gemini SDK
 - `reqwest` - HTTP client
 - `tokio` - Async runtime

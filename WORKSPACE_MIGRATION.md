@@ -44,14 +44,14 @@ This document outlines a two-phase strategy:
   - Branch: Completed on `gemini`, merged to `main`
 
 - ✅ **Phase 1: Core Foundation Crates** (Commit: `c0c0981` on workspace branch)
-  - Created `botticelli-error` crate with foundation error types
-  - Created `botticelli-core` crate with multimodal data types
-  - Created `botticelli-interface` crate with trait definitions
+  - Created `botticelli_error` crate with foundation error types
+  - Created `botticelli_core` crate with multimodal data types
+  - Created `botticelli_interface` crate with trait definitions
   - All crates compile successfully with zero warnings
   - 7 files changed, 867 insertions
 
 - ✅ **Phase 2: Rate Limiting & Retry** (Commit: `367c8f4` on workspace branch)
-  - Created `botticelli-rate-limit` crate with comprehensive rate limiting
+  - Created `botticelli_rate_limit` crate with comprehensive rate limiting
   - Implemented Tier trait and provider-specific tiers (Gemini, Anthropic, OpenAI)
   - RateLimiter with RPM, TPM, RPD, concurrent request limits
   - TOML configuration system with model-specific overrides
@@ -60,46 +60,46 @@ This document outlines a two-phase strategy:
   - 8 files changed, 1388 insertions
 
 - ✅ **Phase 3: Storage & Media Management** (Commit: TBD on workspace branch)
-  - Created `botticelli-storage` crate with content-addressable storage
+  - Created `botticelli_storage` crate with content-addressable storage
   - Implemented `MediaStorage` trait and `FileSystemStorage`
-  - Moved `StorageError` and `StorageErrorKind` to `botticelli-error`
+  - Moved `StorageError` and `StorageErrorKind` to `botticelli_error`
   - All tests passing, zero clippy warnings
   - 3 files changed in storage crate, StorageError added to error crate
 
 - ✅ **Phase 4: Provider Implementations** (Commit: `963eac1` on workspace branch)
-  - Created `botticelli-models` crate with feature-gated provider integrations
+  - Created `botticelli_models` crate with feature-gated provider integrations
   - Migrated Gemini client (REST API + Live API ~2,700 LOC)
-  - Moved `GeminiError` and `GeminiErrorKind` to `botticelli-error`
-  - Moved `RetryableError` trait to `botticelli-error` foundation
-  - Updated `botticelli-rate-limit` to use `RetryableError` from foundation
+  - Moved `GeminiError` and `GeminiErrorKind` to `botticelli_error`
+  - Moved `RetryableError` trait to `botticelli_error` foundation
+  - Updated `botticelli_rate_limit` to use `RetryableError` from foundation
   - All code compiles, zero clippy warnings
   - Doctests deferred (need main facade crate for imports)
   - 11 files changed: 7 new in models, 4 updated in error/rate-limit
 
 - ✅ **Phase 5: Narrative & Database System** (Commit: `736ee3b` on workspace branch)
-  - Both `botticelli-narrative` and `botticelli-database` crates already migrated
-  - Added diesel error conversions to `botticelli-error` with 'database' feature
+  - Both `botticelli_narrative` and `botticelli_database` crates already migrated
+  - Added diesel error conversions to `botticelli_error` with 'database' feature
   - Implemented From<diesel::result::Error>, From<diesel::ConnectionError>, From<serde_json::Error>
   - Fixed unused imports and removed unnecessary feature gates
-  - botticelli-narrative: 6 tests passing, 2,241 LOC
-  - botticelli-database: 43 tests passing, 2,977 LOC
+  - botticelli_narrative: 6 tests passing, 2,241 LOC
+  - botticelli_database: 43 tests passing, 2,977 LOC
   - Zero clippy warnings, all workspace tests pass (49 total)
   - 6 files changed, 35 insertions (+3 From impls, +8 Cargo.toml changes)
 
 - ✅ **Phase 6: Integration Layers (Social & TUI)** (Commits: `b0a2f47`, `b085390` on workspace branch)
-  - **Part 1 - botticelli-social** (Commit: `b0a2f47`):
-    - Created `botticelli-social` crate with Discord integration
+  - **Part 1 - botticelli_social** (Commit: `b0a2f47`):
+    - Created `botticelli_social` crate with Discord integration
     - Migrated Discord bot, models, repository, conversions from src/social/
     - 15 source files, 3,258 lines of code
     - 23 unit tests passing, zero clippy warnings
     - Processors module temporarily disabled (depends on narrative database feature)
     - 17 files changed (17 new), 3,258 insertions
-  - **Part 2 - botticelli-tui** (Commit: `b085390`):
-    - Created `botticelli-tui` crate with Terminal UI
+  - **Part 2 - botticelli_tui** (Commit: `b085390`):
+    - Created `botticelli_tui` crate with Terminal UI
     - Migrated TUI from src/tui/ (6 files, 894 LOC)
-    - Added `TuiError` and `TuiErrorKind` to `botticelli-error` foundation
+    - Added `TuiError` and `TuiErrorKind` to `botticelli_error` foundation
     - Added explicit #[from()] attributes to all BotticelliErrorKind variants
-    - Exported content management functions from botticelli-database
+    - Exported content management functions from botticelli_database
     - Zero clippy warnings, all feature combinations compile
     - 10 files changed (7 new, 3 modified), 894 insertions
 
@@ -117,12 +117,12 @@ This document outlines a two-phase strategy:
   - **Test Results:**
     - ✅ 81 tests passing (without database feature)
     - Default: 49 tests, gemini: 58 tests, discord: 23 tests
-    - ❌ database feature: 17 compilation errors in botticelli-narrative (pre-existing)
+    - ❌ database feature: 17 compilation errors in botticelli_narrative (pre-existing)
   - **Clippy Results:**
     - ✅ PASS without features (8 warnings from rate-limit cfg conditions)
     - ❌ FAIL with all features (due to narrative database errors)
   - **Known Issues (Documented in VALIDATION_REPORT.md):**
-    - Critical: botticelli-narrative database feature needs fixes
+    - Critical: botticelli_narrative database feature needs fixes
     - Minor: 2 doctest failures (expected, use old import patterns)
     - Minor: 8 rate-limit feature warnings (cosmetic only)
   - **Overall Assessment:** Migration functionally successful for core features
@@ -130,14 +130,14 @@ This document outlines a two-phase strategy:
   - 1 file changed, 272 insertions
 
 - ✅ **Phase 8.5: Database Feature Fixes** (Commit: `bd35156` on workspace branch)
-  - **Fixed all 17 compilation errors in botticelli-narrative database feature**
+  - **Fixed all 17 compilation errors in botticelli_narrative database feature**
   - Added missing dependencies: diesel and chrono (optional, feature-gated)
   - Fixed imports in content_generation.rs, core.rs, extraction.rs
   - Removed unused chrono fields from in_memory_repository.rs
   - Aligned with current interface API (removed unsupported date filters)
   - **Test Results:**
-    - ✅ botticelli-narrative (no features): 6 tests passing
-    - ✅ botticelli-narrative (database feature): 15 tests passing (was 6)
+    - ✅ botticelli_narrative (no features): 6 tests passing
+    - ✅ botticelli_narrative (database feature): 15 tests passing (was 6)
     - ✅ Entire workspace with all features: 90 tests passing (was 81)
     - ✅ Zero clippy warnings
   - 5 files changed, 17 insertions, 44 deletions
@@ -172,7 +172,7 @@ This document outlines a two-phase strategy:
 ### Known Issues Status
 
 **All Critical Issues Resolved! ✅**
-- ✅ botticelli-narrative database feature: FIXED (bd35156)
+- ✅ botticelli_narrative database feature: FIXED (bd35156)
 - ⚠️ Doctest failures: Not blocking (use old import patterns)
 - ⚠️ Rate-limit warnings: Not blocking (cosmetic only)
 
@@ -221,16 +221,16 @@ All workspace dependencies are defined in the root `Cargo.toml` under `[workspac
 
 ```
 crates/
-├── botticelli-error/          # Phase 1: Foundation error types ✅
+├── botticelli_error/          # Phase 1: Foundation error types ✅
 │   ├── Cargo.toml
 │   └── src/lib.rs
-├── botticelli-core/           # Phase 1: Core data structures ✅
+├── botticelli_core/           # Phase 1: Core data structures ✅
 │   ├── Cargo.toml
 │   └── src/lib.rs
-├── botticelli-interface/      # Phase 1: Trait definitions ✅
+├── botticelli_interface/      # Phase 1: Trait definitions ✅
 │   ├── Cargo.toml
 │   └── src/lib.rs
-├── botticelli-rate-limit/     # Phase 2: Rate limiting & retry ✅
+├── botticelli_rate_limit/     # Phase 2: Rate limiting & retry ✅
 │   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs
@@ -239,17 +239,17 @@ crates/
 │       ├── limiter.rs        # RateLimiter implementation
 │       ├── config.rs         # TOML configuration
 │       └── detector.rs       # Header-based detection
-├── botticelli-storage/        # Phase 3: Content-addressable storage ✅
+├── botticelli_storage/        # Phase 3: Content-addressable storage ✅
 │   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs
 │       └── filesystem.rs
-├── botticelli-models/         # Phase 4: LLM provider integrations ✅
+├── botticelli_models/         # Phase 4: LLM provider integrations ✅
 │   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs
 │       └── gemini/           # Gemini client (REST + Live API)
-├── botticelli-database/       # Phase 5: PostgreSQL integration ✅
+├── botticelli_database/       # Phase 5: PostgreSQL integration ✅
 │   ├── Cargo.toml
 │   └── src/
 │       ├── lib.rs
@@ -258,7 +258,7 @@ crates/
 │       ├── narrative_*.rs
 │       ├── content_*.rs
 │       └── schema_*.rs       # Schema reflection & inference
-└── botticelli-narrative/      # Phase 5: Narrative execution ✅
+└── botticelli_narrative/      # Phase 5: Narrative execution ✅
     ├── Cargo.toml
     └── src/
         ├── lib.rs
@@ -272,21 +272,21 @@ crates/
         └── in_memory_repository.rs
 
 src/                           # Original monorepo (to be migrated in Phases 6-7)
-├── core.rs                    # → Migrated to botticelli-core ✅
-├── error.rs                   # → Migrated to botticelli-error ✅
-├── interface.rs               # → Migrated to botticelli-interface ✅
-├── rate_limit/                # → Migrated to botticelli-rate-limit ✅
-├── storage/                   # → Migrated to botticelli-storage ✅
-├── models/                    # → Migrated to botticelli-models ✅
-├── narrative/                 # → Migrated to botticelli-narrative ✅
-├── database/                  # → Migrated to botticelli-database ✅
-├── social/                    # → Phase 6: botticelli-social (TODO)
-├── tui/                       # → Phase 6: botticelli-tui (TODO)
+├── core.rs                    # → Migrated to botticelli_core ✅
+├── error.rs                   # → Migrated to botticelli_error ✅
+├── interface.rs               # → Migrated to botticelli_interface ✅
+├── rate_limit/                # → Migrated to botticelli_rate_limit ✅
+├── storage/                   # → Migrated to botticelli_storage ✅
+├── models/                    # → Migrated to botticelli_models ✅
+├── narrative/                 # → Migrated to botticelli_narrative ✅
+├── database/                  # → Migrated to botticelli_database ✅
+├── social/                    # → Phase 6: botticelli_social (TODO)
+├── tui/                       # → Phase 6: botticelli_tui (TODO)
 └── cli.rs                     # → Phase 7: botticelli-cli (TODO)
 └── cli.rs                     # → Phase 7: botticelli-cli
 ```
 
-**Next to migrate:** `src/social/` & `src/tui/` → `botticelli-social` & `botticelli-tui` (Phase 6)
+**Next to migrate:** `src/social/` & `src/tui/` → `botticelli_social` & `botticelli_tui` (Phase 6)
 
 ---
 
@@ -336,23 +336,23 @@ members = [
 # After
 [workspace]
 members = [
-    "crates/botticelli-error",
-    "crates/botticelli-core",
+    "crates/botticelli_error",
+    "crates/botticelli_core",
     ...
 ]
 ```
 
 **Affected crates:**
-- `botticelli-error` → `botticelli-error`
-- `botticelli-core` → `botticelli-core`
-- `botticelli-interface` → `botticelli-interface`
-- `botticelli-rate-limit` → `botticelli-rate-limit`
-- `botticelli-storage` → `botticelli-storage`
-- `botticelli-models` → `botticelli-models`
-- `botticelli-database` → `botticelli-database`
-- `botticelli-narrative` → `botticelli-narrative`
-- `botticelli-social` → `botticelli-social`
-- `botticelli-tui` → `botticelli-tui`
+- `botticelli_error` → `botticelli_error`
+- `botticelli_core` → `botticelli_core`
+- `botticelli_interface` → `botticelli_interface`
+- `botticelli_rate_limit` → `botticelli_rate_limit`
+- `botticelli_storage` → `botticelli_storage`
+- `botticelli_models` → `botticelli_models`
+- `botticelli_database` → `botticelli_database`
+- `botticelli_narrative` → `botticelli_narrative`
+- `botticelli_social` → `botticelli_social`
+- `botticelli_tui` → `botticelli_tui`
 - `botticelli-cli` → `botticelli-cli`
 - `boticelli` → `botticelli` (main facade crate)
 
@@ -364,9 +364,9 @@ members = [
 mv boticelli botticelli  # Optional: rename directory
 
 # Within workspace
-mv crates/boticelli-error crates/botticelli-error
-mv crates/boticelli-core crates/botticelli-core
-mv crates/boticelli-interface crates/botticelli-interface
+mv crates/boticelli-error crates/botticelli_error
+mv crates/boticelli-core crates/botticelli_core
+mv crates/boticelli-interface crates/botticelli_interface
 # ... etc for all crates
 mv crates/boticelli crates/botticelli
 ```
@@ -723,24 +723,24 @@ botticelli/
 
 ```mermaid
 graph TD
-    Core[botticelli-core] --> Error[botticelli-error]
-    Interface[botticelli-interface] --> Core
+    Core[botticelli_core] --> Error[botticelli_error]
+    Interface[botticelli_interface] --> Core
     Interface --> Error
 
-    Models[botticelli-models] --> Interface
-    Models --> RateLimit[botticelli-rate-limit]
+    Models[botticelli_models] --> Interface
+    Models --> RateLimit[botticelli_rate_limit]
 
-    Narrative[botticelli-narrative] --> Interface
-    Narrative --> Storage[botticelli-storage]
-    Narrative --> Database[botticelli-database]
+    Narrative[botticelli_narrative] --> Interface
+    Narrative --> Storage[botticelli_storage]
+    Narrative --> Database[botticelli_database]
 
     Database --> Core
     Database --> Error
 
-    Social[botticelli-social] --> Interface
+    Social[botticelli_social] --> Interface
     Social --> Database
 
-    TUI[botticelli-tui] --> Database
+    TUI[botticelli_tui] --> Database
     TUI --> Narrative
 
     CLI[botticelli-cli] --> Models
@@ -766,7 +766,7 @@ graph TD
 
 Create the foundation that other crates depend on:
 
-#### 1. `botticelli-error`
+#### 1. `botticelli_error`
 **Purpose:** Error types and trait definitions  
 **Dependencies:** None (foundation crate)  
 **Exports:**
@@ -776,9 +776,9 @@ Create the foundation that other crates depend on:
 
 **Why first:** Zero dependencies, needed by everything
 
-#### 2. `botticelli-core`
+#### 2. `botticelli_core`
 **Purpose:** Core types, traits, and abstractions  
-**Dependencies:** `botticelli-error`  
+**Dependencies:** `botticelli_error`  
 **Exports:**
 - `Input` / `Output` enums
 - `Message` / `MessageRole`
@@ -787,9 +787,9 @@ Create the foundation that other crates depend on:
 
 **Why second:** Foundation types, minimal dependencies
 
-#### 3. `botticelli-interface`
+#### 3. `botticelli_interface`
 **Purpose:** The `BoticelliDriver` trait  
-**Dependencies:** `botticelli-core`, `botticelli-error`  
+**Dependencies:** `botticelli_core`, `botticelli_error`  
 **Exports:**
 - `BoticelliDriver` trait
 - Integration test utilities
@@ -800,10 +800,10 @@ Create the foundation that other crates depend on:
 
 ### Phase 2: Rate Limiting & Retry
 
-#### 4. `botticelli-rate-limit`
+#### 4. `botticelli_rate_limit`
 **Purpose:** Rate limiting and error recovery  
 **Dependencies:** 
-- `botticelli-error`
+- `botticelli_error`
 - External: `governor`, `tokio`, `tokio-retry2`, `tracing`
 
 **Exports:**
@@ -819,12 +819,12 @@ Create the foundation that other crates depend on:
 
 ### Phase 3: Provider Implementations
 
-#### 5. `botticelli-models`
+#### 5. `botticelli_models`
 **Purpose:** LLM provider integrations  
 **Dependencies:**
-- `botticelli-interface`
-- `botticelli-rate-limit`
-- `botticelli-error`
+- `botticelli_interface`
+- `botticelli_rate_limit`
+- `botticelli_error`
 - External: `reqwest`, `serde`, `tokio`, `tracing`
 
 **Features:**
@@ -846,10 +846,10 @@ Create the foundation that other crates depend on:
 
 ### Phase 4: Storage & Database
 
-#### 6. `botticelli-storage`
+#### 6. `botticelli_storage`
 **Purpose:** Content-addressable storage  
 **Dependencies:**
-- `botticelli-error`
+- `botticelli_error`
 - External: `sha2`, `tokio`, `serde`
 
 **Exports:**
@@ -859,11 +859,11 @@ Create the foundation that other crates depend on:
 
 **Features:** None
 
-#### 7. `botticelli-database`
+#### 7. `botticelli_database`
 **Purpose:** PostgreSQL integration  
 **Dependencies:**
-- `botticelli-core`
-- `botticelli-error`
+- `botticelli_core`
+- `botticelli_error`
 - External: `diesel`, `chrono`, `uuid`
 
 **Features:**
@@ -882,13 +882,13 @@ Create the foundation that other crates depend on:
 
 ### Phase 5: Narrative System
 
-#### 8. `botticelli-narrative`
+#### 8. `botticelli_narrative`
 **Purpose:** Narrative execution engine  
 **Dependencies:**
-- `botticelli-interface`
-- `botticelli-storage`
-- `botticelli-error`
-- Optional: `botticelli-database`
+- `botticelli_interface`
+- `botticelli_storage`
+- `botticelli_error`
+- Optional: `botticelli_database`
 
 **Features:**
 - `database` (default off) - Database persistence
@@ -908,11 +908,11 @@ Create the foundation that other crates depend on:
 
 ### Phase 6: Integration Layers
 
-#### 9. `botticelli-social`
+#### 9. `botticelli_social`
 **Purpose:** Social platform integrations  
 **Dependencies:**
-- `botticelli-interface`
-- `botticelli-database`
+- `botticelli_interface`
+- `botticelli_database`
 - External: Platform SDKs
 
 **Features:**
@@ -924,11 +924,11 @@ Create the foundation that other crates depend on:
 
 **Why separate:** Heavy platform dependencies, optional
 
-#### 10. `botticelli-tui`
+#### 10. `botticelli_tui`
 **Purpose:** Terminal UI for content review  
 **Dependencies:**
-- `botticelli-database`
-- `botticelli-narrative`
+- `botticelli_database`
+- `botticelli_narrative`
 - External: `ratatui`, `crossterm`
 
 **Features:** None (TUI or nothing)
@@ -943,11 +943,11 @@ Create the foundation that other crates depend on:
 #### 11. `botticelli-cli`
 **Purpose:** Command-line interface  
 **Dependencies:**
-- `botticelli-models`
-- `botticelli-narrative`
-- `botticelli-database`
-- `botticelli-social`
-- `botticelli-tui`
+- `botticelli_models`
+- `botticelli_narrative`
+- `botticelli_database`
+- `botticelli_social`
+- `botticelli_tui`
 - External: `clap`
 
 **Features:** Inherits from dependencies
@@ -1224,17 +1224,17 @@ clap = { version = "4", features = ["derive", "env"] }
 
 2. Create workspace `Cargo.toml`
 
-3. **Migrate `botticelli-error`:**
+3. **Migrate `botticelli_error`:**
    - Move `src/error.rs` → `crates/boticelli-error/src/lib.rs`
    - Create `crates/boticelli-error/Cargo.toml`
    - Test: `cargo build -p boticelli-error`
 
-4. **Migrate `botticelli-core`:**
+4. **Migrate `botticelli_core`:**
    - Move `src/core.rs` → `crates/boticelli-core/src/lib.rs`
-   - Update imports to use `botticelli-error`
+   - Update imports to use `botticelli_error`
    - Test: `cargo build -p boticelli-core`
 
-5. **Migrate `botticelli-interface`:**
+5. **Migrate `botticelli_interface`:**
    - Move `src/interface.rs` → `crates/boticelli-interface/src/lib.rs`
    - Update imports
    - Test: `cargo build -p boticelli-interface`
@@ -1245,7 +1245,7 @@ clap = { version = "4", features = ["derive", "env"] }
 1. Create `crates/boticelli-rate-limit/`
 2. Move `src/rate_limit/*` → `crates/boticelli-rate-limit/src/`
 3. Update `Cargo.toml` with dependencies
-4. Fix imports to use `botticelli-error`
+4. Fix imports to use `botticelli_error`
 5. Test: `cargo test -p boticelli-rate-limit`
 
 #### Phase 3: Storage (1 day)
@@ -1259,9 +1259,9 @@ clap = { version = "4", features = ["derive", "env"] }
 2. Move `src/models/*` → `crates/boticelli-models/src/`
 3. Set up feature flags for each provider
 4. Update imports to use:
-   - `botticelli-interface`
-   - `botticelli-rate-limit`
-   - `botticelli-error`
+   - `botticelli_interface`
+   - `botticelli_rate_limit`
+   - `botticelli_error`
 5. Test each feature:
    ```bash
    cargo test -p boticelli-models --features gemini
@@ -1285,9 +1285,9 @@ clap = { version = "4", features = ["derive", "env"] }
 2. Move `src/narrative/*` → `crates/boticelli-narrative/src/`
 3. Set up `database` and `content-generation` features
 4. Update imports to use:
-   - `botticelli-interface`
-   - `botticelli-storage`
-   - `botticelli-database` (optional)
+   - `botticelli_interface`
+   - `botticelli_storage`
+   - `botticelli_database` (optional)
 5. Test with and without database feature:
    ```bash
    cargo test -p boticelli-narrative
@@ -1420,7 +1420,7 @@ boticelli = { version = "0.2", features = ["gemini", "database", "tui"] }
 - Obvious dependency relationships
 
 **Independent versioning:**
-- Can bump `botticelli-models` without changing core
+- Can bump `botticelli_models` without changing core
 - Semver violations isolated to affected crates
 - Easier to maintain compatibility
 
@@ -1517,10 +1517,10 @@ Add section on workspace structure:
 Boticelli is organized as a Cargo workspace with focused crates:
 
 - `boticelli` - Main crate with re-exports (use this for simplicity)
-- `botticelli-models` - LLM provider integrations
-- `botticelli-narrative` - Narrative execution engine
-- `botticelli-database` - PostgreSQL integration
-- `botticelli-rate-limit` - Rate limiting and retry
+- `botticelli_models` - LLM provider integrations
+- `botticelli_narrative` - Narrative execution engine
+- `botticelli_database` - PostgreSQL integration
+- `botticelli_rate_limit` - Rate limiting and retry
 - ... (list all crates)
 
 For most users, just depend on `boticelli` with desired features.
@@ -1612,7 +1612,7 @@ Can be parallelized with multiple contributors working on independent crates.
 Once workspace migration is complete:
 
 1. **Independent crate releases**
-   - Update `botticelli-models` without changing core
+   - Update `botticelli_models` without changing core
    - Fix bugs in specific crates
    - Add new providers without touching narrative system
 

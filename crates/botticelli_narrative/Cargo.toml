@@ -1,5 +1,5 @@
 [package]
-name = "botticelli-narrative"
+name = "botticelli_narrative"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,13 +10,13 @@ categories.workspace = true
 description = "Narrative execution engine for Botticelli"
 
 [dependencies]
-botticelli-error = { workspace = true }
-botticelli-core = { workspace = true }
-botticelli-interface = { workspace = true }
-botticelli-storage = { workspace = true }
+botticelli_error = { workspace = true }
+botticelli_core = { workspace = true }
+botticelli_interface = { workspace = true }
+botticelli_storage = { workspace = true }
 
 # Optional database support
-botticelli-database = { workspace = true, optional = true }
+botticelli_database = { workspace = true, optional = true }
 diesel = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 
@@ -34,7 +34,7 @@ tracing = { workspace = true }
 
 [features]
 default = []
-database = ["dep:botticelli-database", "dep:diesel", "dep:chrono"]
+database = ["dep:botticelli_database", "dep:diesel", "dep:chrono"]
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

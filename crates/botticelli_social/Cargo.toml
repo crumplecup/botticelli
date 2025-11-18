@@ -1,5 +1,5 @@
 [package]
-name = "botticelli-social"
+name = "botticelli_social"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,10 +11,10 @@ description = "Social media platform integrations for Botticelli LLM framework"
 
 [dependencies]
 # Internal workspace crates
-botticelli-error = { workspace = true }
-botticelli-interface = { workspace = true }
-botticelli-database = { workspace = true }
-botticelli-narrative = { workspace = true }
+botticelli_error = { workspace = true }
+botticelli_interface = { workspace = true }
+botticelli_database = { workspace = true }
+botticelli_narrative = { workspace = true }
 
 # Database
 diesel = { workspace = true }

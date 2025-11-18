@@ -11,33 +11,33 @@ description = "Unified interface for multiple LLM APIs with multimodal support, 
 
 [dependencies]
 # Core crates (always included)
-botticelli-error = { workspace = true }
-botticelli-core = { workspace = true }
-botticelli-interface = { workspace = true }
-botticelli-rate-limit = { workspace = true }
-botticelli-storage = { workspace = true }
-botticelli-narrative = { workspace = true }
+botticelli_error = { workspace = true }
+botticelli_core = { workspace = true }
+botticelli_interface = { workspace = true }
+botticelli_rate_limit = { workspace = true }
+botticelli_storage = { workspace = true }
+botticelli_narrative = { workspace = true }
 
 # Optional crates
-botticelli-models = { workspace = true, optional = true }
-botticelli-database = { workspace = true, optional = true }
-botticelli-social = { workspace = true, optional = true }
-botticelli-tui = { workspace = true, optional = true }
+botticelli_models = { workspace = true, optional = true }
+botticelli_database = { workspace = true, optional = true }
+botticelli_social = { workspace = true, optional = true }
+botticelli_tui = { workspace = true, optional = true }
 
 [features]
 default = []
 
 # LLM provider features
-gemini = ["botticelli-models", "botticelli-models/gemini"]
+gemini = ["botticelli_models", "botticelli_models/gemini"]
 
 # Database feature
-database = ["botticelli-database"]
+database = ["botticelli_database"]
 
 # Social platform features
-discord = ["botticelli-social", "botticelli-social/discord"]
+discord = ["botticelli_social", "botticelli_social/discord"]
 
 # TUI feature
-tui = ["botticelli-tui"]
+tui = ["botticelli_tui"]
 
 # Convenience feature for all providers
 all-providers = ["gemini"]

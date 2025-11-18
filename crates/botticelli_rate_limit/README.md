@@ -1,4 +1,4 @@
-# botticelli-rate-limit
+# botticelli_rate_limit
 
 Rate limiting and retry logic for the Botticelli ecosystem.
 

@@ -1,4 +1,4 @@
-# botticelli-error
+# botticelli_error
 
 Foundation error types for the Botticelli ecosystem.
 
@@ -64,7 +64,7 @@ Enables conversion from diesel and serde_json errors to `DatabaseError`:
 
 ```toml
 [dependencies]
-botticelli-error = { version = "0.2", features = ["database"] }
+botticelli_error = { version = "0.2", features = ["database"] }
 ```
 
 When enabled, provides:

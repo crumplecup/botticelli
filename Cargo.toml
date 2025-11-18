@@ -1,15 +1,15 @@
 [workspace]
 members = [
-    "crates/botticelli-error",
-    "crates/botticelli-core",
-    "crates/botticelli-interface",
-    "crates/botticelli-rate-limit",
-    "crates/botticelli-storage",
-    "crates/botticelli-models",
-    "crates/botticelli-database",
-    "crates/botticelli-narrative",
-    "crates/botticelli-social",
-    "crates/botticelli-tui",
+    "crates/botticelli_error",
+    "crates/botticelli_core",
+    "crates/botticelli_interface",
+    "crates/botticelli_rate_limit",
+    "crates/botticelli_storage",
+    "crates/botticelli_models",
+    "crates/botticelli_database",
+    "crates/botticelli_narrative",
+    "crates/botticelli_social",
+    "crates/botticelli_tui",
     "crates/botticelli",
 ]
 resolver = "2"
@@ -25,30 +25,30 @@ categories = ["api-bindings", "asynchronous", "ai"]
 
 [workspace.dependencies]
 # Internal crates (Phase 1 foundation)
-botticelli-error = { path = "crates/botticelli-error", version = "0.2.0" }
-botticelli-core = { path = "crates/botticelli-core", version = "0.2.0" }
-botticelli-interface = { path = "crates/botticelli-interface", version = "0.2.0" }
+botticelli_error = { path = "crates/botticelli_error", version = "0.2.0" }
+botticelli_core = { path = "crates/botticelli_core", version = "0.2.0" }
+botticelli_interface = { path = "crates/botticelli_interface", version = "0.2.0" }
 
 # Internal crates (Phase 2 rate limiting)
-botticelli-rate-limit = { path = "crates/botticelli-rate-limit", version = "0.2.0" }
+botticelli_rate_limit = { path = "crates/botticelli_rate_limit", version = "0.2.0" }
 
 # Internal crates (Phase 3 storage)
-botticelli-storage = { path = "crates/botticelli-storage", version = "0.2.0" }
+botticelli_storage = { path = "crates/botticelli_storage", version = "0.2.0" }
 
 # Internal crates (Phase 4 models)
-botticelli-models = { path = "crates/botticelli-models", version = "0.2.0" }
+botticelli_models = { path = "crates/botticelli_models", version = "0.2.0" }
 
 # Internal crates (Phase 3.5 database)
-botticelli-database = { path = "crates/botticelli-database", version = "0.2.0" }
+botticelli_database = { path = "crates/botticelli_database", version = "0.2.0" }
 
 # Internal crates (Phase 5 narrative)
-botticelli-narrative = { path = "crates/botticelli-narrative", version = "0.2.0" }
+botticelli_narrative = { path = "crates/botticelli_narrative", version = "0.2.0" }
 
 # Internal crates (Phase 6 social)
-botticelli-social = { path = "crates/botticelli-social", version = "0.2.0" }
+botticelli_social = { path = "crates/botticelli_social", version = "0.2.0" }
 
 # Internal crates (Phase 6 tui)
-botticelli-tui = { path = "crates/botticelli-tui", version = "0.2.0" }
+botticelli_tui = { path = "crates/botticelli_tui", version = "0.2.0" }
 
 # Internal crates (Phase 7 facade)
 botticelli = { path = "crates/botticelli", version = "0.2.0" }

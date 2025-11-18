@@ -1,5 +1,5 @@
 [package]
-name = "botticelli-tui"
+name = "botticelli_tui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -11,9 +11,9 @@ description = "Terminal UI for reviewing and managing Botticelli-generated conte
 
 [dependencies]
 # Internal workspace crates
-botticelli-error = { workspace = true }
-botticelli-database = { workspace = true }
-botticelli-narrative = { workspace = true }
+botticelli_error = { workspace = true }
+botticelli_database = { workspace = true }
+botticelli_narrative = { workspace = true }
 
 # Database
 diesel = { workspace = true }

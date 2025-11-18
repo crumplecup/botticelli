@@ -1,5 +1,5 @@
 [package]
-name = "botticelli-database"
+name = "botticelli_database"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,10 +10,10 @@ categories.workspace = true
 description = "PostgreSQL integration for Botticelli"
 
 [dependencies]
-botticelli-error = { workspace = true, features = ["database"] }
-botticelli-core = { workspace = true }
-botticelli-interface = { workspace = true }
-botticelli-storage = { workspace = true }
+botticelli_error = { workspace = true, features = ["database"] }
+botticelli_core = { workspace = true }
+botticelli_interface = { workspace = true }
+botticelli_storage = { workspace = true }
 
 # Async
 async-trait = { workspace = true }

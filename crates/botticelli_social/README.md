@@ -1,4 +1,4 @@
-# botticelli-social
+# botticelli_social
 
 Social platform integrations for the Botticelli ecosystem.
 
@@ -12,7 +12,7 @@ Integration with social platforms, currently supporting Discord. Store and query
 
 ```toml
 [dependencies]
-botticelli-social = { version = "0.2", features = ["discord"] }
+botticelli_social = { version = "0.2", features = ["discord"] }
 ```
 
 - **Guild management**: Store server information
@@ -183,8 +183,8 @@ database = "botticelli"
 ## Dependencies
 
 - `serenity` - Discord bot library
-- `botticelli-interface` - Trait definitions
-- `botticelli-database` - Database operations
+- `botticelli_interface` - Trait definitions
+- `botticelli_database` - Database operations
 - `diesel` - ORM
 - `chrono` - Timestamps
 - `serde` / `serde_json` - JSON handling

@@ -1,4 +1,4 @@
-# botticelli-tui
+# botticelli_tui
 
 Terminal User Interface for the Botticelli ecosystem.
 
@@ -124,7 +124,7 @@ Press any key to dismiss error messages.
 
 - `ratatui` - Terminal UI framework
 - `crossterm` - Terminal manipulation
-- `botticelli-database` - Database operations
+- `botticelli_database` - Database operations
 - `tokio` - Async runtime
 - `diesel` - Database queries
 

@@ -1,5 +1,5 @@
 [package]
-name = "botticelli-models"
+name = "botticelli_models"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -10,10 +10,10 @@ categories.workspace = true
 description = "LLM provider integrations for Botticelli"
 
 [dependencies]
-botticelli-error = { workspace = true }
-botticelli-core = { workspace = true }
-botticelli-interface = { workspace = true }
-botticelli-rate-limit = { workspace = true }
+botticelli_error = { workspace = true }
+botticelli_core = { workspace = true }
+botticelli_interface = { workspace = true }
+botticelli_rate_limit = { workspace = true }
 
 # Async runtime
 tokio = { workspace = true }

@@ -1,4 +1,4 @@
-# botticelli-narrative
+# botticelli_narrative
 
 Narrative execution engine for the Botticelli ecosystem.
 
@@ -133,7 +133,7 @@ let repo = InMemoryNarrativeRepository::new();
 
 ```toml
 [dependencies]
-botticelli-narrative = { version = "0.2", features = ["database"] }
+botticelli_narrative = { version = "0.2", features = ["database"] }
 ```
 
 ```rust
@@ -176,9 +176,9 @@ let config = ActConfig {
 
 ## Dependencies
 
-- `botticelli-interface` - Traits and types
-- `botticelli-storage` - Media storage
-- `botticelli-database` (optional) - Persistence
+- `botticelli_interface` - Traits and types
+- `botticelli_storage` - Media storage
+- `botticelli_database` (optional) - Persistence
 - `toml` - TOML parsing
 - `serde` / `serde_json` - Serialization
 - `tokio` - Async runtime

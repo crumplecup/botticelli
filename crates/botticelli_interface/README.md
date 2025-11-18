@@ -1,4 +1,4 @@
-# botticelli-interface
+# botticelli_interface
 
 Trait definitions and interfaces for the Botticelli ecosystem.
 
@@ -25,7 +25,7 @@ pub trait BotticelliDriver: Send + Sync {
 ```
 
 Implementations:
-- `GeminiClient` (in `botticelli-models` crate)
+- `GeminiClient` (in `botticelli_models` crate)
 - More providers coming soon
 
 ### NarrativeRepository
@@ -58,8 +58,8 @@ pub trait NarrativeRepository: Send + Sync {
 ```
 
 Implementations:
-- `InMemoryNarrativeRepository` (in `botticelli-narrative`)
-- `PostgresNarrativeRepository` (in `botticelli-database`)
+- `InMemoryNarrativeRepository` (in `botticelli_narrative`)
+- `PostgresNarrativeRepository` (in `botticelli_database`)
 
 ## Narrative Types
 
@@ -219,8 +219,8 @@ All traits require `Send + Sync` bounds to ensure thread-safe usage in async con
 
 ## Dependencies
 
-- `botticelli-error` - Error types
-- `botticelli-core` - Core data structures
+- `botticelli_error` - Error types
+- `botticelli_core` - Core data structures
 - `async-trait` - Async trait support
 - `serde` - Serialization
 - `chrono` - DateTime types

@@ -1,5 +1,5 @@
 [package]
-name = "botticelli-interface"
+name = "botticelli_interface"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -14,6 +14,6 @@ async-trait = { workspace = true }
 futures-util = "0.3"
 serde = { workspace = true }
 serde_json = { workspace = true }
-botticelli-core = { workspace = true }
-botticelli-error = { workspace = true }
-botticelli-storage = { workspace = true }
+botticelli_core = { workspace = true }
+botticelli_error = { workspace = true }
+botticelli_storage = { workspace = true }

@@ -1,4 +1,4 @@
-# botticelli-storage
+# botticelli_storage
 
 Content-addressable storage for media files in the Botticelli ecosystem.
 

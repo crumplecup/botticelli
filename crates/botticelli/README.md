@@ -78,22 +78,22 @@ This facade re-exports from:
 
 ### Foundation
 
-- `botticelli-error` - Error types
-- `botticelli-core` - Core data structures
-- `botticelli-interface` - Trait definitions
+- `botticelli_error` - Error types
+- `botticelli_core` - Core data structures
+- `botticelli_interface` - Trait definitions
 
 ### Core Features
 
-- `botticelli-rate-limit` - Rate limiting and retry
-- `botticelli-storage` - Content-addressable storage
-- `botticelli-narrative` - Narrative execution engine
+- `botticelli_rate_limit` - Rate limiting and retry
+- `botticelli_storage` - Content-addressable storage
+- `botticelli_narrative` - Narrative execution engine
 
 ### Optional Features
 
-- `botticelli-models` - LLM provider implementations
-- `botticelli-database` - PostgreSQL integration
-- `botticelli-social` - Social platform integrations
-- `botticelli-tui` - Terminal UI
+- `botticelli_models` - LLM provider implementations
+- `botticelli_database` - PostgreSQL integration
+- `botticelli_social` - Social platform integrations
+- `botticelli_tui` - Terminal UI
 
 ## Using Individual Crates
 
@@ -101,9 +101,9 @@ For more control, depend on crates directly:
 
 ```toml
 [dependencies]
-botticelli-interface = "0.2"
-botticelli-models = { version = "0.2", features = ["gemini"] }
-botticelli-narrative = "0.2"
+botticelli_interface = "0.2"
+botticelli_models = { version = "0.2", features = ["gemini"] }
+botticelli_narrative = "0.2"
 ```
 
 This gives you:

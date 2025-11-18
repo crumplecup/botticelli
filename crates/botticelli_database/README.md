@@ -1,4 +1,4 @@
-# botticelli-database
+# botticelli_database
 
 PostgreSQL integration for the Botticelli ecosystem.
 
