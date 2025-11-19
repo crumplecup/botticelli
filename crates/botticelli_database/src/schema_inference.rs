@@ -3,7 +3,8 @@
 //! This module provides automatic schema inference from LLM-generated JSON,
 //! allowing content generation without explicit template definitions.
 
-use crate::{DatabaseError, DatabaseErrorKind, DatabaseResult};
+use crate::DatabaseResult;
+use botticelli_error::{DatabaseError, DatabaseErrorKind};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 

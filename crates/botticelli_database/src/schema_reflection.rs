@@ -9,12 +9,13 @@
 
 #![allow(dead_code)] // Phase 1: Infrastructure only, will be used in Phase 2
 
-use crate::{DatabaseError, DatabaseErrorKind, DatabaseResult};
+use crate::DatabaseResult;
+use botticelli_error::{DatabaseError, DatabaseErrorKind};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
 /// Represents a database column's structure
-#[derive(Debug, Clone, PartialEq, QueryableByName)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, QueryableByName)]
 pub struct ColumnInfo {
     /// Column name
     #[diesel(sql_type = diesel::sql_types::Text)]

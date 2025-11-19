@@ -76,8 +76,7 @@ async fn list_content(
 /// Show a specific content item.
 #[cfg(feature = "database")]
 async fn show_content(table: &str, id: i64) -> BotticelliResult<()> {
-    use botticelli::establish_connection;
-    use botticelli_database::content_management::get_content_by_id;
+    use botticelli::{establish_connection, get_content_by_id};
 
     let mut conn = establish_connection()?;
     let content = get_content_by_id(&mut conn, table, id)?;

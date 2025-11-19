@@ -24,46 +24,49 @@
 //! # }
 //! ```
 
-pub mod content_generation_models;
-pub mod content_generation_repository;
-pub mod content_management;
-pub mod models;
-pub mod narrative_conversions;
-pub mod narrative_models;
-pub mod narrative_repository;
+mod connection;
+mod content_generation_models;
+mod content_generation_repository;
+mod content_management;
+mod models;
+mod narrative_conversions;
+mod narrative_models;
+mod narrative_repository;
+
+// Public modules for external access
 pub mod schema;
 pub mod schema_docs;
 pub mod schema_inference;
 pub mod schema_reflection;
 
-// Re-export key types
-pub use content_generation_models::*;
-pub use content_generation_repository::*;
-pub use content_management::{
-    delete_content, list_content, promote_content, update_content_metadata, update_review_status,
-};
-pub use models::*;
-pub use narrative_models::*;
-pub use narrative_repository::*;
+// Re-export connection utilities
+pub use connection::establish_connection;
 
-use botticelli_error::{DatabaseError, DatabaseErrorKind};
+// Re-export content management functions
+pub use content_management::{
+    delete_content, get_content_by_id, list_content, promote_content, update_content_metadata,
+    update_review_status,
+};
+
+// Re-export content generation types
+pub use content_generation_models::{
+    ContentGenerationRow, NewContentGenerationRow, UpdateContentGenerationRow,
+};
+pub use content_generation_repository::{
+    ContentGenerationRepository, PostgresContentGenerationRepository,
+};
+
+// Re-export model types
+pub use models::{ModelResponse, NewModelResponse, SerializableModelResponse};
+
+// Re-export narrative types
+pub use narrative_models::{
+    ActExecutionRow, ActInputRow, NarrativeExecutionRow, NewActExecutionRow, NewActInputRow,
+    NewNarrativeExecutionRow,
+};
+pub use narrative_repository::PostgresNarrativeRepository;
+
+use botticelli_error::DatabaseError;
 
 /// Result type for database operations.
 pub type DatabaseResult<T> = Result<T, DatabaseError>;
-
-use diesel::pg::PgConnection;
-use diesel::prelude::*;
-
-/// Establish a connection to the PostgreSQL database.
-///
-/// Reads the `DATABASE_URL` environment variable to determine the connection string.
-pub fn establish_connection() -> DatabaseResult<PgConnection> {
-    let database_url = std::env::var("DATABASE_URL").map_err(|_| {
-        DatabaseError::new(DatabaseErrorKind::Connection(
-            "DATABASE_URL environment variable not set".to_string(),
-        ))
-    })?;
-
-    PgConnection::establish(&database_url)
-        .map_err(|e| DatabaseError::new(DatabaseErrorKind::Connection(e.to_string())))
-}

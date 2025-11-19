@@ -1,9 +1,9 @@
 //! Repository for content generation tracking.
 
 use crate::{
-    ContentGenerationRow, DatabaseError, DatabaseErrorKind, DatabaseResult,
-    NewContentGenerationRow, UpdateContentGenerationRow,
+    ContentGenerationRow, DatabaseResult, NewContentGenerationRow, UpdateContentGenerationRow,
 };
+use botticelli_error::{DatabaseError, DatabaseErrorKind};
 use diesel::prelude::*;
 
 /// Repository trait for content generation tracking operations.
