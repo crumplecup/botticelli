@@ -20,7 +20,9 @@
 //! # Example
 //!
 //! ```no_run
-//! use botticelli_models::gemini::{BotticelliDriver, GeminiClient, GenerateRequest, Message, Role, Input};
+//! use botticelli_models::GeminiClient;
+//! use botticelli_core::{GenerateRequest, Message, Role, Input};
+//! use botticelli_interface::BotticelliDriver;
 //!
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -239,11 +241,11 @@ impl GeminiClient {
     /// # Example
     ///
     /// ```no_run
-    /// use botticelli_models::gemini::{GeminiClient, GeminiTier};
+    /// use botticelli_models::GeminiClient;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// // Using GeminiTier directly is preferred
-    /// let client = GeminiClient::new_with_tier(Some(Box::new(GeminiTier::Free)))?;
+    /// // Create client with default tier (Free)
+    /// let client = GeminiClient::new_with_tier(None)?;
     /// # Ok(())
     /// # }
     /// ```

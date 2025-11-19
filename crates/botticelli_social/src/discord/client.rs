@@ -18,7 +18,8 @@ use super::handler::BotticelliHandler;
 ///
 /// # Example
 /// ```no_run
-/// use botticelli::{BotticelliBot, establish_connection};
+/// use botticelli_social::discord::BotticelliBot;
+/// use botticelli_database::establish_connection;
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {

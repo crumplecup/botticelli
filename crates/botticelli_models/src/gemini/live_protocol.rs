@@ -29,8 +29,8 @@
 //! # Example
 //!
 //! ```no_run
-//! use botticelli::{SetupMessage, SetupConfig, GenerationConfig, ClientContentMessage,
-//!                  ClientContent, Turn, Part, TextPart};
+//! use botticelli_models::{SetupMessage, SetupConfig, GenerationConfig, ClientContentMessage,
+//!                         ClientContent, Turn, Part, TextPart};
 //!
 //! // Setup message (first message after WebSocket connection)
 //! let setup = SetupMessage {

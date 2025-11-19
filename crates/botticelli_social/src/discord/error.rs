@@ -91,7 +91,7 @@ impl DiscordError {
     ///
     /// # Example
     /// ```
-    /// use botticelli::{DiscordError, DiscordErrorKind};
+    /// use botticelli_social::discord::{DiscordError, DiscordErrorKind};
     ///
     /// let err = DiscordError::new(DiscordErrorKind::InvalidToken);
     /// ```

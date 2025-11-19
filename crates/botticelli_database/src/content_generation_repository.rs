@@ -125,7 +125,7 @@ impl<'a> PostgresContentGenerationRepository<'a> {
     ///
     /// # Example
     /// ```no_run
-    /// use botticelli::{PostgresContentGenerationRepository, establish_connection};
+    /// use botticelli_database::{PostgresContentGenerationRepository, establish_connection};
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let mut conn = establish_connection()?;

@@ -20,7 +20,7 @@ use botticelli_error::BotticelliResult;
 /// # Examples
 ///
 /// ```
-/// use botticelli::extract_json;
+/// use botticelli_narrative::extract_json;
 ///
 /// let response = "Here's the data you requested:\n\
 ///     \n\
@@ -96,7 +96,7 @@ pub fn extract_json(response: &str) -> BotticelliResult<String> {
 /// # Examples
 ///
 /// ```
-/// use botticelli::extract_toml;
+/// use botticelli_narrative::extract_toml;
 ///
 /// let response = "Here's your configuration:\n\
 ///     \n\
@@ -206,7 +206,7 @@ fn extract_balanced(response: &str, open: char, close: char) -> Option<String> {
 /// # Examples
 ///
 /// ```
-/// use botticelli::parse_json;
+/// use botticelli_narrative::parse_json;
 /// use serde::Deserialize;
 ///
 /// #[derive(Deserialize)]
@@ -248,7 +248,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use botticelli::parse_toml;
+/// use botticelli_narrative::parse_toml;
 /// use serde::Deserialize;
 ///
 /// #[derive(Deserialize)]

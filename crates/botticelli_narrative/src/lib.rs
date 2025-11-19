@@ -57,6 +57,10 @@ pub use in_memory_repository::InMemoryNarrativeRepository;
 #[cfg(feature = "database")]
 pub use content_generation::ContentGenerationProcessor;
 
+// Re-export extraction utilities (database feature only)
+#[cfg(feature = "database")]
+pub use extraction::{extract_json, extract_toml, parse_json, parse_toml};
+
 // Re-export from interface
 pub use botticelli_interface::{
     ActExecution, NarrativeExecution,

@@ -37,7 +37,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
     /// # Example
     ///
     /// ```rust,ignore
-    /// use botticelli::{NarrativeExecutor, ProcessorRegistry};
+    /// use botticelli_narrative::{NarrativeExecutor, ProcessorRegistry};
     ///
     /// let mut registry = ProcessorRegistry::new();
     /// registry.register(Box::new(MyProcessor::new()));

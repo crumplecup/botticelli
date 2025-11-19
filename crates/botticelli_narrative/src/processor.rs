@@ -35,7 +35,8 @@ pub struct ProcessorContext<'a> {
 /// # Example
 ///
 /// ```rust,ignore
-/// use botticelli::{ActProcessor, ProcessorContext, BotticelliResult};
+/// use botticelli_narrative::{ActProcessor, ProcessorContext};
+/// use botticelli_error::BotticelliResult;
 /// use async_trait::async_trait;
 ///
 /// struct MyProcessor;
@@ -105,7 +106,7 @@ pub trait ActProcessor: Send + Sync {
 /// # Example
 ///
 /// ```rust,ignore
-/// use botticelli::ProcessorRegistry;
+/// use botticelli_narrative::ProcessorRegistry;
 ///
 /// let mut registry = ProcessorRegistry::new();
 /// registry.register(Box::new(DiscordGuildProcessor::new(pool.clone())));

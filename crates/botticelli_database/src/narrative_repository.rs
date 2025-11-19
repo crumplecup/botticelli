@@ -27,7 +27,9 @@ use tokio::sync::Mutex;
 ///
 /// # Example
 /// ```no_run
-/// use botticelli::{PostgresNarrativeRepository, FileSystemStorage, establish_connection, NarrativeRepository};
+/// use botticelli_database::{PostgresNarrativeRepository, establish_connection};
+/// use botticelli_interface::NarrativeRepository;
+/// use botticelli_storage::FileSystemStorage;
 /// use std::sync::Arc;
 ///
 /// #[tokio::main]

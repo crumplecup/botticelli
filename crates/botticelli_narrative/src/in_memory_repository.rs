@@ -20,7 +20,8 @@ use tokio::sync::RwLock;
 ///
 /// # Example
 /// ```no_run
-/// use botticelli::{InMemoryNarrativeRepository, NarrativeRepository};
+/// use botticelli_narrative::InMemoryNarrativeRepository;
+/// use botticelli_interface::NarrativeRepository;
 ///
 /// #[tokio::main]
 /// async fn main() {
