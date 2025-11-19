@@ -3,12 +3,11 @@
 //! This module provides a simple HashMap-based repository that stores executions
 //! in memory. Useful for unit tests and demonstrating the trait interface.
 
-use botticelli_interface::{
-    ExecutionFilter, ExecutionStatus, ExecutionSummary, 
-    NarrativeExecution, NarrativeRepository,
-};
-use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
 use async_trait::async_trait;
+use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_interface::{
+    ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution, NarrativeRepository,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -191,7 +190,10 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         ))
     }
 
-    async fn load_media(&self, _reference: &botticelli_storage::MediaReference) -> BotticelliResult<Vec<u8>> {
+    async fn load_media(
+        &self,
+        _reference: &botticelli_storage::MediaReference,
+    ) -> BotticelliResult<Vec<u8>> {
         Err(botticelli_error::BotticelliError::from(
             botticelli_error::NotImplementedError::new(
                 "Media loading not yet implemented for in-memory repository",

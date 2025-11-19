@@ -3,10 +3,10 @@
 //! This module provides the executor that processes multi-act narratives
 //! by calling LLM APIs in sequence, passing context between acts.
 
-use botticelli_interface::{BotticelliDriver, ActExecution, NarrativeExecution};
+use crate::{NarrativeProvider, ProcessorContext, ProcessorRegistry};
 use botticelli_core::{GenerateRequest, Input, Message, Output, Role};
 use botticelli_error::BotticelliResult;
-use crate::{NarrativeProvider, ProcessorContext, ProcessorRegistry};
+use botticelli_interface::{ActExecution, BotticelliDriver, NarrativeExecution};
 
 /// Executes narratives by calling LLM APIs in sequence.
 ///

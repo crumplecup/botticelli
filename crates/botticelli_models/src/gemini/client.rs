@@ -61,11 +61,13 @@ use std::sync::{Arc, Mutex};
 use gemini_rust::{Gemini, client::Model};
 
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
-use botticelli_interface::{BotticelliDriver, FinishReason, Metadata, ModelMetadata, StreamChunk, Streaming, Vision};
 use botticelli_error::{BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind};
+use botticelli_interface::{
+    BotticelliDriver, FinishReason, Metadata, ModelMetadata, StreamChunk, Streaming, Vision,
+};
 use botticelli_rate_limit::{BotticelliConfig, RateLimiter, Tier, TierConfig};
 
-use super::{GeminiResult};
+use super::GeminiResult;
 
 //
 // ─── TIERED GEMINI ──────────────────────────────────────────────────────────────
@@ -359,7 +361,6 @@ impl GeminiClient {
 
     /// Internal constructor that returns Gemini-specific errors.
     fn new_internal(tier: Option<Box<dyn Tier>>) -> GeminiResult<Self> {
-
         let api_key = env::var("GEMINI_API_KEY")
             .map_err(|_| GeminiError::new(GeminiErrorKind::MissingApiKey))?;
 
@@ -803,9 +804,7 @@ impl GeminiClient {
         model_name: &str,
     ) -> BotticelliResult<
         std::pin::Pin<
-            Box<
-                dyn futures_util::stream::Stream<Item = BotticelliResult<StreamChunk>> + Send,
-            >,
+            Box<dyn futures_util::stream::Stream<Item = BotticelliResult<StreamChunk>> + Send>,
         >,
     > {
         use futures_util::stream::StreamExt;
@@ -861,9 +860,7 @@ impl Streaming for GeminiClient {
         req: &GenerateRequest,
     ) -> BotticelliResult<
         std::pin::Pin<
-            Box<
-                dyn futures_util::stream::Stream<Item = BotticelliResult<StreamChunk>> + Send,
-            >,
+            Box<dyn futures_util::stream::Stream<Item = BotticelliResult<StreamChunk>> + Send>,
         >,
     > {
         use futures_util::{StreamExt, TryStreamExt};
@@ -1000,9 +997,7 @@ impl GeminiClient {
                 .and_then(|c| c.finish_reason.as_ref())
                 .map(|reason| match reason {
                     gemini_rust::generation::model::FinishReason::Stop => FinishReason::Stop,
-                    gemini_rust::generation::model::FinishReason::MaxTokens => {
-                        FinishReason::Length
-                    }
+                    gemini_rust::generation::model::FinishReason::MaxTokens => FinishReason::Length,
                     gemini_rust::generation::model::FinishReason::Safety
                     | gemini_rust::generation::model::FinishReason::Recitation
                     | gemini_rust::generation::model::FinishReason::Blocklist
@@ -1075,5 +1070,3 @@ impl Vision for GeminiClient {
         20 * 1024 * 1024 // 20MB
     }
 }
-
-

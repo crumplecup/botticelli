@@ -1,7 +1,7 @@
 //! Repository for content generation tracking.
 
 use crate::{
-    ContentGenerationRow, DatabaseResult, DatabaseError, DatabaseErrorKind,
+    ContentGenerationRow, DatabaseError, DatabaseErrorKind, DatabaseResult,
     NewContentGenerationRow, UpdateContentGenerationRow,
 };
 use diesel::prelude::*;

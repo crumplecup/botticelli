@@ -17,7 +17,7 @@ use crate::{
 /// let err: BotticelliError = http_err.into();
 /// assert!(format!("{}", err).contains("HTTP Error"));
 /// ```
-#[derive(Debug, derive_more::From)]
+#[derive(Debug, derive_more::From, derive_more::Display)]
 pub enum BotticelliErrorKind {
     /// HTTP error
     #[from(HttpError)]
@@ -49,23 +49,6 @@ pub enum BotticelliErrorKind {
     /// TUI error (Phase 6)
     #[from(TuiError)]
     Tui(TuiError),
-}
-
-impl std::fmt::Display for BotticelliErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            BotticelliErrorKind::Http(e) => write!(f, "{}", e),
-            BotticelliErrorKind::Json(e) => write!(f, "{}", e),
-            BotticelliErrorKind::Backend(e) => write!(f, "{}", e),
-            BotticelliErrorKind::Config(e) => write!(f, "{}", e),
-            BotticelliErrorKind::NotImplemented(e) => write!(f, "{}", e),
-            BotticelliErrorKind::Storage(e) => write!(f, "{}", e),
-            BotticelliErrorKind::Gemini(e) => write!(f, "{}", e),
-            BotticelliErrorKind::Database(e) => write!(f, "{}", e),
-            BotticelliErrorKind::Narrative(e) => write!(f, "{}", e),
-            BotticelliErrorKind::Tui(e) => write!(f, "{}", e),
-        }
-    }
 }
 
 /// Botticelli error with kind discrimination.

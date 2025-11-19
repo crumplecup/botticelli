@@ -7,11 +7,10 @@ use crate::narrative_conversions::{
 use crate::schema::{act_executions, act_inputs, narrative_executions};
 use crate::{ActExecutionRow, ActInputRow, NarrativeExecutionRow};
 
-use botticelli_interface::{
-    ExecutionFilter, ExecutionStatus, ExecutionSummary, 
-    NarrativeExecution, NarrativeRepository,
-};
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_interface::{
+    ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution, NarrativeRepository,
+};
 
 use async_trait::async_trait;
 use chrono::Utc;
@@ -69,7 +68,10 @@ impl PostgresNarrativeRepository {
     }
 
     /// Create a repository from an Arc<Mutex<PgConnection>> (for sharing connections).
-    pub fn from_arc(conn: Arc<Mutex<PgConnection>>, storage: Arc<dyn botticelli_storage::MediaStorage>) -> Self {
+    pub fn from_arc(
+        conn: Arc<Mutex<PgConnection>>,
+        storage: Arc<dyn botticelli_storage::MediaStorage>,
+    ) -> Self {
         Self { conn, storage }
     }
 }
@@ -113,10 +115,7 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         });
 
         result.map_err(|e| {
-            BotticelliError::from(BackendError::new(format!(
-                "Transaction failed: {}",
-                e
-            )))
+            BotticelliError::from(BackendError::new(format!("Transaction failed: {}", e)))
         })
     }
 
@@ -364,7 +363,10 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         Ok(reference)
     }
 
-    async fn load_media(&self, reference: &botticelli_storage::MediaReference) -> BotticelliResult<Vec<u8>> {
+    async fn load_media(
+        &self,
+        reference: &botticelli_storage::MediaReference,
+    ) -> BotticelliResult<Vec<u8>> {
         self.storage.retrieve(reference).await
     }
 
@@ -401,7 +403,9 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             |(id, media_type_str, mime_type, size_bytes, hash, backend, path)| {
                 botticelli_storage::MediaReference {
                     id,
-                    media_type: media_type_str.parse().unwrap_or(botticelli_storage::MediaType::Image),
+                    media_type: media_type_str
+                        .parse()
+                        .unwrap_or(botticelli_storage::MediaType::Image),
                     mime_type,
                     size_bytes,
                     content_hash: hash,

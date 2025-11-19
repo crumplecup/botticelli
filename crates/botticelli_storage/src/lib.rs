@@ -67,8 +67,11 @@ pub trait MediaStorage: Send + Sync {
     /// # Returns
     ///
     /// A `MediaReference` containing the storage location and metadata
-    async fn store(&self, data: &[u8], metadata: &MediaMetadata)
-    -> BotticelliResult<MediaReference>;
+    async fn store(
+        &self,
+        data: &[u8],
+        metadata: &MediaMetadata,
+    ) -> BotticelliResult<MediaReference>;
 
     /// Retrieve media by reference.
     ///

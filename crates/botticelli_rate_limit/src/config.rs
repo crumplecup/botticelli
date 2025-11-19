@@ -6,8 +6,8 @@
 //! - User overrides (./botticelli.toml or ~/.config/botticelli/botticelli.toml)
 //! - Automatic merging with user values taking precedence
 
-use botticelli_error::{BotticelliError, BotticelliResult, ConfigError};
 use crate::Tier;
+use botticelli_error::{BotticelliError, BotticelliResult, ConfigError};
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

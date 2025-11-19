@@ -4,8 +4,8 @@
 //! shared between the executor (in botticelli-narrative) and persistence layer
 //! (in botticelli-database).
 
-use serde::{Deserialize, Serialize};
 use botticelli_core::Input;
+use serde::{Deserialize, Serialize};
 
 /// Execution result for a single act in a narrative.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

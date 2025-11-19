@@ -21,8 +21,8 @@ async fn test_narrative_multi_model_execution() {
     let executor = NarrativeExecutor::new(client);
 
     let narrative_path = Path::new("narratives/model_options.toml");
-    let narrative = Narrative::from_file(narrative_path)
-        .expect("Failed to load model_options.toml narrative");
+    let narrative =
+        Narrative::from_file(narrative_path).expect("Failed to load model_options.toml narrative");
 
     let execution = executor
         .execute(&narrative)

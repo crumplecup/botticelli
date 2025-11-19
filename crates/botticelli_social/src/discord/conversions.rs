@@ -9,8 +9,8 @@ use chrono::NaiveDateTime;
 
 use super::{
     ChannelType, DiscordChannelJson, DiscordGuildJson, DiscordGuildMemberJson,
-    DiscordMemberRoleJson, DiscordRoleJson, DiscordUserJson, NewChannel, NewGuild,
-    NewGuildMember, NewRole, NewUser,
+    DiscordMemberRoleJson, DiscordRoleJson, DiscordUserJson, NewChannel, NewGuild, NewGuildMember,
+    NewRole, NewUser,
 };
 
 /// Parse an ISO 8601 timestamp string to NaiveDateTime.

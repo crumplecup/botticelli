@@ -3,10 +3,10 @@
 //! Processors are invoked after an act completes to extract structured
 //! data and perform side effects (database insertion, file writing, etc.).
 
-use botticelli_interface::ActExecution;
-use botticelli_error::BotticelliResult;
 use crate::NarrativeMetadata;
 use async_trait::async_trait;
+use botticelli_error::BotticelliResult;
+use botticelli_interface::ActExecution;
 
 /// Context provided to processors for act processing.
 ///

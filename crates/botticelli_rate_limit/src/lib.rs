@@ -16,8 +16,8 @@ pub use limiter::{RateLimiter, RateLimiterGuard};
 pub use tier::Tier;
 
 // Re-export provider-specific tier enums
-#[cfg(feature = "gemini")]
-pub use tiers::GeminiTier;
 #[cfg(feature = "anthropic")]
 pub use tiers::AnthropicTier;
+#[cfg(feature = "gemini")]
+pub use tiers::GeminiTier;
 pub use tiers::OpenAITier;

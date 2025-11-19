@@ -1,7 +1,7 @@
 //! Application state and main TUI entry point.
 
-use crate::{events::EventHandler, ui};
 use crate::{TuiError, TuiErrorKind};
+use crate::{events::EventHandler, ui};
 use botticelli_error::{BotticelliError, BotticelliResult};
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},

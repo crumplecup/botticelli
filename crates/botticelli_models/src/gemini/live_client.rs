@@ -32,20 +32,16 @@
 
 use futures_util::{SinkExt, StreamExt};
 use std::env;
+use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungstenite::Message};
 use tracing::{debug, error, info, trace, warn};
-use std::sync::Arc;
 
-use botticelli_error::{GeminiError, GeminiErrorKind};
 use botticelli_core::Output;
+use botticelli_error::{GeminiError, GeminiErrorKind};
 use botticelli_interface::{FinishReason, StreamChunk};
 
-use super::{
-    GeminiResult,
-    live_protocol::*,
-    live_rate_limit::LiveRateLimiter,
-};
+use super::{GeminiResult, live_protocol::*, live_rate_limit::LiveRateLimiter};
 
 /// WebSocket endpoint for Gemini Live API.
 const LIVE_API_ENDPOINT: &str = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
@@ -97,7 +93,6 @@ impl GeminiLiveClient {
     /// # }
     /// ```
     pub fn new_with_rate_limit(max_messages_per_minute: Option<u32>) -> GeminiResult<Self> {
-
         let api_key = env::var("GEMINI_API_KEY")
             .map_err(|_| GeminiError::new(GeminiErrorKind::MissingApiKey))?;
 

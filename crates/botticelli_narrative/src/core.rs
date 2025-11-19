@@ -91,9 +91,8 @@ impl Narrative {
     /// - The TOML is invalid
     /// - Validation fails (missing acts, empty order, etc.)
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, NarrativeError> {
-        let content = std::fs::read_to_string(path.as_ref()).map_err(|e| {
-            NarrativeError::new(NarrativeErrorKind::FileRead(e.to_string()))
-        })?;
+        let content = std::fs::read_to_string(path.as_ref())
+            .map_err(|e| NarrativeError::new(NarrativeErrorKind::FileRead(e.to_string())))?;
 
         content.parse()
     }
@@ -149,9 +148,11 @@ impl Narrative {
     /// - Prompt assembly fails
     #[cfg(feature = "database")]
     fn assemble_act_prompts(&mut self, conn: &mut PgConnection) -> Result<(), NarrativeError> {
-        let template = self.metadata.template.as_ref().ok_or_else(|| {
-            NarrativeError::new(NarrativeErrorKind::MissingTemplate)
-        })?;
+        let template = self
+            .metadata
+            .template
+            .as_ref()
+            .ok_or_else(|| NarrativeError::new(NarrativeErrorKind::MissingTemplate))?;
 
         for (act_name, config) in &mut self.acts {
             // Get the first text input (most common case)
@@ -205,18 +206,18 @@ impl Narrative {
         // Check that all acts in toc.order exist in acts map
         for act_name in &self.toc.order {
             if !self.acts.contains_key(act_name) {
-                return Err(NarrativeError::new(
-                    NarrativeErrorKind::MissingAct(act_name.clone())
-                ));
+                return Err(NarrativeError::new(NarrativeErrorKind::MissingAct(
+                    act_name.clone(),
+                )));
             }
         }
 
         // Check that all acts have at least one input
         for (act_name, config) in &self.acts {
             if config.inputs.is_empty() {
-                return Err(NarrativeError::new(
-                    NarrativeErrorKind::EmptyPrompt(act_name.clone())
-                ));
+                return Err(NarrativeError::new(NarrativeErrorKind::EmptyPrompt(
+                    act_name.clone(),
+                )));
             }
         }
 
@@ -240,11 +241,8 @@ impl FromStr for Narrative {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Parse TOML into intermediate structure
-        let toml_narrative: toml_parsing::TomlNarrative = toml::from_str(s).map_err(|e| {
-            NarrativeError::new(
-                NarrativeErrorKind::TomlParse(e.to_string()),
-            )
-        })?;
+        let toml_narrative: toml_parsing::TomlNarrative = toml::from_str(s)
+            .map_err(|e| NarrativeError::new(NarrativeErrorKind::TomlParse(e.to_string())))?;
 
         // Convert to domain types
         let metadata = NarrativeMetadata {
@@ -263,13 +261,12 @@ impl FromStr for Narrative {
             let act_config = toml_act.to_act_config().map_err(|e| {
                 // Check if this is an empty prompt error
                 if e.contains("empty") || e.contains("whitespace") {
-                    NarrativeError::new(
-                        NarrativeErrorKind::EmptyPrompt(act_name.clone()),
-                    )
+                    NarrativeError::new(NarrativeErrorKind::EmptyPrompt(act_name.clone()))
                 } else {
-                    NarrativeError::new(
-                        NarrativeErrorKind::TomlParse(format!("Act '{}': {}", act_name, e)),
-                    )
+                    NarrativeError::new(NarrativeErrorKind::TomlParse(format!(
+                        "Act '{}': {}",
+                        act_name, e
+                    )))
                 }
             })?;
             acts.insert(act_name, act_config);

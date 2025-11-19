@@ -1,12 +1,12 @@
 //! Conversions between domain types and database models for narrative executions.
 
-use botticelli_interface::{ActExecution, ExecutionStatus, NarrativeExecution};
 use botticelli_core::Input;
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_interface::{ActExecution, ExecutionStatus, NarrativeExecution};
 
 use crate::{
-    ActExecutionRow, ActInputRow, NarrativeExecutionRow, 
-    NewActExecutionRow, NewActInputRow, NewNarrativeExecutionRow,
+    ActExecutionRow, ActInputRow, NarrativeExecutionRow, NewActExecutionRow, NewActInputRow,
+    NewNarrativeExecutionRow,
 };
 use chrono::Utc;
 

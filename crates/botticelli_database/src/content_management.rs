@@ -34,7 +34,8 @@ pub fn list_content(
 
     // Reflect table schema to check for metadata columns
     let schema = reflect_table_schema(conn, table_name)?;
-    let columns: std::collections::HashSet<_> = schema.columns.iter().map(|c| c.name.as_str()).collect();
+    let columns: std::collections::HashSet<_> =
+        schema.columns.iter().map(|c| c.name.as_str()).collect();
 
     let has_review_status = columns.contains("review_status");
     let has_generated_at = columns.contains("generated_at");
