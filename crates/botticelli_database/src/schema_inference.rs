@@ -7,6 +7,7 @@ use crate::DatabaseResult;
 use botticelli_error::{DatabaseError, DatabaseErrorKind};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
+use tracing::instrument;
 
 /// Inferred column definition from JSON analysis
 #[derive(Debug, Clone, PartialEq)]
@@ -186,6 +187,7 @@ pub fn resolve_type_conflict(type1: &str, type2: &str) -> DatabaseResult<String>
 }
 
 /// Infer schema from JSON (single object or array)
+#[instrument(name = "schema_inference.infer_schema", skip(json))]
 pub fn infer_schema(json: &JsonValue) -> DatabaseResult<InferredSchema> {
     let items: Vec<&JsonValue> = match json {
         JsonValue::Object(_) => {
@@ -255,6 +257,7 @@ pub fn infer_schema(json: &JsonValue) -> DatabaseResult<InferredSchema> {
 /// # Returns
 ///
 /// Returns `Ok(())` if the table was created successfully, or an error if creation failed.
+#[instrument(name = "schema_inference.create_inferred_table", skip(conn, schema), fields(table = %table_name, field_count = schema.field_count()))]
 pub fn create_inferred_table(
     conn: &mut diesel::pg::PgConnection,
     table_name: &str,

@@ -8,6 +8,7 @@ use botticelli_error::{BotticelliResult, DatabaseError, DatabaseErrorKind};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use serde_json::Value as JsonValue;
+use tracing::instrument;
 
 /// List generated content from a table.
 ///
@@ -24,6 +25,7 @@ use serde_json::Value as JsonValue;
 /// # Returns
 ///
 /// Vector of JSON objects representing table rows
+#[instrument(name = "content_management.list_content", skip(conn), fields(table = %table_name, limit = %limit))]
 pub fn list_content(
     conn: &mut PgConnection,
     table_name: &str,
@@ -98,6 +100,7 @@ pub fn list_content(
 /// # Returns
 ///
 /// JSON object representing the row, or error if not found
+#[instrument(name = "content_management.get_content_by_id", skip(conn), fields(table = %table_name, id = %id))]
 pub fn get_content_by_id(
     conn: &mut PgConnection,
     table_name: &str,
@@ -128,6 +131,7 @@ pub fn get_content_by_id(
 /// * `id` - Content ID
 /// * `tags` - Optional tags to set (replaces existing)
 /// * `rating` - Optional rating (1-5)
+#[instrument(name = "content_management.update_content_metadata", skip(conn, tags), fields(table = %table_name, id = %id))]
 pub fn update_content_metadata(
     conn: &mut PgConnection,
     table_name: &str,
@@ -188,6 +192,7 @@ pub fn update_content_metadata(
 /// * `table_name` - Name of the content table
 /// * `id` - Content ID
 /// * `status` - New status ("pending", "approved", "rejected")
+#[instrument(name = "content_management.update_review_status", skip(conn), fields(table = %table_name, id = %id, status = %status))]
 pub fn update_review_status(
     conn: &mut PgConnection,
     table_name: &str,
@@ -223,6 +228,7 @@ pub fn update_review_status(
 /// * `conn` - Database connection
 /// * `table_name` - Name of the content table
 /// * `id` - Content ID
+#[instrument(name = "content_management.delete_content", skip(conn), fields(table = %table_name, id = %id))]
 pub fn delete_content(conn: &mut PgConnection, table_name: &str, id: i64) -> BotticelliResult<()> {
     let query = format!("DELETE FROM {} WHERE id = {}", table_name, id);
 
@@ -250,6 +256,7 @@ pub fn delete_content(conn: &mut PgConnection, table_name: &str, id: i64) -> Bot
 /// # Returns
 ///
 /// The ID of the inserted row in the target table
+#[instrument(name = "content_management.promote_content", skip(conn), fields(source = %source_table, target = %target_table, id = %id))]
 pub fn promote_content(
     conn: &mut PgConnection,
     source_table: &str,
