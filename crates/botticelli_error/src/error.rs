@@ -17,7 +17,7 @@ use crate::{
 /// let err: BotticelliError = http_err.into();
 /// assert!(format!("{}", err).contains("HTTP Error"));
 /// ```
-#[derive(Debug, derive_more::From, derive_more::Display)]
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum BotticelliErrorKind {
     /// HTTP error
     #[from(HttpError)]
@@ -67,7 +67,8 @@ pub enum BotticelliErrorKind {
 ///     Err(e) => println!("Error: {}", e),
 /// }
 /// ```
-#[derive(Debug)]
+#[derive(Debug, derive_more::Display, derive_more::Error)]
+#[display("Botticelli Error: {}", _0)]
 pub struct BotticelliError(Box<BotticelliErrorKind>);
 
 impl BotticelliError {
@@ -81,14 +82,6 @@ impl BotticelliError {
         &self.0
     }
 }
-
-impl std::fmt::Display for BotticelliError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Botticelli Error: {}", self.0)
-    }
-}
-
-impl std::error::Error for BotticelliError {}
 
 // Generic From implementation for any type that converts to BotticelliErrorKind
 impl<T> From<T> for BotticelliError
