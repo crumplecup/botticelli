@@ -36,6 +36,7 @@ mod storage;
 mod gemini;
 mod database;
 mod narrative;
+mod server;
 mod tui;
 mod error;
 
@@ -48,5 +49,6 @@ pub use storage::{StorageError, StorageErrorKind};
 pub use gemini::{GeminiError, GeminiErrorKind, RetryableError};
 pub use database::{DatabaseError, DatabaseErrorKind};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
+pub use server::{ServerError, ServerErrorKind};
 pub use tui::{TuiError, TuiErrorKind};
 pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};

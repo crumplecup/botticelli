@@ -2,7 +2,7 @@
 
 use crate::{
     BackendError, ConfigError, DatabaseError, GeminiError, HttpError, JsonError, NarrativeError,
-    NotImplementedError, StorageError, TuiError,
+    NotImplementedError, ServerError, StorageError, TuiError,
 };
 
 /// This is the foundation error enum. Additional variants will be added
@@ -49,6 +49,9 @@ pub enum BotticelliErrorKind {
     /// TUI error (Phase 6)
     #[from(TuiError)]
     Tui(TuiError),
+    /// Local inference server error
+    #[from(ServerError)]
+    Server(ServerError),
 }
 
 /// Botticelli error with kind discrimination.
