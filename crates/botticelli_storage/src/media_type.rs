@@ -39,6 +39,7 @@ impl MediaType {
 impl std::str::FromStr for MediaType {
     type Err = String;
 
+    #[tracing::instrument(skip(s), fields(input = s))]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "image" => Ok(MediaType::Image),

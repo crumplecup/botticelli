@@ -3,6 +3,8 @@
 use crate::MediaType;
 
 /// Metadata about media being stored.
+///
+/// Note: Does not derive `Eq` or `Hash` due to `f32` fields which don't support these traits.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MediaMetadata {
     /// Type of media (image, audio, video)

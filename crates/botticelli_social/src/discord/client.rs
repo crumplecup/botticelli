@@ -16,7 +16,7 @@ use tracing::{info, instrument};
 ///
 /// # Example
 /// ```no_run
-/// use botticelli_social::discord::BotticelliBot;
+/// use botticelli_social::BotticelliBot;
 /// use botticelli_database::establish_connection;
 ///
 /// #[tokio::main]

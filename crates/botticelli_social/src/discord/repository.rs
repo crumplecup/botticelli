@@ -30,7 +30,7 @@ pub type DiscordResult<T> = Result<T, DatabaseError>;
 ///
 /// # Example
 /// ```no_run
-/// use botticelli_social::discord::DiscordRepository;
+/// use botticelli_social::DiscordRepository;
 /// use botticelli_database::establish_connection;
 /// use std::sync::Arc;
 ///

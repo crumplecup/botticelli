@@ -7,7 +7,7 @@ use uuid::Uuid;
 ///
 /// This structure contains all the information needed to retrieve media
 /// from a storage backend, plus metadata for database storage.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MediaReference {
     /// Unique identifier for this media reference
     pub id: Uuid,
