@@ -30,17 +30,42 @@ pub fn list_content(
     status_filter: Option<&str>,
     limit: usize,
 ) -> BotticelliResult<Vec<JsonValue>> {
+    use crate::schema_reflection::reflect_table_schema;
+
+    // Reflect table schema to check for metadata columns
+    let schema = reflect_table_schema(conn, table_name)?;
+    let columns: std::collections::HashSet<_> = schema.columns.iter().map(|c| c.name.as_str()).collect();
+
+    let has_review_status = columns.contains("review_status");
+    let has_generated_at = columns.contains("generated_at");
+    let has_id = columns.contains("id");
+
     // Build query dynamically
     let mut query = format!(
         "SELECT row_to_json(t) FROM (SELECT * FROM {} WHERE 1=1",
         table_name
     );
 
+    // Only filter by review_status if the column exists
     if let Some(status) = status_filter {
-        query.push_str(&format!(" AND review_status = '{}'", status));
+        if has_review_status {
+            query.push_str(&format!(" AND review_status = '{}'", status));
+        } else {
+            tracing::warn!(
+                table = %table_name,
+                "Ignoring review_status filter - column does not exist"
+            );
+        }
     }
 
-    query.push_str(" ORDER BY generated_at DESC");
+    // Order by generated_at if it exists, otherwise by id if it exists
+    if has_generated_at {
+        query.push_str(" ORDER BY generated_at DESC");
+    } else if has_id {
+        query.push_str(" ORDER BY id DESC");
+    }
+    // If neither exists, no ORDER BY clause (database default ordering)
+
     query.push_str(&format!(" LIMIT {}", limit));
     query.push_str(") t");
 
