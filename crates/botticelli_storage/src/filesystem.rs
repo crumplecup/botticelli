@@ -55,17 +55,19 @@ impl FileSystemStorage {
     /// # Errors
     ///
     /// Returns error if the directory cannot be created or accessed.
+    #[tracing::instrument(skip(base_path))]
     pub fn new(base_path: impl Into<PathBuf>) -> BotticelliResult<Self> {
         let base_path = base_path.into();
 
         std::fs::create_dir_all(&base_path).map_err(|e| {
-            StorageError::new(StorageErrorKind::Io(format!(
-                "Failed to create base directory {}: {}",
+            StorageError::new(StorageErrorKind::DirectoryCreation(format!(
+                "{}: {}",
                 base_path.display(),
                 e
             )))
         })?;
 
+        tracing::info!(path = %base_path.display(), "Created filesystem storage");
         Ok(Self { base_path })
     }
 
@@ -97,10 +99,10 @@ impl FileSystemStorage {
     fn verify_hash(data: &[u8], expected_hash: &str) -> BotticelliResult<()> {
         let actual_hash = Self::compute_hash(data);
         if actual_hash != expected_hash {
-            return Err(StorageError::new(StorageErrorKind::HashMismatch {
-                expected: expected_hash.to_string(),
-                actual: actual_hash,
-            })
+            return Err(StorageError::new(StorageErrorKind::InvalidPath(format!(
+                "Hash mismatch: expected {}, got {}",
+                expected_hash, actual_hash
+            )))
             .into());
         }
         Ok(())
@@ -109,6 +111,7 @@ impl FileSystemStorage {
 
 #[async_trait::async_trait]
 impl MediaStorage for FileSystemStorage {
+    #[tracing::instrument(skip(self, data, metadata), fields(size = data.len(), media_type = %metadata.media_type))]
     async fn store(
         &self,
         data: &[u8],
@@ -139,8 +142,8 @@ impl MediaStorage for FileSystemStorage {
         // Create parent directories
         if let Some(parent) = path.parent() {
             tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                StorageError::new(StorageErrorKind::Io(format!(
-                    "Failed to create directory {}: {}",
+                StorageError::new(StorageErrorKind::DirectoryCreation(format!(
+                    "{}: {}",
                     parent.display(),
                     e
                 )))
@@ -150,16 +153,16 @@ impl MediaStorage for FileSystemStorage {
         // Write to temp file first, then rename for atomicity
         let temp_path = path.with_extension("tmp");
         tokio::fs::write(&temp_path, data).await.map_err(|e| {
-            StorageError::new(StorageErrorKind::Io(format!(
-                "Failed to write temp file {}: {}",
+            StorageError::new(StorageErrorKind::FileWrite(format!(
+                "{}: {}",
                 temp_path.display(),
                 e
             )))
         })?;
 
         tokio::fs::rename(&temp_path, &path).await.map_err(|e| {
-            StorageError::new(StorageErrorKind::Io(format!(
-                "Failed to rename {} to {}: {}",
+            StorageError::new(StorageErrorKind::FileWrite(format!(
+                "rename {} to {}: {}",
                 temp_path.display(),
                 path.display(),
                 e
@@ -185,6 +188,7 @@ impl MediaStorage for FileSystemStorage {
         })
     }
 
+    #[tracing::instrument(skip(self, reference), fields(hash = %reference.content_hash, path = %reference.storage_path))]
     async fn retrieve(&self, reference: &MediaReference) -> BotticelliResult<Vec<u8>> {
         let path = Path::new(&reference.storage_path);
 
@@ -192,8 +196,8 @@ impl MediaStorage for FileSystemStorage {
             if e.kind() == std::io::ErrorKind::NotFound {
                 StorageError::new(StorageErrorKind::NotFound(reference.storage_path.clone()))
             } else {
-                StorageError::new(StorageErrorKind::Io(format!(
-                    "Failed to read {}: {}",
+                StorageError::new(StorageErrorKind::FileRead(format!(
+                    "{}: {}",
                     path.display(),
                     e
                 )))
@@ -222,6 +226,7 @@ impl MediaStorage for FileSystemStorage {
         Ok(None)
     }
 
+    #[tracing::instrument(skip(self, reference), fields(hash = %reference.content_hash, path = %reference.storage_path))]
     async fn delete(&self, reference: &MediaReference) -> BotticelliResult<()> {
         let path = Path::new(&reference.storage_path);
 
@@ -229,8 +234,8 @@ impl MediaStorage for FileSystemStorage {
             if e.kind() == std::io::ErrorKind::NotFound {
                 StorageError::new(StorageErrorKind::NotFound(reference.storage_path.clone()))
             } else {
-                StorageError::new(StorageErrorKind::Io(format!(
-                    "Failed to delete {}: {}",
+                StorageError::new(StorageErrorKind::FileWrite(format!(
+                    "delete {}: {}",
                     path.display(),
                     e
                 )))
@@ -246,6 +251,7 @@ impl MediaStorage for FileSystemStorage {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, reference), fields(hash = %reference.content_hash, path = %reference.storage_path))]
     async fn exists(&self, reference: &MediaReference) -> BotticelliResult<bool> {
         let path = Path::new(&reference.storage_path);
         Ok(tokio::fs::try_exists(path).await.unwrap_or(false))

@@ -3,32 +3,30 @@
 /// Kinds of storage errors.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
 pub enum StorageErrorKind {
+    /// Failed to create storage directory
+    #[display("Failed to create storage directory: {}", _0)]
+    DirectoryCreation(String),
+    /// Failed to write file
+    #[display("Failed to write file: {}", _0)]
+    FileWrite(String),
+    /// Failed to read file
+    #[display("Failed to read file: {}", _0)]
+    FileRead(String),
     /// Media not found at the specified location
     #[display("Media not found: {}", _0)]
     NotFound(String),
+    /// Invalid storage path
+    #[display("Invalid storage path: {}", _0)]
+    InvalidPath(String),
     /// Permission denied when accessing storage
     #[display("Permission denied: {}", _0)]
     PermissionDenied(String),
-    /// I/O error during storage operation
-    #[display("I/O error: {}", _0)]
-    Io(String),
     /// Invalid storage configuration
     #[display("Invalid configuration: {}", _0)]
     InvalidConfig(String),
     /// Storage backend is unavailable
     #[display("Storage unavailable: {}", _0)]
     Unavailable(String),
-    /// Content hash mismatch (corruption detected)
-    #[display("Content hash mismatch: expected {}, got {}", expected, actual)]
-    HashMismatch {
-        /// Expected hash value
-        expected: String,
-        /// Actual hash value found
-        actual: String,
-    },
-    /// Generic storage error with message
-    #[display("{}", _0)]
-    Other(String),
 }
 
 /// Storage error with location tracking.
