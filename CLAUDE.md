@@ -191,17 +191,83 @@ In Cargo.toml:
 
 ## Logging and Tracing
 
+**MANDATORY:** Comprehensive tracing instrumentation is a baseline requirement for all code, not a nice-to-have feature.
+
+### Core Principles
+
 - Use the `tracing` crate for all logging (never `println!` in library code).
-- Choose appropriate log levels:
-  - `trace!()` - Very detailed, fine-grained information (loop iterations, individual calculations)
-  - `debug!()` - General debugging information (function entry/exit, state changes)
-  - `info!()` - Important runtime information (initialization, major events)
-  - `warn!()` - Warnings about unusual but recoverable conditions
-  - `error!()` - Errors that should be investigated
+- **Every public function MUST have tracing instrumentation** - this is non-negotiable.
+- Observability is critical for debugging, performance monitoring, audit trails, and error tracking.
+- Missing instrumentation is a defect that must be caught in audits and fixed before merging.
+
+### Instrumentation Requirements
+
+**All public functions must:**
+1. Use `#[instrument]` macro for automatic span creation
+2. Skip large parameters with `skip(connection, data)` to avoid log bloat
+3. Include relevant fields for context (IDs, counts, status values)
+4. Emit debug/info/warn/error events at key decision points
+5. Log SQL queries at debug level for database operations
+6. Track errors with full context before returning
+
+**Example:**
+```rust
+#[instrument(skip(conn), fields(table_name, limit))]
+pub fn list_content(
+    conn: &mut PgConnection,
+    table_name: &str,
+    limit: i64,
+) -> DatabaseResult<Vec<ContentRow>> {
+    debug!("Querying content table");
+    // ... implementation ...
+    if let Err(e) = result {
+        error!("Failed to query content: {}", e);
+        return Err(e.into());
+    }
+    debug!(count = rows.len(), "Retrieved content rows");
+    Ok(rows)
+}
+```
+
+### Log Levels
+
+Choose appropriate log levels:
+
+- `trace!()` - Very detailed, fine-grained information (loop iterations, individual calculations)
+- `debug!()` - General debugging information (function entry/exit, state changes, SQL queries)
+- `info!()` - Important runtime information (initialization, major events, table creation)
+- `warn!()` - Warnings about unusual but recoverable conditions (missing columns, deprecated usage)
+- `error!()` - Errors that should be investigated (query failures, connection errors)
+
+### Structured Logging
+
 - Use structured logging with fields: `debug!(count = items.len(), "Processing items")`
-- Use `#[instrument]` macro on functions for automatic entry/exit logging with arguments
 - Use `?` prefix for Debug formatting in field values: `debug!(value = ?self.field())`
-- Binary applications can use `println!` for user-facing output, but use `tracing` for diagnostics
+- Use `%` prefix for Display formatting: `info!(table = %table_name, "Creating table")`
+- Skip large data structures in spans: `#[instrument(skip(connection, large_json))]`
+
+### Span Naming Convention
+
+- Pattern: `module_name.function_name`
+- Examples: `database.establish_connection`, `content_management.list_content`
+- Consistent naming enables filtering and tracing request flows
+
+### Audit Checklist
+
+When auditing code for tracing compliance:
+- ✅ Every public function has `#[instrument]`
+- ✅ Span fields include relevant context (IDs, counts, names)
+- ✅ Large structures (connections, JSON, schemas) are skipped
+- ✅ Key operations emit debug/info events
+- ✅ Errors emit error events with context before returning
+- ✅ SQL queries logged at debug level
+- ✅ Span names follow `module.function` convention
+
+### Binary Applications
+
+- Binary applications can use `println!` for user-facing output
+- Use `tracing` for all diagnostics, debugging, and operational logging
+- Configure tracing subscriber in main() with appropriate filtering
 
 ## Testing
 
