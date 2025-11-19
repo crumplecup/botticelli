@@ -11,9 +11,9 @@
 //! - `AnthropicTier` - Available with the `anthropic` feature
 //! - `OpenAITier` - Always available
 //!
-//! Import tier enums directly from their defining crate:
+//! Import tier enums directly from the crate root:
 //! ```ignore
-//! use botticelli_rate_limit::tiers::GeminiTier;
+//! use botticelli_rate_limit::{OpenAITier, GeminiTier};
 //! ```
 
 mod config;
@@ -21,10 +21,15 @@ mod detector;
 mod error;
 mod limiter;
 mod tier;
-pub mod tiers;
+mod tiers;
 
 pub use config::{BotticelliConfig, ModelTierConfig, ProviderConfig, TierConfig};
 pub use detector::HeaderRateLimitDetector;
 pub use error::{RateLimitError, RateLimitErrorKind};
 pub use limiter::{RateLimiter, RateLimiterGuard};
 pub use tier::Tier;
+pub use tiers::OpenAITier;
+#[cfg(feature = "gemini")]
+pub use tiers::GeminiTier;
+#[cfg(feature = "anthropic")]
+pub use tiers::AnthropicTier;
