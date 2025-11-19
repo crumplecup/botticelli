@@ -60,12 +60,3 @@ pub use content_generation::ContentGenerationProcessor;
 // Re-export extraction utilities (database feature only)
 #[cfg(feature = "database")]
 pub use extraction::{extract_json, extract_toml, parse_json, parse_toml};
-
-// Re-export from interface
-pub use botticelli_interface::{
-    ActExecution, ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution,
-    NarrativeRepository,
-};
-
-// Re-export errors
-pub use botticelli_error::{NarrativeError, NarrativeErrorKind};

@@ -53,7 +53,3 @@ pub use gemini::{
     SetupMessage, SystemInstruction, TextPart, TieredGemini, Tool, ToolResponse,
     ToolResponseMessage, Turn, UsageMetadata,
 };
-
-// Re-export error types for convenience
-#[cfg(feature = "gemini")]
-pub use botticelli_error::{GeminiError, GeminiErrorKind};

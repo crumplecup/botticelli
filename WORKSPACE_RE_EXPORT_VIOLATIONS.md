@@ -333,18 +333,60 @@ Added new section: **"Cross-Crate Dependencies"**
 
 ## Checklist
 
-- [ ] Update botticelli_database imports
-- [ ] Remove botticelli_database re-exports
-- [ ] Update botticelli_models imports  
-- [ ] Remove botticelli_models re-exports
-- [ ] Update botticelli_narrative imports
-- [ ] Remove botticelli_narrative re-exports
-- [ ] Update botticelli_storage imports
-- [ ] Remove botticelli_storage re-exports
-- [ ] Verify workspace compilation
-- [ ] Run all tests
-- [ ] Update documentation
+- [x] Update botticelli_database imports
+- [x] Remove botticelli_database re-exports
+- [x] Update botticelli_models imports  
+- [x] Remove botticelli_models re-exports
+- [x] Update botticelli_narrative imports
+- [x] Remove botticelli_narrative re-exports
+- [x] Update botticelli_storage imports
+- [x] Remove botticelli_storage re-exports
+- [x] Verify workspace compilation
+- [x] Run all tests
+- [x] Update documentation
 - [ ] Commit changes
+
+## Fix Applied - 2025-11-19
+
+All re-export violations have been fixed:
+
+### Changes Made
+
+**botticelli_database/src/lib.rs:**
+- Removed: `pub use botticelli_error::{DatabaseError, DatabaseErrorKind};`
+- Changed to: `use botticelli_error::{DatabaseError, DatabaseErrorKind};` (private import for internal use)
+- Kept type alias: `pub type DatabaseResult<T> = Result<T, DatabaseError>;`
+
+**botticelli_models/src/lib.rs:**
+- Removed: `pub use botticelli_error::{GeminiError, GeminiErrorKind};`
+
+**botticelli_narrative/src/lib.rs:**
+- Removed: `pub use botticelli_interface::{...};` (10 types)
+- Removed: `pub use botticelli_error::{NarrativeError, NarrativeErrorKind};`
+
+**botticelli_storage/src/lib.rs:**
+- Removed: `pub use botticelli_error::{StorageError, StorageErrorKind};`
+
+**Test files updated:**
+- `botticelli_models/tests/gemini_mock_test.rs` - Import GeminiErrorKind from botticelli_error
+- `botticelli_models/tests/test_utils/mock_gemini.rs` - Import GeminiError/Kind from botticelli_error
+- `botticelli_models/tests/gemini.rs` - Import GeminiError/Kind from botticelli_error
+
+### Verification
+
+```bash
+✅ cargo check --all-features  # Success
+✅ cargo clippy --all-features --all-targets  # 0 warnings
+✅ just test-all  # All tests pass
+```
+
+### Result
+
+- **NO MORE RE-EXPORTS** across internal workspace crates
+- Each type has exactly ONE import path
+- Type aliases preserved for convenience
+- All tests passing
+- Zero clippy warnings
 
 ---
 

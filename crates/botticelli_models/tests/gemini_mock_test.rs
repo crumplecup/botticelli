@@ -8,8 +8,8 @@
 mod test_utils;
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
+use botticelli_error::GeminiErrorKind;
 use botticelli_interface::BotticelliDriver;
-use botticelli_models::GeminiErrorKind;
 use test_utils::{MockGeminiClient, MockResponse};
 
 #[tokio::test]

@@ -43,7 +43,6 @@ use uuid::Uuid;
 
 mod filesystem;
 
-pub use botticelli_error::{StorageError, StorageErrorKind};
 pub use filesystem::FileSystemStorage;
 
 /// Trait for pluggable media storage backends.

@@ -46,8 +46,7 @@ pub use models::*;
 pub use narrative_models::*;
 pub use narrative_repository::*;
 
-// Re-export error types from botticelli-error
-pub use botticelli_error::{DatabaseError, DatabaseErrorKind};
+use botticelli_error::{DatabaseError, DatabaseErrorKind};
 
 /// Result type for database operations.
 pub type DatabaseResult<T> = Result<T, DatabaseError>;
