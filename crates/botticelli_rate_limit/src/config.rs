@@ -11,6 +11,7 @@ use botticelli_error::{BotticelliError, BotticelliResult, ConfigError};
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use tracing::{debug, instrument};
 
 /// Model-specific rate limit overrides.
 ///
@@ -25,7 +26,7 @@ use std::collections::HashMap;
 /// tpm = 125_000
 /// rpd = 50
 /// ```
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
 pub struct ModelTierConfig {
     /// Requests per minute limit (overrides tier default)
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -80,7 +81,7 @@ pub struct ModelTierConfig {
 /// tpm = 125_000      # Overrides tier default
 /// rpd = 50           # Overrides tier default
 /// ```
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct TierConfig {
     /// Name of the tier (e.g., "Free", "Pro", "Tier 1")
     pub name: String,
@@ -211,7 +212,7 @@ impl TierConfig {
 /// Configuration for a specific provider.
 ///
 /// Contains the default tier name and a map of tier configurations.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ProviderConfig {
     /// Name of the default tier for this provider
     pub default_tier: String,
@@ -241,7 +242,7 @@ pub struct ProviderConfig {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
 pub struct BotticelliConfig {
     /// Map of provider name to provider configuration
     #[serde(default)]
@@ -254,7 +255,10 @@ impl BotticelliConfig {
     /// # Errors
     ///
     /// Returns an error if the file cannot be read or parsed.
+    #[instrument(skip(path), fields(path = %path.as_ref().display()))]
     pub fn from_file(path: impl AsRef<std::path::Path>) -> BotticelliResult<Self> {
+        debug!("Loading configuration from file");
+
         Config::builder()
             .add_source(File::from(path.as_ref()))
             .build()
@@ -293,7 +297,10 @@ impl BotticelliConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument]
     pub fn load() -> BotticelliResult<Self> {
+        debug!("Loading configuration with precedence: current dir > home dir > bundled defaults");
+        
         // Bundled default configuration
         const DEFAULT_CONFIG: &str = include_str!("../../../botticelli.toml");
 
@@ -355,10 +362,13 @@ impl BotticelliConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument(skip(self))]
     pub fn get_tier(&self, provider: &str, tier_name: Option<&str>) -> Option<TierConfig> {
         let provider_config = self.providers.get(provider)?;
 
         let tier = tier_name.unwrap_or(&provider_config.default_tier);
+        
+        debug!(provider, tier, "Looking up tier configuration");
 
         provider_config.tiers.get(tier).cloned()
     }

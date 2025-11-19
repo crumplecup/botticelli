@@ -8,7 +8,7 @@ use botticelli_rate_limit::GeminiTier;
 #[cfg(feature = "anthropic")]
 use botticelli_rate_limit::AnthropicTier;
 
-use botticelli_rate_limit::OpenAITier;
+use botticelli_rate_limit::tiers::OpenAITier;
 
 #[cfg(feature = "gemini")]
 #[test]

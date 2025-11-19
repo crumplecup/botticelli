@@ -15,6 +15,7 @@ use reqwest::header::HeaderMap;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tracing::{debug, instrument};
 
 /// Detects and caches rate limits from API response headers.
 ///
@@ -43,7 +44,9 @@ pub struct HeaderRateLimitDetector {
 
 impl HeaderRateLimitDetector {
     /// Create a new header rate limit detector.
+    #[instrument]
     pub fn new() -> Self {
+        debug!("Creating new header rate limit detector");
         Self {
             detected_limits: Arc::new(RwLock::new(None)),
         }
@@ -64,9 +67,13 @@ impl HeaderRateLimitDetector {
     /// let config = detector.detect_gemini(response.headers()).await;
     /// ```
     #[cfg(feature = "gemini")]
+    #[instrument(skip(self, headers))]
     pub async fn detect_gemini(&self, headers: &HeaderMap) -> Option<TierConfig> {
+        debug!("Detecting Gemini rate limits from headers");
+        
         // Parse rate limit headers
         let rpm = parse_header_u32(headers, "x-ratelimit-limit")?;
+        debug!(rpm, "Detected RPM from x-ratelimit-limit header");
 
         // Gemini doesn't expose TPM/RPD in headers, so we infer from RPM
         let (tpm, rpd, tier_name) = if rpm <= 10 {
@@ -111,9 +118,13 @@ impl HeaderRateLimitDetector {
     /// let config = detector.detect_anthropic(response.headers()).await;
     /// ```
     #[cfg(feature = "anthropic")]
+    #[instrument(skip(self, headers))]
     pub async fn detect_anthropic(&self, headers: &HeaderMap) -> Option<TierConfig> {
+        debug!("Detecting Anthropic rate limits from headers");
+        
         let rpm = parse_header_u32(headers, "anthropic-ratelimit-requests-limit")?;
         let tpm = parse_header_u64(headers, "anthropic-ratelimit-tokens-limit")?;
+        debug!(rpm, tpm, "Detected Anthropic rate limits");
 
         // Determine tier name from limits
         let tier_name = match (rpm, tpm) {
@@ -156,9 +167,13 @@ impl HeaderRateLimitDetector {
     /// ```rust,ignore
     /// let config = detector.detect_openai(response.headers()).await;
     /// ```
+    #[instrument(skip(self, headers))]
     pub async fn detect_openai(&self, headers: &HeaderMap) -> Option<TierConfig> {
+        debug!("Detecting OpenAI rate limits from headers");
+        
         let rpm = parse_header_u32(headers, "x-ratelimit-limit-requests")?;
         let tpm = parse_header_u64(headers, "x-ratelimit-limit-tokens")?;
+        debug!(rpm, tpm, "Detected OpenAI rate limits");
 
         // Determine tier from limits
         let (tier_name, rpd) = match (rpm, tpm) {
@@ -200,14 +215,19 @@ impl HeaderRateLimitDetector {
     ///     println!("Last detected tier: {}", cached.name);
     /// }
     /// ```
+    #[instrument(skip(self))]
     pub async fn get_cached(&self) -> Option<TierConfig> {
-        self.detected_limits.read().await.clone()
+        let cached = self.detected_limits.read().await.clone();
+        debug!(has_cached = cached.is_some(), "Retrieving cached rate limits");
+        cached
     }
 
     /// Clear the cached detected limits.
     ///
     /// Useful when you want to force fresh detection on the next API call.
+    #[instrument(skip(self))]
     pub async fn clear_cache(&self) {
+        debug!("Clearing cached rate limits");
         *self.detected_limits.write().await = None;
     }
 }
