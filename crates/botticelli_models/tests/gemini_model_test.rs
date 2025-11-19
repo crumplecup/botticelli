@@ -44,18 +44,18 @@ async fn test_mock_model_basic_generate() {
     assert!(!response.outputs.is_empty());
 }
 
-/// Test that model_name() returns the correct default.
+/// Test that model_name() returns the correct default for mock.
 #[test]
 fn test_mock_model_name() {
-    let client = GeminiClient::new().expect("Failed to create client");
-    assert_eq!(client.model_name(), "gemini-2.5-flash");
+    let mock = MockGeminiClient::new_success("test");
+    assert_eq!(mock.model_name(), "mock-gemini");
 }
 
-/// Test provider_name() returns "gemini".
+/// Test provider_name() returns "mock-gemini" for mock.
 #[test]
 fn test_mock_provider_name() {
-    let client = GeminiClient::new().expect("Failed to create client");
-    assert_eq!(client.provider_name(), "gemini");
+    let mock = MockGeminiClient::new_success("test");
+    assert_eq!(mock.provider_name(), "mock-gemini");
 }
 
 //

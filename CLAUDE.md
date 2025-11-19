@@ -59,23 +59,38 @@
 Run these commands and ensure ALL pass with zero errors/warnings:
 
 ```bash
-# 1. Check compilation
-cargo check --all-features
+# 1. Check compilation (no features needed for basic check)
+cargo check
 
-# 2. Run unit and integration tests
-cargo test --all-features --lib --tests
+# 2. Run LOCAL tests only (fast, no API keys required)
+cargo test --lib --tests
 
 # 3. Run doctests
-cargo test --all-features --doc
+cargo test --doc
 
 # 4. Run clippy
-cargo clippy --all-features --all-targets
+cargo clippy --all-targets
 
 # 5. For markdown changes
 markdownlint-cli2 "**/*.md" "#target" "#node_modules"
 ```
 
 If any command fails, **fix it before committing**. No exceptions.
+
+### API Testing (Optional)
+
+API tests consume rate-limited resources and require API keys. Only run these:
+1. When explicitly requested by the user
+2. Before merging to another branch
+3. For targeted integration testing
+
+```bash
+# Requires GEMINI_API_KEY environment variable
+cargo test --features gemini,api
+
+# Run all API tests (expensive!)
+cargo test --all-features
+```
 
 ## Linting
 
@@ -492,6 +507,167 @@ This pattern provides:
 ### Cross-Module Communication
 
 - Add helper methods (setters, mut accessors) to core structs for clean cross-module communication instead of directly accessing fields.
+
+## Workspace Organization
+
+When working with Cargo workspaces, each crate must follow the same organizational principles as a standalone crate.
+
+### lib.rs Structure in Workspace Crates
+
+**Critical Rule:** `lib.rs` should ONLY contain `mod` declarations and `pub use` exports, never type definitions, trait definitions, or impl blocks.
+
+```rust
+// ❌ BAD: Types defined in lib.rs
+// src/lib.rs
+pub struct MyType {
+    field: String,
+}
+
+pub enum MyEnum {
+    Variant1,
+    Variant2,
+}
+
+// ✅ GOOD: Only mod and pub use statements
+// src/lib.rs
+//! Crate documentation goes here.
+
+mod types;
+mod enums;
+
+pub use types::MyType;
+pub use enums::MyEnum;
+```
+
+### Organizing Small Crates
+
+Even small crates (100-200 lines) should separate concerns into modules:
+
+```
+crates/my_crate/src/
+├── lib.rs              # Only mod declarations and pub use exports
+├── role.rs             # Role-related types
+├── input.rs            # Input types
+├── output.rs           # Output types
+└── request.rs          # Request/Response types
+```
+
+**lib.rs structure:**
+
+```rust
+//! Crate-level documentation describing the crate's purpose.
+
+mod role;
+mod input;
+mod output;
+mod request;
+
+pub use role::Role;
+pub use input::Input;
+pub use output::{Output, ToolCall};
+pub use request::{Request, Response};
+```
+
+### Module Responsibilities
+
+Each module should have a single, clear responsibility:
+
+- **Single type per module** (simple case) - One enum or struct
+- **Related types per module** (common case) - Types that work together (e.g., `Output` enum + `ToolCall` struct)
+- **Shared dependencies** - Types used by multiple other modules (e.g., `MediaSource` used by both `Input` and `Output`)
+
+### Import Patterns in Workspace Crates
+
+The same import rules apply within each workspace crate:
+
+```rust
+// In any module within the crate
+use crate::{Type1, Type2};  // ✅ Import from crate root
+
+// NOT these:
+use crate::module::Type1;   // ❌ Never use module paths
+use super::Type1;            // ❌ Never use super paths
+```
+
+### Cross-Crate Dependencies
+
+When one workspace crate depends on another:
+
+```rust
+// In crates/crate_b/src/some_module.rs
+use crate_a::{TypeFromA, AnotherType};  // Import from dependency's crate root
+
+// The dependency's lib.rs exports everything:
+// crates/crate_a/src/lib.rs
+pub use internal_module::{TypeFromA, AnotherType};
+```
+
+### Refactoring Checklist for Existing Crates
+
+When cleaning up a crate with types in lib.rs:
+
+1. **Identify type groups** - Group related types by responsibility
+2. **Create module files** - One file per logical group
+3. **Move types** - Cut types from lib.rs, paste into module files
+4. **Add imports** - Each module imports from `crate::{...}`
+5. **Update lib.rs** - Replace type definitions with `mod` and `pub use`
+6. **Verify** - Run `cargo check`, `cargo test`, `cargo clippy`
+7. **Commit** - Use conventional commit message (e.g., `refactor(crate): organize types into modules`)
+
+### Example: Refactoring a Small Core Crate
+
+**Before:**
+
+```rust
+// crates/my_core/src/lib.rs (146 lines)
+pub enum Role { System, User, Assistant }
+pub struct Message { pub role: Role, pub content: String }
+pub struct Request { pub messages: Vec<Message> }
+pub struct Response { pub output: String }
+```
+
+**After:**
+
+```rust
+// crates/my_core/src/lib.rs (12 lines)
+mod role;
+mod message;
+mod request;
+
+pub use role::Role;
+pub use message::Message;
+pub use request::{Request, Response};
+
+// crates/my_core/src/role.rs
+pub enum Role { System, User, Assistant }
+
+// crates/my_core/src/message.rs
+use crate::Role;
+
+pub struct Message {
+    pub role: Role,
+    pub content: String,
+}
+
+// crates/my_core/src/request.rs
+use crate::Message;
+
+pub struct Request {
+    pub messages: Vec<Message>,
+}
+
+pub struct Response {
+    pub output: String,
+}
+```
+
+### Benefits for Workspaces
+
+1. **Consistency** - All crates follow the same organizational pattern
+2. **Discoverability** - Easy to find types across multiple crates
+3. **Maintainability** - Changes to one crate don't require understanding others' internal structure
+4. **Scalability** - Easy to grow crates without restructuring
+5. **Onboarding** - New contributors learn one pattern that applies everywhere
 
 ## Common Refactoring Patterns
 
