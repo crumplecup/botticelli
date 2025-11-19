@@ -8,7 +8,7 @@
 # 2. Review: botticelli content list potential_guilds
 # 3. Promote: botticelli content promote potential_guilds 1 --target discord_guilds
 
-[narration]
+[narrative]
 name = "potential_guilds"
 description = "Generates diverse Discord guild configurations for planning and testing"
 template = "discord_guilds"

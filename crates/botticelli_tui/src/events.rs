@@ -6,7 +6,7 @@ use crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
 use std::time::Duration;
 
 /// Event types for the TUI.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event {
     /// Tick event for periodic updates
     Tick,
@@ -29,6 +29,7 @@ impl EventHandler {
     }
 
     /// Get the next event, blocking until an event is available or timeout.
+    #[tracing::instrument(skip(self))]
     pub fn next(&self) -> BotticelliResult<Option<Event>> {
         if event::poll(self.tick_rate).map_err(|e| {
             BotticelliError::from(TuiError::new(TuiErrorKind::EventPoll(e.to_string())))

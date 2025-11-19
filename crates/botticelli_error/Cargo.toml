@@ -10,8 +10,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-derive_more = { workspace = true }
-derive-new = { workspace = true }
+derive_more = { workspace = true, features = ["from", "display", "error"] }
 
 # Optional database error conversions
 diesel = { workspace = true, optional = true }

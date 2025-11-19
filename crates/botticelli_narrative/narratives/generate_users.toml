@@ -8,7 +8,7 @@
 # 2. Review: botticelli content list users_gen_001
 # 3. Promote: botticelli content promote users_gen_001 1 --target discord_users
 
-[narration]
+[narrative]
 name = "potential_users"
 description = "Generates diverse Discord user profiles for testing and development"
 template = "discord_users"

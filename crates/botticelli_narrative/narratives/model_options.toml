@@ -1,7 +1,7 @@
 # Model options demonstration narrative
 # Shows all unlocked Gemini models, each identifying itself
 
-[narration]
+[narrative]
 name = "Model Options Demo"
 description = "Demonstrate all available Gemini models with minimal token usage"
 

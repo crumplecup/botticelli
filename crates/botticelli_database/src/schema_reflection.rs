@@ -9,12 +9,14 @@
 
 #![allow(dead_code)] // Phase 1: Infrastructure only, will be used in Phase 2
 
-use crate::{DatabaseError, DatabaseErrorKind, DatabaseResult};
+use crate::DatabaseResult;
+use botticelli_error::{DatabaseError, DatabaseErrorKind};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use tracing::instrument;
 
 /// Represents a database column's structure
-#[derive(Debug, Clone, PartialEq, QueryableByName)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, QueryableByName)]
 pub struct ColumnInfo {
     /// Column name
     #[diesel(sql_type = diesel::sql_types::Text)]
@@ -43,6 +45,7 @@ pub struct TableSchema {
 }
 
 /// Query information_schema to get column information for a table
+#[instrument(name = "schema_reflection.reflect_table_schema", skip(conn), fields(table = %table_name))]
 pub fn reflect_table_schema(
     conn: &mut PgConnection,
     table_name: &str,
@@ -165,6 +168,7 @@ struct TableExistsResult {
 }
 
 /// Check if a table exists in the database
+#[instrument(name = "schema_reflection.table_exists", skip(conn), fields(table = %table_name))]
 pub fn table_exists(conn: &mut PgConnection, table_name: &str) -> DatabaseResult<bool> {
     let query = format!(
         r#"
@@ -189,6 +193,7 @@ pub fn table_exists(conn: &mut PgConnection, table_name: &str) -> DatabaseResult
 }
 
 /// Create a content generation table based on a template
+#[instrument(name = "schema_reflection.create_content_table", skip(conn), fields(table = %table_name, template = %template_source))]
 pub fn create_content_table(
     conn: &mut PgConnection,
     table_name: &str,

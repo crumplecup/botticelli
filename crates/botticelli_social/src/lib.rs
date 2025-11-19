@@ -17,4 +17,13 @@
 //! - Integration with Botticelli's narrative system
 
 #[cfg(feature = "discord")]
-pub mod discord;
+mod discord;
+
+#[cfg(feature = "discord")]
+pub use discord::{
+    BotticelliBot, BotticelliHandler, ChannelRow, ChannelType, DiscordChannelJson,
+    DiscordError, DiscordErrorKind, DiscordErrorResult, DiscordGuildJson, DiscordGuildMemberJson,
+    DiscordMemberRoleJson, DiscordRepository, DiscordResult, DiscordRoleJson, DiscordUserJson,
+    GuildMemberRow, GuildRow, NewChannel, NewGuild, NewGuildMember, NewMemberRole, NewRole,
+    NewUser, RoleRow, UserRow, parse_channel_type, parse_iso_timestamp,
+};

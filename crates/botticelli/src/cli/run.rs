@@ -87,7 +87,9 @@ pub async fn run_narrative(
     if save {
         #[cfg(feature = "database")]
         {
-            use botticelli::{establish_connection, PostgresNarrativeRepository, NarrativeRepository};
+            use botticelli::{
+                NarrativeRepository, PostgresNarrativeRepository, establish_connection,
+            };
             use botticelli_storage::FileSystemStorage;
             use std::sync::Arc;
 

@@ -9,6 +9,7 @@ use ratatui::{
 };
 
 /// Draw the main UI.
+#[tracing::instrument(skip_all)]
 pub fn draw(f: &mut Frame, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -36,6 +37,7 @@ pub fn draw(f: &mut Frame, app: &App) {
 }
 
 /// Draw the header.
+#[tracing::instrument(skip_all)]
 fn draw_header(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let title = format!("Botticelli Content Review - {}", app.table_name);
     let header = Paragraph::new(title)
@@ -50,6 +52,7 @@ fn draw_header(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 }
 
 /// Draw the status bar with help text.
+#[tracing::instrument(skip_all)]
 fn draw_status_bar(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let help_text = match app.mode {
         AppMode::List => {
@@ -69,6 +72,7 @@ fn draw_status_bar(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 }
 
 /// Draw the list view.
+#[tracing::instrument(skip_all)]
 fn draw_list_view(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let header = Row::new(vec!["ID", "Status", "Rating", "Tags", "Preview"])
         .style(
@@ -131,6 +135,7 @@ fn draw_list_view(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 }
 
 /// Draw the detail view.
+#[tracing::instrument(skip_all)]
 fn draw_detail_view(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     if let Some(item) = app.content_items.get(app.selected_index) {
         let content_json = serde_json::to_string_pretty(&item.content).unwrap_or_default();
@@ -168,6 +173,7 @@ fn draw_detail_view(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 }
 
 /// Draw the edit view.
+#[tracing::instrument(skip_all)]
 fn draw_edit_view(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     if let Some(buffer) = &app.edit_buffer {
         let chunks = Layout::default()
@@ -207,6 +213,7 @@ fn draw_edit_view(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 }
 
 /// Draw the compare view (side-by-side comparison).
+#[tracing::instrument(skip_all)]
 fn draw_compare_view(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     if app.compare_selection.len() >= 2 {
         let chunks = Layout::default()
@@ -259,6 +266,7 @@ fn draw_compare_view(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 }
 
 /// Draw the export view.
+#[tracing::instrument(skip_all)]
 fn draw_export_view(f: &mut Frame, _app: &App, area: ratatui::layout::Rect) {
     let export_text = "Export functionality coming soon...";
     let export = Paragraph::new(export_text)

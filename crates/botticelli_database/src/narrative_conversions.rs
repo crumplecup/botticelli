@@ -1,12 +1,13 @@
 //! Conversions between domain types and database models for narrative executions.
 
-use botticelli_interface::{ActExecution, ExecutionStatus, NarrativeExecution};
 use botticelli_core::Input;
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_interface::{ActExecution, ExecutionStatus, NarrativeExecution};
+use tracing::instrument;
 
 use crate::{
-    ActExecutionRow, ActInputRow, NarrativeExecutionRow, 
-    NewActExecutionRow, NewActInputRow, NewNarrativeExecutionRow,
+    ActExecutionRow, ActInputRow, NarrativeExecutionRow, NewActExecutionRow, NewActInputRow,
+    NewNarrativeExecutionRow,
 };
 use chrono::Utc;
 
@@ -117,6 +118,7 @@ fn input_type_string(input: &Input) -> String {
 }
 
 /// Reconstruct ActExecution from database rows.
+#[instrument(name = "narrative_conversions.rows_to_act_execution", skip(act_row, input_rows), fields(act_name = %act_row.act_name, input_count = input_rows.len()))]
 pub fn rows_to_act_execution(
     act_row: ActExecutionRow,
     input_rows: Vec<ActInputRow>,
@@ -168,6 +170,7 @@ fn row_to_input(row: ActInputRow) -> BotticelliResult<Input> {
 }
 
 /// Reconstruct NarrativeExecution from database rows.
+#[instrument(name = "narrative_conversions.rows_to_narrative_execution", skip(_execution_row, act_executions), fields(narrative = %narrative_name, act_count = act_executions.len()))]
 pub fn rows_to_narrative_execution(
     _execution_row: &NarrativeExecutionRow,
     narrative_name: String,

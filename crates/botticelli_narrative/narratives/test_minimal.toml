@@ -1,7 +1,7 @@
 # Minimal test narrative for API testing
 # Uses ~10 tokens total to conserve quota
 
-[narration]
+[narrative]
 name = "Minimal Test"
 description = "Smallest possible narrative for testing rate limiting"
 

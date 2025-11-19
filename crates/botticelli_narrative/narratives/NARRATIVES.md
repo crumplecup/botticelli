@@ -190,7 +190,7 @@ Minimal narrative for API testing and quota conservation.
 All narratives use TOML format with this structure:
 
 ```toml
-[narration]
+[narrative]
 name = "Narrative Name"
 description = "What this narrative does"
 
@@ -285,7 +285,7 @@ Botticelli supports two workflows for working with Discord data:
 - Testing different ideas without committing
 
 **Process:**
-1. Narrative has `template` field in `[narration]`
+1. Narrative has `template` field in `[narrative]`
 2. Table named `<narrative_name>` is created automatically
 3. Content stored with metadata (generated_at, review_status, rating, tags)
 4. Review with `content list/show/tag/review` commands

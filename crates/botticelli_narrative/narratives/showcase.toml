@@ -1,7 +1,7 @@
 # Showcase narrative demonstrating all ActConfig capabilities
 # This narrative analyzes a product presentation across multiple modalities
 
-[narration]
+[narrative]
 name = "product_presentation_analysis"
 description = "Multi-modal analysis of a product presentation using different AI models and configurations"
 

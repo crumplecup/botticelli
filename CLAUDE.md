@@ -59,23 +59,38 @@
 Run these commands and ensure ALL pass with zero errors/warnings:
 
 ```bash
-# 1. Check compilation
-cargo check --all-features
+# 1. Check compilation (no features needed for basic check)
+cargo check
 
-# 2. Run unit and integration tests
-cargo test --all-features --lib --tests
+# 2. Run LOCAL tests only (fast, no API keys required)
+cargo test --lib --tests
 
 # 3. Run doctests
-cargo test --all-features --doc
+cargo test --doc
 
 # 4. Run clippy
-cargo clippy --all-features --all-targets
+cargo clippy --all-targets
 
 # 5. For markdown changes
 markdownlint-cli2 "**/*.md" "#target" "#node_modules"
 ```
 
 If any command fails, **fix it before committing**. No exceptions.
+
+### API Testing (Optional)
+
+API tests consume rate-limited resources and require API keys. Only run these:
+1. When explicitly requested by the user
+2. Before merging to another branch
+3. For targeted integration testing
+
+```bash
+# Requires GEMINI_API_KEY environment variable
+cargo test --features gemini,api
+
+# Run all API tests (expensive!)
+cargo test --all-features
+```
 
 ## Linting
 
@@ -94,6 +109,51 @@ If any command fails, **fix it before committing**. No exceptions.
 - Data structures should derive Debug, Copy, Clone, PartialOrd, Ord, PartialEq, Eq, and Hash if possible.
 - Use derive_more to derive Display, FromStr, From, Deref, DerefMut, AsRef, and AsMut when appropriate.
 - For enums with no fields, use strum to derive EnumIter.
+
+### Exception: Error Types
+
+Error types follow different derive policies due to their unique semantics:
+
+**ErrorKind enums** (specific error conditions):
+- MUST derive: `Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display`
+- Rationale: Full derives enable comparison, sorting, and collection operations for error handling
+
+**Wrapper error structs** (error + location tracking):
+- MUST derive: `Debug, Clone, derive_more::Display, derive_more::Error`
+- DO NOT derive: `PartialEq, Eq, Hash, PartialOrd, Ord`
+- Rationale: Location tracking makes comparison confusing (same error at different lines would be unequal)
+- Follows `std::io::Error` precedent (also not PartialEq/Hash)
+
+**Examples:**
+```rust
+// ErrorKind enum - full derives for comparison/sorting
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
+pub enum StorageErrorKind {
+    #[display("Media not found: {}", _0)]
+    NotFound(String),
+}
+
+// Wrapper struct - minimal derives, location tracking
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("Storage Error: {} at line {} in {}", kind, line, file)]
+pub struct StorageError {
+    pub kind: StorageErrorKind,
+    pub line: u32,
+    pub file: &'static str,
+}
+```
+
+**CRITICAL AUDIT REQUIREMENT:**
+When auditing error types, you MUST check:
+1. ✅ ErrorKind enums use `derive_more::Display` (NOT manual `impl Display`)
+2. ✅ Wrapper structs use `derive_more::Display` and `derive_more::Error` (NOT manual impls)
+3. ✅ No `impl std::fmt::Display for ErrorKind` blocks exist
+4. ✅ No `impl std::error::Error for WrapperError` blocks exist
+
+**If you find manual implementations:**
+- Replace them with derive_more macros immediately
+- This is NOT optional - it's a codebase standard violation
+- Update CLAUDE.md if the guidance was insufficient
 
 ## Serialization
 
@@ -143,17 +203,83 @@ In Cargo.toml:
 
 ## Logging and Tracing
 
+**MANDATORY:** Comprehensive tracing instrumentation is a baseline requirement for all code, not a nice-to-have feature.
+
+### Core Principles
+
 - Use the `tracing` crate for all logging (never `println!` in library code).
-- Choose appropriate log levels:
-  - `trace!()` - Very detailed, fine-grained information (loop iterations, individual calculations)
-  - `debug!()` - General debugging information (function entry/exit, state changes)
-  - `info!()` - Important runtime information (initialization, major events)
-  - `warn!()` - Warnings about unusual but recoverable conditions
-  - `error!()` - Errors that should be investigated
+- **Every public function MUST have tracing instrumentation** - this is non-negotiable.
+- Observability is critical for debugging, performance monitoring, audit trails, and error tracking.
+- Missing instrumentation is a defect that must be caught in audits and fixed before merging.
+
+### Instrumentation Requirements
+
+**All public functions must:**
+1. Use `#[instrument]` macro for automatic span creation
+2. Skip large parameters with `skip(connection, data)` to avoid log bloat
+3. Include relevant fields for context (IDs, counts, status values)
+4. Emit debug/info/warn/error events at key decision points
+5. Log SQL queries at debug level for database operations
+6. Track errors with full context before returning
+
+**Example:**
+```rust
+#[instrument(skip(conn), fields(table_name, limit))]
+pub fn list_content(
+    conn: &mut PgConnection,
+    table_name: &str,
+    limit: i64,
+) -> DatabaseResult<Vec<ContentRow>> {
+    debug!("Querying content table");
+    // ... implementation ...
+    if let Err(e) = result {
+        error!("Failed to query content: {}", e);
+        return Err(e.into());
+    }
+    debug!(count = rows.len(), "Retrieved content rows");
+    Ok(rows)
+}
+```
+
+### Log Levels
+
+Choose appropriate log levels:
+
+- `trace!()` - Very detailed, fine-grained information (loop iterations, individual calculations)
+- `debug!()` - General debugging information (function entry/exit, state changes, SQL queries)
+- `info!()` - Important runtime information (initialization, major events, table creation)
+- `warn!()` - Warnings about unusual but recoverable conditions (missing columns, deprecated usage)
+- `error!()` - Errors that should be investigated (query failures, connection errors)
+
+### Structured Logging
+
 - Use structured logging with fields: `debug!(count = items.len(), "Processing items")`
-- Use `#[instrument]` macro on functions for automatic entry/exit logging with arguments
 - Use `?` prefix for Debug formatting in field values: `debug!(value = ?self.field())`
-- Binary applications can use `println!` for user-facing output, but use `tracing` for diagnostics
+- Use `%` prefix for Display formatting: `info!(table = %table_name, "Creating table")`
+- Skip large data structures in spans: `#[instrument(skip(connection, large_json))]`
+
+### Span Naming Convention
+
+- Pattern: `module_name.function_name`
+- Examples: `database.establish_connection`, `content_management.list_content`
+- Consistent naming enables filtering and tracing request flows
+
+### Audit Checklist
+
+When auditing code for tracing compliance:
+- ✅ Every public function has `#[instrument]`
+- ✅ Span fields include relevant context (IDs, counts, names)
+- ✅ Large structures (connections, JSON, schemas) are skipped
+- ✅ Key operations emit debug/info events
+- ✅ Errors emit error events with context before returning
+- ✅ SQL queries logged at debug level
+- ✅ Span names follow `module.function` convention
+
+### Binary Applications
+
+- Binary applications can use `println!` for user-facing output
+- Use `tracing` for all diagnostics, debugging, and operational logging
+- Configure tracing subscriber in main() with appropriate filtering
 
 ## Testing
 
@@ -188,80 +314,38 @@ In Cargo.toml:
 
 ## Error Handling
 
-- Use unique error types for different sources to create encapsulation around error conditions for easier isolation.
-  - Each unique error type should capture the line and file where the error occurred in our codebase.
-  - The idiom for module-level errors wrapping enums: call the enumeration `MyErrorKind`, and the wrapper struct `MyError`.
-  - The idiom for simple errors with just a message: use a struct with `message`, `line`, and `file` fields.
-  - Error struct `file` fields should use `&'static str` (not `String`) to match the return type of `std::panic::Location::caller()`.
-  - Use `#[track_caller]` on error constructors to automatically capture the caller's location (eliminates manual `line!()` and `file!()` macro usage).
-  - Implement a specific error message in the display impl for each variant of the enum, then wrap this msg in the display impl for the wrapper. E.g. If the display for MyErrorKind is e, then MyError displays "My Error: {e} at line {line} in {file}" so the user can see the whole context.
-  - Use the derive_more crate to implement Display and Error when convenient.
-  - Expand and improve error structs and enums as necessary to capture sufficient information about the error conditions to gain insight into the nature of the problem.
-- After creating a new unique error type, add a variant to the crate level error enum using the new error name as a variant type, including the new error type as a field (e.g. `CrateErrorKind::Canvas(CanvasError)`)
-  - Use `#[derive(Debug, derive_more::From)]` on the crate-level error enum to automatically generate From implementations for all error variants.
-  - Use explicit `#[from(ErrorType)]` attributes on each enum variant to make the From implementations clear and explicit (e.g., `#[from(CanvasError)] Canvas(CanvasError)`).
-  - The display impl for the crate-level enum should forward the impl from the original error (e.g. If the display value of NewError is e, then the display for CrateErrorKind is "{e}").
-  - The display impl for the wrapper struct around the crate-level enum should include the display value of its kind field (e.g. If the display value of CrateErrorKind is e, then CrateError displays "Crate Error: {e}").
-  - Use a generic blanket `From` implementation on the wrapper struct to automatically convert any type that implements `Into<CrateErrorKind>` (eliminates need for individual From implementations per error type).
-  - For external error types (e.g., `reqwest::Error`, `serde_json::Error`), provide convenience `From` implementations on the `CrateErrorKind` that wrap them in your error type (e.g., `HttpError::new(err)`).
-- If a function or method returns a single unique error type, use that type. If the body contains more than one error type in its result types, convert the unique error types to the crate level type, and use the crate level error in the return type of the function or method signature.
+### Critical Rule: ALWAYS Use derive_more for Display and Error
 
-### Error Handling Example
+**MANDATORY:** All error types MUST use `derive_more::Display` and `derive_more::Error`. Manual implementations are NOT allowed.
+
+**Why this is critical:**
+- Manual Display/Error implementations are boilerplate code (reduces 200+ lines)
+- More declarative - error messages visible directly in attributes
+- Easier to maintain - change one attribute vs entire impl block
+- Consistent patterns across all error types
+- Prevents audit failures and technical debt
+
+**Audit requirement:** When auditing code, ALWAYS check for manual `impl std::fmt::Display` and `impl std::error::Error` - these are violations.
+
+### Error Type Patterns
+
+Use unique error types for different sources to create encapsulation around error conditions for easier isolation.
+
+#### Pattern 1: Simple Error Structs (message + location)
+
+For errors that just need a message and location tracking:
 
 ```rust
-// Module-level error with enum variants
-#[derive(Debug, Clone, PartialEq)]
-pub enum CanvasErrorKind {
-    ImageLoad(String),
-    NoFormImageLoaded,
-}
-
-impl std::fmt::Display for CanvasErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CanvasErrorKind::ImageLoad(msg) => write!(f, "Failed to load image: {}", msg),
-            CanvasErrorKind::NoFormImageLoaded => write!(f, "No form image loaded"),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct CanvasError {
-    pub kind: CanvasErrorKind,
-    pub line: u32,
-    pub file: &'static str,
-}
-
-impl CanvasError {
-    /// Create a new CanvasError with automatic location tracking
-    #[track_caller]
-    pub fn new(kind: CanvasErrorKind) -> Self {
-        let location = std::panic::Location::caller();
-        Self {
-            kind,
-            line: location.line(),
-            file: location.file(),
-        }
-    }
-}
-
-impl std::fmt::Display for CanvasError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Canvas Error: {} at line {} in {}", self.kind, self.line, self.file)
-    }
-}
-
-impl std::error::Error for CanvasError {}
-
-// Simple error type without enum (just message + location)
-#[derive(Debug)]
-pub struct ConfigError {
+/// HTTP error with source location.
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("HTTP Error: {} at line {} in {}", message, line, file)]
+pub struct HttpError {
     pub message: String,
     pub line: u32,
     pub file: &'static str,
 }
 
-impl ConfigError {
+impl HttpError {
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();
@@ -272,92 +356,168 @@ impl ConfigError {
         }
     }
 }
+```
 
-impl std::fmt::Display for ConfigError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Configuration Error: {} at line {} in {}", self.message, self.line, self.file)
-    }
+**Key requirements:**
+- MUST use `derive_more::Display` with `#[display(...)]` attribute
+- MUST use `derive_more::Error`
+- MUST use `#[track_caller]` on constructor
+- Error struct `file` fields MUST use `&'static str` (not `String`)
+
+#### Pattern 2: ErrorKind Enum (specific error conditions)
+
+For errors with multiple specific conditions:
+
+```rust
+/// Specific storage error conditions.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+pub enum StorageErrorKind {
+    /// Media not found
+    #[display("Media not found: {}", _0)]
+    NotFound(String),
+    
+    /// Permission denied
+    #[display("Permission denied: {}", _0)]
+    PermissionDenied(String),
+    
+    /// Hash mismatch with named fields
+    #[display("Content hash mismatch: expected {}, got {}", expected, actual)]
+    HashMismatch {
+        expected: String,
+        actual: String,
+    },
+}
+```
+
+**Key requirements:**
+- MUST use `derive_more::Display`
+- MUST have `#[display(...)]` attribute on EVERY variant
+- Use `_0`, `_1` for tuple variant fields
+- Use field names for struct variant fields
+- ErrorKind enums do NOT need derive_more::Error (wrapper handles that)
+
+#### Pattern 3: Wrapper Error Struct (ErrorKind + location)
+
+Wraps an ErrorKind enum with location tracking:
+
+```rust
+/// Storage error with location tracking.
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("Storage Error: {} at line {} in {}", kind, line, file)]
+pub struct StorageError {
+    pub kind: StorageErrorKind,
+    pub line: u32,
+    pub file: &'static str,
 }
 
-impl std::error::Error for ConfigError {}
-
-// Crate-level error enum with derive_more::From
-// Use explicit #[from(ErrorType)] attributes on each variant
-#[derive(Debug, derive_more::From)]
-pub enum FormErrorKind {
-    #[from(CanvasError)]
-    Canvas(CanvasError),
-    #[from(ConfigError)]
-    Config(ConfigError),
-    // ... other variants
-}
-
-// Convenience From implementations for external error types
-impl From<std::io::Error> for FormErrorKind {
-    fn from(err: std::io::Error) -> Self {
-        // Wrap external error in our error type with location tracking
-        FormErrorKind::Config(ConfigError::new(format!("IO error: {}", err)))
-    }
-}
-
-impl std::fmt::Display for FormErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FormErrorKind::Canvas(e) => write!(f, "{}", e),
-            FormErrorKind::Config(e) => write!(f, "{}", e),
+impl StorageError {
+    #[track_caller]
+    pub fn new(kind: StorageErrorKind) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            kind,
+            line: location.line(),
+            file: location.file(),
         }
     }
 }
+```
 
-// Wrapper struct around the error enum
-#[derive(Debug)]
-pub struct FormError(Box<FormErrorKind>);
+**Key requirements:**
+- MUST use `derive_more::Display` with format including kind
+- MUST use `derive_more::Error`
+- MUST use `#[track_caller]` on constructor
 
-impl FormError {
-    pub fn new(kind: FormErrorKind) -> Self {
+#### Pattern 4: Crate-Level Error Aggregation
+
+Top-level error that aggregates all module errors:
+
+```rust
+/// Crate-level error enum.
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+pub enum CrateErrorKind {
+    #[from(HttpError)]
+    Http(HttpError),
+    
+    #[from(StorageError)]
+    Storage(StorageError),
+    
+    // ... other variants
+}
+
+/// Crate-level error wrapper.
+#[derive(Debug, derive_more::Display, derive_more::Error)]
+#[display("Crate Error: {}", _0)]
+pub struct CrateError(Box<CrateErrorKind>);
+
+impl CrateError {
+    pub fn new(kind: CrateErrorKind) -> Self {
         Self(Box::new(kind))
     }
-
-    pub fn kind(&self) -> &FormErrorKind {
+    
+    pub fn kind(&self) -> &CrateErrorKind {
         &self.0
     }
 }
 
-impl std::fmt::Display for FormError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Form Error: {}", self.0)
-    }
-}
-
-impl std::error::Error for FormError {}
-
-// Generic blanket implementation - handles ALL conversions automatically!
-impl<T> From<T> for FormError
+// Generic blanket From implementation
+impl<T> From<T> for CrateError
 where
-    T: Into<FormErrorKind>,
+    T: Into<CrateErrorKind>,
 {
     fn from(err: T) -> Self {
         Self::new(err.into())
     }
 }
+```
 
-// Usage example showing automatic conversions:
-fn example() -> Result<(), FormError> {
-    // CanvasError converts automatically via From<CanvasError> for FormError
-    let canvas_err = CanvasError::new(CanvasErrorKind::NoFormImageLoaded);
-    Err(canvas_err)?;
+**Key requirements:**
+- MUST use `derive_more::From` on CrateErrorKind
+- MUST use explicit `#[from(ErrorType)]` on each variant
+- MUST use `derive_more::Display` on both kinds and wrapper
+- MUST use `derive_more::Error` on both kinds and wrapper
+- CrateErrorKind Display forwards to inner errors (automatic with derive_more)
+- CrateError Display wraps with context
 
-    // ConfigError converts automatically too
-    let config_err = ConfigError::new("Invalid configuration");
-    Err(config_err)?;
+### External Error Conversions
 
-    // Even external errors convert if we provide a From impl on FormErrorKind
-    let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
-    Err(io_err)?;
+For external error types (e.g., `reqwest::Error`, `serde_json::Error`):
 
-    Ok(())
+```rust
+impl From<std::io::Error> for CrateErrorKind {
+    fn from(err: std::io::Error) -> Self {
+        // Wrap external error with location tracking
+        CrateErrorKind::Storage(StorageError::new(
+            StorageErrorKind::Io(err.to_string())
+        ))
+    }
 }
 ```
+
+### Return Type Guidelines
+
+- If a function returns a single unique error type, use that type
+- If a function can return multiple error types, use the crate-level error type
+- Use `?` operator for automatic conversions via From implementations
+
+### Audit Checklist for Error Handling
+
+When reviewing or auditing code, verify:
+
+1. ✅ NO manual `impl std::fmt::Display` for error types
+2. ✅ NO manual `impl std::error::Error` for error types
+3. ✅ ALL error structs use `derive_more::Display` with `#[display(...)]`
+4. ✅ ALL error structs use `derive_more::Error`
+5. ✅ ALL ErrorKind enum variants have `#[display(...)]` attributes
+6. ✅ ALL error constructors use `#[track_caller]`
+7. ✅ ALL crate-level error enums use `derive_more::From`
+8. ✅ ALL from attributes are explicit: `#[from(ErrorType)]`
+
+**If you find manual Display/Error implementations during audit:** Flag as critical issue requiring immediate refactoring.
+
+### Reference Implementation
+
+See `crates/botticelli_error` for a complete, production-ready reference implementation of all error patterns using derive_more.
 
 ## Module Organization
 
@@ -492,6 +652,229 @@ This pattern provides:
 ### Cross-Module Communication
 
 - Add helper methods (setters, mut accessors) to core structs for clean cross-module communication instead of directly accessing fields.
+
+## Workspace Organization
+
+When working with Cargo workspaces, each crate must follow the same organizational principles as a standalone crate.
+
+### lib.rs Structure in Workspace Crates
+
+**Critical Rule:** `lib.rs` should ONLY contain `mod` declarations and `pub use` exports, never type definitions, trait definitions, or impl blocks.
+
+```rust
+// ❌ BAD: Types defined in lib.rs
+// src/lib.rs
+pub struct MyType {
+    field: String,
+}
+
+pub enum MyEnum {
+    Variant1,
+    Variant2,
+}
+
+// ✅ GOOD: Only mod and pub use statements
+// src/lib.rs
+//! Crate documentation goes here.
+
+mod types;
+mod enums;
+
+pub use types::MyType;
+pub use enums::MyEnum;
+```
+
+### Organizing Small Crates
+
+Even small crates (100-200 lines) should separate concerns into modules:
+
+```
+crates/my_crate/src/
+├── lib.rs              # Only mod declarations and pub use exports
+├── role.rs             # Role-related types
+├── input.rs            # Input types
+├── output.rs           # Output types
+└── request.rs          # Request/Response types
+```
+
+**lib.rs structure:**
+
+```rust
+//! Crate-level documentation describing the crate's purpose.
+
+mod role;
+mod input;
+mod output;
+mod request;
+
+pub use role::Role;
+pub use input::Input;
+pub use output::{Output, ToolCall};
+pub use request::{Request, Response};
+```
+
+### Module Responsibilities
+
+Each module should have a single, clear responsibility:
+
+- **Single type per module** (simple case) - One enum or struct
+- **Related types per module** (common case) - Types that work together (e.g., `Output` enum + `ToolCall` struct)
+- **Shared dependencies** - Types used by multiple other modules (e.g., `MediaSource` used by both `Input` and `Output`)
+
+### Import Patterns in Workspace Crates
+
+The same import rules apply within each workspace crate:
+
+```rust
+// In any module within the crate
+use crate::{Type1, Type2};  // ✅ Import from crate root
+
+// NOT these:
+use crate::module::Type1;   // ❌ Never use module paths
+use super::Type1;            // ❌ Never use super paths
+```
+
+### Cross-Crate Dependencies
+
+**CRITICAL RULE: NO RE-EXPORTS ACROSS WORKSPACE CRATES**
+
+In a workspace, **DO NOT re-export types from one crate into another crate's public API**. This creates multiple import paths for the same type, violating the "single import path" principle.
+
+#### ❌ WRONG: Re-exporting dependency types
+
+```rust
+// crates/botticelli_database/src/lib.rs
+pub use botticelli_error::{DatabaseError, DatabaseErrorKind};  // ❌ DON'T DO THIS
+
+// Now users can import the same type two ways:
+use botticelli_error::DatabaseError;     // Original source
+use botticelli_database::DatabaseError;  // Re-exported (ambiguous!)
+```
+
+#### ✅ CORRECT: Import dependency types directly
+
+```rust
+// crates/botticelli_database/src/lib.rs
+// NO re-exports of dependency types
+
+// Users of botticelli_database import what they need:
+// In their code:
+use botticelli_database::NarrativeRepository;  // Database's own types
+use botticelli_error::DatabaseError;           // Error types from error crate
+```
+
+#### Rationale
+
+**Problem with re-exports:**
+- Creates ambiguity: `use crate_a::Type` vs `use crate_b::Type` (same type!)
+- Breaks "single import path" principle
+- Makes refactoring difficult (breaking changes when removing re-exports)
+- IDE confusion (multiple auto-import options)
+- Unclear ownership (which crate "owns" the type?)
+
+**Solution:**
+- Each type has exactly ONE canonical import path
+- Users import from the type's home crate
+- Transitive dependencies are explicit in user code
+
+#### Type Aliases for Convenience
+
+If you need a crate-specific Result type, use a type alias (not re-export):
+
+```rust
+// crates/botticelli_database/src/lib.rs
+use botticelli_error::DatabaseError;
+
+/// Result type for database operations.
+pub type DatabaseResult<T> = Result<T, DatabaseError>;  // ✅ Type alias OK
+```
+
+Users get the convenience:
+```rust
+use botticelli_database::DatabaseResult;  // Convenience alias
+use botticelli_error::DatabaseError;      // Actual error type
+```
+
+#### Exception: Foundation Crates
+
+Only the top-level binary/library crate (e.g., `botticelli`) may re-export types from workspace dependencies for user convenience:
+
+```rust
+// crates/botticelli/src/lib.rs (top-level public API)
+pub use botticelli_core::{Role, Input, Output};
+pub use botticelli_error::{BotticelliError, BotticelliResult};
+pub use botticelli_interface::{GenerationBackend, NarrativeRepository};
+
+// This is the ONLY crate that re-exports.
+// Internal workspace crates NEVER re-export from each other.
+```
+
+### Refactoring Checklist for Existing Crates
+
+When cleaning up a crate with types in lib.rs:
+
+1. **Identify type groups** - Group related types by responsibility
+2. **Create module files** - One file per logical group
+3. **Move types** - Cut types from lib.rs, paste into module files
+4. **Add imports** - Each module imports from `crate::{...}`
+5. **Update lib.rs** - Replace type definitions with `mod` and `pub use`
+6. **Verify** - Run `cargo check`, `cargo test`, `cargo clippy`
+7. **Commit** - Use conventional commit message (e.g., `refactor(crate): organize types into modules`)
+
+### Example: Refactoring a Small Core Crate
+
+**Before:**
+
+```rust
+// crates/my_core/src/lib.rs (146 lines)
+pub enum Role { System, User, Assistant }
+pub struct Message { pub role: Role, pub content: String }
+pub struct Request { pub messages: Vec<Message> }
+pub struct Response { pub output: String }
+```
+
+**After:**
+
+```rust
+// crates/my_core/src/lib.rs (12 lines)
+mod role;
+mod message;
+mod request;
+
+pub use role::Role;
+pub use message::Message;
+pub use request::{Request, Response};
+
+// crates/my_core/src/role.rs
+pub enum Role { System, User, Assistant }
+
+// crates/my_core/src/message.rs
+use crate::Role;
+
+pub struct Message {
+    pub role: Role,
+    pub content: String,
+}
+
+// crates/my_core/src/request.rs
+use crate::Message;
+
+pub struct Request {
+    pub messages: Vec<Message>,
+}
+
+pub struct Response {
+    pub output: String,
+}
+```
+
+### Benefits for Workspaces
+
+1. **Consistency** - All crates follow the same organizational pattern
+2. **Discoverability** - Easy to find types across multiple crates
+3. **Maintainability** - Changes to one crate don't require understanding others' internal structure
+4. **Scalability** - Easy to grow crates without restructuring
+5. **Onboarding** - New contributors learn one pattern that applies everywhere
 
 ## Common Refactoring Patterns
 

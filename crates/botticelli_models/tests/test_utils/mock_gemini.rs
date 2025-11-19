@@ -2,11 +2,10 @@
 
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse, Output};
-use botticelli_error::{BotticelliError, BotticelliResult};
+use botticelli_error::{BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind};
 use botticelli_interface::{
-    BotticelliDriver, FinishReason, Metadata, ModelMetadata, Streaming, StreamChunk, Vision,
+    BotticelliDriver, FinishReason, Metadata, ModelMetadata, StreamChunk, Streaming, Vision,
 };
-use botticelli_models::{GeminiError, GeminiErrorKind};
 use std::sync::{Arc, Mutex};
 
 /// Behavior configuration for mock responses.
@@ -219,7 +218,9 @@ impl Streaming for MockGeminiClient {
         &self,
         _req: &GenerateRequest,
     ) -> BotticelliResult<
-        std::pin::Pin<Box<dyn futures_util::stream::Stream<Item = BotticelliResult<StreamChunk>> + Send>>,
+        std::pin::Pin<
+            Box<dyn futures_util::stream::Stream<Item = BotticelliResult<StreamChunk>> + Send>,
+        >,
     > {
         use futures_util::stream;
 

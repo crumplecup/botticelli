@@ -3,13 +3,11 @@
 //! This module provides the BotticelliBot struct which manages the Discord client
 //! connection, event handling, and database integration.
 
-use super::{DiscordError, DiscordErrorKind, DiscordRepository};
+use super::{DiscordError, DiscordErrorKind, DiscordRepository, handler::BotticelliHandler};
 use diesel::pg::PgConnection;
 use serenity::Client;
 use std::sync::Arc;
-use tracing::info;
-
-use super::handler::BotticelliHandler;
+use tracing::{info, instrument};
 
 /// Main Discord bot client for Botticelli.
 ///
@@ -18,7 +16,7 @@ use super::handler::BotticelliHandler;
 ///
 /// # Example
 /// ```no_run
-/// use botticelli_social::discord::BotticelliBot;
+/// use botticelli_social::BotticelliBot;
 /// use botticelli_database::establish_connection;
 ///
 /// #[tokio::main]
@@ -51,6 +49,7 @@ impl BotticelliBot {
     /// - The bot token is invalid
     /// - The Serenity client fails to initialize
     /// - Database connection fails
+    #[instrument(skip(token, conn), fields(token_len = token.len()))]
     pub async fn new(token: String, conn: PgConnection) -> Result<Self, DiscordError> {
         info!("Initializing Botticelli Discord bot");
 
@@ -87,6 +86,7 @@ impl BotticelliBot {
     ///
     /// # Errors
     /// Returns an error if the client fails to start or encounters a fatal error.
+    #[instrument(skip(self))]
     pub async fn start(&mut self) -> Result<(), DiscordError> {
         info!("Starting Discord bot");
 

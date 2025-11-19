@@ -5,14 +5,14 @@ This document defines the TOML configuration format for multi-act narrative exec
 ## Overview
 
 A narrative TOML file consists of three main sections:
-1. `[narration]` - Metadata about the narrative
+1. `[narrative]` - Metadata about the narrative
 2. `[toc]` - Table of contents defining execution order
 3. `[acts]` - Act definitions with prompts and optional configurations
 
 ## Basic Structure
 
 ```toml
-[narration]
+[narrative]
 name = "narrative_name"
 description = "What this narrative does"
 
@@ -26,7 +26,7 @@ act2 = "Another text prompt"
 
 ## Section Reference
 
-### `[narration]` - Metadata
+### `[narrative]` - Metadata
 
 Required fields:
 - `name` (string): Unique identifier for this narrative
@@ -203,7 +203,7 @@ max_tokens = 200  # Short response
 ### Example 1: Simple Text-Only Narrative (mint.toml style)
 
 ```toml
-[narration]
+[narrative]
 name = "mint"
 description = "Generate social media content"
 
@@ -219,7 +219,7 @@ act3 = "Improve the posts based on critique"
 ### Example 2: Vision Analysis with Model Override
 
 ```toml
-[narration]
+[narrative]
 name = "logo_review"
 description = "Analyze a logo design"
 
@@ -278,7 +278,7 @@ url = "https://example.com/interview.mp3"
 ### Example 4: Per-Act Model Selection
 
 ```toml
-[narration]
+[narrative]
 name = "multi_model_analysis"
 description = "Use different models for different strengths"
 

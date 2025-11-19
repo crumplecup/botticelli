@@ -34,8 +34,10 @@ pub enum ChannelType {
 }
 
 impl
-    diesel::serialize::ToSql<botticelli_database::schema::sql_types::DiscordChannelType, diesel::pg::Pg>
-    for ChannelType
+    diesel::serialize::ToSql<
+        botticelli_database::schema::sql_types::DiscordChannelType,
+        diesel::pg::Pg,
+    > for ChannelType
 {
     fn to_sql<'b>(
         &'b self,

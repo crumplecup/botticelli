@@ -31,6 +31,9 @@ serde_json = { workspace = true }
 # Logging
 tracing = { workspace = true }
 
+# Derive macros
+derive_more = { workspace = true }
+
 # Discord integration (optional)
 serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"], optional = true }
 

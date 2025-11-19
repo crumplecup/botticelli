@@ -1,7 +1,7 @@
 //! Content management command handlers.
 
-use botticelli::BotticelliResult;
 use super::commands::{ContentCommands, OutputFormat};
+use botticelli::BotticelliResult;
 
 /// Handle content management commands.
 pub async fn handle_content_command(cmd: ContentCommands) -> BotticelliResult<()> {
@@ -76,8 +76,7 @@ async fn list_content(
 /// Show a specific content item.
 #[cfg(feature = "database")]
 async fn show_content(table: &str, id: i64) -> BotticelliResult<()> {
-    use botticelli::establish_connection;
-    use botticelli_database::content_management::get_content_by_id;
+    use botticelli::{establish_connection, get_content_by_id};
 
     let mut conn = establish_connection()?;
     let content = get_content_by_id(&mut conn, table, id)?;
@@ -98,7 +97,9 @@ async fn show_content(_table: &str, _id: i64) -> BotticelliResult<()> {
 /// Get the last successful generation.
 #[cfg(feature = "database")]
 async fn last_generation(format: OutputFormat) -> BotticelliResult<()> {
-    use botticelli::{establish_connection, ContentGenerationRepository, PostgresContentGenerationRepository};
+    use botticelli::{
+        ContentGenerationRepository, PostgresContentGenerationRepository, establish_connection,
+    };
 
     let mut conn = establish_connection()?;
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
@@ -144,7 +145,9 @@ async fn last_generation(_format: OutputFormat) -> BotticelliResult<()> {
 /// List all content generations.
 #[cfg(feature = "database")]
 async fn list_generations(status: Option<&str>, limit: i64) -> BotticelliResult<()> {
-    use botticelli::{establish_connection, ContentGenerationRepository, PostgresContentGenerationRepository};
+    use botticelli::{
+        ContentGenerationRepository, PostgresContentGenerationRepository, establish_connection,
+    };
 
     let mut conn = establish_connection()?;
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
@@ -162,7 +165,8 @@ async fn list_generations(status: Option<&str>, limit: i64) -> BotticelliResult<
             "{:<20} {:<15} {:<10} {:<20}",
             generation.table_name,
             generation.status,
-            generation.row_count
+            generation
+                .row_count
                 .map(|r| r.to_string())
                 .unwrap_or_else(|| "-".to_string()),
             generation.generated_at.format("%Y-%m-%d %H:%M")

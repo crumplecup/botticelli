@@ -3,9 +3,9 @@
 // Tests for the Gemini client implementation.
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
-use botticelli_error::BotticelliError;
+use botticelli_error::{BotticelliError, GeminiError, GeminiErrorKind};
 use botticelli_interface::{BotticelliDriver, Metadata, Vision};
-use botticelli_models::{GeminiClient, GeminiError, GeminiErrorKind};
+use botticelli_models::GeminiClient;
 
 //
 // ─── ERROR HANDLING TESTS ───────────────────────────────────────────────────────

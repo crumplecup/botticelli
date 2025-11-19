@@ -12,6 +12,7 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing::instrument;
 
 use super::conversions::NewMemberRole;
 use super::models::{
@@ -29,7 +30,7 @@ pub type DiscordResult<T> = Result<T, DatabaseError>;
 ///
 /// # Example
 /// ```no_run
-/// use botticelli_social::discord::DiscordRepository;
+/// use botticelli_social::DiscordRepository;
 /// use botticelli_database::establish_connection;
 /// use std::sync::Arc;
 ///
@@ -75,6 +76,7 @@ impl DiscordRepository {
     /// Store or update a guild in the database.
     ///
     /// Uses INSERT ... ON CONFLICT to upsert the guild.
+    #[instrument(skip(self), fields(guild_id = %guild.id))]
     pub async fn store_guild(&self, guild: &NewGuild) -> DiscordResult<GuildRow> {
         let mut conn = self.conn.lock().await;
 
@@ -97,6 +99,7 @@ impl DiscordRepository {
     }
 
     /// Get a guild by ID.
+    #[instrument(skip(self))]
     pub async fn get_guild(&self, guild_id: i64) -> DiscordResult<Option<GuildRow>> {
         let mut conn = self.conn.lock().await;
 
@@ -108,6 +111,7 @@ impl DiscordRepository {
     }
 
     /// List all active guilds (where bot_active = true and left_at is null).
+    #[instrument(skip(self))]
     pub async fn list_active_guilds(&self) -> DiscordResult<Vec<GuildRow>> {
         let mut conn = self.conn.lock().await;
 
@@ -120,6 +124,7 @@ impl DiscordRepository {
     }
 
     /// Mark a guild as left (soft delete).
+    #[instrument(skip(self))]
     pub async fn mark_guild_left(&self, guild_id: i64) -> DiscordResult<()> {
         let mut conn = self.conn.lock().await;
 
@@ -139,6 +144,7 @@ impl DiscordRepository {
     // ============================================================================
 
     /// Store or update a user in the database.
+    #[instrument(skip(self), fields(user_id = %user.id))]
     pub async fn store_user(&self, user: &NewUser) -> DiscordResult<UserRow> {
         let mut conn = self.conn.lock().await;
 
@@ -159,6 +165,7 @@ impl DiscordRepository {
     }
 
     /// Get a user by ID.
+    #[instrument(skip(self))]
     pub async fn get_user(&self, user_id: i64) -> DiscordResult<Option<UserRow>> {
         let mut conn = self.conn.lock().await;
 
@@ -174,6 +181,7 @@ impl DiscordRepository {
     // ============================================================================
 
     /// Store or update a channel in the database.
+    #[instrument(skip(self), fields(channel_id = %channel.id))]
     pub async fn store_channel(&self, channel: &NewChannel) -> DiscordResult<ChannelRow> {
         let mut conn = self.conn.lock().await;
 
@@ -195,6 +203,7 @@ impl DiscordRepository {
     }
 
     /// Get a channel by ID.
+    #[instrument(skip(self))]
     pub async fn get_channel(&self, channel_id: i64) -> DiscordResult<Option<ChannelRow>> {
         let mut conn = self.conn.lock().await;
 
@@ -206,6 +215,7 @@ impl DiscordRepository {
     }
 
     /// List all channels in a guild.
+    #[instrument(skip(self))]
     pub async fn list_guild_channels(&self, guild_id: i64) -> DiscordResult<Vec<ChannelRow>> {
         let mut conn = self.conn.lock().await;
 
@@ -221,6 +231,7 @@ impl DiscordRepository {
     // ============================================================================
 
     /// Store or update a guild member in the database.
+    #[instrument(skip(self), fields(guild_id = %member.guild_id, user_id = %member.user_id))]
     pub async fn store_guild_member(
         &self,
         member: &NewGuildMember,
@@ -245,6 +256,7 @@ impl DiscordRepository {
     }
 
     /// Get a guild member by guild ID and user ID.
+    #[instrument(skip(self))]
     pub async fn get_guild_member(
         &self,
         guild_id: i64,
@@ -261,6 +273,7 @@ impl DiscordRepository {
     }
 
     /// List all active members in a guild (where left_at is null).
+    #[instrument(skip(self))]
     pub async fn list_guild_members(&self, guild_id: i64) -> DiscordResult<Vec<GuildMemberRow>> {
         let mut conn = self.conn.lock().await;
 
@@ -273,6 +286,7 @@ impl DiscordRepository {
     }
 
     /// Mark a guild member as left (soft delete).
+    #[instrument(skip(self))]
     pub async fn mark_member_left(&self, guild_id: i64, user_id: i64) -> DiscordResult<()> {
         let mut conn = self.conn.lock().await;
 
@@ -293,6 +307,7 @@ impl DiscordRepository {
     // ============================================================================
 
     /// Store or update a role in the database.
+    #[instrument(skip(self), fields(role_id = %role.id))]
     pub async fn store_role(&self, role: &NewRole) -> DiscordResult<RoleRow> {
         let mut conn = self.conn.lock().await;
 
@@ -314,6 +329,7 @@ impl DiscordRepository {
     }
 
     /// Get a role by ID.
+    #[instrument(skip(self))]
     pub async fn get_role(&self, role_id: i64) -> DiscordResult<Option<RoleRow>> {
         let mut conn = self.conn.lock().await;
 
@@ -325,6 +341,7 @@ impl DiscordRepository {
     }
 
     /// List all roles in a guild ordered by position.
+    #[instrument(skip(self))]
     pub async fn list_guild_roles(&self, guild_id: i64) -> DiscordResult<Vec<RoleRow>> {
         let mut conn = self.conn.lock().await;
 
@@ -338,6 +355,7 @@ impl DiscordRepository {
     /// Store a member role assignment in the database.
     ///
     /// Uses INSERT ... ON CONFLICT to upsert the role assignment.
+    #[instrument(skip(self), fields(guild_id = %member_role.guild_id, user_id = %member_role.user_id, role_id = %member_role.role_id))]
     pub async fn store_member_role(&self, member_role: &NewMemberRole) -> DiscordResult<()> {
         let mut conn = self.conn.lock().await;
 
@@ -360,6 +378,7 @@ impl DiscordRepository {
     }
 
     /// Assign a role to a guild member.
+    #[instrument(skip(self))]
     pub async fn assign_role(
         &self,
         guild_id: i64,
@@ -389,6 +408,7 @@ impl DiscordRepository {
     }
 
     /// Remove a role from a guild member.
+    #[instrument(skip(self))]
     pub async fn remove_role(
         &self,
         guild_id: i64,

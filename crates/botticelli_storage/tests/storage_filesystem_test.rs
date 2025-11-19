@@ -1,6 +1,8 @@
 //! Tests for filesystem storage backend.
 
-use botticelli_storage::{FileSystemStorage, MediaMetadata, MediaReference, MediaStorage, MediaType};
+use botticelli_storage::{
+    FileSystemStorage, MediaMetadata, MediaReference, MediaStorage, MediaType,
+};
 use tempfile::TempDir;
 use uuid::Uuid;
 

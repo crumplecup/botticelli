@@ -1,10 +1,11 @@
 //! Repository for content generation tracking.
 
 use crate::{
-    ContentGenerationRow, DatabaseResult, DatabaseError, DatabaseErrorKind,
-    NewContentGenerationRow, UpdateContentGenerationRow,
+    ContentGenerationRow, DatabaseResult, NewContentGenerationRow, UpdateContentGenerationRow,
 };
+use botticelli_error::{DatabaseError, DatabaseErrorKind};
 use diesel::prelude::*;
+use tracing::{debug, error};
 
 /// Repository trait for content generation tracking operations.
 ///
@@ -145,10 +146,14 @@ impl<'a> ContentGenerationRepository for PostgresContentGenerationRepository<'a>
     ) -> DatabaseResult<ContentGenerationRow> {
         use crate::schema::content_generations;
 
+        debug!(table = %new_gen.table_name, narrative = ?new_gen.narrative_file, "Starting content generation");
         diesel::insert_into(content_generations::table)
             .values(&new_gen)
             .get_result(self.conn)
-            .map_err(|e| DatabaseError::new(DatabaseErrorKind::Query(e.to_string())))
+            .map_err(|e| {
+                error!(error = %e, table = %new_gen.table_name, "Failed to start content generation");
+                DatabaseError::new(DatabaseErrorKind::Query(e.to_string()))
+            })
     }
 
     fn complete_generation(
@@ -158,10 +163,14 @@ impl<'a> ContentGenerationRepository for PostgresContentGenerationRepository<'a>
     ) -> DatabaseResult<ContentGenerationRow> {
         use crate::schema::content_generations::dsl;
 
+        debug!(table = %table, status = ?update.status, "Completing content generation");
         diesel::update(dsl::content_generations.filter(dsl::table_name.eq(table)))
             .set(&update)
             .get_result(self.conn)
-            .map_err(|e| DatabaseError::new(DatabaseErrorKind::Query(e.to_string())))
+            .map_err(|e| {
+                error!(error = %e, table = %table, "Failed to complete content generation");
+                DatabaseError::new(DatabaseErrorKind::Query(e.to_string()))
+            })
     }
 
     fn get_last_successful(&mut self) -> DatabaseResult<Option<ContentGenerationRow>> {

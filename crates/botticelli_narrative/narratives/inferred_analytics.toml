@@ -1,4 +1,4 @@
-[narration]
+[narrative]
 name = "analytics_events"
 description = "Generate custom analytics events with flexible schema"
 # No template - schema inferred from JSON

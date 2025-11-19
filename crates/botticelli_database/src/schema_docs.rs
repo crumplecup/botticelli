@@ -3,9 +3,10 @@
 //! This module automatically generates LLM-friendly schema documentation
 //! from database table structures, eliminating boilerplate in narrative files.
 
-use crate::schema_reflection::{ColumnInfo, TableSchema, reflect_table_schema};
 use crate::DatabaseResult;
+use crate::schema_reflection::{ColumnInfo, TableSchema, reflect_table_schema};
 use diesel::pg::PgConnection;
+use tracing::instrument;
 
 /// Type hints and documentation for common Discord field patterns
 struct FieldDocumentation {
@@ -116,6 +117,7 @@ fn format_data_type(pg_type: &str, max_length: Option<i32>) -> String {
 }
 
 /// Generate LLM-friendly schema documentation from a table structure
+#[instrument(name = "schema_docs.generate_schema_prompt", skip(schema), fields(table = %schema.table_name, column_count = schema.columns.len()))]
 pub fn generate_schema_prompt(schema: &TableSchema) -> String {
     let mut prompt = String::new();
 
@@ -169,6 +171,7 @@ pub const DISCORD_PLATFORM_CONTEXT: &str =
     "You are generating data for Discord (a chat and community platform).";
 
 /// Assemble a complete prompt from template schema and user content focus
+#[instrument(name = "schema_docs.assemble_prompt", skip(conn, user_content_focus), fields(template = %template))]
 pub fn assemble_prompt(
     conn: &mut PgConnection,
     template: &str,

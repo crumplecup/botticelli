@@ -1,7 +1,6 @@
 //! Core data structures for narratives.
 
-use crate::toml_parser as toml_parsing;
-use crate::{ActConfig, NarrativeProvider};
+use crate::{toml_parser, ActConfig, NarrativeProvider};
 use botticelli_error::{NarrativeError, NarrativeErrorKind};
 use std::collections::HashMap;
 use std::path::Path;
@@ -14,7 +13,7 @@ use botticelli_database::schema_docs::{assemble_prompt, is_content_focus};
 #[cfg(feature = "database")]
 use diesel::pg::PgConnection;
 
-/// Narrative metadata from the `[narration]` section.
+/// Narrative metadata from the `[narrative]` section.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
 pub struct NarrativeMetadata {
     /// Unique identifier for this narrative
@@ -41,7 +40,7 @@ pub struct NarrativeToc {
 ///
 /// Simple text acts:
 /// ```toml
-/// [narration]
+/// [narrative]
 /// name = "example"
 /// description = "An example narrative"
 ///
@@ -90,10 +89,10 @@ impl Narrative {
     /// - The file cannot be read
     /// - The TOML is invalid
     /// - Validation fails (missing acts, empty order, etc.)
+    #[tracing::instrument(skip_all, fields(path = %path.as_ref().display()))]
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, NarrativeError> {
-        let content = std::fs::read_to_string(path.as_ref()).map_err(|e| {
-            NarrativeError::new(NarrativeErrorKind::FileRead(e.to_string()))
-        })?;
+        let content = std::fs::read_to_string(path.as_ref())
+            .map_err(|e| NarrativeError::new(NarrativeErrorKind::FileRead(e.to_string())))?;
 
         content.parse()
     }
@@ -119,11 +118,13 @@ impl Narrative {
     /// - Database schema reflection fails (if template specified)
     /// - Prompt assembly fails
     #[cfg(feature = "database")]
+    #[tracing::instrument(skip_all, fields(path = %path.as_ref().display()))]
     pub fn from_file_with_db<P: AsRef<Path>>(
         path: P,
         conn: &mut PgConnection,
     ) -> Result<Self, NarrativeError> {
         let mut narrative = Self::from_file(path)?;
+        tracing::debug!(has_template = ?narrative.metadata.template.is_some());
 
         // If template specified, assemble prompts with schema injection
         if narrative.metadata.template.is_some() {
@@ -148,10 +149,13 @@ impl Narrative {
     /// - Database schema reflection fails
     /// - Prompt assembly fails
     #[cfg(feature = "database")]
+    #[tracing::instrument(skip(self, conn), fields(template = ?self.metadata.template, act_count = self.acts.len()))]
     fn assemble_act_prompts(&mut self, conn: &mut PgConnection) -> Result<(), NarrativeError> {
-        let template = self.metadata.template.as_ref().ok_or_else(|| {
-            NarrativeError::new(NarrativeErrorKind::MissingTemplate)
-        })?;
+        let template = self
+            .metadata
+            .template
+            .as_ref()
+            .ok_or_else(|| NarrativeError::new(NarrativeErrorKind::MissingTemplate))?;
 
         for (act_name, config) in &mut self.acts {
             // Get the first text input (most common case)
@@ -196,6 +200,7 @@ impl Narrative {
     /// # Errors
     ///
     /// Returns an error if validation fails.
+    #[tracing::instrument(skip(self), fields(name = %self.metadata.name, act_count = self.toc.order.len()))]
     pub fn validate(&self) -> Result<(), NarrativeError> {
         // Check that toc.order is not empty
         if self.toc.order.is_empty() {
@@ -205,18 +210,18 @@ impl Narrative {
         // Check that all acts in toc.order exist in acts map
         for act_name in &self.toc.order {
             if !self.acts.contains_key(act_name) {
-                return Err(NarrativeError::new(
-                    NarrativeErrorKind::MissingAct(act_name.clone())
-                ));
+                return Err(NarrativeError::new(NarrativeErrorKind::MissingAct(
+                    act_name.clone(),
+                )));
             }
         }
 
         // Check that all acts have at least one input
         for (act_name, config) in &self.acts {
             if config.inputs.is_empty() {
-                return Err(NarrativeError::new(
-                    NarrativeErrorKind::EmptyPrompt(act_name.clone())
-                ));
+                return Err(NarrativeError::new(NarrativeErrorKind::EmptyPrompt(
+                    act_name.clone(),
+                )));
             }
         }
 
@@ -240,18 +245,15 @@ impl FromStr for Narrative {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Parse TOML into intermediate structure
-        let toml_narrative: toml_parsing::TomlNarrative = toml::from_str(s).map_err(|e| {
-            NarrativeError::new(
-                NarrativeErrorKind::TomlParse(e.to_string()),
-            )
-        })?;
+        let toml_narrative: toml_parser::TomlNarrativeFile = toml::from_str(s)
+            .map_err(|e| NarrativeError::new(NarrativeErrorKind::TomlParse(e.to_string())))?;
 
         // Convert to domain types
         let metadata = NarrativeMetadata {
-            name: toml_narrative.narration.name,
-            description: toml_narrative.narration.description,
-            template: toml_narrative.narration.template,
-            skip_content_generation: toml_narrative.narration.skip_content_generation,
+            name: toml_narrative.narrative.name,
+            description: toml_narrative.narrative.description,
+            template: toml_narrative.narrative.template,
+            skip_content_generation: toml_narrative.narrative.skip_content_generation,
         };
 
         let toc = NarrativeToc {
@@ -263,13 +265,12 @@ impl FromStr for Narrative {
             let act_config = toml_act.to_act_config().map_err(|e| {
                 // Check if this is an empty prompt error
                 if e.contains("empty") || e.contains("whitespace") {
-                    NarrativeError::new(
-                        NarrativeErrorKind::EmptyPrompt(act_name.clone()),
-                    )
+                    NarrativeError::new(NarrativeErrorKind::EmptyPrompt(act_name.clone()))
                 } else {
-                    NarrativeError::new(
-                        NarrativeErrorKind::TomlParse(format!("Act '{}': {}", act_name, e)),
-                    )
+                    NarrativeError::new(NarrativeErrorKind::TomlParse(format!(
+                        "Act '{}': {}",
+                        act_name, e
+                    )))
                 }
             })?;
             acts.insert(act_name, act_config);

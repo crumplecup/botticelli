@@ -21,7 +21,7 @@
 //! ```no_run
 //! # #[cfg(feature = "gemini")]
 //! # {
-//! use botticelli_models::gemini::GeminiClient;
+//! use botticelli_models::GeminiClient;
 //! use botticelli_interface::BotticelliDriver;
 //! use botticelli_core::{GenerateRequest, Message, Role, Input};
 //!
@@ -42,7 +42,7 @@
 //! ```
 
 #[cfg(feature = "gemini")]
-pub mod gemini;
+mod gemini;
 
 #[cfg(feature = "gemini")]
 pub use gemini::{
@@ -53,7 +53,3 @@ pub use gemini::{
     SetupMessage, SystemInstruction, TextPart, TieredGemini, Tool, ToolResponse,
     ToolResponseMessage, Turn, UsageMetadata,
 };
-
-// Re-export error types for convenience
-#[cfg(feature = "gemini")]
-pub use botticelli_error::{GeminiError, GeminiErrorKind};

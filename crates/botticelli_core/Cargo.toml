@@ -12,6 +12,4 @@ categories.workspace = true
 [dependencies]
 serde = { workspace = true }
 serde_json = { workspace = true }
-derive_more = { workspace = true }
-derive-new = { workspace = true }
-botticelli_error = { workspace = true }
+derive_more = { workspace = true, features = ["display", "from"] }

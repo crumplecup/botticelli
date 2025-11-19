@@ -23,7 +23,7 @@
 
 mod client;
 mod live_client;
-pub mod live_protocol;
+mod live_protocol;
 mod live_rate_limit;
 
 pub use client::{GeminiClient, TieredGemini};
@@ -37,8 +37,5 @@ pub use live_protocol::{
 };
 pub use live_rate_limit::LiveRateLimiter;
 
-// Re-export error types from botticelli-error
-pub use botticelli_error::{GeminiError, GeminiErrorKind};
-
 /// Result type for Gemini operations.
-pub type GeminiResult<T> = Result<T, GeminiError>;
+pub type GeminiResult<T> = Result<T, botticelli_error::GeminiError>;

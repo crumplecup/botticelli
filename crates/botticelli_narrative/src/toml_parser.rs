@@ -3,14 +3,14 @@
 //! This module provides intermediate structures for deserializing TOML
 //! into our domain types (ActConfig, Input, etc.).
 
-use botticelli_core::{Input, MediaSource};
 use crate::ActConfig;
+use botticelli_core::{Input, MediaSource};
 use serde::Deserialize;
 use std::collections::HashMap;
 
-/// Intermediate structure for deserializing the [narration] section.
+/// Intermediate structure for deserializing the [narrative] section.
 #[derive(Debug, Clone, Deserialize)]
-pub struct TomlNarration {
+pub struct TomlNarrative {
     pub name: String,
     pub description: String,
     /// Optional template table to use as schema source for content generation
@@ -82,8 +82,8 @@ pub struct TomlInput {
 
 /// Root TOML structure.
 #[derive(Debug, Clone, Deserialize)]
-pub struct TomlNarrative {
-    pub narration: TomlNarration,
+pub struct TomlNarrativeFile {
+    pub narrative: TomlNarrative,
     pub toc: TomlToc,
     pub acts: HashMap<String, TomlAct>,
 }

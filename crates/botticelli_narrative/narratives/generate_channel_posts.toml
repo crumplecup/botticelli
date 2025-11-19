@@ -8,7 +8,7 @@
 # 2. Review: botticelli content list potential_posts
 # 3. Promote: botticelli content promote potential_posts 1 --target discord_channels
 
-[narration]
+[narrative]
 name = "potential_posts"
 description = "Generates engaging Discord channel post content for review and scheduling"
 template = "discord_channels"

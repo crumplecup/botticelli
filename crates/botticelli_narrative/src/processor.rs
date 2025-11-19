@@ -3,10 +3,10 @@
 //! Processors are invoked after an act completes to extract structured
 //! data and perform side effects (database insertion, file writing, etc.).
 
-use botticelli_interface::ActExecution;
-use botticelli_error::BotticelliResult;
 use crate::NarrativeMetadata;
 use async_trait::async_trait;
+use botticelli_error::BotticelliResult;
+use botticelli_interface::ActExecution;
 
 /// Context provided to processors for act processing.
 ///
@@ -148,6 +148,7 @@ impl ProcessorRegistry {
     ///
     /// Returns an error if any processor fails. The error message includes
     /// all processor errors concatenated together.
+    #[tracing::instrument(skip(self, context), fields(act = %context.execution.act_name, processor_count = self.processors.len()))]
     pub async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
         let mut errors = Vec::new();
 

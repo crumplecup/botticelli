@@ -14,6 +14,7 @@ use governor::{Quota, RateLimiter as GovernorRateLimiter};
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
+use tracing::{debug, instrument, warn};
 
 // Type alias for our direct rate limiter
 type DirectRateLimiter = GovernorRateLimiter<NotKeyed, InMemoryState, DefaultClock>;
@@ -71,7 +72,7 @@ pub struct RateLimiter<T: Tier> {
     retry_backoff_ms: Option<u64>,
 }
 
-impl<T: Tier> RateLimiter<T> {
+impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
     /// Create a new rate limiter from a tier.
     ///
     /// Takes ownership of the tier and uses it to configure rate limits.
@@ -89,9 +90,13 @@ impl<T: Tier> RateLimiter<T> {
     /// let limiter = RateLimiter::new(GeminiTier::Free);
     /// // Enforces: 10 RPM, 250K TPM, 250 RPD, 1 concurrent
     /// ```
+    #[instrument(skip(tier), fields(tier = ?tier))]
     pub fn new(tier: T) -> Self {
+        debug!("Creating new rate limiter");
+        
         // Create RPM limiter
         let rpm_limiter = tier.rpm().and_then(|rpm| {
+            debug!(rpm, "Configuring RPM limiter");
             NonZeroU32::new(rpm).map(|n| {
                 let quota = Quota::per_minute(n);
                 Arc::new(GovernorRateLimiter::direct(quota))
@@ -206,14 +211,19 @@ impl<T: Tier> RateLimiter<T> {
     /// let response = client.generate(&request).await?;
     /// drop(guard); // Release concurrent slot
     /// ```
+    #[instrument(skip(self))]
     pub async fn acquire(&self, estimated_tokens: u64) -> RateLimiterGuard {
+        debug!(estimated_tokens, "Acquiring rate limit permission");
+        
         // Wait for RPM quota
         if let Some(limiter) = &self.rpm_limiter {
+            debug!("Waiting for RPM quota");
             limiter.until_ready().await;
         }
 
         // Wait for TPM quota (consume estimated tokens)
         if let Some(limiter) = &self.tpm_limiter {
+            debug!(estimated_tokens, "Waiting for TPM quota");
             let tokens = (estimated_tokens.min(u32::MAX as u64) as u32).max(1);
             // Consume tokens one at a time to respect the rate
             // Governor doesn't have a "consume N" API, so we acquire N times
@@ -252,7 +262,10 @@ impl<T: Tier> RateLimiter<T> {
     ///     // Rate limited, try again later
     /// }
     /// ```
+    #[instrument(skip(self))]
     pub fn try_acquire(&self, estimated_tokens: u64) -> Option<RateLimiterGuard> {
+        debug!(estimated_tokens, "Trying to acquire rate limit permission without waiting");
+        
         // Check RPM
         if let Some(limiter) = &self.rpm_limiter {
             limiter.check().ok()?;
@@ -403,6 +416,7 @@ impl<T: Tier> RateLimiter<T> {
 /// Automatically releases the concurrent request slot when dropped.
 /// This ensures that even if the request fails or panics, the concurrent
 /// slot is properly returned to the semaphore.
+#[derive(Debug)]
 pub struct RateLimiterGuard {
     _permit: tokio::sync::OwnedSemaphorePermit,
 }

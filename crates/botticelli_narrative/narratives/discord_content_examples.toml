@@ -9,7 +9,7 @@
 #
 # Run with: botticelli run --narrative narratives/discord_content_examples.toml
 
-[narration]
+[narrative]
 name = "Discord Content Examples"
 description = "Generates creative content examples for Discord bot posts"
 

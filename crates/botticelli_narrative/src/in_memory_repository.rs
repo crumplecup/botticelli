@@ -3,12 +3,11 @@
 //! This module provides a simple HashMap-based repository that stores executions
 //! in memory. Useful for unit tests and demonstrating the trait interface.
 
-use botticelli_interface::{
-    ExecutionFilter, ExecutionStatus, ExecutionSummary, 
-    NarrativeExecution, NarrativeRepository,
-};
-use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
 use async_trait::async_trait;
+use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_interface::{
+    ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution, NarrativeRepository,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -82,6 +81,7 @@ impl Default for InMemoryNarrativeRepository {
 
 #[async_trait]
 impl NarrativeRepository for InMemoryNarrativeRepository {
+    #[tracing::instrument(skip(self, execution), fields(narrative = %execution.narrative_name))]
     async fn save_execution(&self, execution: &NarrativeExecution) -> BotticelliResult<i32> {
         let mut next_id_guard = self.next_id.write().await;
         let id = *next_id_guard;
@@ -101,6 +101,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         Ok(id)
     }
 
+    #[tracing::instrument(skip(self))]
     async fn load_execution(&self, id: i32) -> BotticelliResult<NarrativeExecution> {
         let executions = self.executions.read().await;
         executions
@@ -111,6 +112,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
             })
     }
 
+    #[tracing::instrument(skip(self, filter), fields(narrative = ?filter.narrative_name, status = ?filter.status))]
     async fn list_executions(
         &self,
         filter: &ExecutionFilter,
@@ -155,6 +157,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         Ok(results.into_iter().skip(offset).take(limit).collect())
     }
 
+    #[tracing::instrument(skip(self))]
     async fn update_status(&self, id: i32, status: ExecutionStatus) -> BotticelliResult<()> {
         let mut executions = self.executions.write().await;
         executions
@@ -167,6 +170,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
             })
     }
 
+    #[tracing::instrument(skip(self))]
     async fn delete_execution(&self, id: i32) -> BotticelliResult<()> {
         self.executions
             .write()
@@ -191,7 +195,10 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         ))
     }
 
-    async fn load_media(&self, _reference: &botticelli_storage::MediaReference) -> BotticelliResult<Vec<u8>> {
+    async fn load_media(
+        &self,
+        _reference: &botticelli_storage::MediaReference,
+    ) -> BotticelliResult<Vec<u8>> {
         Err(botticelli_error::BotticelliError::from(
             botticelli_error::NotImplementedError::new(
                 "Media loading not yet implemented for in-memory repository",

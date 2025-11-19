@@ -14,6 +14,7 @@ async-trait = { workspace = true }
 futures-util = "0.3"
 serde = { workspace = true }
 serde_json = { workspace = true }
+strum = { workspace = true }
 botticelli_core = { workspace = true }
 botticelli_error = { workspace = true }
 botticelli_storage = { workspace = true }

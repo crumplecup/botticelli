@@ -4,13 +4,13 @@
 //! content into custom tables based on Discord schema templates, OR infers
 //! schema automatically from JSON responses when no template is provided.
 
-use crate::{extraction::extract_json, extraction::parse_json, ActProcessor, ProcessorContext};
+use crate::{ActProcessor, ProcessorContext, extraction::extract_json, extraction::parse_json};
 use async_trait::async_trait;
 use botticelli_database::{
-    schema_inference::{create_inferred_table, infer_schema},
-    schema_reflection::{create_content_table, reflect_table_schema},
     ContentGenerationRepository, NewContentGenerationRow, PostgresContentGenerationRepository,
     UpdateContentGenerationRow,
+    schema_inference::{create_inferred_table, infer_schema},
+    schema_reflection::{create_content_table, reflect_table_schema},
 };
 use botticelli_error::BotticelliResult;
 use chrono::Utc;
@@ -59,10 +59,9 @@ impl ContentGenerationProcessor {
         act_name: &str,
         model: Option<&str>,
     ) -> BotticelliResult<()> {
-        let mut conn = self
-            .connection
-            .lock()
-            .map_err(|e| botticelli_error::BackendError::new(format!("Failed to lock connection: {}", e)))?;
+        let mut conn = self.connection.lock().map_err(|e| {
+            botticelli_error::BackendError::new(format!("Failed to lock connection: {}", e))
+        })?;
 
         // Query schema to get column types
         let schema = reflect_table_schema(&mut conn, table_name)?;
@@ -111,7 +110,9 @@ impl ContentGenerationProcessor {
 
         diesel::sql_query(&insert_sql)
             .execute(&mut *conn)
-            .map_err(|e| botticelli_error::BackendError::new(format!("Failed to insert content: {}", e)))?;
+            .map_err(|e| {
+                botticelli_error::BackendError::new(format!("Failed to insert content: {}", e))
+            })?;
 
         Ok(())
     }

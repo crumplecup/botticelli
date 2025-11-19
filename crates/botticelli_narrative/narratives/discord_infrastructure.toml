@@ -8,7 +8,7 @@
 #
 # Run with: botticelli run --narrative narratives/discord_infrastructure.toml --process-discord
 
-[narration]
+[narrative]
 name = "Discord Infrastructure Setup"
 description = "Creates a Discord guild, bot user, and channel for demonstration purposes"
 

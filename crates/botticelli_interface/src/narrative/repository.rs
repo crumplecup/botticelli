@@ -4,9 +4,9 @@
 //! Implementations can use databases, filesystems, or in-memory structures.
 
 use crate::narrative::execution::NarrativeExecution;
+use async_trait::async_trait;
 use botticelli_error::BotticelliResult;
 use botticelli_storage::{MediaMetadata, MediaReference};
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 /// Repository for storing and retrieving narrative executions.

@@ -50,6 +50,10 @@ tui = ["botticelli_tui"]
 # Convenience feature for all providers
 all-providers = ["gemini"]
 
+# Testing feature flags
+api = []  # Empty marker feature to gate API-consuming tests
+local = ["gemini", "database", "discord", "tui"]  # All features except api
+
 # Convenience feature for all optional features
 all = ["gemini", "database", "discord", "tui"]
 

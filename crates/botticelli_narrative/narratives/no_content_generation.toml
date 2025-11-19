@@ -1,4 +1,4 @@
-[narration]
+[narrative]
 name = "analysis_only"
 description = "Narrative that only analyzes data without storing to database"
 skip_content_generation = true

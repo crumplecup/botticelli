@@ -1,7 +1,7 @@
 //! Application state and main TUI entry point.
 
-use crate::{events::EventHandler, ui};
-use crate::{TuiError, TuiErrorKind};
+use crate::{Event, EventHandler, TuiError, TuiErrorKind};
+use crate::ui;
 use botticelli_error::{BotticelliError, BotticelliResult};
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
@@ -13,7 +13,7 @@ use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 
 /// Application mode determines which view is displayed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AppMode {
     /// List view - browse content items
     List,
@@ -28,7 +28,7 @@ pub enum AppMode {
 }
 
 /// Content row representation for TUI display.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ContentRow {
     /// Row ID
     pub id: i64,
@@ -49,7 +49,7 @@ pub struct ContentRow {
 }
 
 /// Edit buffer for inline editing.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EditBuffer {
     /// Tags being edited
     pub tags: String,
@@ -62,7 +62,7 @@ pub struct EditBuffer {
 }
 
 /// Edit field focus.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum EditField {
     /// Tags field
     Tags,
@@ -96,6 +96,7 @@ pub struct App {
 
 impl App {
     /// Create a new App instance.
+    #[tracing::instrument(skip(conn))]
     pub fn new(table_name: String, conn: PgConnection) -> BotticelliResult<Self> {
         let mut app = Self {
             mode: AppMode::List,
@@ -116,6 +117,7 @@ impl App {
     }
 
     /// Reload content from database.
+    #[tracing::instrument(skip(self))]
     pub fn reload_content(&mut self) -> BotticelliResult<()> {
         use botticelli_database::list_content;
 
@@ -209,6 +211,7 @@ impl App {
     }
 
     /// Enter edit mode for selected item.
+    #[tracing::instrument(skip(self))]
     pub fn enter_edit(&mut self) -> BotticelliResult<()> {
         if let Some(item) = self.content_items.get(self.selected_index) {
             self.edit_buffer = Some(EditBuffer {
@@ -223,6 +226,7 @@ impl App {
     }
 
     /// Save edits to database.
+    #[tracing::instrument(skip(self))]
     pub fn save_edit(&mut self) -> BotticelliResult<()> {
         if let Some(buffer) = &self.edit_buffer {
             let item_id = self.content_items[self.selected_index].id;
@@ -270,6 +274,7 @@ impl App {
     }
 
     /// Delete selected item.
+    #[tracing::instrument(skip(self))]
     pub fn delete_selected(&mut self) -> BotticelliResult<()> {
         if let Some(item) = self.content_items.get(self.selected_index) {
             use botticelli_database::delete_content;
@@ -283,6 +288,7 @@ impl App {
     }
 
     /// Promote selected item to target table.
+    #[tracing::instrument(skip(self))]
     pub fn promote_selected(&mut self, target: &str) -> BotticelliResult<()> {
         if let Some(item) = self.content_items.get(self.selected_index) {
             use botticelli_database::promote_content;
@@ -300,6 +306,7 @@ impl App {
 }
 
 /// Run the TUI application.
+#[tracing::instrument(skip(conn))]
 pub fn run_tui(table_name: String, conn: PgConnection) -> BotticelliResult<()> {
     // Setup terminal
     enable_raw_mode().map_err(|e| {
@@ -363,6 +370,7 @@ pub fn run_tui(table_name: String, conn: PgConnection) -> BotticelliResult<()> {
 }
 
 /// Run the application event loop.
+#[tracing::instrument(skip_all)]
 fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
@@ -374,7 +382,6 @@ fn run_app<B: ratatui::backend::Backend>(
         })?;
 
         if let Some(event) = events.next()? {
-            use crate::events::Event;
             match event {
                 Event::Tick => {}
                 Event::Key(key) => handle_key_event(app, key)?,
@@ -386,6 +393,7 @@ fn run_app<B: ratatui::backend::Backend>(
 }
 
 /// Handle keyboard input.
+#[tracing::instrument(skip(app))]
 fn handle_key_event(app: &mut App, key: crossterm::event::KeyEvent) -> BotticelliResult<()> {
     use crossterm::event::{KeyCode, KeyModifiers};
 

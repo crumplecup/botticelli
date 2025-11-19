@@ -20,7 +20,7 @@ Execute multi-act LLM narratives defined in TOML files. Each narrative consists 
 
 ```toml
 # narrative.toml
-[narration]
+[narrative]
 name = "content-pipeline"
 description = "Generate and refine content"
 
@@ -106,7 +106,7 @@ executor.register_processor(Box::new(MyProcessor));
 Automatically generate database tables and store results:
 
 ```toml
-[narration]
+[narrative]
 template = "social_posts"  # Use existing schema
 
 # Or let Botticelli infer schema from JSON response

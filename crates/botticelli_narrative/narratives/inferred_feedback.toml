@@ -1,4 +1,4 @@
-[narration]
+[narrative]
 name = "user_feedback"
 description = "Generate sample user feedback for testing review workflows"
 # No template - schema inferred from JSON

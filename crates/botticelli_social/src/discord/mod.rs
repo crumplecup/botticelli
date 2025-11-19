@@ -44,19 +44,13 @@
 //! }
 //! ```
 
-// Module declarations (private)
 mod client;
 mod conversions;
 mod error;
 mod handler;
 mod json_models;
-pub mod models;
-// Note: Processors require botticelli-narrative's database feature, which is not yet stable
-// TODO: Re-enable when narrative's database feature is complete
-// mod processors;
+mod models;
 mod repository;
-// mod commands;
-// mod poster;
 
 // Public re-exports
 pub use client::BotticelliBot;

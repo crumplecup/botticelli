@@ -32,40 +32,30 @@
 //! # }
 //! ```
 
-pub mod core;
-pub mod executor;
-pub mod processor;
-pub mod provider;
-pub mod toml_parser;
-pub mod in_memory_repository;
+#![forbid(unsafe_code)]
+#![warn(missing_docs)]
 
-// Optional content generation (feature-gated for database)
+mod core;
+mod executor;
+mod in_memory_repository;
+mod processor;
+mod provider;
+mod toml_parser;
+
 #[cfg(feature = "database")]
-pub mod content_generation;
+mod content_generation;
 
 #[cfg(feature = "database")]
-pub mod extraction;
+mod extraction;
 
-// Re-export key types
 pub use core::{Narrative, NarrativeMetadata, NarrativeToc};
 pub use executor::NarrativeExecutor;
+pub use in_memory_repository::InMemoryNarrativeRepository;
 pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
 pub use provider::{ActConfig, NarrativeProvider};
-pub use in_memory_repository::InMemoryNarrativeRepository;
 
-// Re-export content generation processor (database feature only)
 #[cfg(feature = "database")]
 pub use content_generation::ContentGenerationProcessor;
 
-// Re-export extraction utilities (database feature only)
 #[cfg(feature = "database")]
 pub use extraction::{extract_json, extract_toml, parse_json, parse_toml};
-
-// Re-export from interface
-pub use botticelli_interface::{
-    ActExecution, NarrativeExecution,
-    NarrativeRepository, ExecutionFilter, ExecutionStatus, ExecutionSummary,
-};
-
-// Re-export errors
-pub use botticelli_error::{NarrativeError, NarrativeErrorKind};

@@ -1,4 +1,4 @@
-[narration]
+[narrative]
 name = "gaming_achievements"
 description = "Generate gaming achievements with automatic schema inference"
 # No template field - schema will be inferred from JSON responses
