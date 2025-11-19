@@ -203,80 +203,38 @@ In Cargo.toml:
 
 ## Error Handling
 
-- Use unique error types for different sources to create encapsulation around error conditions for easier isolation.
-  - Each unique error type should capture the line and file where the error occurred in our codebase.
-  - The idiom for module-level errors wrapping enums: call the enumeration `MyErrorKind`, and the wrapper struct `MyError`.
-  - The idiom for simple errors with just a message: use a struct with `message`, `line`, and `file` fields.
-  - Error struct `file` fields should use `&'static str` (not `String`) to match the return type of `std::panic::Location::caller()`.
-  - Use `#[track_caller]` on error constructors to automatically capture the caller's location (eliminates manual `line!()` and `file!()` macro usage).
-  - Implement a specific error message in the display impl for each variant of the enum, then wrap this msg in the display impl for the wrapper. E.g. If the display for MyErrorKind is e, then MyError displays "My Error: {e} at line {line} in {file}" so the user can see the whole context.
-  - Use the derive_more crate to implement Display and Error when convenient.
-  - Expand and improve error structs and enums as necessary to capture sufficient information about the error conditions to gain insight into the nature of the problem.
-- After creating a new unique error type, add a variant to the crate level error enum using the new error name as a variant type, including the new error type as a field (e.g. `CrateErrorKind::Canvas(CanvasError)`)
-  - Use `#[derive(Debug, derive_more::From)]` on the crate-level error enum to automatically generate From implementations for all error variants.
-  - Use explicit `#[from(ErrorType)]` attributes on each enum variant to make the From implementations clear and explicit (e.g., `#[from(CanvasError)] Canvas(CanvasError)`).
-  - The display impl for the crate-level enum should forward the impl from the original error (e.g. If the display value of NewError is e, then the display for CrateErrorKind is "{e}").
-  - The display impl for the wrapper struct around the crate-level enum should include the display value of its kind field (e.g. If the display value of CrateErrorKind is e, then CrateError displays "Crate Error: {e}").
-  - Use a generic blanket `From` implementation on the wrapper struct to automatically convert any type that implements `Into<CrateErrorKind>` (eliminates need for individual From implementations per error type).
-  - For external error types (e.g., `reqwest::Error`, `serde_json::Error`), provide convenience `From` implementations on the `CrateErrorKind` that wrap them in your error type (e.g., `HttpError::new(err)`).
-- If a function or method returns a single unique error type, use that type. If the body contains more than one error type in its result types, convert the unique error types to the crate level type, and use the crate level error in the return type of the function or method signature.
+### Critical Rule: ALWAYS Use derive_more for Display and Error
 
-### Error Handling Example
+**MANDATORY:** All error types MUST use `derive_more::Display` and `derive_more::Error`. Manual implementations are NOT allowed.
+
+**Why this is critical:**
+- Manual Display/Error implementations are boilerplate code (reduces 200+ lines)
+- More declarative - error messages visible directly in attributes
+- Easier to maintain - change one attribute vs entire impl block
+- Consistent patterns across all error types
+- Prevents audit failures and technical debt
+
+**Audit requirement:** When auditing code, ALWAYS check for manual `impl std::fmt::Display` and `impl std::error::Error` - these are violations.
+
+### Error Type Patterns
+
+Use unique error types for different sources to create encapsulation around error conditions for easier isolation.
+
+#### Pattern 1: Simple Error Structs (message + location)
+
+For errors that just need a message and location tracking:
 
 ```rust
-// Module-level error with enum variants
-#[derive(Debug, Clone, PartialEq)]
-pub enum CanvasErrorKind {
-    ImageLoad(String),
-    NoFormImageLoaded,
-}
-
-impl std::fmt::Display for CanvasErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CanvasErrorKind::ImageLoad(msg) => write!(f, "Failed to load image: {}", msg),
-            CanvasErrorKind::NoFormImageLoaded => write!(f, "No form image loaded"),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct CanvasError {
-    pub kind: CanvasErrorKind,
-    pub line: u32,
-    pub file: &'static str,
-}
-
-impl CanvasError {
-    /// Create a new CanvasError with automatic location tracking
-    #[track_caller]
-    pub fn new(kind: CanvasErrorKind) -> Self {
-        let location = std::panic::Location::caller();
-        Self {
-            kind,
-            line: location.line(),
-            file: location.file(),
-        }
-    }
-}
-
-impl std::fmt::Display for CanvasError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Canvas Error: {} at line {} in {}", self.kind, self.line, self.file)
-    }
-}
-
-impl std::error::Error for CanvasError {}
-
-// Simple error type without enum (just message + location)
-#[derive(Debug)]
-pub struct ConfigError {
+/// HTTP error with source location.
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("HTTP Error: {} at line {} in {}", message, line, file)]
+pub struct HttpError {
     pub message: String,
     pub line: u32,
     pub file: &'static str,
 }
 
-impl ConfigError {
+impl HttpError {
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();
@@ -287,92 +245,168 @@ impl ConfigError {
         }
     }
 }
+```
 
-impl std::fmt::Display for ConfigError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Configuration Error: {} at line {} in {}", self.message, self.line, self.file)
-    }
+**Key requirements:**
+- MUST use `derive_more::Display` with `#[display(...)]` attribute
+- MUST use `derive_more::Error`
+- MUST use `#[track_caller]` on constructor
+- Error struct `file` fields MUST use `&'static str` (not `String`)
+
+#### Pattern 2: ErrorKind Enum (specific error conditions)
+
+For errors with multiple specific conditions:
+
+```rust
+/// Specific storage error conditions.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+pub enum StorageErrorKind {
+    /// Media not found
+    #[display("Media not found: {}", _0)]
+    NotFound(String),
+    
+    /// Permission denied
+    #[display("Permission denied: {}", _0)]
+    PermissionDenied(String),
+    
+    /// Hash mismatch with named fields
+    #[display("Content hash mismatch: expected {}, got {}", expected, actual)]
+    HashMismatch {
+        expected: String,
+        actual: String,
+    },
+}
+```
+
+**Key requirements:**
+- MUST use `derive_more::Display`
+- MUST have `#[display(...)]` attribute on EVERY variant
+- Use `_0`, `_1` for tuple variant fields
+- Use field names for struct variant fields
+- ErrorKind enums do NOT need derive_more::Error (wrapper handles that)
+
+#### Pattern 3: Wrapper Error Struct (ErrorKind + location)
+
+Wraps an ErrorKind enum with location tracking:
+
+```rust
+/// Storage error with location tracking.
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("Storage Error: {} at line {} in {}", kind, line, file)]
+pub struct StorageError {
+    pub kind: StorageErrorKind,
+    pub line: u32,
+    pub file: &'static str,
 }
 
-impl std::error::Error for ConfigError {}
-
-// Crate-level error enum with derive_more::From
-// Use explicit #[from(ErrorType)] attributes on each variant
-#[derive(Debug, derive_more::From)]
-pub enum FormErrorKind {
-    #[from(CanvasError)]
-    Canvas(CanvasError),
-    #[from(ConfigError)]
-    Config(ConfigError),
-    // ... other variants
-}
-
-// Convenience From implementations for external error types
-impl From<std::io::Error> for FormErrorKind {
-    fn from(err: std::io::Error) -> Self {
-        // Wrap external error in our error type with location tracking
-        FormErrorKind::Config(ConfigError::new(format!("IO error: {}", err)))
-    }
-}
-
-impl std::fmt::Display for FormErrorKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FormErrorKind::Canvas(e) => write!(f, "{}", e),
-            FormErrorKind::Config(e) => write!(f, "{}", e),
+impl StorageError {
+    #[track_caller]
+    pub fn new(kind: StorageErrorKind) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            kind,
+            line: location.line(),
+            file: location.file(),
         }
     }
 }
+```
 
-// Wrapper struct around the error enum
-#[derive(Debug)]
-pub struct FormError(Box<FormErrorKind>);
+**Key requirements:**
+- MUST use `derive_more::Display` with format including kind
+- MUST use `derive_more::Error`
+- MUST use `#[track_caller]` on constructor
 
-impl FormError {
-    pub fn new(kind: FormErrorKind) -> Self {
+#### Pattern 4: Crate-Level Error Aggregation
+
+Top-level error that aggregates all module errors:
+
+```rust
+/// Crate-level error enum.
+#[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
+pub enum CrateErrorKind {
+    #[from(HttpError)]
+    Http(HttpError),
+    
+    #[from(StorageError)]
+    Storage(StorageError),
+    
+    // ... other variants
+}
+
+/// Crate-level error wrapper.
+#[derive(Debug, derive_more::Display, derive_more::Error)]
+#[display("Crate Error: {}", _0)]
+pub struct CrateError(Box<CrateErrorKind>);
+
+impl CrateError {
+    pub fn new(kind: CrateErrorKind) -> Self {
         Self(Box::new(kind))
     }
-
-    pub fn kind(&self) -> &FormErrorKind {
+    
+    pub fn kind(&self) -> &CrateErrorKind {
         &self.0
     }
 }
 
-impl std::fmt::Display for FormError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Form Error: {}", self.0)
-    }
-}
-
-impl std::error::Error for FormError {}
-
-// Generic blanket implementation - handles ALL conversions automatically!
-impl<T> From<T> for FormError
+// Generic blanket From implementation
+impl<T> From<T> for CrateError
 where
-    T: Into<FormErrorKind>,
+    T: Into<CrateErrorKind>,
 {
     fn from(err: T) -> Self {
         Self::new(err.into())
     }
 }
+```
 
-// Usage example showing automatic conversions:
-fn example() -> Result<(), FormError> {
-    // CanvasError converts automatically via From<CanvasError> for FormError
-    let canvas_err = CanvasError::new(CanvasErrorKind::NoFormImageLoaded);
-    Err(canvas_err)?;
+**Key requirements:**
+- MUST use `derive_more::From` on CrateErrorKind
+- MUST use explicit `#[from(ErrorType)]` on each variant
+- MUST use `derive_more::Display` on both kinds and wrapper
+- MUST use `derive_more::Error` on both kinds and wrapper
+- CrateErrorKind Display forwards to inner errors (automatic with derive_more)
+- CrateError Display wraps with context
 
-    // ConfigError converts automatically too
-    let config_err = ConfigError::new("Invalid configuration");
-    Err(config_err)?;
+### External Error Conversions
 
-    // Even external errors convert if we provide a From impl on FormErrorKind
-    let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
-    Err(io_err)?;
+For external error types (e.g., `reqwest::Error`, `serde_json::Error`):
 
-    Ok(())
+```rust
+impl From<std::io::Error> for CrateErrorKind {
+    fn from(err: std::io::Error) -> Self {
+        // Wrap external error with location tracking
+        CrateErrorKind::Storage(StorageError::new(
+            StorageErrorKind::Io(err.to_string())
+        ))
+    }
 }
 ```
+
+### Return Type Guidelines
+
+- If a function returns a single unique error type, use that type
+- If a function can return multiple error types, use the crate-level error type
+- Use `?` operator for automatic conversions via From implementations
+
+### Audit Checklist for Error Handling
+
+When reviewing or auditing code, verify:
+
+1. ✅ NO manual `impl std::fmt::Display` for error types
+2. ✅ NO manual `impl std::error::Error` for error types
+3. ✅ ALL error structs use `derive_more::Display` with `#[display(...)]`
+4. ✅ ALL error structs use `derive_more::Error`
+5. ✅ ALL ErrorKind enum variants have `#[display(...)]` attributes
+6. ✅ ALL error constructors use `#[track_caller]`
+7. ✅ ALL crate-level error enums use `derive_more::From`
+8. ✅ ALL from attributes are explicit: `#[from(ErrorType)]`
+
+**If you find manual Display/Error implementations during audit:** Flag as critical issue requiring immediate refactoring.
+
+### Reference Implementation
+
+See `crates/botticelli_error` for a complete, production-ready reference implementation of all error patterns using derive_more.
 
 ## Module Organization
 
