@@ -35,6 +35,10 @@ tracing = { workspace = true }
 [features]
 default = []
 database = ["dep:botticelli_database", "dep:diesel", "dep:chrono"]
+api = []  # Marker feature for tests that make real API calls
+gemini = []  # Marker feature for Gemini-specific tests
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+botticelli_models = { workspace = true, features = ["gemini"] }
+dotenvy = { workspace = true }
