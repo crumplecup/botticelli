@@ -136,6 +136,7 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     }
 
     /// Convert security error to bot command error.
+    #[allow(unreachable_patterns)]
     fn convert_security_error(error: SecurityError, command_name: &str) -> BotCommandError {
         match error.kind {
             SecurityErrorKind::PermissionDenied { command, reason } => {
@@ -190,8 +191,8 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
                     reason: format!("Configuration error: {}", msg),
                 })
             }
+            // Catch-all for feature-gated variants
             _ => {
-                // Catch-all for any feature-gated variants (e.g., Database)
                 BotCommandError::new(BotCommandErrorKind::ApiError {
                     command: command_name.to_string(),
                     reason: format!("Security error: {}", error.kind),

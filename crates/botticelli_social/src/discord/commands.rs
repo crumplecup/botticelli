@@ -1145,6 +1145,446 @@ impl DiscordCommandExecutor {
 
         Ok(serde_json::json!(regions_json))
     }
+
+    // =============================================================================
+    // WRITE COMMANDS (Require Security Framework)
+    // =============================================================================
+
+    /// Send a message to a channel.
+    ///
+    /// **Security**: This command MUST go through the security framework.
+    /// Use `SecureBotCommandExecutor` to ensure proper permission checking,
+    /// content validation, rate limiting, and approval workflows.
+    ///
+    /// # Required Arguments
+    ///
+    /// * `guild_id` - Guild ID
+    /// * `channel_id` - Channel ID
+    /// * `content` - Message content (max 2000 characters)
+    ///
+    /// # Optional Arguments
+    ///
+    /// * `tts` - Enable text-to-speech (default: false)
+    ///
+    /// # Returns
+    ///
+    /// ```json
+    /// {
+    ///     "id": "message_id",
+    ///     "channel_id": "channel_id",
+    ///     "content": "message_content",
+    ///     "timestamp": "2024-01-01T00:00:00Z"
+    /// }
+    /// ```
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "messages.send",
+            guild_id,
+            channel_id,
+            content_len
+        )
+    )]
+    async fn messages_send(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::model::id::ChannelId;
+        use serenity::builder::CreateMessage;
+
+        debug!("Parsing arguments for messages.send");
+        let _guild_id = Self::parse_guild_id("messages.send", args)?;
+        
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "messages.send".to_string(),
+                    arg_name: "channel_id".to_string(),
+                })
+            })?;
+        
+        let channel_id = channel_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "messages.send".to_string(),
+                arg_name: "channel_id".to_string(),
+                reason: format!("Invalid channel ID format: {}", e),
+            })
+        })?;
+        let channel_id = ChannelId::new(channel_id);
+
+        let content = args
+            .get("content")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "messages.send".to_string(),
+                    arg_name: "content".to_string(),
+                })
+            })?
+            .to_string();
+
+        let tts = args
+            .get("tts")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("content_len", content.len());
+
+        info!(
+            channel_id = %channel_id,
+            content_len = content.len(),
+            tts,
+            "Sending message to Discord channel"
+        );
+
+        // Send the message
+        let message = channel_id
+            .send_message(&self.http, CreateMessage::new().content(content).tts(tts))
+            .await
+            .map_err(|e| {
+                error!(channel_id = %channel_id, error = %e, "Failed to send message");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "messages.send".to_string(),
+                    reason: format!("Failed to send message: {}", e),
+                })
+            })?;
+
+        info!(message_id = %message.id, "Successfully sent message");
+
+        Ok(serde_json::json!({
+            "id": message.id.to_string(),
+            "channel_id": message.channel_id.to_string(),
+            "content": message.content,
+            "timestamp": message.timestamp.to_rfc3339(),
+            "tts": message.tts,
+        }))
+    }
+
+    /// Create a new channel in a guild.
+    ///
+    /// **Security**: This command MUST go through the security framework
+    /// and typically requires approval workflow.
+    ///
+    /// # Required Arguments
+    ///
+    /// * `guild_id` - Guild ID
+    /// * `name` - Channel name (2-100 characters)
+    /// * `kind` - Channel type ("text", "voice", "category", "announcement", "stage", "forum")
+    ///
+    /// # Optional Arguments
+    ///
+    /// * `topic` - Channel topic (max 1024 characters for text channels)
+    /// * `position` - Sorting position
+    /// * `nsfw` - Age-restricted channel (default: false)
+    /// * `category_id` - Parent category ID
+    ///
+    /// # Returns
+    ///
+    /// ```json
+    /// {
+    ///     "id": "channel_id",
+    ///     "name": "channel-name",
+    ///     "kind": "text",
+    ///     "position": 0
+    /// }
+    /// ```
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "channels.create",
+            guild_id,
+            name,
+            kind
+        )
+    )]
+    async fn channels_create(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::builder::CreateChannel;
+        use serenity::model::channel::ChannelType;
+
+        debug!("Parsing arguments for channels.create");
+        let guild_id = Self::parse_guild_id("channels.create", args)?;
+
+        let name = args
+            .get("name")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "channels.create".to_string(),
+                    arg_name: "name".to_string(),
+                })
+            })?;
+
+        let kind_str = args
+            .get("kind")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "channels.create".to_string(),
+                    arg_name: "kind".to_string(),
+                })
+            })?;
+
+        let kind = match kind_str {
+            "text" => ChannelType::Text,
+            "voice" => ChannelType::Voice,
+            "category" => ChannelType::Category,
+            "announcement" => ChannelType::News,
+            "stage" => ChannelType::Stage,
+            "forum" => ChannelType::Forum,
+            _ => {
+                return Err(BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                    command: "channels.create".to_string(),
+                    arg_name: "kind".to_string(),
+                    reason: format!("Invalid channel type: {}", kind_str),
+                }));
+            }
+        };
+
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("name", name);
+        tracing::Span::current().record("kind", kind_str);
+
+        info!(
+            guild_id = %guild_id,
+            name,
+            kind = kind_str,
+            "Creating channel in Discord guild"
+        );
+
+        // Build the create channel request
+        let mut builder = CreateChannel::new(name).kind(kind);
+
+        if let Some(topic) = args.get("topic").and_then(|v| v.as_str()) {
+            builder = builder.topic(topic);
+        }
+
+        if let Some(position) = args.get("position").and_then(|v| v.as_u64()) {
+            builder = builder.position(position as u16);
+        }
+
+        if let Some(nsfw) = args.get("nsfw").and_then(|v| v.as_bool()) {
+            builder = builder.nsfw(nsfw);
+        }
+
+        // Create the channel
+        let channel = guild_id
+            .create_channel(&self.http, builder)
+            .await
+            .map_err(|e| {
+                error!(guild_id = %guild_id, name, error = %e, "Failed to create channel");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "channels.create".to_string(),
+                    reason: format!("Failed to create channel: {}", e),
+                })
+            })?;
+
+        info!(channel_id = %channel.id, name, "Successfully created channel");
+
+        Ok(serde_json::json!({
+            "id": channel.id.to_string(),
+            "name": channel.name,
+            "kind": format!("{:?}", channel.kind),
+            "position": channel.position,
+        }))
+    }
+
+    /// Delete a channel from a guild.
+    ///
+    /// **Security**: This command MUST go through the security framework
+    /// and ALWAYS requires approval workflow.
+    ///
+    /// # Required Arguments
+    ///
+    /// * `guild_id` - Guild ID
+    /// * `channel_id` - Channel ID to delete
+    ///
+    /// # Optional Arguments
+    ///
+    /// * `reason` - Audit log reason (max 512 characters)
+    ///
+    /// # Returns
+    ///
+    /// ```json
+    /// {
+    ///     "id": "channel_id",
+    ///     "deleted": true
+    /// }
+    /// ```
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "channels.delete",
+            guild_id,
+            channel_id
+        )
+    )]
+    async fn channels_delete(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::model::id::ChannelId;
+
+        debug!("Parsing arguments for channels.delete");
+        let guild_id = Self::parse_guild_id("channels.delete", args)?;
+
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "channels.delete".to_string(),
+                    arg_name: "channel_id".to_string(),
+                })
+            })?;
+
+        let channel_id = channel_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "channels.delete".to_string(),
+                arg_name: "channel_id".to_string(),
+                reason: format!("Invalid channel ID format: {}", e),
+            })
+        })?;
+        let channel_id = ChannelId::new(channel_id);
+
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("channel_id", channel_id.get());
+
+        warn!(
+            guild_id = %guild_id,
+            channel_id = %channel_id,
+            "Deleting channel from Discord guild"
+        );
+
+        // Delete the channel
+        channel_id
+            .delete(&self.http)
+            .await
+            .map_err(|e| {
+                error!(
+                    guild_id = %guild_id,
+                    channel_id = %channel_id,
+                    error = %e,
+                    "Failed to delete channel"
+                );
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "channels.delete".to_string(),
+                    reason: format!("Failed to delete channel: {}", e),
+                })
+            })?;
+
+        info!(channel_id = %channel_id, "Successfully deleted channel");
+
+        Ok(serde_json::json!({
+            "id": channel_id.to_string(),
+            "deleted": true,
+        }))
+    }
+
+    /// Ban a member from a guild.
+    ///
+    /// **Security**: This command MUST go through the security framework
+    /// and ALWAYS requires approval workflow.
+    ///
+    /// # Required Arguments
+    ///
+    /// * `guild_id` - Guild ID
+    /// * `user_id` - User ID to ban
+    ///
+    /// # Optional Arguments
+    ///
+    /// * `delete_message_days` - Delete messages from last N days (0-7, default: 0)
+    /// * `reason` - Ban reason for audit log (max 512 characters)
+    ///
+    /// # Returns
+    ///
+    /// ```json
+    /// {
+    ///     "user_id": "user_id",
+    ///     "banned": true
+    /// }
+    /// ```
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "members.ban",
+            guild_id,
+            user_id
+        )
+    )]
+    async fn members_ban(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::model::id::UserId;
+
+        debug!("Parsing arguments for members.ban");
+        let guild_id = Self::parse_guild_id("members.ban", args)?;
+
+        let user_id_str = args
+            .get("user_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "members.ban".to_string(),
+                    arg_name: "user_id".to_string(),
+                })
+            })?;
+
+        let user_id = user_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "members.ban".to_string(),
+                arg_name: "user_id".to_string(),
+                reason: format!("Invalid user ID format: {}", e),
+            })
+        })?;
+        let user_id = UserId::new(user_id);
+
+        let delete_message_days = args
+            .get("delete_message_days")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0)
+            .min(7) as u8;
+
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("user_id", user_id.get());
+
+        warn!(
+            guild_id = %guild_id,
+            user_id = %user_id,
+            delete_message_days,
+            "Banning member from Discord guild"
+        );
+
+        // Ban the member
+        guild_id
+            .ban(&self.http, user_id, delete_message_days)
+            .await
+            .map_err(|e| {
+                error!(
+                    guild_id = %guild_id,
+                    user_id = %user_id,
+                    error = %e,
+                    "Failed to ban member"
+                );
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "members.ban".to_string(),
+                    reason: format!("Failed to ban member: {}", e),
+                })
+            })?;
+
+        info!(user_id = %user_id, "Successfully banned member");
+
+        Ok(serde_json::json!({
+            "user_id": user_id.to_string(),
+            "banned": true,
+        }))
+    }
 }
 
 #[async_trait]
@@ -1173,6 +1613,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
         let start = std::time::Instant::now();
 
         let result = match command {
+            // Read commands
             "server.get_stats" => self.server_get_stats(args).await?,
             "channels.list" => self.channels_list(args).await?,
             "channels.get" => self.channels_get(args).await?,
@@ -1188,6 +1629,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "bans.list" => self.bans_list(args).await?,
             "integrations.list" => self.integrations_list(args).await?,
             "voice_regions.list" => self.voice_regions_list(args).await?,
+            // Write commands (require security framework)
+            "messages.send" => self.messages_send(args).await?,
+            "channels.create" => self.channels_create(args).await?,
+            "channels.delete" => self.channels_delete(args).await?,
+            "members.ban" => self.members_ban(args).await?,
             _ => {
                 error!(
                     command,
@@ -1219,6 +1665,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     fn supports_command(&self, command: &str) -> bool {
         matches!(
             command,
+            // Read commands
             "server.get_stats"
                 | "channels.list"
                 | "channels.get"
@@ -1234,11 +1681,17 @@ impl BotCommandExecutor for DiscordCommandExecutor {
                 | "bans.list"
                 | "integrations.list"
                 | "voice_regions.list"
+                // Write commands
+                | "messages.send"
+                | "channels.create"
+                | "channels.delete"
+                | "members.ban"
         )
     }
 
     fn supported_commands(&self) -> Vec<String> {
         vec![
+            // Read commands
             "server.get_stats".to_string(),
             "channels.list".to_string(),
             "channels.get".to_string(),
@@ -1254,6 +1707,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "bans.list".to_string(),
             "integrations.list".to_string(),
             "voice_regions.list".to_string(),
+            // Write commands
+            "messages.send".to_string(),
+            "channels.create".to_string(),
+            "channels.delete".to_string(),
+            "members.ban".to_string(),
         ]
     }
 
@@ -1334,6 +1792,30 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "voice_regions.list" => Some(
                 "List available voice regions for a server\n\
                  Required arguments: guild_id"
+                    .to_string(),
+            ),
+            "messages.send" => Some(
+                "Send a message to a channel (requires security framework)\n\
+                 Required arguments: guild_id, channel_id, content\n\
+                 Optional arguments: tts (default false)"
+                    .to_string(),
+            ),
+            "channels.create" => Some(
+                "Create a new channel (requires security framework and approval)\n\
+                 Required arguments: guild_id, name, kind (text/voice/category/announcement/stage/forum)\n\
+                 Optional arguments: topic, position, nsfw, category_id"
+                    .to_string(),
+            ),
+            "channels.delete" => Some(
+                "Delete a channel (requires security framework and approval)\n\
+                 Required arguments: guild_id, channel_id\n\
+                 Optional arguments: reason"
+                    .to_string(),
+            ),
+            "members.ban" => Some(
+                "Ban a member (requires security framework and approval)\n\
+                 Required arguments: guild_id, user_id\n\
+                 Optional arguments: delete_message_days (0-7), reason"
                     .to_string(),
             ),
             _ => None,
