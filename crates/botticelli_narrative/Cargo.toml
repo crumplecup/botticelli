@@ -31,6 +31,8 @@ toml = { workspace = true }
 
 # Logging
 tracing = { workspace = true }
+derive_builder.workspace = true
+derive-getters.workspace = true
 
 [features]
 default = []

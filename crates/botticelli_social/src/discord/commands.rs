@@ -30,7 +30,7 @@
 
 use crate::{BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandResult};
 use async_trait::async_trait;
-use botticelli_security::{ActionType, Permission, PermissionChecker, ResourceType};
+use botticelli_security::PermissionChecker;
 use serde_json::Value as JsonValue;
 use serenity::http::Http;
 use serenity::model::id::GuildId;

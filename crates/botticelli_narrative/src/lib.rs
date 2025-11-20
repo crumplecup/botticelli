@@ -40,6 +40,7 @@ mod executor;
 mod in_memory_repository;
 mod processor;
 mod provider;
+mod table_reference;
 mod toml_parser;
 
 #[cfg(feature = "database")]
@@ -53,6 +54,7 @@ pub use executor::{BotCommandRegistry, NarrativeExecutor};
 pub use in_memory_repository::InMemoryNarrativeRepository;
 pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
 pub use provider::{ActConfig, NarrativeProvider};
+pub use table_reference::TableReference;
 
 #[cfg(feature = "database")]
 pub use content_generation::ContentGenerationProcessor;
