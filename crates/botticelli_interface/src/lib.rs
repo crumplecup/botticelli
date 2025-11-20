@@ -4,6 +4,7 @@
 //! the Botticelli interface.
 
 mod narrative;
+mod table_query_view;
 mod table_view;
 mod traits;
 mod types;
@@ -12,6 +13,7 @@ pub use narrative::{
     ActExecution, ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution,
     NarrativeRepository,
 };
+pub use table_query_view::{TableCountView, TableCountViewBuilder, TableQueryView, TableQueryViewBuilder};
 pub use table_view::{TableReference, TableView};
 pub use traits::{
     Audio, BatchGeneration, BotticelliDriver, ContentRepository, DocumentProcessing, Embeddings,
