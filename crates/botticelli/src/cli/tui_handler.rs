@@ -5,7 +5,7 @@ use botticelli::BotticelliResult;
 /// Launch the terminal user interface for a table.
 #[cfg(feature = "tui")]
 pub async fn launch_tui(table: &str) -> BotticelliResult<()> {
-    use botticelli::establish_connection;
+    use botticelli_database::establish_connection;
     use botticelli_tui::run_tui;
 
     tracing::info!(table = %table, "Launching TUI");
@@ -25,7 +25,7 @@ pub async fn launch_tui(_table: &str) -> BotticelliResult<()> {
 /// Launch the terminal user interface in server management mode.
 #[cfg(all(feature = "tui", feature = "server"))]
 pub async fn launch_server_tui() -> BotticelliResult<()> {
-    use botticelli::establish_connection;
+    use botticelli_database::establish_connection;
     use botticelli_tui::{App, AppMode, EventHandler, run_app, ServerView};
     use botticelli_error::BotticelliError;
     use botticelli_tui::{TuiError, TuiErrorKind};
