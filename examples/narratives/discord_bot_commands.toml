@@ -1,0 +1,63 @@
+# Example narrative demonstrating bot command execution
+#
+# This narrative queries Discord for server statistics and generates
+# a community update post based on the real-time data.
+#
+# Prerequisites:
+# - DISCORD_BOT_TOKEN environment variable set
+# - Bot must be in the guild specified below
+# - Bot needs READ_MESSAGES and VIEW_CHANNEL permissions
+
+[narrative]
+name = "discord_community_update"
+description = "Generate community update using live Discord server data"
+
+# Define bot commands as reusable resources
+[bots.server_stats]
+platform = "discord"
+command = "server.get_stats"
+guild_id = "YOUR_GUILD_ID_HERE"  # Replace with actual Discord server ID
+
+[bots.channel_list]
+platform = "discord"
+command = "channels.list"
+guild_id = "YOUR_GUILD_ID_HERE"  # Replace with actual Discord server ID
+
+[bots.role_list]
+platform = "discord"
+command = "roles.list"
+guild_id = "YOUR_GUILD_ID_HERE"  # Replace with actual Discord server ID
+
+[toc]
+order = ["fetch_data", "analyze", "generate_post"]
+
+# Act 1: Fetch Discord data
+[acts]
+fetch_data = ["bots.server_stats", "bots.channel_list", "bots.role_list"]
+
+# Act 2: Analyze the data
+analyze = """
+Based on the Discord server data from the previous act, analyze:
+
+1. Community size and growth potential
+2. Channel organization and activity patterns
+3. Role distribution and community structure
+4. Key strengths and areas for improvement
+
+Provide a brief analysis (3-4 sentences) focusing on the most interesting insights.
+"""
+
+# Act 3: Generate community update post
+generate_post = """
+Using the analysis from the previous act, write an engaging community update post.
+
+Requirements:
+- Start with an attention-grabbing headline
+- Mention specific statistics (member count, channel count, etc.)
+- Highlight what makes this community special
+- Keep it under 200 words
+- Tone: Friendly and enthusiastic
+- Format: Ready to post to Discord or social media
+
+Write only the post content, no meta-commentary.
+"""
