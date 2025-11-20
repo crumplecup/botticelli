@@ -3108,6 +3108,488 @@ impl DiscordCommandExecutor {
             "banned": true,
         }))
     }
+
+    /// Execute: messages.pin
+    ///
+    /// Pin a message in a channel.
+    ///
+    /// Required args: channel_id, message_id
+    /// Security: Requires Write permission on Channel
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "messages.pin",
+            channel_id,
+            message_id
+        )
+    )]
+    async fn messages_pin(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::model::id::{ChannelId, MessageId};
+
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "messages.pin".to_string(),
+                    arg_name: "channel_id".to_string(),
+                })
+            })?;
+
+        let channel_id = channel_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "messages.pin".to_string(),
+                arg_name: "channel_id".to_string(),
+                reason: format!("Invalid channel ID format: {}", e),
+            })
+        })?;
+
+        self.check_permission("messages.pin", ResourceType::Channel, channel_id_str)?;
+
+        let message_id_str = args
+            .get("message_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "messages.pin".to_string(),
+                    arg_name: "message_id".to_string(),
+                })
+            })?;
+
+        let message_id = message_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "messages.pin".to_string(),
+                arg_name: "message_id".to_string(),
+                reason: format!("Invalid message ID format: {}", e),
+            })
+        })?;
+
+        info!("Pinning message");
+
+        self.http
+            .pin_message(ChannelId::new(channel_id), MessageId::new(message_id), None)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to pin message");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "messages.pin".to_string(),
+                    reason: format!("Failed to pin message: {}", e),
+                })
+            })?;
+
+        info!("Successfully pinned message");
+
+        Ok(serde_json::json!({
+            "channel_id": channel_id_str,
+            "message_id": message_id_str,
+            "pinned": true,
+        }))
+    }
+
+    /// Execute: messages.unpin
+    ///
+    /// Unpin a message in a channel.
+    ///
+    /// Required args: channel_id, message_id
+    /// Security: Requires Write permission on Channel
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "messages.unpin",
+            channel_id,
+            message_id
+        )
+    )]
+    async fn messages_unpin(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::model::id::{ChannelId, MessageId};
+
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "messages.unpin".to_string(),
+                    arg_name: "channel_id".to_string(),
+                })
+            })?;
+
+        let channel_id = channel_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "messages.unpin".to_string(),
+                arg_name: "channel_id".to_string(),
+                reason: format!("Invalid channel ID format: {}", e),
+            })
+        })?;
+
+        self.check_permission("messages.unpin", ResourceType::Channel, channel_id_str)?;
+
+        let message_id_str = args
+            .get("message_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "messages.unpin".to_string(),
+                    arg_name: "message_id".to_string(),
+                })
+            })?;
+
+        let message_id = message_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "messages.unpin".to_string(),
+                arg_name: "message_id".to_string(),
+                reason: format!("Invalid message ID format: {}", e),
+            })
+        })?;
+
+        info!("Unpinning message");
+
+        self.http
+            .unpin_message(ChannelId::new(channel_id), MessageId::new(message_id), None)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to unpin message");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "messages.unpin".to_string(),
+                    reason: format!("Failed to unpin message: {}", e),
+                })
+            })?;
+
+        info!("Successfully unpinned message");
+
+        Ok(serde_json::json!({
+            "channel_id": channel_id_str,
+            "message_id": message_id_str,
+            "pinned": false,
+        }))
+    }
+
+    /// Execute: members.edit
+    ///
+    /// Edit member properties (nickname, roles, mute, deafen).
+    ///
+    /// Required args: guild_id, user_id
+    /// Optional args: nickname, mute, deafen, roles (array of role IDs)
+    /// Security: Requires Write permission on Member
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "members.edit",
+            guild_id,
+            user_id
+        )
+    )]
+    async fn members_edit(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::builder::EditMember;
+        use serenity::model::id::{RoleId, UserId};
+
+        let guild_id = Self::parse_guild_id("members.edit", args)?;
+
+        let user_id_str = args
+            .get("user_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "members.edit".to_string(),
+                    arg_name: "user_id".to_string(),
+                })
+            })?;
+
+        let user_id = user_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "members.edit".to_string(),
+                arg_name: "user_id".to_string(),
+                reason: format!("Invalid user ID format: {}", e),
+            })
+        })?;
+
+        self.check_permission("members.edit", ResourceType::Member, user_id_str)?;
+
+        let user_id = UserId::new(user_id);
+
+        info!(guild_id = %guild_id, user_id = %user_id, "Editing member");
+
+        let builder = EditMember::new();
+        let mut builder = builder;
+        let mut changes = Vec::new();
+
+        if let Some(nickname) = args.get("nickname").and_then(|v| v.as_str()) {
+            builder = builder.nickname(nickname);
+            changes.push(format!("nickname={}", nickname));
+        }
+
+        if let Some(mute) = args.get("mute").and_then(|v| v.as_bool()) {
+            builder = builder.mute(mute);
+            changes.push(format!("mute={}", mute));
+        }
+
+        if let Some(deafen) = args.get("deafen").and_then(|v| v.as_bool()) {
+            builder = builder.deafen(deafen);
+            changes.push(format!("deafen={}", deafen));
+        }
+
+        if let Some(roles) = args.get("roles").and_then(|v| v.as_array()) {
+            let role_ids: Result<Vec<RoleId>, _> = roles
+                .iter()
+                .map(|r| {
+                    r.as_str()
+                        .and_then(|s| s.parse::<u64>().ok())
+                        .map(RoleId::new)
+                        .ok_or_else(|| {
+                            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                                command: "members.edit".to_string(),
+                                arg_name: "roles".to_string(),
+                                reason: "Invalid role ID format".to_string(),
+                            })
+                        })
+                })
+                .collect();
+
+            let role_ids = role_ids?;
+            changes.push(format!("roles={:?}", role_ids));
+            builder = builder.roles(&role_ids);
+        }
+
+        debug!(changes = ?changes, "Applying member changes");
+
+        guild_id
+            .edit_member(&self.http, user_id, builder)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to edit member");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "members.edit".to_string(),
+                    reason: format!("Failed to edit member: {}", e),
+                })
+            })?;
+
+        info!("Successfully edited member");
+
+        Ok(serde_json::json!({
+            "guild_id": guild_id.to_string(),
+            "user_id": user_id_str,
+            "changes": changes,
+        }))
+    }
+
+    /// Execute: members.remove_timeout
+    ///
+    /// Remove timeout from a member.
+    ///
+    /// Required args: guild_id, user_id
+    /// Security: Requires Write permission on Member
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "members.remove_timeout",
+            guild_id,
+            user_id
+        )
+    )]
+    async fn members_remove_timeout(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::builder::EditMember;
+        use serenity::model::id::UserId;
+
+        let guild_id = Self::parse_guild_id("members.remove_timeout", args)?;
+
+        let user_id_str = args
+            .get("user_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "members.remove_timeout".to_string(),
+                    arg_name: "user_id".to_string(),
+                })
+            })?;
+
+        let user_id = user_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "members.remove_timeout".to_string(),
+                arg_name: "user_id".to_string(),
+                reason: format!("Invalid user ID format: {}", e),
+            })
+        })?;
+
+        self.check_permission("members.remove_timeout", ResourceType::Member, user_id_str)?;
+
+        let user_id = UserId::new(user_id);
+
+        info!(guild_id = %guild_id, user_id = %user_id, "Removing member timeout");
+
+        let builder = EditMember::new().disable_communication_until_datetime(serenity::model::Timestamp::now());
+
+        guild_id
+            .edit_member(&self.http, user_id, builder)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to remove timeout");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "members.remove_timeout".to_string(),
+                    reason: format!("Failed to remove timeout: {}", e),
+                })
+            })?;
+
+        info!("Successfully removed member timeout");
+
+        Ok(serde_json::json!({
+            "guild_id": guild_id.to_string(),
+            "user_id": user_id_str,
+            "timeout_removed": true,
+        }))
+    }
+
+    /// Execute: channels.create_invite
+    ///
+    /// Create an invite link for a channel.
+    ///
+    /// Required args: channel_id
+    /// Optional args: max_age (seconds, 0 = never), max_uses (0 = unlimited), temporary (bool)
+    /// Security: Requires Write permission on Channel
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "channels.create_invite",
+            channel_id
+        )
+    )]
+    async fn channels_create_invite(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::builder::CreateInvite;
+        use serenity::model::id::ChannelId;
+
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "channels.create_invite".to_string(),
+                    arg_name: "channel_id".to_string(),
+                })
+            })?;
+
+        let channel_id = channel_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "channels.create_invite".to_string(),
+                arg_name: "channel_id".to_string(),
+                reason: format!("Invalid channel ID format: {}", e),
+            })
+        })?;
+
+        self.check_permission("channels.create_invite", ResourceType::Channel, channel_id_str)?;
+
+        let channel_id = ChannelId::new(channel_id);
+
+        info!(channel_id = %channel_id, "Creating invite");
+
+        let mut builder = CreateInvite::new();
+
+        if let Some(max_age) = args.get("max_age").and_then(|v| v.as_u64()) {
+            builder = builder.max_age(max_age as u32);
+        }
+
+        if let Some(max_uses) = args.get("max_uses").and_then(|v| v.as_u64()) {
+            builder = builder.max_uses(max_uses as u8);
+        }
+
+        if let Some(temporary) = args.get("temporary").and_then(|v| v.as_bool()) {
+            builder = builder.temporary(temporary);
+        }
+
+        let invite = channel_id
+            .create_invite(&self.http, builder)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to create invite");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "channels.create_invite".to_string(),
+                    reason: format!("Failed to create invite: {}", e),
+                })
+            })?;
+
+        info!(code = %invite.code, "Successfully created invite");
+
+        Ok(serde_json::json!({
+            "code": invite.code,
+            "url": format!("https://discord.gg/{}", invite.code),
+            "channel_id": invite.channel.id.to_string(),
+            "max_age": invite.max_age,
+            "max_uses": invite.max_uses,
+            "temporary": invite.temporary,
+        }))
+    }
+
+    /// Execute: channels.typing
+    ///
+    /// Trigger typing indicator in a channel.
+    ///
+    /// Required args: channel_id
+    /// Security: Low-risk write operation (typing indicator)
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "channels.typing",
+            channel_id
+        )
+    )]
+    async fn channels_typing(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::model::id::ChannelId;
+
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "channels.typing".to_string(),
+                    arg_name: "channel_id".to_string(),
+                })
+            })?;
+
+        let channel_id = channel_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "channels.typing".to_string(),
+                arg_name: "channel_id".to_string(),
+                reason: format!("Invalid channel ID format: {}", e),
+            })
+        })?;
+
+        // Typing is low-risk, but still requires permission checker
+        self.check_permission("channels.typing", ResourceType::Channel, channel_id_str)?;
+
+        let channel_id = ChannelId::new(channel_id);
+
+        debug!(channel_id = %channel_id, "Triggering typing indicator");
+
+        channel_id.broadcast_typing(&self.http).await.map_err(|e| {
+            error!(error = %e, "Failed to trigger typing");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "channels.typing".to_string(),
+                reason: format!("Failed to trigger typing: {}", e),
+            })
+        })?;
+
+        debug!("Successfully triggered typing indicator");
+
+        Ok(serde_json::json!({
+            "channel_id": channel_id_str,
+            "typing": true,
+        }))
+    }
 }
 
 #[async_trait]
@@ -3172,6 +3654,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "roles.remove" => self.roles_remove(args).await?,
             "roles.edit" => self.roles_edit(args).await?,
             "roles.delete" => self.roles_delete(args).await?,
+            "messages.pin" => self.messages_pin(args).await?,
+            "messages.unpin" => self.messages_unpin(args).await?,
+            "members.edit" => self.members_edit(args).await?,
+            "members.remove_timeout" => self.members_remove_timeout(args).await?,
+            "channels.create_invite" => self.channels_create_invite(args).await?,
+            "channels.typing" => self.channels_typing(args).await?,
             _ => {
                 error!(
                     command,
@@ -3266,11 +3754,26 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "messages.send".to_string(),
             "messages.edit".to_string(),
             "messages.delete".to_string(),
+            "messages.pin".to_string(),
+            "messages.unpin".to_string(),
             "channels.create".to_string(),
+            "channels.edit".to_string(),
             "channels.delete".to_string(),
+            "channels.create_invite".to_string(),
+            "channels.typing".to_string(),
             "members.ban".to_string(),
             "members.kick".to_string(),
+            "members.timeout".to_string(),
+            "members.unban".to_string(),
+            "members.edit".to_string(),
+            "members.remove_timeout".to_string(),
             "roles.create".to_string(),
+            "roles.assign".to_string(),
+            "roles.remove".to_string(),
+            "roles.edit".to_string(),
+            "roles.delete".to_string(),
+            "reactions.add".to_string(),
+            "reactions.remove".to_string(),
         ]
     }
 
@@ -3409,6 +3912,38 @@ impl BotCommandExecutor for DiscordCommandExecutor {
                 "Create a new role in the server (requires security framework)\n\
                  Required arguments: guild_id, name\n\
                  Optional arguments: color (hex), hoist (bool), mentionable (bool), permissions (u64)"
+                    .to_string(),
+            ),
+            "messages.pin" => Some(
+                "Pin a message in a channel (requires security framework)\n\
+                 Required arguments: channel_id, message_id"
+                    .to_string(),
+            ),
+            "messages.unpin" => Some(
+                "Unpin a message in a channel (requires security framework)\n\
+                 Required arguments: channel_id, message_id"
+                    .to_string(),
+            ),
+            "members.edit" => Some(
+                "Edit member properties (requires security framework)\n\
+                 Required arguments: guild_id, user_id\n\
+                 Optional arguments: nickname, mute (bool), deafen (bool), roles (array of role IDs)"
+                    .to_string(),
+            ),
+            "members.remove_timeout" => Some(
+                "Remove timeout from a member (requires security framework)\n\
+                 Required arguments: guild_id, user_id"
+                    .to_string(),
+            ),
+            "channels.create_invite" => Some(
+                "Create an invite link for a channel (requires security framework)\n\
+                 Required arguments: channel_id\n\
+                 Optional arguments: max_age (seconds, 0 = never), max_uses (0 = unlimited), temporary (bool)"
+                    .to_string(),
+            ),
+            "channels.typing" => Some(
+                "Trigger typing indicator in a channel (low-risk write)\n\
+                 Required arguments: channel_id"
                     .to_string(),
             ),
             _ => None,

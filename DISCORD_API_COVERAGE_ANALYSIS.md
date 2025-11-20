@@ -1,6 +1,6 @@
 # Discord API Coverage Analysis
 
-## Current Implementation (35 commands)
+## Current Implementation (41 commands)
 
 ### Server Management (READ)
 - ✅ `server.get_stats` - Get server statistics (members, description, icon, etc.)
@@ -11,6 +11,8 @@
 - ✅ `channels.create` - Create a new channel (WRITE - secured)
 - ✅ `channels.edit` - Edit channel properties (WRITE - secured)
 - ✅ `channels.delete` - Delete a channel (WRITE - secured)
+- ✅ `channels.create_invite` - Create invite link (WRITE - secured)
+- ✅ `channels.typing` - Trigger typing indicator (WRITE - secured, low-risk)
 
 ### Roles (READ + WRITE)
 - ✅ `roles.list` - List all roles in a server
@@ -28,6 +30,8 @@
 - ✅ `members.kick` - Kick a member (WRITE - secured)
 - ✅ `members.timeout` - Timeout a member (WRITE - secured)
 - ✅ `members.unban` - Unban a member (WRITE - secured)
+- ✅ `members.edit` - Edit member properties (WRITE - secured)
+- ✅ `members.remove_timeout` - Remove timeout (WRITE - secured)
 
 ### Messages (READ + WRITE)
 - ✅ `messages.get` - Get a specific message (READ)
@@ -35,6 +39,8 @@
 - ✅ `messages.send` - Send a message to a channel (WRITE - secured)
 - ✅ `messages.edit` - Edit an existing message (WRITE - secured)
 - ✅ `messages.delete` - Delete a message (WRITE - secured)
+- ✅ `messages.pin` - Pin a message (WRITE - secured)
+- ✅ `messages.unpin` - Unpin a message (WRITE - secured)
 
 ### Reactions (WRITE)
 - ✅ `reactions.add` - Add reaction to message (WRITE - secured, low-risk)
@@ -61,8 +67,8 @@
 - ✅ `messages.delete` - Delete a message (IMPLEMENTED)
 - ✅ `messages.get` - Get a specific message (IMPLEMENTED)
 - ✅ `messages.list` - Get channel message history (IMPLEMENTED)
-- ❌ `messages.pin` - Pin a message
-- ❌ `messages.unpin` - Unpin a message
+- ✅ `messages.pin` - Pin a message (IMPLEMENTED)
+- ✅ `messages.unpin` - Unpin a message (IMPLEMENTED)
 - ❌ `messages.bulk_delete` - Delete multiple messages
 
 #### Reactions (WRITE)
@@ -71,8 +77,8 @@
 
 #### Channels (WRITE)
 - ✅ `channels.edit` - Modify channel settings (IMPLEMENTED)
-- ❌ `channels.create_invite` - Create an invite link
-- ❌ `channels.typing` - Trigger typing indicator
+- ✅ `channels.create_invite` - Create an invite link (IMPLEMENTED)
+- ✅ `channels.typing` - Trigger typing indicator (IMPLEMENTED)
 
 #### Roles (WRITE)
 - ✅ `roles.create` - Create a new role (IMPLEMENTED)
@@ -85,8 +91,8 @@
 - ✅ `members.kick` - Kick a member (IMPLEMENTED)
 - ✅ `members.unban` - Unban a member (IMPLEMENTED)
 - ✅ `members.timeout` - Timeout a member (IMPLEMENTED)
-- ❌ `members.edit` - Modify member (nickname, roles, mute, deafen)
-- ❌ `members.remove_timeout` - Remove timeout from member
+- ✅ `members.edit` - Modify member (nickname, roles, mute, deafen) (IMPLEMENTED)
+- ✅ `members.remove_timeout` - Remove timeout from member (IMPLEMENTED)
 
 #### Threads
 - ❌ `threads.create` - Create a thread from message or in forum
