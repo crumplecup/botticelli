@@ -58,23 +58,28 @@ All infrastructure for resource definitions is implemented:
 
 **Current Status**: Infrastructure complete, executor integration pending.
 
-### Phase 3: Table References ⏸️ **PARTIALLY IMPLEMENTED**
+### Phase 3: Table References ✅ **INFRASTRUCTURE COMPLETE**
 
 **What's Done**:
 - ✅ `Input::Table` variant exists in `botticelli_core`
 - ✅ TOML parsing with `TomlTableDefinition`
 - ✅ Reference resolution: `"tables.name"` → `Input::Table`
 - ✅ Database storage (table name stored in text_content field)
-- ✅ Design outlined in this document
+- ✅ `TableQueryExecutor` in `botticelli_database` with full implementation
+- ✅ `TableQueryView` and `TableCountView` with `derive_builder`
+- ✅ SQL query building with sanitization and validation
+- ✅ Data formatting (JSON, Markdown, CSV)
+- ✅ Comprehensive tracing instrumentation
+- ✅ SQL injection prevention (table/column name validation, WHERE clause sanitization)
 
-**What's Needed** (to make table references actually work):
-1. `TableQueryExecutor` in `botticelli_database`
-2. SQL query building with sanitization
-3. Data formatting (JSON, Markdown, CSV)
-4. `NarrativeExecutor` integration to process `Input::Table`
-5. Security and performance optimizations
+**What's Needed** (to complete Phase 3):
+1. `NarrativeExecutor` integration to process `Input::Table` during execution
+2. Format selection in TOML (JSON/Markdown/CSV)
+3. Result caching within execution context
+4. Integration tests with real database queries
+5. Example narratives demonstrating table references
 
-**Current Gap**: Table references are parsed but not executed - they need executor integration.
+**Current Status**: All infrastructure is in place. The executor can query tables, format results, and handle errors. Only needs integration into narrative execution flow.
 
 ---
 
