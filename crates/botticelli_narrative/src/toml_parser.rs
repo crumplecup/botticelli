@@ -86,7 +86,7 @@ pub enum TomlActInput {
     /// String reference to resource or plain text
     String(String),
     /// Inline structured input
-    Structured(TomlInput),
+    Structured(Box<TomlInput>),
 }
 
 /// Structured act configuration from TOML.

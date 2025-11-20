@@ -102,6 +102,28 @@ pub fn input_to_new_row(
                 media_ref_id: None, // Will be populated by caller
             }
         }
+        Input::BotCommand { command, .. } => {
+            NewActInputRow {
+                act_execution_id,
+                input_order: order as i32,
+                input_type: "bot_command".to_string(),
+                text_content: Some(command.clone()),
+                mime_type: None,
+                filename: None,
+                media_ref_id: None,
+            }
+        }
+        Input::Table { table_name, .. } => {
+            NewActInputRow {
+                act_execution_id,
+                input_order: order as i32,
+                input_type: "table".to_string(),
+                text_content: Some(table_name.clone()),
+                mime_type: None,
+                filename: None,
+                media_ref_id: None,
+            }
+        }
     };
     Ok(row)
 }
@@ -114,6 +136,8 @@ fn input_type_string(input: &Input) -> String {
         Input::Audio { .. } => "audio".to_string(),
         Input::Video { .. } => "video".to_string(),
         Input::Document { .. } => "document".to_string(),
+        Input::BotCommand { .. } => "bot_command".to_string(),
+        Input::Table { .. } => "table".to_string(),
     }
 }
 
