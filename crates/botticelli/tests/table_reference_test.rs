@@ -2,6 +2,8 @@
 //!
 //! Tests table querying, formatting, and integration with narrative execution.
 
+#![cfg(feature = "database")]
+
 use botticelli::{
     DatabaseError, DatabaseErrorKind, DatabaseResult, TableQueryExecutor,
     TableQueryViewBuilder,

@@ -14,8 +14,9 @@ pub use narrative::{
 };
 pub use table_view::{TableReference, TableView};
 pub use traits::{
-    Audio, BatchGeneration, BotticelliDriver, DocumentProcessing, Embeddings, Health, JsonMode,
-    Metadata, Streaming, TableQueryRegistry, TokenCounting, ToolUse, Video, Vision,
+    Audio, BatchGeneration, BotticelliDriver, ContentRepository, DocumentProcessing, Embeddings,
+    Health, JsonMode, Metadata, Streaming, TableQueryRegistry, TokenCounting, ToolUse, Video,
+    Vision,
 };
 pub use types::{
     FinishReason, HealthStatus, ModelMetadata, StreamChunk, ToolDefinition, ToolResult,

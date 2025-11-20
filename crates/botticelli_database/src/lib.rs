@@ -28,6 +28,7 @@ mod connection;
 mod content_generation_models;
 mod content_generation_repository;
 mod content_management;
+mod content_repository;
 mod models;
 mod narrative_conversions;
 mod narrative_models;
@@ -50,6 +51,7 @@ pub use content_management::{
     delete_content, get_content_by_id, list_content, promote_content, update_content_metadata,
     update_review_status,
 };
+pub use content_repository::DatabaseContentRepository;
 
 // Re-export content generation types
 pub use content_generation_models::{
