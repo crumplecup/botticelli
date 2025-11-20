@@ -62,14 +62,20 @@ Create a vibrant Discord community that:
 **Narrative**: `narratives/discord/server_rules.toml`
 
 ```toml
-[[acts]]
-name = "generate_rules"
+[narrative]
+name = "discord_server_rules"
+description = "Generate community guidelines for Botticelli Discord server"
+
+[toc]
+order = ["generate_rules"]
+
+[acts.generate_rules]
 model = "gemini-2.0-flash-exp"
 max_tokens = 2000
 temperature = 0.7
 
-[[acts.messages]]
-role = "user"
+[[acts.generate_rules.input]]
+type = "text"
 content = """
 Create comprehensive community guidelines for the Botticelli Discord server.
 
@@ -97,13 +103,19 @@ Format as Discord-friendly markdown with emojis.
 **Narrative**: `narratives/discord/welcome_message.toml`
 
 ```toml
-[[acts]]
-name = "generate_welcome"
+[narrative]
+name = "discord_welcome"
+description = "Generate welcome message for new Discord members"
+
+[toc]
+order = ["generate_welcome"]
+
+[acts.generate_welcome]
 model = "gemini-2.0-flash-exp"
 max_tokens = 1500
 
-[[acts.messages]]
-role = "user"
+[[acts.generate_welcome.input]]
+type = "text"
 content = """
 Create an engaging welcome message for new members of the Botticelli Discord server.
 
@@ -125,13 +137,19 @@ Keep it concise and welcoming.
 **Narrative**: `narratives/discord/faq_generation.toml`
 
 ```toml
-[[acts]]
-name = "research_common_questions"
+[narrative]
+name = "discord_faq"
+description = "Generate FAQ for Botticelli Discord server"
+
+[toc]
+order = ["research_common_questions", "generate_faq"]
+
+[acts.research_common_questions]
 model = "gemini-2.0-flash-exp"
 max_tokens = 2000
 
-[[acts.messages]]
-role = "user"
+[[acts.research_common_questions.input]]
+type = "text"
 content = """
 Based on the Botticelli README and documentation, identify the 15 most common 
 questions new users might ask. Consider:
@@ -143,13 +161,12 @@ questions new users might ask. Consider:
 - Best practices
 """
 
-[[acts]]
-name = "generate_faq"
+[acts.generate_faq]
 model = "gemini-2.0-flash-exp"
 max_tokens = 3000
 
-[[acts.messages]]
-role = "user"
+[[acts.generate_faq.input]]
+type = "text"
 content = """
 Create a comprehensive FAQ document with clear, concise answers to these questions:
 {{research_common_questions}}
@@ -172,13 +189,19 @@ Format for Discord with collapsible sections using spoiler tags.
 **Narrative**: `narratives/discord/tutorial_series.toml`
 
 ```toml
-[[acts]]
-name = "plan_tutorial_series"
+[narrative]
+name = "discord_tutorial_series"
+description = "Generate tutorial series for Botticelli Discord"
+
+[toc]
+order = ["plan_tutorial_series", "write_tutorial_1"]
+
+[acts.plan_tutorial_series]
 model = "gemini-2.0-flash-exp"
 max_tokens = 2000
 
-[[acts.messages]]
-role = "user"
+[[acts.plan_tutorial_series.input]]
+type = "text"
 content = """
 Design a 5-part tutorial series for Botticelli, progressing from beginner to advanced:
 
@@ -196,13 +219,12 @@ For each tutorial, outline:
 - Expected outcomes
 """
 
-[[acts]]
-name = "write_tutorial_1"
+[acts.write_tutorial_1]
 model = "gemini-2.0-flash-exp"
 max_tokens = 3000
 
-[[acts.messages]]
-role = "user"
+[[acts.write_tutorial_1.input]]
+type = "text"
 content = """
 Write Tutorial 1: Hello World Narrative
 
@@ -219,7 +241,7 @@ Include:
 Format for Discord with code blocks and clear sections.
 """
 
-# Repeat for tutorials 2-5
+# Repeat for tutorials 2-5 by adding more acts to [toc] order
 ```
 
 #### 2.2 Generate Use Case Examples
@@ -227,12 +249,18 @@ Format for Discord with code blocks and clear sections.
 **Narrative**: `narratives/discord/use_case_examples.toml`
 
 ```toml
-[[acts]]
-name = "identify_use_cases"
+[narrative]
+name = "discord_use_case_examples"
+description = "Generate use case examples for Discord"
+
+[toc]
+order = ["identify_use_cases", "write_example_narratives"]
+
+[acts.identify_use_cases]
 model = "gemini-2.0-flash-exp"
 
-[[acts.messages]]
-role = "user"
+[[acts.identify_use_cases.input]]
+type = "text"
 content = """
 Identify 10 practical use cases for Botticelli across different domains:
 - Content creation
@@ -249,13 +277,12 @@ Identify 10 practical use cases for Botticelli across different domains:
 For each use case, describe the problem and how Botticelli solves it.
 """
 
-[[acts]]
-name = "write_example_narratives"
+[acts.write_example_narratives]
 model = "gemini-2.0-flash-exp"
 max_tokens = 4000
 
-[[acts.messages]]
-role = "user"
+[[acts.write_example_narratives.input]]
+type = "text"
 content = """
 Choose 3 of the most compelling use cases from:
 {{identify_use_cases}}
@@ -279,12 +306,18 @@ Make the examples copy-paste ready.
 **Narrative**: `narratives/discord/weekly_topics.toml`
 
 ```toml
-[[acts]]
-name = "generate_weekly_topics"
+[narrative]
+name = "discord_weekly_topics"
+description = "Generate weekly discussion topics for community engagement"
+
+[toc]
+order = ["generate_weekly_topics"]
+
+[acts.generate_weekly_topics]
 model = "gemini-2.0-flash-exp"
 
-[[acts.messages]]
-role = "user"
+[[acts.generate_weekly_topics.input]]
+type = "text"
 content = """
 Generate 12 engaging discussion topics for weekly community conversations, such as:
 - "Show and Tell: Your Coolest Narrative"
@@ -309,12 +342,18 @@ Format as Discord posts with engaging emojis and formatting.
 **Narrative**: `narratives/discord/community_highlights.toml`
 
 ```toml
-[[acts]]
-name = "create_highlight_template"
+[narrative]
+name = "discord_community_highlights"
+description = "Generate weekly community highlight posts"
+
+[toc]
+order = ["create_highlight_template"]
+
+[acts.create_highlight_template]
 model = "gemini-2.0-flash-exp"
 
-[[acts.messages]]
-role = "user"
+[[acts.create_highlight_template.input]]
+type = "text"
 content = """
 Create a template for weekly "Community Highlights" posts that feature:
 - New members welcome
@@ -387,16 +426,21 @@ async fn handle_slash_command(
 **Narrative**: `narratives/discord/content_pipeline.toml`
 
 ```toml
-[[acts]]
-name = "generate_content"
-# ... content generation act
+[narrative]
+name = "discord_content_review"
+description = "Review and approve Discord content"
 
-[[acts]]
-name = "review_checklist"
+[toc]
+order = ["generate_content", "review_checklist"]
+
+[acts]
+generate_content = "Generate Discord content (details depend on specific use case)"
+
+[acts.review_checklist]
 model = "gemini-2.0-flash-exp"
 
-[[acts.messages]]
-role = "user"
+[[acts.review_checklist.input]]
+type = "text"
 content = """
 Review this Discord content for:
 {{generate_content}}
