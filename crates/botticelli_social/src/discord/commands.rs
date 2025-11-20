@@ -30,12 +30,13 @@
 
 use crate::{BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandResult};
 use async_trait::async_trait;
+use botticelli_security::{ActionType, Permission, PermissionChecker, ResourceType};
 use serde_json::Value as JsonValue;
 use serenity::http::Http;
 use serenity::model::id::GuildId;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, info, instrument, warn};
 
 /// Discord command executor for bot command execution.
 ///
@@ -43,6 +44,7 @@ use tracing::{debug, error, info, instrument};
 /// command handling using Serenity's HTTP client.
 pub struct DiscordCommandExecutor {
     http: Arc<Http>,
+    permission_checker: Option<Arc<PermissionChecker>>,
 }
 
 impl DiscordCommandExecutor {
@@ -65,7 +67,10 @@ impl DiscordCommandExecutor {
     pub fn new(token: impl AsRef<str>) -> Self {
         info!("Creating standalone Discord command executor");
         let http = Arc::new(Http::new(token.as_ref()));
-        Self { http }
+        Self {
+            http,
+            permission_checker: None,
+        }
     }
 
     /// Create executor with an existing HTTP client.
@@ -85,7 +90,47 @@ impl DiscordCommandExecutor {
     /// ```
     pub fn with_http_client(http: Arc<Http>) -> Self {
         info!("Creating Discord command executor with shared HTTP client");
-        Self { http }
+        Self {
+            http,
+            permission_checker: None,
+        }
+    }
+
+    /// Set permission checker for security enforcement.
+    ///
+    /// Write operations require a permission checker with appropriate policies.
+    pub fn with_permission_checker(mut self, checker: Arc<PermissionChecker>) -> Self {
+        info!("Setting permission checker for Discord command executor");
+        self.permission_checker = Some(checker);
+        self
+    }
+
+    /// Check permission for a write operation.
+    fn check_permission(&self, command: &str, resource_type: ResourceType, resource_id: &str) -> BotCommandResult<()> {
+        let checker = self.permission_checker.as_ref().ok_or_else(|| {
+            error!(command, "Write operation requires permission checker");
+            BotCommandError::new(BotCommandErrorKind::SecurityError {
+                command: command.to_string(),
+                reason: "Permission checker required for write operations".to_string(),
+            })
+        })?;
+
+        let permission = Permission::builder()
+            .action(ActionType::Write)
+            .resource_type(resource_type)
+            .resource_id(resource_id.to_string())
+            .build();
+
+        if !checker.check(&permission) {
+            error!(command, ?permission, "Permission denied");
+            return Err(BotCommandError::new(BotCommandErrorKind::SecurityError {
+                command: command.to_string(),
+                reason: format!("Permission denied for {:?} on {} {}", ActionType::Write, resource_type, resource_id),
+            }));
+        }
+
+        debug!(command, ?permission, "Permission granted");
+        Ok(())
     }
 
     /// Parse guild_id argument from command args.
@@ -1213,6 +1258,9 @@ impl DiscordCommandExecutor {
             })
         })?;
         let channel_id = ChannelId::new(channel_id);
+        
+        // Security check: require permission to send messages to this channel
+        self.check_permission("messages.send", ResourceType::Channel, channel_id_str)?;
 
         let content = args
             .get("content")
@@ -1309,6 +1357,9 @@ impl DiscordCommandExecutor {
 
         debug!("Parsing arguments for channels.create");
         let guild_id = Self::parse_guild_id("channels.create", args)?;
+        
+        // Security check: require permission to create channels in this guild
+        self.check_permission("channels.create", ResourceType::Guild, &guild_id.to_string())?;
 
         let name = args
             .get("name")
@@ -1451,6 +1502,9 @@ impl DiscordCommandExecutor {
             })
         })?;
         let channel_id = ChannelId::new(channel_id);
+        
+        // Security check: require permission to delete this channel
+        self.check_permission("channels.delete", ResourceType::Channel, channel_id_str)?;
 
         tracing::Span::current().record("guild_id", guild_id.get());
         tracing::Span::current().record("channel_id", channel_id.get());
@@ -1544,6 +1598,9 @@ impl DiscordCommandExecutor {
             })
         })?;
         let user_id = UserId::new(user_id);
+        
+        // Security check: require permission to ban members in this guild
+        self.check_permission("members.ban", ResourceType::Guild, &guild_id.to_string())?;
 
         let delete_message_days = args
             .get("delete_message_days")

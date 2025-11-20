@@ -28,6 +28,7 @@
 #![warn(missing_docs)]
 
 mod bot_commands;
+mod secure_bot_executor;
 mod secure_executor;
 
 #[cfg(feature = "discord")]
@@ -40,6 +41,7 @@ pub use bot_commands::{
 };
 
 // Export secure executor (always available)
+pub use secure_bot_executor::SecureBotExecutor;
 pub use secure_executor::{ExecutionResult, SecureBotCommandExecutor};
 
 // Export Discord-specific types (feature-gated)

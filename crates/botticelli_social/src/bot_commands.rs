@@ -103,6 +103,24 @@ pub enum BotCommandErrorKind {
         reason: String,
     },
 
+    /// Security policy violation.
+    #[display("Security error for '{}': {}", command, reason)]
+    SecurityError {
+        /// Command that triggered security error
+        command: String,
+        /// Reason for security violation
+        reason: String,
+    },
+
+    /// Content filtered by security policy.
+    #[display("Content filtered for '{}': {}", command, reason)]
+    ContentFiltered {
+        /// Command that had content filtered
+        command: String,
+        /// Reason for filtering
+        reason: String,
+    },
+
     /// Resource not found (guild, channel, user, etc.).
     #[display("Resource not found for '{}': {}", command, resource_type)]
     ResourceNotFound {
