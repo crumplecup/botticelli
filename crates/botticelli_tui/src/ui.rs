@@ -30,7 +30,6 @@ pub fn draw(f: &mut Frame, app: &App) {
         AppMode::Edit => draw_edit_view(f, app, chunks[1]),
         AppMode::Compare => draw_compare_view(f, app, chunks[1]),
         AppMode::Export => draw_export_view(f, app, chunks[1]),
-        AppMode::Server => draw_server_view(f, app, chunks[1]),
     }
 
     // Draw status bar
@@ -57,13 +56,12 @@ fn draw_header(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
 fn draw_status_bar(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
     let help_text = match app.mode {
         AppMode::List => {
-            "↑↓: Navigate | Enter: Detail | E: Edit | C: Compare | S: Server | D: Delete | R: Reload | Q: Quit"
+            "↑↓: Navigate | Enter: Detail | E: Edit | C: Compare | D: Delete | R: Reload | Q: Quit"
         }
         AppMode::Detail => "Esc: Back | E: Edit | Q: Quit",
         AppMode::Edit => "Ctrl+Enter: Save | Esc: Cancel",
         AppMode::Compare => "Esc: Back | Q: Quit",
         AppMode::Export => "Esc: Back | Q: Quit",
-        AppMode::Server => "↑↓: Navigate | D: Download | S: Start | X: Stop | Q: Back",
     };
 
     let status_text = format!("{} | {}", app.status_message, help_text);
@@ -277,76 +275,4 @@ fn draw_export_view(f: &mut Frame, _app: &App, area: ratatui::layout::Rect) {
     f.render_widget(export, area);
 }
 
-/// Draw the server management view.
-#[tracing::instrument(skip_all)]
-fn draw_server_view(f: &mut Frame, app: &App, area: ratatui::layout::Rect) {
-    let Some(server_view) = &app.server_view else {
-        let error = Paragraph::new("Server view not initialized")
-            .block(Block::default().borders(Borders::ALL).title("Server Management"))
-            .alignment(Alignment::Center);
-        f.render_widget(error, area);
-        return;
-    };
 
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(5),  // Status box
-            Constraint::Min(0),      // Model list
-        ])
-        .split(area);
-
-    // Server status box
-    let status_text = format!(
-        "Status: {}\nDownload Dir: {}\nServer: {}",
-        server_view.status,
-        server_view.download_dir.display(),
-        if server_view.is_running() { "Running ✓" } else { "Stopped" }
-    );
-    let status_box = Paragraph::new(status_text)
-        .block(Block::default().borders(Borders::ALL).title("Server Status"))
-        .style(Style::default().fg(if server_view.is_running() {
-            Color::Green
-        } else {
-            Color::Yellow
-        }));
-    f.render_widget(status_box, chunks[0]);
-
-    // Model list
-    let rows: Vec<Row> = server_view
-        .available_models
-        .iter()
-        .enumerate()
-        .map(|(idx, model)| {
-            let status = if model.downloaded { "✓ Downloaded" } else { "Not downloaded" };
-            let style = if idx == server_view.selected_model_index {
-                Style::default().bg(Color::DarkGray).fg(Color::White)
-            } else {
-                Style::default()
-            };
-            Row::new(vec![
-                model.spec.description().to_string(),
-                format!("~{}GB", model.spec.size_gb()),
-                status.to_string(),
-            ])
-            .style(style)
-        })
-        .collect();
-
-    let model_table = Table::new(
-        rows,
-        [
-            Constraint::Percentage(50),
-            Constraint::Percentage(20),
-            Constraint::Percentage(30),
-        ],
-    )
-    .header(
-        Row::new(vec!["Model", "Size", "Status"])
-            .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
-            .bottom_margin(1),
-    )
-    .block(Block::default().borders(Borders::ALL).title("Available Models"));
-
-    f.render_widget(model_table, chunks[1]);
-}

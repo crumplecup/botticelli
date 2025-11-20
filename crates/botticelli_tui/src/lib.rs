@@ -6,11 +6,9 @@
 mod app;
 mod error;
 mod events;
-mod server_view;
 mod ui;
 mod views;
 
 pub use app::{App, AppMode, ContentRow, EditBuffer, EditField, run_tui, run_app};
 pub use error::{TuiError, TuiErrorKind};
 pub use events::{Event, EventHandler};
-pub use server_view::{ServerView, ModelInfo};
