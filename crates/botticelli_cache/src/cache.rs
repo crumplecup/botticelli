@@ -263,10 +263,10 @@ impl CommandCache {
 
         self.entries.retain(|key, entry| {
             let keep = !entry.is_expired();
-            if !keep {
-                if let Some(pos) = self.access_order.iter().position(|k| k == key) {
-                    self.access_order.remove(pos);
-                }
+            if !keep
+                && let Some(pos) = self.access_order.iter().position(|k| k == key)
+            {
+                self.access_order.remove(pos);
             }
             keep
         });
