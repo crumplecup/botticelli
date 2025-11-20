@@ -1,0 +1,24 @@
+# Model options demonstration narrative
+# Shows all unlocked Gemini models, each identifying itself
+
+[narrative]
+name = "bot syntax"
+description = "demonstrates bot sytnax"
+
+[toc]
+order = ["fetch_stats", "discuss", "something_else"]
+
+[bots.get_discord_stats]
+platform = "discord"
+command = "server.get_stats"
+guild_id = "1234567890"
+
+[bots.do_something_else]
+platform = "discord"
+command = "server.something_else"
+user_id = "0987654321"
+
+[acts]
+fetch_stats = "bots.get_discord_stats"
+discuss = "Tell me what you think about our stats."
+something_else = "bots.do_something_else"
