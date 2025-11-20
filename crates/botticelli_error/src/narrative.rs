@@ -29,6 +29,15 @@ pub enum NarrativeErrorKind {
         /// Error message
         message: String,
     },
+    /// Bot command registry not configured
+    #[display("Bot command not configured: {}", _0)]
+    BotCommandNotConfigured(String),
+    /// Bot command execution failed
+    #[display("Bot command failed: {}", _0)]
+    BotCommandFailed(String),
+    /// Serialization error
+    #[display("Serialization error: {}", _0)]
+    SerializationError(String),
 }
 
 /// Error type for narrative operations.

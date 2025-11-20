@@ -308,6 +308,21 @@ impl Default for BotCommandRegistry {
     }
 }
 
+// Implement the narrative trait to avoid circular dependencies
+#[async_trait]
+impl botticelli_narrative::BotCommandRegistry for BotCommandRegistry {
+    async fn execute(
+        &self,
+        platform: &str,
+        command: &str,
+        args: &HashMap<String, JsonValue>,
+    ) -> Result<JsonValue, Box<dyn std::error::Error + Send + Sync>> {
+        self.execute(platform, command, args)
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -49,7 +49,7 @@ mod content_generation;
 mod extraction;
 
 pub use core::{Narrative, NarrativeMetadata, NarrativeToc};
-pub use executor::NarrativeExecutor;
+pub use executor::{BotCommandRegistry, NarrativeExecutor};
 pub use in_memory_repository::InMemoryNarrativeRepository;
 pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
 pub use provider::{ActConfig, NarrativeProvider};
