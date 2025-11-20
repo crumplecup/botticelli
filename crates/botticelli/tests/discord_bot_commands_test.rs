@@ -4,10 +4,10 @@
 //! - DISCORD_TOKEN environment variable (bot token)
 //! - TEST_GUILD_ID environment variable (Discord server ID where bot is a member)
 //!
-//! Run with: cargo test --test discord_bot_commands_test --features discord
+//! Run with: cargo test -p botticelli --test discord_bot_commands_test --features discord
 
 use botticelli_narrative::NarrativeExecutor;
-use botticelli_social::{BotCommandRegistry, DiscordCommandExecutor};
+use botticelli_social::{BotCommandExecutor, BotCommandRegistry, DiscordCommandExecutor};
 use std::collections::HashMap;
 
 /// Helper to get test guild ID from environment
@@ -187,6 +187,14 @@ async fn test_narrative_with_bot_commands() {
 
     #[async_trait]
     impl BotticelliDriver for MockDriver {
+        fn provider_name(&self) -> &'static str {
+            "mock"
+        }
+
+        fn model_name(&self) -> &str {
+            "mock-model"
+        }
+
         async fn generate(
             &self,
             _request: &GenerateRequest,

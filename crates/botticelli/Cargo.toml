@@ -65,6 +65,11 @@ local = ["gemini", "database", "discord", "tui", "server"]  # All features excep
 # Convenience feature for all optional features
 all = ["gemini", "database", "discord", "tui", "server"]
 
+[dev-dependencies]
+dotenvy = { workspace = true }
+async-trait = { workspace = true }
+serde_json = { workspace = true }
+
 [[bin]]
 name = "botticelli"
 path = "src/main.rs"
