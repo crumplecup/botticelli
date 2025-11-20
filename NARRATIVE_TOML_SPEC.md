@@ -4,13 +4,23 @@ This document defines the TOML configuration format for multi-act narrative exec
 
 ## Overview
 
-A narrative TOML file consists of three main sections:
+A narrative TOML file consists of several sections:
+
+**Core sections** (required):
 1. `[narrative]` - Metadata about the narrative
 2. `[toc]` - Table of contents defining execution order
 3. `[acts]` - Act definitions with prompts and optional configurations
 
+**Resource sections** (optional - for friendly syntax):
+4. `[bots]` - Bot command definitions that can be referenced by name
+5. `[tables]` - Table query definitions that can be referenced by name
+6. `[media]` - Media file definitions that can be referenced by name
+
+The resource sections enable a **friendly syntax** where you define resources once and reference them by name, reducing boilerplate and making narratives easier to read and maintain.
+
 ## Basic Structure
 
+**Minimal narrative** (classic syntax):
 ```toml
 [narrative]
 name = "narrative_name"
@@ -23,6 +33,234 @@ order = ["act1", "act2", "act3"]
 act1 = "Simple text prompt"
 act2 = "Another text prompt"
 ```
+
+**With friendly syntax** (define once, reference many times):
+```toml
+[narrative]
+name = "bot_demo"
+description = "Demonstrate friendly syntax"
+
+[toc]
+order = ["fetch_stats", "analyze"]
+
+# Define bot command once
+[bots.get_stats]
+platform = "discord"
+command = "server.get_stats"
+guild_id = "1234567890"
+
+# Define media once
+[media.chart]
+file = "./chart.png"
+
+# Reference them in acts
+[acts]
+fetch_stats = "bots.get_stats"
+analyze = ["media.chart", "Analyze this chart with {{fetch_stats}}"]
+```
+
+## Friendly Syntax (Recommended)
+
+The friendly syntax allows you to **define resources once and reference them by name**, dramatically reducing boilerplate and making narratives easier to read and maintain.
+
+### Quick Example
+
+**Without friendly syntax** (verbose):
+```toml
+[acts.fetch_stats]
+[[acts.fetch_stats.input]]
+type = "bot_command"
+platform = "discord"
+command = "server.get_stats"
+args = { guild_id = "123" }
+
+[acts.analyze]
+[[acts.analyze.input]]
+type = "bot_command"
+platform = "discord"
+command = "server.get_stats"
+args = { guild_id = "123" }
+
+[[acts.analyze.input]]
+type = "text"
+content = "What do you think?"
+```
+
+**With friendly syntax** (concise):
+```toml
+[bots.get_stats]
+platform = "discord"
+command = "server.get_stats"
+guild_id = "123"
+
+[acts]
+fetch_stats = "bots.get_stats"
+analyze = ["bots.get_stats", "What do you think?"]
+```
+
+### Resource Types
+
+#### `[bots.name]` - Bot Command Definitions
+
+Define bot commands that can be referenced in acts:
+
+```toml
+[bots.get_server_stats]
+platform = "discord"
+command = "server.get_stats"
+guild_id = "1234567890"
+
+[bots.list_channels]
+platform = "discord"
+command = "channels.list"
+guild_id = "1234567890"
+```
+
+Fields:
+- `platform` (string): Platform name (e.g., "discord", "slack")
+- `command` (string): Command to execute (e.g., "server.get_stats")
+- Additional fields are passed as command arguments (flattened)
+
+Reference in acts: `"bots.get_server_stats"`
+
+#### `[tables.name]` - Table Query Definitions
+
+Define database table queries that can be referenced in acts:
+
+```toml
+[tables.recent_posts]
+table_name = "social_posts_20241120"
+where = "status = 'approved'"
+limit = 50
+format = "markdown"
+
+[tables.user_stats]
+table_name = "user_activity"
+columns = ["user_id", "post_count", "last_active"]
+order_by = "post_count DESC"
+limit = 100
+```
+
+Fields:
+- `table_name` (string, required): Name of the table to query
+- `columns` (array of strings, optional): Specific columns to select (default: all)
+- `where` (string, optional): WHERE clause for filtering
+- `limit` (integer, optional): Maximum number of rows (default: 100)
+- `offset` (integer, optional): Offset for pagination
+- `order_by` (string, optional): ORDER BY clause
+- `format` (string, optional): Output format - "json", "markdown", or "csv" (default: "json")
+- `sample` (integer, optional): Random sample N rows
+
+Reference in acts: `"tables.recent_posts"`
+
+#### `[media.name]` - Media File Definitions
+
+Define media files (images, audio, video, documents) with automatic MIME type inference:
+
+```toml
+[media.logo]
+file = "./images/logo.png"
+# MIME type automatically inferred as "image/png"
+
+[media.screenshot]
+url = "https://example.com/dashboard.jpg"
+# MIME type automatically inferred as "image/jpeg"
+
+[media.interview]
+file = "./audio/interview.mp3"
+# MIME type automatically inferred as "audio/mp3"
+
+[media.report]
+file = "./docs/report.pdf"
+# MIME type automatically inferred as "application/pdf"
+
+[media.custom]
+file = "./image.webp"
+mime = "image/webp"  # Can override inferred type
+```
+
+Fields:
+- Source (one required): `file`, `url`, or `base64`
+- `mime` (string, optional): MIME type (auto-inferred from extension if not provided)
+- `filename` (string, optional): Filename for documents
+
+Supported extensions with auto-inference:
+- **Images**: .png, .jpg, .jpeg, .gif, .webp
+- **Audio**: .mp3, .wav, .ogg
+- **Video**: .mp4, .webm, .avi, .mov
+- **Documents**: .pdf, .txt, .md, .json
+
+Reference in acts: `"media.logo"`
+
+### Referencing Resources in Acts
+
+#### Single Resource Reference
+
+```toml
+[acts]
+# Reference a bot command
+fetch_data = "bots.get_stats"
+
+# Reference a table
+load_data = "tables.recent_posts"
+
+# Reference media
+analyze_image = "media.logo"
+
+# Plain text (unchanged)
+discuss = "What do you think about our stats?"
+```
+
+#### Multiple Inputs (Array Syntax)
+
+Combine resources and text in a single act:
+
+```toml
+[acts]
+comprehensive_analysis = [
+    "bots.get_stats",        # Bot command
+    "media.screenshot",       # Image
+    "tables.recent_posts",    # Table data
+    "Compare all this data"   # Text prompt
+]
+```
+
+#### Mixing Friendly and Verbose Syntax
+
+You can use friendly syntax for simple cases and drop down to verbose syntax when you need fine control:
+
+```toml
+[media.logo]
+file = "./logo.png"
+
+[acts]
+# Friendly syntax for simple act
+simple = "media.logo"
+
+# Verbose syntax for complex act with overrides
+[acts.complex]
+model = "gemini-2.0-flash-exp"
+temperature = 0.3
+max_tokens = 2000
+
+[[acts.complex.input]]
+ref = "media.logo"  # Reference defined media
+
+[[acts.complex.input]]
+type = "text"
+content = "Detailed analysis prompt"
+```
+
+Note: Use `ref = "resource.name"` in verbose syntax to reference friendly resources.
+
+### Benefits of Friendly Syntax
+
+- **DRY (Don't Repeat Yourself)**: Define once, use many times
+- **Less boilerplate**: ~30% fewer lines of code
+- **Easier to read**: Clear separation of resources and logic
+- **Easier to refactor**: Change definition in one place
+- **Sensible defaults**: MIME types inferred automatically
+- **100% backward compatible**: Existing narratives work unchanged
 
 ## Section Reference
 
@@ -45,9 +283,9 @@ Acts execute sequentially in this order, with each act seeing previous outputs a
 
 ### `[acts]` - Act Definitions
 
-Acts can be defined in two ways:
+Acts can be defined in several ways, from simple to complex:
 
-#### Simple Text Acts (Backward Compatible)
+#### 1. Simple Text Acts
 
 ```toml
 [acts]
@@ -59,9 +297,46 @@ This creates an act with:
 - No model override (uses executor default)
 - No temperature/max_tokens overrides
 
-#### Structured Acts (Full Configuration)
+#### 2. Resource References (Friendly Syntax)
 
-Use TOML's array-of-tables syntax (`[[...]]`) for multimodal inputs:
+Reference pre-defined resources:
+
+```toml
+[bots.get_stats]
+platform = "discord"
+command = "server.get_stats"
+guild_id = "123"
+
+[media.logo]
+file = "./logo.png"
+
+[acts]
+# Single resource
+fetch_data = "bots.get_stats"
+analyze_logo = "media.logo"
+```
+
+#### 3. Multiple Inputs (Array Syntax)
+
+Combine multiple resources and/or text:
+
+```toml
+[acts]
+analyze = [
+    "bots.get_stats",
+    "media.screenshot",
+    "Compare the screenshot with the stats"
+]
+
+multi_input = [
+    "tables.recent_posts",
+    "Based on these posts, recommend new content"
+]
+```
+
+#### 4. Structured Acts (Full Configuration)
+
+Use TOML's array-of-tables syntax (`[[...]]`) for full control:
 
 ```toml
 [acts.act_name]
@@ -317,38 +592,219 @@ type = "text"
 content = "Create a technical implementation plan"
 ```
 
+### Example 5: Friendly Syntax - Bot Commands and Media
+
+```toml
+[narrative]
+name = "discord_content_analysis"
+description = "Analyze Discord server with friendly syntax"
+
+[toc]
+order = ["fetch_stats", "fetch_channels", "analyze_screenshot", "recommend"]
+
+# Define bot commands once
+[bots.get_stats]
+platform = "discord"
+command = "server.get_stats"
+guild_id = "1234567890"
+
+[bots.get_channels]
+platform = "discord"
+command = "channels.list"
+guild_id = "1234567890"
+
+# Define media once
+[media.dashboard]
+file = "./screenshots/dashboard.png"
+# MIME type auto-inferred as image/png
+
+# Simple references in acts
+[acts]
+fetch_stats = "bots.get_stats"
+fetch_channels = "bots.get_channels"
+
+# Multi-input act with array syntax
+analyze_screenshot = [
+    "media.dashboard",
+    "bots.get_stats",
+    "Compare the dashboard screenshot with the actual stats"
+]
+
+# Mix bot commands with text
+recommend = [
+    "bots.get_stats",
+    "bots.get_channels",
+    "Based on our server stats and channel activity, recommend content strategy"
+]
+```
+
+### Example 6: Friendly Syntax - Table References
+
+```toml
+[narrative]
+name = "content_analysis"
+description = "Analyze previously generated content"
+
+[toc]
+order = ["load_posts", "load_metrics", "analyze_trends", "recommend"]
+
+# Define table queries once
+[tables.recent_posts]
+table_name = "social_posts_20241120_153045"
+where = "status = 'approved'"
+limit = 50
+format = "markdown"
+
+[tables.engagement_metrics]
+table_name = "post_metrics"
+columns = ["post_id", "views", "reactions", "shares"]
+order_by = "views DESC"
+limit = 20
+
+# Reference tables in acts
+[acts]
+load_posts = "tables.recent_posts"
+load_metrics = "tables.engagement_metrics"
+
+# Combine table data with text
+analyze_trends = [
+    "tables.recent_posts",
+    "tables.engagement_metrics",
+    "Identify trends in our top-performing content"
+]
+
+recommend = """
+Based on the analysis from {{analyze_trends}}, recommend 5 new content ideas
+that build on successful themes.
+"""
+```
+
+### Example 7: Comprehensive - All Friendly Syntax Features
+
+```toml
+[narrative]
+name = "comprehensive_friendly"
+description = "Demonstrates all friendly syntax features"
+
+[toc]
+order = ["fetch_data", "load_historical", "analyze_visual", "recommend"]
+
+# Bot commands
+[bots.get_stats]
+platform = "discord"
+command = "server.get_stats"
+guild_id = "1234567890"
+
+# Table queries
+[tables.previous_posts]
+table_name = "approved_posts_2024"
+limit = 30
+format = "markdown"
+
+# Media files with auto-inferred MIME types
+[media.logo]
+file = "./images/logo.png"
+
+[media.chart]
+url = "https://example.com/engagement_chart.jpg"
+
+[media.report]
+file = "./docs/q3_report.pdf"
+
+# Acts using friendly syntax
+[acts]
+# Single resource references
+fetch_data = "bots.get_stats"
+load_historical = "tables.previous_posts"
+
+# Multi-input with array syntax
+analyze_visual = [
+    "media.chart",
+    "media.logo",
+    "bots.get_stats",
+    "Analyze our branding and engagement data"
+]
+
+# Mix everything together
+recommend = [
+    "tables.previous_posts",
+    "media.report",
+    "bots.get_stats",
+    "Based on historical performance and current stats, create a content strategy"
+]
+```
+
+### Example 8: Mixing Friendly and Verbose Syntax
+
+You can start with friendly syntax and drop down to verbose when you need fine control:
+
+```toml
+[narrative]
+name = "mixed_syntax"
+description = "Mix friendly and verbose syntax"
+
+[toc]
+order = ["simple", "complex"]
+
+# Define resources
+[bots.get_stats]
+platform = "discord"
+command = "server.get_stats"
+guild_id = "123"
+
+[media.logo]
+file = "./logo.png"
+
+[acts]
+# Friendly syntax for simple act
+simple = ["bots.get_stats", "media.logo", "Quick analysis"]
+
+# Verbose syntax for complex act with overrides
+[acts.complex]
+model = "gemini-2.0-flash-exp"
+temperature = 0.3
+max_tokens = 2000
+
+# Can reference friendly resources with 'ref'
+[[acts.complex.input]]
+ref = "bots.get_stats"
+
+[[acts.complex.input]]
+ref = "media.logo"
+
+# And mix with inline definitions
+[[acts.complex.input]]
+type = "text"
+content = "Provide detailed technical analysis"
+```
+
 ## Best Practices
 
-1. **Context Passing**: Each act sees all previous outputs. Design prompts accordingly.
+1. **Use Friendly Syntax**: Start with friendly syntax (`[bots]`, `[tables]`, `[media]`) for cleaner, more maintainable narratives. Drop down to verbose syntax only when you need fine control.
+
+2. **Context Passing**: Each act sees all previous outputs. Design prompts accordingly.
 
 2. **Temperature Guidelines**:
    - 0.0-0.3: Analytical, factual, deterministic tasks
    - 0.4-0.7: Balanced tasks
    - 0.8-1.0: Creative, exploratory tasks
 
-3. **Model Selection**:
+3. **Define Resources Once**: Use `[bots]`, `[tables]`, and `[media]` sections to define resources once and reference them multiple times. This follows the DRY principle and makes refactoring easier.
+
+4. **Let MIME Types Be Inferred**: For media files, let Botticelli infer MIME types from file extensions (.png, .jpg, .mp3, .pdf, etc.). Only specify `mime` explicitly when you need to override the default.
+
+5. **Model Selection**:
    - Vision tasks: `gemini-pro-vision`, `gpt-4-vision-preview`
    - Audio transcription: `whisper-large-v3`
    - Document analysis: `claude-3-opus-20240229`
    - Creative writing: `gpt-4`, `claude-3-opus-20240229`
    - Fast tasks: `gpt-3.5-turbo`, `claude-3-haiku-20240307`
 
-4. **Mixing Formats**: You can mix simple and structured acts in the same narrative:
-   ```toml
-   [acts]
-   simple_act = "Just text"
+6. **Mixing Formats**: You can mix friendly and verbose syntax in the same narrative. Start simple and add complexity only where needed.
 
-   [acts.complex_act]
-   model = "gpt-4"
+7. **Act Naming**: Use descriptive act names that indicate their purpose (e.g., `fetch_stats`, `analyze_visual`, `recommend_strategy`).
 
-   [[acts.complex_act.input]]
-   type = "text"
-   content = "Complex prompt"
-   ```
-
-5. **Act Naming**: Use descriptive act names that indicate their purpose.
-
-6. **TOML Syntax**: Use array-of-tables `[[acts.act_name.input]]` for multiple inputs. This is idiomatic TOML and much more readable than inline tables.
+8. **Array Syntax for Multi-Input**: Use array syntax `act = ["resource1", "resource2", "text"]` for acts with multiple inputs. It's much cleaner than verbose table syntax.
 
 ## Content Generation
 
