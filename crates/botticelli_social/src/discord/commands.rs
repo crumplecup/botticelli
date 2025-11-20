@@ -247,6 +247,272 @@ impl DiscordCommandExecutor {
         Ok(serde_json::json!(channels_json))
     }
 
+    /// Execute: channels.get
+    ///
+    /// Get specific channel details.
+    ///
+    /// Required args: guild_id, channel_id
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "channels.get",
+            guild_id,
+            channel_id
+        )
+    )]
+    async fn channels_get(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        debug!("Parsing arguments");
+        let guild_id = Self::parse_guild_id("channels.get", args)?;
+
+        // Parse channel_id
+        let channel_id_value = args.get("channel_id").ok_or_else(|| {
+            error!(command = "channels.get", "Missing required argument: channel_id");
+            BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                command: "channels.get".to_string(),
+                arg_name: "channel_id".to_string(),
+            })
+        })?;
+
+        let channel_id_str = channel_id_value.as_str().ok_or_else(|| {
+            error!(command = "channels.get", ?channel_id_value, "channel_id must be a string");
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "channels.get".to_string(),
+                arg_name: "channel_id".to_string(),
+                reason: "Must be a string".to_string(),
+            })
+        })?;
+
+        let channel_id_u64: u64 = channel_id_str.parse().map_err(|_| {
+            error!(command = "channels.get", channel_id_str, "Invalid channel_id format");
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "channels.get".to_string(),
+                arg_name: "channel_id".to_string(),
+                reason: "Invalid Discord ID format".to_string(),
+            })
+        })?;
+
+        let channel_id = serenity::model::id::ChannelId::new(channel_id_u64);
+
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("channel_id", channel_id.get());
+        info!(guild_id = %guild_id, channel_id = %channel_id, "Fetching channel from Discord API");
+
+        // Fetch all channels and find the specific one
+        let channels = self
+            .http
+            .get_channels(guild_id)
+            .await
+            .map_err(|e| {
+                error!(guild_id = %guild_id, error = %e, "Failed to fetch channels");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "channels.get".to_string(),
+                    reason: format!("Failed to fetch channels: {}", e),
+                })
+            })?;
+
+        // Find the specific channel
+        let channel = channels
+            .into_iter()
+            .find(|c| c.id == channel_id)
+            .ok_or_else(|| {
+                error!(guild_id = %guild_id, channel_id = %channel_id, "Channel not found in guild");
+                BotCommandError::new(BotCommandErrorKind::ResourceNotFound {
+                    command: "channels.get".to_string(),
+                    resource_type: "channel".to_string(),
+                })
+            })?;
+
+        let channel_json = serde_json::json!({
+            "id": channel.id.to_string(),
+            "name": channel.name,
+            "type": format!("{:?}", channel.kind),
+            "position": channel.position,
+            "topic": channel.topic,
+            "nsfw": channel.nsfw,
+            "parent_id": channel.parent_id.map(|id| id.to_string()),
+            "rate_limit_per_user": channel.rate_limit_per_user,
+            "bitrate": channel.bitrate,
+        });
+
+        info!(channel_id = %channel_id, "Successfully retrieved channel details");
+
+        Ok(channel_json)
+    }
+
+    /// Execute: members.list
+    ///
+    /// List guild members (paginated).
+    ///
+    /// Required args: guild_id
+    /// Optional args: limit (default 100, max 1000)
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "members.list",
+            guild_id,
+            limit,
+            member_count
+        )
+    )]
+    async fn members_list(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        debug!("Parsing guild_id argument");
+        let guild_id = Self::parse_guild_id("members.list", args)?;
+
+        // Parse optional limit parameter
+        let limit = args
+            .get("limit")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(100)
+            .min(1000); // Discord's max is 1000
+
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("limit", limit);
+        info!(guild_id = %guild_id, limit, "Fetching guild members from Discord API");
+
+        // Fetch members
+        let members = self
+            .http
+            .get_guild_members(guild_id, Some(limit), None)
+            .await
+            .map_err(|e| {
+                error!(guild_id = %guild_id, error = %e, "Failed to fetch members");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "members.list".to_string(),
+                    reason: format!("Failed to fetch members: {}", e),
+                })
+            })?;
+
+        let member_count = members.len();
+        tracing::Span::current().record("member_count", member_count);
+
+        let members_json: Vec<JsonValue> = members
+            .into_iter()
+            .map(|member| {
+                let roles: Vec<String> = member
+                    .roles
+                    .iter()
+                    .map(|role_id| role_id.to_string())
+                    .collect();
+
+                serde_json::json!({
+                    "user_id": member.user.id.to_string(),
+                    "username": member.user.name,
+                    "discriminator": member.user.discriminator,
+                    "nickname": member.nick,
+                    "roles": roles,
+                    "joined_at": member.joined_at.map(|t| t.to_string()),
+                    "premium_since": member.premium_since.map(|t| t.to_string()),
+                    "avatar": member.avatar,
+                    "pending": member.pending,
+                    "deaf": member.deaf,
+                    "mute": member.mute,
+                })
+            })
+            .collect();
+
+        info!(member_count, "Successfully retrieved guild members");
+
+        Ok(serde_json::json!(members_json))
+    }
+
+    /// Execute: members.get
+    ///
+    /// Get specific member details.
+    ///
+    /// Required args: guild_id, user_id
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "members.get",
+            guild_id,
+            user_id
+        )
+    )]
+    async fn members_get(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        debug!("Parsing arguments");
+        let guild_id = Self::parse_guild_id("members.get", args)?;
+
+        // Parse user_id
+        let user_id_value = args.get("user_id").ok_or_else(|| {
+            error!(command = "members.get", "Missing required argument: user_id");
+            BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                command: "members.get".to_string(),
+                arg_name: "user_id".to_string(),
+            })
+        })?;
+
+        let user_id_str = user_id_value.as_str().ok_or_else(|| {
+            error!(command = "members.get", ?user_id_value, "user_id must be a string");
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "members.get".to_string(),
+                arg_name: "user_id".to_string(),
+                reason: "Must be a string".to_string(),
+            })
+        })?;
+
+        let user_id_u64: u64 = user_id_str.parse().map_err(|_| {
+            error!(command = "members.get", user_id_str, "Invalid user_id format");
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "members.get".to_string(),
+                arg_name: "user_id".to_string(),
+                reason: "Invalid Discord ID format".to_string(),
+            })
+        })?;
+
+        let user_id = serenity::model::id::UserId::new(user_id_u64);
+
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("user_id", user_id.get());
+        info!(guild_id = %guild_id, user_id = %user_id, "Fetching member from Discord API");
+
+        // Fetch member
+        let member = self
+            .http
+            .get_member(guild_id, user_id)
+            .await
+            .map_err(|e| {
+                error!(guild_id = %guild_id, user_id = %user_id, error = %e, "Failed to fetch member");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "members.get".to_string(),
+                    reason: format!("Failed to fetch member: {}", e),
+                })
+            })?;
+
+        let roles: Vec<String> = member
+            .roles
+            .iter()
+            .map(|role_id| role_id.to_string())
+            .collect();
+
+        let member_json = serde_json::json!({
+            "user_id": member.user.id.to_string(),
+            "username": member.user.name,
+            "discriminator": member.user.discriminator,
+            "nickname": member.nick,
+            "roles": roles,
+            "joined_at": member.joined_at.map(|t| t.to_string()),
+            "premium_since": member.premium_since.map(|t| t.to_string()),
+            "avatar": member.avatar,
+            "pending": member.pending,
+            "deaf": member.deaf,
+            "mute": member.mute,
+            "communication_disabled_until": member.communication_disabled_until.map(|t| t.to_string()),
+        });
+
+        info!(user_id = %user_id, "Successfully retrieved member details");
+
+        Ok(member_json)
+    }
+
     /// Execute: roles.list
     ///
     /// List all roles in a server.
@@ -333,7 +599,10 @@ impl BotCommandExecutor for DiscordCommandExecutor {
         let result = match command {
             "server.get_stats" => self.server_get_stats(args).await?,
             "channels.list" => self.channels_list(args).await?,
+            "channels.get" => self.channels_get(args).await?,
             "roles.list" => self.roles_list(args).await?,
+            "members.list" => self.members_list(args).await?,
+            "members.get" => self.members_get(args).await?,
             _ => {
                 error!(
                     command,
@@ -365,7 +634,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     fn supports_command(&self, command: &str) -> bool {
         matches!(
             command,
-            "server.get_stats" | "channels.list" | "roles.list"
+            "server.get_stats"
+                | "channels.list"
+                | "channels.get"
+                | "roles.list"
+                | "members.list"
+                | "members.get"
         )
     }
 
@@ -373,7 +647,10 @@ impl BotCommandExecutor for DiscordCommandExecutor {
         vec![
             "server.get_stats".to_string(),
             "channels.list".to_string(),
+            "channels.get".to_string(),
             "roles.list".to_string(),
+            "members.list".to_string(),
+            "members.get".to_string(),
         ]
     }
 
@@ -389,9 +666,25 @@ impl BotCommandExecutor for DiscordCommandExecutor {
                  Required arguments: guild_id"
                     .to_string(),
             ),
+            "channels.get" => Some(
+                "Get specific channel details\n\
+                 Required arguments: guild_id, channel_id"
+                    .to_string(),
+            ),
             "roles.list" => Some(
                 "List all roles in a server\n\
                  Required arguments: guild_id"
+                    .to_string(),
+            ),
+            "members.list" => Some(
+                "List guild members (paginated)\n\
+                 Required arguments: guild_id\n\
+                 Optional arguments: limit (default 100, max 1000)"
+                    .to_string(),
+            ),
+            "members.get" => Some(
+                "Get specific member details\n\
+                 Required arguments: guild_id, user_id"
                     .to_string(),
             ),
             _ => None,
@@ -410,7 +703,10 @@ mod tests {
 
         assert!(executor.supports_command("server.get_stats"));
         assert!(executor.supports_command("channels.list"));
+        assert!(executor.supports_command("channels.get"));
         assert!(executor.supports_command("roles.list"));
+        assert!(executor.supports_command("members.list"));
+        assert!(executor.supports_command("members.get"));
         assert!(!executor.supports_command("unknown.command"));
     }
 
@@ -420,10 +716,13 @@ mod tests {
         let executor = DiscordCommandExecutor::new(token);
 
         let commands = executor.supported_commands();
-        assert_eq!(commands.len(), 3);
+        assert_eq!(commands.len(), 6);
         assert!(commands.contains(&"server.get_stats".to_string()));
         assert!(commands.contains(&"channels.list".to_string()));
+        assert!(commands.contains(&"channels.get".to_string()));
         assert!(commands.contains(&"roles.list".to_string()));
+        assert!(commands.contains(&"members.list".to_string()));
+        assert!(commands.contains(&"members.get".to_string()));
     }
 
     #[test]
@@ -433,7 +732,10 @@ mod tests {
 
         assert!(executor.command_help("server.get_stats").is_some());
         assert!(executor.command_help("channels.list").is_some());
+        assert!(executor.command_help("channels.get").is_some());
         assert!(executor.command_help("roles.list").is_some());
+        assert!(executor.command_help("members.list").is_some());
+        assert!(executor.command_help("members.get").is_some());
         assert!(executor.command_help("unknown.command").is_none());
     }
 
