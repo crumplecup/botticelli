@@ -4,12 +4,70 @@
 
 This document outlines planned enhancements to the narrative TOML specification to support:
 
-1. **Bot Commands** - Execute Discord bot commands and include results in prompts
-2. **Table References** - Attach data from existing database tables to prompts
+1. **Bot Commands** - Execute Discord bot commands and include results in prompts (**PHASE 2 - PARTIALLY IMPLEMENTED**)
+2. **Table References** - Attach data from existing database tables to prompts (**PHASE 3 - PARTIALLY IMPLEMENTED**)
 
 These features enable narratives to interact with external systems and reference previously generated content, creating more powerful and composable workflows.
 
-## Current Gaps
+**Current Status** (as of commit `181bfb4`):
+- ✅ **Phase 1 Complete**: Friendly syntax foundation with resource definitions
+- ⏸️ **Phase 2 In Progress**: `Input::BotCommand` type exists, executor integration needed
+- ⏸️ **Phase 3 In Progress**: `Input::Table` type exists, executor integration needed
+
+See `IMPLEMENTATION_STATUS.md` for detailed progress tracking.
+
+## Current Implementation Status
+
+### Phase 1: Friendly Syntax ✅ **COMPLETE**
+
+All infrastructure for resource definitions is implemented:
+- ✅ `[bots.name]`, `[tables.name]`, `[media.name]` sections
+- ✅ Reference resolution: `"bots.name"` → `Input::BotCommand`
+- ✅ Array syntax: `["ref1", "ref2", "text"]`
+- ✅ MIME type inference from file extensions
+- ✅ Backward compatibility maintained
+
+**Commit**: `a941fdc` - feat(narrative): implement Phase 1 - friendly syntax foundation
+
+### Phase 2: Bot Commands ⏸️ **PARTIALLY IMPLEMENTED**
+
+**What's Done**:
+- ✅ `Input::BotCommand` variant exists in `botticelli_core`
+- ✅ TOML parsing with `TomlBotDefinition`
+- ✅ Reference resolution: `"bots.name"` → `Input::BotCommand`
+- ✅ Database storage (command stored in text_content field)
+- ✅ Comprehensive implementation plan in `PHASE_2_BOT_COMMANDS.md`
+
+**What's Needed** (to make bot commands actually work):
+1. `BotCommandExecutor` trait (platform abstraction)
+2. `DiscordCommandExecutor` implementation
+3. `NarrativeExecutor` integration to process `Input::BotCommand`
+4. Error handling for required vs optional commands
+5. Caching layer for bot command results
+
+**Current Gap**: Bot commands are parsed but not executed - they need executor integration.
+
+### Phase 3: Table References ⏸️ **PARTIALLY IMPLEMENTED**
+
+**What's Done**:
+- ✅ `Input::Table` variant exists in `botticelli_core`
+- ✅ TOML parsing with `TomlTableDefinition`
+- ✅ Reference resolution: `"tables.name"` → `Input::Table`
+- ✅ Database storage (table name stored in text_content field)
+- ✅ Design outlined in this document
+
+**What's Needed** (to make table references actually work):
+1. `TableQueryExecutor` in `botticelli_database`
+2. SQL query building with sanitization
+3. Data formatting (JSON, Markdown, CSV)
+4. `NarrativeExecutor` integration to process `Input::Table`
+5. Security and performance optimizations
+
+**Current Gap**: Table references are parsed but not executed - they need executor integration.
+
+---
+
+## Original Gaps (Context for Design)
 
 ### Gap 1: Bot Commands
 
@@ -54,9 +112,11 @@ Narrative 2: Analyze those posts for themes
 
 ### Feature 1: Bot Command Execution
 
-#### TOML Syntax
+**Implementation Status**: ✅ TOML syntax implemented, ⏸️ executor integration pending
 
-Add a new input type: `type = "bot_command"`
+See `PHASE_2_BOT_COMMANDS.md` for comprehensive implementation plan (architecture, tracing, security, testing).
+
+#### TOML Syntax (✅ Implemented)
 
 ```toml
 [narrative]
@@ -180,7 +240,13 @@ impl TomlInput {
 }
 ```
 
-**3. Bot Command Executor**
+**3. Bot Command Executor** ⏸️ **TODO**
+
+See `PHASE_2_BOT_COMMANDS.md` for detailed design with:
+- Trait definition with comprehensive tracing
+- Registry pattern for multi-platform support
+- Caching layer implementation
+- Error handling with `derive_more`
 
 ```rust
 // crates/botticelli_social/src/discord/command_executor.rs
@@ -345,9 +411,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Feature 2: Table References
 
-#### TOML Syntax
+**Implementation Status**: ✅ TOML syntax implemented, ⏸️ executor integration pending
 
-Add a new input type: `type = "table"`
+#### TOML Syntax (✅ Implemented)
 
 ```toml
 [narrative]
@@ -547,7 +613,9 @@ impl TomlInput {
 }
 ```
 
-**3. Table Query Executor**
+**3. Table Query Executor** ⏸️ **TODO**
+
+Needs implementation in `botticelli_database` crate:
 
 ```rust
 // crates/botticelli_database/src/table_query.rs
@@ -802,12 +870,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Implementation Phases
 
-### Phase 1: Bot Commands (2-3 weeks)
+### Phase 1: Friendly Syntax Foundation ✅ **COMPLETE** (commit `a941fdc`)
+
+All resource definition and reference resolution implemented.
+
+### Phase 2: Bot Commands ⏸️ **IN PROGRESS** (2-3 weeks remaining)
 
 **Week 1: Foundation**
-- [ ] Add `Input::BotCommand` variant to botticelli_core
-- [ ] Update TOML parser to support bot_command input type
-- [ ] Create `BotCommandExecutor` trait in botticelli_social
+- [x] Add `Input::BotCommand` variant to botticelli_core ✅ (commit `a941fdc`)
+- [x] Update TOML parser to support bot_command input type ✅ (commit `181bfb4`)
+- [ ] Create `BotCommandExecutor` trait (see `PHASE_2_BOT_COMMANDS.md` for design)
 - [ ] Implement basic Discord command executor (server.get_stats, channels.list)
 
 **Week 2: Integration**
@@ -823,11 +895,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 - [ ] Create example narratives using bot commands
 - [ ] Add to Discord community server plan
 
-### Phase 2: Table References (2-3 weeks)
+### Phase 3: Table References ⏸️ **PENDING** (2-3 weeks, starts after Phase 2)
 
 **Week 1: Foundation**
-- [ ] Add `Input::Table` variant to botticelli_core
-- [ ] Update TOML parser to support table input type
+- [x] Add `Input::Table` variant to botticelli_core ✅ (commit `a941fdc`)
+- [x] Update TOML parser to support table input type ✅ (commit `181bfb4`)
 - [ ] Create `TableQueryExecutor` in botticelli_database
 - [ ] Implement basic SELECT queries with filters
 
@@ -845,7 +917,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 - [ ] Update NARRATIVE_TOML_SPEC.md
 - [ ] Create example narratives using table references
 
-### Phase 3: Advanced Features (Future)
+### Phase 4: Advanced Features (Future Backlog)
 
 **Enhancements to Consider**:
 - [ ] Table joins for complex queries
@@ -989,17 +1061,50 @@ New sections to add:
 
 ## Related Documents
 
-- `NARRATIVE_TOML_SPEC.md` - Current specification (will be updated)
+- **`PHASE_2_BOT_COMMANDS.md`** - Detailed Phase 2 implementation plan with architecture, tracing, and security
+- **`IMPLEMENTATION_STATUS.md`** - Current implementation status for all phases
+- `NARRATIVE_TOML_SPEC.md` - Current specification (updated with friendly syntax)
 - `CONTENT_GENERATION.md` - Content generation workflows
 - `DISCORD_COMMUNITY_SERVER_PLAN.md` - Will use bot commands extensively
 - `DISCORD_SETUP.md` - Bot setup and permissions
+- `CLAUDE.md` - Project standards for error handling, tracing, and derives
 
 ## Conclusion
 
 Adding bot commands and table references will significantly enhance Botticelli's composability and enable powerful new workflows:
 
-- **Bot Commands** enable narratives to interact with live Discord data
-- **Table References** enable narratives to build on previous generations
+- **Bot Commands** (Phase 2 - 50% complete) enable narratives to interact with live Discord data
+  - ✅ Type system and TOML parsing complete
+  - ⏸️ Executor integration pending (see `PHASE_2_BOT_COMMANDS.md`)
+  
+- **Table References** (Phase 3 - 50% complete) enable narratives to build on previous generations
+  - ✅ Type system and TOML parsing complete
+  - ⏸️ Query executor pending
+  
 - Together, they create a **composable narrative system** where outputs become inputs
 
 These features transform Botticelli from a linear execution engine into a **data-aware, platform-integrated content generation system**.
+
+---
+
+## Next Steps
+
+1. **Implement Phase 2 Bot Commands**:
+   - Create `BotCommandExecutor` trait in new crate or `botticelli_social`
+   - Implement `DiscordCommandExecutor` with Discord API integration
+   - Integrate into `NarrativeExecutor.execute()` to process `Input::BotCommand`
+   - Add comprehensive tracing (see `PHASE_2_BOT_COMMANDS.md` for patterns)
+   - Test with mock and real Discord bots
+
+2. **Implement Phase 3 Table References**:
+   - Create `TableQueryExecutor` in `botticelli_database`
+   - Implement SQL query building with injection protection
+   - Add data formatting functions (JSON, Markdown, CSV)
+   - Integrate into `NarrativeExecutor.execute()` to process `Input::Table`
+   - Test with real database queries
+
+3. **Update Documentation**:
+   - Update `NARRATIVE_TOML_SPEC.md` after executors are working
+   - Create user guide for bot commands
+   - Create user guide for table references
+   - Add example narratives demonstrating both features

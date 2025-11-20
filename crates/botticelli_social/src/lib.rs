@@ -4,6 +4,15 @@
 //! enabling Botticelli to post narrative content, respond to events, and
 //! interact with users across different platforms.
 //!
+//! # Bot Command Execution
+//!
+//! The crate provides a platform-agnostic command execution system:
+//! - `BotCommandExecutor` - Trait for implementing platform-specific commands
+//! - `BotCommandRegistry` - Registry for managing multiple platform executors
+//! - `BotCommandError` - Error types for command failures
+//!
+//! # Platform Support
+//!
 //! Each platform is feature-gated and lives in its own submodule:
 //! - `discord` - Discord bot integration (requires `discord` feature)
 //! - `telegram` - Telegram bot integration (requires `telegram` feature, not yet implemented)
@@ -14,11 +23,22 @@
 //! - Diesel models for database persistence
 //! - Repository layer for data access
 //! - Client/handler for platform API interaction
-//! - Integration with Botticelli's narrative system
+//! - Bot command executor for narrative integration
+
+#![warn(missing_docs)]
+
+mod bot_commands;
 
 #[cfg(feature = "discord")]
 mod discord;
 
+// Export bot command infrastructure (always available)
+pub use bot_commands::{
+    BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandRegistry,
+    BotCommandResult,
+};
+
+// Export Discord-specific types (feature-gated)
 #[cfg(feature = "discord")]
 pub use discord::{
     BotticelliBot, BotticelliHandler, ChannelRow, ChannelType, DiscordChannelJson,
