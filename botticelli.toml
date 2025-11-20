@@ -24,9 +24,9 @@ default_tier = "free"
 # Tier-level defaults (used when no model-specific override exists)
 [providers.gemini.tiers.free]
 name = "Free"
-rpm = 10                                # Default (gemini-2.5-flash)
-tpm = 250_000                           # Default (gemini-2.5-flash)
-rpd = 250                               # Default (gemini-2.5-flash)
+rpm = 10                             # Default (gemini-2.5-flash)
+tpm = 250_000                        # Default (gemini-2.5-flash)
+rpd = 250                            # Default (gemini-2.5-flash)
 max_concurrent = 1
 cost_per_million_input_tokens = 0.0
 cost_per_million_output_tokens = 0.0
@@ -55,11 +55,11 @@ rpd = 200
 # Pay-as-you-go tier defaults
 [providers.gemini.tiers.payasyougo]
 name = "Pay-as-you-go"
-rpm = 1_000                             # Default (gemini-2.5-flash)
-tpm = 1_000_000                         # Default (gemini-2.5-flash)
+rpm = 1_000            # Default (gemini-2.5-flash)
+tpm = 1_000_000        # Default (gemini-2.5-flash)
 # rpd not specified = unlimited
 max_concurrent = 1
-cost_per_million_input_tokens = 0.075  # Gemini 2.0 Flash pricing
+cost_per_million_input_tokens = 0.075 # Gemini 2.0 Flash pricing
 cost_per_million_output_tokens = 0.30
 
 # Model-specific overrides for pay-as-you-go tier
@@ -97,7 +97,7 @@ name = "Tier 1"
 rpm = 5
 tpm = 20_000
 max_concurrent = 5
-cost_per_million_input_tokens = 3.0    # Claude 3.5 Sonnet
+cost_per_million_input_tokens = 3.0   # Claude 3.5 Sonnet
 cost_per_million_output_tokens = 15.0
 
 [providers.anthropic.tiers.tier2]
@@ -147,7 +147,7 @@ name = "Tier 1"
 rpm = 500
 tpm = 200_000
 max_concurrent = 50
-cost_per_million_input_tokens = 2.50   # GPT-4 Turbo (varies by model)
+cost_per_million_input_tokens = 2.50  # GPT-4 Turbo (varies by model)
 cost_per_million_output_tokens = 10.0
 
 [providers.openai.tiers.tier2]
@@ -181,6 +181,11 @@ tpm = 100_000_000
 max_concurrent = 50
 cost_per_million_input_tokens = 2.50
 cost_per_million_output_tokens = 10.0
+
+[inference]
+backend = "local"
+api_url = "http://localhost:8080"
+model = "mistralai/Mistral-7B-Instruct-v0.2" # Must match the model you started
 
 # ============================================================================
 # Additional Providers
