@@ -10,7 +10,7 @@ members = [
     "crates/botticelli_narrative",
     "crates/botticelli_social",
     "crates/botticelli_tui",
-    "crates/botticelli", "crates/botticelli_server",
+    "crates/botticelli", "crates/botticelli_server", "crates/botticelli_security",
 ]
 resolver = "2"
 

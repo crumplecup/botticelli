@@ -1,0 +1,25 @@
+[package]
+name = "botticelli_security"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Security framework for safe agentic bot operations"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+botticelli_error = { path = "../botticelli_error" }
+derive_more = { workspace = true, features = ["display", "from", "deref", "deref_mut"] }
+serde = { workspace = true, features = ["derive"] }
+toml = { workspace = true }
+regex = "1"
+tracing = { workspace = true }
+
+# Optional for database-backed approval workflows
+diesel = { workspace = true, optional = true }
+
+[features]
+default = []
+database = ["dep:diesel", "botticelli_error/database"]
