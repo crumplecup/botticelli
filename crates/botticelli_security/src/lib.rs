@@ -31,7 +31,7 @@ pub use error::{SecurityError, SecurityErrorKind, SecurityResult};
 pub use permission::{
     CommandPermission, ResourcePermission, PermissionConfig, PermissionChecker,
 };
-pub use validation::{CommandValidator, ValidationError};
+pub use validation::{CommandValidator, ValidationError, DiscordValidator};
 pub use content::{ContentFilter, ContentFilterConfig, ContentViolation};
 pub use rate_limit::{RateLimiter, RateLimit, RateLimitExceeded};
 pub use approval::{ApprovalWorkflow, PendingAction, ApprovalDecision};
