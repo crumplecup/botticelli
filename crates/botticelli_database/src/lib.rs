@@ -32,12 +32,12 @@ mod models;
 mod narrative_conversions;
 mod narrative_models;
 mod narrative_repository;
+mod schema_docs;
+mod schema_inference;
+mod schema_reflection;
 
-// Public modules for external access
+// Schema module must be public for Diesel's #[diesel(table_name = ...)] attributes
 pub mod schema;
-pub mod schema_docs;
-pub mod schema_inference;
-pub mod schema_reflection;
 
 // Re-export connection utilities
 pub use connection::establish_connection;
@@ -65,6 +65,18 @@ pub use narrative_models::{
     NewNarrativeExecutionRow,
 };
 pub use narrative_repository::PostgresNarrativeRepository;
+
+// Re-export schema documentation types
+pub use schema_docs::{assemble_prompt, generate_schema_prompt, is_content_focus};
+
+// Re-export schema inference types
+pub use schema_inference::{create_inferred_table, infer_schema, InferredSchema};
+
+// Re-export schema reflection types
+pub use schema_reflection::{
+    create_content_table, generate_create_table_sql, reflect_table_schema, table_exists,
+    ColumnInfo, TableSchema,
+};
 
 use botticelli_error::DatabaseError;
 

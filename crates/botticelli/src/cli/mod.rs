@@ -17,3 +17,5 @@ pub use run::run_narrative;
 #[cfg(feature = "server")]
 pub use server::handle_server_command;
 pub use tui_handler::launch_tui;
+#[cfg(all(feature = "tui", feature = "server"))]
+pub use tui_handler::launch_server_tui;

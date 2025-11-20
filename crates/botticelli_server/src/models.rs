@@ -69,7 +69,7 @@ impl ModelSpec {
     /// Parse from a string identifier
     pub fn parse(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
-            "mistral-7b-q4" | "mistral-7b-instruct-v0.3-q4" => {
+            "mistral-7b-q4" | "mistral-7b-instruct-v0.3-q4" | "mistral-7b-instruct" | "mistral" => {
                 Some(ModelSpec::Mistral7BInstructV03Q4)
             }
             "mistral-7b-q5" | "mistral-7b-instruct-v0.3-q5" => {

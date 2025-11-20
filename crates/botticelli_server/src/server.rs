@@ -20,16 +20,39 @@ impl ServerHandle {
     fn start_internal(port: u16, model_path: String, tokenizer_id: String) -> Result<Self, ServerError> {
         info!("Starting inference server on port {}", port);
         
+        // Extract directory and filename from model_path
+        let path = std::path::Path::new(&model_path);
+        let model_dir = path.parent().ok_or_else(|| {
+            ServerError::new(ServerErrorKind::ServerStartFailed(
+                "Model path must have a parent directory".to_string()
+            ))
+        })?;
+        let filename = path.file_name().ok_or_else(|| {
+            ServerError::new(ServerErrorKind::ServerStartFailed(
+                "Model path must have a filename".to_string()
+            ))
+        })?;
+        
+        debug!(
+            model_dir = ?model_dir,
+            filename = ?filename,
+            tokenizer = %tokenizer_id,
+            "Starting mistralrs-server"
+        );
+        
         let process = Command::new("mistralrs-server")
             .arg("--port")
             .arg(port.to_string())
             .arg("gguf")
             .arg("-m")
-            .arg(&model_path)
+            .arg(model_dir)
+            .arg("-f")
+            .arg(filename)
             .arg("-t")
             .arg(&tokenizer_id)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .stdin(Stdio::null())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
             .spawn()
             .map_err(|e| {
                 ServerError::new(ServerErrorKind::ServerStartFailed(format!(

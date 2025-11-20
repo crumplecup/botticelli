@@ -42,6 +42,10 @@ pub enum Commands {
         table: String,
     },
 
+    /// Launch the terminal user interface for server management
+    #[cfg(all(feature = "tui", feature = "server"))]
+    TuiServer,
+
     /// Content management commands
     #[command(subcommand)]
     Content(ContentCommands),

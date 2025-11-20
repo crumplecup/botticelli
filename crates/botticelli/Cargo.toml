@@ -33,6 +33,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde_json = { workspace = true }
 dirs = { workspace = true }
 
+# TUI dependencies (optional, only when both tui and server features are enabled)
+ratatui = { version = "0.29", optional = true }
+crossterm = { version = "0.28", optional = true }
+
 [features]
 default = []
 
@@ -46,7 +50,7 @@ database = ["botticelli_database", "botticelli_narrative/database"]
 discord = ["botticelli_social", "botticelli_social/discord"]
 
 # TUI feature
-tui = ["botticelli_tui"]
+tui = ["botticelli_tui", "dep:ratatui", "dep:crossterm"]
 
 # Local model server feature
 server = ["botticelli_server"]

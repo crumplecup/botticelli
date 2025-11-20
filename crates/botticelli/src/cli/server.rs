@@ -90,7 +90,13 @@ async fn start_server(
         std::mem::forget(handle); // Keep running in background
     } else {
         println!("Server running on port {} (press Ctrl+C to stop)...", port);
-        handle.wait().await?;
+        
+        // Wait for Ctrl+C signal
+        tokio::signal::ctrl_c().await?;
+        
+        println!("\nShutting down server...");
+        handle.stop()?;
+        println!("✓ Server stopped");
     }
 
     Ok(())
@@ -150,9 +156,9 @@ async fn list_models(model_dir: &PathBuf) -> Result<(), Box<dyn std::error::Erro
 
     println!();
     println!("Popular models you can download:");
-    println!("  • mistral-7b-instruct  - Mistral 7B Instruct v0.2");
-    println!("  • llama3-8b           - Meta Llama 3 8B");
-    println!("  • phi3-mini           - Microsoft Phi-3 Mini");
+    println!("  • mistral-7b-instruct (or mistral) - Mistral 7B Instruct v0.3 Q4 (~4GB)");
+    println!("  • mistral-7b-q5                    - Mistral 7B Instruct v0.3 Q5 (~5GB)");
+    println!("  • mistral-7b-q8                    - Mistral 7B Instruct v0.3 Q8 (~7GB)");
     println!();
     println!("Download with: botticelli server download <model>");
 

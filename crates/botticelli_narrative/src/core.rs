@@ -9,7 +9,7 @@ use std::str::FromStr;
 #[cfg(feature = "database")]
 use botticelli_core::Input;
 #[cfg(feature = "database")]
-use botticelli_database::schema_docs::{assemble_prompt, is_content_focus};
+use botticelli_database::{assemble_prompt, is_content_focus};
 #[cfg(feature = "database")]
 use diesel::pg::PgConnection;
 

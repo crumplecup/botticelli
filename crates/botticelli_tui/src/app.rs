@@ -413,7 +413,7 @@ pub fn run_tui(table_name: String, conn: PgConnection) -> BotticelliResult<()> {
 
 /// Run the application event loop.
 #[tracing::instrument(skip_all)]
-fn run_app<B: ratatui::backend::Backend>(
+pub fn run_app<B: ratatui::backend::Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
     events: &mut EventHandler,

@@ -12,6 +12,8 @@ mod cli;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use cli::{Cli, Commands, handle_content_command, launch_tui, run_narrative};
+    #[cfg(all(feature = "tui", feature = "server"))]
+    use cli::launch_server_tui;
     #[cfg(feature = "server")]
     use cli::handle_server_command;
 
@@ -42,6 +44,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         Commands::Tui { table } => {
             launch_tui(&table).await?;
+        }
+
+        #[cfg(all(feature = "tui", feature = "server"))]
+        Commands::TuiServer => {
+            launch_server_tui().await?;
         }
 
         Commands::Content(content_cmd) => {

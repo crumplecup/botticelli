@@ -306,12 +306,39 @@ content-list table:
 content-show table id:
     cargo run -p botticelli --release --features database,gemini -- content show {{table}} {{id}}
 
+# Model Server Management
+# =======================
+
+# List available models for download
+server-models:
+    cargo run -p botticelli --release --features server -- server list
+
+# Download a model by name
+server-download model:
+    cargo run -p botticelli --release --features server -- server download {{model}}
+
+# Start the inference server
+server-start model="mistral":
+    cargo run -p botticelli --release --features server -- server start {{model}}
+
+# Stop the inference server
+server-stop:
+    cargo run -p botticelli --release --features server -- server stop
+
+# Check server status
+server-status:
+    cargo run -p botticelli --release --features server -- server status
+
 # TUI (Terminal User Interface)
 # ==============================
 
 # Launch TUI for a specific table
 tui table:
     cargo run -p botticelli --release --features tui -- tui {{table}}
+
+# Launch TUI server management view
+tui-server:
+    cargo run -p botticelli --release --features tui,server -- tui-server
 
 # Launch TUI for a table with all features enabled
 tui-all table:
