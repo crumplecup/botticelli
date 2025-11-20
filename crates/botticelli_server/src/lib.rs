@@ -1,47 +1,45 @@
-//! Local inference server integration for Botticelli
+//! Generic inference server traits and OpenAI-compatible client for Botticelli
 //!
-//! This crate provides a client for interacting with local inference servers
-//! (like mistral.rs), enabling fast local model inference for large language models.
+//! This crate provides trait interfaces for local LLM inference servers and a generic
+//! client for interacting with OpenAI-compatible APIs. Server implementations are
+//! provided by external crates (e.g., `botticelli_mistral` for MistralRS).
 //!
 //! # Features
 //!
-//! - OpenAI-compatible API client
-//! - Streaming and non-streaming inference
-//! - Full observability with tracing instrumentation
+//! - **Trait Interfaces**: `InferenceServer`, `ServerLauncher`, `ModelManager`
+//! - **Generic Client**: OpenAI-compatible HTTP client with streaming support
+//! - **Request/Response Types**: Standard chat completion API types
+//! - **Full Observability**: Comprehensive tracing instrumentation
 //!
-//! # Setup
-//!
-//! 1. Install an inference server (e.g., mistral.rs)
-//! 2. Start the server: `mistralrs_server --port 8080`
-//! 3. Set environment variables:
-//!    - `INFERENCE_SERVER_BASE_URL` (default: "http://localhost:8080")
-//!    - `INFERENCE_SERVER_MODEL` (required, e.g., "microsoft/Phi-3.5-mini-instruct")
-//!
-//! # Example
+//! # Example with External Implementation
 //!
 //! ```rust,no_run
-//! use botticelli_server::{ServerClient, ServerConfig, Message, ChatCompletionRequest};
+//! use botticelli_server::{ServerClient, ServerConfig};
+//! // Server implementation from external crate:
+//! // use botticelli_mistral::{MistralLauncher, MistralConfig, MistralModelManager, MistralModelSpec};
+//! // use botticelli_server::{InferenceServer, ServerLauncher, ModelManagerTrait};
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let config = ServerConfig::new("http://localhost:8080", "phi-3.5");
+//!     // Assuming server is already running at localhost:8080
+//!     let config = ServerConfig::new("http://localhost:8080", "mistral-7b");
 //!     let client = ServerClient::new(config);
 //!
-//!     let request = ChatCompletionRequest {
-//!         model: "phi-3.5".into(),
-//!         messages: vec![Message::user("Explain Rust ownership")],
-//!         max_tokens: Some(100),
-//!         temperature: Some(0.7),
-//!         top_p: None,
-//!         stream: None,
-//!     };
-//!
-//!     let response = client.chat_completion(request).await?;
-//!     println!("{}", response.choices[0].message.content);
+//!     // Use client to interact with the server...
 //!
 //!     Ok(())
 //! }
 //! ```
+//!
+//! # Server Implementations
+//!
+//! Server implementations live in external crates to avoid git dependencies:
+//!
+//! - **`botticelli_mistral`**: MistralRS GGUF model inference
+//! - **`botticelli_llamacpp`**: llama.cpp integration (community)
+//! - **`botticelli_ollama`**: Ollama integration (community)
+//!
+//! See trait documentation for implementation guidelines.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
@@ -49,26 +47,15 @@
 mod client;
 mod config;
 mod convert;
-mod models;
 mod request;
 mod response;
-mod server;
 mod traits;
 
 pub use botticelli_error::{ServerError, ServerErrorKind};
 pub use client::ServerClient;
 pub use config::ServerConfig;
-
-// Deprecated exports - will be removed in Phase 5
-#[allow(deprecated)]
-pub use models::{ModelManager, ModelSpec};
-#[allow(deprecated)]
-pub use server::ServerHandle;
-
-// New trait-based exports
-pub use traits::{InferenceServer, ModelManager as ModelManagerTrait, ServerLauncher};
-
 pub use request::{ChatCompletionRequest, Message};
 pub use response::{
     ChatCompletionChunk, ChatCompletionResponse, Choice, ChoiceMessage, ChunkChoice, Delta, Usage,
 };
+pub use traits::{InferenceServer, ModelManager as ModelManagerTrait, ServerLauncher};
