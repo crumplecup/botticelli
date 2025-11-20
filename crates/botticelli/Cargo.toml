@@ -70,6 +70,7 @@ dotenvy = { workspace = true }
 async-trait = { workspace = true }
 serde_json = { workspace = true }
 botticelli_cache = { workspace = true }
+diesel = { workspace = true, features = ["postgres"] }
 
 [[bin]]
 name = "botticelli"

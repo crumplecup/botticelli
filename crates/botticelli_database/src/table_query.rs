@@ -163,7 +163,7 @@ impl TableQueryExecutor {
 
         #[derive(QueryableByName)]
         struct JsonRow {
-            #[diesel(sql_type = diesel::sql_types::Jsonb)]
+            #[diesel(sql_type = diesel::sql_types::Json)]
             json: JsonValue,
         }
 

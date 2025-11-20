@@ -106,7 +106,7 @@ impl DiscordCommandExecutor {
     }
 
     /// Check permission for a write operation.
-    fn check_permission(&self, command: &str, resource_type: ResourceType, resource_id: &str) -> BotCommandResult<()> {
+    fn check_permission(&self, command: &str, _resource_type: ResourceType, resource_id: &str) -> BotCommandResult<()> {
         let checker = self.permission_checker.as_ref().ok_or_else(|| {
             error!(command, "Write operation requires permission checker");
             BotCommandError::new(BotCommandErrorKind::SecurityError {
@@ -115,21 +115,16 @@ impl DiscordCommandExecutor {
             })
         })?;
 
-        let permission = Permission::builder()
-            .action(ActionType::Write)
-            .resource_type(resource_type)
-            .resource_id(resource_id.to_string())
-            .build();
-
-        if !checker.check(&permission) {
-            error!(command, ?permission, "Permission denied");
-            return Err(BotCommandError::new(BotCommandErrorKind::SecurityError {
+        // Check command permission
+        checker.check_command(command).map_err(|e| {
+            error!(command, resource_id, "Permission denied: {}", e);
+            BotCommandError::new(BotCommandErrorKind::SecurityError {
                 command: command.to_string(),
-                reason: format!("Permission denied for {:?} on {} {}", ActionType::Write, resource_type, resource_id),
-            }));
-        }
+                reason: format!("Permission denied: {}", e),
+            })
+        })?;
 
-        debug!(command, ?permission, "Permission granted");
+        debug!(command, resource_id, "Permission granted");
         Ok(())
     }
 
