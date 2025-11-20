@@ -268,6 +268,118 @@ async fn test_discord_command_executor_members_get() {
 
 #[tokio::test]
 #[ignore]
+async fn test_discord_command_executor_roles_get() {
+    dotenvy::dotenv().ok();
+    
+    let token = get_discord_token();
+    let guild_id = get_test_guild_id();
+
+    let executor = DiscordCommandExecutor::new(&token);
+
+    // First list roles to get a valid role_id
+    let mut args = HashMap::new();
+    args.insert("guild_id".to_string(), serde_json::json!(guild_id));
+
+    let roles = executor
+        .execute("roles.list", &args)
+        .await
+        .expect("Failed to list roles");
+
+    let roles_array = roles.as_array().unwrap();
+    assert!(!roles_array.is_empty(), "Should have at least one role");
+
+    // Get the first role's ID
+    let first_role = &roles_array[0];
+    let role_id = first_role["id"].as_str().unwrap();
+
+    // Now test roles.get with that role_id
+    args.insert("role_id".to_string(), serde_json::json!(role_id));
+
+    let result = executor
+        .execute("roles.get", &args)
+        .await
+        .expect("Failed to execute roles.get command");
+
+    // Verify result structure
+    assert!(result.is_object(), "Result should be a JSON object");
+    let obj = result.as_object().unwrap();
+    assert!(obj.contains_key("id"), "Result should have id");
+    assert!(obj.contains_key("name"), "Result should have name");
+    assert!(obj.contains_key("permissions"), "Result should have permissions");
+
+    println!("Role details: {}", serde_json::to_string_pretty(&result).unwrap());
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_discord_command_executor_emojis_list() {
+    dotenvy::dotenv().ok();
+    
+    let token = get_discord_token();
+    let guild_id = get_test_guild_id();
+
+    let executor = DiscordCommandExecutor::new(&token);
+
+    let mut args = HashMap::new();
+    args.insert("guild_id".to_string(), serde_json::json!(guild_id));
+
+    let result = executor
+        .execute("emojis.list", &args)
+        .await
+        .expect("Failed to execute emojis.list command");
+
+    // Verify result is an array
+    assert!(result.is_array(), "Result should be a JSON array");
+    let emojis = result.as_array().unwrap();
+
+    println!("Found {} custom emojis", emojis.len());
+    
+    // Verify emoji structure if any emojis exist
+    if let Some(emoji) = emojis.first() {
+        assert!(emoji.is_object(), "Emoji should be a JSON object");
+        let emoji_obj = emoji.as_object().unwrap();
+        assert!(emoji_obj.contains_key("id"), "Emoji should have id");
+        assert!(emoji_obj.contains_key("name"), "Emoji should have name");
+        assert!(emoji_obj.contains_key("animated"), "Emoji should have animated");
+    }
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_discord_command_executor_events_list() {
+    dotenvy::dotenv().ok();
+    
+    let token = get_discord_token();
+    let guild_id = get_test_guild_id();
+
+    let executor = DiscordCommandExecutor::new(&token);
+
+    let mut args = HashMap::new();
+    args.insert("guild_id".to_string(), serde_json::json!(guild_id));
+
+    let result = executor
+        .execute("events.list", &args)
+        .await
+        .expect("Failed to execute events.list command");
+
+    // Verify result is an array
+    assert!(result.is_array(), "Result should be a JSON array");
+    let events = result.as_array().unwrap();
+
+    println!("Found {} scheduled events", events.len());
+    
+    // Verify event structure if any events exist
+    if let Some(event) = events.first() {
+        assert!(event.is_object(), "Event should be a JSON object");
+        let event_obj = event.as_object().unwrap();
+        assert!(event_obj.contains_key("id"), "Event should have id");
+        assert!(event_obj.contains_key("name"), "Event should have name");
+        assert!(event_obj.contains_key("start_time"), "Event should have start_time");
+    }
+}
+
+#[tokio::test]
+#[ignore]
 async fn test_bot_command_registry_with_discord() {
     dotenvy::dotenv().ok();
     
