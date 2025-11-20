@@ -380,6 +380,186 @@ async fn test_discord_command_executor_events_list() {
 
 #[tokio::test]
 #[ignore]
+async fn test_discord_command_executor_stickers_list() {
+    dotenvy::dotenv().ok();
+    
+    let token = get_discord_token();
+    let guild_id = get_test_guild_id();
+
+    let executor = DiscordCommandExecutor::new(&token);
+
+    let mut args = HashMap::new();
+    args.insert("guild_id".to_string(), serde_json::json!(guild_id));
+
+    let result = executor
+        .execute("stickers.list", &args)
+        .await
+        .expect("Failed to execute stickers.list command");
+
+    assert!(result.is_array(), "Result should be a JSON array");
+    let stickers = result.as_array().unwrap();
+
+    println!("Found {} custom stickers", stickers.len());
+    
+    if let Some(sticker) = stickers.first() {
+        assert!(sticker.is_object());
+        let sticker_obj = sticker.as_object().unwrap();
+        assert!(sticker_obj.contains_key("id"));
+        assert!(sticker_obj.contains_key("name"));
+    }
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_discord_command_executor_invites_list() {
+    dotenvy::dotenv().ok();
+    
+    let token = get_discord_token();
+    let guild_id = get_test_guild_id();
+
+    let executor = DiscordCommandExecutor::new(&token);
+
+    let mut args = HashMap::new();
+    args.insert("guild_id".to_string(), serde_json::json!(guild_id));
+
+    let result = executor.execute("invites.list", &args).await;
+    
+    match result {
+        Ok(result) => {
+            assert!(result.is_array(), "Result should be a JSON array");
+            let invites = result.as_array().unwrap();
+            println!("Found {} invites", invites.len());
+            
+            if let Some(invite) = invites.first() {
+                assert!(invite.is_object());
+                let invite_obj = invite.as_object().unwrap();
+                assert!(invite_obj.contains_key("code"));
+                assert!(invite_obj.contains_key("uses"));
+            }
+        }
+        Err(e) => {
+            // Requires MANAGE_GUILD permission - may not be available
+            if e.to_string().contains("Missing Permissions") {
+                println!("Skipped: Bot lacks MANAGE_GUILD permission for invites.list");
+            } else {
+                panic!("Unexpected error: {}", e);
+            }
+        }
+    }
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_discord_command_executor_webhooks_list() {
+    dotenvy::dotenv().ok();
+    
+    let token = get_discord_token();
+    let guild_id = get_test_guild_id();
+
+    let executor = DiscordCommandExecutor::new(&token);
+
+    let mut args = HashMap::new();
+    args.insert("guild_id".to_string(), serde_json::json!(guild_id));
+
+    let result = executor.execute("webhooks.list", &args).await;
+    
+    match result {
+        Ok(result) => {
+            assert!(result.is_array(), "Result should be a JSON array");
+            let webhooks = result.as_array().unwrap();
+            println!("Found {} webhooks", webhooks.len());
+            
+            if let Some(webhook) = webhooks.first() {
+                assert!(webhook.is_object());
+                let webhook_obj = webhook.as_object().unwrap();
+                assert!(webhook_obj.contains_key("id"));
+                assert!(webhook_obj.contains_key("name"));
+            }
+        }
+        Err(e) => {
+            // Requires MANAGE_WEBHOOKS permission - may not be available
+            if e.to_string().contains("Missing Permissions") {
+                println!("Skipped: Bot lacks MANAGE_WEBHOOKS permission for webhooks.list");
+            } else {
+                panic!("Unexpected error: {}", e);
+            }
+        }
+    }
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_discord_command_executor_bans_list() {
+    dotenvy::dotenv().ok();
+    
+    let token = get_discord_token();
+    let guild_id = get_test_guild_id();
+
+    let executor = DiscordCommandExecutor::new(&token);
+
+    let mut args = HashMap::new();
+    args.insert("guild_id".to_string(), serde_json::json!(guild_id));
+
+    let result = executor.execute("bans.list", &args).await;
+    
+    match result {
+        Ok(result) => {
+            assert!(result.is_array(), "Result should be a JSON array");
+            let bans = result.as_array().unwrap();
+            println!("Found {} bans", bans.len());
+            
+            if let Some(ban) = bans.first() {
+                assert!(ban.is_object());
+                let ban_obj = ban.as_object().unwrap();
+                assert!(ban_obj.contains_key("user_id"));
+                assert!(ban_obj.contains_key("username"));
+            }
+        }
+        Err(e) => {
+            // Requires BAN_MEMBERS permission - may not be available
+            if e.to_string().contains("Missing Permissions") {
+                println!("Skipped: Bot lacks BAN_MEMBERS permission for bans.list");
+            } else {
+                panic!("Unexpected error: {}", e);
+            }
+        }
+    }
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_discord_command_executor_voice_regions_list() {
+    dotenvy::dotenv().ok();
+    
+    let token = get_discord_token();
+    let guild_id = get_test_guild_id();
+
+    let executor = DiscordCommandExecutor::new(&token);
+
+    let mut args = HashMap::new();
+    args.insert("guild_id".to_string(), serde_json::json!(guild_id));
+
+    let result = executor
+        .execute("voice_regions.list", &args)
+        .await
+        .expect("Failed to execute voice_regions.list command");
+
+    assert!(result.is_array(), "Result should be a JSON array");
+    let regions = result.as_array().unwrap();
+
+    println!("Found {} voice regions", regions.len());
+    assert!(!regions.is_empty(), "Should have at least one voice region");
+    
+    let region = &regions[0];
+    assert!(region.is_object());
+    let region_obj = region.as_object().unwrap();
+    assert!(region_obj.contains_key("id"));
+    assert!(region_obj.contains_key("name"));
+    assert!(region_obj.contains_key("optimal"));
+}
+
+#[tokio::test]
+#[ignore]
 async fn test_bot_command_registry_with_discord() {
     dotenvy::dotenv().ok();
     
