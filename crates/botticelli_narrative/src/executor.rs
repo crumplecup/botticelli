@@ -41,6 +41,14 @@ pub trait BotCommandRegistry: Send + Sync {
 ///
 /// Table queries can be registered to enable narratives to reference data
 /// from database tables in prompts.
+///
+/// ## Template Substitution
+///
+/// Bot command arguments support template substitution using `{{act_name}}` or
+/// `{{act_name.field.path}}` syntax to reference outputs from previous acts.
+/// The response from each act is stored in the ActExecution history and can be
+/// referenced by name. For JSON responses (e.g., from bot commands), you can
+/// navigate JSON paths using dot notation.
 pub struct NarrativeExecutor<D: BotticelliDriver> {
     driver: D,
     processor_registry: Option<ProcessorRegistry>,
@@ -428,6 +436,10 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
 
                     match registry.execute(platform, command, &resolved_args).await {
                         Ok(result) => {
+                            // Store bot command output for template substitution in later acts
+                            // Note: We can't store in act_outputs here because we don't have &mut self
+                            // The result will be stored after the act completes
+                            
                             // Convert JSON result to pretty-printed text for LLM
                             let text = serde_json::to_string_pretty(&result).map_err(|e| {
                                 tracing::error!(error = %e, "Failed to serialize bot command result");
@@ -711,8 +723,8 @@ fn resolve_template(
     })?;
     
     for cap in re.captures_iter(template) {
-        let placeholder = &cap[0]; // Full match like {{previous}}
-        let reference = cap[1].trim(); // Inner content like "previous"
+        let placeholder = &cap[0]; // Full match like {{previous}} or {{act_name.field}}
+        let reference = cap[1].trim(); // Inner content like "previous" or "act_name.field"
         
         let replacement = if reference == "previous" {
             // Get previous act
@@ -725,6 +737,59 @@ fn resolve_template(
                 .into());
             }
             act_executions[current_index - 1].response.clone()
+        } else if reference.contains('.') {
+            // JSON path reference like "act_name.field" or "act_name.field.subfield"
+            let parts: Vec<&str> = reference.splitn(2, '.').collect();
+            let act_name = parts[0];
+            let json_path = parts[1];
+            
+            // Find the act
+            let act_exec = act_executions
+                .iter()
+                .find(|exec| exec.act_name == act_name)
+                .ok_or_else(|| {
+                    botticelli_error::NarrativeError::new(
+                        botticelli_error::NarrativeErrorKind::TemplateError(
+                            format!("Referenced act '{}' not found in execution history", act_name),
+                        ),
+                    )
+                })?;
+            
+            // Try to parse response as JSON and navigate path
+            let json_value: JsonValue = serde_json::from_str(&act_exec.response).map_err(|e| {
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::TemplateError(
+                        format!("Act '{}' response is not valid JSON: {}", act_name, e),
+                    ),
+                )
+            })?;
+            
+            // Navigate JSON path
+            let mut current = &json_value;
+            for segment in json_path.split('.') {
+                current = current.get(segment).ok_or_else(|| {
+                    botticelli_error::NarrativeError::new(
+                        botticelli_error::NarrativeErrorKind::TemplateError(
+                            format!("JSON path '{}' not found in act '{}'", json_path, act_name),
+                        ),
+                    )
+                })?;
+            }
+            
+            // Convert value to string
+            match current {
+                JsonValue::String(s) => s.clone(),
+                JsonValue::Number(n) => n.to_string(),
+                JsonValue::Bool(b) => b.to_string(),
+                JsonValue::Null => "null".to_string(),
+                _ => serde_json::to_string(current).map_err(|e| {
+                    botticelli_error::NarrativeError::new(
+                        botticelli_error::NarrativeErrorKind::TemplateError(
+                            format!("Failed to serialize JSON value: {}", e),
+                        ),
+                    )
+                })?,
+            }
         } else {
             // Get named act
             act_executions
