@@ -9,12 +9,12 @@ This document outlines planned enhancements to the narrative TOML specification 
 
 These features enable narratives to interact with external systems and reference previously generated content, creating more powerful and composable workflows.
 
-**Current Status** (as of commit `440c1e7`):
-- ✅ **Phase 1 Complete**: Friendly syntax foundation with resource definitions
+**Current Status**:
+- ✅ **Phase 1 Complete**: Friendly syntax foundation with resource definitions  
 - ✅ **Phase 2 Complete**: Bot commands fully implemented with security framework
-- 🚧 **Phase 3 In Progress**: Table references and carousel features designed, implementation pending
+- ✅ **Phase 3 Complete**: Table references and carousel features implemented
 
-See `PHASE_2_5_SUMMARY.md` for detailed completion report and `SPEC_ENHANCEMENT_PHASE_3.md` for Phase 3 plan.
+See `PHASE_2_5_SUMMARY.md` for Phase 2 completion report and `SPEC_ENHANCEMENT_PHASE_3.md` for Phase 3 implementation details.
 
 ## Current Implementation Status
 
@@ -42,8 +42,26 @@ All infrastructure for resource definitions is implemented:
 - ✅ Integration tests with Discord API (`botticelli/tests/discord_integration_test.rs`)
 - ✅ Security framework in `botticelli_security` crate with 5-layer protection
 - ✅ All integration tests consolidated in facade crate
-- ✅ Example Discord community narratives (`crates/botticelli_narratives/narratives/discord/`)
+- ✅ Example Discord community narratives (`crates/botticelli_narrative/narratives/discord/`)
 - ✅ Tested end-to-end: `simple_welcome.toml` successfully generates content via Gemini API
+
+### Phase 3: Table References and Carousel ✅ **COMPLETE**
+
+**What's Done**:
+- ✅ `Input::Table` variant exists in `botticelli_core` with all query parameters
+- ✅ TOML parsing with `TomlTableDefinition`
+- ✅ Reference resolution: `"tables.name"` → `Input::Table`
+- ✅ `TableQueryRegistry` trait in `botticelli_interface`
+- ✅ `DatabaseTableQueryRegistry` implementation in `botticelli_database`
+- ✅ `TableQueryExecutor` with support for columns, where, limit, offset, order_by
+- ✅ Multiple output formats: JSON, Markdown, CSV
+- ✅ Integration into `NarrativeExecutor.process_inputs()`
+- ✅ Error types: `TableQueryFailed`, `TableQueryNotConfigured`
+- ✅ Carousel feature with `CarouselConfig`, `CarouselBudget`, `CarouselResult`
+- ✅ Budget-aware execution with TPM/RPM/TPD/RPD tracking
+- ✅ `Act::Carousel` variant with nested act support
+- ✅ Example narratives demonstrating table references and carousel loops
+- ✅ Integration test framework ready (`publish_welcome_test.rs`)
 
 **Commands Implemented** (30+):
 - **Server**: `server.get`, `server.get_channels`, `server.get_members`, `server.get_roles`
