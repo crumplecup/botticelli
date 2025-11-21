@@ -58,6 +58,12 @@ pub enum NarrativeErrorKind {
     /// Template resolution error
     #[display("Template error: {}", _0)]
     TemplateError(String),
+    /// Nested narrative load failed
+    #[display("Nested narrative load failed: {}", _0)]
+    NestedNarrativeLoadFailed(String),
+    /// Nested narrative execution failed
+    #[display("Nested narrative execution failed: {}", _0)]
+    NestedNarrativeExecutionFailed(String),
 }
 
 /// Error type for narrative operations.

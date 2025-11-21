@@ -1,0 +1,108 @@
+# FAQ Content Generation
+# Generates comprehensive FAQ content for the Botticelli Discord server
+# Uses carousel mode to produce 9 refined FAQ sets (3 iterations × 3 per iteration)
+
+[narrative]
+name = "faq_content"
+description = "Generate FAQ content for Botticelli Discord server"
+
+[narrative.carousel]
+iterations = 3
+
+[toc]
+order = ["generate_batch", "critique_batch", "refine_best"]
+
+[acts.generate_batch]
+model = "gemini-2.5-flash-lite"
+temperature = 0.7
+max_tokens = 2000
+
+[[acts.generate_batch.input]]
+type = "text"
+content = """
+Create 10 FAQ document options for the Botticelli Discord server.
+
+Botticelli is a Rust library and CLI for executing multi-act LLM narratives with:
+- Multi-step narratives with context passing
+- Content generation with database persistence
+- Discord bot integration with security policies
+- Support for multiple AI providers (Gemini, Claude, GPT)
+- Carousel mode for batch content generation
+- TOML-based workflow definitions
+
+Each FAQ should answer 12-15 common questions about:
+- Installation and setup
+- Basic usage and getting started
+- Feature availability and capabilities
+- Comparison to other tools
+- Troubleshooting common issues
+- Best practices
+
+Each FAQ document should:
+- Have clear question/answer pairs
+- Include code examples where relevant
+- Use Discord markdown (spoilers for long answers)
+- Be organized by category
+- Be 400-600 words total
+- Use emojis for visual navigation
+
+Provide your response as a JSON array with this schema:
+[
+  {
+    "title": "FAQ Version",
+    "content": "Full FAQ content with Discord markdown, spoilers, and emojis",
+    "categories": ["Installation", "Usage", "Features", "Troubleshooting"],
+    "question_count": 15
+  }
+]
+"""
+
+[acts.critique_batch]
+model = "gemini-2.5-flash"
+temperature = 0.3
+max_tokens = 2000
+
+[[acts.critique_batch.input]]
+type = "text"
+content = """
+Review the 10 FAQ document options from the previous act and provide a critique.
+
+Evaluate each on:
+1. Question Coverage - Are the most important questions answered?
+2. Answer Quality - Are answers clear, accurate, and helpful?
+3. Code Examples - Are examples correct and well-explained?
+4. Organization - Is the structure logical and easy to navigate?
+5. Formatting - Is Discord markdown used effectively?
+
+Provide an overall assessment and identify the 3 strongest FAQ versions.
+"""
+
+[acts.refine_best]
+model = "gemini-2.5-flash"
+temperature = 0.3
+max_tokens = 2000
+
+[[acts.refine_best.input]]
+type = "text"
+content = """
+Based on the critique, select the 3 best FAQ documents and improve them further.
+
+For each of the 3 selected FAQs:
+- Fill any gaps in question coverage
+- Enhance answer clarity and accuracy
+- Verify and improve code examples
+- Optimize organization and navigation
+- Perfect Discord formatting (spoilers, emojis, code blocks)
+
+Provide your response as a JSON array with the same schema:
+[
+  {
+    "title": "FAQ Version",
+    "content": "Refined FAQ content with Discord markdown, spoilers, and emojis",
+    "categories": ["Installation", "Usage", "Features", "Troubleshooting"],
+    "question_count": 15
+  }
+]
+
+Aim for 3 comprehensive, production-ready FAQ documents.
+"""

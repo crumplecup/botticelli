@@ -73,6 +73,12 @@ pub struct TomlMediaDefinition {
     pub filename: Option<String>,
 }
 
+/// Nested narrative reference from [narratives.name] section.
+#[derive(Debug, Clone, Deserialize)]
+pub struct TomlNarrativeReference {
+    pub narrative: String,
+}
+
 /// Intermediate structure for deserializing acts.
 ///
 /// Acts can be:
@@ -182,6 +188,9 @@ pub struct TomlNarrativeFile {
     /// Optional media source definitions
     #[serde(default)]
     pub media: HashMap<String, TomlMediaDefinition>,
+    /// Optional nested narrative references
+    #[serde(default)]
+    pub narratives: HashMap<String, TomlNarrativeReference>,
 }
 
 impl TomlInput {
@@ -433,9 +442,9 @@ impl TomlAct {
     }
 }
 
-/// Check if a string is a resource reference (bots.name, tables.name, media.name, narrative:name).
+/// Check if a string is a resource reference (bots.name, tables.name, media.name, narratives.name, narrative:name).
 fn is_reference(s: &str) -> bool {
-    s.starts_with("bots.") || s.starts_with("tables.") || s.starts_with("media.") || s.starts_with("narrative:")
+    s.starts_with("bots.") || s.starts_with("tables.") || s.starts_with("media.") || s.starts_with("narratives.") || s.starts_with("narrative:")
 }
 
 impl TomlNarrativeFile {
@@ -466,6 +475,7 @@ impl TomlNarrativeFile {
             "bots" => self.resolve_bot_reference(name),
             "tables" => self.resolve_table_reference(name),
             "media" => self.resolve_media_reference(name),
+            "narratives" => self.resolve_narrative_reference(name),
             _ => {
                 error!(category, "Unknown reference category");
                 Err(format!("Unknown reference category: {}", category))
@@ -605,6 +615,22 @@ impl TomlNarrativeFile {
                 Err(format!("Unknown media type: {}", media_type))
             }
         }
+    }
+    
+    #[instrument(skip(self), fields(name))]
+    fn resolve_narrative_reference(&self, name: &str) -> Result<Input, String> {
+        debug!(%name, "Resolving narrative reference");
+        let narrative_def = self.narratives.get(name)
+            .ok_or_else(|| {
+                error!(%name, "Narrative not found");
+                format!("Narrative not found: {}", name)
+            })?;
+        
+        debug!(narrative_file = %narrative_def.narrative, "Narrative reference resolved");
+        Ok(Input::Narrative {
+            name: name.to_string(),
+            path: Some(narrative_def.narrative.clone()),
+        })
     }
 }
 

@@ -1,0 +1,106 @@
+# Community Rules Content Generation
+# Generates multiple community guidelines options for the Botticelli Discord server
+# Uses carousel mode to produce 9 total options (3 iterations × 3 refined options per iteration)
+
+[narrative]
+name = "community_rules"
+description = "Generate community guidelines for Botticelli Discord server"
+
+[narrative.carousel]
+iterations = 3
+
+[toc]
+order = ["generate_batch", "critique_batch", "refine_best"]
+
+[acts.generate_batch]
+model = "gemini-2.5-flash-lite"
+temperature = 0.7
+max_tokens = 2000
+
+[[acts.generate_batch.input]]
+type = "text"
+content = """
+Create 5 community guideline options for the Botticelli Discord server.
+
+Botticelli is a Rust library for executing multi-act LLM narratives with support for 
+multiple AI providers. The community values:
+- Respectful, inclusive communication
+- Helping newcomers learn Rust and LLMs
+- Constructive feedback on code and ideas
+- Sharing knowledge and examples
+- Open-source collaboration
+
+Each guideline set should cover:
+1. General conduct and respect
+2. Technical discussion guidelines
+3. Code sharing and support expectations
+4. Self-promotion and spam policies
+5. Moderation and enforcement
+
+Guidelines should be:
+- Clear and actionable
+- Friendly but firm
+- Discord-formatted with emojis
+- 150-250 words total (keep concise)
+- Organized with headers
+
+Provide your response as a JSON array with this schema:
+[
+  {
+    "title": "Community Guidelines Version",
+    "content": "Full guidelines text with Discord markdown and emojis",
+    "tone": "professional|friendly|casual",
+    "emphasis": ["respect", "collaboration", "learning"]
+  }
+]
+"""
+
+[acts.critique_batch]
+model = "gemini-2.5-flash"
+temperature = 0.3
+max_tokens = 2000
+
+[[acts.critique_batch.input]]
+type = "text"
+content = """
+Review the 5 community guideline options from the previous act and provide a critique.
+
+Evaluate each on:
+1. Clarity - Are the rules unambiguous?
+2. Completeness - Do they cover all necessary scenarios?
+3. Tone - Is it welcoming yet authoritative?
+4. Enforceability - Can moderators apply these consistently?
+5. Formatting - Is the Discord markdown effective?
+
+Provide an overall assessment and identify the 3 strongest versions.
+"""
+
+[acts.refine_best]
+model = "gemini-2.5-flash"
+temperature = 0.3
+max_tokens = 2000
+
+[[acts.refine_best.input]]
+type = "text"
+content = """
+Based on the critique, select the 3 best community guideline versions and improve them further.
+
+For each of the 3 selected versions:
+- Address any ambiguities identified in the critique
+- Ensure comprehensive coverage of scenarios
+- Balance welcoming tone with clear authority
+- Make enforcement criteria specific
+- Optimize Discord formatting
+
+Provide your response as a JSON array with the same schema:
+[
+  {
+    "title": "Community Guidelines Version",
+    "content": "Refined guidelines text with Discord markdown and emojis",
+    "tone": "professional|friendly|casual",
+    "emphasis": ["respect", "collaboration", "learning"]
+  }
+]
+
+Aim for 3 polished, production-ready community guideline sets.
+"""

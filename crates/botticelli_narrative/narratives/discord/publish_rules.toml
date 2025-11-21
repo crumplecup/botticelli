@@ -1,0 +1,47 @@
+# Publish Community Rules Narrative
+# Demonstrates: Narrative composition, table references, content selection, bot command execution
+
+[narrative]
+name = "publish_rules"
+description = "Generate, select, and publish community guidelines to Discord server"
+skip_content_generation = true
+model = "gemini-2.5-flash"
+
+[toc]
+order = ["generate_content", "select_best", "publish_message"]
+
+# Define nested narrative for content generation
+[narratives.generate_content]
+narrative = "./crates/botticelli_narrative/narratives/discord/rules_content_generation"
+
+# Define bot command for publishing
+[bots.publish_message]
+platform = "discord"
+command = "messages.send"
+guild_id = "1439415903753076859"
+channel_id = "1441256008092483724"  # Update with rules channel ID
+content = "{{select_best}}"
+
+# Define table reference for loading generated rules
+[tables.community_rules]
+table_name = "community_rules"
+limit = 100
+format = "markdown"
+
+[acts]
+# Act 1: Run rules content generation to populate the table
+generate_content = ["narratives.generate_content"]
+
+# Act 2: Select the best community guidelines from generated options
+select_best = [
+  "tables.community_rules",
+  """You are reviewing community guideline options for the Botticelli Discord server.
+
+Review all guideline sets above and:
+1. Evaluate them based on clarity, completeness, appropriate tone, enforceability, and formatting
+2. Select the SINGLE BEST guideline set that balances welcoming tone with clear authority
+3. Output ONLY the selected guidelines content (no explanation, no prefix)""",
+]
+
+# Act 3: Publish to Discord rules channel (uses output from select_best)
+publish_message = ["bots.publish_message"]

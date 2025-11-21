@@ -1,0 +1,47 @@
+# Publish FAQ Narrative
+# Demonstrates: Carousel-generated content, table references, selection, bot publishing
+
+[narrative]
+name = "publish_faq"
+description = "Generate, select, and publish FAQ content to Discord server"
+skip_content_generation = true
+model = "gemini-2.5-flash"
+
+[toc]
+order = ["generate_content", "select_best", "publish_message"]
+
+# Define nested narrative for content generation
+[narratives.generate_content]
+narrative = "faq_content_generation"
+
+# Define bot command for publishing
+[bots.publish_message]
+platform = "discord"
+command = "messages.send"
+guild_id = "1439415903753076859"
+channel_id = "1441256008092483724"  # Update with FAQ channel ID
+content = "{{select_best}}"
+
+# Define table reference for loading generated FAQs
+[tables.faq_content]
+table_name = "faq_content"
+limit = 100
+format = "markdown"
+
+[acts]
+# Act 1: Run FAQ content generation to populate the table
+generate_content = ["narratives.generate_content"]
+
+# Act 2: Select the best FAQ from generated options
+select_best = [
+  "tables.faq_content",
+  """You are reviewing FAQ document options for the Botticelli Discord server.
+
+Review all FAQ documents above and:
+1. Evaluate them based on question coverage, answer quality, code examples, organization, and formatting
+2. Select the SINGLE BEST FAQ that is most comprehensive and helpful for new users
+3. Output ONLY the selected FAQ content (no explanation, no prefix)""",
+]
+
+# Act 3: Publish to Discord FAQ channel (uses output from select_best)
+publish_message = ["bots.publish_message"]

@@ -535,14 +535,76 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     tracing::debug!(
                         name = %name,
                         path = ?path,
-                        "Processing narrative reference input"
+                        "Processing narrative reference input - executing nested narrative"
                     );
                     
-                    // TODO: Implement narrative composition
-                    // For now, return a placeholder message
-                    let msg = format!("[Narrative composition not yet implemented: {}]", name);
-                    tracing::warn!(name = %name, "Narrative composition feature pending");
-                    processed.push(Input::Text(msg));
+                    // Resolve the path (if None, use name.toml)
+                    // Add .toml extension if not present
+                    let mut narrative_path = path.as_ref()
+                        .map(|p| p.to_string())
+                        .unwrap_or_else(|| name.to_string());
+                    
+                    if !narrative_path.ends_with(".toml") {
+                        narrative_path.push_str(".toml");
+                    }
+                    
+                    tracing::info!(
+                        name = %name,
+                        path = %narrative_path,
+                        "Loading nested narrative"
+                    );
+                    
+                    // Load the nested narrative from file
+                    let nested_narrative = crate::Narrative::from_file(&narrative_path)
+                        .map_err(|e| {
+                            tracing::error!(
+                                name = %name,
+                                path = %narrative_path,
+                                error = %e,
+                                "Failed to load nested narrative"
+                            );
+                            botticelli_error::NarrativeError::new(
+                                botticelli_error::NarrativeErrorKind::NestedNarrativeLoadFailed(
+                                    format!("Failed to load nested narrative '{}' from '{}': {}", name, narrative_path, e)
+                                ),
+                            )
+                        })?;
+                    
+                    tracing::info!(
+                        name = %name,
+                        acts = nested_narrative.act_names().len(),
+                        "Executing nested narrative"
+                    );
+                    
+                    // Execute the nested narrative recursively
+                    // Use Box::pin to avoid infinite sized future in recursive async function
+                    let nested_execution = Box::pin(self.execute(&nested_narrative)).await
+                        .map_err(|e| {
+                            tracing::error!(
+                                name = %name,
+                                error = %e,
+                                "Nested narrative execution failed"
+                            );
+                            botticelli_error::NarrativeError::new(
+                                botticelli_error::NarrativeErrorKind::NestedNarrativeExecutionFailed(
+                                    format!("Nested narrative '{}' execution failed: {}", name, e)
+                                ),
+                            )
+                        })?;
+                    
+                    tracing::info!(
+                        name = %name,
+                        acts_executed = nested_execution.act_executions.len(),
+                        "Nested narrative execution completed"
+                    );
+                    
+                    // Note: We don't include the nested narrative's output in processed inputs
+                    // The nested narrative is executed for its side effects (e.g., populating tables)
+                    // If you want to include the output, uncomment the lines below:
+                    // let final_output = nested_execution.act_executions.last()
+                    //     .map(|a| a.output.clone())
+                    //     .unwrap_or_default();
+                    // processed.push(Input::Text(final_output));
                 }
 
                 // Pass through all other input types unchanged
