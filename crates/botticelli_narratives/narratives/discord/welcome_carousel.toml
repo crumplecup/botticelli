@@ -1,0 +1,31 @@
+# Carousel Example: Welcome Messages
+# Demonstrates carousel feature by generating multiple welcome messages
+
+[narrative]
+name = "welcome_carousel"
+description = "Generate multiple welcome messages for new Discord server members"
+
+[narrative.carousel]
+iterations = 5
+estimated_tokens_per_iteration = 300
+continue_on_error = true
+
+[toc]
+order = ["generate_welcome"]
+
+[acts.generate_welcome]
+model = "gemini-1.5-flash"
+temperature = 0.8
+max_tokens = 150
+
+[[acts.generate_welcome.input]]
+type = "text"
+content = """Generate a unique, friendly welcome message for a new member joining the Botticelli Discord community. 
+
+The message should:
+- Be warm and welcoming
+- Mention that this is a community for narrative-driven AI automation
+- Encourage them to explore and ask questions
+- Be 2-3 sentences max
+
+Make each message distinct and creative."""
