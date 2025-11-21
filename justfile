@@ -47,7 +47,7 @@ install-node-tools:
 # Update just itself
 update-just:
     @echo "⚡ Updating just..."
-    cargo install just --force
+    cargo install just || true
 
 # Update all dependencies (Rust, cargo tools, just)
 update-all: install-rust install-cargo-tools update-just
@@ -281,7 +281,7 @@ narrate name:
         echo "✓ Found: $NARRATIVE"
         echo ""
         echo "🚀 Executing narrative..."
-        cargo run -p botticelli --release --features local -- run --narrative "$NARRATIVE" --save --verbose
+        cargo run -p botticelli --release --features local -- run --narrative "$NARRATIVE" --save --process-discord --verbose
     else
         echo "❌ Multiple narratives found matching '{{name}}':"
         echo "$MATCHES" | sed 's/^/  /'
