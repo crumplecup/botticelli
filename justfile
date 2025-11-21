@@ -289,27 +289,27 @@ narrate name:
 
 # Run example narrative: generate channel posts
 example-channels:
-    cargo run -p botticelli --release --features database,gemini -- run --narrative crates/botticelli_narrative/narratives/generate_channel_posts.toml
+    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_channel_posts.toml
 
 # Run example narrative: generate users
 example-users:
-    cargo run -p botticelli --release --features database,gemini -- run --narrative crates/botticelli_narrative/narratives/generate_users.toml
+    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_users.toml
 
 # Run example narrative: generate guilds
 example-guilds:
-    cargo run -p botticelli --release --features database,gemini -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
+    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
 
 # Run example narrative: generate guilds (simplified with prompt injection)
 example-guilds-simple:
-    cargo run -p botticelli --release --features database,gemini -- run --narrative crates/botticelli_narrative/narratives/generate_guilds_simple.toml
+    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_guilds_simple.toml
 
 # List content from a generation table
 content-list table:
-    cargo run -p botticelli --release --features database,gemini -- content list {{table}}
+    cargo run -p botticelli --release --features local -- content list {{table}}
 
 # Show specific content item
 content-show table id:
-    cargo run -p botticelli --release --features database,gemini -- content show {{table}} {{id}}
+    cargo run -p botticelli --release --features local -- content show {{table}} {{id}}
 
 # Model Server Management
 # =======================
@@ -347,40 +347,40 @@ tui-server:
 
 # Launch TUI for a table with all features enabled
 tui-all table:
-    cargo run -p botticelli --release --all-features -- tui {{table}}
+    cargo run -p botticelli --release --features local -- tui {{table}}
 
 # Generate test guilds and launch TUI (full workflow)
 tui-test-guilds:
     #!/usr/bin/env bash
     echo "🎲 Generating test guilds..."
-    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
+    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
     echo "✅ Content generated in table: potential_guilds"
     echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --all-features -- tui "potential_guilds"
+    cargo run -p botticelli --release --features local -- tui "potential_guilds"
 
 # Generate test channels and launch TUI (full workflow)
 tui-test-channels:
     #!/usr/bin/env bash
     echo "🎲 Generating test channels..."
-    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/generate_channel_posts.toml
+    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_channel_posts.toml
     echo "✅ Content generated in table: potential_posts"
     echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --all-features -- tui "potential_posts"
+    cargo run -p botticelli --release --features local -- tui "potential_posts"
 
 # Generate test users and launch TUI (full workflow)
 tui-test-users:
     #!/usr/bin/env bash
     echo "🎲 Generating test users..."
-    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/generate_users.toml
+    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_users.toml
     echo "✅ Content generated in table: potential_users"
     echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --all-features -- tui "potential_users"
+    cargo run -p botticelli --release --features local -- tui "potential_users"
 
 # Generate Discord infrastructure and launch TUI for review
 tui-test-discord:
     #!/usr/bin/env bash
     echo "🎲 Generating Discord infrastructure..."
-    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/discord_infrastructure.toml --process-discord
+    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/discord_infrastructure.toml --process-discord
     echo "✅ Discord infrastructure generated"
     echo "💡 Note: Discord infrastructure uses fixed IDs, check discord_guilds table directly"
     echo "🖥️  To review generated content, use:"
@@ -395,18 +395,18 @@ tui-list-tables:
 
 # List all content generations with tracking metadata
 content-generations:
-    cargo run -p botticelli --release --all-features -- content generations
+    cargo run -p botticelli --release --features local -- content generations
 
 # Show details of the last generation
 content-last:
-    cargo run -p botticelli --release --all-features -- content last
+    cargo run -p botticelli --release --features local -- content last
 
 # Launch TUI on the most recently generated table
 tui-last:
     #!/usr/bin/env bash
     set -e
     echo "📊 Getting latest generation..."
-    TABLE=$(cargo run -p botticelli --release --all-features -- content last --format=table-name-only 2>/dev/null || echo "")
+    TABLE=$(cargo run -p botticelli --release --features local -- content last --format=table-name-only 2>/dev/null || echo "")
     if [ -z "$TABLE" ]; then
         echo "❌ No content generations found"
         echo "💡 Generate content first with: just example-guilds"
@@ -415,18 +415,18 @@ tui-last:
     echo "   Table: $TABLE"
     echo ""
     echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --all-features -- tui "$TABLE"
+    cargo run -p botticelli --release --features local -- tui "$TABLE"
 
 # Quick TUI demo with sample data
 tui-demo:
     #!/usr/bin/env bash
     set -e
     echo "🎲 Generating sample content..."
-    cargo run -p botticelli --release --all-features -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
+    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
     echo "✅ Content generated"
     echo ""
     echo "📊 Getting latest generation..."
-    TABLE=$(cargo run -p botticelli --release --all-features -- content last --format=table-name-only 2>/dev/null || echo "")
+    TABLE=$(cargo run -p botticelli --release --features local -- content last --format=table-name-only 2>/dev/null || echo "")
     if [ -z "$TABLE" ]; then
         echo "❌ No content generations found"
         exit 1
@@ -434,17 +434,17 @@ tui-demo:
     echo "   Table: $TABLE"
     echo ""
     echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --all-features -- tui "$TABLE"
+    cargo run -p botticelli --release --features local -- tui "$TABLE"
 
 # Full Workflow (CI/CD)
 # ====================
 
 # Run the complete CI pipeline locally (includes API tests)
-ci: fmt-check lint test-pre-merge audit
+ci: fmt-check lint check-features test-pre-merge audit
     @echo "✅ CI pipeline completed successfully!"
 
-# Prepare for commit (format, lint, local tests only)
-pre-commit: fix-all test-all
+# Prepare for commit (format, lint, local tests, feature checks)
+pre-commit: fix-all check-features test-all
     @echo "✅ Ready to commit!"
 
 # Prepare for merge (all checks including API tests)
