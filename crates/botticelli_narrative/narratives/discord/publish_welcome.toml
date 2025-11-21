@@ -8,7 +8,7 @@ skip_content_generation = true
 model = "gemini-2.5-flash"
 
 [toc]
-order = ["create_channel", "generate_content", "select_best", "publish_message", "pin_message"]
+order = ["create_channel", "clear_channel", "generate_content", "select_best", "publish_message", "pin_message"]
 
 # Define nested narrative for content generation
 [narratives.generate_content]
@@ -21,6 +21,14 @@ command = "channels.create"
 guild_id = "1439415903753076859"
 name = "welcome"
 channel_type = "text"
+
+# Define bot command for clearing channel messages
+[bots.clear_channel]
+platform = "discord"
+command = "messages.clear"
+guild_id = "1439415903753076859"
+channel_id = "1441256008092483724"
+limit = 100
 
 # Define bot command for publishing
 [bots.publish_message]
@@ -48,10 +56,13 @@ format = "markdown"
 # Act 1: Create the welcome channel
 create_channel = ["bots.create_channel"]
 
-# Act 2: Run welcome content generation to populate the table
+# Act 2: Clear existing messages from welcome channel
+clear_channel = ["bots.clear_channel"]
+
+# Act 3: Run welcome content generation to populate the table
 generate_content = ["narratives.generate_content"]
 
-# Act 3: Select the best welcome message from generated options
+# Act 4: Select the best welcome message from generated options
 select_best = [
   "tables.welcome_messages",
   """You are reviewing welcome messages for the Botticelli Discord community server.
@@ -62,8 +73,8 @@ Review all welcome messages above and:
 3. Output ONLY the selected message content (no explanation, no prefix)""",
 ]
 
-# Act 4: Publish to Discord welcome channel (uses output from select_best)
+# Act 5: Publish to Discord welcome channel (uses output from select_best)
 publish_message = ["bots.publish_message"]
 
-# Act 5: Pin the welcome message to the channel
+# Act 6: Pin the welcome message to the channel
 pin_message = ["bots.pin_message"]

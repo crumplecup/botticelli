@@ -1590,6 +1590,101 @@ impl DiscordCommandExecutor {
         }))
     }
 
+    /// Execute: messages.clear
+    ///
+    /// Clear all messages from a channel (bulk delete).
+    ///
+    /// **Security**: HIGH-RISK write operation (irreversible data loss).
+    ///
+    /// Required args: channel_id
+    /// Optional args: limit (default: 100, max: 100)
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "messages.clear",
+            channel_id,
+            limit
+        )
+    )]
+    async fn messages_clear(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        let _guild_id = Self::parse_guild_id("messages.clear", args)?;
+
+        // Parse channel_id
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                error!(command = "messages.clear", "Missing required argument: channel_id");
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "messages.clear".to_string(),
+                    arg_name: "channel_id".to_string(),
+                })
+            })?;
+
+        let channel_id: u64 = channel_id_str.parse().map_err(|_| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "messages.clear".to_string(),
+                arg_name: "channel_id".to_string(),
+                reason: "Invalid channel ID format".to_string(),
+            })
+        })?;
+
+        // Parse optional limit (default 100, max 100)
+        let limit = args
+            .get("limit")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(100)
+            .min(100);
+
+        tracing::Span::current().record("channel_id", channel_id);
+        tracing::Span::current().record("limit", limit);
+        info!(channel_id, limit, "Clearing messages from channel");
+
+        // Fetch messages
+        let messages = self
+            .http
+            .get_messages(channel_id.into(), None, Some(limit as u8))
+            .await
+            .map_err(|e| {
+                error!(channel_id, error = %e, "Failed to fetch messages for clearing");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "messages.clear".to_string(),
+                    reason: format!("Failed to fetch messages: {}", e),
+                })
+            })?;
+
+        let message_ids: Vec<_> = messages.iter().map(|m| m.id).collect();
+        let count = message_ids.len();
+
+        if count == 0 {
+            info!("No messages to clear");
+            return Ok(serde_json::json!({
+                "cleared": 0,
+                "channel_id": channel_id.to_string(),
+            }));
+        }
+
+        // Delete messages one by one (bulk delete has age restrictions)
+        for message_id in message_ids {
+            if let Err(e) = self
+                .http
+                .delete_message(channel_id.into(), message_id, None)
+                .await
+            {
+                warn!(channel_id, message_id = %message_id, error = %e, "Failed to delete message, continuing");
+            }
+        }
+
+        info!(cleared = count, "Successfully cleared messages");
+        Ok(serde_json::json!({
+            "cleared": count,
+            "channel_id": channel_id.to_string(),
+        }))
+    }
+
     /// Execute: reactions.add
     ///
     /// Add a reaction to a message.
@@ -3624,6 +3719,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "messages.send" => self.messages_send(args).await?,
             "messages.edit" => self.messages_edit(args).await?,
             "messages.delete" => self.messages_delete(args).await?,
+            "messages.clear" => self.messages_clear(args).await?,
             "reactions.add" => self.reactions_add(args).await?,
             "reactions.remove" => self.reactions_remove(args).await?,
             "channels.create" => self.channels_create(args).await?,
@@ -3697,6 +3793,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
                 | "messages.send"
                 | "messages.edit"
                 | "messages.delete"
+                | "messages.clear"
                 | "reactions.add"
                 | "reactions.remove"
                 | "channels.create"
@@ -3738,6 +3835,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "messages.send".to_string(),
             "messages.edit".to_string(),
             "messages.delete".to_string(),
+            "messages.clear".to_string(),
             "messages.pin".to_string(),
             "messages.unpin".to_string(),
             "channels.create".to_string(),
@@ -3866,6 +3964,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
                 "Delete a message (requires security framework)\n\
                  Required arguments: channel_id, message_id\n\
                  Optional arguments: reason"
+                    .to_string(),
+            ),
+            "messages.clear" => Some(
+                "Clear all messages from a channel (requires security framework and approval)\n\
+                 Required arguments: guild_id, channel_id\n\
+                 Optional arguments: limit (default 100, max 100)"
                     .to_string(),
             ),
             "channels.create" => Some(
