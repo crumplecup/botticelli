@@ -95,6 +95,24 @@ cargo test --features gemini,api
 cargo test --all-features
 ```
 
+## Justfile Maintenance
+
+The `justfile` is a **first-class project document** that must be maintained alongside code changes:
+
+- **Add new recipes** when introducing new workflows, tools, or common development tasks
+- **Update existing recipes** when dependencies, flags, or build steps change
+- **Document recipes** with clear comments explaining what they do and when to use them
+- **Remove obsolete recipes** when features are deprecated or workflows change
+- **Test recipes** after changes to ensure they work correctly
+- The justfile should always reflect current best practices and project structure
+
+**Common justfile updates:**
+- New feature flags → update `check-features` recipe
+- New test categories → add test filtering recipes
+- New linters or tools → add check recipes
+- Build optimizations → update build recipes
+- CI/CD changes → sync with justfile equivalents
+
 ## Linting
 
 - When running any linter (e.g. clippy or markdownlint), rather than deny all warnings, let them complete so you can fix them all in a single pass.
