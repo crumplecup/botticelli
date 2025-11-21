@@ -19,3 +19,4 @@ serde_json = { workspace = true, optional = true }
 [features]
 default = []
 database = ["dep:diesel", "dep:serde_json"]
+tui = []

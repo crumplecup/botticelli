@@ -11,6 +11,7 @@ categories.workspace = true
 [dependencies]
 derive-getters = "0.5"
 derive_setters = "0.1"
+derive_builder = { workspace = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"

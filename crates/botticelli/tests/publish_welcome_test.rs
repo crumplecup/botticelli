@@ -7,11 +7,12 @@
 //!
 //! Run with: `cargo test --package botticelli --test publish_welcome_test --features gemini,discord,database,api`
 
+#![cfg(all(feature = "gemini", feature = "discord", feature = "database"))]
+
 use botticelli::{
-    BotCommandRegistryImpl, DiscordCommandExecutor, GeminiClient, Narrative, NarrativeExecutor,
-    establish_connection,
+    BotCommandRegistryImpl, DatabaseTableQueryRegistry, DiscordCommandExecutor, GeminiClient,
+    Narrative, NarrativeExecutor, TableQueryExecutor, establish_connection,
 };
-use botticelli_database::{DatabaseTableQueryRegistry, TableQueryExecutor};
 use dotenvy::dotenv;
 use std::{env, sync::{Arc, Mutex}};
 

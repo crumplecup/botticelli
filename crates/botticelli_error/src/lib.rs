@@ -34,9 +34,11 @@ mod backend;
 mod not_implemented;
 mod storage;
 mod gemini;
+#[cfg(feature = "database")]
 mod database;
 mod narrative;
 mod server;
+#[cfg(feature = "tui")]
 mod tui;
 mod error;
 
@@ -47,8 +49,10 @@ pub use backend::BackendError;
 pub use not_implemented::NotImplementedError;
 pub use storage::{StorageError, StorageErrorKind};
 pub use gemini::{GeminiError, GeminiErrorKind, RetryableError};
+#[cfg(feature = "database")]
 pub use database::{DatabaseError, DatabaseErrorKind};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
 pub use server::{ServerError, ServerErrorKind};
+#[cfg(feature = "tui")]
 pub use tui::{TuiError, TuiErrorKind};
 pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};

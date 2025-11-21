@@ -1,6 +1,6 @@
 //! Tests for command result caching.
 
-use botticelli_cache::{CommandCache, CommandCacheConfig};
+use botticelli_cache::{CommandCache, CommandCacheConfig, CommandCacheConfigBuilder};
 use serde_json::json;
 use std::collections::HashMap;
 use std::thread::sleep;
@@ -100,11 +100,12 @@ fn test_cache_cleanup_expired() {
 
 #[test]
 fn test_cache_lru_eviction() {
-    let config = CommandCacheConfig {
-        default_ttl: 300,
-        max_size: 2,
-        enabled: true,
-    };
+    let config = CommandCacheConfigBuilder::default()
+        .default_ttl(300)
+        .max_size(2)
+        .enabled(true)
+        .build()
+        .unwrap();
     let mut cache = CommandCache::new(config);
 
     let mut args1 = HashMap::new();
@@ -132,11 +133,12 @@ fn test_cache_lru_eviction() {
 
 #[test]
 fn test_cache_disabled() {
-    let config = CommandCacheConfig {
-        default_ttl: 300,
-        max_size: 1000,
-        enabled: false,
-    };
+    let config = CommandCacheConfigBuilder::default()
+        .default_ttl(300)
+        .max_size(1000)
+        .enabled(false)
+        .build()
+        .unwrap();
     let mut cache = CommandCache::new(config);
 
     let mut args = HashMap::new();

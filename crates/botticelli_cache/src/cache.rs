@@ -60,7 +60,7 @@ impl CacheKey {
 }
 
 /// Configuration for command cache.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_setters::Setters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_setters::Setters, derive_builder::Builder)]
 #[setters(prefix = "with_")]
 pub struct CommandCacheConfig {
     /// Default TTL for cached entries (seconds)

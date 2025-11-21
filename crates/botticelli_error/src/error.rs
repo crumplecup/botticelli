@@ -1,9 +1,13 @@
 //! Top-level error wrapper types.
 
 use crate::{
-    BackendError, ConfigError, DatabaseError, GeminiError, HttpError, JsonError, NarrativeError,
-    NotImplementedError, ServerError, StorageError, TuiError,
+    BackendError, ConfigError, GeminiError, HttpError, JsonError, NarrativeError,
+    NotImplementedError, ServerError, StorageError,
 };
+#[cfg(feature = "database")]
+use crate::DatabaseError;
+#[cfg(feature = "tui")]
+use crate::TuiError;
 
 /// This is the foundation error enum. Additional variants will be added
 /// by other botticelli crates during the workspace migration.
@@ -48,6 +52,7 @@ pub enum BotticelliErrorKind {
     #[from(NarrativeError)]
     Narrative(NarrativeError),
     /// TUI error (Phase 6)
+    #[cfg(feature = "tui")]
     #[from(TuiError)]
     Tui(TuiError),
     /// Local inference server error
