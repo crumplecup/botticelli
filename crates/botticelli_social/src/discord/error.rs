@@ -3,6 +3,8 @@
 //! This module provides error handling for Discord integration, including
 //! Serenity API errors, connection issues, and Discord-specific validation errors.
 
+use derive_getters::Getters;
+
 /// Discord error variants.
 ///
 /// Represents different error conditions that can occur during Discord operations.
@@ -64,12 +66,12 @@ pub enum DiscordErrorKind {
 /// Discord error with source location tracking.
 ///
 /// Captures the error kind along with the file and line where the error occurred.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, Getters)]
 #[display("Discord Error: {} at line {} in {}", kind, line, file)]
 pub struct DiscordError {
-    pub kind: DiscordErrorKind,
-    pub line: u32,
-    pub file: &'static str,
+    kind: DiscordErrorKind,
+    line: u32,
+    file: &'static str,
 }
 
 impl DiscordError {

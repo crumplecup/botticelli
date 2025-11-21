@@ -35,7 +35,7 @@ dirs = { workspace = true }
 
 # TUI dependencies (optional, only when both tui and server features are enabled)
 ratatui = { version = "0.29", optional = true }
-crossterm = { version = "0.28", optional = true }
+crossterm = { version = "0.29", optional = true }
 dotenvy.workspace = true
 
 [features]
@@ -60,8 +60,14 @@ server = ["botticelli_server"]
 all-providers = ["gemini"]
 
 # Testing feature flags
-api = []  # Empty marker feature to gate API-consuming tests
-local = ["gemini", "database", "discord", "tui", "server"]  # All features except api
+api = [] # Empty marker feature to gate API-consuming tests
+local = [
+  "gemini",
+  "database",
+  "discord",
+  "tui",
+  "server",
+] # All features except api
 
 # Convenience feature for all optional features
 all = ["gemini", "database", "discord", "tui", "server"]

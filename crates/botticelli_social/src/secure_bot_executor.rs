@@ -292,7 +292,7 @@ mod tests {
             .await;
 
         assert!(result.is_err());
-        match &result.unwrap_err().kind {
+        match result.unwrap_err().kind() {
             BotCommandErrorKind::PermissionDenied { .. } => {}
             other => panic!("Expected PermissionDenied, got {:?}", other),
         }

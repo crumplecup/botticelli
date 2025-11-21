@@ -31,6 +31,7 @@
 use crate::{BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandResult};
 use async_trait::async_trait;
 use botticelli_security::PermissionChecker;
+use derive_getters::Getters;
 use serde_json::Value as JsonValue;
 use serenity::http::Http;
 use serenity::model::id::GuildId;
@@ -42,6 +43,7 @@ use tracing::{debug, error, info, instrument, warn};
 ///
 /// Implements the BotCommandExecutor trait to provide Discord-specific
 /// command handling using Serenity's HTTP client.
+#[derive(Getters)]
 pub struct DiscordCommandExecutor {
     http: Arc<Http>,
     permission_checker: Option<Arc<PermissionChecker>>,

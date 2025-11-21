@@ -11,6 +11,7 @@ use botticelli_security::{
     CommandValidator, ContentFilter, PermissionChecker, RateLimiter, SecureExecutor,
     ApprovalWorkflow, SecurityError, SecurityErrorKind,
 };
+use derive_getters::Getters;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use tracing::{debug, error, info, instrument, warn};
@@ -23,6 +24,7 @@ use tracing::{debug, error, info, instrument, warn};
 /// 3. Content filtering
 /// 4. Rate limiting
 /// 5. Approval workflow
+#[derive(Getters)]
 pub struct SecureBotCommandExecutor<V: CommandValidator> {
     registry: BotCommandRegistryImpl,
     security: SecureExecutor<V>,
@@ -342,7 +344,7 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(matches!(
-            err.kind,
+            err.kind(),
             BotCommandErrorKind::PermissionDenied { .. }
         ));
     }
@@ -368,7 +370,7 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(matches!(
-            err.kind,
+            err.kind(),
             BotCommandErrorKind::InvalidArgument { .. }
         ));
     }
@@ -393,7 +395,7 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(matches!(
-            err.kind,
+            err.kind(),
             BotCommandErrorKind::InvalidArgument { .. }
         ));
     }
@@ -427,7 +429,7 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(matches!(
-            err.kind,
+            err.kind(),
             BotCommandErrorKind::RateLimitExceeded { .. }
         ));
     }

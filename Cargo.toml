@@ -1,22 +1,21 @@
 [workspace]
 members = [
-    "crates/botticelli_error",
-    "crates/botticelli_core",
-    "crates/botticelli_interface",
-    "crates/botticelli_rate_limit",
-    "crates/botticelli_storage",
-    "crates/botticelli_models",
-    "crates/botticelli_database",
-    "crates/botticelli_narrative",
-    "crates/botticelli_social",
-    "crates/botticelli_tui",
-    "crates/botticelli", "crates/botticelli_server", "crates/botticelli_security", "crates/botticelli_cache",
+  "crates/botticelli_error",
+  "crates/botticelli_core",
+  "crates/botticelli_interface",
+  "crates/botticelli_rate_limit",
+  "crates/botticelli_storage",
+  "crates/botticelli_models",
+  "crates/botticelli_database",
+  "crates/botticelli_narrative",
+  "crates/botticelli_social",
+  "crates/botticelli_tui",
+  "crates/botticelli",
+  "crates/botticelli_server",
+  "crates/botticelli_security",
+  "crates/botticelli_cache",
 ]
 resolver = "2"
-
-[workspace.metadata.features]
-# local: All features except api (for daily development without API costs)
-local = ["gemini", "database", "discord"]
 
 [workspace.package]
 version = "0.2.0"
@@ -70,7 +69,7 @@ botticelli = { path = "crates/botticelli", version = "0.2.0" }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml = "0.8"
+toml = "0.9"
 async-trait = "0.1"
 futures-util = "0.3"
 derive_more = { version = "2", features = ["display", "from"] }
@@ -78,17 +77,22 @@ derive-new = "0.7"
 derive-getters = "0.5"
 derive_setters = "0.1"
 derive_builder = "0.20"
-strum = { version = "0.26", features = ["derive"] }
+strum = { version = "0.27", features = ["derive"] }
 
 # Rate limiting and retry
 governor = "0.10"
-tokio-retry2 = { version = "0.6", features = ["jitter"] }
+tokio-retry2 = { version = "0.7", features = ["jitter"] }
 tracing = "0.1"
 regex = "1"
 
 # Configuration and HTTP
 config = { version = "0.15", features = ["toml"] }
-reqwest = { version = "0.12", features = ["json", "gzip", "stream", "rustls-tls"] }
+reqwest = { version = "0.12", features = [
+  "json",
+  "gzip",
+  "stream",
+  "rustls-tls",
+] }
 dirs = "6"
 
 # Storage and hashing
@@ -100,16 +104,23 @@ gemini-rust = "1.5"
 base64 = "0.22"
 
 # WebSocket for live APIs
-tokio-tungstenite = "0.27"
+tokio-tungstenite = "0.28"
 
 # Database
-diesel = { version = "2.2", features = ["postgres", "chrono", "uuid", "serde_json", "64-column-tables", "r2d2"] }
-diesel_migrations = "2.2"
+diesel = { version = "2", features = [
+  "postgres",
+  "chrono",
+  "uuid",
+  "serde_json",
+  "64-column-tables",
+  "r2d2",
+] }
+diesel_migrations = "2"
 chrono = { version = "0.4", features = ["serde"] }
 
 # TUI
 ratatui = "0.29"
-crossterm = "0.28"
+crossterm = "0.29"
 
 # Environment variables
 dotenvy = "0.15"

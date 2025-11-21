@@ -28,6 +28,7 @@
 
 use async_trait::async_trait;
 use botticelli_cache::CommandCache;
+use derive_getters::Getters;
 use derive_more::{Display, Error};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -141,15 +142,15 @@ pub enum BotCommandErrorKind {
 }
 
 /// Bot command error with location tracking.
-#[derive(Debug, Clone, Display, Error)]
+#[derive(Debug, Clone, Display, Error, Getters)]
 #[display("Bot Command Error: {} at line {} in {}", kind, line, file)]
 pub struct BotCommandError {
     /// The specific error kind
-    pub kind: BotCommandErrorKind,
+    kind: BotCommandErrorKind,
     /// Line number where error occurred
-    pub line: u32,
+    line: u32,
     /// File where error occurred
-    pub file: &'static str,
+    file: &'static str,
 }
 
 impl BotCommandError {
@@ -265,6 +266,7 @@ pub trait BotCommandExecutor: Send + Sync {
 ///
 /// let result = registry.execute("discord", "server.get_stats", &args).await?;
 /// ```
+#[derive(Getters)]
 pub struct BotCommandRegistryImpl {
     executors: HashMap<String, Arc<dyn BotCommandExecutor>>,
     cache: Arc<Mutex<CommandCache>>,
