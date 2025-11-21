@@ -1,8 +1,6 @@
 //! Integration tests for Discord narratives.
 
-use botticelli_interface::{ContentRepository, GenerationBackend, NarrativeRepository};
-use botticelli_narrative::{InMemoryNarrativeRepository, NarrativeExecutor};
-use std::path::PathBuf;
+use botticelli_narrative::Narrative;
 
 /// Helper to load .env file for tests
 fn load_env() {
@@ -10,35 +8,33 @@ fn load_env() {
 }
 
 #[tokio::test]
-#[cfg_attr(not(feature = "api"), ignore)]
-async fn test_welcome_content_generation() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_welcome_content_generation_loads() -> Result<(), Box<dyn std::error::Error>> {
     load_env();
-    tracing_subscriber::fmt::init();
     
-    // Load narrative
-    let narrative_path = PathBuf::from("crates/botticelli_narrative/narratives/discord/welcome_content_generation.toml");
-    let narrative_repo = InMemoryNarrativeRepository::new();
-    let narrative = narrative_repo.load_from_file(&narrative_path).await?;
+    // Load narrative from file (relative to workspace root)
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let narrative_path = format!("{}/narratives/discord/welcome_content_generation.toml", manifest_dir);
+    let narrative = Narrative::from_file(&narrative_path)?;
     
-    // Create executor (will need backend and content repository)
-    // TODO: Set up proper backend and content repository
+    // Verify basic structure
+    assert_eq!(narrative.metadata.name, "welcome_content_generation");
+    assert!(!narrative.acts.is_empty());
     
     Ok(())
 }
 
 #[tokio::test]
-#[cfg_attr(not(feature = "api"), ignore)]
-async fn test_publish_welcome() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_publish_welcome_loads() -> Result<(), Box<dyn std::error::Error>> {
     load_env();
-    tracing_subscriber::fmt::init();
     
-    // Load narrative
-    let narrative_path = PathBuf::from("crates/botticelli_narrative/narratives/discord/publish_welcome.toml");
-    let narrative_repo = InMemoryNarrativeRepository::new();
-    let narrative = narrative_repo.load_from_file(&narrative_path).await?;
+    // Load narrative from file (relative to workspace root)
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let narrative_path = format!("{}/narratives/discord/publish_welcome.toml", manifest_dir);
+    let narrative = Narrative::from_file(&narrative_path)?;
     
-    // Create executor (will need backend, content repository, and bot manager)
-    // TODO: Set up proper backend, content repository, and bot manager
+    // Verify basic structure
+    assert_eq!(narrative.metadata.name, "publish_welcome");
+    assert!(!narrative.acts.is_empty());
     
     Ok(())
 }
