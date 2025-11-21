@@ -501,6 +501,20 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     }
                 }
 
+                Input::Narrative { name, path } => {
+                    tracing::debug!(
+                        name = %name,
+                        path = ?path,
+                        "Processing narrative reference input"
+                    );
+                    
+                    // TODO: Implement narrative composition
+                    // For now, return a placeholder message
+                    let msg = format!("[Narrative composition not yet implemented: {}]", name);
+                    tracing::warn!(name = %name, "Narrative composition feature pending");
+                    processed.push(Input::Text(msg));
+                }
+
                 // Pass through all other input types unchanged
                 other => {
                     processed.push(other.clone());

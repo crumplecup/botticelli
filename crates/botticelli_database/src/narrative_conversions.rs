@@ -124,6 +124,17 @@ pub fn input_to_new_row(
                 media_ref_id: None,
             }
         }
+        Input::Narrative { name, .. } => {
+            NewActInputRow {
+                act_execution_id,
+                input_order: order as i32,
+                input_type: "narrative".to_string(),
+                text_content: Some(name.clone()),
+                mime_type: None,
+                filename: None,
+                media_ref_id: None,
+            }
+        }
     };
     Ok(row)
 }
@@ -138,6 +149,7 @@ fn input_type_string(input: &Input) -> String {
         Input::Document { .. } => "document".to_string(),
         Input::BotCommand { .. } => "bot_command".to_string(),
         Input::Table { .. } => "table".to_string(),
+        Input::Narrative { .. } => "narrative".to_string(),
     }
 }
 

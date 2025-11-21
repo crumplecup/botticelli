@@ -424,9 +424,9 @@ impl TomlAct {
     }
 }
 
-/// Check if a string is a resource reference (bots.name, tables.name, media.name).
+/// Check if a string is a resource reference (bots.name, tables.name, media.name, narrative:name).
 fn is_reference(s: &str) -> bool {
-    s.starts_with("bots.") || s.starts_with("tables.") || s.starts_with("media.")
+    s.starts_with("bots.") || s.starts_with("tables.") || s.starts_with("media.") || s.starts_with("narrative:")
 }
 
 impl TomlNarrativeFile {
@@ -434,6 +434,16 @@ impl TomlNarrativeFile {
     #[instrument(skip(self), fields(reference))]
     pub fn resolve_reference(&self, reference: &str) -> Result<Input, String> {
         debug!(%reference, "Resolving resource reference");
+        
+        // Handle narrative: prefix specially
+        if let Some(narrative_name) = reference.strip_prefix("narrative:") {
+            debug!(narrative_name, "Resolved narrative reference");
+            return Ok(Input::Narrative {
+                name: narrative_name.to_string(),
+                path: None,  // Will be resolved relative to calling narrative
+            });
+        }
+        
         let parts: Vec<&str> = reference.split('.').collect();
         if parts.len() != 2 {
             error!(%reference, "Invalid reference format (expected 'category.name')");

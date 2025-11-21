@@ -245,6 +245,9 @@ load_data = "tables.recent_posts"
 # Reference media
 analyze_image = "media.logo"
 
+# Reference another narrative (runs it and uses its output)
+run_preprocessing = "narrative:data_preparation"
+
 # Plain text (unchanged)
 discuss = "What do you think about our stats?"
 ```
@@ -395,7 +398,41 @@ multi_input = [
 ]
 ```
 
-#### 4. Structured Acts (Full Configuration)
+#### 4. Narrative Composition
+
+Run other narratives as steps in your narrative using the `narrative:` prefix:
+
+```toml
+[toc]
+order = ["prepare_data", "analyze_data", "publish_results"]
+
+[acts]
+# Run the data_preparation narrative first
+prepare_data = "narrative:data_preparation"
+
+# Use the output from data_preparation in subsequent steps
+analyze_data = ["narrative:data_preparation", "Analyze this prepared data"]
+
+# Run multiple narratives in sequence
+process_all = [
+    "narrative:collect_data",
+    "narrative:clean_data", 
+    "narrative:analyze_data"
+]
+```
+
+**How it works:**
+- The referenced narrative is loaded and executed completely
+- Its final output becomes the input for the current act
+- Narratives are resolved relative to the calling narrative's directory
+- Use the base filename without `.toml` extension (e.g., `data_preparation` for `data_preparation.toml`)
+
+**Use cases:**
+- Breaking complex workflows into reusable components
+- Creating pipelines where each narrative handles one responsibility
+- Composing modular narratives for maintainability
+
+#### 5. Structured Acts (Full Configuration)
 
 Use TOML's array-of-tables syntax (`[[...]]`) for full control:
 

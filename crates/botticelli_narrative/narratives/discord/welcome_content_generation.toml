@@ -3,9 +3,8 @@
 # Uses carousel mode to produce 9 total options (3 iterations × 3 refined options per iteration)
 
 [narrative]
-name = "welcome_content_generation"
+name = "welcome_messages"
 description = "Generate welcome message content for Botticelli Discord server"
-# template = "welcome_messages"  # Disabled until table exists
 
 [narrative.carousel]
 iterations = 3

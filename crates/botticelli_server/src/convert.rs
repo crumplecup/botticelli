@@ -40,8 +40,8 @@ fn message_to_server_message(msg: Message) -> Result<crate::Message, ServerError
             Input::Text(t) => Some(t.as_str()),
             // Skip non-text inputs for text-only server
             Input::Image { .. } | Input::Audio { .. } | Input::Video { .. } | Input::Document { .. } => None,
-            // Skip bot commands and table references (not supported in text-only server)
-            Input::BotCommand { .. } | Input::Table { .. } => None,
+            // Skip bot commands, table references, and narrative references (not supported in text-only server)
+            Input::BotCommand { .. } | Input::Table { .. } | Input::Narrative { .. } => None,
         })
         .collect::<Vec<_>>()
         .join("\n");

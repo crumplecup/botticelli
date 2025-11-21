@@ -102,6 +102,17 @@ pub enum Input {
         /// Random sample N rows
         sample: Option<u32>,
     },
+
+    /// Narrative reference for composing narratives.
+    ///
+    /// When encountered, the executor will load and execute the referenced
+    /// narrative, using its final output as input for the current act.
+    Narrative {
+        /// Name of the narrative file (without .toml extension)
+        name: String,
+        /// Optional path relative to calling narrative (defaults to same directory)
+        path: Option<String>,
+    },
 }
 
 /// Output format for table data.

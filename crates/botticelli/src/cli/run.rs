@@ -43,17 +43,23 @@ pub async fn run_narrative(
     // Create Gemini client (reads API key from GEMINI_API_KEY environment variable)
     let client = GeminiClient::new()?;
 
-    // Create executor with content generation processor
+    // Create executor with content generation processor and table registry
     let executor = {
         #[cfg(feature = "database")]
         {
             use botticelli::ProcessorRegistry;
             use botticelli_narrative::ContentGenerationProcessor;
+            use botticelli_database::{DatabaseTableQueryRegistry, TableQueryExecutor};
             use std::sync::{Arc, Mutex};
 
-            // Create content generation processor if database feature is enabled
-            let conn = botticelli::establish_connection()?;
-            let processor = ContentGenerationProcessor::new(Arc::new(Mutex::new(conn)));
+            // Create database connection for table queries
+            let table_conn = botticelli::establish_connection()?;
+            let table_executor = TableQueryExecutor::new(Arc::new(Mutex::new(table_conn)));
+            let table_registry = DatabaseTableQueryRegistry::new(table_executor);
+
+            // Create content generation processor
+            let proc_conn = botticelli::establish_connection()?;
+            let processor = ContentGenerationProcessor::new(Arc::new(Mutex::new(proc_conn)));
 
             let mut registry = ProcessorRegistry::new();
             registry.register(Box::new(processor));
@@ -62,7 +68,12 @@ pub async fn run_narrative(
                 tracing::warn!("Discord-specific processors not yet implemented");
             }
 
-            NarrativeExecutor::with_processors(client, registry)
+            // Build executor with processors and table registry
+            tracing::info!("Configuring executor with table registry");
+            let mut executor = NarrativeExecutor::with_processors(client, registry);
+            executor = executor.with_table_registry(Box::new(table_registry));
+            tracing::info!("Table registry configured");
+            executor
         }
 
         #[cfg(not(feature = "database"))]

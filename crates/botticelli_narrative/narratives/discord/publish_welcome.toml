@@ -1,10 +1,11 @@
 # Publish Welcome Message Narrative
-# Demonstrates: Table references, content selection, bot command execution
-# NOTE: Run welcome_content_generation.toml first to populate the table
+# Demonstrates: Narrative composition (PENDING), table references, content selection, bot command execution
+# NOTE: Narrative composition (narrative: syntax) is parsed but not yet executed
+# For now, run welcome_content_generation.toml manually before running this
 
 [narrative]
 name = "publish_welcome"
-description = "Select and publish the best welcome message to Discord server"
+description = "Generate, select, and publish the best welcome message to Discord server"
 
 [toc]
 order = ["select_best", "publish_message"]
@@ -34,5 +35,5 @@ Review all 9 welcome messages above and:
 3. Output ONLY the selected message content (no explanation, no prefix)"""
 ]
 
-# Act 2: Publish to Discord welcome channel (uses output from select_best)
+# Act 3: Publish to Discord welcome channel (uses output from select_best)
 publish_message = ["bots.publish_message"]

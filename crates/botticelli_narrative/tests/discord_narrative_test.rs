@@ -17,7 +17,7 @@ async fn test_welcome_content_generation_loads() -> Result<(), Box<dyn std::erro
     let narrative = Narrative::from_file(&narrative_path)?;
     
     // Verify basic structure
-    assert_eq!(narrative.metadata.name, "welcome_content_generation");
+    assert_eq!(narrative.metadata.name, "welcome_messages");
     assert!(!narrative.acts.is_empty());
     
     Ok(())
