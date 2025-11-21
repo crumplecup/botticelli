@@ -54,5 +54,5 @@ pub use database::{DatabaseError, DatabaseErrorKind};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
 pub use server::{ServerError, ServerErrorKind};
 #[cfg(feature = "tui")]
-pub use tui::{TuiError, TuiErrorKind};
+pub use tui::{TuiError, TuiErrorKind, TuiResult};
 pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};

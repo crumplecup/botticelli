@@ -18,6 +18,9 @@ pub enum TuiErrorKind {
     /// Failed to render TUI frame
     #[display("Failed to render: {}", _0)]
     Rendering(String),
+    /// Database operation failed
+    #[display("Database error: {}", _0)]
+    Database(String),
 }
 
 /// TUI error with source location tracking.
@@ -53,3 +56,6 @@ impl TuiError {
         }
     }
 }
+
+/// Result type for TUI operations.
+pub type TuiResult<T> = Result<T, TuiError>;

@@ -3,21 +3,20 @@
 use botticelli::BotticelliResult;
 
 /// Launch the terminal user interface for a table.
-#[cfg(feature = "tui")]
+#[cfg(all(feature = "tui", feature = "database"))]
 pub async fn launch_tui(table: &str) -> BotticelliResult<()> {
-    use botticelli_database::establish_connection;
-    use botticelli_tui::run_tui;
+    use botticelli_tui::{run_tui, DatabaseBackend};
 
     tracing::info!(table = %table, "Launching TUI");
-
-    let conn = establish_connection()?;
-    run_tui(table.to_string(), conn)?;
+    
+    let mut backend = DatabaseBackend::new()?;
+    run_tui(&mut backend, table.to_string())?;
 
     Ok(())
 }
 
-#[cfg(not(feature = "tui"))]
+#[cfg(not(all(feature = "tui", feature = "database")))]
 pub async fn launch_tui(_table: &str) -> BotticelliResult<()> {
-    eprintln!("Error: TUI feature not enabled. Rebuild with --features tui");
+    eprintln!("Error: TUI and database features not enabled. Rebuild with --features tui,database");
     std::process::exit(1);
 }

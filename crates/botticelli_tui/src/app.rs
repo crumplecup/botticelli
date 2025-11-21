@@ -1,24 +1,4 @@
-//! Application state and main TUI entry point.
-
-#[cfg(feature = "database")]
-use crate::{TuiError, TuiErrorKind};
-#[cfg(feature = "database")]
-use botticelli_error::BotticelliError;
-use botticelli_error::BotticelliResult;
-#[cfg(feature = "database")]
-use crate::{Event, EventHandler, ui};
-#[cfg(feature = "database")]
-use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture},
-    execute,
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
-};
-#[cfg(feature = "database")]
-use diesel::PgConnection;
-#[cfg(feature = "database")]
-use ratatui::{Terminal, backend::CrosstermBackend};
-#[cfg(feature = "database")]
-use std::io;
+//! Application state and core TUI types.
 
 /// Application mode determines which view is displayed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -98,17 +78,12 @@ pub struct App {
     pub status_message: String,
     /// Whether to quit the application
     pub should_quit: bool,
-    /// Database connection
-    #[cfg(feature = "database")]
-    conn: PgConnection,
 }
 
 impl App {
-    /// Create a new App instance.
-    #[cfg(feature = "database")]
-    #[tracing::instrument(skip(conn))]
-    pub fn new(table_name: String, conn: PgConnection) -> BotticelliResult<Self> {
-        let mut app = Self {
+    /// Create a new App instance with empty state.
+    pub fn new(table_name: String) -> Self {
+        Self {
             mode: AppMode::List,
             table_name,
             content_items: Vec::new(),
@@ -117,28 +92,15 @@ impl App {
             edit_buffer: None,
             status_message: String::from("Press ? for help"),
             should_quit: false,
-            conn,
-        };
-
-        // Load initial content
-        app.reload_content()?;
-
-        Ok(app)
+        }
     }
 
-    /// Reload content from database.
-    #[cfg(feature = "database")]
-    #[tracing::instrument(skip(self))]
-    pub fn reload_content(&mut self) -> BotticelliResult<()> {
-        use crate::database::load_content;
-
-        self.content_items = load_content(&mut self.conn, &self.table_name)?;
-
+    /// Set content items from external source.
+    pub fn set_content(&mut self, items: Vec<ContentRow>) {
+        self.content_items = items;
         if self.selected_index >= self.content_items.len() && !self.content_items.is_empty() {
             self.selected_index = self.content_items.len() - 1;
         }
-
-        Ok(())
     }
 
     /// Move selection up.
@@ -170,8 +132,7 @@ impl App {
     }
 
     /// Enter edit mode for selected item.
-    #[tracing::instrument(skip(self))]
-    pub fn enter_edit(&mut self) -> BotticelliResult<()> {
+    pub fn enter_edit(&mut self) {
         if let Some(item) = self.content_items.get(self.selected_index) {
             self.edit_buffer = Some(EditBuffer {
                 tags: item.tags.join(", "),
@@ -181,13 +142,10 @@ impl App {
             });
             self.mode = AppMode::Edit;
         }
-        Ok(())
     }
 
-    /// Save edits to database.
-    #[cfg(feature = "database")]
-    #[tracing::instrument(skip(self))]
-    pub fn save_edit(&mut self) -> BotticelliResult<()> {
+    /// Get current edit buffer data for saving.
+    pub fn get_edit_data(&self) -> Option<(i64, Vec<String>, Option<i32>, String)> {
         if let Some(buffer) = &self.edit_buffer {
             let item_id = self.content_items[self.selected_index].id;
             let tags: Vec<String> = buffer
@@ -196,23 +154,10 @@ impl App {
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty())
                 .collect();
-
-            use crate::database::save_content_metadata;
-
-            save_content_metadata(
-                &mut self.conn,
-                &self.table_name,
-                item_id,
-                &tags,
-                buffer.rating,
-                &buffer.status,
-            )?;
-
-            self.reload_content()?;
-            self.status_message = format!("Saved changes to item {}", item_id);
-            self.return_to_list();
+            Some((item_id, tags, buffer.rating, buffer.status.clone()))
+        } else {
+            None
         }
-        Ok(())
     }
 
     /// Toggle item in comparison selection.
@@ -232,32 +177,9 @@ impl App {
         }
     }
 
-    /// Delete selected item.
-    #[cfg(feature = "database")]
-    #[tracing::instrument(skip(self))]
-    pub fn delete_selected(&mut self) -> BotticelliResult<()> {
-        if let Some(item) = self.content_items.get(self.selected_index) {
-            use crate::database::delete_content_item;
-
-            let item_id = item.id;
-            delete_content_item(&mut self.conn, &self.table_name, item_id)?;
-            self.reload_content()?;
-            self.status_message = format!("Deleted item {}", item_id);
-        }
-        Ok(())
-    }
-
-    /// Promote selected item to target table.
-    #[cfg(feature = "database")]
-    #[tracing::instrument(skip(self))]
-    pub fn promote_selected(&mut self, target: &str) -> BotticelliResult<()> {
-        if let Some(item) = self.content_items.get(self.selected_index) {
-            use crate::database::promote_content_item;
-
-            let new_id = promote_content_item(&mut self.conn, &self.table_name, target, item.id)?;
-            self.status_message = format!("Promoted to {} with ID {}", target, new_id);
-        }
-        Ok(())
+    /// Get selected item ID for deletion.
+    pub fn get_selected_id(&self) -> Option<i64> {
+        self.content_items.get(self.selected_index).map(|item| item.id)
     }
 
     /// Quit the application.
@@ -266,140 +188,4 @@ impl App {
     }
 }
 
-/// Run the TUI application.
-#[cfg(feature = "database")]
-#[tracing::instrument(skip(conn))]
-pub fn run_tui(table_name: String, conn: PgConnection) -> BotticelliResult<()> {
-    // Setup terminal
-    enable_raw_mode().map_err(|e| {
-        BotticelliError::from(TuiError::new(TuiErrorKind::TerminalSetup(format!(
-            "enable raw mode: {}",
-            e
-        ))))
-    })?;
 
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).map_err(|e| {
-        BotticelliError::from(TuiError::new(TuiErrorKind::TerminalSetup(format!(
-            "alternate screen/mouse capture: {}",
-            e
-        ))))
-    })?;
-
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend).map_err(|e| {
-        BotticelliError::from(TuiError::new(TuiErrorKind::TerminalSetup(format!(
-            "create terminal: {}",
-            e
-        ))))
-    })?;
-
-    // Create app state
-    let mut app = App::new(table_name, conn)?;
-    let mut events = EventHandler::new(250);
-
-    // Main event loop
-    let result = run_app(&mut terminal, &mut app, &mut events);
-
-    // Restore terminal
-    disable_raw_mode().map_err(|e| {
-        BotticelliError::from(TuiError::new(TuiErrorKind::TerminalRestore(format!(
-            "disable raw mode: {}",
-            e
-        ))))
-    })?;
-
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )
-    .map_err(|e| {
-        BotticelliError::from(TuiError::new(TuiErrorKind::TerminalRestore(format!(
-            "leave alternate screen: {}",
-            e
-        ))))
-    })?;
-
-    terminal.show_cursor().map_err(|e| {
-        BotticelliError::from(TuiError::new(TuiErrorKind::TerminalRestore(format!(
-            "show cursor: {}",
-            e
-        ))))
-    })?;
-
-    result
-}
-
-/// Run the application event loop.
-#[cfg(feature = "database")]
-#[tracing::instrument(skip_all)]
-pub fn run_app<B: ratatui::backend::Backend>(
-    terminal: &mut Terminal<B>,
-    app: &mut App,
-    events: &mut EventHandler,
-) -> BotticelliResult<()> {
-    while !app.should_quit {
-        terminal.draw(|f| ui::draw(f, app)).map_err(|e| {
-            BotticelliError::from(TuiError::new(TuiErrorKind::Rendering(e.to_string())))
-        })?;
-
-        if let Some(event) = events.next()? {
-            match event {
-                Event::Tick => {}
-                Event::Key(key) => handle_key_event(app, key)?,
-            }
-        }
-    }
-
-    Ok(())
-}
-
-/// Handle keyboard input.
-#[cfg(feature = "database")]
-#[tracing::instrument(skip(app))]
-fn handle_key_event(app: &mut App, key: crossterm::event::KeyEvent) -> BotticelliResult<()> {
-    use crossterm::event::{KeyCode, KeyModifiers};
-
-    match app.mode {
-        AppMode::List => match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => app.quit(),
-            KeyCode::Up | KeyCode::Char('k') => app.select_previous(),
-            KeyCode::Down | KeyCode::Char('j') => app.select_next(),
-            KeyCode::Enter => app.enter_detail(),
-            KeyCode::Char('e') => app.enter_edit()?,
-            KeyCode::Char('c') => app.toggle_compare(),
-            KeyCode::Char('d') => {
-                if key.modifiers.contains(KeyModifiers::SHIFT) {
-                    app.delete_selected()?;
-                }
-            }
-            KeyCode::Char('r') => app.reload_content()?,
-            _ => {}
-        },
-        AppMode::Detail => match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => app.return_to_list(),
-            KeyCode::Char('e') => app.enter_edit()?,
-            _ => {}
-        },
-        AppMode::Edit => match key.code {
-            KeyCode::Esc => app.return_to_list(),
-            KeyCode::Enter if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                app.save_edit()?;
-            }
-            _ => {
-                // Handle text input in edit mode (TODO: implement in next iteration)
-            }
-        },
-        AppMode::Compare => match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => app.return_to_list(),
-            _ => {}
-        },
-        AppMode::Export => match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => app.return_to_list(),
-            _ => {}
-        },
-    }
-
-    Ok(())
-}
