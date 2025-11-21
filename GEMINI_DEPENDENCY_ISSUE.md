@@ -69,22 +69,38 @@ Open issues: Issue #28 discusses outdated model versions but was never resolved
 
 ## Action Items
 
-1. [ ] Test `gemini_rust` implementation
-   - Verify correct model naming (especially gemini-2.5-flash-lite)
-   - Test streaming support (critical for our use case)
-   - Verify function calling compatibility
-   - Compare API surface with our current wrapper
-2. [ ] If gemini_rust unsuitable, test `gemini_rs`
-3. [ ] Create migration plan for chosen library
-4. [ ] File issue on google-generative-ai-rs repo about model naming bug
-5. [ ] Update CLAUDE.md with dependency maintenance best practices
+1. [✅] Test `gemini_rust` implementation
+   - ✅ Migrated to gemini-rust 1.5.0
+   - ⚠️ **Bug Found**: `Model::Gemini25FlashLite` maps to "gemini-2.0-flash-lite" instead of "gemini-2.5-flash-lite"
+   - ✅ Workaround implemented using `Model::Custom("models/gemini-2.5-flash-lite")`
+   - ✅ Streaming support working
+   - ✅ Function calling compatible
+2. [✅] File issue on gemini-rust repository about model naming bug
+   - Repository: https://github.com/flachesis/gemini-rust
+   - ✅ Searched for existing issues (none found for this specific bug)
+   - ✅ Filed issue #49: https://github.com/flachesis/gemini-rust/issues/49
+3. [ ] Monitor upstream for fix
+4. [ ] Remove workaround when fixed upstream
 
-## Temporary Workaround
+## Current Status (Updated 2025-11-21)
 
-Until migration, document the model naming issue and warn users:
+**Migration Complete**: We've migrated to `gemini-rust 1.5.0`, but discovered a bug in that library.
+
+### Bug Details
+
+- **Affected**: `Model::Gemini25FlashLite` enum variant
+- **Expected**: Maps to `"models/gemini-2.5-flash-lite"`
+- **Actual**: Maps to `"models/gemini-2.0-flash-lite"`
+- **Impact**: Requests route to older 2.0 model instead of current 2.5 model
+
+### Workaround Implemented
+
+In `crates/botticelli_models/src/gemini/client.rs` (line 212):
 
 ```rust
-// WORKAROUND: google-generative-ai-rs has outdated model mappings
-// gemini-2.5-flash-lite incorrectly routes to gemini-2.0-flash-lite
-// This is a known issue - see GEMINI_DEPENDENCY_ISSUE.md
+// NOTE: gemini-rust 1.5's Model::Gemini25FlashLite incorrectly maps to "gemini-2.0-flash-lite"
+// Use Custom variant to get correct 2.5 version until upstream is fixed
+"gemini-2.5-flash-lite" => Model::Custom("models/gemini-2.5-flash-lite".to_string()),
 ```
+
+This workaround ensures the correct model is used while we wait for an upstream fix.
