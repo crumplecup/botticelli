@@ -9,6 +9,26 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use tracing::{debug, error, instrument};
 
+/// Expand environment variables in string values within a HashMap.
+///
+/// Supports `${VAR_NAME}` and `$VAR_NAME` syntax.
+fn expand_env_vars(args: &HashMap<String, serde_json::Value>) -> HashMap<String, serde_json::Value> {
+    args.iter()
+        .map(|(k, v)| {
+            let expanded_value = match v {
+                serde_json::Value::String(s) => {
+                    match shellexpand::env(s) {
+                        Ok(expanded) => serde_json::Value::String(expanded.into_owned()),
+                        Err(_) => v.clone(), // Keep original if expansion fails
+                    }
+                }
+                _ => v.clone(),
+            };
+            (k.clone(), expanded_value)
+        })
+        .collect()
+}
+
 /// Intermediate structure for deserializing the [narrative] section.
 #[derive(Debug, Clone, Deserialize)]
 pub struct TomlNarrative {
@@ -258,10 +278,11 @@ impl TomlInput {
                         "Bot command missing 'command' field".to_string()
                     })?;
                 debug!(%platform, %command, "Created bot command input");
+                let args = expand_env_vars(&self.args.clone().unwrap_or_default());
                 Ok(Input::BotCommand {
                     platform: platform.clone(),
                     command: command.clone(),
-                    args: self.args.clone().unwrap_or_default(),
+                    args,
                     required: self.required.unwrap_or(false),
                     cache_duration: self.cache_duration,
                 })
@@ -493,10 +514,11 @@ impl TomlNarrativeFile {
             })?;
         
         debug!(platform = %bot_def.platform, command = %bot_def.command, "Bot reference resolved");
+        let args = expand_env_vars(&bot_def.args);
         Ok(Input::BotCommand {
             platform: bot_def.platform.clone(),
             command: bot_def.command.clone(),
-            args: bot_def.args.clone(),
+            args,
             required: false,
             cache_duration: None,
         })

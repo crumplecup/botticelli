@@ -1,0 +1,265 @@
+# Setup Discord Channels for Botticelli Community Server
+# This narrative creates all the channels outlined in the server plan
+
+[narrative]
+name = "setup_channels"
+description = "Create Discord channels for Botticelli community server"
+skip_content_generation = true
+
+[toc]
+order = [
+    "create_welcome_channels",
+    "create_documentation_channels", 
+    "create_discussion_channels",
+    "create_development_channels",
+    "create_showcase_channels",
+    "create_bot_channels"
+]
+
+# 🏠 Welcome & Information Channels
+[[acts.create_welcome_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_welcome_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "welcome"
+type = "text"
+
+[[acts.create_welcome_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_welcome_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "rules"
+type = "text"
+
+[[acts.create_welcome_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_welcome_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "announcements"
+type = "text"
+
+[[acts.create_welcome_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_welcome_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "faq"
+type = "text"
+
+# 📚 Documentation & Learning Channels
+[[acts.create_documentation_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_documentation_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "getting-started"
+type = "text"
+
+[[acts.create_documentation_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_documentation_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "tutorials"
+type = "text"
+
+[[acts.create_documentation_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_documentation_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "examples"
+type = "text"
+
+[[acts.create_documentation_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_documentation_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "best-practices"
+type = "text"
+
+# 💬 Discussion & Support Channels
+[[acts.create_discussion_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_discussion_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "general"
+type = "text"
+
+[[acts.create_discussion_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_discussion_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "help"
+type = "text"
+
+[[acts.create_discussion_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_discussion_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "feature-requests"
+type = "text"
+
+[[acts.create_discussion_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_discussion_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "bug-reports"
+type = "text"
+
+# 🔧 Development Channels
+[[acts.create_development_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_development_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "contributors"
+type = "text"
+
+[[acts.create_development_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_development_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "pull-requests"
+type = "text"
+
+[[acts.create_development_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_development_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "architecture"
+type = "text"
+
+# 🎨 Showcase Channels
+[[acts.create_showcase_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_showcase_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "projects"
+type = "text"
+
+[[acts.create_showcase_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_showcase_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "narratives"
+type = "text"
+
+[[acts.create_showcase_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_showcase_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "generated-content"
+type = "text"
+
+[[acts.create_showcase_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_showcase_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "integrations"
+type = "text"
+
+# 🤖 Bot Interaction Channels
+[[acts.create_bot_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_bot_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "bot-commands"
+type = "text"
+
+[[acts.create_bot_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_bot_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "narrative-requests"
+type = "text"
+
+[[acts.create_bot_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[acts.create_bot_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "scheduled-content"
+type = "text"

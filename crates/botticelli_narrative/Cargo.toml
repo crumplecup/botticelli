@@ -14,6 +14,7 @@ botticelli_error = { workspace = true }
 botticelli_core = { workspace = true }
 botticelli_interface = { workspace = true }
 botticelli_storage = { workspace = true }
+shellexpand = "3"
 
 # Optional database support
 botticelli_database = { workspace = true, optional = true }
