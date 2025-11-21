@@ -1,0 +1,139 @@
+# Welcome Content Generation Narrative
+# 
+# This narrative demonstrates:
+# - JSON-structured output with database schemas
+# - Multi-model workflow (cheap generation → critique → refinement)
+# - Carousel looping (3 iterations = 9 total options)
+# - Database storage for content review
+
+[narrative]
+name = "welcome_content_generation"
+description = "Generate, critique, and refine Discord welcome messages for the Botticelli community"
+
+# Carousel configuration - run 3 times to generate 9 total options
+[narrative.carousel]
+iterations = 3
+budget.requests_per_minute = 10
+budget.requests_per_day = 100
+budget.tokens_per_minute = 50000
+budget.tokens_per_day = 500000
+
+# Act 1: Generate 10 welcome message options using cheap model
+[[act]]
+prompt = """
+Generate 10 engaging welcome messages for the #welcome channel of the Botticelli Discord community.
+
+**About Botticelli:**
+- AI narrative framework with TOML-based workflows
+- Multi-step narratives for complex AI interactions
+- Content generation with multiple model support
+- Discord bot integration for community automation
+- Database-backed content management
+
+**Requirements for each welcome message:**
+1. Use Discord markdown formatting (bold, italic, code blocks, links)
+2. Be warm and inviting but professional
+3. Explain what Botticelli is clearly
+4. Highlight 2-3 key features
+5. Include a call-to-action (explore docs, try examples, ask questions)
+6. Be 150-250 words
+7. Include emojis strategically for visual appeal
+
+**Output format:** Return ONLY valid JSON matching this schema:
+{
+  "messages": [
+    {
+      "title": "Short catchy title",
+      "content": "Full Discord-formatted message text",
+      "tone": "professional|friendly|enthusiastic|technical",
+      "key_features": ["feature1", "feature2", "feature3"]
+    }
+  ]
+}
+
+Generate exactly 10 diverse welcome messages with different tones and angles.
+"""
+
+[act.generation]
+model = "gemini-2.0-flash-exp"
+max_tokens = 4000
+temperature = 0.9
+
+# Act 2: Critique the generated options
+[[act]]
+prompt = """
+Review these 10 welcome message options for the Botticelli Discord community.
+
+{{previous_output}}
+
+**Evaluation criteria:**
+1. **Clarity** - Is it immediately clear what Botticelli is and does?
+2. **Engagement** - Does it make newcomers excited to learn more?
+3. **Completeness** - Does it cover the essential information?
+4. **Formatting** - Does it use Discord markdown effectively?
+5. **Tone** - Is the tone appropriate for a technical community?
+6. **Length** - Is it the right length (not too long, not too short)?
+7. **Emoji usage** - Are emojis used strategically, not excessively?
+
+For each message, provide:
+- Overall score (1-10)
+- Strengths (2-3 bullet points)
+- Weaknesses (2-3 bullet points)
+- Specific improvement suggestions
+
+Then identify the 3 most promising messages to refine.
+"""
+
+[act.generation]
+model = "gemini-2.0-flash-exp"
+max_tokens = 3000
+temperature = 0.7
+
+# Act 3: Refine the best 3 options using better model
+[[act]]
+prompt = """
+Based on the critique, take the 3 most promising welcome messages and refine them into polished, production-ready versions.
+
+{{previous_output}}
+
+**Refinement goals:**
+1. Address all identified weaknesses
+2. Enhance strengths
+3. Ensure perfect Discord markdown formatting
+4. Balance professionalism with friendliness
+5. Make the call-to-action compelling
+6. Optimize emoji placement
+7. Ensure 150-250 word length
+
+**Output format:** Return ONLY valid JSON matching this schema:
+{
+  "refined_messages": [
+    {
+      "title": "Polished title",
+      "content": "Refined Discord-formatted message",
+      "tone": "professional|friendly|enthusiastic|technical",
+      "key_features": ["feature1", "feature2", "feature3"],
+      "improvements_made": ["improvement1", "improvement2"],
+      "rationale": "Brief explanation of why this version is better"
+    }
+  ]
+}
+
+Create exactly 3 refined messages.
+"""
+
+[act.generation]
+model = "gemini-2.0-flash-exp"
+max_tokens = 3000
+temperature = 0.8
+
+# Act 4: Store the refined options in database for review
+[[act]]
+[act.bot]
+platform = "discord"
+command = "content.create"
+
+[act.bot.args]
+table_name = "welcome_messages"
+# The content from Act 3 will be parsed and stored as JSON
+# Each iteration stores 3 messages, 3 iterations = 9 total options

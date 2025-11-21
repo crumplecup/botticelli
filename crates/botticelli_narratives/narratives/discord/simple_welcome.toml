@@ -1,0 +1,26 @@
+# Simple Welcome Message Generation
+# A basic narrative to test the system
+
+[narrative]
+name = "simple_welcome"
+description = "Generate a single welcome message for Discord"
+
+[toc]
+order = ["generate"]
+
+[acts]
+generate = """
+You are creating a welcome message for the Botticelli Discord community server.
+
+Botticelli is an AI narrative framework that uses TOML-based workflows to orchestrate
+multi-step AI interactions. It supports content generation, Discord bot integration,
+and database-backed content management.
+
+Create a welcoming, engaging message that:
+- Introduces new members to Botticelli
+- Highlights key features (TOML narratives, bot commands, content workflows)
+- Encourages exploration and community participation
+- Uses Discord markdown formatting for visual appeal
+
+Keep it concise (under 500 words) and friendly.
+"""

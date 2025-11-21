@@ -1,0 +1,88 @@
+# Publish Welcome Message Narrative
+# Demonstrates: Nested narratives, table references, content selection, bot command execution
+# This narrative runs the content generation first, then selects and publishes the best option
+
+[narrative]
+name = "publish_welcome"
+description = "Generate, select, and publish the best welcome message to Discord server"
+
+# Act 1: Generate welcome message options (runs the content generation narrative)
+[[acts]]
+type = "narrative"
+
+[acts.narrative]
+path = "discord/welcome_content_generation.toml"
+
+# Act 2: Select the best welcome message from generated options
+[[acts]]
+type = "generation"
+
+[acts.generation]
+model = "gemini-2.0-flash-exp"
+max_tokens = 2000
+
+[[acts.generation.inputs]]
+type = "text"
+content = """
+You are reviewing welcome messages for the Botticelli Discord community server.
+
+Here are the candidate welcome messages from our content generation process:
+
+{{table:welcome_messages}}
+
+Your task:
+1. Review all 9 welcome messages
+2. Evaluate them based on:
+   - Clarity and engagement
+   - Completeness of information
+   - Use of Discord markdown formatting
+   - Tone and accessibility
+3. Select the SINGLE BEST message
+4. Explain your reasoning briefly
+
+Output the selected message content in your response, prefixed with "SELECTED MESSAGE:" followed by the message text.
+"""
+
+# Act 3: Publish to Discord welcome channel
+[[acts]]
+type = "bot"
+
+[acts.bot]
+platform = "discord"
+command = "channel.send_message"
+
+[acts.bot.args]
+guild_id = "${TEST_GUILD_ID}"
+channel_id = "${WELCOME_CHANNEL_ID}"  # Set in environment or config
+content = "{{previous}}"  # Uses output from Act 2
+
+# Act 4: Pin the welcome message
+[[acts]]
+type = "bot"
+
+[acts.bot]
+platform = "discord"
+command = "message.pin"
+
+[acts.bot.args]
+channel_id = "${WELCOME_CHANNEL_ID}"
+message_id = "{{previous.message_id}}"  # Get message ID from Act 3 response
+
+# Act 5: Log success
+[[acts]]
+type = "generation"
+
+[acts.generation]
+model = "gemini-2.0-flash-thinking-exp"
+max_tokens = 500
+
+[[acts.generation.inputs]]
+type = "text"
+content = """
+Welcome message published successfully!
+
+Channel: {{table:discord_channels[name='welcome']}}
+Message posted and pinned.
+
+Generate a brief confirmation log entry summarizing what was published.
+"""
