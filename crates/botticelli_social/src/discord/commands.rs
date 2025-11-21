@@ -2687,27 +2687,73 @@ impl DiscordCommandExecutor {
             "Sending message to Discord channel"
         );
 
-        // Send the message
-        let message = channel_id
-            .send_message(&self.http, CreateMessage::new().content(content).tts(tts))
-            .await
-            .map_err(|e| {
-                error!(channel_id = %channel_id, error = %e, "Failed to send message");
-                BotCommandError::new(BotCommandErrorKind::ApiError {
-                    command: "messages.send".to_string(),
-                    reason: format!("Failed to send message: {}", e),
-                })
-            })?;
+        // Discord has a 2000 character limit for messages
+        const MAX_MESSAGE_LENGTH: usize = 2000;
+        
+        if content.len() <= MAX_MESSAGE_LENGTH {
+            // Send single message
+            let message = channel_id
+                .send_message(&self.http, CreateMessage::new().content(content).tts(tts))
+                .await
+                .map_err(|e| {
+                    error!(channel_id = %channel_id, error = %e, "Failed to send message");
+                    BotCommandError::new(BotCommandErrorKind::ApiError {
+                        command: "messages.send".to_string(),
+                        reason: format!("Failed to send message: {}", e),
+                    })
+                })?;
 
-        info!(message_id = %message.id, "Successfully sent message");
+            info!(message_id = %message.id, "Successfully sent message");
 
-        Ok(serde_json::json!({
-            "id": message.id.to_string(),
-            "channel_id": message.channel_id.to_string(),
-            "content": message.content,
-            "timestamp": message.timestamp.to_rfc3339(),
-            "tts": message.tts,
-        }))
+            Ok(serde_json::json!({
+                "id": message.id.to_string(),
+                "channel_id": message.channel_id.to_string(),
+                "content": message.content,
+                "timestamp": message.timestamp.to_rfc3339(),
+                "tts": message.tts,
+            }))
+        } else {
+            // Split into multiple messages
+            info!(
+                content_len = content.len(),
+                max_len = MAX_MESSAGE_LENGTH,
+                "Message too long, splitting into multiple messages"
+            );
+            
+            let mut messages = Vec::new();
+            let mut current_pos = 0;
+            
+            while current_pos < content.len() {
+                let end_pos = (current_pos + MAX_MESSAGE_LENGTH).min(content.len());
+                let chunk = &content[current_pos..end_pos];
+                
+                let message = channel_id
+                    .send_message(&self.http, CreateMessage::new().content(chunk).tts(tts))
+                    .await
+                    .map_err(|e| {
+                        error!(channel_id = %channel_id, error = %e, "Failed to send message chunk");
+                        BotCommandError::new(BotCommandErrorKind::ApiError {
+                            command: "messages.send".to_string(),
+                            reason: format!("Failed to send message chunk: {}", e),
+                        })
+                    })?;
+                
+                info!(message_id = %message.id, chunk_num = messages.len() + 1, "Successfully sent message chunk");
+                messages.push(message);
+                current_pos = end_pos;
+            }
+            
+            // Return info about the first message
+            let first_message = &messages[0];
+            Ok(serde_json::json!({
+                "id": first_message.id.to_string(),
+                "channel_id": first_message.channel_id.to_string(),
+                "content": first_message.content,
+                "timestamp": first_message.timestamp.to_rfc3339(),
+                "tts": first_message.tts,
+                "split_messages": messages.len(),
+            }))
+        }
     }
 
     /// Create a new channel in a guild.
