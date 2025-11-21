@@ -227,6 +227,18 @@ impl BotticelliDriver for ServerClient {
     fn model_name(&self) -> &str {
         &self.config.model
     }
+
+    fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig {
+        // Local server has no rate limits - return unlimited config
+        static UNLIMITED: botticelli_rate_limit::RateLimitConfig =
+            botticelli_rate_limit::RateLimitConfig {
+                requests_per_minute: u64::MAX,
+                tokens_per_minute: u64::MAX,
+                requests_per_day: u64::MAX,
+                tokens_per_day: u64::MAX,
+            };
+        &UNLIMITED
+    }
 }
 
 #[async_trait::async_trait]

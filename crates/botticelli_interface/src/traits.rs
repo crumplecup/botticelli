@@ -21,6 +21,11 @@ pub trait BotticelliDriver: Send + Sync {
 
     /// Model identifier (e.g., "claude-3-5-sonnet-20241022").
     fn model_name(&self) -> &str;
+
+    /// Rate limits for this driver.
+    ///
+    /// Returns the rate limit configuration for carousel budget tracking.
+    fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig;
 }
 
 /// Trait for models that support streaming responses.

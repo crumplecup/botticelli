@@ -805,6 +805,11 @@ impl BotticelliDriver for GeminiClient {
     fn model_name(&self) -> &str {
         &self.model_name
     }
+
+    fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig {
+        // TODO: This creates a temporary on each call. Consider caching in the struct.
+        Box::leak(Box::new(botticelli_rate_limit::RateLimitConfig::from_tier(&self.base_tier)))
+    }
 }
 
 impl GeminiClient {
