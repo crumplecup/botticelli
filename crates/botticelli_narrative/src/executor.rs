@@ -581,6 +581,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     tracing::info!(
                         name = %name,
                         path = %resolved_path.display(),
+                        exists = %resolved_path.exists(),
                         "Loading nested narrative"
                     );
                     
