@@ -3,24 +3,45 @@
 
 [narrative]
 name = "publish_faq"
-description = "Generate, select, and publish FAQ content to Discord server"
+description = "Setup FAQ channel, generate content, select best, publish, and pin"
 skip_content_generation = true
 model = "gemini-2.5-flash"
 
 [toc]
-order = ["generate_content", "select_best", "publish_message"]
+order = ["clear_channel", "create_channel", "generate_content", "select_best", "publish_message", "pin_message"]
 
-# Define nested narrative for content generation
-[narratives.generate_content]
-narrative = "faq_content_generation"
+# Define bot commands
+[bots.clear_channel]
+platform = "discord"
+command = "messages.bulk_delete"
+guild_id = "1439415903753076859"
+channel_id = "1441256008092483724"
+limit = 100
 
-# Define bot command for publishing
+[bots.create_channel]
+platform = "discord"
+command = "channels.create"
+guild_id = "1439415903753076859"
+name = "faq"
+type = "text"
+
 [bots.publish_message]
 platform = "discord"
 command = "messages.send"
 guild_id = "1439415903753076859"
-channel_id = "1441256008092483724"  # Update with FAQ channel ID
+channel_id = "1441256008092483724"
 content = "{{select_best}}"
+
+[bots.pin_message]
+platform = "discord"
+command = "messages.pin"
+guild_id = "1439415903753076859"
+channel_id = "1441256008092483724"
+message_id = "{{publish_message}}"
+
+# Define nested narrative for content generation
+[narratives.generate_content]
+narrative = "faq_content_generation"
 
 # Define table reference for loading generated FAQs
 [tables.faq_content]
@@ -29,10 +50,16 @@ limit = 100
 format = "markdown"
 
 [acts]
-# Act 1: Run FAQ content generation to populate the table
+# Act 1: Clear any existing messages in the FAQ channel
+clear_channel = ["bots.clear_channel"]
+
+# Act 2: Create FAQ channel if it doesn't exist (optional, will error if exists)
+create_channel = ["bots.create_channel"]
+
+# Act 3: Run FAQ content generation to populate the table
 generate_content = ["narratives.generate_content"]
 
-# Act 2: Compile all FAQ questions into a single formatted document
+# Act 4: Compile all FAQ questions into a single formatted document
 select_best = [
   "tables.faq_content",
   """You are formatting FAQ questions for the Botticelli Discord server.
@@ -48,5 +75,8 @@ The table above contains 9 FAQ questions generated iteratively. Your task:
 Output ONLY the formatted FAQ document (no explanation, no JSON, just the markdown content).""",
 ]
 
-# Act 3: Publish to Discord FAQ channel (uses output from select_best)
+# Act 5: Publish to Discord FAQ channel (uses output from select_best)
 publish_message = ["bots.publish_message"]
+
+# Act 6: Pin the FAQ message to the top of the channel
+pin_message = ["bots.pin_message"]
