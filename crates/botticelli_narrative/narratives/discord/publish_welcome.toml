@@ -5,6 +5,7 @@
 name = "publish_welcome"
 description = "Generate, select, and publish the best welcome message to Discord server"
 skip_content_generation = true
+model = "gemini-2.5-flash"
 
 [toc]
 order = ["generate_content", "select_best", "publish_message"]

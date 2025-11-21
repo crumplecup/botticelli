@@ -491,8 +491,8 @@ impl GeminiClient {
 
         // Build generation config from request
         let config = super::live_protocol::GenerationConfig {
-            max_output_tokens: req.max_tokens.map(|t| t as i32),
-            temperature: req.temperature.map(|t| t as f64),
+            max_output_tokens: req.max_tokens().map(|t| t as i32),
+            temperature: req.temperature().map(|t| t as f64),
             ..Default::default()
         };
 
@@ -610,7 +610,7 @@ impl GeminiClient {
     /// Helper to combine all message content into a single text string.
     fn combine_messages(&self, req: &GenerateRequest) -> String {
         let mut combined_text = String::new();
-        for msg in &req.messages {
+        for msg in req.messages() {
             for input in &msg.content {
                 if let Some(text) = Self::extract_text(input) {
                     combined_text.push_str(&text);
@@ -624,7 +624,7 @@ impl GeminiClient {
     /// Internal generate method that returns Gemini-specific errors.
     async fn generate_internal(&self, req: &GenerateRequest) -> GeminiResult<GenerateResponse> {
         // Determine which model to use
-        let model_name = req.model.as_ref().unwrap_or(&self.model_name);
+        let model_name = req.model().as_ref().unwrap_or(&self.model_name);
 
         // Check if this is a live model (requires WebSocket Live API)
         if Self::is_live_model(model_name) {
@@ -667,7 +667,7 @@ impl GeminiClient {
 
         // Estimate tokens for rate limiting
         let estimated_tokens: u64 = req
-            .messages
+            .messages()
             .iter()
             .flat_map(|msg| &msg.content)
             .filter_map(Self::extract_text)
@@ -675,12 +675,12 @@ impl GeminiClient {
             .sum();
 
         // Add max_tokens if specified (output token estimate)
-        let total_estimate = estimated_tokens + req.max_tokens.unwrap_or(1000) as u64;
+        let total_estimate = estimated_tokens + req.max_tokens().unwrap_or(1000) as u64;
 
         // Clone data needed in the closure
-        let messages = req.messages.clone();
-        let temperature = req.temperature;
-        let max_tokens = req.max_tokens;
+        let messages = req.messages().clone();
+        let temperature = req.temperature();
+        let max_tokens = req.max_tokens();
 
         // Execute with rate limiting and automatic retry
         let response = rate_limited_client
@@ -734,11 +734,11 @@ impl GeminiClient {
 
                 // Apply optional parameters
                 if let Some(temp) = temperature {
-                    builder = builder.with_temperature(temp);
+                    builder = builder.with_temperature(*temp);
                 }
 
                 if let Some(max_tok) = max_tokens {
-                    builder = builder.with_max_output_tokens(max_tok as i32);
+                    builder = builder.with_max_output_tokens(*max_tok as i32);
                 }
 
                 // Execute the request and parse errors
@@ -836,8 +836,8 @@ impl GeminiClient {
 
         // Build generation config from request
         let config = super::live_protocol::GenerationConfig {
-            max_output_tokens: req.max_tokens.map(|t| t as i32),
-            temperature: req.temperature.map(|t| t as f64),
+            max_output_tokens: req.max_tokens().map(|t| t as i32),
+            temperature: req.temperature().map(|t| t as f64),
             ..Default::default()
         };
 
@@ -849,7 +849,7 @@ impl GeminiClient {
 
         // Combine all user messages into a single text
         let mut combined_text = String::new();
-        for msg in &req.messages {
+        for msg in req.messages() {
             for input in &msg.content {
                 if let Some(text) = Self::extract_text(input) {
                     combined_text.push_str(&text);
@@ -884,7 +884,7 @@ impl Streaming for GeminiClient {
         use futures_util::{StreamExt, TryStreamExt};
 
         // Determine which model to use
-        let model_name = req.model.as_ref().unwrap_or(&self.model_name);
+        let model_name = req.model().as_ref().unwrap_or(&self.model_name);
 
         // Check if this is a live model (requires WebSocket Live API)
         if Self::is_live_model(model_name) {
@@ -912,14 +912,14 @@ impl Streaming for GeminiClient {
 
         // Estimate tokens for rate limiting
         let estimated_tokens: u64 = req
-            .messages
+            .messages()
             .iter()
             .flat_map(|msg| &msg.content)
             .filter_map(Self::extract_text)
             .map(|text| Self::estimate_tokens(&text))
             .sum();
 
-        let total_estimate = estimated_tokens + req.max_tokens.unwrap_or(1000) as u64;
+        let total_estimate = estimated_tokens + req.max_tokens().unwrap_or(1000) as u64;
 
         // Acquire rate limit permission (counts stream as single request)
         let _guard = rate_limited_client.acquire(total_estimate).await;
@@ -931,7 +931,7 @@ impl Streaming for GeminiClient {
         let mut builder = client.generate_content();
         let mut system_prompt = None;
 
-        for msg in &req.messages {
+        for msg in req.messages() {
             match msg.role {
                 Role::System => {
                     if let Some(text) = msg.content.iter().find_map(Self::extract_text) {
@@ -962,12 +962,12 @@ impl Streaming for GeminiClient {
             builder = builder.with_system_prompt(&prompt);
         }
 
-        if let Some(temp) = req.temperature {
-            builder = builder.with_temperature(temp);
+        if let Some(temp) = req.temperature() {
+            builder = builder.with_temperature(*temp);
         }
 
-        if let Some(max_tokens) = req.max_tokens {
-            builder = builder.with_max_output_tokens(max_tokens as i32);
+        if let Some(max_tokens) = req.max_tokens() {
+            builder = builder.with_max_output_tokens(*max_tokens as i32);
         }
 
         // Execute as stream

@@ -35,8 +35,8 @@ pub async fn run_narrative(
     let narrative = Narrative::from_file(narrative_path)?;
 
     tracing::info!(
-        name = %narrative.metadata.name,
-        acts = narrative.toc.order.len(),
+        name = %narrative.metadata().name(),
+        acts = narrative.toc().order().len(),
         "Narrative loaded"
     );
 
@@ -122,7 +122,7 @@ pub async fn run_narrative(
         // Print carousel summary
         println!("\nCarousel Execution Summary:");
         println!("============================");
-        println!("Narrative: {}", narrative.metadata.name);
+        println!("Narrative: {}", narrative.metadata().name());
         println!("Iterations attempted: {}", carousel_result.iterations_attempted());
         println!("Successful iterations: {}", carousel_result.successful_iterations());
         println!("Failed iterations: {}", carousel_result.failed_iterations());

@@ -11,14 +11,14 @@ use serde::{Deserialize, Serialize};
 ///
 /// This structure allows fine-grained control over each act's behavior,
 /// including multimodal inputs and per-act model/parameter overrides.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_getters::Getters)]
 pub struct ActConfig {
     /// Multimodal inputs for this act.
     ///
     /// Can include text, images, audio, video, documents, or any combination.
     /// Most acts will have a single `Input::Text`, but multimodal acts can
     /// combine multiple input types.
-    pub inputs: Vec<Input>,
+    inputs: Vec<Input>,
 
     /// Optional model override for this specific act.
     ///
@@ -26,26 +26,43 @@ pub struct ActConfig {
     /// executor's default. Enables per-act model selection.
     ///
     /// Example: `Some("gpt-4".to_string())` or `Some("claude-3-opus-20240229".to_string())`
-    pub model: Option<String>,
+    model: Option<String>,
 
     /// Optional temperature override for this act.
     ///
     /// Controls randomness/creativity. Typical range: 0.0 (deterministic) to 1.0 (creative).
-    pub temperature: Option<f32>,
+    temperature: Option<f32>,
 
     /// Optional max_tokens override for this act.
     ///
     /// Limits the length of the generated response.
-    pub max_tokens: Option<u32>,
+    max_tokens: Option<u32>,
 
     /// Optional carousel configuration for repeated execution.
     ///
     /// If `Some`, this act will be executed multiple times according to the
     /// carousel configuration, with rate limit budgeting applied.
-    pub carousel: Option<CarouselConfig>,
+    carousel: Option<CarouselConfig>,
 }
 
 impl ActConfig {
+    /// Create a new act configuration with all fields.
+    pub fn new(
+        inputs: Vec<Input>,
+        model: Option<String>,
+        temperature: Option<f32>,
+        max_tokens: Option<u32>,
+        carousel: Option<CarouselConfig>,
+    ) -> Self {
+        Self {
+            inputs,
+            model,
+            temperature,
+            max_tokens,
+            carousel,
+        }
+    }
+
     /// Create a simple text-only act configuration.
     ///
     /// Convenience constructor for the common case of a single text prompt
@@ -92,6 +109,12 @@ impl ActConfig {
     /// Builder method to set the carousel configuration.
     pub fn with_carousel(mut self, carousel: CarouselConfig) -> Self {
         self.carousel = Some(carousel);
+        self
+    }
+
+    /// Builder method to set the inputs.
+    pub fn with_inputs(mut self, inputs: Vec<Input>) -> Self {
+        self.inputs = inputs;
         self
     }
 }

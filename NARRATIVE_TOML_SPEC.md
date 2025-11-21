@@ -336,6 +336,11 @@ Required fields:
 Optional fields:
 - `template` (string): Name of database table to use as schema source for content generation (see [Content Generation](#content-generation))
 - `skip_content_generation` (boolean): Skip automatic content generation to custom tables (default: `false`)
+- `model` (string): Default model for all acts in this narrative (can be overridden per-act)
+- `temperature` (float): Default temperature for all acts (range: 0.0-1.0, can be overridden per-act)
+- `max_tokens` (integer): Default max_tokens for all acts (can be overridden per-act)
+
+**Configuration hierarchy:** Act-level overrides take precedence over narrative-level defaults, which take precedence over executor defaults.
 
 ### `[toc]` - Table of Contents
 

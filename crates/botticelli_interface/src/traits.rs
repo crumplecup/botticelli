@@ -210,7 +210,7 @@ pub trait TokenCounting: BotticelliDriver {
     /// Count tokens in a full request (all messages).
     fn count_request_tokens(&self, req: &GenerateRequest) -> BotticelliResult<usize> {
         let mut total = 0;
-        for msg in &req.messages {
+        for msg in req.messages() {
             for input in &msg.content {
                 if let Input::Text(text) = input {
                     total += self.count_tokens(text)?;

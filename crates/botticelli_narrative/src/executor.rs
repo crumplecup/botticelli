@@ -5,7 +5,7 @@
 
 use crate::{CarouselResult, CarouselState, NarrativeProvider, ProcessorContext, ProcessorRegistry};
 use botticelli_core::{GenerateRequest, Input, Message, Output, Role};
-use botticelli_error::BotticelliResult;
+use botticelli_error::{BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind};
 use botticelli_interface::{ActExecution, BotticelliDriver, NarrativeExecution, TableQueryRegistry};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -151,7 +151,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
 
             // Process inputs (execute bot commands, query tables, etc.)
             // Pass execution history for template resolution
-            let processed_inputs = self.process_inputs(&config.inputs, &act_executions, sequence_number).await?;
+            let processed_inputs = self.process_inputs(config.inputs(), &act_executions, sequence_number).await?;
 
             // Build the request with conversation history + processed inputs
             conversation_history.push(Message {
@@ -159,12 +159,24 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 content: processed_inputs.clone(),
             });
 
-            let request = GenerateRequest {
-                messages: conversation_history.clone(),
-                max_tokens: config.max_tokens,
-                temperature: config.temperature,
-                model: config.model.clone(),
-            };
+            // Apply narrative-level defaults for model/temperature/max_tokens if act doesn't override
+            let metadata = narrative.metadata();
+            let model = config.model().clone().or_else(|| metadata.model().clone());
+            let temperature = config.temperature().or_else(|| *metadata.temperature());
+            let max_tokens = config.max_tokens().or_else(|| *metadata.max_tokens());
+
+            let request = GenerateRequest::builder()
+                .messages(conversation_history.clone())
+                .max_tokens(max_tokens)
+                .temperature(temperature)
+                .model(model.clone())
+                .build()
+                .map_err(|e| {
+                    BotticelliError::from(NarrativeError::new(NarrativeErrorKind::FileRead(format!(
+                        "Failed to build request: {}",
+                        e
+                    ))))
+                })?;
 
             // Call the LLM
             let response = self.driver.generate(&request).await?;
@@ -176,9 +188,9 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
             let act_execution = ActExecution {
                 act_name: act_name.clone(),
                 inputs: processed_inputs.clone(),
-                model: config.model,
-                temperature: config.temperature,
-                max_tokens: config.max_tokens,
+                model,
+                temperature,
+                max_tokens,
                 response: response_text.clone(),
                 sequence_number,
             };

@@ -13,16 +13,16 @@ pub fn to_chat_request(
     model: String,
 ) -> Result<ChatCompletionRequest, ServerError> {
     let messages = request
-        .messages
-        .into_iter()
-        .map(message_to_server_message)
+        .messages()
+        .iter()
+        .map(|m| message_to_server_message(m.clone()))
         .collect::<Result<Vec<_>, _>>()?;
 
     let chat_request = ChatCompletionRequest {
         model,
         messages,
-        max_tokens: request.max_tokens,
-        temperature: request.temperature,
+        max_tokens: *request.max_tokens(),
+        temperature: *request.temperature(),
         top_p: None,
         stream: Some(false),
     };

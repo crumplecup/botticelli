@@ -2,6 +2,7 @@
 
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
+use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -54,10 +55,10 @@ impl NewModelResponse {
         Ok(Self {
             provider: provider.into(),
             model_name: model_name.into(),
-            request_messages: serde_json::to_value(&request.messages)?,
-            request_temperature: request.temperature,
-            request_max_tokens: request.max_tokens.map(|t| t as i32),
-            request_model: request.model.clone(),
+            request_messages: serde_json::to_value(request.messages())?,
+            request_temperature: *request.temperature(),
+            request_max_tokens: request.max_tokens().map(|t| t as i32),
+            request_model: request.model().clone(),
             response_outputs: serde_json::to_value(&response.outputs)?,
             duration_ms,
             error_message: None,
@@ -75,10 +76,10 @@ impl NewModelResponse {
         Ok(Self {
             provider: provider.into(),
             model_name: model_name.into(),
-            request_messages: serde_json::to_value(&request.messages)?,
-            request_temperature: request.temperature,
-            request_max_tokens: request.max_tokens.map(|t| t as i32),
-            request_model: request.model.clone(),
+            request_messages: serde_json::to_value(request.messages())?,
+            request_temperature: *request.temperature(),
+            request_max_tokens: request.max_tokens().map(|t| t as i32),
+            request_model: request.model().clone(),
             response_outputs: serde_json::json!([]),
             duration_ms,
             error_message: Some(error.to_string()),
@@ -102,12 +103,13 @@ pub struct SerializableModelResponse {
 impl ModelResponse {
     /// Convert to a serializable format.
     pub fn to_serializable(&self) -> Result<SerializableModelResponse, serde_json::Error> {
-        let request = GenerateRequest {
-            messages: serde_json::from_value(self.request_messages.clone())?,
-            temperature: self.request_temperature,
-            max_tokens: self.request_max_tokens.map(|t| t as u32),
-            model: self.request_model.clone(),
-        };
+        let request = GenerateRequest::builder()
+            .messages(serde_json::from_value(self.request_messages.clone())?)
+            .temperature(self.request_temperature)
+            .max_tokens(self.request_max_tokens.map(|t| t as u32))
+            .model(self.request_model.clone())
+            .build()
+            .map_err(|e| serde_json::Error::custom(e.to_string()))?;
 
         let response = if self.error_message.is_none() {
             Some(GenerateResponse {

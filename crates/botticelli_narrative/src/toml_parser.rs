@@ -22,6 +22,15 @@ pub struct TomlNarrative {
     /// Optional carousel configuration
     #[serde(default)]
     pub carousel: Option<crate::CarouselConfig>,
+    /// Optional default model for all acts
+    #[serde(default)]
+    pub model: Option<String>,
+    /// Optional default temperature for all acts
+    #[serde(default)]
+    pub temperature: Option<f32>,
+    /// Optional default max_tokens for all acts
+    #[serde(default)]
+    pub max_tokens: Option<u32>,
 }
 
 /// Intermediate structure for deserializing the [toc] section.
@@ -323,13 +332,13 @@ impl TomlActConfig {
 
         let inputs = inputs?;
         debug!(inputs_converted = inputs.len(), "Successfully converted inputs");
-        Ok(ActConfig {
+        Ok(ActConfig::new(
             inputs,
-            model: self.model.clone(),
-            temperature: self.temperature,
-            max_tokens: self.max_tokens,
-            carousel: self.carousel.clone(),
-        })
+            self.model.clone(),
+            self.temperature,
+            self.max_tokens,
+            self.carousel.clone(),
+        ))
     }
 }
 
@@ -346,13 +355,13 @@ impl TomlAct {
                 if is_reference(text) {
                     debug!(reference = %text, "Resolving simple reference");
                     let input = narrative_file.resolve_reference(text)?;
-                    Ok(ActConfig {
-                        inputs: vec![input],
-                        model: None,
-                        temperature: None,
-                        max_tokens: None,
-                        carousel: None,
-                    })
+                    Ok(ActConfig::new(
+                        vec![input],
+                        None,
+                        None,
+                        None,
+                        None,
+                    ))
                 } else {
                     // Validate that the text is not empty or just whitespace
                     if text.trim().is_empty() {
@@ -390,13 +399,13 @@ impl TomlAct {
                     }
                 }
                 debug!(input_count = inputs.len(), "Array act converted successfully");
-                Ok(ActConfig {
+                Ok(ActConfig::new(
                     inputs,
-                    model: None,
-                    temperature: None,
-                    max_tokens: None,
-                    carousel: None,
-                })
+                    None,
+                    None,
+                    None,
+                    None,
+                ))
             }
             TomlAct::Structured(config) => {
                 debug!(input_count = config.input.len(), "Processing structured act");
@@ -412,13 +421,13 @@ impl TomlAct {
                     }
                 }
                 debug!(input_count = inputs.len(), "Structured act converted successfully");
-                Ok(ActConfig {
+                Ok(ActConfig::new(
                     inputs,
-                    model: config.model.clone(),
-                    temperature: config.temperature,
-                    max_tokens: config.max_tokens,
-                    carousel: config.carousel.clone(),
-                })
+                    config.model.clone(),
+                    config.temperature,
+                    config.max_tokens,
+                    config.carousel.clone(),
+                ))
             }
         }
     }

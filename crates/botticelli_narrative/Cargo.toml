@@ -35,6 +35,7 @@ derive_builder.workspace = true
 derive-getters.workspace = true
 botticelli_rate_limit = { version = "0.2.0", path = "../botticelli_rate_limit" }
 regex = { workspace = true }
+derive_setters.workspace = true
 
 [features]
 default = []

@@ -120,10 +120,10 @@ impl ContentGenerationProcessor {
 #[async_trait]
 impl ActProcessor for ContentGenerationProcessor {
     async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
-        let table_name = &context.narrative_metadata.name;
+        let table_name = &context.narrative_metadata.name();
 
         // Determine processing mode: Template or Inference
-        let processing_mode = if let Some(template) = &context.narrative_metadata.template {
+        let processing_mode = if let Some(template) = &context.narrative_metadata.template() {
             ProcessingMode::Template(template.clone())
         } else {
             ProcessingMode::Inference
@@ -148,7 +148,7 @@ impl ActProcessor for ContentGenerationProcessor {
 
             // Try to start tracking (ignore unique constraint violations if already exists)
             let new_gen = NewContentGenerationRow {
-                table_name: table_name.clone(),
+                table_name: table_name.to_string(),
                 narrative_file: format!("{} (from processor)", context.narrative_name),
                 narrative_name: context.narrative_name.to_string(),
                 status: "running".to_string(),
@@ -197,7 +197,7 @@ impl ActProcessor for ContentGenerationProcessor {
                             table_name,
                             template,
                             Some(context.narrative_name),
-                            Some(&context.narrative_metadata.description),
+                            Some(&context.narrative_metadata.description()),
                         )?;
                     }
                     ProcessingMode::Inference => {
@@ -216,7 +216,7 @@ impl ActProcessor for ContentGenerationProcessor {
                             table_name,
                             &schema,
                             Some(context.narrative_name),
-                            Some(&context.narrative_metadata.description),
+                            Some(&context.narrative_metadata.description()),
                         )?;
                     }
                 }
@@ -319,7 +319,7 @@ impl ActProcessor for ContentGenerationProcessor {
 
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
         // Don't process if user explicitly opted out
-        if context.narrative_metadata.skip_content_generation {
+        if *context.narrative_metadata.skip_content_generation() {
             return false;
         }
 

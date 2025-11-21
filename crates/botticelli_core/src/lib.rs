@@ -16,5 +16,5 @@ pub use input::{Input, TableFormat};
 pub use media::MediaSource;
 pub use message::Message;
 pub use output::{Output, ToolCall};
-pub use request::{GenerateRequest, GenerateResponse};
+pub use request::{GenerateRequest, GenerateRequestBuilder, GenerateResponse};
 pub use role::Role;

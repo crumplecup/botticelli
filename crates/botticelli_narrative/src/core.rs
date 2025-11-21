@@ -14,27 +14,36 @@ use botticelli_database::{assemble_prompt, is_content_focus};
 use diesel::pg::PgConnection;
 
 /// Narrative metadata from the `[narrative]` section.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize, derive_getters::Getters)]
 pub struct NarrativeMetadata {
     /// Unique identifier for this narrative
-    pub name: String,
+    name: String,
     /// Human-readable description of what this narrative does
-    pub description: String,
+    description: String,
     /// Optional template table to use as schema source for content generation
-    pub template: Option<String>,
+    template: Option<String>,
     /// Skip content generation (both template and inference modes)
     #[serde(default)]
-    pub skip_content_generation: bool,
+    skip_content_generation: bool,
     /// Optional carousel configuration for narrative-level looping
     #[serde(default)]
-    pub carousel: Option<CarouselConfig>,
+    carousel: Option<CarouselConfig>,
+    /// Optional default model for all acts in this narrative
+    #[serde(default)]
+    model: Option<String>,
+    /// Optional default temperature for all acts in this narrative
+    #[serde(default)]
+    temperature: Option<f32>,
+    /// Optional default max_tokens for all acts in this narrative
+    #[serde(default)]
+    max_tokens: Option<u32>,
 }
 
 /// Table of contents from the `[toc]` section.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize, derive_getters::Getters)]
 pub struct NarrativeToc {
     /// Ordered list of act names to execute
-    pub order: Vec<String>,
+    order: Vec<String>,
 }
 
 /// Complete narrative structure parsed from TOML.
@@ -70,17 +79,17 @@ pub struct NarrativeToc {
 /// mime = "image/png"
 /// url = "https://example.com/image.png"
 /// ```
-#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, derive_getters::Getters)]
 pub struct Narrative {
     /// Narrative metadata
-    pub metadata: NarrativeMetadata,
+    metadata: NarrativeMetadata,
 
     /// Table of contents defining execution order
-    pub toc: NarrativeToc,
+    toc: NarrativeToc,
 
     /// Map of act names to their configurations
     #[serde(skip)]
-    pub acts: HashMap<String, ActConfig>,
+    acts: HashMap<String, ActConfig>,
 }
 
 impl Narrative {
@@ -162,7 +171,7 @@ impl Narrative {
 
         for (act_name, config) in &mut self.acts {
             // Get the first text input (most common case)
-            if let Some(Input::Text(user_prompt)) = config.inputs.first() {
+            if let Some(Input::Text(user_prompt)) = config.inputs().first() {
                 // Check if this is a content focus or explicit prompt
                 if is_content_focus(user_prompt) {
                     // Assemble complete prompt with schema injection
@@ -174,7 +183,9 @@ impl Narrative {
                     })?;
 
                     // Replace the first input with assembled prompt
-                    config.inputs[0] = Input::Text(assembled);
+                    let mut new_inputs = config.inputs().clone();
+                    new_inputs[0] = Input::Text(assembled);
+                    *config = config.clone().with_inputs(new_inputs);
 
                     tracing::debug!(
                         act = %act_name,
@@ -221,7 +232,7 @@ impl Narrative {
 
         // Check that all acts have at least one input
         for (act_name, config) in &self.acts {
-            if config.inputs.is_empty() {
+            if config.inputs().is_empty() {
                 return Err(NarrativeError::new(NarrativeErrorKind::EmptyPrompt(
                     act_name.clone(),
                 )));
@@ -258,6 +269,9 @@ impl FromStr for Narrative {
             template: toml_narrative.narrative.template.clone(),
             skip_content_generation: toml_narrative.narrative.skip_content_generation,
             carousel: toml_narrative.narrative.carousel.clone(),
+            model: toml_narrative.narrative.model.clone(),
+            temperature: toml_narrative.narrative.temperature,
+            max_tokens: toml_narrative.narrative.max_tokens,
         };
 
         let toc = NarrativeToc {
