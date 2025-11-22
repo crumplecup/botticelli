@@ -79,9 +79,7 @@ just test-local
 
 ## Remaining Work for Gemini Tests
 
-1. **Fix malformed function calls in gemini_streaming_test.rs**
-   - Lines 73, 113, 253, 278 have `Some("model", Some(10))` which is invalid
-   - Should be `Some("model"), Some(10)` (separate arguments)
+1. ✅ **Fixed malformed function calls in gemini_streaming_test.rs** - DONE
    
 2. **Fix test_utils/mod.rs `create_test_request`**
    - `Message::new()` doesn't exist
@@ -92,6 +90,22 @@ just test-local
    - Need to add getters to `GenerateRequest` or use builder assertions
    
 4. **Fix remaining duplicate import in gemini_live_basic_test.rs line 19**
+
+## botticelli_social Discord Conversion Tests
+
+**Files affected:**
+- `crates/botticelli_social/src/discord/conversions.rs`
+
+**Problem:** Conversion tests use struct literals for JSON models with private fields:
+- `DiscordGuildMemberJson`
+- `DiscordMemberRoleJson`
+- Other Discord JSON models
+
+**Solution:** Either:
+1. Make JSON model fields public (they're DTOs)
+2. OR add builder derives to JSON models for testing
+
+**Status:** NEEDS FIX
 
 ## Notes
 

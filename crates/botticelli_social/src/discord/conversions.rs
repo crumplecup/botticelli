@@ -369,7 +369,7 @@ mod tests {
     #[test]
     fn test_convert_features() {
         let input = vec!["COMMUNITY".to_string(), "DISCOVERABLE".to_string()];
-        let output = convert_features(input);
+        let output = convert_features(&input);
         assert_eq!(output.len(), 2);
         assert_eq!(output[0], Some("COMMUNITY".to_string()));
         assert_eq!(output[1], Some("DISCOVERABLE".to_string()));

@@ -70,7 +70,7 @@ async fn test_streaming_with_standard_model() {
     let client = GeminiClient::new().expect("Failed to create client");
 
     // Explicitly use standard flash model
-    let request = create_test_request("Say 'ok'", Some("gemini-2.0-flash".to_string(), Some(10)));
+    let request = create_test_request("Say 'ok'", Some("gemini-2.0-flash".to_string()), Some(10));
 
     let mut stream = client
         .generate_stream(&request)
@@ -110,7 +110,7 @@ async fn test_streaming_with_live_model() {
     let client = GeminiClient::new().expect("Failed to create client");
 
     // CRITICAL TEST: Use live model for better rate limits
-    let request = create_test_request("Say 'ok'", Some("gemini-2.5-flash-live".to_string(), Some(10)));
+    let request = create_test_request("Say 'ok'", Some("gemini-2.5-flash-live".to_string()), Some(10));
 
     let mut stream = client
         .generate_stream(&request)

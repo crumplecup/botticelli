@@ -569,6 +569,58 @@ mod tests {
         fn command_help(&self, _command: &str) -> Option<String> {
             None
         }
+
+        async fn messages_bulk_delete(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"deleted": 5}))
+        }
+
+        async fn threads_create(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"thread_id": "123456"}))
+        }
+
+        async fn threads_list(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"threads": []}))
+        }
+
+        async fn threads_get(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"thread_id": "123456"}))
+        }
+
+        async fn threads_edit(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"success": true}))
+        }
+
+        async fn threads_delete(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"success": true}))
+        }
+
+        async fn threads_join(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"success": true}))
+        }
+
+        async fn threads_leave(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"success": true}))
+        }
+
+        async fn threads_add_member(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"success": true}))
+        }
+
+        async fn threads_remove_member(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"success": true}))
+        }
+
+        async fn reactions_list(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"reactions": []}))
+        }
+
+        async fn reactions_clear(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"success": true}))
+        }
+
+        async fn reactions_clear_emoji(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+            Ok(serde_json::json!({"success": true}))
+        }
     }
 
     #[tokio::test]
