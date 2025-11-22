@@ -10,11 +10,13 @@ use std::path::Path;
 /// * `narrative_path` - Path to the narrative TOML file
 /// * `save` - Whether to save execution results to the database
 /// * `process_discord` - Whether to process Discord infrastructure
+/// * `state_dir` - Optional directory for persistent state storage
 #[cfg(feature = "gemini")]
 pub async fn run_narrative(
     narrative_path: &Path,
     save: bool,
     process_discord: bool,
+    state_dir: Option<&Path>,
 ) -> BotticelliResult<()> {
     use botticelli::{GeminiClient, NarrativeExecutor, NarrativeProvider};
 
@@ -91,6 +93,15 @@ pub async fn run_narrative(
             #[cfg(not(feature = "discord"))]
             if process_discord {
                 tracing::warn!("Discord feature not enabled, Discord commands will fail");
+            }
+            
+            // Configure state manager if state_dir provided
+            if let Some(dir) = state_dir {
+                tracing::info!(state_dir = %dir.display(), "Configuring state manager");
+                use botticelli_narrative::StateManager;
+                let state_mgr = StateManager::new(dir)?;
+                executor = executor.with_state_manager(state_mgr);
+                tracing::info!("State manager configured");
             }
             
             executor
@@ -192,6 +203,7 @@ pub async fn run_narrative(
     _narrative_path: &Path,
     _save: bool,
     _process_discord: bool,
+    _state_dir: Option<&Path>,
 ) -> BotticelliResult<()> {
     eprintln!("Error: Gemini feature not enabled. Rebuild with --features gemini");
     std::process::exit(1);

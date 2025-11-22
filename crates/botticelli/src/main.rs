@@ -37,8 +37,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             narrative,
             save,
             process_discord,
+            state_dir,
         } => {
-            run_narrative(&narrative, save, process_discord).await?;
+            run_narrative(&narrative, save, process_discord, state_dir.as_deref()).await?;
         }
 
         Commands::Tui { table } => {

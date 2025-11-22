@@ -13,15 +13,15 @@ Enable bot commands to automatically save their output IDs to persistent state, 
 - [x] Add helpful error messages with available keys
 - [ ] Add unit tests for state template resolution (deferred)
 
-### Phase 2: Bot Command Output Capture ⏳ IN PROGRESS
+### Phase 2: Bot Command Output Capture ✅ DONE
 - [x] Identify where bot commands are executed in executor.rs (process_inputs method)
-- [ ] After successful bot command execution, parse JSON response
-- [ ] Extract common ID fields (channel_id, message_id, role_id, etc.)
-- [ ] Generate state key: `<platform>.<command>.<id_type>`
-- [ ] Save extracted IDs to state_manager if present
-- [ ] Log state saves for debugging
+- [x] After successful bot command execution, parse JSON response
+- [x] Extract common ID fields (channel_id, message_id, role_id, etc.)
+- [x] Generate state key: `<platform>.<command>.<id_type>`
+- [x] Save extracted IDs to state_manager if present (both full and short keys)
+- [x] Log state saves for debugging
 
-### Phase 3: Integration Tests
+### Phase 3: Integration Tests ⏳ NEXT
 - [ ] Create test narrative that creates a channel
 - [ ] Verify channel_id is saved to state automatically
 - [ ] Create second narrative that references ${state:channel_id}

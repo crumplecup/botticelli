@@ -34,6 +34,10 @@ pub enum Commands {
         /// Process Discord infrastructure (guilds, channels, etc.)
         #[arg(long)]
         process_discord: bool,
+
+        /// Directory for persistent state storage
+        #[arg(long)]
+        state_dir: Option<PathBuf>,
     },
 
     /// Launch the terminal user interface for a table

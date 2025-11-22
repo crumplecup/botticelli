@@ -1,0 +1,16 @@
+# Test narrative: Create a channel and verify ID is saved to state
+
+name = "state_test_create"
+skip_content_generation = true
+
+[act.create_channel]
+
+[[act.create_channel.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[act.create_channel.input.args]
+name = "botticelli-state-test"
+type = "text"

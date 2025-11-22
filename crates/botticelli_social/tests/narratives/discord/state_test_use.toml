@@ -1,0 +1,16 @@
+# Test narrative: Use channel_id from state to send a message
+
+name = "state_test_use"
+skip_content_generation = true
+
+[act.send_message]
+
+[[act.send_message.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.send"
+required = true
+
+[act.send_message.input.args]
+channel_id = "${state:channel_id}"
+content = "Test message using state-stored channel ID"

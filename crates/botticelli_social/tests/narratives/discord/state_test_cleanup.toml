@@ -1,0 +1,15 @@
+# Test narrative: Delete channel using state-stored ID
+
+name = "state_test_cleanup"
+skip_content_generation = true
+
+[act.delete_channel]
+
+[[act.delete_channel.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.delete"
+required = true
+
+[act.delete_channel.input.args]
+channel_id = "${state:channel_id}"
