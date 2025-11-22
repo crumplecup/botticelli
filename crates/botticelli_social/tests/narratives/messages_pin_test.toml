@@ -1,0 +1,22 @@
+# Test: Message Pin Command
+# Tests pinning a message in a channel
+
+[narrative]
+name = "messages_pin_test"
+description = "Test pinning a message"
+skip_content_generation = true
+
+[toc]
+order = ["pin_message"]
+
+[acts.pin_message]
+
+[[acts.pin_message.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.pin"
+required = true
+
+[acts.pin_message.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${TEST_MESSAGE_ID}"

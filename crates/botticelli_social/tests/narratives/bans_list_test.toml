@@ -1,0 +1,18 @@
+[narrative]
+name = "bans_list_test"
+description = "Test listing guild bans"
+skip_content_generation = true
+
+[toc]
+order = ["list_bans"]
+
+[acts.list_bans]
+
+[[acts.list_bans.input]]
+type = "bot_command"
+platform = "discord"
+command = "bans.list"
+required = true
+
+[acts.list_bans.input.args]
+guild_id = "${TEST_GUILD_ID}"

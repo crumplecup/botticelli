@@ -1,0 +1,23 @@
+# Test: Reaction Remove Command
+# Tests removing a reaction from a message
+
+[narrative]
+name = "reactions_remove_test"
+description = "Test removing a reaction"
+skip_content_generation = true
+
+[toc]
+order = ["remove_reaction"]
+
+[acts.remove_reaction]
+
+[[acts.remove_reaction.input]]
+type = "bot_command"
+platform = "discord"
+command = "reactions.remove"
+required = true
+
+[acts.remove_reaction.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${TEST_MESSAGE_ID}"
+emoji = "👍"

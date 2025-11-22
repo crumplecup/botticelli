@@ -1,0 +1,19 @@
+[narrative]
+name = "threads_list_test"
+description = "Test listing threads in a channel"
+skip_content_generation = true
+
+[toc]
+order = ["list_threads"]
+
+[acts.list_threads]
+
+[[acts.list_threads.input]]
+type = "bot_command"
+platform = "discord"
+command = "threads.list"
+required = true
+
+[acts.list_threads.input.args]
+guild_id = "${TEST_GUILD_ID}"
+channel_id = "${TEST_CHANNEL_ID}"

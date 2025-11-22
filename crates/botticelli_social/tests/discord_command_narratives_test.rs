@@ -67,3 +67,52 @@ fn test_channels_delete_narrative_loads() -> Result<(), Box<dyn std::error::Erro
     assert!(!narrative.acts().is_empty());
     Ok(())
 }
+
+#[test]
+fn test_messages_pin_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("messages_pin_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_messages_unpin_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("messages_unpin_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_reactions_remove_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("reactions_remove_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_threads_list_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("threads_list_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_emojis_list_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("emojis_list_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_invites_list_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("invites_list_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_bans_list_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("bans_list_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}

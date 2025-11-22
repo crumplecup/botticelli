@@ -1,0 +1,22 @@
+# Test: Message Unpin Command
+# Tests unpinning a message in a channel
+
+[narrative]
+name = "messages_unpin_test"
+description = "Test unpinning a message"
+skip_content_generation = true
+
+[toc]
+order = ["unpin_message"]
+
+[acts.unpin_message]
+
+[[acts.unpin_message.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.unpin"
+required = true
+
+[acts.unpin_message.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${TEST_MESSAGE_ID}"
