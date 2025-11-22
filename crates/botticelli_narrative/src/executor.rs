@@ -477,7 +477,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     let mut resolved_args = args.clone();
                     for (_key, value) in resolved_args.iter_mut() {
                         if let JsonValue::String(s) = value {
-                            *s = resolve_template(s, act_executions, current_index)?;
+                            *s = resolve_template(s, act_executions, current_index, self.state_manager.as_ref())?;
                         }
                     }
 
@@ -740,11 +740,12 @@ fn extract_text_from_outputs(outputs: &[Output]) -> BotticelliResult<String> {
     }
 }
 
-/// Resolve template placeholders in a string using act execution history.
+/// Resolve template placeholders in a string using act execution history and state.
 ///
 /// Supports:
 /// - `{{previous}}` - Content from the immediately previous act
 /// - `{{act_name}}` - Content from a specific named act
+/// - `${state:key}` - Value from persistent state
 ///
 /// # Errors
 ///
@@ -752,10 +753,12 @@ fn extract_text_from_outputs(outputs: &[Output]) -> BotticelliResult<String> {
 /// - Referenced act doesn't exist
 /// - Referenced act hasn't executed yet
 /// - Template syntax is malformed
+/// - State key doesn't exist
 fn resolve_template(
     template: &str,
     act_executions: &[ActExecution],
     current_index: usize,
+    state_manager: Option<&StateManager>,
 ) -> BotticelliResult<String> {
     let mut result = template.to_string();
     
@@ -781,7 +784,45 @@ fn resolve_template(
                 )
             })?;
         
-        let replacement = if reference == "previous" {
+        let replacement = if reference.starts_with("state:") {
+            // State reference like "${state:channel_id}" or "${state:discord.channels.create.channel_id}"
+            let state_key = reference.strip_prefix("state:").unwrap();
+            
+            let state_mgr = state_manager.ok_or_else(|| {
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::TemplateError(
+                        format!("State reference '{}' requires state_manager to be configured", reference),
+                    ),
+                )
+            })?;
+            
+            // Try to load global state
+            let state = state_mgr.load(&crate::state::StateScope::Global).map_err(|e| {
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::TemplateError(
+                        format!("Failed to load state: {}", e),
+                    ),
+                )
+            })?;
+            
+            state.get(state_key).ok_or_else(|| {
+                // Provide helpful error with available keys
+                let available_keys: Vec<_> = state.keys().collect();
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::TemplateError(
+                        format!(
+                            "State key '{}' not found. Available keys: {}",
+                            state_key,
+                            if available_keys.is_empty() {
+                                "none".to_string()
+                            } else {
+                                available_keys.join(", ")
+                            }
+                        ),
+                    ),
+                )
+            })?.to_string()
+        } else if reference == "previous" {
             // Get previous act
             if current_index == 0 {
                 return Err(botticelli_error::NarrativeError::new(
