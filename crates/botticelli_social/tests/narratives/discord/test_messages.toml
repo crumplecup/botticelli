@@ -1,0 +1,51 @@
+# Test narrative for Discord messages commands
+
+[narrative]
+name = "test_messages"
+description = "Test Discord messages commands"
+skip_content_generation = true
+
+[[act]]
+name = "get_test_channel"
+prompt = "Get the test channel"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.get_or_create"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+channel_name = "botticelli-test"
+channel_type = "text"
+
+[[act]]
+name = "send_message"
+prompt = "Send a test message"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.send"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+channel_name = "botticelli-test"
+content = "Integration test message - {{timestamp}}"
+
+[[act]]
+name = "list_messages"
+prompt = "List recent messages in the channel"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.list"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+channel_name = "botticelli-test"
+limit = "5"

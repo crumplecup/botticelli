@@ -1,0 +1,33 @@
+# Test narrative for Discord roles commands
+
+[narrative]
+name = "test_roles"
+description = "Test Discord roles commands"
+skip_content_generation = true
+
+[[act]]
+name = "list_roles"
+prompt = "List all roles in the test guild"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "roles.list"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+
+[[act]]
+name = "get_role"  
+prompt = "Get details about @everyone role"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "roles.get"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+role_name = "everyone"

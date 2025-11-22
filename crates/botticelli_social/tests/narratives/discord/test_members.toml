@@ -1,0 +1,20 @@
+# Test narrative for Discord members commands
+
+[narrative]
+name = "test_members"
+description = "Test Discord members commands"
+skip_content_generation = true
+
+[[act]]
+name = "list_members"
+prompt = "List members in the test guild"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "members.list"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+limit = "10"

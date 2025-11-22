@@ -54,3 +54,39 @@ async fn test_channels() {
         .await
         .expect("test_channels narrative failed");
 }
+
+#[tokio::test]
+#[cfg_attr(not(feature = "discord"), ignore)]
+async fn test_roles() {
+    load_env();
+    run_test_narrative("test_roles")
+        .await
+        .expect("test_roles narrative failed");
+}
+
+#[tokio::test]
+#[cfg_attr(not(feature = "discord"), ignore)]
+async fn test_members() {
+    load_env();
+    run_test_narrative("test_members")
+        .await
+        .expect("test_members narrative failed");
+}
+
+#[tokio::test]
+#[cfg_attr(not(feature = "discord"), ignore)]
+async fn test_server_stats() {
+    load_env();
+    run_test_narrative("test_server_stats")
+        .await
+        .expect("test_server_stats narrative failed");
+}
+
+#[tokio::test]
+#[cfg_attr(not(feature = "discord"), ignore)]
+async fn test_messages() {
+    load_env();
+    run_test_narrative("test_messages")
+        .await
+        .expect("test_messages narrative failed");
+}

@@ -1,0 +1,19 @@
+# Test narrative for Discord server stats command
+
+[narrative]
+name = "test_server_stats"
+description = "Test Discord server statistics command"
+skip_content_generation = true
+
+[[act]]
+name = "get_stats"
+prompt = "Get server statistics for the test guild"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "server.get_stats"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
