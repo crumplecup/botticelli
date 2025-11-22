@@ -13,31 +13,31 @@ order = ["create_channel", "clear_channel", "generate_content", "select_best", "
 # Define bot commands
 [bots.create_channel]
 platform = "discord"
-command = "channels.create"
+command = "channels.get_or_create"
 guild_id = "1439415903753076859"
 name = "faq"
-type = "text"
+channel_type = "text"
 
 [bots.clear_channel]
 platform = "discord"
-command = "messages.bulk_delete"
+command = "messages.clear"
 guild_id = "1439415903753076859"
-channel_id = "{{create_channel}}"
+channel_id = "${create_channel.id}"  # Use channel ID from create_channel act
 limit = 100
 
 [bots.publish_message]
 platform = "discord"
 command = "messages.send"
 guild_id = "1439415903753076859"
-channel_id = "{{create_channel}}"
+channel_id = "${create_channel.id}"  # Use channel ID from create_channel act
 content = "{{select_best}}"
 
 [bots.pin_message]
 platform = "discord"
 command = "messages.pin"
 guild_id = "1439415903753076859"
-channel_id = "{{create_channel}}"
-message_id = "{{publish_message}}"
+channel_id = "${create_channel.id}"  # Use channel ID from create_channel act
+message_id = "${publish_message.id}"  # Extract message ID from publish act JSON response
 
 # Define nested narrative for content generation
 [narratives.generate_content]

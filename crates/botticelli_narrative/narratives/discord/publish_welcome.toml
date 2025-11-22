@@ -14,10 +14,10 @@ order = ["create_channel", "clear_channel", "generate_content", "select_best", "
 [narratives.generate_content]
 narrative = "welcome_content_generation"
 
-# Define bot command for creating welcome channel
+# Define bot command for getting or creating welcome channel
 [bots.create_channel]
 platform = "discord"
-command = "channels.create"
+command = "channels.get_or_create"
 guild_id = "1439415903753076859"
 name = "welcome"
 channel_type = "text"
@@ -27,7 +27,7 @@ channel_type = "text"
 platform = "discord"
 command = "messages.clear"
 guild_id = "1439415903753076859"
-channel_id = "1441256008092483724"
+channel_id = "${create_channel.id}"  # Use channel ID from create_channel act
 limit = 100
 
 # Define bot command for publishing
@@ -35,15 +35,15 @@ limit = 100
 platform = "discord"
 command = "messages.send"
 guild_id = "1439415903753076859"
-channel_id = "1441256008092483724"
-content = "{{select_best}}"        # Inject output from select_best act
+channel_id = "${create_channel.id}"  # Use channel ID from create_channel act
+content = "{{select_best}}"          # Inject output from select_best act
 
 # Define bot command for pinning message
 [bots.pin_message]
 platform = "discord"
 command = "messages.pin"
 guild_id = "1439415903753076859"
-channel_id = "1441256008092483724"
+channel_id = "${create_channel.id}"  # Use channel ID from create_channel act
 message_id = "${publish_message.id}"  # Extract message ID from publish act JSON response
 
 # Define table reference for loading generated messages

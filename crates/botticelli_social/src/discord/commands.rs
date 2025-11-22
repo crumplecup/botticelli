@@ -2984,6 +2984,132 @@ impl DiscordCommandExecutor {
         }))
     }
 
+    /// Execute: channels.get_or_create
+    ///
+    /// Get a channel by name, or create it if it doesn't exist.
+    ///
+    /// Required args: guild_id, name, channel_type
+    /// Optional args: topic, position, nsfw
+    #[instrument(
+        skip(self, args),
+        fields(
+            command = "channels.get_or_create",
+            guild_id,
+            name
+        )
+    )]
+    async fn channels_get_or_create(
+        &self,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        use serenity::builder::CreateChannel;
+        use serenity::model::channel::ChannelType;
+
+        debug!("Parsing arguments for channels.get_or_create");
+        let guild_id = Self::parse_guild_id("channels.get_or_create", args)?;
+        
+        let name = args
+            .get("name")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "channels.get_or_create".to_string(),
+                    arg_name: "name".to_string(),
+                })
+            })?;
+
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("name", name);
+
+        info!(guild_id = %guild_id, name, "Checking if channel exists");
+
+        // Fetch all channels to check if one with this name exists
+        let channels = self
+            .http
+            .get_channels(guild_id)
+            .await
+            .map_err(|e| {
+                error!(guild_id = %guild_id, error = %e, "Failed to fetch channels");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "channels.get_or_create".to_string(),
+                    reason: format!("Failed to fetch channels: {}", e),
+                })
+            })?;
+
+        // Check if channel already exists
+        if let Some(existing) = channels.iter().find(|c| c.name == name) {
+            info!(channel_id = %existing.id, name, "Channel already exists");
+            return Ok(serde_json::json!({
+                "id": existing.id.to_string(),
+                "name": existing.name,
+                "kind": format!("{:?}", existing.kind),
+                "position": existing.position,
+                "existed": true,
+            }));
+        }
+
+        // Channel doesn't exist, create it
+        info!(guild_id = %guild_id, name, "Channel doesn't exist, creating");
+
+        let kind_str = args
+            .get("channel_type")
+            .and_then(|v| v.as_str())
+            .unwrap_or("text");
+
+        let kind = match kind_str {
+            "text" => ChannelType::Text,
+            "voice" => ChannelType::Voice,
+            "category" => ChannelType::Category,
+            "announcement" => ChannelType::News,
+            "stage" => ChannelType::Stage,
+            "forum" => ChannelType::Forum,
+            _ => {
+                return Err(BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                    command: "channels.get_or_create".to_string(),
+                    arg_name: "channel_type".to_string(),
+                    reason: format!("Invalid channel type: {}", kind_str),
+                }));
+            }
+        };
+
+        // Build the create channel request
+        let mut builder = CreateChannel::new(name).kind(kind);
+
+        if let Some(topic) = args.get("topic").and_then(|v| v.as_str()) {
+            builder = builder.topic(topic);
+        }
+
+        if let Some(position) = args.get("position").and_then(|v| v.as_u64()) {
+            builder = builder.position(position as u16);
+        }
+
+        if let Some(nsfw) = args.get("nsfw").and_then(|v| v.as_bool()) {
+            builder = builder.nsfw(nsfw);
+        }
+
+        // Create the channel
+        let channel = guild_id
+            .create_channel(&self.http, builder)
+            .await
+            .map_err(|e| {
+                error!(guild_id = %guild_id, name, error = %e, "Failed to create channel");
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "channels.get_or_create".to_string(),
+                    reason: format!("Failed to create channel: {}", e),
+                })
+            })?;
+
+        info!(channel_id = %channel.id, name, "Successfully created channel");
+
+        Ok(serde_json::json!({
+            "id": channel.id.to_string(),
+            "name": channel.name,
+            "kind": format!("{:?}", channel.kind),
+            "position": channel.position,
+            "existed": false,
+        }))
+    }
+
     /// Delete a channel from a guild.
     ///
     /// **Security**: This command MUST go through the security framework
@@ -3723,6 +3849,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "reactions.add" => self.reactions_add(args).await?,
             "reactions.remove" => self.reactions_remove(args).await?,
             "channels.create" => self.channels_create(args).await?,
+            "channels.get_or_create" => self.channels_get_or_create(args).await?,
             "channels.edit" => self.channels_edit(args).await?,
             "channels.delete" => self.channels_delete(args).await?,
             "members.ban" => self.members_ban(args).await?,
@@ -3797,6 +3924,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
                 | "reactions.add"
                 | "reactions.remove"
                 | "channels.create"
+                | "channels.get_or_create"
                 | "channels.edit"
                 | "channels.delete"
                 | "members.ban"
@@ -3839,6 +3967,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "messages.pin".to_string(),
             "messages.unpin".to_string(),
             "channels.create".to_string(),
+            "channels.get_or_create".to_string(),
             "channels.edit".to_string(),
             "channels.delete".to_string(),
             "channels.create_invite".to_string(),
@@ -3976,6 +4105,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
                 "Create a new channel (requires security framework and approval)\n\
                  Required arguments: guild_id, name, kind (text/voice/category/announcement/stage/forum)\n\
                  Optional arguments: topic, position, nsfw, category_id"
+                    .to_string(),
+            ),
+            "channels.get_or_create" => Some(
+                "Get a channel by name, or create it if it doesn't exist\n\
+                 Required arguments: guild_id, name\n\
+                 Optional arguments: channel_type (default: text), topic, position, nsfw"
                     .to_string(),
             ),
             "channels.delete" => Some(
