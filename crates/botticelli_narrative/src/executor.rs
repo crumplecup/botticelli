@@ -3,7 +3,7 @@
 //! This module provides the executor that processes multi-act narratives
 //! by calling LLM APIs in sequence, passing context between acts.
 
-use crate::{CarouselResult, CarouselState, NarrativeProvider, ProcessorContext, ProcessorRegistry};
+use crate::{CarouselResult, CarouselState, NarrativeProvider, ProcessorContext, ProcessorRegistry, StateManager};
 use botticelli_core::{GenerateRequest, Input, Message, Output, Role};
 use botticelli_error::{BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind};
 use botticelli_interface::{ActExecution, BotticelliDriver, NarrativeExecution, TableQueryRegistry};
@@ -54,6 +54,7 @@ pub struct NarrativeExecutor<D: BotticelliDriver> {
     processor_registry: Option<ProcessorRegistry>,
     bot_registry: Option<Box<dyn BotCommandRegistry>>,
     table_registry: Option<Box<dyn TableQueryRegistry>>,
+    state_manager: Option<StateManager>,
 }
 
 impl<D: BotticelliDriver> NarrativeExecutor<D> {
@@ -64,6 +65,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
             processor_registry: None,
             bot_registry: None,
             table_registry: None,
+            state_manager: None,
         }
     }
 
@@ -88,6 +90,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
             processor_registry: Some(registry),
             bot_registry: None,
             table_registry: None,
+            state_manager: None,
         }
     }
 
@@ -129,6 +132,26 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
     /// ```
     pub fn with_table_registry(mut self, registry: Box<dyn TableQueryRegistry>) -> Self {
         self.table_registry = Some(registry);
+        self
+    }
+
+    /// Add a state manager for persistent state across narrative executions.
+    ///
+    /// Enables narratives to store and retrieve state like channel IDs, message IDs,
+    /// and other runtime artifacts that persist between runs.
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// use botticelli_narrative::{NarrativeExecutor, StateManager};
+    ///
+    /// let state_manager = StateManager::new("./state")?;
+    ///
+    /// let executor = NarrativeExecutor::new(driver)
+    ///     .with_state_manager(state_manager);
+    /// ```
+    pub fn with_state_manager(mut self, manager: StateManager) -> Self {
+        self.state_manager = Some(manager);
         self
     }
 

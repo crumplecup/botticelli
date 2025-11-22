@@ -41,6 +41,7 @@ mod executor;
 mod in_memory_repository;
 mod processor;
 mod provider;
+mod state;
 mod table_reference;
 mod toml_parser;
 
@@ -56,6 +57,7 @@ pub use executor::{BotCommandRegistry, NarrativeExecutor};
 pub use in_memory_repository::InMemoryNarrativeRepository;
 pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
 pub use provider::{ActConfig, NarrativeProvider};
+pub use state::{NarrativeState, StateManager, StateScope};
 pub use table_reference::TableReference;
 
 #[cfg(feature = "database")]
