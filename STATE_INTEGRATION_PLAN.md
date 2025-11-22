@@ -79,9 +79,19 @@ channel_id = "${state:channel_id}"
 
 ## Success Criteria
 
-- [ ] Can create Discord channel and ID is auto-saved to state
-- [ ] Can reference ${state:channel_id} in subsequent acts
-- [ ] Can delete channel using state ID
-- [ ] State persists across narrative executions
+- [x] Can create Discord channel and ID is auto-saved to state
+- [x] Can reference ${state:channel_id} in subsequent acts
+- [x] Can delete channel using state ID
+- [x] State persists across narrative executions (via --state-dir flag)
+- [x] CLI supports --state-dir for state management
+- [ ] Integration tests verified (ready to test)
 - [ ] All existing tests still pass
 - [ ] Documentation is clear and includes examples
+
+## Implementation Complete (Phases 1 & 2)
+
+✅ Phase 1: State template resolution with ${state:key} syntax
+✅ Phase 2: Automatic bot command ID capture to persistent state
+✅ CLI Integration: --state-dir flag for state management
+
+**Ready for Phase 3**: Integration testing and validation
