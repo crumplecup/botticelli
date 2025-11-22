@@ -15,18 +15,17 @@ pub fn create_test_request(
     model: Option<String>,
     max_tokens: Option<u32>,
 ) -> GenerateRequest {
-    let mut builder = GenerateRequestBuilder::default();
-    builder = builder
-        .messages(vec![Message {
-            role: Role::User,
-            content: vec![botticelli_core::Input::Text(prompt.to_string())],
-        }])
+    let message = botticelli_core::MessageBuilder::default()
+        .role(Role::User)
+        .content(vec![botticelli_core::Input::Text(prompt.to_string())])
+        .build()
+        .expect("Failed to build message");
+    
+    GenerateRequest::builder()
+        .messages(vec![message])
         .max_tokens(max_tokens)
-        .temperature(None);
-    
-    if let Some(m) = model {
-        builder = builder.model(Some(m));
-    }
-    
-    builder.build().expect("Failed to build test request")
+        .temperature(None)
+        .model(model)
+        .build()
+        .expect("Failed to build test request")
 }

@@ -254,15 +254,18 @@ async fn test_streaming_error_recovery() {
 
     let client = GeminiClient::new().expect("Failed to create client");
 
-    let request = GenerateRequest {
-        messages: vec![Message {
-            role: Role::User,
-            content: vec![Input::Text("Count to 5".to_string())],
-        }],
-        model: Some("models/gemini-2.0-flash-exp".to_string()),
-        max_tokens: Some(50),
-        ..Default::default()
-    };
+    let message = Message::builder()
+        .role(Role::User)
+        .content(vec![Input::Text("Count to 5".to_string())])
+        .build()
+        .expect("Failed to build message");
+    
+    let request = GenerateRequest::builder()
+        .messages(vec![message])
+        .model("models/gemini-2.0-flash-exp".to_string())
+        .max_tokens(50)
+        .build()
+        .expect("Failed to build request");
 
     let mut stream = client
         .generate_stream(&request)

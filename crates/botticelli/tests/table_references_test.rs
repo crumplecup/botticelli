@@ -41,7 +41,7 @@ impl TableReferenceNarrative {
                 format: TableFormat::Markdown,
                 sample: None,
             }],
-            model: Some("gemini-1.5-flash".to_string()),
+            model: Some("gemini-2.0-flash-lite".to_string()),
             temperature: Some(0.7),
             max_tokens: Some(100),
         };
@@ -232,7 +232,7 @@ async fn test_table_reference_with_filter() {
             format: TableFormat::Json,
             sample: None,
         }],
-        model: Some("gemini-1.5-flash".to_string()),
+        model: Some("gemini-2.0-flash-lite".to_string()),
         temperature: Some(0.7),
         max_tokens: Some(100),
     };
@@ -343,7 +343,7 @@ async fn test_table_reference_format_csv() {
             format: TableFormat::Csv,
             sample: None,
         }],
-        model: Some("gemini-1.5-flash".to_string()),
+        model: Some("gemini-2.0-flash-lite".to_string()),
         temperature: Some(0.7),
         max_tokens: Some(100),
     };
