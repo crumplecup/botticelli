@@ -1,6 +1,8 @@
 # Test narrative for Discord channel commands
 
+[narrative]
 name = "test_channels"
+description = "Test Discord channel commands"
 skip_content_generation = true
 
 [[act]]

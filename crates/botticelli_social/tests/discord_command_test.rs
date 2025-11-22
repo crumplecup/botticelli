@@ -22,10 +22,12 @@ async fn run_test_narrative(name: &str) -> Result<(), Box<dyn std::error::Error>
     let output = tokio::process::Command::new("cargo")
         .args(&[
             "run",
+            "-p",
+            "botticelli",
             "--bin",
             "botticelli",
             "--features",
-            "discord,local",
+            "gemini,discord,database",
             "--",
             "run",
             "--narrative",
