@@ -17,13 +17,9 @@
 mod test_utils;
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
-use test_utils::create_test_request;
 use botticelli_interface::BotticelliDriver;
-use test_utils::create_test_request;
 use botticelli_models::GeminiClient;
-use test_utils::create_test_request;
-use test_utils::MockGeminiClient;
-use test_utils::create_test_request;
+use test_utils::{create_test_request, MockGeminiClient};
 
 //
 // ─── MOCK TESTS (FAST, NO API CALLS) ───────────────────────────────────────────

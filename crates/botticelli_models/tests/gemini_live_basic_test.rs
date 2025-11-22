@@ -1,5 +1,4 @@
 //! Integration tests for Gemini Live API basic functionality.
-mod test_utils;
 //!
 //! These tests require the `api` feature flag to run:
 //! ```bash
@@ -11,6 +10,8 @@ mod test_utils;
 //! Tests are currently ignored until the handshake issue is resolved.
 
 #![cfg(feature = "gemini")]
+
+mod test_utils;
 
 use botticelli_models::{GeminiLiveClient, GenerationConfig};
 use test_utils::create_test_request;

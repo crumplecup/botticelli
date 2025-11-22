@@ -29,10 +29,8 @@ fn setup_executor() -> (NarrativeExecutor, Pool<ConnectionManager<PgConnection>>
 
     let repository = PostgresNarrativeRepository::new(pool.clone());
 
-    let executor = NarrativeExecutor::builder()
-        .repository(Box::new(repository))
-        .bot_registry(Some(bot_registry))
-        .build();
+    let mut executor = NarrativeExecutor::new(Box::new(repository));
+    executor.with_bot_registry(bot_registry);
 
     (executor, pool)
 }

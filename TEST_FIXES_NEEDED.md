@@ -4,6 +4,8 @@
 
 Tests are currently failing due to API changes. This document tracks what needs to be fixed.
 
+**Progress Update:** Discord tests are fixed. Gemini tests partially fixed but need more work (see details below).
+
 ## Issues
 
 ### 1. Gemini Model Tests - Struct Literal Usage
@@ -21,7 +23,10 @@ Tests are currently failing due to API changes. This document tracks what needs 
 
 **Solution:** Replace all `GenerateRequest { ... }` with calls to `test_utils::create_test_request()` helper.
 
-**Status:** Started - gemini_2_0_models_test.rs is partially fixed. Remaining files need the same treatment.
+**Status:** In progress - duplicate imports removed, but new issues found:
+1. Sed command created malformed syntax `Some("model", Some(10))` - needs manual fix
+2. `Message::new()` doesn't exist - need to use builder or struct literal with public fields
+3. `GenerateRequest` fields are private - tests need to use getters instead of direct field access
 
 ### 2. Discord Test API Changes
 
@@ -36,6 +41,8 @@ Tests are currently failing due to API changes. This document tracks what needs 
 
 **Solution:** Update tests to use current API.
 
+**Status:** FIXED - Updated to use `NarrativeExecutor::new()` and `with_bot_registry()`.
+
 ### 3. Documentation Comment Errors
 
 **Files affected:**
@@ -44,6 +51,8 @@ Tests are currently failing due to API changes. This document tracks what needs 
 **Problem:** Module-level doc comments (`//!`) appearing after attributes cause E0753 errors.
 
 **Solution:** Move module doc comments to the very top of the file, before any attributes.
+
+**Status:** FIXED - gemini_live_basic_test.rs doc comments moved before attributes.
 
 ## Testing Strategy
 

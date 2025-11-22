@@ -8,13 +8,9 @@
 mod test_utils;
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
-use test_utils::create_test_request;
 use botticelli_error::GeminiErrorKind;
-use test_utils::create_test_request;
 use botticelli_interface::BotticelliDriver;
-use test_utils::create_test_request;
-use test_utils::{MockGeminiClient, MockResponse};
-use test_utils::create_test_request;
+use test_utils::{create_test_request, MockGeminiClient, MockResponse};
 
 #[tokio::test]
 async fn test_mock_basic_generate() {

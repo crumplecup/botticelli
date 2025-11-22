@@ -7,27 +7,11 @@ mod test_utils;
 // Live models (e.g., gemini-2.0-flash-live) offer better rate limits on the free tier,
 // which is the primary motivation for implementing streaming.
 
-use botticelli_core::{GenerateRequest, Input, Message, Output, Role};
-use test_utils::create_test_request;
+use botticelli_core::{Output, Role};
 use botticelli_interface::{BotticelliDriver, Streaming};
-use test_utils::create_test_request;
 use botticelli_models::GeminiClient;
-use test_utils::create_test_request;
 use futures_util::StreamExt;
 use test_utils::create_test_request;
-
-/// Helper to create a simple test request.
-fn create_test_request(prompt: &str, model: Option<String>) -> GenerateRequest {
-    GenerateRequest {
-        messages: vec![Message {
-            role: Role::User,
-            content: vec![Input::Text(prompt.to_string())],
-        }],
-        model,
-        max_tokens: Some(10), // Minimize token usage
-        temperature: Some(0.7),
-    }
-}
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
@@ -36,7 +20,7 @@ async fn test_streaming_basic() {
 
     let client = GeminiClient::new().expect("Failed to create client");
 
-    let request = create_test_request("Say 'ok'", None);
+    let request = create_test_request("Say 'ok'", None, Some(10));
 
     let mut stream = client
         .generate_stream(&request)
@@ -86,7 +70,7 @@ async fn test_streaming_with_standard_model() {
     let client = GeminiClient::new().expect("Failed to create client");
 
     // Explicitly use standard flash model
-    let request = create_test_request("Say 'ok'", Some("gemini-2.0-flash".to_string()));
+    let request = create_test_request("Say 'ok'", Some("gemini-2.0-flash".to_string(), Some(10)));
 
     let mut stream = client
         .generate_stream(&request)
@@ -126,7 +110,7 @@ async fn test_streaming_with_live_model() {
     let client = GeminiClient::new().expect("Failed to create client");
 
     // CRITICAL TEST: Use live model for better rate limits
-    let request = create_test_request("Say 'ok'", Some("gemini-2.5-flash-live".to_string()));
+    let request = create_test_request("Say 'ok'", Some("gemini-2.5-flash-live".to_string(), Some(10)));
 
     let mut stream = client
         .generate_stream(&request)
@@ -165,7 +149,7 @@ async fn test_streaming_finish_reasons() {
 
     let client = GeminiClient::new().expect("Failed to create client");
 
-    let request = create_test_request("Say 'ok'", None);
+    let request = create_test_request("Say 'ok'", None, Some(10));
 
     let mut stream = client
         .generate_stream(&request)
@@ -201,7 +185,7 @@ async fn test_streaming_vs_non_streaming_consistency() {
 
     let client = GeminiClient::new().expect("Failed to create client");
 
-    let request = create_test_request("Say 'ok'", None);
+    let request = create_test_request("Say 'ok'", None, Some(10));
 
     // Get streaming response
     let mut stream = client
@@ -266,7 +250,7 @@ async fn test_rate_limit_comparison() {
     // Try 3 requests to standard model
     let mut standard_success = 0;
     for i in 0..3 {
-        let request = create_test_request("ok", Some("gemini-2.0-flash".to_string()));
+        let request = create_test_request("ok", Some("gemini-2.0-flash".to_string(), Some(10)));
 
         match client.generate_stream(&request).await {
             Ok(mut stream) => {
@@ -291,7 +275,7 @@ async fn test_rate_limit_comparison() {
     // Try 3 requests to live model
     let mut live_success = 0;
     for i in 0..3 {
-        let request = create_test_request("ok", Some("gemini-2.0-flash-live".to_string()));
+        let request = create_test_request("ok", Some("gemini-2.0-flash-live".to_string(), Some(10)));
 
         match client.generate_stream(&request).await {
             Ok(mut stream) => {
