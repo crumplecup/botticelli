@@ -1,7 +1,7 @@
 //! Top-level error wrapper types.
 
 use crate::{
-    BackendError, ConfigError, GeminiError, HttpError, JsonError, NarrativeError,
+    BackendError, BuilderError, ConfigError, GeminiError, HttpError, JsonError, NarrativeError,
     NotImplementedError, ServerError, StorageError,
 };
 #[cfg(feature = "database")]
@@ -35,6 +35,9 @@ pub enum BotticelliErrorKind {
     /// Configuration error
     #[from(ConfigError)]
     Config(ConfigError),
+    /// Builder error
+    #[from(BuilderError)]
+    Builder(BuilderError),
     /// Feature not yet implemented
     #[from(NotImplementedError)]
     NotImplemented(NotImplementedError),

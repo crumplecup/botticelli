@@ -14,7 +14,6 @@
 mod test_utils;
 
 use botticelli_models::{GeminiLiveClient, GenerationConfig};
-use test_utils::create_test_request;
 use futures_util::StreamExt;
 
 #[tokio::test]

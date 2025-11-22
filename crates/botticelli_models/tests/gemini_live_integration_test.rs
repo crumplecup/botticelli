@@ -36,7 +36,7 @@ async fn test_gemini_client_routes_to_live_api() {
         .messages(vec![MessageBuilder::default()
             .role(Role::User)
             .content(vec![Input::Text("Say 'Hello from Live API'".to_string())])
-        .build()])
+            .build()?])
         .model(Some("models/gemini-2.0-flash-exp".to_string()))
         .max_tokens(Some(20))
         .build().unwrap();
