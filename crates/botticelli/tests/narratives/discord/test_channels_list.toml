@@ -1,0 +1,25 @@
+# Test: Channels List Command
+# Tests: channels.list
+
+[narrative]
+name = "test_channels_list"
+description = "Test Discord channels.list command"
+skip_content_generation = true
+
+[toc]
+order = ["list_channels"]
+
+[acts.list_channels]
+model = "gemini-2.0-flash-exp"
+temperature = 0.7
+max_tokens = 100
+prompt = "Summarize the channels"
+
+[[acts.list_channels.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.list"
+required = true
+
+[acts.list_channels.input.args]
+guild_id = "${TEST_GUILD_ID}"

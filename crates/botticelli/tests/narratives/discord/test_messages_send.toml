@@ -1,0 +1,27 @@
+# Test: Messages Send Command
+# Tests: messages.send
+
+[narrative]
+name = "test_messages_send"
+description = "Test Discord messages.send command"
+skip_content_generation = true
+
+[toc]
+order = ["send_message"]
+
+[acts.send_message]
+model = "gemini-2.0-flash-exp"
+temperature = 0.7
+max_tokens = 50
+prompt = "Acknowledge the message was sent"
+
+[[acts.send_message.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.send"
+required = true
+
+[acts.send_message.input.args]
+guild_id = "${TEST_GUILD_ID}"
+channel_id = "${WELCOME_CHANNEL_ID}"
+content = "Test message from Discord command integration test"
