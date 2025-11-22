@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 /// JSON model for Discord guild data.
 ///
 /// Matches the schema defined in DISCORD_NARRATIVE.md for guild generation.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters, derive_builder::Builder)]
 pub struct DiscordGuildJson {
     /// Discord snowflake ID (required)
     id: i64,
@@ -48,7 +48,7 @@ pub struct DiscordGuildJson {
 /// JSON model for Discord channel data.
 ///
 /// Matches the schema defined in DISCORD_NARRATIVE.md for channel generation.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters, derive_builder::Builder)]
 pub struct DiscordChannelJson {
     /// Discord snowflake ID (required)
     id: i64,
@@ -87,7 +87,7 @@ pub struct DiscordChannelJson {
 /// JSON model for Discord user data.
 ///
 /// Matches the schema defined in DISCORD_NARRATIVE.md for user generation.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters, derive_builder::Builder)]
 pub struct DiscordUserJson {
     /// Discord snowflake ID (required)
     id: i64,
@@ -117,7 +117,7 @@ pub struct DiscordUserJson {
 /// JSON model for Discord role data.
 ///
 /// Matches the schema defined in DISCORD_NARRATIVE.md for role generation.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters, derive_builder::Builder)]
 pub struct DiscordRoleJson {
     /// Discord snowflake ID (required)
     id: i64,
@@ -153,7 +153,7 @@ pub struct DiscordRoleJson {
 /// JSON model for Discord guild member data.
 ///
 /// Matches the schema defined in DISCORD_NARRATIVE.md for guild member generation.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters, derive_builder::Builder)]
 pub struct DiscordGuildMemberJson {
     /// Guild ID (required)
     guild_id: i64,
@@ -185,7 +185,7 @@ pub struct DiscordGuildMemberJson {
 /// JSON model for Discord member role assignment data.
 ///
 /// Matches the schema defined in DISCORD_NARRATIVE.md for member role generation.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, derive_getters::Getters, derive_builder::Builder)]
 pub struct DiscordMemberRoleJson {
     /// Guild ID (required)
     guild_id: i64,

@@ -314,6 +314,10 @@ impl TryFrom<DiscordMemberRoleJson> for NewMemberRole {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::discord::json_models::{
+        DiscordChannelJsonBuilder, DiscordGuildJsonBuilder, DiscordGuildMemberJsonBuilder,
+        DiscordMemberRoleJsonBuilder, DiscordRoleJsonBuilder, DiscordUserJsonBuilder,
+    };
     use chrono::{Datelike, Timelike};
 
     #[test]
@@ -377,18 +381,19 @@ mod tests {
 
     #[test]
     fn test_guild_json_to_new_guild() {
-        let json = DiscordGuildJson {
-            id: 123456789,
-            name: "Test Guild".to_string(),
-            owner_id: 987654321,
-            icon: Some("icon_hash".to_string()),
-            banner: None,
-            description: Some("A test guild".to_string()),
-            member_count: Some(100),
-            verification_level: Some(2),
-            premium_tier: Some(1),
-            features: Some(vec!["COMMUNITY".to_string()]),
-        };
+        let json = DiscordGuildJsonBuilder::default()
+            .id(123456789)
+            .name("Test Guild".to_string())
+            .owner_id(987654321)
+            .icon(Some("icon_hash".to_string()))
+            .banner(None)
+            .description(Some("A test guild".to_string()))
+            .member_count(Some(100))
+            .verification_level(Some(2))
+            .premium_tier(Some(1))
+            .features(Some(vec!["COMMUNITY".to_string()]))
+            .build()
+            .unwrap();
 
         let result: Result<NewGuild, _> = json.try_into();
         assert!(result.is_ok());
@@ -403,16 +408,17 @@ mod tests {
 
     #[test]
     fn test_user_json_to_new_user() {
-        let json = DiscordUserJson {
-            id: 222222222,
-            username: "testuser".to_string(),
-            discriminator: Some("1234".to_string()),
-            global_name: Some("Test User".to_string()),
-            avatar: Some("avatar_hash".to_string()),
-            bot: Some(false),
-            premium_type: Some(2),
-            locale: Some("en-US".to_string()),
-        };
+        let json = DiscordUserJsonBuilder::default()
+            .id(222222222)
+            .username("testuser".to_string())
+            .discriminator(Some("1234".to_string()))
+            .global_name(Some("Test User".to_string()))
+            .avatar(Some("avatar_hash".to_string()))
+            .bot(Some(false))
+            .premium_type(Some(2))
+            .locale(Some("en-US".to_string()))
+            .build()
+            .unwrap();
 
         let result: Result<NewUser, _> = json.try_into();
         assert!(result.is_ok());
@@ -425,19 +431,20 @@ mod tests {
 
     #[test]
     fn test_channel_json_to_new_channel() {
-        let json = DiscordChannelJson {
-            id: 111111111,
-            channel_type: "guild_text".to_string(),
-            guild_id: Some(123456789),
-            name: Some("general".to_string()),
-            topic: Some("General chat".to_string()),
-            position: Some(0),
-            parent_id: None,
-            nsfw: Some(false),
-            rate_limit_per_user: None,
-            bitrate: None,
-            user_limit: None,
-        };
+        let json = DiscordChannelJsonBuilder::default()
+            .id(111111111)
+            .channel_type("guild_text".to_string())
+            .guild_id(Some(123456789))
+            .name(Some("general".to_string()))
+            .topic(Some("General chat".to_string()))
+            .position(Some(0))
+            .parent_id(None)
+            .nsfw(Some(false))
+            .rate_limit_per_user(None)
+            .bitrate(None)
+            .user_limit(None)
+            .build()
+            .unwrap();
 
         let result: Result<NewChannel, _> = json.try_into();
         assert!(result.is_ok());
@@ -451,19 +458,20 @@ mod tests {
 
     #[test]
     fn test_role_json_to_new_role() {
-        let json = DiscordRoleJson {
-            id: 333333333,
-            guild_id: 123456789,
-            name: "Moderator".to_string(),
-            position: 5,
-            permissions: 8,
-            color: Some(3447003),
-            hoist: Some(true),
-            icon: None,
-            unicode_emoji: None,
-            managed: Some(false),
-            mentionable: Some(true),
-        };
+        let json = DiscordRoleJsonBuilder::default()
+            .id(333333333)
+            .guild_id(123456789)
+            .name("Moderator".to_string())
+            .position(5)
+            .permissions(8)
+            .color(Some(3447003))
+            .hoist(Some(true))
+            .icon(None)
+            .unicode_emoji(None)
+            .managed(Some(false))
+            .mentionable(Some(true))
+            .build()
+            .unwrap();
 
         let result: Result<NewRole, _> = json.try_into();
         assert!(result.is_ok());
@@ -478,17 +486,18 @@ mod tests {
 
     #[test]
     fn test_guild_member_json_to_new_guild_member() {
-        let json = DiscordGuildMemberJson {
-            guild_id: 123456789,
-            user_id: 222222222,
-            joined_at: "2024-01-15T14:30:00Z".to_string(),
-            nick: Some("TestNick".to_string()),
-            avatar: None,
-            premium_since: Some("2024-02-01T10:00:00Z".to_string()),
-            deaf: Some(false),
-            mute: Some(false),
-            pending: Some(false),
-        };
+        let json = DiscordGuildMemberJsonBuilder::default()
+            .guild_id(123456789)
+            .user_id(222222222)
+            .joined_at("2024-01-15T14:30:00Z".to_string())
+            .nick(Some("TestNick".to_string()))
+            .avatar(None)
+            .premium_since(Some("2024-02-01T10:00:00Z".to_string()))
+            .deaf(Some(false))
+            .mute(Some(false))
+            .pending(Some(false))
+            .build()
+            .unwrap();
 
         let result: Result<NewGuildMember, _> = json.try_into();
         assert!(result.is_ok());
@@ -502,13 +511,14 @@ mod tests {
 
     #[test]
     fn test_member_role_json_to_new_member_role() {
-        let json = DiscordMemberRoleJson {
-            guild_id: 123456789,
-            user_id: 222222222,
-            role_id: 333333333,
-            assigned_at: "2024-01-20T10:00:00Z".to_string(),
-            assigned_by: Some(987654321),
-        };
+        let json = DiscordMemberRoleJsonBuilder::default()
+            .guild_id(123456789)
+            .user_id(222222222)
+            .role_id(333333333)
+            .assigned_at("2024-01-20T10:00:00Z".to_string())
+            .assigned_by(Some(987654321))
+            .build()
+            .unwrap();
 
         let result: Result<NewMemberRole, _> = json.try_into();
         assert!(result.is_ok());

@@ -4,7 +4,16 @@
 
 Tests are currently failing due to API changes. This document tracks what needs to be fixed.
 
-**Progress Update:** Discord tests are fixed. Gemini tests partially fixed but need more work (see details below).
+**Progress Update:** Discord bot command test framework established and working! First test (`test_guilds_get`) validates `server.get_stats` command successfully.
+
+## ✅ Working Tests
+
+### Discord Command Tests
+- ✅ **test_guilds_get** - Tests `server.get_stats` command
+  - File: `crates/botticelli/tests/discord_commands_test.rs`
+  - Narrative: `crates/botticelli/tests/narratives/discord/test_guilds_get.toml`
+  - Status: **PASSING** ✅
+  - Pattern established for testing additional Discord commands
 
 ## Issues
 
