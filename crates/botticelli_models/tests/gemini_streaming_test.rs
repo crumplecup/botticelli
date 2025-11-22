@@ -15,23 +15,22 @@ use test_utils::create_test_request;
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
-async fn test_streaming_basic() {
+async fn test_streaming_basic() -> botticelli_error::BotticelliResult<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiClient::new().expect("Failed to create client");
+    let client = GeminiClient::new()?;
 
-    let request = create_test_request("Say 'ok'", None, Some(10));
+    let request = create_test_request("Say 'ok'", None, Some(10))?;
 
     let mut stream = client
         .generate_stream(&request)
-        .await
-        .expect("Stream creation failed");
+        .await?;
 
     let mut chunks = Vec::new();
     let mut saw_final = false;
 
     while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result.expect("Chunk error");
+        let chunk = chunk_result?;
         chunks.push(chunk.clone());
 
         if chunk.is_final {
@@ -60,27 +59,28 @@ async fn test_streaming_basic() {
 
     // Should have generated some text
     assert!(!full_text.is_empty(), "Response should contain text");
+    
+    Ok(())
 }
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
-async fn test_streaming_with_standard_model() {
+async fn test_streaming_with_standard_model() -> botticelli_error::BotticelliResult<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiClient::new().expect("Failed to create client");
+    let client = GeminiClient::new()?;
 
     // Explicitly use standard flash model
-    let request = create_test_request("Say 'ok'", Some("gemini-2.0-flash".to_string()), Some(10));
+    let request = create_test_request("Say 'ok'", Some("gemini-2.0-flash".to_string()), Some(10))?;
 
     let mut stream = client
         .generate_stream(&request)
-        .await
-        .expect("Stream creation failed");
+        .await?;
 
     let mut chunks = Vec::new();
 
     while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result.expect("Chunk error");
+        let chunk = chunk_result?;
         chunks.push(chunk.clone());
 
         if chunk.is_final {
@@ -100,27 +100,28 @@ async fn test_streaming_with_standard_model() {
 
     println!("Standard model result: {}", full_text);
     assert!(!full_text.is_empty(), "Should have generated text");
+    
+    Ok(())
 }
 
 #[tokio::test]
 #[ignore] // Model doesn't exist - confirmed via API ListModels query (see GEMINI_STREAMING.md)
-async fn test_streaming_with_live_model() {
+async fn test_streaming_with_live_model() -> botticelli_error::BotticelliResult<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiClient::new().expect("Failed to create client");
+    let client = GeminiClient::new()?;
 
     // CRITICAL TEST: Use live model for better rate limits
-    let request = create_test_request("Say 'ok'", Some("gemini-2.5-flash-live".to_string()), Some(10));
+    let request = create_test_request("Say 'ok'", Some("gemini-2.5-flash-live".to_string()), Some(10))?;
 
     let mut stream = client
         .generate_stream(&request)
-        .await
-        .expect("Live model streaming failed");
+        .await?;
 
     let mut chunks = Vec::new();
 
     while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result.expect("Chunk error");
+        let chunk = chunk_result?;
         chunks.push(chunk.clone());
 
         if chunk.is_final {
@@ -140,26 +141,27 @@ async fn test_streaming_with_live_model() {
 
     println!("Live model result: {}", full_text);
     assert!(!full_text.is_empty(), "Live model should generate text");
+    
+    Ok(())
 }
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
-async fn test_streaming_finish_reasons() {
+async fn test_streaming_finish_reasons() -> botticelli_error::BotticelliResult<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiClient::new().expect("Failed to create client");
+    let client = GeminiClient::new()?;
 
-    let request = create_test_request("Say 'ok'", None, Some(10));
+    let request = create_test_request("Say 'ok'", None, Some(10))?;
 
     let mut stream = client
         .generate_stream(&request)
-        .await
-        .expect("Stream creation failed");
+        .await?;
 
     let mut final_chunk = None;
 
     while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result.expect("Chunk error");
+        let chunk = chunk_result?;
 
         if chunk.is_final {
             final_chunk = Some(chunk);
@@ -176,26 +178,26 @@ async fn test_streaming_finish_reasons() {
     );
 
     println!("Finish reason: {:?}", final_chunk.finish_reason);
+    Ok(())
 }
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
-async fn test_streaming_vs_non_streaming_consistency() {
+async fn test_streaming_vs_non_streaming_consistency() -> botticelli_error::BotticelliResult<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiClient::new().expect("Failed to create client");
+    let client = GeminiClient::new()?;
 
-    let request = create_test_request("Say 'ok'", None, Some(10));
+    let request = create_test_request("Say 'ok'", None, Some(10))?;
 
     // Get streaming response
     let mut stream = client
         .generate_stream(&request)
-        .await
-        .expect("Stream failed");
+        .await?;
 
     let mut streaming_text = String::new();
     while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result.expect("Chunk error");
+        let chunk = chunk_result?;
         if let Output::Text(t) = &chunk.content {
             streaming_text.push_str(t);
         }
@@ -205,7 +207,7 @@ async fn test_streaming_vs_non_streaming_consistency() {
     }
 
     // Get non-streaming response
-    let response = client.generate(&request).await.expect("Generate failed");
+    let response = client.generate(&request).await?;
     let non_streaming_text = response
         .outputs
         .iter()
@@ -227,11 +229,13 @@ async fn test_streaming_vs_non_streaming_consistency() {
 
     // Note: Content might differ slightly due to randomness,
     // but both should have generated something meaningful
+    
+    Ok(())
 }
 
 #[tokio::test]
 #[ignore] // OBSOLETE: 'Live' models don't exist - original premise was incorrect (see GEMINI_STREAMING.md)
-async fn test_rate_limit_comparison() {
+async fn test_rate_limit_comparison() -> botticelli_error::BotticelliResult<()> {
     // DEPRECATED: This test compared rate limits between standard and "live" models.
     // Investigation on 2025-01-17 confirmed that no "live" models exist in the Gemini API.
     // The model "gemini-2.0-flash-live" returns 404 NOT_FOUND from Google's servers.
@@ -243,14 +247,14 @@ async fn test_rate_limit_comparison() {
 
     let _ = dotenvy::dotenv();
 
-    let client = GeminiClient::new().expect("Failed to create client");
+    let client = GeminiClient::new()?;
 
     println!("Testing standard model rate limits (3 requests)...");
 
     // Try 3 requests to standard model
     let mut standard_success = 0;
     for i in 0..3 {
-        let request = create_test_request("ok", Some("gemini-2.0-flash".to_string()), Some(10));
+        let request = create_test_request("ok", Some("gemini-2.0-flash".to_string()), Some(10))?;
 
         match client.generate_stream(&request).await {
             Ok(mut stream) => {
@@ -275,7 +279,7 @@ async fn test_rate_limit_comparison() {
     // Try 3 requests to live model
     let mut live_success = 0;
     for i in 0..3 {
-        let request = create_test_request("ok", Some("gemini-2.0-flash-live".to_string()), Some(10));
+        let request = create_test_request("ok", Some("gemini-2.0-flash-live".to_string()), Some(10))?;
 
         match client.generate_stream(&request).await {
             Ok(mut stream) => {
@@ -299,4 +303,6 @@ async fn test_rate_limit_comparison() {
         standard_success,
         live_success
     );
+    
+    Ok(())
 }

@@ -16,6 +16,7 @@ pub async fn run_narrative(
     narrative_path: &Path,
     save: bool,
     process_discord: bool,
+    #[cfg_attr(not(feature = "database"), allow(unused_variables))]
     state_dir: Option<&Path>,
 ) -> BotticelliResult<()> {
     use botticelli::{GeminiClient, NarrativeExecutor, NarrativeProvider};
