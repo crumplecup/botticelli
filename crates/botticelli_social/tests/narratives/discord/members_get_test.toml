@@ -1,18 +1,19 @@
 [narrative]
-name = "members_get_test"
+name = "test_members_get"
 description = "Test getting member details"
 skip_content_generation = true
 
-[[act]]
-name = "get_member"
-prompt = "Get details for a specific member"
+[toc]
+order = ["get_member"]
 
-[[act.inputs]]
+[acts.get_member]
+
+[[acts.get_member.input]]
 type = "bot_command"
 platform = "discord"
 command = "members.get"
 required = true
 
-[act.inputs.args]
+[acts.get_member.input.args]
 guild_id = "${TEST_GUILD_ID}"
 user_id = "${TEST_USER_ID}"

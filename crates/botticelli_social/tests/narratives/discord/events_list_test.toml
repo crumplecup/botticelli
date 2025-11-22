@@ -1,17 +1,18 @@
 [narrative]
-name = "events_list_test"
+name = "test_events_list"
 description = "Test listing scheduled events"
 skip_content_generation = true
 
-[[act]]
-name = "list_events"
-prompt = "List scheduled events in the guild"
+[toc]
+order = ["list_events"]
 
-[[act.inputs]]
+[acts.list_events]
+
+[[acts.list_events.input]]
 type = "bot_command"
 platform = "discord"
 command = "events.list"
 required = true
 
-[act.inputs.args]
+[acts.list_events.input.args]
 guild_id = "${TEST_GUILD_ID}"
