@@ -7,7 +7,7 @@ use botticelli_core::{GenerateRequest, Input, Message, Role};
 use botticelli_error::{BotticelliError, GeminiError, GeminiErrorKind};
 use botticelli_interface::{BotticelliDriver, Metadata, Vision};
 use botticelli_models::GeminiClient;
-use test_utils::create_test_request;
+
 
 //
 // ─── ERROR HANDLING TESTS ───────────────────────────────────────────────────────
@@ -84,29 +84,32 @@ fn test_simple_text_request_structure() {
         .expect("Failed to build request");
 
     assert_eq!(request.messages().len(), 1);
-    assert_eq!(request.max_tokens(), Some(100));
-    assert_eq!(request.temperature(), Some(0.7));
+    assert_eq!(*request.max_tokens(), Some(100));
+    assert_eq!(*request.temperature(), Some(0.7));
 }
 
 #[test]
 fn test_multi_message_request_structure() {
+    let message1 = Message::builder()
+        .role(Role::System)
+        .content(vec![Input::Text("You are a helpful assistant.".to_string())])
+        .build()
+        .expect("Failed to build message");
+    
+    let message2 = Message::builder()
+        .role(Role::User)
+        .content(vec![Input::Text("What is Rust?".to_string())])
+        .build()
+        .expect("Failed to build message");
+    
     let request = GenerateRequest::builder()
-        .messages(vec![
-            Message {
-                role: Role::System,
-                content: vec![Input::Text("You are a helpful assistant.".to_string())],
-            },
-            Message {
-                role: Role::User,
-                content: vec![Input::Text("What is Rust?".to_string())],
-            },
-        ])
+        .messages(vec![message1, message2])
         .build()
         .expect("Failed to build request");
 
     assert_eq!(request.messages().len(), 2);
-    assert_eq!(request.messages()[0].role, Role::System);
-    assert_eq!(request.messages()[1].role, Role::User);
+    assert_eq!(request.messages()[0].role(), &Role::System);
+    assert_eq!(request.messages()[1].role(), &Role::User);
 }
 
 //
@@ -158,15 +161,18 @@ fn test_real_api_call() {
         }
     };
 
-    let request = GenerateRequest {
-        messages: vec![Message {
-            role: Role::User,
-            content: vec![Input::Text("Say 'ok'".to_string())],
-        }],
-        max_tokens: Some(10),
-        temperature: Some(0.0),
-        model: None,
-    };
+    let message = Message::builder()
+        .role(Role::User)
+        .content(vec![Input::Text("Say 'ok'".to_string())])
+        .build()
+        .expect("Failed to build message");
+    
+    let request = GenerateRequest::builder()
+        .messages(vec![message])
+        .max_tokens(Some(10))
+        .temperature(Some(0.0))
+        .build()
+        .expect("Failed to build request");
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     let result = rt.block_on(async { client.generate(&request).await });
