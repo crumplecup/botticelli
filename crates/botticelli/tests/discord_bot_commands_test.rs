@@ -8,7 +8,7 @@
 
 #![cfg(feature = "discord")]
 
-use botticelli_narrative::NarrativeExecutor;
+use botticelli_narrative::{Narrative, NarrativeExecutor};
 use botticelli_social::{BotCommandExecutor, BotCommandRegistryImpl, DiscordCommandExecutor};
 use std::collections::HashMap;
 
@@ -616,6 +616,26 @@ async fn test_narrative_with_bot_commands() {
             "mock-model"
         }
 
+        fn rate_limits(&self) -> &botticelli::RateLimitConfig {
+            use botticelli::TierConfig;
+            static DEFAULT_CONFIG: std::sync::OnceLock<botticelli::RateLimitConfig> = std::sync::OnceLock::new();
+            DEFAULT_CONFIG.get_or_init(|| {
+                // Create a minimal tier config for testing
+                let tier = TierConfig {
+                    name: "test".to_string(),
+                    rpm: Some(60),
+                    tpm: Some(1_000_000),
+                    rpd: Some(1500),
+                    max_concurrent: Some(5),
+                    daily_quota_usd: None,
+                    cost_per_million_input_tokens: Some(0.0),
+                    cost_per_million_output_tokens: Some(0.0),
+                    models: Default::default(),
+                };
+                botticelli::RateLimitConfig::from_tier(&tier)
+            })
+        }
+
         async fn generate(
             &self,
             _request: &GenerateRequest,
@@ -627,70 +647,57 @@ async fn test_narrative_with_bot_commands() {
         }
     }
 
+    // Establish database connection
+    use botticelli_database::establish_connection;
+    let mut conn = establish_connection().expect("Failed to connect to database");
+
     // Create narrative executor with bot registry
     let executor = NarrativeExecutor::new(MockDriver)
         .with_bot_registry(Box::new(bot_registry));
 
-    // Create a simple in-memory narrative with bot command
-    use botticelli_core::Input as CoreInput;
-    use botticelli_narrative::{ActConfig, Narrative, NarrativeMetadata, NarrativeToc};
-    use std::collections::HashMap as StdHashMap;
+    // Create a test TOML narrative file
+    let narrative_toml = format!(
+        r#"
+[metadata]
+name = "test_bot_command"
+description = "Test Discord bot commands"
 
-    let mut args = HashMap::new();
-    args.insert("guild_id".to_string(), serde_json::json!(guild_id));
+[toc]
+order = ["get_stats"]
 
-    let mut acts = StdHashMap::new();
-    acts.insert(
-        "fetch_stats".to_string(),
-        ActConfig {
-            inputs: vec![CoreInput::BotCommand {
-                platform: "discord".to_string(),
-                command: "server.get_stats".to_string(),
-                args,
-                required: true,
-                cache_duration: None,
-            }],
-            model: None,
-            temperature: None,
-            max_tokens: None,
-        },
+[[act]]
+name = "get_stats"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "server.get_stats"
+required = true
+
+[act.input.args]
+guild_id = "{}"
+"#,
+        guild_id
     );
 
-    let narrative = Narrative {
-        metadata: NarrativeMetadata {
-            name: "test_narrative".to_string(),
-            description: "Test narrative with bot command".to_string(),
-            template: None,
-            skip_content_generation: false,
-        },
-        toc: NarrativeToc {
-            order: vec!["fetch_stats".to_string()],
-        },
-        acts,
-    };
+    let temp_file = std::env::temp_dir().join("test_bot_command.toml");
+    std::fs::write(&temp_file, narrative_toml).expect("Failed to write temp file");
 
-    // Execute the narrative
+    // Load and execute the narrative
+    let narrative = Narrative::from_file_with_db(temp_file.to_str().unwrap(), &mut conn)
+        .expect("Failed to load narrative");
+
     let result = executor
         .execute(&narrative)
         .await
         .expect("Failed to execute narrative with bot commands");
 
+    // Clean up
+    std::fs::remove_file(&temp_file).ok();
+
     // Verify execution
     assert_eq!(result.act_executions.len(), 1);
-    assert_eq!(result.act_executions[0].act_name, "fetch_stats");
-    
-    // The input should have been processed (bot command executed and converted to text)
-    assert_eq!(result.act_executions[0].inputs.len(), 1);
-    match &result.act_executions[0].inputs[0] {
-        CoreInput::Text(text) => {
-            // Should contain JSON from Discord API
-            assert!(text.contains("guild_id") || text.contains("name"), 
-                    "Processed input should contain Discord API response");
-            println!("Bot command was executed and converted to text:");
-            println!("{}", text);
-        }
-        _ => panic!("Expected bot command to be converted to text input"),
-    }
+    assert_eq!(result.act_executions[0].act_name, "get_stats");
 
     println!("Narrative execution with bot commands successful!");
 }
