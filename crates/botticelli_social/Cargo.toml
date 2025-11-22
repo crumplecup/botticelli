@@ -45,6 +45,7 @@ serenity = { version = "0.12", default-features = false, features = ["client", "
 [dev-dependencies]
 dotenvy = "0.15"
 tokio = { workspace = true, features = ["full"] }
+botticelli_narrative = { workspace = true }
 
 [features]
 default = []

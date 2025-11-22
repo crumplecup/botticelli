@@ -116,3 +116,24 @@ fn test_bans_list_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
     assert!(!narrative.acts().is_empty());
     Ok(())
 }
+
+#[test]
+fn test_reactions_add_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("reactions_add_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_messages_edit_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("messages_edit_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_threads_create_narrative_loads() -> Result<(), Box<dyn std::error::Error>> {
+    let narrative = load_narrative("threads_create_test.toml")?;
+    assert!(!narrative.acts().is_empty());
+    Ok(())
+}

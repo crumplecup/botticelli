@@ -11,7 +11,11 @@ use std::path::PathBuf;
 
 /// Helper to get path to test narrative
 fn get_test_narrative_path(name: &str) -> PathBuf {
+    // Narratives are in botticelli_social crate
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .unwrap()
+        .join("botticelli_social")
         .join("tests")
         .join("narratives")
         .join("discord")
