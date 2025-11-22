@@ -197,7 +197,7 @@ impl ActProcessor for ContentGenerationProcessor {
                             table_name,
                             template,
                             Some(context.narrative_name),
-                            Some(&context.narrative_metadata.description()),
+                            Some(context.narrative_metadata.description()),
                         )?;
                     }
                     ProcessingMode::Inference => {
@@ -216,7 +216,7 @@ impl ActProcessor for ContentGenerationProcessor {
                             table_name,
                             &schema,
                             Some(context.narrative_name),
-                            Some(&context.narrative_metadata.description()),
+                            Some(context.narrative_metadata.description()),
                         )?;
                     }
                 }
