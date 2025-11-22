@@ -3,26 +3,30 @@
 ## Overview
 Multiple test narrative files are using the old `[[act]]` array syntax instead of the current `[toc]` + `[acts]` + friendly syntax pattern.
 
-## Files Needing Conversion
+## Status: ✅ COMPLETE
 
-1. test_channel_commands.toml - NEEDS FIX
-2. test_members.toml - NEEDS FIX  
-3. test_message_commands.toml - NEEDS FIX
-4. test_messages.toml - NEEDS FIX
-5. test_reaction_commands.toml - NEEDS FIX
-6. test_roles.toml - NEEDS FIX
-7. test_server_commands.toml - NEEDS FIX
-8. test_server_stats.toml - NEEDS FIX
+All test narratives have been converted to the current TOML spec.
 
-## Already Fixed
+## Files Fixed
 
-- test_role_commands.toml ✅
-- test_member_commands.toml ✅
-- test_channels_list.toml ✅ (already correct)
-- test_guilds_get.toml ✅ (already correct)
-- test_members_list.toml ✅ (already correct)
-- test_messages_send.toml ✅ (already correct)
-- test_roles_list.toml ✅ (already correct)
+1. test_channel_commands.toml ✅
+2. test_members.toml ✅  
+3. test_message_commands.toml ✅
+4. test_messages.toml ✅
+5. test_reaction_commands.toml ✅
+6. test_roles.toml ✅
+7. test_server_commands.toml ✅
+8. test_server_stats.toml ✅
+9. test_role_commands.toml ✅
+10. test_member_commands.toml ✅
+
+## Already Correct
+
+- test_channels_list.toml ✅
+- test_guilds_get.toml ✅
+- test_members_list.toml ✅
+- test_messages_send.toml ✅
+- test_roles_list.toml ✅
 
 ## Conversion Pattern
 
