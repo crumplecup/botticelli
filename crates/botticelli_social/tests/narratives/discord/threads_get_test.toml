@@ -1,0 +1,19 @@
+[narrative]
+name = "test_threads_get"
+description = "Test threads.get command"
+skip_content_generation = true
+
+[toc]
+order = ["get_thread"]
+
+[acts.get_thread]
+
+[[acts.get_thread.input]]
+type = "bot_command"
+platform = "discord"
+command = "threads.get"
+required = true
+
+[acts.get_thread.input.args]
+guild_id = "${TEST_GUILD_ID}"
+channel_id = "${TEST_THREAD_ID}"

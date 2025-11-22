@@ -1,0 +1,20 @@
+[narrative]
+name = "test_reactions_list"
+description = "Test reactions.list command"
+skip_content_generation = true
+
+[toc]
+order = ["list_reactions"]
+
+[acts.list_reactions]
+
+[[acts.list_reactions.input]]
+type = "bot_command"
+platform = "discord"
+command = "reactions.list"
+required = true
+
+[acts.list_reactions.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${TEST_MESSAGE_ID}"
+emoji = "👍"

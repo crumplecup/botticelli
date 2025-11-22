@@ -1,0 +1,19 @@
+[narrative]
+name = "test_events_get"
+description = "Test events.get command"
+skip_content_generation = true
+
+[toc]
+order = ["get_event"]
+
+[acts.get_event]
+
+[[acts.get_event.input]]
+type = "bot_command"
+platform = "discord"
+command = "events.get"
+required = true
+
+[acts.get_event.input.args]
+guild_id = "${TEST_GUILD_ID}"
+event_id = "${TEST_EVENT_ID}"

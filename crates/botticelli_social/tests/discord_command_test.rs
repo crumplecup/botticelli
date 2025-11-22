@@ -67,6 +67,12 @@ parse_test!(parse_bans_list, "discord/bans_list_test.toml");
 parse_test!(parse_stickers_list, "discord/stickers_list_test.toml");
 parse_test!(parse_voice_regions_list, "discord/voice_regions_list_test.toml");
 parse_test!(parse_events_list, "discord/events_list_test.toml");
+parse_test!(parse_server_get_stats, "discord/server_get_stats_test.toml");
+parse_test!(parse_webhooks_list, "discord/webhooks_list_test.toml");
+parse_test!(parse_integrations_list, "discord/integrations_list_test.toml");
+parse_test!(parse_threads_get, "discord/threads_get_test.toml");
+parse_test!(parse_reactions_list, "discord/reactions_list_test.toml");
+parse_test!(parse_events_get, "discord/events_get_test.toml");
 
 // ============================================================================
 // Integration Tests - Full execution with Discord API
@@ -122,3 +128,6 @@ integration_test!(test_channels_get, "channels_get_test");
 integration_test!(test_messages_list, "messages_list_test");
 integration_test!(test_messages_send, "messages_send_test");
 integration_test!(test_members_list, "members_list_test");
+integration_test!(test_server_get_stats, "server_get_stats_test");
+integration_test!(test_webhooks_list, "webhooks_list_test");
+integration_test!(test_integrations_list, "integrations_list_test");

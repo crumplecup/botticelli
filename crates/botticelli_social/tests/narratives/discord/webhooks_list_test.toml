@@ -1,0 +1,18 @@
+[narrative]
+name = "test_webhooks_list"
+description = "Test webhooks.list command"
+skip_content_generation = true
+
+[toc]
+order = ["list_webhooks"]
+
+[acts.list_webhooks]
+
+[[acts.list_webhooks.input]]
+type = "bot_command"
+platform = "discord"
+command = "webhooks.list"
+required = true
+
+[acts.list_webhooks.input.args]
+guild_id = "${TEST_GUILD_ID}"
