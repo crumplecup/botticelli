@@ -1,0 +1,84 @@
+# Test: Role Commands
+# Tests: roles.list, roles.get, roles.create, roles.edit, roles.delete
+
+[narrative]
+name = "test_role_commands"
+description = "Test Discord role management commands"
+skip_content_generation = true
+
+[narrative.model]
+name = "gemini-2.0-flash-exp"
+temperature = 0.7
+max_tokens = 100
+
+[[act]]
+name = "list_roles"
+prompt = "List all roles"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "roles.list"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+
+[[act]]
+name = "create_test_role"
+prompt = "Create a test role"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "roles.create"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "Botticelli Tester"
+color = "#5865F2"
+
+[[act]]
+name = "get_role"
+prompt = "Get the test role details"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "roles.get"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+role_id = "${ROLE_ID}"
+
+[[act]]
+name = "edit_role"
+prompt = "Edit the test role"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "roles.edit"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+role_id = "${ROLE_ID}"
+name = "Botticelli Tester Edited"
+color = "#ED4245"
+
+[[act]]
+name = "delete_role"
+prompt = "Delete the test role"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "roles.delete"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+role_id = "${ROLE_ID}"

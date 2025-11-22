@@ -1,0 +1,111 @@
+# Test: Message Commands
+# Tests: messages.send, messages.get, messages.list, messages.edit, messages.delete, messages.pin, messages.unpin
+
+[narrative]
+name = "test_message_commands"
+description = "Test Discord message commands"
+skip_content_generation = true
+
+[narrative.model]
+name = "gemini-2.0-flash-exp"
+temperature = 0.7
+max_tokens = 100
+
+[[act]]
+name = "send_test_message"
+prompt = "Send a test message"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.send"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+content = "Test message from Botticelli automated tests"
+
+[[act]]
+name = "get_message"
+prompt = "Get the test message"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.get"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"
+
+[[act]]
+name = "list_messages"
+prompt = "List recent messages"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.list"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+limit = "5"
+
+[[act]]
+name = "edit_message"
+prompt = "Edit the test message"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.edit"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"
+content = "Edited test message from Botticelli"
+
+[[act]]
+name = "pin_message"
+prompt = "Pin the test message"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.pin"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"
+
+[[act]]
+name = "unpin_message"
+prompt = "Unpin the test message"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.unpin"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"
+
+[[act]]
+name = "delete_message"
+prompt = "Delete the test message"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.delete"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"

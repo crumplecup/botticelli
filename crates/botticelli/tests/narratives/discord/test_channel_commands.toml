@@ -1,0 +1,81 @@
+# Test: Channel Commands
+# Tests: channels.list, channels.get, channels.create, channels.edit, channels.delete
+
+[narrative]
+name = "test_channel_commands"
+description = "Test Discord channel management commands"
+skip_content_generation = true
+
+[narrative.model]
+name = "gemini-2.0-flash-exp"
+temperature = 0.7
+max_tokens = 100
+
+[[act]]
+name = "list_channels"
+prompt = "List all channels"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.list"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+
+[[act]]
+name = "create_test_channel"
+prompt = "Create a test channel"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "botticelli-test"
+type = "text"
+
+[[act]]
+name = "get_channel"
+prompt = "Get the test channel details"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.get"
+required = true
+
+[act.input.args]
+channel_id = "${CHANNEL_ID}"
+
+[[act]]
+name = "edit_channel"
+prompt = "Edit the test channel"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.edit"
+required = true
+
+[act.input.args]
+channel_id = "${CHANNEL_ID}"
+name = "botticelli-test-edited"
+topic = "Test channel for Botticelli"
+
+[[act]]
+name = "delete_channel"
+prompt = "Delete the test channel"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.delete"
+required = true
+
+[act.input.args]
+channel_id = "${CHANNEL_ID}"

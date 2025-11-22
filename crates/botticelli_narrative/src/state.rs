@@ -18,7 +18,12 @@ pub enum StateScope {
     /// State scoped to a specific narrative
     Narrative(String),
     /// State scoped to a specific platform (e.g., Discord server)
-    Platform { platform: String, id: String },
+    Platform {
+        /// Platform name (e.g., "discord")
+        platform: String,
+        /// Platform-specific ID (e.g., guild_id)
+        id: String,
+    },
 }
 
 /// A key-value store for narrative state.

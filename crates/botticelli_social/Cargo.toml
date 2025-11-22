@@ -42,6 +42,10 @@ derive_builder = "0.20"
 # Discord integration (optional)
 serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"], optional = true }
 
+[dev-dependencies]
+dotenvy = "0.15"
+tokio = { workspace = true, features = ["full"] }
+
 [features]
 default = []
 discord = ["serenity", "database"]

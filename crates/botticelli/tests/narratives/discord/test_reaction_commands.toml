@@ -1,0 +1,99 @@
+# Test: Reaction Commands
+# Tests: reactions.add, reactions.list, reactions.remove, reactions.clear
+
+[narrative]
+name = "test_reaction_commands"
+description = "Test Discord reaction commands"
+skip_content_generation = true
+
+[narrative.model]
+name = "gemini-2.0-flash-exp"
+temperature = 0.7
+max_tokens = 100
+
+[[act]]
+name = "send_message_for_reactions"
+prompt = "Send a message to test reactions"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.send"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+content = "Test message for reactions"
+
+[[act]]
+name = "add_reaction"
+prompt = "Add a reaction"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "reactions.add"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"
+emoji = "👍"
+
+[[act]]
+name = "list_reactions"
+prompt = "List who reacted"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "reactions.list"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"
+emoji = "👍"
+
+[[act]]
+name = "remove_reaction"
+prompt = "Remove the reaction"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "reactions.remove"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"
+emoji = "👍"
+
+[[act]]
+name = "clear_reactions"
+prompt = "Clear all reactions"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "reactions.clear"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"
+
+[[act]]
+name = "cleanup"
+prompt = "Delete the test message"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "messages.delete"
+required = true
+
+[act.input.args]
+channel_id = "${TEST_CHANNEL_ID}"
+message_id = "${MESSAGE_ID}"

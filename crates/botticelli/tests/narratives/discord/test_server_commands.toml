@@ -1,0 +1,25 @@
+# Test: Server Commands
+# Tests: server.get_stats
+
+[narrative]
+name = "test_server_commands"
+description = "Test Discord server management commands"
+skip_content_generation = true
+
+[narrative.model]
+name = "gemini-2.0-flash-exp"
+temperature = 0.7
+max_tokens = 100
+
+[[act]]
+name = "get_server_stats"
+prompt = "Summarize the server statistics"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "server.get_stats"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"

@@ -1,0 +1,30 @@
+# Test narrative for Discord channel commands
+
+name = "test_channels"
+skip_content_generation = true
+
+[[act]]
+name = "create_test_channel"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.create"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"
+name = "botticelli-test-channel"
+channel_type = "text"
+
+[[act]]
+name = "list_channels"
+
+[[act.input]]
+type = "bot_command"
+platform = "discord"
+command = "channels.list"
+required = true
+
+[act.input.args]
+guild_id = "${TEST_GUILD_ID}"

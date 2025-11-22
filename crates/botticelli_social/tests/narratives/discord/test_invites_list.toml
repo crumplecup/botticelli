@@ -1,0 +1,16 @@
+# Test narrative for invites.list command
+name = "test_invites_list"
+skip_content_generation = true
+
+[[acts]]
+name = "list_invites"
+prompt = "List all server invites"
+
+[[acts.inputs]]
+type = "bot_command"
+platform = "discord"
+command = "invites.list"
+required = true
+
+[acts.inputs.args]
+guild_id = "$TEST_GUILD_ID"
