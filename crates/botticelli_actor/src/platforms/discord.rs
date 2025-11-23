@@ -12,6 +12,7 @@ use chrono::{DateTime, Utc};
 /// Integrates with Discord API for posting content to channels.
 pub struct DiscordPlatform {
     /// Discord bot token for authentication.
+    #[allow(dead_code)]
     token: String,
     /// Default channel ID for posting.
     channel_id: String,
@@ -70,12 +71,12 @@ impl SocialMediaPlatform for DiscordPlatform {
         }
 
         // Check text length limit
-        if let Some(text) = content.text() {
-            if text.len() > 2000 {
-                return Err(ActorError::new(ActorErrorKind::ValidationFailed(
-                    format!("Text exceeds Discord limit of 2000 characters ({})", text.len()),
-                )));
-            }
+        if let Some(text) = content.text()
+            && text.len() > 2000
+        {
+            return Err(ActorError::new(ActorErrorKind::ValidationFailed(
+                format!("Text exceeds Discord limit of 2000 characters ({})", text.len()),
+            )));
         }
 
         // Check media attachment limit
@@ -125,8 +126,8 @@ impl SocialMediaPlatform for DiscordPlatform {
         Ok(ScheduleId(schedule_id))
     }
 
-    #[tracing::instrument(skip(self), fields(post_id = %id.0))]
-    async fn delete_post(&self, id: PostId) -> PlatformResult<()> {
+    #[tracing::instrument(skip(self), fields(post_id = %_id.0))]
+    async fn delete_post(&self, _id: PostId) -> PlatformResult<()> {
         tracing::debug!("Deleting Discord post");
 
         // In production, would use Discord API to delete message
@@ -159,12 +160,12 @@ impl DiscordPlatform {
             )));
         }
 
-        if let Some(text) = content.text() {
-            if text.len() > 2000 {
-                return Err(ActorError::new(ActorErrorKind::ValidationFailed(
-                    format!("Text exceeds Discord limit of 2000 characters ({})", text.len()),
-                )));
-            }
+        if let Some(text) = content.text()
+            && text.len() > 2000
+        {
+            return Err(ActorError::new(ActorErrorKind::ValidationFailed(
+                format!("Text exceeds Discord limit of 2000 characters ({})", text.len()),
+            )));
         }
 
         if content.media().len() > 10 {

@@ -2,9 +2,8 @@
 
 use async_trait::async_trait;
 use botticelli_actor::{
-    Content, ContentBuilder, MediaAttachment, MediaAttachmentBuilder, MediaType,
-    PlatformMetadata, PlatformMetadataBuilder, PlatformResult, PostId, ScheduleId,
-    SocialMediaPlatform,
+    Content, ContentBuilder, MediaAttachmentBuilder, MediaType, PlatformMetadata,
+    PlatformMetadataBuilder, PlatformResult, PostId, ScheduleId, SocialMediaPlatform,
 };
 use chrono::{DateTime, Utc};
 

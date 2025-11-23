@@ -2,9 +2,8 @@
 
 use async_trait::async_trait;
 use botticelli_actor::{
-    Actor, ActorConfigBuilder, ExecutionResult, PlatformMetadata, PlatformMetadataBuilder,
-    PlatformResult, PostId, ScheduleId, Skill, SkillContext, SkillOutput, SkillRegistry,
-    SkillResult, SocialMediaPlatform,
+    Actor, ActorConfigBuilder, PlatformMetadata, PlatformMetadataBuilder, PlatformResult, PostId,
+    ScheduleId, Skill, SkillContext, SkillOutput, SkillResult, SocialMediaPlatform,
 };
 use serde_json::json;
 use std::sync::Arc;
@@ -45,6 +44,7 @@ impl SocialMediaPlatform for MockPlatform {
 }
 
 /// Mock skill for testing.
+#[allow(dead_code)]
 struct MockSkill {
     name: String,
     should_fail: bool,

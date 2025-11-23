@@ -2,7 +2,7 @@
 
 use crate::{Skill, SkillContext, SkillOutput, SkillResult};
 use async_trait::async_trait;
-use chrono::{DateTime, NaiveTime, Timelike, Utc};
+use chrono::{DateTime, NaiveTime, Utc};
 use serde_json::json;
 
 /// Skill for scheduling content posts based on time windows.
@@ -102,7 +102,7 @@ fn calculate_next_slot(
 
     if current_time >= window_start && current_time <= window_end {
         if randomize {
-            let offset_secs = (now.timestamp() % 900) as i64;
+            let offset_secs = now.timestamp() % 900;
             return now + chrono::Duration::seconds(offset_secs);
         }
         return now;

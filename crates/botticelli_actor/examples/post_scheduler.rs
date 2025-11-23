@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 4. Build the actor
     println!("\n🎭 Building actor...");
-    let actor = Actor::builder()
+    let _actor = Actor::builder()
         .config(config)
         .skills(registry)
         .platform(Arc::new(platform))

@@ -8,6 +8,7 @@ use std::collections::HashMap;
 /// Skill for enforcing posting frequency limits.
 pub struct RateLimitingSkill {
     name: String,
+    #[allow(dead_code)]
     state: HashMap<String, usize>,
 }
 

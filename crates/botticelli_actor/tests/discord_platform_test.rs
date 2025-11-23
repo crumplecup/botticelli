@@ -3,7 +3,7 @@
 #[cfg(feature = "discord")]
 mod discord_tests {
     use botticelli_actor::{
-        platforms::DiscordPlatform, Content, ContentBuilder, MediaAttachmentBuilder, MediaType,
+        platforms::DiscordPlatform, ContentBuilder, MediaAttachmentBuilder, MediaType,
         SocialMediaPlatform,
     };
     use chrono::Utc;
