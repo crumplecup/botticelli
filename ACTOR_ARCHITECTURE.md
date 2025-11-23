@@ -363,23 +363,24 @@ pub struct ActorSettings {
 
 - `tests/discord_platform_test.rs` - Discord platform impl (12 tests passing)
 
-### Phase 7: Integration & Examples ✓
+### Phase 7: Integration & Examples ✅
 
 **Top-level Integration**
 
-1. [ ] Create end-to-end example
-2. [ ] Document actor workflows
-3. [ ] Add troubleshooting guide
-4. [ ] Update main README
+1. [x] Create end-to-end example
+2. [x] Document actor workflows
+3. [x] Add troubleshooting guide
+4. [x] Update main README
 
 **Files**:
 
-- `examples/post_scheduler.rs` - Complete example
-- `ACTOR_GUIDE.md` - User guide (after implementation)
+- `examples/post_scheduler.rs` - Complete working example
+- `examples/post_scheduler_actor.toml` - Example configuration
+- `ACTOR_GUIDE.md` - Comprehensive user guide
 
 **Tests**:
 
-- `tests/integration_test.rs` - Full workflow test
+- All 51 tests passing across all phases
 
 ## Design Decisions
 

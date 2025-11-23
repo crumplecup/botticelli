@@ -54,3 +54,6 @@ pub use platform::{
 };
 pub use skill::{Skill, SkillContext, SkillInfo, SkillOutput, SkillRegistry, SkillResult};
 pub use skills::{ContentSchedulingSkill, RateLimitingSkill};
+
+#[cfg(feature = "discord")]
+pub use platforms::DiscordPlatform;

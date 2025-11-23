@@ -29,3 +29,6 @@ botticelli_error = { path = "../botticelli_error" }
 default = []
 discord = []
 local = ["discord"]
+
+[dev-dependencies]
+tracing-subscriber = "0.3"

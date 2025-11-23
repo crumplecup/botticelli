@@ -1,0 +1,32 @@
+[actor]
+name = "Content Post Scheduler"
+description = "Automatically schedules and posts content from approved knowledge tables"
+knowledge = ["approved_posts", "scheduled_content"]
+skills = ["content_scheduling", "rate_limiting"]
+
+[actor.config]
+max_posts_per_day = 10
+min_interval_minutes = 60
+retry_attempts = 3
+timezone = "America/New_York"
+
+[actor.cache]
+strategy = "memory"
+ttl_seconds = 300
+max_entries = 1000
+
+[actor.execution]
+stop_on_unrecoverable = true
+max_retries = 3
+continue_on_error = true
+
+[skills.content_scheduling]
+enabled = true
+schedule_window_start = "09:00"
+schedule_window_end = "17:00"
+randomize_within_window = true
+
+[skills.rate_limiting]
+enabled = true
+max_posts_per_day = 10
+min_interval_minutes = 60

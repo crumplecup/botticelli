@@ -72,6 +72,19 @@ build-local:
 build-all:
     cargo build --all-features
 
+# Build an example for a specific package
+build-example package example:
+    #!/usr/bin/env bash
+    # Check if package has a 'local' feature, use it if available
+    if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
+       jq -e ".packages[] | select(.name == \"{{package}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
+        echo "🔨 Building example '{{example}}' for {{package}} with local features"
+        cargo build --example {{example}} -p {{package}} --features local
+    else
+        echo "🔨 Building example '{{example}}' for {{package}} without features"
+        cargo build --example {{example}} -p {{package}}
+    fi
+
 # Build release with local features
 build-release-local:
     cargo build --release --features local
