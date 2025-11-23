@@ -8,21 +8,16 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Cache strategy for actor state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum CacheStrategy {
     /// No caching - always re-query knowledge.
     None,
     /// In-memory cache with TTL (faster, volatile).
+    #[default]
     Memory,
     /// Disk-based cache with TTL (persistent, slower).
     Disk,
-}
-
-impl Default for CacheStrategy {
-    fn default() -> Self {
-        Self::Memory
-    }
 }
 
 /// Actor state cache configuration.
@@ -320,14 +315,14 @@ impl ActorConfig {
             warnings.push("min_interval_minutes is 0, rate limiting disabled".to_string());
         }
 
-        if let Some(disk_path) = self.cache.disk_path() {
-            if self.cache.strategy() != &CacheStrategy::Disk {
-                warnings.push(format!(
-                    "disk_path set ({}) but cache strategy is {:?}",
-                    disk_path.display(),
-                    self.cache.strategy()
-                ));
-            }
+        if let Some(disk_path) = self.cache.disk_path()
+            && self.cache.strategy() != &CacheStrategy::Disk
+        {
+            warnings.push(format!(
+                "disk_path set ({}) but cache strategy is {:?}",
+                disk_path.display(),
+                self.cache.strategy()
+            ));
         }
 
         for skill in &self.skills {
