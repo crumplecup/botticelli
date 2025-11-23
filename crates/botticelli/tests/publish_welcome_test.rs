@@ -23,7 +23,7 @@ async fn test_publish_welcome() {
     dotenv().ok();
 
     // Get required environment variables
-    let gemini_key = env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY must be set");
+    let _gemini_key = env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY must be set");
     let discord_token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
 
     // Set up database connection

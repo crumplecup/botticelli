@@ -5,6 +5,7 @@
 //! runtime artifacts.
 
 use botticelli_error::{BotticelliResult, ConfigError, JsonError};
+use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -78,6 +79,7 @@ impl NarrativeState {
 }
 
 /// Manages narrative state persistence.
+#[derive(Debug, Clone, Getters)]
 pub struct StateManager {
     /// Base directory for state files
     state_dir: PathBuf,

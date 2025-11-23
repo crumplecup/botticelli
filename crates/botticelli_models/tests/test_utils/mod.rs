@@ -11,6 +11,7 @@ use botticelli_core::{GenerateRequest, Input, MessageBuilder, Role};
 use botticelli_error::BotticelliResult;
 
 /// Creates a test request with a simple message.
+#[allow(dead_code)]
 pub fn create_test_request(
     content: &str,
     model: Option<String>,
