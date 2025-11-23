@@ -1,0 +1,34 @@
+[actor]
+name = "Post Scheduler"
+description = "Schedules and posts content to social media platforms"
+knowledge = ["approved_posts_channel_1", "approved_posts_channel_2"]
+skills = ["content_scheduling", "social_media_posting"]
+
+[actor.config]
+# User-customizable settings with defaults
+max_posts_per_day = 10
+min_interval_minutes = 60
+retry_attempts = 3
+timezone = "America/New_York"
+
+[actor.cache]
+strategy = "memory"  # "none", "memory", "disk"
+ttl_seconds = 300
+max_entries = 1000
+# disk_path = ".actor_cache"  # Only for disk strategy
+
+[actor.execution]
+stop_on_unrecoverable = true
+max_retries = 3
+continue_on_error = true
+
+[skills.content_scheduling]
+enabled = true
+schedule_window_start = "09:00"
+schedule_window_end = "17:00"
+randomize_within_window = true
+
+[skills.social_media_posting]
+enabled = true
+include_hashtags = true
+max_media_size_mb = 10

@@ -29,11 +29,15 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
+mod config;
 mod content;
 mod error;
 mod platform;
 mod skill;
 
+pub use config::{
+    ActorCacheConfig, ActorConfig, ActorSettings, CacheStrategy, ExecutionConfig, SkillConfig,
+};
 pub use content::{Content, MediaAttachment, MediaType};
 pub use error::{ActorError, ActorErrorKind, ActorResult};
 pub use platform::{PlatformMetadata, PlatformResult, PostId, ScheduleId, SocialMediaPlatform};

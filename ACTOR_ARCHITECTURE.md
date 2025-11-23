@@ -272,15 +272,15 @@ pub struct ActorSettings {
 - `tests/platform_trait_test.rs` - Mock platform implementation (7 tests passing)
 - `tests/skill_registry_test.rs` - Skill registration/execution (6 tests passing)
 
-### Phase 2: Configuration System ✓
+### Phase 2: Configuration System ✅
 
 **Crate**: `crates/botticelli_actor`
 
-1. [ ] Design TOML schema
-2. [ ] Create `ActorConfig` with `TypedBuilder`
-3. [ ] Implement TOML deserialization
-4. [ ] Add validation logic
-5. [ ] Create configuration examples
+1. [x] Design TOML schema
+2. [x] Create `ActorConfig` with `TypedBuilder`
+3. [x] Implement TOML deserialization
+4. [x] Add validation logic
+5. [x] Create configuration examples
 
 **Files**:
 
@@ -289,7 +289,7 @@ pub struct ActorSettings {
 
 **Tests**:
 
-- `tests/config_test.rs` - TOML loading, validation, defaults
+- `tests/config_test.rs` - TOML loading, validation, defaults (13 tests passing)
 
 ### Phase 3: Knowledge Integration ✓
 
