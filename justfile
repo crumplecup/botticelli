@@ -197,8 +197,22 @@ check package="":
 
 # Run clippy linter (no warnings allowed)
 # Uses local features to match test environment
-lint:
-    cargo clippy --workspace --features local --all-targets
+lint package='':
+    #!/usr/bin/env bash
+    if [ -z "{{package}}" ]; then
+        echo "🔍 Linting entire workspace with local features"
+        cargo clippy --workspace --features local --all-targets
+    else
+        # Check if package has a 'local' feature, use it if available
+        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
+           jq -e ".packages[] | select(.name == \"{{package}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
+            echo "🔍 Linting {{package}} with local features"
+            cargo clippy -p {{package}} --features local --all-targets
+        else
+            echo "🔍 Linting {{package}} without features"
+            cargo clippy -p {{package}} --all-targets
+        fi
+    fi
 
 # Run clippy and fix issues automatically
 lint-fix:
