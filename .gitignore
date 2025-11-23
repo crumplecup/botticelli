@@ -32,6 +32,9 @@ narrations/*
 !narrations/mint.toml
 !narrations/showcase.toml
 
+# Application State
+.narrative_state/
+
 # Documentation build
 /doc
 
