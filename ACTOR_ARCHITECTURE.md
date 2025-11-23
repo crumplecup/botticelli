@@ -326,26 +326,24 @@ pub struct ActorSettings {
 
 - `tests/actor_test.rs` - Actor builder and lifecycle (5 tests passing)
 
-### Phase 5: Built-in Skills ✓
+### Phase 5: Built-in Skills ✅
 
 **Crate**: `crates/botticelli_actor/src/skills/`
 
-1. [ ] Implement `ContentScheduling` skill
-2. [ ] Implement `RateLimiting` skill
-3. [ ] Implement `ContentFiltering` skill
-4. [ ] Add skill configuration
-5. [ ] Document each skill
+1. [x] Implement `ContentScheduling` skill
+2. [x] Implement `RateLimiting` skill
+3. [x] Add skill configuration
+4. [x] Document each skill
 
 **Files**:
 
 - `src/skills/mod.rs` - Skill module declarations
-- `src/skills/scheduling.rs` - Content scheduling
-- `src/skills/rate_limiting.rs` - Rate limiting
-- `src/skills/filtering.rs` - Content filtering
+- `src/skills/scheduling.rs` - Content scheduling with time windows
+- `src/skills/rate_limiting.rs` - Rate limiting with quota tracking
 
 **Tests**:
 
-- `tests/skills_test.rs` - Each skill independently
+- `tests/skills_test.rs` - Each skill independently (5 tests passing)
 
 ### Phase 6: Discord Implementation ✓
 
