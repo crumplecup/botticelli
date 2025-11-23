@@ -911,6 +911,17 @@ fn resolve_template(
                     ),
                 )
             })?.to_string()
+        } else if reference.starts_with("env:") {
+            // Environment variable reference like "${env:TEST_GUILD_ID}"
+            let env_var = reference.strip_prefix("env:").unwrap();
+            
+            std::env::var(env_var).map_err(|e| {
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::TemplateError(
+                        format!("Environment variable '{}' not found: {}", env_var, e),
+                    ),
+                )
+            })?
         } else if reference == "previous" {
             // Get previous act
             if current_index == 0 {
