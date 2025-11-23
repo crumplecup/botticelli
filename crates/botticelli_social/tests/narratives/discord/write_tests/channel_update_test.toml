@@ -17,5 +17,5 @@ command = "channels.update"
 required = true
 
 [acts.update_channel_name.input.args]
-channel_id = "${WRITE_TEST_CHANNEL_ID}"
-name = "botticelli-test-updated"
+channel_id = "${state:channel_id}"
+name = "botticelli-write-test-updated"

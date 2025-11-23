@@ -6,18 +6,7 @@ description = "Delete test channel using cached ID"
 skip_content_generation = true
 
 [toc]
-order = ["get_channel_id", "delete_test_channel"]
-
-[acts.get_channel_id]
-
-[[acts.get_channel_id.input]]
-type = "bot_command"
-platform = "discord"
-command = "state.get"
-required = true
-
-[acts.get_channel_id.input.args]
-key = "WRITE_TEST_CHANNEL_ID"
+order = ["delete_test_channel"]
 
 [acts.delete_test_channel]
 
@@ -28,4 +17,4 @@ command = "channels.delete"
 required = false
 
 [acts.delete_test_channel.input.args]
-channel_id = "${get_channel_id.value}"
+channel_id = "${state:channel_id}"

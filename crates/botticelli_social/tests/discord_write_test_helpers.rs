@@ -54,6 +54,10 @@ impl WriteOperationTest {
 
     /// Run a single narrative
     fn run_narrative(&self, path: &PathBuf, stage: &str) -> TestResult {
+        // Use a temporary directory for state management
+        let state_dir = std::env::temp_dir().join("botticelli_test_state");
+        std::fs::create_dir_all(&state_dir)?;
+        
         let output = Command::new("cargo")
             .args([
                 "run",
@@ -68,7 +72,10 @@ impl WriteOperationTest {
                 "--narrative",
             ])
             .arg(path)
+            .arg("--save")
             .arg("--process-discord")
+            .arg("--state-dir")
+            .arg(&state_dir)
             .output()?;
 
         if !output.status.success() {
