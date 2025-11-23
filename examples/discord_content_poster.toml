@@ -1,0 +1,91 @@
+# Discord Content Poster Actor Configuration
+# 
+# This actor periodically posts content from the database to a Discord channel.
+# 
+# Usage:
+#   botticelli actor run discord_content_poster.toml
+
+[actor]
+name = "discord_content_poster"
+description = "Posts approved content to Discord on a schedule"
+platform = "discord"
+
+# Knowledge tables the actor queries
+[[actor.knowledge]]
+table = "content"
+# Query approved content that hasn't expired
+query = """
+SELECT * FROM content 
+WHERE approved_at IS NOT NULL 
+  AND (expires_at IS NULL OR expires_at > NOW())
+  AND (scheduled_for IS NULL OR scheduled_for <= NOW())
+ORDER BY priority DESC, created_at DESC
+LIMIT 50
+"""
+
+[[actor.knowledge]]
+table = "post_history"
+# Get recent post history for this actor
+query = """
+SELECT * FROM post_history
+WHERE actor_name = $1
+  AND posted_at >= NOW() - INTERVAL '30 days'
+ORDER BY posted_at DESC
+"""
+
+[[actor.knowledge]]
+table = "actor_preferences"
+# Get actor-specific preferences if they exist
+query = """
+SELECT * FROM actor_preferences
+WHERE actor_name = $1
+LIMIT 1
+"""
+
+# Skills execute in order
+[[skills]]
+name = "content_selection"
+enabled = true
+[skills.config]
+max_candidates = 10
+priority_weight = 0.7
+freshness_weight = 0.3
+
+[[skills]]
+name = "duplicate_check"
+enabled = true
+[skills.config]
+lookback_days = 30
+similarity_threshold = 0.9
+
+[[skills]]
+name = "content_scheduling"
+enabled = true
+[skills.config]
+schedule_window_start = "09:00"
+schedule_window_end = "21:00"
+randomize_within_window = true
+
+[[skills]]
+name = "rate_limiting"
+enabled = true
+[skills.config]
+max_posts_per_day = 10
+min_interval_minutes = 60
+
+[[skills]]
+name = "content_formatter"
+enabled = true
+[skills.config]
+max_text_length = 2000
+include_source = true
+add_hashtags = true
+
+# Platform-specific configuration
+[platform]
+# Discord channel ID where content will be posted
+channel_id = "1234567890123456789"
+
+# Environment variables required:
+# DISCORD_BOT_TOKEN - Discord bot authentication token
+# DATABASE_URL - PostgreSQL connection string
