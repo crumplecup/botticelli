@@ -1,0 +1,5 @@
+[actor]
+name = "Post Scheduler"
+description = "An actor that schedules and posts content to various social media platforms."
+knowledge = ["approved_posts_channel_1", "approved_posts_channel_2"]
+skills = ["content_scheduling", "social_media_posting"]

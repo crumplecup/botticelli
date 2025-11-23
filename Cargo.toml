@@ -13,7 +13,7 @@ members = [
   "crates/botticelli",
   "crates/botticelli_server",
   "crates/botticelli_security",
-  "crates/botticelli_cache",
+  "crates/botticelli_cache", "crates/botticelli_actor",
 ]
 resolver = "2"
 

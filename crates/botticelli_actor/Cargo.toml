@@ -1,0 +1,25 @@
+[package]
+name = "botticelli_actor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+async-trait = "0.1"
+chrono = { workspace = true }
+derive-getters = "0.5"
+derive_more = { workspace = true }
+derive_setters = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { workspace = true }
+toml = "0.8"
+tracing = "0.1"
+typed-builder = "0.20"
+
+botticelli_database = { path = "../botticelli_database" }
+botticelli_error = { path = "../botticelli_error" }

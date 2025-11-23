@@ -107,6 +107,10 @@ test-doc:
 test-one name:
     cargo test --workspace --features local --lib --tests {{name}} -- --nocapture
 
+# Run tests for a specific package
+test-package package:
+    cargo test -p {{package}} --lib --tests
+
 # Run API tests for Gemini (requires GEMINI_API_KEY)
 test-api-gemini:
     #!/usr/bin/env bash
@@ -144,6 +148,17 @@ test-pre-merge: test test-doc test-api-gemini
 
 # Code Quality
 # ============
+
+# Check compilation (all features by default, or specific package)
+check package="":
+    #!/usr/bin/env bash
+    if [ -z "{{package}}" ]; then
+        echo "🔍 Checking all packages with all features..."
+        cargo check --all-features
+    else
+        echo "🔍 Checking package: {{package}}"
+        cargo check -p "{{package}}"
+    fi
 
 # Run clippy linter (no warnings allowed)
 # Uses local features to match test environment
