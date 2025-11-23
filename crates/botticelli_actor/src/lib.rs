@@ -13,15 +13,23 @@
 //! # Example
 //!
 //! ```no_run
-//! use botticelli_actor::{Actor, ActorConfig};
+//! use botticelli_actor::{Actor, ActorConfig, SkillRegistry, DiscordPlatform};
+//! use std::sync::Arc;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let config = ActorConfig::from_file("actor.toml")?;
+//! let platform = DiscordPlatform::new("token", "channel_id")?;
+//! let registry = SkillRegistry::new();
+//!
 //! let actor = Actor::builder()
 //!     .config(config)
+//!     .skills(registry)
+//!     .platform(Arc::new(platform))
 //!     .build()?;
 //!
-//! actor.execute().await?;
+//! // Execute requires database connection
+//! // let mut conn = establish_connection()?;
+//! // actor.execute(&mut conn).await?;
 //! # Ok(())
 //! # }
 //! ```
