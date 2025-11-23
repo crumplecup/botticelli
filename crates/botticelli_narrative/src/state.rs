@@ -9,7 +9,7 @@ use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use tracing::debug;
+use tracing::{debug, error, info, instrument};
 
 /// Represents different scopes for state storage.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -91,17 +91,20 @@ impl StateManager {
     /// # Arguments
     ///
     /// * `state_dir` - Directory where state files will be stored
+    #[instrument(skip(state_dir), fields(path = %state_dir.as_ref().display()))]
     pub fn new(state_dir: impl AsRef<Path>) -> BotticelliResult<Self> {
         let state_dir = state_dir.as_ref().to_path_buf();
         
         // Ensure the state directory exists
         if !state_dir.exists() {
+            debug!("Creating state directory");
             std::fs::create_dir_all(&state_dir).map_err(|e| {
-                ConfigError::new(format!("Failed to create state directory: {}", e))
+                error!(path = %state_dir.display(), error = %e, "Failed to create state directory");
+                ConfigError::new(format!("Failed to create state directory '{}': {}", state_dir.display(), e))
             })?;
         }
 
-        debug!(path = %state_dir.display(), "Initialized state manager");
+        info!("Initialized state manager");
         Ok(Self { state_dir })
     }
 
@@ -116,51 +119,64 @@ impl StateManager {
     }
 
     /// Loads state for a given scope.
+    #[instrument(skip(self), fields(scope = ?scope))]
     pub fn load(&self, scope: &StateScope) -> BotticelliResult<NarrativeState> {
         let path = self.scope_path(scope);
+        debug!(path = %path.display(), "Loading state from file");
         
         if !path.exists() {
-            debug!(scope = ?scope, "No existing state file, returning empty state");
+            debug!("No existing state file, returning empty state");
             return Ok(NarrativeState::new());
         }
 
         let contents = std::fs::read_to_string(&path).map_err(|e| {
-            ConfigError::new(format!("Failed to read state file: {}", e))
+            error!(path = %path.display(), error = %e, "Failed to read state file");
+            ConfigError::new(format!("Failed to read state file '{}': {}", path.display(), e))
         })?;
 
         let state: NarrativeState = serde_json::from_str(&contents).map_err(|e| {
-            JsonError::new(format!("Failed to parse state file: {}", e))
+            error!(path = %path.display(), error = %e, "Failed to parse state JSON");
+            JsonError::new(format!("Failed to parse state file '{}': {}", path.display(), e))
         })?;
 
-        debug!(scope = ?scope, keys = state.data.len(), "Loaded state");
+        info!(keys = state.data.len(), "Loaded state successfully");
         Ok(state)
     }
 
     /// Saves state for a given scope.
+    #[instrument(skip(self, state), fields(scope = ?scope, keys = state.data.len()))]
     pub fn save(&self, scope: &StateScope, state: &NarrativeState) -> BotticelliResult<()> {
         let path = self.scope_path(scope);
+        debug!(path = %path.display(), "Saving state to file");
         
         let contents = serde_json::to_string_pretty(state).map_err(|e| {
+            error!(error = %e, "Failed to serialize state");
             JsonError::new(format!("Failed to serialize state: {}", e))
         })?;
 
         std::fs::write(&path, contents).map_err(|e| {
-            ConfigError::new(format!("Failed to write state file: {}", e))
+            error!(path = %path.display(), error = %e, "Failed to write state file");
+            ConfigError::new(format!("Failed to write state file '{}': {}", path.display(), e))
         })?;
 
-        debug!(scope = ?scope, keys = state.data.len(), "Saved state");
+        info!("Saved state successfully");
         Ok(())
     }
 
     /// Deletes state for a given scope.
+    #[instrument(skip(self), fields(scope = ?scope))]
     pub fn delete(&self, scope: &StateScope) -> BotticelliResult<()> {
         let path = self.scope_path(scope);
+        debug!(path = %path.display(), "Deleting state file");
         
         if path.exists() {
             std::fs::remove_file(&path).map_err(|e| {
-                ConfigError::new(format!("Failed to delete state file: {}", e))
+                error!(path = %path.display(), error = %e, "Failed to delete state file");
+                ConfigError::new(format!("Failed to delete state file '{}': {}", path.display(), e))
             })?;
-            debug!(scope = ?scope, "Deleted state");
+            info!("Deleted state successfully");
+        } else {
+            debug!("State file does not exist, nothing to delete");
         }
 
         Ok(())
