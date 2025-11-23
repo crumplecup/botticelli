@@ -45,6 +45,15 @@ The `test_write_operations_with_teardown` test is failing because teardown narra
 - Permissions might prevent deletion
 - Resources might not be immediately available for deletion after creation
 
+## Root Cause Found (Test Run Evidence)
+
+The state is NOT persisting between narratives! The test output shows:
+- Setup runs with `--save` flag and `--state-dir /tmp/botticelli_test_state`
+- Test runs with same flags and tries to read state  
+- Error: "State key 'channel_id' not found. Available keys: none"
+
+This means the state file isn't being written or isn't being read correctly between narrative executions.
+
 ## Testing Strategy
 
 ### Step 1: Verify State Persistence
@@ -98,9 +107,11 @@ The setup narrative needs to use state management actions to save the channel ID
 1. ✅ Identified the problem - setup not saving state
 2. ✅ Confirmed `--save` flag is passed and state dir is created
 3. ✅ Verified state shows "Available keys: none" - setup is NOT saving
-4. **ACTION**: Fix setup narrative channel_create_setup.toml to save channel_id to state
-5. Verify state persists between narratives
-6. Re-run full test to confirm fix
+4. ✅ **PROGRESS**: Basic file I/O state persistence works (test_state_persistence_basic passes)
+5. **CURRENT**: Test state persistence through CLI narrative execution
+6. Fix setup narrative channel_create_setup.toml to save channel_id to state
+7. Verify state persists between narratives
+8. Re-run full test to confirm fix
 
 ## Investigation Results
 
