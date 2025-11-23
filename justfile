@@ -290,6 +290,12 @@ narrate name:
         exit 1
     fi
 
+# Execute a narrative from tests for testing purposes
+test-narrate path:
+    #!/usr/bin/env bash
+    set -e
+    cargo run -p botticelli --features local -- run --narrative "{{path}}" --save --process-discord
+
 # Run example narrative: generate channel posts
 example-channels:
     cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_channel_posts.toml
