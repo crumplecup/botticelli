@@ -29,6 +29,7 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
+mod actor;
 mod config;
 mod content;
 mod error;
@@ -36,6 +37,7 @@ mod knowledge;
 mod platform;
 mod skill;
 
+pub use actor::{Actor, ActorBuilder, ExecutionResult};
 pub use config::{
     ActorCacheConfig, ActorCacheConfigBuilder, ActorConfig, ActorConfigBuilder, ActorSettings,
     ActorSettingsBuilder, CacheStrategy, ExecutionConfig, ExecutionConfigBuilder, SkillConfig,

@@ -308,24 +308,23 @@ pub struct ActorSettings {
 
 - `tests/knowledge_test.rs` - Table creation and basic operations (3 tests passing)
 
-### Phase 4: Actor Core ✓
+### Phase 4: Actor Core ✅
 
 **Crate**: `crates/botticelli_actor`
 
-1. [ ] Implement `Actor` struct
-2. [ ] Add builder pattern
-3. [ ] Create execution loop
-4. [ ] Add instrumentation
-5. [ ] Implement lifecycle management
+1. [x] Implement `Actor` struct
+2. [x] Add builder pattern
+3. [x] Create execution loop
+4. [x] Add instrumentation
+5. [x] Implement lifecycle management
 
 **Files**:
 
-- `src/actor.rs` - Main actor implementation
-- `src/executor.rs` - Execution orchestration
+- `src/actor.rs` - Main actor implementation with execution orchestration
 
 **Tests**:
 
-- `tests/actor_test.rs` - Actor lifecycle, execution
+- `tests/actor_test.rs` - Actor builder and lifecycle (5 tests passing)
 
 ### Phase 5: Built-in Skills ✓
 
