@@ -30,7 +30,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 1. Load actor configuration
     println!("📋 Loading actor configuration...");
-    let config = ActorConfig::from_file("examples/post_scheduler_actor.toml")?;
+    let config_path = std::env::current_dir()?
+        .join("crates/botticelli_actor/examples/post_scheduler_actor.toml");
+    let config = ActorConfig::from_file(&config_path)?;
     println!("   ✓ Loaded actor: {}", config.name());
     println!("   ✓ Knowledge tables: {}", config.knowledge().len());
     println!("   ✓ Skills: {}", config.skills().len());
