@@ -309,7 +309,7 @@ async fn test_table_reference_with_filter() -> botticelli::BotticelliResult<()> 
     let executor = NarrativeExecutor::new(MockDriver).with_table_registry(Box::new(table_registry));
 
     // Execute narrative
-    let execution = executor.execute(&narrative).await.expect("Execution failed");
+    let execution = executor.execute(&narrative).await?;
 
     // Verify execution
     assert_eq!(execution.act_executions.len(), 1);
@@ -346,7 +346,7 @@ async fn test_table_reference_format_csv() -> botticelli::BotticelliResult<()> {
         )",
     )
     .execute(&mut conn)
-    .expect("Failed to create test table");
+    .map_err(|e| DatabaseError::new(DatabaseErrorKind::Query(format!("Failed to create test table: {}", e))))?;
 
     // Insert test data
     diesel::sql_query(
@@ -356,11 +356,13 @@ async fn test_table_reference_format_csv() -> botticelli::BotticelliResult<()> {
             ('Charlie', 'Engineering', 105000)",
     )
     .execute(&mut conn)
-    .expect("Failed to insert test data");
+    .map_err(|e| DatabaseError::new(DatabaseErrorKind::Query(format!("Failed to insert test data: {}", e))))?;
 
     // Create table query registry
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let query_conn = PgConnection::establish(&database_url).expect("Failed to establish connection");
+    let database_url = env::var("DATABASE_URL")
+        .map_err(|e| DatabaseError::new(DatabaseErrorKind::Connection(format!("DATABASE_URL not set: {}", e))))?;
+    let query_conn = PgConnection::establish(&database_url)
+        .map_err(|e| DatabaseError::new(DatabaseErrorKind::Connection(format!("Failed to establish connection: {}", e))))?;
     let query_executor = TableQueryExecutor::new(Arc::new(Mutex::new(query_conn)));
     let table_registry = DatabaseTableQueryRegistry::new(query_executor);
 
@@ -425,7 +427,7 @@ async fn test_table_reference_format_csv() -> botticelli::BotticelliResult<()> {
     let executor = NarrativeExecutor::new(MockDriver).with_table_registry(Box::new(table_registry));
 
     // Execute narrative
-    let execution = executor.execute(&narrative).await.expect("Execution failed");
+    let execution = executor.execute(&narrative).await?;
 
     // Verify execution
     assert_eq!(execution.act_executions.len(), 1);
