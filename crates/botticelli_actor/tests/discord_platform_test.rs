@@ -3,8 +3,8 @@
 #[cfg(feature = "discord")]
 mod discord_tests {
     use botticelli_actor::{
-        platforms::DiscordPlatform, ContentBuilder, MediaAttachmentBuilder, MediaType,
-        SocialMediaPlatform,
+        ContentBuilder, MediaAttachmentBuilder, MediaType, SocialMediaPlatform,
+        platforms::DiscordPlatform,
     };
     use chrono::Utc;
 
@@ -29,7 +29,7 @@ mod discord_tests {
     #[tokio::test]
     async fn test_discord_platform_post_text_only() {
         let platform = DiscordPlatform::new("test_token", "123456789").expect("Valid platform");
-        
+
         let content = ContentBuilder::default()
             .text(Some("Test message".to_string()))
             .build()
@@ -42,10 +42,8 @@ mod discord_tests {
     #[tokio::test]
     async fn test_discord_platform_post_empty_content() {
         let platform = DiscordPlatform::new("test_token", "123456789").expect("Valid platform");
-        
-        let content = ContentBuilder::default()
-            .build()
-            .expect("Valid content");
+
+        let content = ContentBuilder::default().build().expect("Valid content");
 
         let result = platform.post(content).await;
         assert!(result.is_err());
@@ -54,7 +52,7 @@ mod discord_tests {
     #[tokio::test]
     async fn test_discord_platform_post_text_too_long() {
         let platform = DiscordPlatform::new("test_token", "123456789").expect("Valid platform");
-        
+
         let long_text = "a".repeat(2001);
         let content = ContentBuilder::default()
             .text(Some(long_text))
@@ -68,7 +66,7 @@ mod discord_tests {
     #[tokio::test]
     async fn test_discord_platform_post_with_media() {
         let platform = DiscordPlatform::new("test_token", "123456789").expect("Valid platform");
-        
+
         let attachment = MediaAttachmentBuilder::default()
             .url("https://example.com/image.png".to_string())
             .media_type(MediaType::Image)
@@ -88,7 +86,7 @@ mod discord_tests {
     #[tokio::test]
     async fn test_discord_platform_post_too_many_attachments() {
         let platform = DiscordPlatform::new("test_token", "123456789").expect("Valid platform");
-        
+
         let mut attachments = vec![];
         for i in 0..11 {
             attachments.push(
@@ -112,7 +110,7 @@ mod discord_tests {
     #[tokio::test]
     async fn test_discord_platform_schedule_future() {
         let platform = DiscordPlatform::new("test_token", "123456789").expect("Valid platform");
-        
+
         let content = ContentBuilder::default()
             .text(Some("Scheduled message".to_string()))
             .build()
@@ -126,7 +124,7 @@ mod discord_tests {
     #[tokio::test]
     async fn test_discord_platform_schedule_past() {
         let platform = DiscordPlatform::new("test_token", "123456789").expect("Valid platform");
-        
+
         let content = ContentBuilder::default()
             .text(Some("Scheduled message".to_string()))
             .build()
@@ -140,7 +138,7 @@ mod discord_tests {
     #[tokio::test]
     async fn test_discord_platform_delete() {
         let platform = DiscordPlatform::new("test_token", "123456789").expect("Valid platform");
-        
+
         let post_id = botticelli_actor::PostId("test_message_123".to_string());
         let result = platform.delete_post(post_id).await;
         assert!(result.is_ok());

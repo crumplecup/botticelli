@@ -331,10 +331,10 @@ impl ActorConfig {
         }
 
         for skill in &self.skills {
-            if let Some(skill_config) = self.skill_configs.get(skill) {
-                if !skill_config.enabled() {
-                    warnings.push(format!("Skill '{}' is configured but disabled", skill));
-                }
+            if let Some(skill_config) = self.skill_configs.get(skill)
+                && !skill_config.enabled()
+            {
+                warnings.push(format!("Skill '{}' is configured but disabled", skill));
             }
         }
 

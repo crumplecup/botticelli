@@ -13,10 +13,7 @@ struct MockPlatform;
 
 #[async_trait]
 impl SocialMediaPlatform for MockPlatform {
-    async fn post(
-        &self,
-        _content: botticelli_actor::Content,
-    ) -> PlatformResult<PostId> {
+    async fn post(&self, _content: botticelli_actor::Content) -> PlatformResult<PostId> {
         Ok(PostId("mock".to_string()))
     }
 

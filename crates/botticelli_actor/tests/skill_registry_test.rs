@@ -75,18 +75,12 @@ fn test_skill_registry_get() {
 fn test_skill_registry_list() {
     let mut registry = SkillRegistry::new();
 
-    registry.register(std::sync::Arc::new(MockSkill::new(
-        "skill1",
-        "First skill",
-    )));
+    registry.register(std::sync::Arc::new(MockSkill::new("skill1", "First skill")));
     registry.register(std::sync::Arc::new(MockSkill::new(
         "skill2",
         "Second skill",
     )));
-    registry.register(std::sync::Arc::new(MockSkill::new(
-        "skill3",
-        "Third skill",
-    )));
+    registry.register(std::sync::Arc::new(MockSkill::new("skill3", "Third skill")));
 
     let list = registry.list();
     assert_eq!(list.len(), 3);

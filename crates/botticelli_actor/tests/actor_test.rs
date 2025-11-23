@@ -2,8 +2,9 @@
 
 use async_trait::async_trait;
 use botticelli_actor::{
-    Actor, ActorConfigBuilder, PlatformMetadata, PlatformMetadataBuilder, PlatformResult, PostId,
-    ScheduleId, Skill, SkillContext, SkillOutput, SkillResult, SocialMediaPlatform,
+    Actor, ActorConfigBuilder, ExecutionResult, PlatformMetadata, PlatformMetadataBuilder,
+    PlatformResult, PostId, ScheduleId, Skill, SkillContext, SkillOutput, SkillResult,
+    SocialMediaPlatform,
 };
 use serde_json::json;
 use std::sync::Arc;
@@ -13,10 +14,7 @@ struct MockPlatform;
 
 #[async_trait]
 impl SocialMediaPlatform for MockPlatform {
-    async fn post(
-        &self,
-        _content: botticelli_actor::Content,
-    ) -> PlatformResult<PostId> {
+    async fn post(&self, _content: botticelli_actor::Content) -> PlatformResult<PostId> {
         Ok(PostId("mock_post".to_string()))
     }
 
@@ -76,9 +74,7 @@ impl Skill for MockSkill {
 
 #[test]
 fn test_actor_builder_missing_config() {
-    let result = Actor::builder()
-        .platform(Arc::new(MockPlatform))
-        .build();
+    let result = Actor::builder().platform(Arc::new(MockPlatform)).build();
 
     assert!(result.is_err());
 }
@@ -93,9 +89,7 @@ fn test_actor_builder_missing_platform() {
         .build()
         .expect("Valid config");
 
-    let result = Actor::builder()
-        .config(config)
-        .build();
+    let result = Actor::builder().config(config).build();
 
     assert!(result.is_err());
 }

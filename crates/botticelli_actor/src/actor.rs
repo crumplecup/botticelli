@@ -73,12 +73,12 @@ impl Actor {
             tracing::debug!(skill = %skill_name, "Preparing skill execution");
 
             // Check if skill is enabled in configuration
-            if let Some(skill_config) = self.config.skill_configs().get(skill_name) {
-                if !skill_config.enabled() {
-                    tracing::info!(skill = %skill_name, "Skill disabled, skipping");
-                    result.skipped.push(skill_name.clone());
-                    continue;
-                }
+            if let Some(skill_config) = self.config.skill_configs().get(skill_name)
+                && !skill_config.enabled()
+            {
+                tracing::info!(skill = %skill_name, "Skill disabled, skipping");
+                result.skipped.push(skill_name.clone());
+                continue;
             }
 
             // Build skill context
@@ -105,8 +105,7 @@ impl Actor {
                     result.failed.push((skill_name.clone(), error.clone()));
 
                     // Check if we should stop on unrecoverable errors
-                    if !error.is_recoverable() && *self.config.execution().stop_on_unrecoverable()
-                    {
+                    if !error.is_recoverable() && *self.config.execution().stop_on_unrecoverable() {
                         tracing::error!("Unrecoverable error, stopping execution");
                         return Err(error);
                     }
@@ -132,8 +131,14 @@ impl Actor {
 
     /// Load knowledge from configured tables.
     #[tracing::instrument(skip(self, conn))]
-    fn load_knowledge(&self, conn: &mut PgConnection) -> ActorResult<HashMap<String, Vec<JsonValue>>> {
-        tracing::debug!(table_count = self.config.knowledge().len(), "Loading knowledge tables");
+    fn load_knowledge(
+        &self,
+        conn: &mut PgConnection,
+    ) -> ActorResult<HashMap<String, Vec<JsonValue>>> {
+        tracing::debug!(
+            table_count = self.config.knowledge().len(),
+            "Loading knowledge tables"
+        );
 
         let mut knowledge = HashMap::new();
 
@@ -262,19 +267,19 @@ impl ActorBuilder {
     ///
     /// Returns error if required fields are missing.
     pub fn build(self) -> ActorResult<Actor> {
-        let config = self
-            .config
-            .ok_or_else(|| ActorError::new(ActorErrorKind::InvalidConfiguration(
+        let config = self.config.ok_or_else(|| {
+            ActorError::new(ActorErrorKind::InvalidConfiguration(
                 "Actor config is required".to_string(),
-            )))?;
+            ))
+        })?;
 
         let skills = self.skills.unwrap_or_default();
 
-        let platform = self
-            .platform
-            .ok_or_else(|| ActorError::new(ActorErrorKind::InvalidConfiguration(
+        let platform = self.platform.ok_or_else(|| {
+            ActorError::new(ActorErrorKind::InvalidConfiguration(
                 "Platform implementation is required".to_string(),
-            )))?;
+            ))
+        })?;
 
         Ok(Actor {
             config,

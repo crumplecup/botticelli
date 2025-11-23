@@ -16,7 +16,9 @@ pub enum MediaType {
 }
 
 /// Media attachment for content.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Getters, Serialize, Deserialize, derive_builder::Builder)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, Getters, Serialize, Deserialize, derive_builder::Builder,
+)]
 pub struct MediaAttachment {
     /// URL to media file.
     url: String,

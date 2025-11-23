@@ -38,7 +38,11 @@ impl SocialMediaPlatform for MockPlatform {
         Ok(PostId("mock_post_123".to_string()))
     }
 
-    async fn schedule(&self, _content: Content, _time: DateTime<Utc>) -> PlatformResult<ScheduleId> {
+    async fn schedule(
+        &self,
+        _content: Content,
+        _time: DateTime<Utc>,
+    ) -> PlatformResult<ScheduleId> {
         Ok(ScheduleId("mock_schedule_456".to_string()))
     }
 

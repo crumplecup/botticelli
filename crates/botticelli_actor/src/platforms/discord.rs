@@ -1,8 +1,8 @@
 //! Discord platform implementation.
 
 use crate::{
-    ActorError, ActorErrorKind, Content, PlatformMetadata, PlatformMetadataBuilder,
-    PlatformResult, PostId, ScheduleId, SocialMediaPlatform,
+    ActorError, ActorErrorKind, Content, PlatformMetadata, PlatformMetadataBuilder, PlatformResult,
+    PostId, ScheduleId, SocialMediaPlatform,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -74,19 +74,18 @@ impl SocialMediaPlatform for DiscordPlatform {
         if let Some(text) = content.text()
             && text.len() > 2000
         {
-            return Err(ActorError::new(ActorErrorKind::ValidationFailed(
-                format!("Text exceeds Discord limit of 2000 characters ({})", text.len()),
-            )));
+            return Err(ActorError::new(ActorErrorKind::ValidationFailed(format!(
+                "Text exceeds Discord limit of 2000 characters ({})",
+                text.len()
+            ))));
         }
 
         // Check media attachment limit
         if content.media().len() > 10 {
-            return Err(ActorError::new(ActorErrorKind::ValidationFailed(
-                format!(
-                    "Too many media attachments ({}, max 10)",
-                    content.media().len()
-                ),
-            )));
+            return Err(ActorError::new(ActorErrorKind::ValidationFailed(format!(
+                "Too many media attachments ({}, max 10)",
+                content.media().len()
+            ))));
         }
 
         // In production, would use serenity or twilight to post via Discord API
@@ -108,12 +107,10 @@ impl SocialMediaPlatform for DiscordPlatform {
         // Check that scheduled time is in the future
         let now = Utc::now();
         if time <= now {
-            return Err(ActorError::new(ActorErrorKind::ValidationFailed(
-                format!(
-                    "Scheduled time must be in the future (now: {}, scheduled: {})",
-                    now, time
-                ),
-            )));
+            return Err(ActorError::new(ActorErrorKind::ValidationFailed(format!(
+                "Scheduled time must be in the future (now: {}, scheduled: {})",
+                now, time
+            ))));
         }
 
         tracing::info!(
@@ -163,18 +160,17 @@ impl DiscordPlatform {
         if let Some(text) = content.text()
             && text.len() > 2000
         {
-            return Err(ActorError::new(ActorErrorKind::ValidationFailed(
-                format!("Text exceeds Discord limit of 2000 characters ({})", text.len()),
-            )));
+            return Err(ActorError::new(ActorErrorKind::ValidationFailed(format!(
+                "Text exceeds Discord limit of 2000 characters ({})",
+                text.len()
+            ))));
         }
 
         if content.media().len() > 10 {
-            return Err(ActorError::new(ActorErrorKind::ValidationFailed(
-                format!(
-                    "Too many media attachments ({}, max 10)",
-                    content.media().len()
-                ),
-            )));
+            return Err(ActorError::new(ActorErrorKind::ValidationFailed(format!(
+                "Too many media attachments ({}, max 10)",
+                content.media().len()
+            ))));
         }
 
         Ok(())

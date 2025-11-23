@@ -30,8 +30,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 1. Load actor configuration
     println!("📋 Loading actor configuration...");
-    let config_path = std::env::current_dir()?
-        .join("crates/botticelli_actor/examples/post_scheduler_actor.toml");
+    let config_path =
+        std::env::current_dir()?.join("crates/botticelli_actor/examples/post_scheduler_actor.toml");
     let config = ActorConfig::from_file(&config_path)?;
     println!("   ✓ Loaded actor: {}", config.name());
     println!("   ✓ Knowledge tables: {}", config.knowledge().len());
@@ -51,29 +51,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut registry = SkillRegistry::new();
 
     let scheduling_skill = ContentSchedulingSkill::new();
-    println!("   ✓ {}: {}", scheduling_skill.name(), scheduling_skill.description());
+    println!(
+        "   ✓ {}: {}",
+        scheduling_skill.name(),
+        scheduling_skill.description()
+    );
     registry.register(Arc::new(scheduling_skill));
 
     let rate_limit_skill = RateLimitingSkill::new();
-    println!("   ✓ {}: {}", rate_limit_skill.name(), rate_limit_skill.description());
+    println!(
+        "   ✓ {}: {}",
+        rate_limit_skill.name(),
+        rate_limit_skill.description()
+    );
     registry.register(Arc::new(rate_limit_skill));
 
     println!("   Total skills registered: {}", registry.len());
 
     // 3. Create Discord platform instance
     println!("\n🔌 Creating Discord platform...");
-    
+
     // In production, get these from environment variables or secure config
-    let discord_token = std::env::var("DISCORD_BOT_TOKEN")
-        .unwrap_or_else(|_| "mock_token_for_example".to_string());
-    let channel_id = std::env::var("DISCORD_CHANNEL_ID")
-        .unwrap_or_else(|_| "123456789".to_string());
-    
+    let discord_token =
+        std::env::var("DISCORD_BOT_TOKEN").unwrap_or_else(|_| "mock_token_for_example".to_string());
+    let channel_id =
+        std::env::var("DISCORD_CHANNEL_ID").unwrap_or_else(|_| "123456789".to_string());
+
     let platform = DiscordPlatform::new(discord_token, channel_id)?;
     let metadata = platform.metadata();
     println!("   ✓ Platform: {}", metadata.name());
     println!("   ✓ Max text length: {}", metadata.max_text_length());
-    println!("   ✓ Max media attachments: {}", metadata.max_media_attachments());
+    println!(
+        "   ✓ Max media attachments: {}",
+        metadata.max_media_attachments()
+    );
 
     // 4. Build the actor
     println!("\n🎭 Building actor...");
@@ -92,10 +103,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // - Connect to your database
     // - Load knowledge from configured tables
     // - Execute skills to process and post content
-    // 
+    //
     // For this example, we'll demonstrate the execution flow:
     println!("   Workflow steps:");
-    println!("   1. Load knowledge from tables: {:?}", ["approved_posts", "scheduled_content"]);
+    println!(
+        "   1. Load knowledge from tables: {:?}",
+        ["approved_posts", "scheduled_content"]
+    );
     println!("   2. Execute skill: content_scheduling");
     println!("      - Calculate optimal posting time within window (09:00-17:00)");
     println!("      - Apply randomization if enabled");

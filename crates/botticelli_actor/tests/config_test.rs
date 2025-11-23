@@ -108,7 +108,11 @@ fn test_actor_config_from_file() {
     assert_eq!(config.name(), "Post Scheduler");
     assert_eq!(config.knowledge().len(), 2);
     assert_eq!(config.skills().len(), 2);
-    assert!(config.knowledge().contains(&"approved_posts_channel_1".to_string()));
+    assert!(
+        config
+            .knowledge()
+            .contains(&"approved_posts_channel_1".to_string())
+    );
     assert!(config.skills().contains(&"content_scheduling".to_string()));
 }
 

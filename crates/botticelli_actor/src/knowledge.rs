@@ -1,8 +1,8 @@
 //! Knowledge table abstraction for actor data access.
 
 use crate::{ActorError, ActorErrorKind, ActorResult};
-use diesel::prelude::*;
 use diesel::PgConnection;
+use diesel::prelude::*;
 use serde_json::Value as JsonValue;
 
 /// Wrapper for knowledge table access.
@@ -53,10 +53,7 @@ impl KnowledgeTable {
         tracing::debug!("Querying knowledge table");
 
         // Use raw SQL to query dynamic table names
-        let query = format!(
-            "SELECT row_to_json(t.*) as data FROM {} as t",
-            self.name
-        );
+        let query = format!("SELECT row_to_json(t.*) as data FROM {} as t", self.name);
 
         tracing::debug!(sql = %query, "Executing query");
 
@@ -150,15 +147,13 @@ impl KnowledgeTable {
 
         tracing::debug!(sql = %query, "Executing query");
 
-        let result: CountRow = diesel::sql_query(&query)
-            .get_result(conn)
-            .map_err(|e| {
-                tracing::error!(error = ?e, "Count query failed");
-                ActorError::new(ActorErrorKind::KnowledgeTableNotFound(format!(
-                    "{}: {}",
-                    self.name, e
-                )))
-            })?;
+        let result: CountRow = diesel::sql_query(&query).get_result(conn).map_err(|e| {
+            tracing::error!(error = ?e, "Count query failed");
+            ActorError::new(ActorErrorKind::KnowledgeTableNotFound(format!(
+                "{}: {}",
+                self.name, e
+            )))
+        })?;
 
         tracing::debug!(count = result.count, "Row count retrieved");
         Ok(result.count)
