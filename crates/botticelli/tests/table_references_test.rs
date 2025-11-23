@@ -127,13 +127,13 @@ impl botticelli::BotticelliDriver for MockDriver {
 
 /// Establish database connection for tests.
 fn establish_connection() -> Pool<ConnectionManager<PgConnection>> {
+    dotenvy::dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     Pool::builder().build(manager).expect("Failed to create pool")
 }
 
 #[tokio::test]
-#[cfg_attr(not(feature = "api"), ignore)]
 async fn test_table_reference_query() -> botticelli::BotticelliResult<()> {
     let pool = establish_connection();
     let mut conn = pool.get().expect("Failed to get connection");
@@ -197,7 +197,6 @@ async fn test_table_reference_query() -> botticelli::BotticelliResult<()> {
 }
 
 #[tokio::test]
-#[cfg_attr(not(feature = "api"), ignore)]
 async fn test_table_reference_with_filter() -> botticelli::BotticelliResult<()> {
     let pool = establish_connection();
     let mut conn = pool.get().expect("Failed to get connection");
@@ -313,7 +312,6 @@ async fn test_table_reference_with_filter() -> botticelli::BotticelliResult<()> 
 }
 
 #[tokio::test]
-#[cfg_attr(not(feature = "api"), ignore)]
 async fn test_table_reference_format_csv() -> botticelli::BotticelliResult<()> {
     let pool = establish_connection();
     let mut conn = pool.get().expect("Failed to get connection");
