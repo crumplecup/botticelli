@@ -15,6 +15,6 @@ command = "channels.create"
 required = true
 
 [acts.create_channel.input.args]
-guild_id = "1439415903753076859"
+guild_id = "${TEST_GUILD_ID}"
 name = "botticelli-state-test"
-type = "text"
+kind = "text"

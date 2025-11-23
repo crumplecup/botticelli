@@ -52,30 +52,19 @@ impl WriteOperationTest {
         test_result
     }
 
-    /// Run a single narrative
+    /// Run a single narrative using just command
     fn run_narrative(&self, path: &PathBuf, stage: &str) -> TestResult {
-        // Use a temporary directory for state management
-        let state_dir = std::env::temp_dir().join("botticelli_test_state");
-        std::fs::create_dir_all(&state_dir)?;
+        println!("\n=== Running {} narrative: {} ===", stage, path.display());
         
-        let output = Command::new("cargo")
-            .args([
-                "run",
-                "--package",
-                "botticelli",
-                "--bin",
-                "botticelli",
-                "--features",
-                "local",
-                "--",
-                "run",
-                "--narrative",
-            ])
-            .arg(path)
-            .arg("--save")
-            .arg("--process-discord")
-            .arg("--state-dir")
-            .arg(&state_dir)
+        // Extract just the narrative name from the path
+        let narrative_name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or("Invalid narrative path")?;
+        
+        let output = Command::new("just")
+            .arg("narrate")
+            .arg(narrative_name)
             .output()?;
 
         if !output.status.success() {

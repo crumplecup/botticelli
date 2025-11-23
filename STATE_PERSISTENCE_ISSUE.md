@@ -1,6 +1,12 @@
 # State Persistence Issue
 
-**STATUS: RESOLVED** - State persistence is working correctly. Tests added in `botticelli_narrative/tests/state_persistence_test.rs` verify functionality.
+**STATUS: ROOT CAUSE FOUND** - The `just narrate` recipe doesn't pass `--save` or `--state-dir` flags to the CLI.
+
+## Latest Finding (2025-11-23)
+
+Test successfully created Discord channel (ID: 1441994324920373333), but no state file was created even though `--save` was supposed to be passed via `just narrate`. 
+
+The problem: The `justfile`'s `narrate` recipe doesn't support `--save` or `--state-dir` flags.
 
 ## Problem (Historical)
 
@@ -47,14 +53,55 @@ In `botticelli/src/cli/run.rs`:
 - Lines 99-105: State manager is configured when `--state-dir` is provided
 - State manager is passed to executor via `with_state_manager()`
 
-## Hypothesis
+## ROOT CAUSE IDENTIFIED
 
-The state IS being saved after the setup narrative completes, but when the test narrative loads, it's loading an empty state. Possible causes:
+**The `state_capture` feature is NOT IMPLEMENTED in the executor.**
 
-1. **Scope mismatch**: Setup saves to one scope, test loads from another
-2. **Timing issue**: State file write isn't flushing before next narrative starts
-3. **File path issue**: State files are being written/read from different locations
-4. **State manager not configured**: Test narratives might not be getting state manager instance
+The narratives declare state_capture configurations like:
+
+```toml
+[acts.create_channel.state_capture]
+channel_id = "$.channel_id"
+```
+
+But grep for "state_capture" in crates/botticelli_narrative/src returns **NO matches**.
+
+The executor has NO code to:
+1. Parse `state_capture` from the TOML ActConfig
+2. Extract values from bot command outputs using JSONPath expressions
+3. Store those values in the StateManager
+
+**Evidence:**
+- Setup narrative runs but warning shows "State file does not exist after Setup"
+- Test narrative error: "State key 'channel_id' not found. Available keys: none"
+- No state_capture parsing or handling code exists in executor
+
+## Implementation Plan
+
+### 1. Add state_capture to ActConfig
+
+In `crates/botticelli_narrative/src/models/act.rs`:
+- Add `state_capture: Option<HashMap<String, String>>` field to ActConfig
+- Update ActConfigBuilder to support state_capture
+
+### 2. Parse state_capture from TOML
+
+In `crates/botticelli_narrative/src/core.rs`:
+- Extract state_capture from TOML act table
+- Add to ActConfig during parsing
+
+### 3. Implement state capture in executor
+
+In `crates/botticelli_narrative/src/executor.rs`:
+- After bot command execution, check if act has state_capture config
+- Parse bot command JSON output
+- Use JSONPath expressions to extract values (add `jsonpath_lib` dependency)
+- Store extracted values in StateManager with specified keys
+- Save state to disk
+
+### 4. Update NARRATIVE_TOML_SPEC
+
+Document the state_capture feature with examples.
 
 ## Investigation Cycle 1
 

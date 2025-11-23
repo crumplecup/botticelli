@@ -33,55 +33,69 @@ fn test_state_persistence_basic() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-#[ignore] // Requires CLI execution
-fn test_state_persistence_via_cli() -> Result<(), Box<dyn std::error::Error>> {
+#[cfg(feature = "discord")]
+fn test_state_persistence_across_narratives() -> Result<(), Box<dyn std::error::Error>> {
     use std::fs;
     use std::path::PathBuf;
     use std::process::Command;
     
     // Create unique state directory
-    let state_dir = PathBuf::from("/tmp/botticelli_state_test_cli");
+    let state_dir = PathBuf::from("/tmp/botticelli_state_test_persistence");
     if state_dir.exists() {
         fs::remove_dir_all(&state_dir)?;
     }
     fs::create_dir_all(&state_dir)?;
     
-    // Create a simple narrative that outputs something
-    let narrative_file = state_dir.join("test_narrative.toml");
-    fs::write(&narrative_file, r#"
-name = "test_state_save"
-skip_content_generation = true
-
-[acts.output_test]
-prompt = "Say 'test123'"
-"#)?;
+    let state_file = state_dir.join("narrative_state.json");
     
-    // Run narrative with --save flag
-    let output = Command::new("cargo")
+    // Run setup narrative to create and store channel ID
+    let setup_output = Command::new("just")
         .args(&[
-            "run",
-            "--bin",
-            "botticelli",
-            "--",
-            "run",
-            "--narrative",
-            narrative_file.to_str().unwrap(),
-            "--save",
-            "--state-dir",
-            state_dir.to_str().unwrap(),
+            "narrate",
+            "crates/botticelli_social/tests/narratives/discord/state_test_create.toml",
         ])
+        .env("BOTTICELLI_STATE_DIR", state_dir.to_str().unwrap())
         .output()?;
     
-    println!("CLI stdout: {}", String::from_utf8_lossy(&output.stdout));
-    println!("CLI stderr: {}", String::from_utf8_lossy(&output.stderr));
+    println!("Setup stdout: {}", String::from_utf8_lossy(&setup_output.stdout));
+    println!("Setup stderr: {}", String::from_utf8_lossy(&setup_output.stderr));
     
-    assert!(output.status.success(), "CLI execution failed");
+    assert!(setup_output.status.success(), "Setup narrative failed");
     
-    // Check if state file was created
-    let state_file = state_dir.join("narrative_state.json");
-    assert!(state_file.exists(), "State file should exist after --save");
+    // Verify state file exists and contains channel ID
+    assert!(state_file.exists(), "State file should exist after setup");
+    let state_content = fs::read_to_string(&state_file)?;
+    let state: serde_json::Value = serde_json::from_str(&state_content)?;
+    assert!(state.get("TEST_CHANNEL_ID").is_some(), "TEST_CHANNEL_ID should be in state");
+    println!("State after setup: {}", serde_json::to_string_pretty(&state)?);
     
-    // Cleanup
+    // Run use narrative that reads the channel ID from state
+    let use_output = Command::new("just")
+        .args(&[
+            "narrate",
+            "crates/botticelli_social/tests/narratives/discord/state_test_use.toml",
+        ])
+        .env("BOTTICELLI_STATE_DIR", state_dir.to_str().unwrap())
+        .output()?;
+    
+    println!("Use stdout: {}", String::from_utf8_lossy(&use_output.stdout));
+    println!("Use stderr: {}", String::from_utf8_lossy(&use_output.stderr));
+    
+    assert!(use_output.status.success(), "Use narrative should succeed with persisted state");
+    
+    // Run cleanup narrative
+    let cleanup_output = Command::new("just")
+        .args(&[
+            "narrate",
+            "crates/botticelli_social/tests/narratives/discord/state_test_cleanup.toml",
+        ])
+        .env("BOTTICELLI_STATE_DIR", state_dir.to_str().unwrap())
+        .output()?;
+    
+    println!("Cleanup stdout: {}", String::from_utf8_lossy(&cleanup_output.stdout));
+    println!("Cleanup stderr: {}", String::from_utf8_lossy(&cleanup_output.stderr));
+    
+    // Cleanup test directory
     fs::remove_dir_all(&state_dir)?;
     
     Ok(())
