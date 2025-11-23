@@ -291,24 +291,22 @@ pub struct ActorSettings {
 
 - `tests/config_test.rs` - TOML loading, validation, defaults (13 tests passing)
 
-### Phase 3: Knowledge Integration ✓
+### Phase 3: Knowledge Integration ✅
 
 **Crate**: `crates/botticelli_actor`
 
-1. [ ] Create `KnowledgeTable` wrapper
-2. [ ] Implement query methods
-3. [ ] Add connection to `botticelli_database`
-4. [ ] Create knowledge context type
+1. [x] Create `KnowledgeTable` wrapper
+2. [x] Implement query methods
+3. [x] Add connection to `botticelli_database`
+4. [x] Create knowledge context type (in SkillContext)
 
 **Files**:
 
 - `src/knowledge.rs` - Knowledge table abstraction
-- `src/context.rs` - Execution context types
 
 **Tests**:
 
-- `tests/knowledge_test.rs` - Table queries, filtering
-- Integration with existing database schemas
+- `tests/knowledge_test.rs` - Table creation and basic operations (3 tests passing)
 
 ### Phase 4: Actor Core ✓
 

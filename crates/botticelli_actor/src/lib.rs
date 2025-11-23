@@ -32,6 +32,7 @@
 mod config;
 mod content;
 mod error;
+mod knowledge;
 mod platform;
 mod skill;
 
@@ -42,6 +43,7 @@ pub use config::{
 };
 pub use content::{Content, ContentBuilder, MediaAttachment, MediaAttachmentBuilder, MediaType};
 pub use error::{ActorError, ActorErrorKind, ActorResult};
+pub use knowledge::KnowledgeTable;
 pub use platform::{
     PlatformMetadata, PlatformMetadataBuilder, PlatformResult, PostId, ScheduleId,
     SocialMediaPlatform,
