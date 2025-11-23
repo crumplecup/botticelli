@@ -281,7 +281,8 @@ narrate name:
         echo "✓ Found: $NARRATIVE"
         echo ""
         echo "🚀 Executing narrative..."
-        cargo run -p botticelli --release --features local -- run --narrative "$NARRATIVE" --save --state-dir .narrative_state --process-discord --verbose
+        STATE_DIR="${BOTTICELLI_STATE_DIR:-.narrative_state}"
+        cargo run -p botticelli --release --features local -- run --narrative "$NARRATIVE" --save --state-dir "$STATE_DIR" --process-discord --verbose
     else
         echo "❌ Multiple narratives found matching '{{name}}':"
         echo "$MATCHES" | sed 's/^/  /'

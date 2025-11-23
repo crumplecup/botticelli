@@ -291,3 +291,27 @@ Implementation:
 4. Update justfile to support state-name parameter
 5. Update test narratives to use shared state name
 
+
+## Root Cause Discovery (2025-11-23)
+
+The issue has been identified! Looking at the logs:
+- Channel is created successfully: "Successfully created channel channel_id=1442012048920674335"  
+- But NO "Captured bot command ID to state" or "Saved bot command IDs to state" messages appear
+- This means `capture_bot_command_ids()` is not finding any matching ID fields in the JSON response
+
+### The Problem
+
+The `capture_bot_command_ids()` method in executor.rs looks for fields like "channel_id", "message_id", etc. in the JSON result. But the Discord API response from channels.create likely uses a different structure (maybe just "id" or nested structure).
+
+### The Solution
+
+We need to:
+1. Log what the actual JSON response looks like from Discord commands
+2. Update the ID field extraction logic to handle Discord's actual response format  
+3. Possibly use the command type to determine which field contains the ID
+
+## Next Steps
+
+1. **Debug Discord Response Format** - Add logging to see actual JSON structure
+2. **Fix ID Extraction Logic** - Update capture_bot_command_ids to handle Discord's format
+3. **Verify State Persistence** - Confirm IDs are actually captured and saved

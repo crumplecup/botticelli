@@ -15,5 +15,6 @@ command = "messages.send"
 required = true
 
 [acts.send_message.input.args]
-channel_id = "${state:channel_id}"
+guild_id = "${env:TEST_GUILD_ID}"
+channel_id = "${state:id}"
 content = "Test message using state-stored channel ID"

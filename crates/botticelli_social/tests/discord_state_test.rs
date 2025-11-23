@@ -46,7 +46,7 @@ fn test_state_persistence_across_narratives() -> Result<(), Box<dyn std::error::
     }
     fs::create_dir_all(&state_dir)?;
     
-    let state_file = state_dir.join("narrative_state.json");
+    let state_file = state_dir.join("global.json");  // StateManager uses "global.json" for global scope
     
     // Run setup narrative to create and store channel ID
     let setup_output = Command::new("just")
@@ -66,7 +66,9 @@ fn test_state_persistence_across_narratives() -> Result<(), Box<dyn std::error::
     assert!(state_file.exists(), "State file should exist after setup");
     let state_content = fs::read_to_string(&state_file)?;
     let state: serde_json::Value = serde_json::from_str(&state_content)?;
-    assert!(state.get("TEST_CHANNEL_ID").is_some(), "TEST_CHANNEL_ID should be in state");
+    // The state has a "data" wrapper, so we need to look in data.id
+    let data = state.get("data").expect("State should have data field");
+    assert!(data.get("id").is_some(), "id should be in state data");
     println!("State after setup: {}", serde_json::to_string_pretty(&state)?);
     
     // Run use narrative that reads the channel ID from state

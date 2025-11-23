@@ -166,6 +166,14 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
         command: &str,
         result: &JsonValue,
     ) -> BotticelliResult<()> {
+        // Debug: Log the actual JSON response structure
+        tracing::debug!(
+            platform = %platform,
+            command = %command,
+            result = %serde_json::to_string_pretty(result).unwrap_or_else(|_| "invalid json".to_string()),
+            "Bot command result for ID extraction"
+        );
+        
         // Load global state
         let mut state = state_mgr.load(&crate::state::StateScope::Global).map_err(|e| {
             NarrativeError::new(NarrativeErrorKind::StateError(
@@ -175,6 +183,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
 
         // List of common ID field names to capture
         let id_fields = [
+            "id",  // Generic ID field (most common in Discord responses)
             "channel_id",
             "message_id",
             "role_id",
