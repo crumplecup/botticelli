@@ -17,4 +17,4 @@ command = "channels.delete"
 required = false
 
 [acts.delete_test_channel.input.args]
-channel_id = "${state:channel_id}"
+channel_id = "${state:discord.channels.create.id}"

@@ -13,9 +13,9 @@ order = ["update_channel_name"]
 [[acts.update_channel_name.input]]
 type = "bot_command"
 platform = "discord"
-command = "channels.update"
+command = "channels.edit"
 required = true
 
 [acts.update_channel_name.input.args]
-channel_id = "${state:channel_id}"
+channel_id = "${state:discord.channels.create.id}"
 name = "botticelli-write-test-updated"
