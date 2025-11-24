@@ -10,6 +10,20 @@
 # 4. Default: boticelli.toml (this file)
 
 # ============================================================================
+# Context Path Configuration
+# ============================================================================
+# Base directory for resolving file references in narrative TOML files.
+# When a narrative references a file (e.g., file = "BOTTICELLI_CONTEXT.md"),
+# the system searches recursively from this path.
+#
+# Default: Current workspace root (for development)
+# Override: Set to your project directory or a shared context repository
+
+[context]
+# Search base directory (defaults to workspace root if not set)
+# path = "/path/to/your/context/files"
+
+# ============================================================================
 # Default Budget Multipliers
 # ============================================================================
 # Apply conservative multipliers to all rate limits by default to avoid

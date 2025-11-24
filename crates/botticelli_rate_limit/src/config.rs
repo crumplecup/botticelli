@@ -281,6 +281,18 @@ pub struct BotticelliConfig {
     /// Default budget multipliers for all providers
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub budget: Option<botticelli_core::BudgetConfig>,
+
+    /// Context path configuration for file references
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<ContextConfig>,
+}
+
+/// Configuration for context file resolution.
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct ContextConfig {
+    /// Base directory for resolving file references in narrative TOML files.
+    /// Defaults to workspace root if not specified.
+    pub path: Option<String>,
 }
 
 impl BotticelliConfig {

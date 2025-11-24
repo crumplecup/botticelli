@@ -7,7 +7,106 @@ use crate::ActConfig;
 use botticelli_core::{Input, MediaSource};
 use serde::Deserialize;
 use std::collections::HashMap;
-use tracing::{debug, error, instrument};
+use std::path::{Path, PathBuf};
+use tracing::{debug, error, instrument, warn};
+
+/// Recursively search for a file starting from a base directory.
+///
+/// Searches upward through parent directories until the file is found or root is reached.
+/// Then searches downward recursively from the highest found directory.
+///
+/// # Arguments
+///
+/// * `filename` - The filename to search for (without path, e.g., "BOTTICELLI_CONTEXT.md")
+/// * `start_dir` - Optional starting directory (defaults to current directory)
+/// * `context_path` - Optional context base path from configuration
+///
+/// # Returns
+///
+/// The full path to the file if found, or an error if not found.
+#[instrument(skip_all, fields(%filename))]
+fn find_file_recursive(
+    filename: &str,
+    start_dir: Option<&Path>,
+    context_path: Option<&str>,
+) -> Result<PathBuf, String> {
+    // Determine search start directory
+    let base_dir = if let Some(ctx_path) = context_path {
+        PathBuf::from(ctx_path)
+    } else if let Some(start) = start_dir {
+        start.to_path_buf()
+    } else {
+        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?
+    };
+
+    debug!(search_base = %base_dir.display(), "Starting file search");
+
+    // First try exact match in base directory
+    let direct_path = base_dir.join(filename);
+    if direct_path.exists() {
+        debug!(found = %direct_path.display(), "Found file directly");
+        return Ok(direct_path);
+    }
+
+    // Search upward to find project root or file
+    let mut current = base_dir.as_path();
+    let mut search_roots = vec![current.to_path_buf()];
+    
+    while let Some(parent) = current.parent() {
+        let candidate = parent.join(filename);
+        if candidate.exists() {
+            debug!(found = %candidate.display(), "Found file in parent directory");
+            return Ok(candidate);
+        }
+        
+        // Check for workspace markers (stop at project root)
+        if parent.join("Cargo.toml").exists() || parent.join(".git").exists() {
+            search_roots.push(parent.to_path_buf());
+            break;
+        }
+        
+        search_roots.push(parent.to_path_buf());
+        current = parent;
+    }
+
+    // Search downward recursively from collected roots
+    for root in search_roots.iter().rev() {
+        if let Ok(found) = search_directory_recursive(root, filename) {
+            debug!(found = %found.display(), "Found file via recursive search");
+            return Ok(found);
+        }
+    }
+
+    error!("File not found after exhaustive search");
+    Err(format!("File '{}' not found in {} or any parent/child directories", filename, base_dir.display()))
+}
+
+/// Recursively search a directory tree for a file.
+fn search_directory_recursive(dir: &Path, filename: &str) -> Result<PathBuf, ()> {
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            
+            // Check if this is the file we're looking for
+            if path.is_file() && path.file_name().and_then(|n| n.to_str()) == Some(filename) {
+                return Ok(path);
+            }
+            
+            // Recurse into subdirectories (skip hidden dirs and common ignore patterns)
+            if path.is_dir() {
+                if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
+                    if !dir_name.starts_with('.') && dir_name != "target" && dir_name != "node_modules" {
+                        if let Ok(found) = search_directory_recursive(&path, filename) {
+                            return Ok(found);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    Err(())
+}
 
 /// Expand environment variables in string values within a HashMap.
 ///
@@ -357,12 +456,39 @@ impl TomlInput {
 
         match input_type {
             "text" => {
-                let content = self.content.as_ref().ok_or_else(|| {
-                    error!("Text input missing 'content' field");
-                    "Text input missing 'content' field".to_string()
-                })?;
+                // Support both inline content and file reference
+                let content = if let Some(content) = &self.content {
+                    content.clone()
+                } else if let Some(file_ref) = &self.file {
+                    // Load content from file
+                    let file_path = if Path::new(file_ref).is_absolute() || file_ref.contains('/') || file_ref.contains('\\') {
+                        PathBuf::from(file_ref)
+                    } else {
+                        let context_path = std::env::var("BOTTICELLI_CONTEXT_PATH").ok();
+                        match find_file_recursive(file_ref, None, context_path.as_deref()) {
+                            Ok(path) => {
+                                debug!(original = %file_ref, resolved = %path.display(), "Resolved text file path");
+                                path
+                            }
+                            Err(e) => {
+                                warn!(filename = %file_ref, error = %e, "File search failed, trying as-is");
+                                PathBuf::from(file_ref)
+                            }
+                        }
+                    };
+                    
+                    debug!(file = %file_path.display(), "Loading text from file");
+                    std::fs::read_to_string(&file_path).map_err(|e| {
+                        error!(file = %file_path.display(), error = %e, "Failed to read text file");
+                        format!("Failed to read text file {}: {}", file_path.display(), e)
+                    })?
+                } else {
+                    error!("Text input missing both 'content' and 'file' fields");
+                    return Err("Text input missing both 'content' and 'file' fields".to_string());
+                };
+                
                 debug!(content_len = content.len(), "Created text input");
-                Ok(Input::Text(content.clone()))
+                Ok(Input::Text(content))
             }
             "image" => {
                 let mime = self.mime.clone();
@@ -458,13 +584,32 @@ impl TomlInput {
         } else if let Some(base64) = &self.base64 {
             debug!(base64_len = base64.len(), "Using base64 source");
             Ok(MediaSource::Base64(base64.clone()))
-        } else if let Some(file) = &self.file {
-            debug!(%file, "Reading file source");
-            let data = std::fs::read(file).map_err(|e| {
-                error!(%file, error = %e, "Failed to read file");
-                format!("Failed to read file {}: {}", file, e)
+        } else if let Some(file_ref) = &self.file {
+            // Try to find the file recursively if it's just a filename
+            let file_path = if Path::new(file_ref).is_absolute() || file_ref.contains('/') || file_ref.contains('\\') {
+                // Use as-is if it looks like a full path
+                PathBuf::from(file_ref)
+            } else {
+                // Search recursively for the file
+                let context_path = std::env::var("BOTTICELLI_CONTEXT_PATH").ok();
+                match find_file_recursive(file_ref, None, context_path.as_deref()) {
+                    Ok(path) => {
+                        debug!(original = %file_ref, resolved = %path.display(), "Resolved file path");
+                        path
+                    }
+                    Err(e) => {
+                        warn!(filename = %file_ref, error = %e, "File search failed, trying as-is");
+                        PathBuf::from(file_ref)
+                    }
+                }
+            };
+            
+            debug!(file = %file_path.display(), "Reading file source");
+            let data = std::fs::read(&file_path).map_err(|e| {
+                error!(file = %file_path.display(), error = %e, "Failed to read file");
+                format!("Failed to read file {}: {}", file_path.display(), e)
             })?;
-            debug!(%file, size = data.len(), "File read successfully");
+            debug!(file = %file_path.display(), size = data.len(), "File read successfully");
             Ok(MediaSource::Binary(data))
         } else {
             error!("Media input missing source (url, base64, or file)");

@@ -27,7 +27,7 @@ max_tokens = 600
 
 # Load Botticelli context for the LLM
 [media.context]
-file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
+file = "BOTTICELLI_CONTEXT.md"
 
 # === Shared Act Definitions ===
 
@@ -92,7 +92,7 @@ max_tokens = 600
 
 [[narratives.feature.acts.generate.input]]
 type = "text"
-file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
+file = "BOTTICELLI_CONTEXT.md"
 
 [[narratives.feature.acts.generate.input]]
 type = "text"
@@ -133,7 +133,7 @@ max_tokens = 600
 
 [[narratives.usecase.acts.generate.input]]
 type = "text"
-file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
+file = "BOTTICELLI_CONTEXT.md"
 
 [[narratives.usecase.acts.generate.input]]
 type = "text"
@@ -174,7 +174,7 @@ max_tokens = 600
 
 [[narratives.tutorial.acts.generate.input]]
 type = "text"
-file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
+file = "BOTTICELLI_CONTEXT.md"
 
 [[narratives.tutorial.acts.generate.input]]
 type = "text"
@@ -215,7 +215,7 @@ max_tokens = 600
 
 [[narratives.community.acts.generate.input]]
 type = "text"
-file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
+file = "BOTTICELLI_CONTEXT.md"
 
 [[narratives.community.acts.generate.input]]
 type = "text"
@@ -256,7 +256,7 @@ max_tokens = 600
 
 [[narratives.problem.acts.generate.input]]
 type = "text"
-file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
+file = "BOTTICELLI_CONTEXT.md"
 
 [[narratives.problem.acts.generate.input]]
 type = "text"
