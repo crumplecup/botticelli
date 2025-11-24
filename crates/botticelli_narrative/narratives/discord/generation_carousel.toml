@@ -1,12 +1,44 @@
 # Discord Post Generation Carousel
-# Multi-narrative file with 5 different post generation focuses
-# Each narrative generates 10 posts using carousel mode
+# Five narratives that each generate-critique-refine a single post
+# Each narrative auto-stores to potential_posts table at completion
+#
+# Usage:
+#   Single post:  just narrate generation_carousel.feature
+#   Batch of 50:  just narrate generation_carousel.batch_generate
 
-# Shared resources
+# === Batch Generator: Run all five narratives 10 times (50 posts) ===
+[narratives.batch_generate]
+name = "generation_batch_50"
+description = "Run all five generation narratives 10 times using carousel mode"
+
+[narratives.batch_generate.carousel]
+iterations = 10
+
+[narratives.batch_generate.toc]
+order = ["feature", "usecase", "tutorial", "community", "problem"]
+
+# === Shared Model Configuration ===
+[config.gemini]
+model = "gemini-2.5-flash-lite"
+temperature = 0.8
+max_tokens = 600
+
+# === Shared Resources ===
+
+# Load Botticelli context for the LLM
 [media.context]
 file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
 
-# Shared act definitions (not used directly, acts are defined per narrative)
+# === Shared Act Definitions ===
+
+[acts.generate_base]
+model = "gemini-2.5-flash-lite"
+temperature = 0.8
+max_tokens = 600
+
+[[acts.generate_base.input]]
+type = "text"
+file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
 
 [acts.critique]
 model = "gemini-2.5-flash-lite"
@@ -15,7 +47,20 @@ max_tokens = 400
 
 [[acts.critique.input]]
 type = "text"
-content = "Critique {{generate}}: Evaluate engagement, clarity, accuracy, formatting. Provide improvements."
+content = """
+Critique this Discord post:
+
+{{generate}}
+
+Evaluate:
+1. Engagement (hook, CTA)
+2. Clarity (structure, readability)
+3. Accuracy (matches Botticelli capabilities)
+4. Discord formatting (markdown, emojis)
+5. Length (under 1800 chars)
+
+Provide specific improvements.
+"""
 
 [acts.refine]
 model = "gemini-2.5-flash-lite"
@@ -24,20 +69,27 @@ max_tokens = 600
 
 [[acts.refine.input]]
 type = "text"
-content = "Improve based on critique. Original: {{generate}}\n\nCritique: {{critique}}\n\nOutput JSON."
+content = """
+Improve the post based on critique:
 
-# === Narrative 1: Feature Posts ===
+Original: {{generate}}
+
+Critique: {{critique}}
+
+Output the refined post as JSON (preserve the exact format):
+{
+  "text_content": "Improved post here...",
+  "content_type": "discord_post",
+  "source": "generation_carousel",
+  "tags": ["potential", "TAG_FROM_ORIGINAL"]
+}
+"""
+
+# === Narrative 1: Feature Showcase ===
 [narratives.feature]
-name = "gen_posts_feature"
-description = "Generate feature-focused Discord posts"
+name = "potential_posts_feature"
+description = "Generate Discord post showcasing a Botticelli feature"
 template = "potential_posts"
-
-[narratives.feature.carousel]
-iterations = 10
-# Budget defaults to botticelli.toml [budget] section (80% of all limits)
-# Override here if needed:
-# [narratives.feature.carousel.budget]
-# rpm_multiplier = 0.5  # Even more conservative
 
 [narratives.feature.toc]
 order = ["generate", "critique", "refine"]
@@ -49,35 +101,36 @@ max_tokens = 600
 
 [[narratives.feature.acts.generate.input]]
 type = "text"
+file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
+
+[[narratives.feature.acts.generate.input]]
+type = "text"
 content = """
-You are generating content for Botticelli - a Rust library for executing multi-act LLM narratives.
+Read the Botticelli context document above. Use this information to create an engaging Discord post.
 
-Key features:
-- Multi-step narratives with context passing between acts
-- Content generation with PostgreSQL persistence
-- Discord bot integration with security policies  
-- Support for Gemini, Claude, GPT
-- Carousel mode for batch generation
-- Template-driven schema injection
+Focus: Feature showcase
+Angle: Highlight a specific Botticelli capability
 
-Create a Discord post showcasing ONE specific capability.
+Requirements:
+- Length: Under 1800 characters
+- Format: Discord markdown (**, *, __, ~~, ||) with emojis
+- Structure: Hook, explanation, example, call-to-action
+- Tone: Enthusiastic but professional
 
-Format: Discord markdown with emojis
-Length: Under 1800 chars
-Structure: Hook, explanation, code example, CTA
-
-Output JSON:
-{"text_content": "...", "content_type": "discord_post", "source": "generation_carousel", "tags": ["potential", "feature"]}
+Output only the post text as JSON:
+{
+  "text_content": "Your post here...",
+  "content_type": "discord_post",
+  "source": "generation_carousel",
+  "tags": ["potential", "feature"]
+}
 """
 
-# === Narrative 2: Use Case Posts ===
+# === Narrative 2: Use Cases ===
 [narratives.usecase]
-name = "gen_posts_usecase"
-description = "Generate use-case-focused Discord posts"
+name = "potential_posts_usecase"
+description = "Generate Discord post about real-world Botticelli use cases"
 template = "potential_posts"
-
-[narratives.usecase.carousel]
-iterations = 10
 
 [narratives.usecase.toc]
 order = ["generate", "critique", "refine"]
@@ -89,28 +142,36 @@ max_tokens = 600
 
 [[narratives.usecase.acts.generate.input]]
 type = "text"
+file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
+
+[[narratives.usecase.acts.generate.input]]
+type = "text"
 content = """
-Botticelli is a Rust library for executing multi-act LLM narratives with content generation and database persistence.
+Read the Botticelli context document above. Use this information to create an engaging Discord post.
 
-Focus: Real-world use case - Show a practical application
+Focus: Real-world use cases
+Angle: Show practical applications
 
-Examples: automated content generation, Discord community management, FAQ generation, social media scheduling
+Requirements:
+- Length: Under 1800 characters
+- Format: Discord markdown (**, *, __, ~~, ||) with emojis
+- Structure: Hook, explanation, example, call-to-action
+- Tone: Enthusiastic but professional
 
-Format: Discord markdown with emojis
-Make each iteration UNIQUE - explore different use cases
-
-Output JSON:
-{"text_content": "...", "content_type": "discord_post", "source": "generation_carousel", "tags": ["potential", "usecase"]}
+Output only the post text as JSON:
+{
+  "text_content": "Your post here...",
+  "content_type": "discord_post",
+  "source": "generation_carousel",
+  "tags": ["potential", "usecase"]
+}
 """
 
-# === Narrative 3: Tutorial Posts ===
+# === Narrative 3: Tutorial ===
 [narratives.tutorial]
-name = "gen_posts_tutorial"
-description = "Generate tutorial-focused Discord posts"
+name = "potential_posts_tutorial"
+description = "Generate Discord post with tutorial or how-to content"
 template = "potential_posts"
-
-[narratives.tutorial.carousel]
-iterations = 10
 
 [narratives.tutorial.toc]
 order = ["generate", "critique", "refine"]
@@ -122,28 +183,36 @@ max_tokens = 600
 
 [[narratives.tutorial.acts.generate.input]]
 type = "text"
+file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
+
+[[narratives.tutorial.acts.generate.input]]
+type = "text"
 content = """
-Botticelli is a Rust library for multi-act LLM narratives.
+Read the Botticelli context document above. Use this information to create an engaging Discord post.
 
-Focus: Tutorial/how-to - Educational, step-by-step guide
+Focus: Tutorial or how-to guide
+Angle: Educational, step-by-step
 
-Topics: Setting up a narrative, using carousel mode, integrating Discord bots, database persistence, template schemas
+Requirements:
+- Length: Under 1800 characters
+- Format: Discord markdown (**, *, __, ~~, ||) with emojis
+- Structure: Hook, explanation, example, call-to-action
+- Tone: Enthusiastic but professional
 
-Format: Discord markdown with emojis
-Structure: Introduction → Steps (numbered/bulleted) → Result → CTA
-
-Output JSON:
-{"text_content": "...", "content_type": "discord_post", "source": "generation_carousel", "tags": ["potential", "tutorial"]}
+Output only the post text as JSON:
+{
+  "text_content": "Your post here...",
+  "content_type": "discord_post",
+  "source": "generation_carousel",
+  "tags": ["potential", "tutorial"]
+}
 """
 
-# === Narrative 4: Community Posts ===
+# === Narrative 4: Community ===
 [narratives.community]
-name = "gen_posts_community"
-description = "Generate community-engagement Discord posts"
+name = "potential_posts_community"
+description = "Generate Discord post for community engagement"
 template = "potential_posts"
-
-[narratives.community.carousel]
-iterations = 10
 
 [narratives.community.toc]
 order = ["generate", "critique", "refine"]
@@ -154,32 +223,37 @@ temperature = 0.8
 max_tokens = 600
 
 [[narratives.community.acts.generate.input]]
-ref = "media.context"
+type = "text"
+file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
 
 [[narratives.community.acts.generate.input]]
 type = "text"
 content = """
-Botticelli is a Rust library for LLM narrative execution.
+Read the Botticelli context document above. Use this information to create an engaging Discord post.
 
-Focus: Community engagement - Encourage participation, questions, sharing
+Focus: Community engagement
+Angle: Encourage participation, questions, sharing
 
-Ideas: Ask for use cases, request feedback, showcase community projects, polls, challenges
+Requirements:
+- Length: Under 1800 characters
+- Format: Discord markdown (**, *, __, ~~, ||) with emojis
+- Structure: Hook, explanation, example, call-to-action
+- Tone: Enthusiastic but professional
 
-Format: Discord markdown with emojis
-Tone: Friendly, inviting, conversational
-
-Output JSON:
-{"text_content": "...", "content_type": "discord_post", "source": "generation_carousel", "tags": ["potential", "community"]}
+Output only the post text as JSON:
+{
+  "text_content": "Your post here...",
+  "content_type": "discord_post",
+  "source": "generation_carousel",
+  "tags": ["potential", "community"]
+}
 """
 
-# === Narrative 5: Problem-Solution Posts ===
+# === Narrative 5: Problem-Solution ===
 [narratives.problem]
-name = "gen_posts_problem"
-description = "Generate problem-solution Discord posts"
+name = "potential_posts_problemsolution"
+description = "Generate Discord post about problems Botticelli solves"
 template = "potential_posts"
-
-[narratives.problem.carousel]
-iterations = 10
 
 [narratives.problem.toc]
 order = ["generate", "critique", "refine"]
@@ -190,21 +264,28 @@ temperature = 0.8
 max_tokens = 600
 
 [[narratives.problem.acts.generate.input]]
-ref = "media.context"
+type = "text"
+file = "crates/botticelli_narrative/narratives/discord/BOTTICELLI_CONTEXT.md"
 
 [[narratives.problem.acts.generate.input]]
 type = "text"
 content = """
-Botticelli is a Rust library for LLM narrative execution.
+Read the Botticelli context document above. Use this information to create an engaging Discord post.
 
 Focus: Problem-solution narrative
+Angle: Common challenges Botticelli solves
 
-Common problems: Managing complex LLM workflows, content generation pipelines, context passing, rate limiting, database storage, multi-provider support
+Requirements:
+- Length: Under 1800 characters
+- Format: Discord markdown (**, *, __, ~~, ||) with emojis
+- Structure: Hook, explanation, example, call-to-action
+- Tone: Enthusiastic but professional
 
-Structure: Pain point → How Botticelli solves it → Benefit
-
-Format: Discord markdown with emojis
-
-Output JSON:
-{"text_content": "...", "content_type": "discord_post", "source": "generation_carousel", "tags": ["potential", "problem_solution"]}
+Output only the post text as JSON:
+{
+  "text_content": "Your post here...",
+  "content_type": "discord_post",
+  "source": "generation_carousel",
+  "tags": ["potential", "problem_solution"]
+}
 """
