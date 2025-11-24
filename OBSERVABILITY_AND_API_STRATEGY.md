@@ -3,6 +3,53 @@
 **Date**: 2025-11-24
 **Status**: Optional Enhancement Planning
 
+## Table of Contents
+
+### Core Sections
+- [Executive Summary](#executive-summary)
+- [Phase 1: Observability & Metrics](#phase-1-observability--metrics)
+- [Phase 2: HTTP API for Runtime Control](#phase-2-http-api-for-runtime-control)
+- [Implementation Sequence](#implementation-sequence)
+- [Success Criteria](#success-criteria)
+- [Risks and Mitigations](#risks-and-mitigations)
+- [Summary](#summary)
+
+### Phase 1: Observability
+- [Why Observability Matters](#why-observability-matters)
+- [Implementation Plan](#implementation-plan)
+  - [1.1: Prometheus Metrics Export](#11-prometheus-metrics-export-core)
+  - [1.2: Health Check Endpoints](#12-health-check-endpoints)
+  - [1.3: Grafana Dashboards](#13-grafana-dashboards-reference)
+  - [1.4: Alerting Rules](#14-alerting-rules-reference)
+- [Testing Strategy](#testing-strategy)
+- [Deliverables](#deliverables)
+
+### Phase 2: HTTP API
+- [Why an HTTP API?](#why-an-http-api)
+- [Implementation Plan](#implementation-plan-1)
+  - [2.1: API Framework Setup](#21-api-framework-setup)
+  - [2.2: API Server Implementation](#22-api-server-implementation)
+  - [2.3: Authentication & Authorization](#23-authentication--authorization)
+  - [2.4: Integration with Actor Server](#24-integration-with-actor-server)
+  - [2.5: API Client Examples](#25-api-client-examples)
+- [Testing Strategy](#testing-strategy-1)
+- [Deliverables](#deliverables-1)
+
+### Implementation Guide
+- [Recommended Order](#recommended-order)
+- [Alternative: Parallel Development](#alternative-parallel-development)
+- [Minimal Viable Product (MVP)](#minimal-viable-product-mvp)
+
+### Reference
+- [Phase 1 Complete When](#phase-1-complete-when)
+- [Phase 2 Complete When](#phase-2-complete-when)
+- [Production Ready When](#production-ready-when)
+- [Phase 1 Risks](#phase-1-risks)
+- [Phase 2 Risks](#phase-2-risks)
+- [Appendix: Database Schema Extensions](#appendix-database-schema-extensions)
+
+---
+
 ## Executive Summary
 
 This document outlines two complementary enhancements for the actor-server binary that add **operational visibility** and **programmatic control**:
