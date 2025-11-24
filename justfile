@@ -133,17 +133,25 @@ test-doc:
 test-one name:
     cargo test --workspace --features local --lib --tests {{name}} -- --nocapture
 
-# Run tests for a specific package
-test-package package:
+# Run tests for a specific package, optionally filtering by test name
+test-package package test_name="":
     #!/usr/bin/env bash
     # Check if package has a 'local' feature, use it if available
     if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
        jq -e ".packages[] | select(.name == \"{{package}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
         echo "📦 Testing {{package}} with local features"
-        cargo test -p {{package}} --features local --lib --tests
+        if [ -n "{{test_name}}" ]; then
+            cargo test -p {{package}} --features local --lib --tests {{test_name}} -- --nocapture
+        else
+            cargo test -p {{package}} --features local --lib --tests
+        fi
     else
         echo "📦 Testing {{package}} without features"
-        cargo test -p {{package}} --lib --tests
+        if [ -n "{{test_name}}" ]; then
+            cargo test -p {{package}} --lib --tests {{test_name}} -- --nocapture
+        else
+            cargo test -p {{package}} --lib --tests
+        fi
     fi
 
 # Run API tests for Gemini (requires GEMINI_API_KEY)
@@ -241,13 +249,13 @@ check-all package='':
     #!/usr/bin/env bash
     if [ -z "{{package}}" ]; then
         echo "🔍 Running all checks on entire workspace..."
+        just fmt
         just lint
-        just fmt-check
         just test-all
     else
         echo "🔍 Running all checks on {{package}}..."
+        just fmt
         just lint "{{package}}"
-        just fmt-check
         just test-package "{{package}}"
         # Run doc tests for the package if it has any
         if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
