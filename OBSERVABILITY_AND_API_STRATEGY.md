@@ -1,21 +1,20 @@
 # Actor Server: Observability & API Strategy
 
 **Date**: 2025-11-24
-**Status**: Planning Phase 7 & 8
-**Prerequisites**: ✅ Phase 5c Complete (Production-Ready Binary)
+**Status**: Optional Enhancement Planning
 
 ## Executive Summary
 
-The actor-server binary is production-ready with full state persistence, circuit breaker, and execution history. The next evolution focuses on **operational visibility** and **programmatic control** through two complementary enhancements:
+This document outlines two complementary enhancements for the actor-server binary that add **operational visibility** and **programmatic control**:
 
-- **Phase 7: Observability** - Metrics, monitoring, and health checks for operational insight
-- **Phase 8: HTTP API** - REST endpoints for runtime control and introspection
+- **Phase 1: Observability** - Metrics, monitoring, and health checks for operational insight
+- **Phase 2: HTTP API** - REST endpoints for runtime control and introspection
 
-Both phases are **optional enhancements** that add operational capabilities without changing core functionality.
+Both phases are **optional enhancements** that add operational capabilities without changing core functionality. The actor-server is already production-ready; these features enable advanced operational workflows.
 
 ---
 
-## Phase 7: Observability & Metrics
+## Phase 1: Observability & Metrics
 
 **Goal**: Enable operators to monitor actor health, performance, and execution patterns in production.
 
@@ -38,7 +37,7 @@ With observability:
 
 ### Implementation Plan
 
-#### 7.1: Prometheus Metrics Export (Core)
+#### 1.1: Prometheus Metrics Export (Core)
 
 **Location**: New file `crates/botticelli_actor/src/metrics.rs`
 
@@ -200,7 +199,7 @@ scrape_configs:
       - targets: ['localhost:9090']
 ```
 
-#### 7.2: Health Check Endpoints
+#### 1.2: Health Check Endpoints
 
 **Location**: New file `crates/botticelli_actor/src/health.rs`
 
@@ -334,7 +333,7 @@ startupProbe:
   periodSeconds: 10
 ```
 
-#### 7.3: Grafana Dashboards (Reference)
+#### 1.3: Grafana Dashboards (Reference)
 
 **Example Dashboard Panels**:
 
@@ -374,7 +373,7 @@ histogram_quantile(0.95,
 botticelli_actor_paused == 1
 ```
 
-#### 7.4: Alerting Rules (Reference)
+#### 1.4: Alerting Rules (Reference)
 
 **Prometheus Alerting Rules** (`alerts.yml`):
 
@@ -479,7 +478,7 @@ async fn test_metrics_recorded() {
 
 ---
 
-## Phase 8: HTTP API for Runtime Control
+## Phase 2: HTTP API for Runtime Control
 
 **Goal**: Enable programmatic control and introspection of running actors without SSH/database access.
 
@@ -504,7 +503,7 @@ With HTTP API:
 
 ### Implementation Plan
 
-#### 8.1: API Framework Setup
+#### 2.1: API Framework Setup
 
 **Dependencies**:
 ```toml
@@ -539,11 +538,11 @@ jsonwebtoken = "9"  # For API authentication
     POST   /reload        - Reload configuration from file
 
   /health
-    GET    /live          - Liveness probe (shared with Phase 7)
-    GET    /ready         - Readiness probe (shared with Phase 7)
+    GET    /live          - Liveness probe (shared with Phase 1)
+    GET    /ready         - Readiness probe (shared with Phase 1)
 ```
 
-#### 8.2: API Server Implementation
+#### 2.2: API Server Implementation
 
 **Location**: New file `crates/botticelli_actor/src/api_server.rs`
 
@@ -799,7 +798,7 @@ async fn reload_config(
 }
 ```
 
-#### 8.3: Authentication & Authorization
+#### 2.3: Authentication & Authorization
 
 **JWT-based Authentication**:
 
@@ -878,7 +877,7 @@ API_JWT_SECRET="your-very-secure-secret-key-here"
 # Example payload: {"sub": "admin", "role": "admin", "exp": 1735689600}
 ```
 
-#### 8.4: Integration with Actor Server
+#### 2.4: Integration with Actor Server
 
 **Main Changes to `actor-server.rs`**:
 
@@ -937,7 +936,7 @@ loop {
 }
 ```
 
-#### 8.5: API Client Examples
+#### 2.5: API Client Examples
 
 **cURL Examples**:
 
@@ -1192,12 +1191,12 @@ async fn test_trigger_actor() {
 
 ### Recommended Order
 
-**Week 1: Phase 7 - Observability**
+**Week 1: Phase 1 - Observability**
 1. Day 1: Prometheus metrics implementation and integration
 2. Day 2: Health check endpoints and Grafana dashboard examples
 3. Testing and documentation
 
-**Week 2: Phase 8 - HTTP API**
+**Week 2: Phase 2 - HTTP API**
 1. Day 1: API framework, basic routes (list, get)
 2. Day 2: Control routes (pause, resume, trigger)
 3. Day 3: Authentication, integration, testing
@@ -1205,21 +1204,21 @@ async fn test_trigger_actor() {
 ### Alternative: Parallel Development
 
 If multiple developers available:
-- **Developer A**: Phase 7 (Observability)
-- **Developer B**: Phase 8 (HTTP API foundation)
-- **Integration**: Merge health checks from Phase 7 into API from Phase 8
+- **Developer A**: Phase 1 (Observability)
+- **Developer B**: Phase 2 (HTTP API foundation)
+- **Integration**: Merge health checks from Phase 1 into API from Phase 2
 
 ### Minimal Viable Product (MVP)
 
 If time-constrained, prioritize:
 
-**Phase 7 MVP** (4-6 hours):
+**Phase 1 MVP** (4-6 hours):
 - ✅ Basic Prometheus metrics (executions, failures)
 - ✅ Simple health check endpoint
 - ❌ Skip: Grafana dashboards (can create later)
 - ❌ Skip: Alerting rules (can configure later)
 
-**Phase 8 MVP** (8-12 hours):
+**Phase 2 MVP** (8-12 hours):
 - ✅ Read-only endpoints (list actors, executions)
 - ✅ Basic control (pause/resume)
 - ❌ Skip: Authentication (add later)
@@ -1230,7 +1229,7 @@ If time-constrained, prioritize:
 
 ## Success Criteria
 
-### Phase 7 Complete When:
+### Phase 1 Complete When:
 - ✅ Prometheus metrics endpoint responding on :9090
 - ✅ Key metrics visible: executions, failures, circuit breakers, duration
 - ✅ Health endpoints responding on :8080 (live, ready, startup)
@@ -1238,7 +1237,7 @@ If time-constrained, prioritize:
 - ✅ Example alert rules documented
 - ✅ Tests verify metrics are recorded correctly
 
-### Phase 8 Complete When:
+### Phase 2 Complete When:
 - ✅ API server responding on :3000
 - ✅ All CRUD endpoints functional (list, get, pause, resume, trigger)
 - ✅ JWT authentication protecting control endpoints
@@ -1248,7 +1247,7 @@ If time-constrained, prioritize:
 - ✅ Integration tests passing
 
 ### Production Ready When:
-- ✅ Phases 7 & 8 complete
+- ✅ Both phases complete
 - ✅ Deployed with metrics scraping configured
 - ✅ Grafana dashboards showing real data
 - ✅ Alerts firing when issues occur
@@ -1259,7 +1258,7 @@ If time-constrained, prioritize:
 
 ## Risks and Mitigations
 
-### Phase 7 Risks
+### Phase 1 Risks
 
 **Risk**: Metrics overhead impacts execution performance
 - **Mitigation**: Metrics are async, minimal overhead (<1ms)
@@ -1270,7 +1269,7 @@ If time-constrained, prioritize:
 - **Mitigation**: Metrics endpoint is pull-based, no data loss
 - **Mitigation**: Health checks independent of metrics
 
-### Phase 8 Risks
+### Phase 2 Risks
 
 **Risk**: API changes break main execution loop
 - **Mitigation**: Minimal coupling via channels
@@ -1293,7 +1292,7 @@ If time-constrained, prioritize:
 
 ### Execution History Queries
 
-Current schema supports Phase 7 & 8 with existing tables:
+Current schema supports both phases with existing tables:
 - `actor_server_state` - Task state (pause, failures)
 - `actor_server_executions` - Execution history
 
@@ -1316,11 +1315,11 @@ ON actor_server_state(actor_name);
 
 ## Summary
 
-**Phase 7: Observability** enables production monitoring through Prometheus metrics, health checks, and alerting integration. This provides operational visibility without changing actor behavior.
+**Phase 1: Observability** enables production monitoring through Prometheus metrics, health checks, and alerting integration. This provides operational visibility without changing actor behavior.
 
-**Phase 8: HTTP API** enables programmatic control through REST endpoints for pausing, resuming, triggering, and querying actors. This provides operational flexibility without requiring database or SSH access.
+**Phase 2: HTTP API** enables programmatic control through REST endpoints for pausing, resuming, triggering, and querying actors. This provides operational flexibility without requiring database or SSH access.
 
-Both phases are **optional enhancements** that build on the production-ready Phase 5c foundation. They can be implemented independently or together based on operational needs.
+Both phases are **optional enhancements** that add operational capabilities to the production-ready actor-server. They can be implemented independently or together based on operational needs.
 
 **Estimated Total Time**: 3-5 days (or 12-18 hours for MVP versions)
 
@@ -1331,4 +1330,4 @@ Both phases are **optional enhancements** that build on the production-ready Pha
 - 🏥 Kubernetes-ready health checks
 - 🔐 Secure API with authentication
 
-**Next Steps**: Choose Phase 7, Phase 8, or both based on immediate operational needs.
+**Next Steps**: Choose Phase 1, Phase 2, or both based on immediate operational needs.
