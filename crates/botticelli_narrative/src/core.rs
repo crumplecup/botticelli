@@ -269,9 +269,9 @@ impl Narrative {
             }
         }
 
-        // Check that all acts have at least one input
+        // Check that all acts have at least one input OR are narrative references
         for (act_name, config) in &self.acts {
-            if config.inputs().is_empty() {
+            if config.inputs().is_empty() && !config.is_narrative_ref() {
                 return Err(NarrativeError::new(NarrativeErrorKind::EmptyPrompt(
                     act_name.clone(),
                 )));

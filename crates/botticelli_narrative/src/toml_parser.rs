@@ -270,6 +270,10 @@ pub struct TomlActConfig {
     #[serde(default)]
     pub input: Vec<TomlInput>,
 
+    /// Reference to another narrative to execute as this act
+    #[serde(default)]
+    pub narrative: Option<String>,
+
     /// Optional model override
     pub model: Option<String>,
 
@@ -621,9 +625,28 @@ impl TomlInput {
 impl TomlActConfig {
     /// Convert TOML act config to domain ActConfig.
     #[allow(dead_code)]
-    #[instrument(skip(self), fields(input_count = self.input.len()))]
+    #[instrument(skip(self), fields(input_count = self.input.len(), has_narrative_ref = self.narrative.is_some()))]
     pub fn to_act_config(&self) -> Result<ActConfig, String> {
         debug!("Converting TOML act config to domain ActConfig");
+        
+        // Check for mutual exclusivity
+        if self.narrative.is_some() && !self.input.is_empty() {
+            error!("Act has both narrative reference and inputs");
+            return Err("Act cannot have both 'narrative' and 'input' fields".to_string());
+        }
+        
+        // If this is a narrative reference act
+        if let Some(ref narrative_name) = self.narrative {
+            debug!(narrative = %narrative_name, "Creating narrative reference act");
+            return Ok(ActConfig::from_narrative_ref(
+                narrative_name.clone(),
+                self.model.clone(),
+                self.temperature,
+                self.max_tokens,
+            ));
+        }
+        
+        // Otherwise, process inputs normally
         let inputs: Result<Vec<Input>, String> =
             self.input.iter().map(|ti| ti.to_input()).collect();
 

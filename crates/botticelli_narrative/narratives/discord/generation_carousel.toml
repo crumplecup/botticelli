@@ -17,6 +17,21 @@ iterations = 10
 [narratives.batch_generate.toc]
 order = ["feature", "usecase", "tutorial", "community", "problem"]
 
+[narratives.batch_generate.acts.feature]
+narrative = "feature"
+
+[narratives.batch_generate.acts.usecase]
+narrative = "usecase"
+
+[narratives.batch_generate.acts.tutorial]
+narrative = "tutorial"
+
+[narratives.batch_generate.acts.community]
+narrative = "community"
+
+[narratives.batch_generate.acts.problem]
+narrative = "problem"
+
 # === Shared Model Configuration ===
 [config.gemini]
 model = "gemini-2.5-flash-lite"

@@ -11,6 +11,10 @@ use serde::{Deserialize, Serialize};
 ///
 /// This structure allows fine-grained control over each act's behavior,
 /// including multimodal inputs and per-act model/parameter overrides.
+///
+/// Acts can either:
+/// - Have direct inputs (traditional act execution)
+/// - Reference another narrative (narrative composition)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_getters::Getters)]
 pub struct ActConfig {
     /// Multimodal inputs for this act.
@@ -18,7 +22,19 @@ pub struct ActConfig {
     /// Can include text, images, audio, video, documents, or any combination.
     /// Most acts will have a single `Input::Text`, but multimodal acts can
     /// combine multiple input types.
+    ///
+    /// Mutually exclusive with `narrative_ref`.
+    #[serde(default)]
     inputs: Vec<Input>,
+
+    /// Reference to another narrative to execute as this act.
+    ///
+    /// When set, this act will execute the referenced narrative and use its
+    /// output as the act's result. Enables narrative composition.
+    ///
+    /// Mutually exclusive with `inputs`.
+    #[serde(default)]
+    narrative_ref: Option<String>,
 
     /// Optional model override for this specific act.
     ///
@@ -56,10 +72,28 @@ impl ActConfig {
     ) -> Self {
         Self {
             inputs,
+            narrative_ref: None,
             model,
             temperature,
             max_tokens,
             carousel,
+        }
+    }
+    
+    /// Create an act that references another narrative.
+    pub fn from_narrative_ref<S: Into<String>>(
+        narrative_name: S,
+        model: Option<String>,
+        temperature: Option<f32>,
+        max_tokens: Option<u32>,
+    ) -> Self {
+        Self {
+            inputs: Vec::new(),
+            narrative_ref: Some(narrative_name.into()),
+            model,
+            temperature,
+            max_tokens,
+            carousel: None,
         }
     }
 
@@ -70,6 +104,7 @@ impl ActConfig {
     pub fn from_text<S: Into<String>>(text: S) -> Self {
         Self {
             inputs: vec![Input::Text(text.into())],
+            narrative_ref: None,
             model: None,
             temperature: None,
             max_tokens: None,
@@ -77,10 +112,16 @@ impl ActConfig {
         }
     }
 
+    /// Check if this act is a narrative reference.
+    pub fn is_narrative_ref(&self) -> bool {
+        self.narrative_ref.is_some()
+    }
+    
     /// Create an act configuration with multimodal inputs.
     pub fn from_inputs(inputs: Vec<Input>) -> Self {
         Self {
             inputs,
+            narrative_ref: None,
             model: None,
             temperature: None,
             max_tokens: None,

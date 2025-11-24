@@ -282,6 +282,37 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 .get_act_config(act_name)
                 .expect("NarrativeProvider should ensure all acts exist");
 
+            // Check if this act is a narrative reference
+            if config.is_narrative_ref() {
+                let narrative_ref_name = config.narrative_ref().as_ref().unwrap();
+                tracing::info!(
+                    act = %act_name,
+                    referenced_narrative = %narrative_ref_name,
+                    "Executing narrative reference"
+                );
+                
+                // Get the referenced narrative from the provider
+                // For multi-narrative files, the provider should have all narratives loaded
+                // This is a simplified approach - in reality we'd need to pass the multi-narrative context
+                tracing::warn!(
+                    "Narrative composition not yet fully implemented - referenced narrative {} would be executed here",
+                    narrative_ref_name
+                );
+                
+                // TODO: Implement recursive narrative execution
+                // For now, record a placeholder execution
+                act_executions.push(ActExecution {
+                    act_name: act_name.clone(),
+                    inputs: Vec::new(),
+                    model: config.model().clone(),
+                    temperature: *config.temperature(),
+                    max_tokens: *config.max_tokens(),
+                    response: format!("[Narrative reference to: {}]", narrative_ref_name),
+                    sequence_number,
+                });
+                continue;
+            }
+
             // Process inputs (execute bot commands, query tables, etc.)
             // Pass execution history for template resolution
             let (processed_inputs, bot_command_result) = self
