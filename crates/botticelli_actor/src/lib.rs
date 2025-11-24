@@ -43,6 +43,7 @@ mod content;
 #[cfg(feature = "discord")]
 mod discord_server;
 mod error;
+mod execution_tracker;
 mod knowledge;
 mod platform_trait;
 pub mod platforms;
@@ -63,6 +64,7 @@ pub use content::{
     MediaAttachmentBuilder, MediaType,
 };
 pub use error::{ActorError, ActorErrorKind, ActorResult};
+pub use execution_tracker::ActorExecutionTracker;
 pub use knowledge::KnowledgeTable;
 pub use platform_trait::{Platform, PlatformCapability, PlatformMessage, PlatformMetadata};
 pub use server::{
@@ -78,7 +80,7 @@ pub use skills::{
     ContentFormatterSkill, ContentSchedulingSkill, ContentSelectionSkill, DuplicateCheckSkill,
     RateLimitingSkill,
 };
-pub use state_persistence::DatabaseStatePersistence;
+pub use state_persistence::{DatabaseExecutionResult, DatabaseStatePersistence};
 
 #[cfg(feature = "discord")]
 pub use discord_server::{

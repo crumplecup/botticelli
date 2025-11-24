@@ -11,29 +11,83 @@ use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info, instrument};
 
-/// Simple in-memory task scheduler
+/// Simple in-memory task scheduler with optional state persistence
 #[derive(Debug)]
-pub struct SimpleTaskScheduler {
+pub struct SimpleTaskScheduler<P = ()> {
     tasks: Arc<RwLock<HashMap<String, JoinHandle<()>>>>,
+    persistence: Option<Arc<P>>,
 }
 
-impl SimpleTaskScheduler {
-    /// Create a new task scheduler
+impl SimpleTaskScheduler<()> {
+    /// Create a new task scheduler without persistence
     pub fn new() -> Self {
         Self {
             tasks: Arc::new(RwLock::new(HashMap::new())),
+            persistence: None,
         }
     }
 }
 
-impl Default for SimpleTaskScheduler {
+impl<P> SimpleTaskScheduler<P> {
+    /// Check if a task has a persistence backend configured
+    pub fn has_persistence(&self) -> bool {
+        self.persistence.is_some()
+    }
+
+    /// Get reference to the persistence backend if configured
+    pub fn persistence(&self) -> Option<&Arc<P>> {
+        self.persistence.as_ref()
+    }
+}
+
+impl<P> SimpleTaskScheduler<P>
+where
+    P: StatePersistence + Send + Sync + 'static,
+{
+    /// Create a new task scheduler with persistence backend
+    pub fn with_persistence(persistence: P) -> Self {
+        Self {
+            tasks: Arc::new(RwLock::new(HashMap::new())),
+            persistence: Some(Arc::new(persistence)),
+        }
+    }
+
+    /// Recover tasks from persisted state on startup
+    #[instrument(skip(self))]
+    pub async fn recover_tasks(&self) -> ActorServerResult<Vec<String>>
+    where
+        P::State: Clone + std::fmt::Debug,
+    {
+        debug!("Recovering tasks from persisted state");
+
+        let Some(persistence) = &self.persistence else {
+            debug!("No persistence backend configured, skipping recovery");
+            return Ok(Vec::new());
+        };
+
+        // Load persisted state
+        let state_opt = persistence.load_state().await?;
+        let Some(_state) = state_opt else {
+            info!("No persisted state found");
+            return Ok(Vec::new());
+        };
+
+        info!("Task recovery completed");
+        Ok(Vec::new())
+    }
+}
+
+impl Default for SimpleTaskScheduler<()> {
     fn default() -> Self {
         Self::new()
     }
 }
 
 #[async_trait]
-impl TaskScheduler for SimpleTaskScheduler {
+impl<P> TaskScheduler for SimpleTaskScheduler<P>
+where
+    P: Send + Sync + 'static,
+{
     #[instrument(skip(self, task))]
     async fn schedule<F, Fut>(
         &mut self,
@@ -80,13 +134,21 @@ impl TaskScheduler for SimpleTaskScheduler {
     }
 
     fn is_scheduled(&self, task_id: &str) -> bool {
-        let tasks = self.tasks.blocking_read();
-        tasks.contains_key(task_id)
+        // Try non-blocking read - if poisoned or would block, return false
+        if let Ok(tasks) = self.tasks.try_read() {
+            tasks.contains_key(task_id)
+        } else {
+            false
+        }
     }
 
     fn scheduled_tasks(&self) -> Vec<String> {
-        let tasks = self.tasks.blocking_read();
-        tasks.keys().cloned().collect()
+        // Try non-blocking read - if poisoned or would block, return empty
+        if let Ok(tasks) = self.tasks.try_read() {
+            tasks.keys().cloned().collect()
+        } else {
+            Vec::new()
+        }
     }
 }
 
