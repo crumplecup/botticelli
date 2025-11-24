@@ -1,0 +1,54 @@
+# Botticelli Actor Server Configuration
+#
+# This file configures the actor server binary for running long-running
+# social media automation tasks.
+
+[server]
+# How often to check for scheduled tasks (in seconds)
+check_interval_seconds = 60
+
+# Maximum consecutive failures before pausing a task
+max_consecutive_failures = 5
+
+# Example actor: Daily content poster
+[[actors]]
+name = "daily_poster"
+config_file = "examples/actors/daily_poster.toml"
+channel_id = "1234567890"  # Discord channel ID
+enabled = true
+
+[actors.schedule]
+type = "Interval"
+seconds = 86400  # Once per day (24 hours)
+
+# Example actor: Hourly trending topics
+[[actors]]
+name = "hourly_trends"
+config_file = "examples/actors/trending.toml"
+channel_id = "0987654321"  # Discord channel ID
+enabled = true
+
+[actors.schedule]
+type = "Interval"
+seconds = 3600  # Every hour
+
+# Example actor: Immediate execution on startup
+[[actors]]
+name = "startup_welcome"
+config_file = "examples/actors/welcome.toml"
+channel_id = "1234567890"
+enabled = false  # Disabled by default
+
+[actors.schedule]
+type = "Immediate"
+
+# Example actor: Future cron-based scheduling (Phase 4)
+# [[actors]]
+# name = "morning_summary"
+# config_file = "examples/actors/summary.toml"
+# channel_id = "1234567890"
+# enabled = false
+#
+# [actors.schedule]
+# type = "Cron"
+# expression = "0 9 * * *"  # 9 AM daily
