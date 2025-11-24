@@ -27,6 +27,10 @@ pub enum Commands {
         #[arg(long)]
         narrative: PathBuf,
 
+        /// Specific narrative name (for multi-narrative files)
+        #[arg(long)]
+        narrative_name: Option<String>,
+
         /// Save execution results to database
         #[arg(long)]
         save: bool,

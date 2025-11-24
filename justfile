@@ -53,16 +53,25 @@ update-just:
 update-all: install-rust install-cargo-tools update-just
     @echo "✅ All tools updated!"
 
-# Building
-# ========
+# Building and Checking
+# ======================
 
-# Build the project in debug mode
-build:
-    cargo build
 
-# Build the project in release mode
-build-release:
-    cargo build --release
+
+# Build specific package or all workspace with local features
+build PACKAGE="":
+    #!/usr/bin/env bash
+    if [ -z "{{PACKAGE}}" ]; then
+        cargo build --release --features local
+    else
+        # Check if package has local feature
+        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
+           jq -e ".packages[] | select(.name == \"{{PACKAGE}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
+            cargo build --release --package {{PACKAGE}} --features local
+        else
+            cargo build --release --package {{PACKAGE}}
+        fi
+    fi
 
 # Build with local features (all except api)
 build-local:
@@ -346,39 +355,85 @@ run-all *args:
 # Content Generation Examples
 # ===========================
 
-# Execute a narrative by name (searches recursively for matching TOML files)
-narrate name:
+# Execute a narrative by name (supports file.narrative syntax for multi-narrative files)
+narrate PATTERN:
     #!/usr/bin/env bash
     set -e
     
-    echo "🔍 Searching for narrative: {{name}}"
-    
-    # Find all TOML files recursively that match the name
-    MATCHES=$(find . -type f -name "*.toml" | grep -i "{{name}}" | grep -v target | grep -v node_modules || true)
-    
-    if [ -z "$MATCHES" ]; then
-        echo "❌ No narrative found matching '{{name}}'"
-        echo ""
-        echo "📂 Available narratives:"
-        find crates/botticelli_narrative/narratives -type f -name "*.toml" 2>/dev/null | sed 's|crates/botticelli_narrative/narratives/||' | sed 's/\.toml$//' | sort || echo "  (no narratives directory)"
-        exit 1
-    fi
-    
-    # Count matches
-    COUNT=$(echo "$MATCHES" | wc -l)
-    
-    if [ "$COUNT" -eq 1 ]; then
-        NARRATIVE="$MATCHES"
-        echo "✓ Found: $NARRATIVE"
+    # Check if pattern contains a dot (file.narrative_name syntax)
+    PATTERN="{{PATTERN}}"
+    if [[ "$PATTERN" == *.* ]]; then
+        FILE_PART="${PATTERN%.*}"
+        NARRATIVE_NAME="${PATTERN##*.}"
+        
+        echo "🔍 Searching for multi-narrative file: ${FILE_PART}"
+        NARRATIVE_FILE=$(find ./crates/botticelli_narrative/narratives -name "${FILE_PART}.toml" | head -1)
+        
+        if [ -z "$NARRATIVE_FILE" ]; then
+            echo "❌ No narrative file found matching '${FILE_PART}'"
+            echo ""
+            echo "📂 Available narratives:"
+            find crates/botticelli_narrative/narratives -type f -name "*.toml" 2>/dev/null | sed 's|crates/botticelli_narrative/narratives/||' | sed 's/\.toml$//' | sort || echo "  (no narratives directory)"
+            exit 1
+        fi
+        
+        echo "✓ Found: $NARRATIVE_FILE"
+        echo "✓ Loading narrative: ${NARRATIVE_NAME}"
         echo ""
         echo "🚀 Executing narrative..."
         STATE_DIR="${BOTTICELLI_STATE_DIR:-.narrative_state}"
-        cargo run -p botticelli --release --features local -- run --narrative "$NARRATIVE" --save --state-dir "$STATE_DIR" --process-discord --verbose
+        cargo run -p botticelli --release --features local -- run \
+            --narrative "$NARRATIVE_FILE" \
+            --narrative-name "${NARRATIVE_NAME}" \
+            --save \
+            --state-dir "$STATE_DIR" \
+            --process-discord \
+            --verbose
     else
-        echo "❌ Multiple narratives found matching '{{name}}':"
-        echo "$MATCHES" | sed 's/^/  /'
+        # Original behavior: search for file by name
+        echo "🔍 Searching for narrative: {{PATTERN}}"
+        
+        # Find all TOML files recursively that match the name
+        MATCHES=$(find ./crates/botticelli_narrative/narratives -type f -name "*.toml" | grep -i "{{PATTERN}}" | grep -v target | grep -v node_modules || true)
+        
+        if [ -z "$MATCHES" ]; then
+            echo "❌ No narrative found matching '{{PATTERN}}'"
+            echo ""
+            echo "📂 Available narratives:"
+            find crates/botticelli_narrative/narratives -type f -name "*.toml" 2>/dev/null | sed 's|crates/botticelli_narrative/narratives/||' | sed 's/\.toml$//' | sort || echo "  (no narratives directory)"
+            exit 1
+        fi
+        
+        # Count matches
+        COUNT=$(echo "$MATCHES" | wc -l)
+        
+        if [ "$COUNT" -eq 1 ]; then
+            NARRATIVE="$MATCHES"
+            echo "✓ Found: $NARRATIVE"
+            echo ""
+            echo "🚀 Executing narrative..."
+            STATE_DIR="${BOTTICELLI_STATE_DIR:-.narrative_state}"
+            cargo run -p botticelli --release --features local -- run \
+                --narrative "$NARRATIVE" \
+                --save \
+                --state-dir "$STATE_DIR" \
+                --process-discord \
+                --verbose
+        else
+            echo "❌ Multiple narratives found matching '{{PATTERN}}':"
+            echo "$MATCHES" | sed 's/^/  /'
+            echo ""
+            echo "💡 Please be more specific with the name"
+            exit 1
+        fi
+    fi
+    
+    if [ $? -eq 0 ]; then
         echo ""
-        echo "💡 Please be more specific with the name"
+        echo "✅ Narrative execution completed successfully"
+    else
+        echo ""
+        echo "❌ Narrative execution failed"
         exit 1
     fi
 

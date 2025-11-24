@@ -118,6 +118,11 @@ pub struct Narrative {
 }
 
 impl Narrative {
+    /// Set the source path for this narrative.
+    pub fn set_source_path(&mut self, path: Option<std::path::PathBuf>) {
+        self.source_path = path;
+    }
+
     /// Loads a narrative from a TOML file.
     ///
     /// # Errors
@@ -190,7 +195,7 @@ impl Narrative {
     /// - Prompt assembly fails
     #[cfg(feature = "database")]
     #[tracing::instrument(skip(self, conn), fields(template = ?self.metadata.template, act_count = self.acts.len()))]
-    fn assemble_act_prompts(&mut self, conn: &mut PgConnection) -> Result<(), NarrativeError> {
+    pub fn assemble_act_prompts(&mut self, conn: &mut PgConnection) -> Result<(), NarrativeError> {
         let template = self
             .metadata
             .template
@@ -286,29 +291,41 @@ impl FromStr for Narrative {
     type Err = NarrativeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_toml_str(s, None)
+    }
+}
+
+impl Narrative {
+    /// Parse a narrative from TOML string, optionally specifying which narrative to load.
+    pub fn from_toml_str(s: &str, narrative_name: Option<&str>) -> Result<Self, NarrativeError> {
         // Parse TOML into intermediate structure
-        let toml_narrative: toml_parser::TomlNarrativeFile = toml::from_str(s)
+        let toml_narrative_file: toml_parser::TomlNarrativeFile = toml::from_str(s)
             .map_err(|e| NarrativeError::new(NarrativeErrorKind::TomlParse(e.to_string())))?;
+
+        // Resolve the narrative (supports multi-narrative files)
+        let (narrative_meta, narrative_toc, narrative_acts) = toml_narrative_file
+            .resolve_narrative(narrative_name)
+            .map_err(|e| NarrativeError::new(NarrativeErrorKind::TomlParse(e)))?;
 
         // Convert to domain types
         let metadata = NarrativeMetadata {
-            name: toml_narrative.narrative.name.clone(),
-            description: toml_narrative.narrative.description.clone(),
-            template: toml_narrative.narrative.template.clone(),
-            skip_content_generation: toml_narrative.narrative.skip_content_generation,
-            carousel: toml_narrative.narrative.carousel.clone(),
-            model: toml_narrative.narrative.model.clone(),
-            temperature: toml_narrative.narrative.temperature,
-            max_tokens: toml_narrative.narrative.max_tokens,
+            name: narrative_meta.name.clone(),
+            description: narrative_meta.description.clone(),
+            template: narrative_meta.template.clone(),
+            skip_content_generation: narrative_meta.skip_content_generation,
+            carousel: narrative_meta.carousel.clone(),
+            model: narrative_meta.model.clone(),
+            temperature: narrative_meta.temperature,
+            max_tokens: narrative_meta.max_tokens,
         };
 
         let toc = NarrativeToc {
-            order: toml_narrative.toc.order.clone(),
+            order: narrative_toc.order.clone(),
         };
 
         let mut acts = HashMap::new();
-        for (act_name, toml_act) in &toml_narrative.acts {
-            let act_config = toml_act.to_act_config(&toml_narrative).map_err(|e| {
+        for (act_name, toml_act) in &narrative_acts {
+            let act_config = toml_act.to_act_config(&toml_narrative_file).map_err(|e| {
                 // Check if this is an empty prompt error
                 if e.contains("empty") || e.contains("whitespace") {
                     NarrativeError::new(NarrativeErrorKind::EmptyPrompt(act_name.clone()))

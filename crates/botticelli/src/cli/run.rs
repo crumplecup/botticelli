@@ -8,12 +8,14 @@ use std::path::Path;
 /// # Arguments
 ///
 /// * `narrative_path` - Path to the narrative TOML file
+/// * `narrative_name` - Optional specific narrative name (for multi-narrative files)
 /// * `save` - Whether to save execution results to the database
 /// * `process_discord` - Whether to process Discord infrastructure
 /// * `state_dir` - Optional directory for persistent state storage
 #[cfg(feature = "gemini")]
 pub async fn run_narrative(
     narrative_path: &Path,
+    narrative_name: Option<&str>,
     save: bool,
     process_discord: bool,
     #[cfg(feature = "database")] state_dir: Option<&Path>,
@@ -23,18 +25,42 @@ pub async fn run_narrative(
     #[cfg(not(feature = "database"))]
     use botticelli::Narrative;
 
-    tracing::info!(path = %narrative_path.display(), "Loading narrative");
+    tracing::info!(
+        path = %narrative_path.display(),
+        narrative_name = ?narrative_name,
+        "Loading narrative"
+    );
 
     // Load and parse the narrative TOML file
     // If database feature is enabled, use from_file_with_db to inject schema docs
     #[cfg(feature = "database")]
     let narrative = {
         let mut conn = botticelli::establish_connection()?;
-        botticelli::Narrative::from_file_with_db(narrative_path, &mut conn)?
+
+        // Read file and parse with optional narrative name
+        let content = std::fs::read_to_string(narrative_path).map_err(|e| {
+            botticelli::NarrativeError::new(botticelli::NarrativeErrorKind::FileRead(e.to_string()))
+        })?;
+        let mut narrative = botticelli::Narrative::from_toml_str(&content, narrative_name)?;
+        narrative.set_source_path(Some(narrative_path.to_path_buf()));
+
+        // Assemble prompts if template specified
+        if narrative.metadata().template().is_some() {
+            narrative.assemble_act_prompts(&mut conn)?;
+        }
+
+        narrative
     };
 
     #[cfg(not(feature = "database"))]
-    let narrative = Narrative::from_file(narrative_path)?;
+    let narrative = {
+        let content = std::fs::read_to_string(narrative_path).map_err(|e| {
+            botticelli::NarrativeError::new(botticelli::NarrativeErrorKind::FileRead(e.to_string()))
+        })?;
+        let mut narrative = Narrative::from_toml_str(&content, narrative_name)?;
+        narrative.set_source_path(Some(narrative_path.to_path_buf()));
+        narrative
+    };
 
     tracing::info!(
         name = %narrative.metadata().name(),
@@ -207,6 +233,7 @@ pub async fn run_narrative(
 #[cfg(not(feature = "gemini"))]
 pub async fn run_narrative(
     _narrative_path: &Path,
+    _narrative_name: Option<&str>,
     _save: bool,
     _process_discord: bool,
     #[cfg(feature = "database")] _state_dir: Option<&Path>,

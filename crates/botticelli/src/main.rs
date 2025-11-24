@@ -35,18 +35,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Commands::Run {
             narrative,
+            narrative_name,
             save,
             process_discord,
             state_dir,
         } => {
             #[cfg(feature = "database")]
             {
-                run_narrative(&narrative, save, process_discord, state_dir.as_deref()).await?;
+                run_narrative(
+                    &narrative,
+                    narrative_name.as_deref(),
+                    save,
+                    process_discord,
+                    state_dir.as_deref(),
+                )
+                .await?;
             }
             #[cfg(not(feature = "database"))]
             {
                 let _ = state_dir; // Suppress unused warning
-                run_narrative(&narrative, save, process_discord).await?;
+                run_narrative(&narrative, narrative_name.as_deref(), save, process_discord).await?;
             }
         }
 
