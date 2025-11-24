@@ -9,6 +9,7 @@ use botticelli_actor::{
 use std::sync::atomic::{AtomicU32, Ordering};
 
 /// Mock platform for testing.
+#[allow(dead_code)]
 struct MockPlatform;
 
 #[async_trait]

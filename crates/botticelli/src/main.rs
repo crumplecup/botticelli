@@ -11,6 +11,14 @@ mod cli;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(feature = "gemini")]
+    use botticelli_core::BudgetConfig;
+    #[cfg(feature = "gemini")]
+    use cli::{
+        Cli, Commands, ExecutionOptions, NarrativeSource, handle_content_command, launch_tui,
+        run_narrative,
+    };
+    #[cfg(not(feature = "gemini"))]
     use cli::{Cli, Commands, handle_content_command, launch_tui, run_narrative};
 
     // Load environment variables from .env file (if present)
@@ -38,38 +46,66 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             narrative_name,
             save,
             process_discord,
+            #[cfg(all(feature = "gemini", feature = "database"))]
             state_dir,
             rpm_multiplier,
             tpm_multiplier,
             rpd_multiplier,
         } => {
-            #[cfg(feature = "database")]
+            #[cfg(feature = "gemini")]
             {
-                run_narrative(
-                    &narrative,
-                    narrative_name.as_deref(),
+                // Build narrative source
+                let source = NarrativeSource::new(narrative, narrative_name);
+
+                // Build execution options
+                #[cfg(feature = "database")]
+                let options = ExecutionOptions::builder()
+                    .save(save)
+                    .process_discord(process_discord)
+                    .state_dir(state_dir)
+                    .build();
+
+                #[cfg(not(feature = "database"))]
+                let options = ExecutionOptions::builder()
+                    .save(save)
+                    .process_discord(process_discord)
+                    .build();
+
+                // Build budget overrides if any multiplier is provided
+                let budget_overrides = if rpm_multiplier.is_some()
+                    || tpm_multiplier.is_some()
+                    || rpd_multiplier.is_some()
+                {
+                    let mut builder = BudgetConfig::builder();
+                    if let Some(rpm) = rpm_multiplier {
+                        builder = builder.rpm_multiplier(rpm);
+                    }
+                    if let Some(tpm) = tpm_multiplier {
+                        builder = builder.tpm_multiplier(tpm);
+                    }
+                    if let Some(rpd) = rpd_multiplier {
+                        builder = builder.rpd_multiplier(rpd);
+                    }
+                    Some(builder.build())
+                } else {
+                    None
+                };
+
+                run_narrative(&source, &options, budget_overrides.as_ref()).await?;
+            }
+
+            #[cfg(not(feature = "gemini"))]
+            {
+                let _ = (
+                    narrative,
+                    narrative_name,
                     save,
                     process_discord,
-                    state_dir.as_deref(),
                     rpm_multiplier,
                     tpm_multiplier,
                     rpd_multiplier,
-                )
-                .await?;
-            }
-            #[cfg(not(feature = "database"))]
-            {
-                let _ = state_dir; // Suppress unused warning
-                run_narrative(
-                    &narrative, 
-                    narrative_name.as_deref(), 
-                    save, 
-                    process_discord,
-                    rpm_multiplier,
-                    tpm_multiplier,
-                    rpd_multiplier,
-                )
-                .await?;
+                );
+                run_narrative().await?;
             }
         }
 

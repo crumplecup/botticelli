@@ -1,30 +1,149 @@
 //! Narrative execution command handler.
 
 use botticelli::BotticelliResult;
-use std::path::Path;
+#[cfg(feature = "gemini")]
+use botticelli_core::BudgetConfig;
+#[cfg(feature = "gemini")]
+use std::path::{Path, PathBuf};
+
+/// Source specification for loading a narrative.
+///
+/// Encapsulates the file path and optional narrative name for multi-narrative files.
+///
+/// Available with the `gemini` feature.
+#[cfg(feature = "gemini")]
+#[derive(Debug, Clone)]
+pub struct NarrativeSource {
+    path: PathBuf,
+    name: Option<String>,
+}
+
+#[cfg(feature = "gemini")]
+impl NarrativeSource {
+    /// Create a new narrative source.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - Path to the narrative TOML file
+    /// * `name` - Optional specific narrative name for multi-narrative files
+    pub fn new(path: impl Into<PathBuf>, name: Option<String>) -> Self {
+        Self {
+            path: path.into(),
+            name,
+        }
+    }
+
+    /// Get the narrative file path.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    /// Get the optional narrative name.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+}
+
+/// Execution options for narrative running.
+///
+/// Configures save behavior, Discord processing, and state persistence.
+///
+/// Available with the `gemini` feature.
+#[cfg(feature = "gemini")]
+#[derive(Debug, Clone, Default)]
+pub struct ExecutionOptions {
+    save: bool,
+    process_discord: bool,
+    #[cfg(feature = "database")]
+    state_dir: Option<PathBuf>,
+}
+
+#[cfg(feature = "gemini")]
+impl ExecutionOptions {
+    /// Create a new execution options builder.
+    pub fn builder() -> ExecutionOptionsBuilder {
+        ExecutionOptionsBuilder::default()
+    }
+
+    /// Whether to save execution results to the database.
+    pub fn save(&self) -> bool {
+        self.save
+    }
+
+    /// Whether to process Discord infrastructure (guilds, channels, etc.).
+    pub fn process_discord(&self) -> bool {
+        self.process_discord
+    }
+
+    /// Get the state directory for persistent storage.
+    ///
+    /// Available with the `database` feature.
+    #[cfg(feature = "database")]
+    pub fn state_dir(&self) -> Option<&Path> {
+        self.state_dir.as_deref()
+    }
+}
+
+/// Builder for execution options.
+///
+/// Provides a fluent interface for constructing `ExecutionOptions`.
+///
+/// Available with the `gemini` feature.
+#[cfg(feature = "gemini")]
+#[derive(Debug, Clone, Default)]
+pub struct ExecutionOptionsBuilder {
+    save: bool,
+    process_discord: bool,
+    #[cfg(feature = "database")]
+    state_dir: Option<PathBuf>,
+}
+
+#[cfg(feature = "gemini")]
+impl ExecutionOptionsBuilder {
+    /// Set whether to save execution results to the database.
+    pub fn save(mut self, save: bool) -> Self {
+        self.save = save;
+        self
+    }
+
+    /// Set whether to process Discord infrastructure.
+    pub fn process_discord(mut self, process_discord: bool) -> Self {
+        self.process_discord = process_discord;
+        self
+    }
+
+    /// Set the state directory for persistent storage.
+    ///
+    /// Available with the `database` feature.
+    #[cfg(feature = "database")]
+    pub fn state_dir(mut self, state_dir: Option<PathBuf>) -> Self {
+        self.state_dir = state_dir;
+        self
+    }
+
+    /// Build the execution options.
+    pub fn build(self) -> ExecutionOptions {
+        ExecutionOptions {
+            save: self.save,
+            process_discord: self.process_discord,
+            #[cfg(feature = "database")]
+            state_dir: self.state_dir,
+        }
+    }
+}
 
 /// Execute a narrative from a TOML file.
 ///
 /// # Arguments
 ///
-/// * `narrative_path` - Path to the narrative TOML file
-/// * `narrative_name` - Optional specific narrative name (for multi-narrative files)
-/// * `save` - Whether to save execution results to the database
-/// * `process_discord` - Whether to process Discord infrastructure
-/// * `state_dir` - Optional directory for persistent state storage
-/// * `rpm_multiplier` - Optional RPM budget multiplier
-/// * `tpm_multiplier` - Optional TPM budget multiplier
-/// * `rpd_multiplier` - Optional RPD budget multiplier
+/// * `source` - Narrative source specification (path and optional name)
+/// * `options` - Execution options (save, Discord processing, state directory)
+/// * `budget_overrides` - Optional budget multipliers to override configuration
 #[cfg(feature = "gemini")]
 pub async fn run_narrative(
-    narrative_path: &Path,
-    narrative_name: Option<&str>,
-    save: bool,
-    process_discord: bool,
-    #[cfg(feature = "database")] state_dir: Option<&Path>,
-    rpm_multiplier: Option<f64>,
-    tpm_multiplier: Option<f64>,
-    rpd_multiplier: Option<f64>,
+    source: &NarrativeSource,
+    options: &ExecutionOptions,
+    budget_overrides: Option<&BudgetConfig>,
 ) -> BotticelliResult<()> {
     use botticelli::{GeminiClient, NarrativeExecutor, NarrativeProvider};
 
@@ -32,8 +151,8 @@ pub async fn run_narrative(
     use botticelli::Narrative;
 
     tracing::info!(
-        path = %narrative_path.display(),
-        narrative_name = ?narrative_name,
+        path = %source.path().display(),
+        narrative_name = ?source.name(),
         "Loading narrative"
     );
 
@@ -44,11 +163,11 @@ pub async fn run_narrative(
         let mut conn = botticelli::establish_connection()?;
 
         // Read file and parse with optional narrative name
-        let content = std::fs::read_to_string(narrative_path).map_err(|e| {
+        let content = std::fs::read_to_string(source.path()).map_err(|e| {
             botticelli::NarrativeError::new(botticelli::NarrativeErrorKind::FileRead(e.to_string()))
         })?;
-        let mut narrative = botticelli::Narrative::from_toml_str(&content, narrative_name)?;
-        narrative.set_source_path(Some(narrative_path.to_path_buf()));
+        let mut narrative = botticelli::Narrative::from_toml_str(&content, source.name())?;
+        narrative.set_source_path(Some(source.path().to_path_buf()));
 
         // Assemble prompts if template specified
         if narrative.metadata().template().is_some() {
@@ -60,11 +179,11 @@ pub async fn run_narrative(
 
     #[cfg(not(feature = "database"))]
     let narrative = {
-        let content = std::fs::read_to_string(narrative_path).map_err(|e| {
+        let content = std::fs::read_to_string(source.path()).map_err(|e| {
             botticelli::NarrativeError::new(botticelli::NarrativeErrorKind::FileRead(e.to_string()))
         })?;
-        let mut narrative = Narrative::from_toml_str(&content, narrative_name)?;
-        narrative.set_source_path(Some(narrative_path.to_path_buf()));
+        let mut narrative = Narrative::from_toml_str(&content, source.name())?;
+        narrative.set_source_path(Some(source.path().to_path_buf()));
         narrative
     };
 
@@ -79,53 +198,48 @@ pub async fn run_narrative(
     let budget = {
         use botticelli_core::BudgetConfig;
         use botticelli_rate_limit::BotticelliConfig;
-        
+
         let mut budget = BudgetConfig::default();
-        
+
         // Apply config file default budget if present (lowest priority after default)
-        if let Ok(config) = BotticelliConfig::load() {
-            if let Some(config_budget) = config.budget {
-                budget = budget.merge(&config_budget);
-                tracing::debug!(
-                    rpm = config_budget.rpm_multiplier(),
-                    tpm = config_budget.tpm_multiplier(),
-                    rpd = config_budget.rpd_multiplier(),
-                    "Loaded default budget from botticelli.toml"
-                );
-            }
+        if let Ok(config) = BotticelliConfig::load()
+            && let Some(config_budget) = config.budget
+        {
+            budget = budget.merge(&config_budget);
+            tracing::debug!(
+                rpm = config_budget.rpm_multiplier(),
+                tpm = config_budget.tpm_multiplier(),
+                rpd = config_budget.rpd_multiplier(),
+                "Loaded default budget from botticelli.toml"
+            );
         }
-        
+
         // Apply narrative-level budget if present
         if let Some(narrative_budget) = narrative.metadata().budget() {
             budget = budget.merge(narrative_budget);
         }
-        
+
         // Apply carousel-level budget if present
-        if let Some(carousel) = narrative.metadata().carousel() {
-            if let Some(carousel_budget) = carousel.budget() {
-                budget = budget.merge(carousel_budget);
-            }
+        if let Some(carousel) = narrative.metadata().carousel()
+            && let Some(carousel_budget) = carousel.budget()
+        {
+            budget = budget.merge(carousel_budget);
         }
-        
+
         // Apply CLI overrides if present (highest priority)
-        if rpm_multiplier.is_some() || tpm_multiplier.is_some() || rpd_multiplier.is_some() {
-            let cli_budget = BudgetConfig::builder()
-                .rpm_multiplier(rpm_multiplier.unwrap_or(1.0))
-                .tpm_multiplier(tpm_multiplier.unwrap_or(1.0))
-                .rpd_multiplier(rpd_multiplier.unwrap_or(1.0))
-                .build();
-            budget = budget.merge(&cli_budget);
+        if let Some(cli_budget) = budget_overrides {
+            budget = budget.merge(cli_budget);
         }
-        
+
         // Validate the final budget
         budget.validate().map_err(|e| {
             botticelli::NarrativeError::new(botticelli::NarrativeErrorKind::ConfigurationError(e))
         })?;
-        
+
         // Log if throttling is active
-        if budget.rpm_multiplier() < &1.0 
-            || budget.tpm_multiplier() < &1.0 
-            || budget.rpd_multiplier() < &1.0 
+        if budget.rpm_multiplier() < &1.0
+            || budget.tpm_multiplier() < &1.0
+            || budget.rpd_multiplier() < &1.0
         {
             tracing::info!(
                 rpm = budget.rpm_multiplier(),
@@ -134,14 +248,14 @@ pub async fn run_narrative(
                 "Applying budget multipliers"
             );
         }
-        
+
         budget
     };
 
     // Create Gemini client with budget-adjusted rate limits
     let client = {
         use botticelli_rate_limit::{BotticelliConfig, TierConfig};
-        
+
         // Load base tier from config
         let tier_config = BotticelliConfig::load()
             .ok()
@@ -160,15 +274,19 @@ pub async fn run_narrative(
                     models: std::collections::HashMap::new(),
                 }
             });
-        
+
         // Apply budget multipliers to create adjusted tier
-        let adjusted_tier = if budget.rpm_multiplier() < &1.0 
-            || budget.tpm_multiplier() < &1.0 
-            || budget.rpd_multiplier() < &1.0 
+        let adjusted_tier = if budget.rpm_multiplier() < &1.0
+            || budget.tpm_multiplier() < &1.0
+            || budget.rpd_multiplier() < &1.0
         {
             // Apply multipliers to rate limits
-            let adjusted = TierConfig {
-                name: format!("{} ({}x)", tier_config.name, budget.rpm_multiplier().min(*budget.rpd_multiplier())),
+            TierConfig {
+                name: format!(
+                    "{} ({}x)",
+                    tier_config.name,
+                    budget.rpm_multiplier().min(*budget.rpd_multiplier())
+                ),
                 rpm: tier_config.rpm.map(|r| budget.apply_rpm(r as u64) as u32),
                 tpm: tier_config.tpm.map(|t| budget.apply_tpm(t)),
                 rpd: tier_config.rpd.map(|r| budget.apply_rpd(r as u64) as u32),
@@ -177,12 +295,11 @@ pub async fn run_narrative(
                 cost_per_million_input_tokens: tier_config.cost_per_million_input_tokens,
                 cost_per_million_output_tokens: tier_config.cost_per_million_output_tokens,
                 models: tier_config.models.clone(),
-            };
-            adjusted
+            }
         } else {
             tier_config
         };
-        
+
         GeminiClient::new_with_tier(Some(Box::new(adjusted_tier)))?
     };
 
@@ -215,7 +332,7 @@ pub async fn run_narrative(
 
             // Configure Discord bot registry if feature enabled and requested
             #[cfg(feature = "discord")]
-            if process_discord {
+            if options.process_discord() {
                 use botticelli_social::{BotCommandRegistryImpl, DiscordCommandExecutor};
                 use std::env;
 
@@ -232,12 +349,12 @@ pub async fn run_narrative(
             }
 
             #[cfg(not(feature = "discord"))]
-            if process_discord {
+            if options.process_discord() {
                 tracing::warn!("Discord feature not enabled, Discord commands will fail");
             }
 
             // Configure state manager if state_dir provided
-            if let Some(dir) = state_dir {
+            if let Some(dir) = options.state_dir() {
                 tracing::info!(state_dir = %dir.display(), "Configuring state manager");
                 use botticelli_narrative::StateManager;
                 let state_mgr = StateManager::new(dir)?;
@@ -250,7 +367,7 @@ pub async fn run_narrative(
 
         #[cfg(not(feature = "database"))]
         {
-            if process_discord {
+            if options.process_discord() {
                 tracing::warn!("Discord processing requires database feature");
             }
             NarrativeExecutor::new(client)
@@ -299,7 +416,7 @@ pub async fn run_narrative(
     );
 
     // Save to database if requested
-    if save {
+    if options.save() {
         #[cfg(feature = "database")]
         {
             use botticelli::{
@@ -346,16 +463,7 @@ pub async fn run_narrative(
 }
 
 #[cfg(not(feature = "gemini"))]
-pub async fn run_narrative(
-    _narrative_path: &Path,
-    _narrative_name: Option<&str>,
-    _save: bool,
-    _process_discord: bool,
-    #[cfg(feature = "database")] _state_dir: Option<&Path>,
-    _rpm_multiplier: Option<f64>,
-    _tpm_multiplier: Option<f64>,
-    _rpd_multiplier: Option<f64>,
-) -> BotticelliResult<()> {
+pub async fn run_narrative() -> BotticelliResult<()> {
     eprintln!("Error: Gemini feature not enabled. Rebuild with --features gemini");
     std::process::exit(1);
 }

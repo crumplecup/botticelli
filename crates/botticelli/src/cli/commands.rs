@@ -40,6 +40,7 @@ pub enum Commands {
         process_discord: bool,
 
         /// Directory for persistent state storage
+        #[cfg(all(feature = "gemini", feature = "database"))]
         #[arg(long)]
         state_dir: Option<PathBuf>,
 

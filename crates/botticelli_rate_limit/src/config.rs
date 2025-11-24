@@ -277,7 +277,7 @@ pub struct BotticelliConfig {
     /// Map of provider name to provider configuration
     #[serde(default)]
     pub providers: HashMap<String, ProviderConfig>,
-    
+
     /// Default budget multipliers for all providers
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub budget: Option<botticelli_core::BudgetConfig>,

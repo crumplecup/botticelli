@@ -3,12 +3,12 @@
 //! This binary runs actor servers that execute scheduled tasks for social media
 //! platforms like Discord, posting content based on narratives and knowledge tables.
 
+use botticelli_actor::ActorServerConfig;
 #[cfg(feature = "discord")]
 use botticelli_actor::{
-    Actor, ActorConfig, ActorExecutionTracker, DatabaseExecutionResult, ScheduleConfig,
-    SkillRegistry,
+    Actor, ActorConfig, ActorExecutionTracker, DatabaseExecutionResult, DatabaseStatePersistence,
+    ScheduleConfig, SkillRegistry,
 };
-use botticelli_actor::{ActorServerConfig, DatabaseStatePersistence};
 #[cfg(feature = "discord")]
 use botticelli_database::establish_connection;
 #[cfg(feature = "discord")]
@@ -22,9 +22,8 @@ use std::path::PathBuf;
 #[cfg(feature = "discord")]
 use std::sync::Arc;
 use tracing::info;
-use tracing::warn;
 #[cfg(feature = "discord")]
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 use tracing_subscriber::EnvFilter;
 
 #[cfg(feature = "discord")]
@@ -98,6 +97,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     #[cfg(feature = "discord")]
     {
+        // Type alias for actor tracking
+        type ActorEntry = (
+            Actor,
+            ScheduleConfig,
+            Option<DateTime<Utc>>,
+            Option<ActorExecutionTracker<DatabaseStatePersistence>>,
+        );
+
         // Set up database state persistence if DATABASE_URL is set
         let persistence = if args.database_url.is_some() || std::env::var("DATABASE_URL").is_ok() {
             info!("Database state persistence enabled");
@@ -131,15 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut server = DiscordActorServer::new(http.clone(), state_path);
 
         // Track actors, their schedules, last run time, and execution trackers
-        let mut actors: HashMap<
-            String,
-            (
-                Actor,
-                ScheduleConfig,
-                Option<DateTime<Utc>>,
-                Option<ActorExecutionTracker<DatabaseStatePersistence>>,
-            ),
-        > = HashMap::new();
+        let mut actors: HashMap<String, ActorEntry> = HashMap::new();
 
         // Load and register actors from configuration
         for actor_instance in &server_config.actors {
@@ -349,24 +348,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             *last_run = Some(Utc::now());
 
                                             // Record success if tracker available
-                                            if let Some(exec_id) = exec_id {
-                                                if let Some(tracker) = tracker.as_ref() {
-                                                    let db_result = DatabaseExecutionResult {
-                                                        skills_succeeded: result.succeeded.len() as i32,
-                                                        skills_failed: result.failed.len() as i32,
-                                                        skills_skipped: result.skipped.len() as i32,
-                                                        metadata: serde_json::json!({}),
-                                                    };
+                                            if let Some(exec_id) = exec_id
+                                                && let Some(tracker) = tracker.as_ref() {
+                                                let db_result = DatabaseExecutionResult {
+                                                    skills_succeeded: result.succeeded.len() as i32,
+                                                    skills_failed: result.failed.len() as i32,
+                                                    skills_skipped: result.skipped.len() as i32,
+                                                    metadata: serde_json::json!({}),
+                                                };
 
-                                                    if let Err(e) =
-                                                        tracker.record_success(exec_id, db_result).await
-                                                    {
-                                                        warn!(
-                                                            actor = %name,
-                                                            error = ?e,
-                                                            "Failed to record success"
-                                                        );
-                                                    }
+                                                if let Err(e) =
+                                                    tracker.record_success(exec_id, db_result).await
+                                                {
+                                                    warn!(
+                                                        actor = %name,
+                                                        error = ?e,
+                                                        "Failed to record success"
+                                                    );
                                                 }
                                             }
                                         }
@@ -374,27 +372,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                             error!(actor = %name, error = ?e, "Actor execution failed");
 
                                             // Record failure if tracker available
-                                            if let Some(exec_id) = exec_id {
-                                                if let Some(tracker) = tracker.as_ref() {
-                                                    match tracker
-                                                        .record_failure(exec_id, &e.to_string())
-                                                        .await
-                                                    {
-                                                        Ok(should_pause) => {
-                                                            if should_pause {
-                                                                warn!(
-                                                                    actor = %name,
-                                                                    "Circuit breaker triggered, task paused"
-                                                                );
-                                                            }
-                                                        }
-                                                        Err(e) => {
+                                            if let Some(exec_id) = exec_id
+                                                && let Some(tracker) = tracker.as_ref() {
+                                                match tracker
+                                                    .record_failure(exec_id, &e.to_string())
+                                                    .await
+                                                {
+                                                    Ok(should_pause) => {
+                                                        if should_pause {
                                                             warn!(
                                                                 actor = %name,
-                                                                error = ?e,
-                                                                "Failed to record failure"
+                                                                "Circuit breaker triggered, task paused"
                                                             );
                                                         }
+                                                    }
+                                                    Err(e) => {
+                                                        warn!(
+                                                            actor = %name,
+                                                            error = ?e,
+                                                            "Failed to record failure"
+                                                        );
                                                     }
                                                 }
                                             }
@@ -405,18 +402,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     error!(actor = %name, error = ?e, "Failed to establish database connection");
 
                                     // Record connection failure if tracker available
-                                    if let Some(exec_id) = exec_id {
-                                        if let Some(tracker) = tracker.as_ref() {
-                                            if let Err(e) =
-                                                tracker.record_failure(exec_id, &e.to_string()).await
-                                            {
-                                                warn!(
-                                                    actor = %name,
-                                                    error = ?e,
-                                                    "Failed to record connection failure"
-                                                );
-                                            }
-                                        }
+                                    if let Some(exec_id) = exec_id
+                                        && let Some(tracker) = tracker.as_ref()
+                                        && let Err(e) =
+                                            tracker.record_failure(exec_id, &e.to_string()).await
+                                    {
+                                        warn!(
+                                            actor = %name,
+                                            error = ?e,
+                                            "Failed to record connection failure"
+                                        );
                                     }
                                 }
                             }

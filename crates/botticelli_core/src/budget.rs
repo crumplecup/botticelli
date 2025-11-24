@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// // Default: use full quotas
 /// let full = BudgetConfig::default();
-/// assert_eq!(full.rpm_multiplier(), 1.0);
+/// assert_eq!(*full.rpm_multiplier(), 1.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_getters::Getters)]
 #[serde(deny_unknown_fields)]
@@ -156,9 +156,9 @@ mod tests {
     #[test]
     fn default_budget_uses_full_quota() {
         let budget = BudgetConfig::default();
-        assert_eq!(budget.rpm_multiplier(), 1.0);
-        assert_eq!(budget.tpm_multiplier(), 1.0);
-        assert_eq!(budget.rpd_multiplier(), 1.0);
+        assert_eq!(*budget.rpm_multiplier(), 1.0);
+        assert_eq!(*budget.tpm_multiplier(), 1.0);
+        assert_eq!(*budget.rpd_multiplier(), 1.0);
     }
 
     #[test]
@@ -168,9 +168,9 @@ mod tests {
             .rpd_multiplier(0.5)
             .build();
 
-        assert_eq!(budget.rpm_multiplier(), 0.8);
-        assert_eq!(budget.tpm_multiplier(), 1.0); // Default
-        assert_eq!(budget.rpd_multiplier(), 0.5);
+        assert_eq!(*budget.rpm_multiplier(), 0.8);
+        assert_eq!(*budget.tpm_multiplier(), 1.0); // Default
+        assert_eq!(*budget.rpd_multiplier(), 0.5);
     }
 
     #[test]
@@ -223,8 +223,8 @@ mod tests {
 
         let merged = budget1.merge(&budget2);
 
-        assert_eq!(merged.rpm_multiplier(), 0.5); // min(0.8, 0.5)
-        assert_eq!(merged.tpm_multiplier(), 0.9); // min(0.9, 1.0)
-        assert_eq!(merged.rpd_multiplier(), 0.3); // min(1.0, 0.3)
+        assert_eq!(*merged.rpm_multiplier(), 0.5); // min(0.8, 0.5)
+        assert_eq!(*merged.tpm_multiplier(), 0.9); // min(0.9, 1.0)
+        assert_eq!(*merged.rpd_multiplier(), 0.3); // min(1.0, 0.3)
     }
 }

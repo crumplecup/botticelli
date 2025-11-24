@@ -269,7 +269,7 @@ pub enum TomlNarrativeEntry {
     /// Reference to another narrative file
     Reference(TomlNarrativeReference),
     /// Inline narrative definition
-    Definition(TomlNarrativeDefinition),
+    Definition(Box<TomlNarrativeDefinition>),
 }
 
 impl TomlNarrativeFile {
