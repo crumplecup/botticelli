@@ -1,11 +1,27 @@
 # Actor Server Implementation Strategy
 
 **Date**: 2025-11-24
-**Status**: Core Infrastructure Complete, Production Deployment Pending
+**Status**: Infrastructure 100% Complete, Binary Integration 40% Complete
 
 ## Executive Summary
 
-The actor server framework has achieved **Phases 1-4 completion**: core traits, Discord integration, persistent state management, and advanced scheduling with cron support. **Phase 4 tests now passing** after fixing async context issues in TaskScheduler trait methods. The focus now shifts to **production deployment**: building the executable server binary with configuration management and graceful lifecycle control.
+The actor server framework has **complete production-grade infrastructure** implemented:
+- ✅ **Connection pooling** (r2d2) with DatabaseStatePersistence
+- ✅ **Circuit breaker** with automatic pause on failure threshold
+- ✅ **Execution history** tracking with start/complete/fail methods
+- ✅ **ActorExecutionTracker** high-level API wrapper
+- ✅ **All 66 tests passing** across 13 test files
+
+However, the **actor-server binary** (crates/botticelli_actor/src/bin/actor-server.rs) is only partially integrated:
+- ✅ Configuration loading and actor instantiation
+- ✅ Schedule-based execution loop
+- ✅ Graceful shutdown
+- ❌ Uses per-execution `establish_connection()` instead of pooled persistence
+- ❌ No execution history recording
+- ❌ No circuit breaker enforcement
+- ❌ No state persistence after execution
+
+**Next Step**: Integrate DatabaseStatePersistence and ActorExecutionTracker into the binary's execution loop.
 
 ### ✅ Completed Infrastructure (Phases 1-4)
 
@@ -124,76 +140,151 @@ Complete Discord platform implementation:
 - Builder pattern compliance
 - Full tracing instrumentation
 
-### ✅ Phase 5 Complete: Production Binary
+### 🚧 Phase 5: Production Binary (40% Complete)
 
-**Location**: `crates/botticelli_actor/src/bin/actor-server.rs`
+**Location**: `crates/botticelli_actor/src/bin/actor-server.rs` (lines 1-300)
 
-Complete production-ready binary with:
+**Infrastructure Ready** (100% implemented):
+- ✅ `DatabaseStatePersistence` with r2d2 connection pooling (state_persistence.rs:1-1091)
+- ✅ `ActorExecutionTracker` high-level API wrapper (execution_tracker.rs:1-191)
+- ✅ Circuit breaker with auto-pause on threshold (state_persistence.rs:909-1007)
+- ✅ Execution history tracking (state_persistence.rs:610-869)
+- ✅ Task pause/resume/listing methods (state_persistence.rs:365-566)
+- ✅ Connection pooling with configurable size (state_persistence.rs:54-99)
+- ✅ `CircuitBreakerConfig` in server config (server_config.rs:47-69)
+- ✅ All 66 tests passing across 13 test files
+
+**Binary Implementation** (40% complete):
 
 1. **Executable Binary** ✅
-   - ✅ clap argument parsing (--config, --database-url, --discord-token)
+   - ✅ clap argument parsing (--config, --database-url, --discord-token, --dry-run)
    - ✅ TOML configuration file loading via `ActorServerConfig`
    - ✅ Actor instantiation from config files
    - ✅ Graceful shutdown on SIGTERM/SIGINT (tokio::signal)
    - ✅ Tracing initialization with EnvFilter
+   - ✅ Schedule-based task execution loop using `tokio::select!`
+   - ❌ **NOT using DatabaseStatePersistence** - creates it but doesn't use (lines 100-121)
+   - ❌ **NOT using ActorExecutionTracker** - helper not integrated
 
-2. **Configuration System** ✅
+2. **State Persistence** ❌ NOT INTEGRATED
+   - ✅ Infrastructure: DatabaseStatePersistence fully implemented
+   - ❌ Binary: Loads state on startup but doesn't apply it (lines 104-118)
+   - ❌ Binary: Uses `establish_connection()` per-execution (line 253)
+   - ❌ Binary: Doesn't save state after execution
+   - ❌ Binary: In-memory `last_run` tracking, lost on restart (line 139-140)
+
+3. **Circuit Breaker** ❌ NOT INTEGRATED
+   - ✅ Infrastructure: `record_failure()` with auto-pause (state_persistence.rs:909-1007)
+   - ✅ Infrastructure: `should_execute()` checks pause state (state_persistence.rs:1047-1090)
+   - ❌ Binary: No failure tracking in execution loop (lines 256-265)
+   - ❌ Binary: No circuit breaker enforcement
+   - ❌ Binary: Failures only logged, not recorded
+
+4. **Execution History** ❌ NOT INTEGRATED
+   - ✅ Infrastructure: `start_execution()` / `complete_execution()` / `fail_execution()`
+   - ✅ Infrastructure: `get_execution_history()` for debugging
+   - ❌ Binary: No execution records created
+   - ❌ Binary: No execution history tracking
+
+5. **Configuration System** ✅
    - ✅ `ActorServerConfig` with server settings
-   - ✅ `ServerSettings` (check_interval, max_consecutive_failures)
+   - ✅ `ServerSettings` with `CircuitBreakerConfig`
    - ✅ `ActorInstanceConfig` (name, config_file, channel_id, schedule, enabled)
    - ✅ `ScheduleConfig` enum (Interval, Cron, Once, Immediate)
    - ✅ Schedule trait implementation for all schedule types
    - ✅ Environment variable support (DATABASE_URL, DISCORD_TOKEN)
 
-3. **Example Configurations** ✅
+6. **Example Configurations** ✅
    - ✅ `examples/actor_server.toml` - Server configuration
    - ✅ `examples/actors/daily_poster.toml` - Daily content posting
    - ✅ `examples/actors/trending.toml` - Hourly trending topics
    - ✅ `examples/actors/welcome.toml` - Startup welcome message
 
-4. **Features** ✅
-   - ✅ Dry run mode (--dry-run) for configuration validation
-   - ✅ State persistence integration (DatabaseStatePersistence)
-   - ✅ Discord feature gating (#[cfg(feature = "discord")])
-   - ✅ Per-actor enable/disable flags
+**What Needs Integration** (lines 240-282 of actor-server.rs):
 
-### ✅ Phase 5b Complete (Task Execution)
+```rust
+// CURRENT (lines 246-274):
+for (name, (actor, schedule, last_run)) in actors.iter_mut() {
+    let check = schedule.check(*last_run);
+    if check.should_run {
+        match establish_connection() {  // ❌ Per-execution connection
+            Ok(mut conn) => {
+                match actor.execute(&mut conn).await {  // ❌ No history/circuit breaker
+                    Ok(_) => {
+                        *last_run = Some(Utc::now());  // ❌ In-memory only
+                    }
+                    Err(e) => {
+                        error!(error = ?e, "Actor execution failed");  // ❌ No tracking
+                    }
+                }
+            }
+            Err(e) => error!(error = ?e, "Failed to connect"),
+        }
+    }
+}
 
-**Current Status**: Binary now executes actors on schedule with database integration!
+// NEEDED:
+let persistence = Arc::new(DatabaseStatePersistence::new()?);
+for (name, (actor, schedule, last_run)) in actors.iter_mut() {
+    let tracker = ActorExecutionTracker::new(
+        persistence.clone(),
+        name.clone(),
+        name.clone(),
+    );
 
-**Implemented**:
-   - ✅ Schedule-based task execution loop using `tokio::select!`
-   - ✅ In-memory tracking of actors with schedules and last run times
-   - ✅ Schedule evaluation via `ScheduleConfig::check()` trait method
-   - ✅ Database connection per execution via `establish_connection()`
-   - ✅ Actor.execute() integration with proper error handling
-   - ✅ Graceful shutdown with `tokio::signal::ctrl_c()`
-   - ✅ Configurable check interval from server config
+    if !tracker.should_execute().await? {  // ✅ Circuit breaker check
+        continue;
+    }
 
-**Architecture Decisions**:
-   - In-memory state tracking (not persisted across restarts yet)
-   - Per-execution database connections (no connection pool yet)
-   - Simple error logging (no circuit breaker yet)
-   - Direct schedule evaluation (no DB-backed task queue yet)
+    let check = schedule.check(*last_run);
+    if check.should_run {
+        let exec_id = tracker.start_execution().await?;  // ✅ History start
 
-**Still Missing (for Phase 6)**:
-   - ❌ State recovery and persistence across restarts
-   - ❌ Circuit breaker enforcement after consecutive failures
-   - ❌ Execution history recording to database
-   - ❌ Connection pooling for better performance
+        match establish_connection() {
+            Ok(mut conn) => {
+                match actor.execute(&mut conn).await {
+                    Ok(_) => {
+                        let result = DatabaseExecutionResult { /* ... */ };
+                        tracker.record_success(exec_id, result).await?;  // ✅ Success tracking
+                        *last_run = Some(Utc::now());
+                    }
+                    Err(e) => {
+                        tracker.record_failure(exec_id, &e.to_string()).await?;  // ✅ Circuit breaker
+                    }
+                }
+            }
+            Err(e) => {
+                tracker.record_failure(exec_id, &e.to_string()).await?;
+            }
+        }
+    }
+}
+```
 
 ### ✅ Phase 6 Complete: Comprehensive Testing
 
-**Test Coverage**: 34 passing tests across 6 test files
+**Test Coverage**: 66 passing tests across 13 test files
 
-1. **Configuration Tests** (4 tests) ✅
+1. **Actor Error Handling Tests** (6 tests) ✅
+   - `actor_error_handling_test.rs`
+   - Config validation (cache size, TTL, retries)
+   - Error classification (recoverable vs unrecoverable)
+   - SkillInfo builder validation
+
+2. **Actor Execution Tracker Tests** (3 tests) ✅
+   - `actor_execution_tracker_test.rs`
+   - Execution lifecycle (start → success/failure → history)
+   - Circuit breaker integration
+   - Accessor methods
+
+3. **Configuration Tests** (4 tests) ✅
    - `actor_server_integration_test.rs`
    - Actor config loading from TOML files
    - Multiple knowledge sources
    - Skills configuration
    - Minimal configuration validation
 
-2. **Schedule Tests** (11 tests) ✅
+4. **Schedule Tests** (11 tests) ✅
    - `schedule_test.rs`
    - Immediate, Once, Interval, Cron schedules
    - Schedule checking logic
@@ -201,31 +292,63 @@ Complete production-ready binary with:
    - Cron expression parsing (daily, weekday patterns)
    - Edge cases (zero interval, already executed)
 
-3. **State Persistence Tests** (2 tests) ✅
+5. **State Persistence Tests** (2 tests) ✅
    - `state_persistence_test.rs`
-   - DatabaseStatePersistence trait implementation
+   - DatabaseStatePersistence construction
    - Interface validation
 
-4. **Discord Integration Tests** (9 tests) ✅
-   - `discord_server_test.rs`
-   - Actor ID, Context, Manager creation
-   - Content posting
-   - Server state persistence
-   - Task scheduler lifecycle
-   - Server reload functionality
+6. **State Persistence Circuit Breaker Tests** (6 tests) ✅
+   - `state_persistence_circuit_breaker_test.rs`
+   - Failure counter increment
+   - Threshold exceeded auto-pause
+   - Success counter reset
+   - Pause state enforcement
+   - Manual pause override
+   - Execution logging integration
 
-5. **Platform Trait Tests** (5 tests) ✅
-   - `platform_trait_test.rs`
-   - Discord platform creation
-   - Post validation
-   - Text limit enforcement
-   - Platform capabilities
+7. **State Persistence Multi-Task Tests** (9 tests) ✅
+   - `state_persistence_multi_task_test.rs`
+   - Save/load/delete task state
+   - List tasks (all, by actor, active, paused)
+   - Update next run
+   - Pause/resume operations
+   - Concurrent operations
 
-6. **Unit Tests** (3 tests) ✅
-   - `server_config` module tests
-   - Default values
-   - Immediate schedule behavior
-   - Server config parsing
+8. **State Persistence Minimal Tests** (4 tests) ✅
+   - `state_persistence_minimal_test.rs`
+   - Single state save/load
+   - Two task inserts
+   - Concurrent competing inserts
+
+9. **State Persistence Five Test** (1 test) ✅
+   - `state_persistence_five_test.rs`
+   - Five task concurrent inserts
+
+10. **Discord Integration Tests** (9 tests) ✅
+    - `discord_server_test.rs`
+    - Actor ID, Context, Manager creation
+    - Content posting
+    - Server state persistence
+    - Task scheduler lifecycle
+    - Server reload functionality
+
+11. **Platform Trait Tests** (5 tests) ✅
+    - `platform_trait_test.rs`
+    - Discord platform creation
+    - Post validation
+    - Text limit enforcement
+    - Platform capabilities
+
+12. **Scheduler Persistence Integration Tests** (3 tests) ✅
+    - `scheduler_persistence_integration_test.rs`
+    - Scheduler with/without persistence
+    - Task recovery from database
+
+13. **Server Config Tests** (3 tests) ✅
+    - `server_config_test.rs`
+    - Default values
+    - Immediate schedule behavior
+    - Server config parsing
 
 **Test Quality**:
 - ✅ No `#[ignore]` tests
@@ -234,32 +357,144 @@ Complete production-ready binary with:
 - ✅ Async test support with tokio
 - ✅ Full feature coverage (schedule types, platforms, persistence)
 
-### ❌ Remaining Work (Production Deployment)
+### ❌ Remaining Work (Binary Integration)
 
-#### Must Have (Phase 5b - Task Execution Integration) ✅
+#### Phase 5c: Integrate DatabaseStatePersistence into Binary (Required for Production)
 
-1. **Execution Loop** ✅
-   - ✅ Main loop checking scheduled tasks every `check_interval_seconds`
-   - ✅ Execute ready actors with database connection
-   - ✅ Track last run time per actor in memory
-   - 🚧 Query database for tasks where `next_run <= NOW()` (future: DB-backed scheduling)
-   - 🚧 Update task state (last_run, next_run, consecutive_failures) (future: DB persistence)
-   - 🚧 Record execution history in `actor_server_executions` (future: execution logging)
+**Current Issue**: All infrastructure exists but binary doesn't use it.
 
-2. **State Management** 🚧
-   - ✅ Graceful shutdown with signal handling
-   - ✅ Server lifecycle management (start/stop)
-   - 🚧 Apply recovered state to server on startup (future: DB state recovery)
-   - 🚧 Circuit breaker logic (pause after max_consecutive_failures) (future: failure tracking)
-   - 🚧 Task state updates via DatabaseStatePersistence (future: persistent state)
-   - 🚧 Graceful state persistence on shutdown (future: save state on exit)
+**Required Changes to actor-server.rs**:
 
-3. **Actor Integration** ✅
-   - ✅ Pass database connection to actors via `establish_connection()`
-   - ✅ Call `Actor.execute()` with proper connection
-   - ✅ Handle actor execution errors with logging
-   - ✅ Use `ScheduleConfig::check()` to evaluate schedule
-   - ✅ Track next_run from schedule evaluation
+1. **Initialize Shared Persistence** (before line 136)
+   ```rust
+   // Create shared persistence with connection pool
+   let persistence = if args.database_url.is_some() || std::env::var("DATABASE_URL").is_ok() {
+       Some(Arc::new(DatabaseStatePersistence::new()?))
+   } else {
+       None
+   };
+   ```
+
+2. **Load State on Startup** (replace lines 104-121)
+   ```rust
+   if let Some(persistence) = &persistence {
+       for actor_instance in &server_config.actors {
+           if let Some(state) = persistence.load_task_state(&actor_instance.name).await? {
+               info!(
+                   task_id = %state.task_id,
+                   actor = %state.actor_name,
+                   consecutive_failures = ?state.consecutive_failures,
+                   is_paused = ?state.is_paused,
+                   "Loaded previous task state from database"
+               );
+               // TODO: Initialize actor with loaded state
+           }
+       }
+   }
+   ```
+
+3. **Create ActorExecutionTracker per Actor** (after line 175)
+   ```rust
+   // Store tracker with actor
+   let tracker = persistence.as_ref().map(|p| {
+       ActorExecutionTracker::new(
+           p.clone(),
+           actor_instance.name.clone(),
+           actor_instance.name.clone()
+       )
+   });
+   actors.insert(
+       actor_instance.name.clone(),
+       (actor, actor_instance.schedule.clone(), None, tracker),
+   );
+   ```
+
+4. **Integrate Circuit Breaker and History** (replace lines 246-274)
+   ```rust
+   for (name, (actor, schedule, last_run, tracker)) in actors.iter_mut() {
+       // Check circuit breaker
+       if let Some(tracker) = tracker {
+           if !tracker.should_execute().await? {
+               debug!(actor = %name, "Task paused by circuit breaker, skipping");
+               continue;
+           }
+       }
+
+       let check = schedule.check(*last_run);
+       if check.should_run {
+           info!(actor = %name, "Executing scheduled actor");
+
+           // Start execution history
+           let exec_id = if let Some(tracker) = tracker {
+               Some(tracker.start_execution().await?)
+           } else {
+               None
+           };
+
+           // Get database connection (TODO: use pooled connection)
+           match establish_connection() {
+               Ok(mut conn) => {
+                   match actor.execute(&mut conn).await {
+                       Ok(result) => {
+                           info!(actor = %name, "Actor executed successfully");
+                           *last_run = Some(Utc::now());
+
+                           // Record success
+                           if let (Some(tracker), Some(exec_id)) = (tracker, exec_id) {
+                               let db_result = DatabaseExecutionResult {
+                                   skills_succeeded: result.skills_executed() as i32,
+                                   skills_failed: 0,
+                                   skills_skipped: 0,
+                                   metadata: serde_json::json!({}),
+                               };
+                               tracker.record_success(exec_id, db_result).await?;
+                           }
+                       }
+                       Err(e) => {
+                           error!(actor = %name, error = ?e, "Actor execution failed");
+
+                           // Record failure (circuit breaker)
+                           if let (Some(tracker), Some(exec_id)) = (tracker, exec_id) {
+                               let should_pause = tracker.record_failure(exec_id, &e.to_string()).await?;
+                               if should_pause {
+                                   warn!(actor = %name, "Circuit breaker triggered, task paused");
+                               }
+                           }
+                       }
+                   }
+               }
+               Err(e) => {
+                   error!(actor = %name, error = ?e, "Failed to establish database connection");
+
+                   // Record connection failure
+                   if let (Some(tracker), Some(exec_id)) = (tracker, exec_id) {
+                       tracker.record_failure(exec_id, &e.to_string()).await?;
+                   }
+               }
+           }
+
+           if let Some(next) = check.next_run {
+               debug!(actor = %name, next_run = %next, "Next execution scheduled");
+           }
+       }
+   }
+   ```
+
+5. **Save State on Shutdown** (after line 285)
+   ```rust
+   // Save final state
+   if let Some(persistence) = &persistence {
+       for (name, (_, _, last_run, _)) in &actors {
+           if let Some(state) = persistence.load_task_state(name).await? {
+               let mut updated = state.clone();
+               updated.last_run = last_run.map(|dt| dt.naive_utc());
+               persistence.save_task_state(name, &updated).await?;
+           }
+       }
+   }
+   ```
+
+**Estimated Effort**: 2-3 hours (straightforward integration of existing code)
 
 #### Should Have (Phase 6 - Observability)
 
@@ -677,49 +912,68 @@ pub fn create_router(server: Arc<RwLock<DiscordActorServer>>) -> Router {
 
 ## Implementation Roadmap
 
-### ✅ Completed Phases (Ready for Production)
+### ✅ Completed Phases
 
-1. **Phase 1-2: Foundation** 
+1. **Phase 1-2: Foundation** ✅
    - Core trait framework (TaskScheduler, ActorManager, ContentPoster, StatePersistence, ActorServer)
-   - Generic implementations for prototyping
-   - Discord platform integration
-   - 14 passing tests with full tracing
+   - Generic implementations (SimpleTaskScheduler, GenericActorManager, etc.)
+   - Discord platform integration with full trait implementation
+   - 9 Discord server tests + 5 platform trait tests passing
 
-2. **Phase 3: Persistent State Management**
+2. **Phase 3: Persistent State Management** ✅
    - PostgreSQL schema (`actor_server_state`, `actor_server_executions`)
-   - Diesel models with builders
-   - `DatabaseStatePersistence` implementation
-   - Execution history and circuit breaker state
+   - Diesel models with derive_builder pattern
+   - `DatabaseStatePersistence` with r2d2 connection pooling
+   - 20+ state persistence tests across 5 test files
+   - Execution history and circuit breaker infrastructure
 
-3. **Phase 4: Advanced Scheduling**
-   - `ScheduleType` enum (Cron, Interval, Once, Immediate)
-   - `Schedule` trait with next_execution calculation
+3. **Phase 4: Advanced Scheduling** ✅
+   - `ScheduleConfig` enum (Cron, Interval, Once, Immediate)
+   - `Schedule` trait with check() and next_execution()
    - Cron parsing with `cron = "0.12"` (7-field format)
-   - 7 comprehensive tests, all passing
+   - 11 comprehensive schedule tests, all passing
 
-### 🚧 Current Priority: Phase 5 (Production Binary)
+4. **Phase 5a-5b: Binary Foundation** ✅
+   - `actor-server` binary with clap CLI
+   - TOML configuration loading (ActorServerConfig)
+   - Actor instantiation from config files
+   - Schedule-driven execution loop
+   - Graceful shutdown handling
+   - Example configurations
 
-**Estimated Time**: 2-3 days
+5. **Phase 6: Comprehensive Testing** ✅
+   - 66 tests passing across 13 test files
+   - Circuit breaker tests (6 tests)
+   - Execution tracking tests (3 tests)
+   - Multi-task state persistence (9 tests)
+   - Error handling tests (6 tests)
+   - All infrastructure validated
+
+### 🚧 Current Priority: Phase 5c (Binary Integration)
+
+**Status**: Infrastructure 100% complete, binary integration 40% complete
+
+**Estimated Time**: 2-3 hours (not days - just integration work)
 
 **Deliverables**:
-1. `actor-server` binary with clap CLI
-2. TOML configuration loading
-3. State recovery on startup
-4. Schedule-driven execution loop
-5. Circuit breaker enforcement
-6. Graceful shutdown handling
-7. Example configurations
+1. ✅ Integrate DatabaseStatePersistence into binary
+2. ✅ Use ActorExecutionTracker in execution loop
+3. ✅ Enable circuit breaker enforcement
+4. ✅ Record execution history to database
+5. ✅ Persist state across restarts
+6. ✅ Load state on startup
 
-**Blockers**: None - all dependencies complete
+**Blockers**: None - all infrastructure exists and is tested
 
-**Next Actions**:
-1. Create `server_config.rs` with TOML structures
-2. Implement `bin/actor-server.rs` entry point
-3. Add clap dependency to Cargo.toml
-4. Build execution loop with schedule checking
-5. Test with example configuration files
+**Implementation Plan**: See "Phase 5c: Integrate DatabaseStatePersistence into Binary" section above
 
-### 📋 Phase 6: Observability (Should Have)
+**Why This is Fast**:
+- All infrastructure already exists
+- ActorExecutionTracker provides simple API
+- Just need to wire up existing components
+- No new features to implement
+
+### 📋 Phase 7: Observability (Should Have)
 
 **Estimated Time**: 1-2 days
 
@@ -729,9 +983,9 @@ pub fn create_router(server: Arc<RwLock<DiscordActorServer>>) -> Router {
 - Execution metrics (duration, success rate)
 - Alerting integration points
 
-**Dependencies**: Phase 5 complete
+**Dependencies**: Phase 5c complete
 
-### 🎯 Phase 7: HTTP API (Nice to Have)
+### 🎯 Phase 8: HTTP API (Nice to Have)
 
 **Estimated Time**: 2-3 days
 
@@ -741,7 +995,7 @@ pub fn create_router(server: Arc<RwLock<DiscordActorServer>>) -> Router {
 - Execution history queries
 - API authentication
 
-**Dependencies**: Phase 5 complete, Phase 6 recommended
+**Dependencies**: Phase 5c complete, Phase 7 recommended
 
 ---
 
@@ -749,11 +1003,17 @@ pub fn create_router(server: Arc<RwLock<DiscordActorServer>>) -> Router {
 
 ### Database Connection Strategy
 
-**Current**: `tokio::spawn_blocking` with `establish_connection()` per operation
+**Infrastructure**: ✅ r2d2 connection pooling fully implemented (state_persistence.rs:35-99)
+- Configurable pool size (default: 10 connections)
+- Warm-up on initialization
+- Used by all DatabaseStatePersistence methods
 
-**Future**: Connection pooling (r2d2 or deadpool) for high-frequency operations
+**Binary Status**: ❌ Not integrated - still using `establish_connection()` per execution
+- Binary uses `establish_connection()` at line 253
+- Doesn't utilize DatabaseStatePersistence's pool
+- Could switch to `persistence.pool.get()` for significant performance improvement
 
-**Decision**: Defer pooling until Phase 6 (observability reveals bottlenecks)
+**Recommendation**: Integrate in Phase 5c alongside other persistence features
 
 ### Schedule Timezone Handling
 
@@ -768,63 +1028,110 @@ pub fn create_router(server: Arc<RwLock<DiscordActorServer>>) -> Router {
 
 ### Circuit Breaker Strategy
 
-**Current**: Simple counter-based circuit breaker
+**Infrastructure**: ✅ Fully implemented with auto-pause (state_persistence.rs:909-1007)
 
-**Implementation**:
-```rust
-if consecutive_failures >= max_consecutive_failures {
-    // Pause task automatically
-    diesel::update(actor_server_state::table.find(task_id))
-        .set(actor_server_state::is_paused.eq(true))
-        .execute(&mut conn)?;
-}
-```
+**Features**:
+- Counter-based failure tracking per task
+- Automatic pause when `consecutive_failures >= max_consecutive_failures`
+- Success resets failure counter (state_persistence.rs:1009-1045)
+- `should_execute()` checks pause state (state_persistence.rs:1047-1090)
+- Manual pause/resume overrides (state_persistence.rs:493-566)
+- Configuration via `CircuitBreakerConfig` (server_config.rs:47-69)
 
-**Future**: Add exponential backoff before pausing in Phase 6
+**Binary Status**: ❌ Not enforced - failures only logged, not tracked
+- No calls to `record_failure()` or `should_execute()`
+- Circuit breaker exists but inactive
+- Would activate with ActorExecutionTracker integration
+
+**Testing**: ✅ 6 dedicated tests in `state_persistence_circuit_breaker_test.rs`
+
+**Future Enhancement**: Add exponential backoff before auto-pause (Phase 6+)
 
 ### Testing Strategy
 
-**Unit Tests**: ✅ Complete (21 tests passing)
-- Schedule logic (7 tests)
+**Unit & Integration Tests**: ✅ Comprehensive (66 tests passing across 13 files)
+- Schedule logic (11 tests)
 - Discord server traits (9 tests)
 - Platform traits (5 tests)
+- Circuit breaker (6 tests)
+- State persistence (20+ tests across 5 files)
+- Execution tracking (3 tests)
+- Configuration (7 tests)
+- Error handling (6 tests)
 
-**Integration Tests**: ⏳ Needed for Phase 5
-- End-to-end task execution
-- State persistence round-trip
-- Circuit breaker triggering
-- Graceful shutdown
+**Infrastructure Coverage**: ✅ All major features tested
+- State persistence round-trip ✅
+- Circuit breaker triggering ✅
+- Execution history ✅
+- Concurrent operations ✅
+- Connection pooling ✅
+
+**Binary Integration Tests**: ❌ Missing
+- End-to-end binary execution
+- Graceful shutdown with state persistence
+- State recovery on restart
+- Circuit breaker enforcement in running server
 
 **API Tests**: ❌ Deferred to Phase 7
 - REST endpoint behavior
 - Authentication/authorization
 
+**Test Command**: `just test-package botticelli_actor`
+
 ---
 
 ## Success Criteria
 
-### Phase 5 Complete When:
+### Infrastructure Complete ✅
+- ✅ Connection pooling (r2d2)
+- ✅ State persistence (DatabaseStatePersistence)
+- ✅ Circuit breaker with auto-pause
+- ✅ Execution history tracking
+- ✅ ActorExecutionTracker helper
+- ✅ 66 tests passing across 13 files
+- ✅ All schedule types (Interval, Cron, Once, Immediate)
+- ✅ Configuration system with CircuitBreakerConfig
+
+### Phase 5c Complete When (Binary Integration):
 - ✅ `actor-server` binary compiles and runs
 - ✅ Loads TOML configuration without errors
-- ✅ Recovers state from database on startup
 - ✅ Executes tasks on all schedule types
-- ✅ Circuit breaker pauses failing tasks
 - ✅ Graceful shutdown completes cleanly
 - ✅ Example configs work out of box
+- ❌ Uses DatabaseStatePersistence with connection pooling
+- ❌ Recovers state from database on startup
+- ❌ Records execution history to database
+- ❌ Circuit breaker pauses failing tasks
+- ❌ State persists across restarts
 
 ### Production Ready When:
-- ✅ Phase 3: Persistent state (DONE)
+- ✅ Phase 1-2: Core traits and generic implementations (DONE)
+- ✅ Phase 3: Persistent state infrastructure (DONE)
 - ✅ Phase 4: Advanced scheduling (DONE)
-- ⏳ Phase 5: Production binary (IN PROGRESS)
-- ⏳ Phase 6: Observability metrics
-- ⏳ Integration test suite passing
+- ✅ Phase 6: Comprehensive testing (66 tests PASSING)
+- 🚧 Phase 5c: Binary integration (IN PROGRESS - 40% complete)
+- ⏳ Phase 7: Observability metrics
+- ⏳ Binary integration test suite
 - ⏳ Deployment documentation
 
 ---
 
 ## Recent Changes
 
-### 2025-11-24: Planning Document Rewrite
+### 2025-11-24: Comprehensive Codebase Audit & Documentation Update
+- **Audited entire codebase** to verify implementation vs documentation
+- **Discovered infrastructure is 100% complete**:
+  - r2d2 connection pooling (state_persistence.rs:35-99)
+  - Circuit breaker with auto-pause (state_persistence.rs:909-1007)
+  - Execution history tracking (state_persistence.rs:610-869)
+  - ActorExecutionTracker helper (execution_tracker.rs:1-191)
+  - 66 tests passing across 13 test files
+- **Identified integration gap**: Binary not using infrastructure
+- **Corrected status**: Changed from "Phase 5 Complete" to "Phase 5c Needed"
+- **Updated roadmap**: Clear 2-3 hour integration task, not days of work
+- **Added code examples**: Exact changes needed in actor-server.rs
+
+### 2025-11-24: Planning Document Original Rewrite
 - Clarified completed vs pending work
 - Phases 3-4 marked complete
 - Detailed Phase 5 implementation plan
@@ -833,30 +1140,58 @@ if consecutive_failures >= max_consecutive_failures {
 - Updated success criteria
 
 ### 2025-11-23: Phase 4 Completion
-- Implemented `ScheduleType` with 4 variants
+- Implemented `ScheduleConfig` with 4 variants
 - Full `Schedule` trait with time handling
 - Discovered 7-field cron format requirement
-- 7 comprehensive tests added
+- 11 comprehensive tests added
 - Public API exported from `botticelli_server`
 
 ### 2025-11-23: Phase 3 Completion
 - Created database migration for state tables
 - Implemented Diesel models with builders
-- Built `DatabaseStatePersistence` with async support
-- Added execution history tracking
+- Built `DatabaseStatePersistence` with async support and r2d2 pooling
+- Added execution history tracking with start/complete/fail methods
+- Implemented circuit breaker with auto-pause
+- Added 20+ tests across 5 test files
 
 ---
 
 ## Next Immediate Actions
 
-1. ✅ **Review planning document** - Ensure clarity and completeness
-2. **Create `server_config.rs`** - TOML configuration structures
-3. **Implement `bin/actor-server.rs`** - Binary entry point
-4. **Add clap dependency** - CLI argument parsing
-5. **Build execution loop** - Schedule checking and task execution
-6. **Test with examples** - Validate all schedule types work
+### Phase 5c Implementation (2-3 hours)
+
+1. **Initialize shared persistence** in actor-server.rs (before line 136)
+   - Create `Arc<DatabaseStatePersistence>` with connection pool
+   - Make available to all actors
+
+2. **Load state on startup** (replace lines 104-121)
+   - Query `load_task_state()` for each actor
+   - Log loaded state (failures, pause status)
+   - Initialize last_run from database
+
+3. **Create ActorExecutionTracker** (after line 175)
+   - One tracker per actor
+   - Store in actors HashMap alongside actor, schedule, last_run
+
+4. **Integrate into execution loop** (replace lines 246-274)
+   - Check `tracker.should_execute()` for circuit breaker
+   - Call `tracker.start_execution()` before actor.execute()
+   - Call `tracker.record_success()` or `tracker.record_failure()`
+   - Extract skill counts from ExecutionResult
+
+5. **Save state on shutdown** (after line 285)
+   - Persist final last_run for all actors
+   - Update next_run based on schedule
+
+6. **Test end-to-end**
+   - Run binary with DATABASE_URL set
+   - Verify execution history in database
+   - Test circuit breaker by forcing failures
+   - Restart binary and verify state recovery
+
+**Success Metric**: Binary survives restart with state intact, circuit breaker auto-pauses failing tasks
 
 ---
 
-**Last Updated**: 2025-11-24
-**Next Review**: After Phase 5 completion
+**Last Updated**: 2025-11-24 (Post-Audit)
+**Next Review**: After Phase 5c integration complete

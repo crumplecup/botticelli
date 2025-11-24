@@ -4,7 +4,10 @@
 //! platforms like Discord, posting content based on narratives and knowledge tables.
 
 #[cfg(feature = "discord")]
-use botticelli_actor::{Actor, ActorConfig, ScheduleConfig, SkillRegistry};
+use botticelli_actor::{
+    Actor, ActorConfig, ActorExecutionTracker, DatabaseExecutionResult, ScheduleConfig,
+    SkillRegistry,
+};
 use botticelli_actor::{ActorServerConfig, DatabaseStatePersistence};
 #[cfg(feature = "discord")]
 use botticelli_database::establish_connection;
@@ -12,7 +15,6 @@ use botticelli_database::establish_connection;
 use botticelli_server::ActorServer;
 #[cfg(feature = "discord")]
 use botticelli_server::Schedule;
-use botticelli_server::StatePersistence;
 use clap::Parser;
 #[cfg(feature = "discord")]
 use std::collections::HashMap;
@@ -94,34 +96,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    // Set up database state persistence if DATABASE_URL is set
-    if args.database_url.is_some() || std::env::var("DATABASE_URL").is_ok() {
-        info!("Database state persistence enabled");
-        let persistence = DatabaseStatePersistence::new()
-            .map_err(|e| format!("Failed to create persistence: {}", e))?;
-
-        // Attempt to load previous state
-        match persistence.load_state().await {
-            Ok(Some(state)) => {
-                info!(
-                    task_id = %state.task_id,
-                    actor = %state.actor_name,
-                    "Loaded previous server state from database"
-                );
-            }
-            Ok(None) => {
-                info!("No previous server state found in database");
-            }
-            Err(e) => {
-                warn!("Failed to load previous state: {}", e);
-            }
-        }
-    } else {
-        warn!("DATABASE_URL not set - state persistence disabled");
-    }
-
     #[cfg(feature = "discord")]
     {
+        // Set up database state persistence if DATABASE_URL is set
+        let persistence = if args.database_url.is_some() || std::env::var("DATABASE_URL").is_ok() {
+            info!("Database state persistence enabled");
+            match DatabaseStatePersistence::new() {
+                Ok(p) => {
+                    info!("Created connection pool for state persistence");
+                    Some(Arc::new(p))
+                }
+                Err(e) => {
+                    warn!("Failed to create persistence: {}", e);
+                    warn!("Continuing without state persistence");
+                    None
+                }
+            }
+        } else {
+            warn!("DATABASE_URL not set - state persistence disabled");
+            None
+        };
+
         // Initialize Discord server
         let discord_token = args
             .discord_token
@@ -135,9 +130,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let state_path = PathBuf::from(".actor_server_state.json");
         let mut server = DiscordActorServer::new(http.clone(), state_path);
 
-        // Track actors and their schedules
-        let mut actors: HashMap<String, (Actor, ScheduleConfig, Option<DateTime<Utc>>)> =
-            HashMap::new();
+        // Track actors, their schedules, last run time, and execution trackers
+        let mut actors: HashMap<
+            String,
+            (
+                Actor,
+                ScheduleConfig,
+                Option<DateTime<Utc>>,
+                Option<ActorExecutionTracker<DatabaseStatePersistence>>,
+            ),
+        > = HashMap::new();
 
         // Load and register actors from configuration
         for actor_instance in &server_config.actors {
@@ -168,10 +170,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 info!(actor = %actor_instance.name, "Actor created successfully");
 
-                // Store actor with schedule
+                // Load previous state from database if available
+                let mut loaded_last_run = None;
+                if let Some(ref persistence) = persistence {
+                    match persistence.load_task_state(&actor_instance.name).await {
+                        Ok(Some(state)) => {
+                            info!(
+                                actor = %actor_instance.name,
+                                consecutive_failures = ?state.consecutive_failures,
+                                is_paused = ?state.is_paused,
+                                "Loaded previous task state from database"
+                            );
+                            loaded_last_run = state
+                                .last_run
+                                .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc));
+                        }
+                        Ok(None) => {
+                            debug!(actor = %actor_instance.name, "No previous state found");
+                        }
+                        Err(e) => {
+                            warn!(
+                                actor = %actor_instance.name,
+                                error = ?e,
+                                "Failed to load previous state"
+                            );
+                        }
+                    }
+                }
+
+                // Create execution tracker if persistence is enabled
+                let tracker = persistence.as_ref().map(|p| {
+                    ActorExecutionTracker::new(
+                        p.clone(),
+                        actor_instance.name.clone(),
+                        actor_instance.name.clone(),
+                    )
+                });
+
+                // Store actor with schedule, last run, and tracker
                 actors.insert(
                     actor_instance.name.clone(),
-                    (actor, actor_instance.schedule.clone(), None),
+                    (
+                        actor,
+                        actor_instance.schedule.clone(),
+                        loaded_last_run,
+                        tracker,
+                    ),
                 );
 
                 match &actor_instance.schedule {
@@ -243,28 +287,137 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     debug!("Checking for ready actors");
 
                     // Check each actor's schedule
-                    for (name, (actor, schedule, last_run)) in actors.iter_mut() {
+                    for (name, (actor, schedule, last_run, tracker)) in actors.iter_mut() {
+                        // Check circuit breaker if tracker available
+                        if let Some(tracker) = tracker.as_ref() {
+                            match tracker.should_execute().await {
+                                Ok(should_run) => {
+                                    if !should_run {
+                                        debug!(actor = %name, "Task paused by circuit breaker, skipping");
+                                        continue;
+                                    }
+                                }
+                                Err(e) => {
+                                    warn!(
+                                        actor = %name,
+                                        error = ?e,
+                                        "Failed to check circuit breaker state, skipping"
+                                    );
+                                    continue;
+                                }
+                            }
+                        }
+
                         let check = schedule.check(*last_run);
 
                         if check.should_run {
                             info!(actor = %name, "Executing scheduled actor");
+
+                            // Start execution history if tracker available
+                            let exec_id = if let Some(tracker) = tracker.as_ref() {
+                                match tracker.start_execution().await {
+                                    Ok(id) => {
+                                        debug!(actor = %name, exec_id = id, "Started execution record");
+                                        Some(id)
+                                    }
+                                    Err(e) => {
+                                        warn!(
+                                            actor = %name,
+                                            error = ?e,
+                                            "Failed to start execution record"
+                                        );
+                                        None
+                                    }
+                                }
+                            } else {
+                                None
+                            };
 
                             // Get database connection
                             match establish_connection() {
                                 Ok(mut conn) => {
                                     // Execute the actor
                                     match actor.execute(&mut conn).await {
-                                        Ok(_) => {
-                                            info!(actor = %name, "Actor executed successfully");
+                                        Ok(result) => {
+                                            info!(
+                                                actor = %name,
+                                                skills_succeeded = result.succeeded.len(),
+                                                skills_failed = result.failed.len(),
+                                                skills_skipped = result.skipped.len(),
+                                                "Actor executed successfully"
+                                            );
                                             *last_run = Some(Utc::now());
+
+                                            // Record success if tracker available
+                                            if let Some(exec_id) = exec_id {
+                                                if let Some(tracker) = tracker.as_ref() {
+                                                    let db_result = DatabaseExecutionResult {
+                                                        skills_succeeded: result.succeeded.len() as i32,
+                                                        skills_failed: result.failed.len() as i32,
+                                                        skills_skipped: result.skipped.len() as i32,
+                                                        metadata: serde_json::json!({}),
+                                                    };
+
+                                                    if let Err(e) =
+                                                        tracker.record_success(exec_id, db_result).await
+                                                    {
+                                                        warn!(
+                                                            actor = %name,
+                                                            error = ?e,
+                                                            "Failed to record success"
+                                                        );
+                                                    }
+                                                }
+                                            }
                                         }
                                         Err(e) => {
                                             error!(actor = %name, error = ?e, "Actor execution failed");
+
+                                            // Record failure if tracker available
+                                            if let Some(exec_id) = exec_id {
+                                                if let Some(tracker) = tracker.as_ref() {
+                                                    match tracker
+                                                        .record_failure(exec_id, &e.to_string())
+                                                        .await
+                                                    {
+                                                        Ok(should_pause) => {
+                                                            if should_pause {
+                                                                warn!(
+                                                                    actor = %name,
+                                                                    "Circuit breaker triggered, task paused"
+                                                                );
+                                                            }
+                                                        }
+                                                        Err(e) => {
+                                                            warn!(
+                                                                actor = %name,
+                                                                error = ?e,
+                                                                "Failed to record failure"
+                                                            );
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
                                 Err(e) => {
                                     error!(actor = %name, error = ?e, "Failed to establish database connection");
+
+                                    // Record connection failure if tracker available
+                                    if let Some(exec_id) = exec_id {
+                                        if let Some(tracker) = tracker.as_ref() {
+                                            if let Err(e) =
+                                                tracker.record_failure(exec_id, &e.to_string()).await
+                                            {
+                                                warn!(
+                                                    actor = %name,
+                                                    error = ?e,
+                                                    "Failed to record connection failure"
+                                                );
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
@@ -277,6 +430,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 _ = shutdown_flag.notified() => {
                     info!("Shutdown signal received, stopping gracefully...");
                     break;
+                }
+            }
+        }
+
+        // Save final state before shutdown if persistence available
+        if let Some(ref persistence) = persistence {
+            info!("Saving final task state to database");
+            for (name, (_, _, last_run, _)) in &actors {
+                if let Some(last_run_time) = last_run {
+                    match persistence.load_task_state(name).await {
+                        Ok(Some(mut state)) => {
+                            state.last_run = Some(last_run_time.naive_utc());
+                            if let Err(e) = persistence.save_task_state(name, &state).await {
+                                warn!(
+                                    actor = %name,
+                                    error = ?e,
+                                    "Failed to save final state"
+                                );
+                            } else {
+                                debug!(actor = %name, "Saved final state");
+                            }
+                        }
+                        Ok(None) => {
+                            debug!(actor = %name, "No state to update on shutdown");
+                        }
+                        Err(e) => {
+                            warn!(
+                                actor = %name,
+                                error = ?e,
+                                "Failed to load state for final save"
+                            );
+                        }
+                    }
                 }
             }
         }

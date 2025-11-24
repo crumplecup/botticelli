@@ -1,11 +1,11 @@
 //! Tests for actor error handling and recovery behavior.
 
+use async_trait::async_trait;
 use botticelli_actor::{
     ActorConfigBuilder, ActorError, ActorErrorKind, ExecutionConfigBuilder, Platform,
-    PlatformCapability, PlatformMessage, PlatformMetadata, Skill, SkillContext,
-    SkillInfoBuilder, SkillOutput, SkillOutputBuilder,
+    PlatformCapability, PlatformMessage, PlatformMetadata, Skill, SkillContext, SkillInfoBuilder,
+    SkillOutput, SkillOutputBuilder,
 };
-use async_trait::async_trait;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 /// Mock platform for testing.
@@ -60,9 +60,10 @@ impl Skill for RecoverableErrorSkill {
 
         if attempt < self.fail_count {
             // Return recoverable error
-            Err(ActorError::new(ActorErrorKind::PlatformTemporary(
-                format!("Temporary failure (attempt {})", attempt),
-            )))
+            Err(ActorError::new(ActorErrorKind::PlatformTemporary(format!(
+                "Temporary failure (attempt {})",
+                attempt
+            ))))
         } else {
             // Success after retries
             Ok(SkillOutputBuilder::default()
@@ -181,9 +182,11 @@ fn test_config_validation_with_high_retries() {
     let warnings = config.validate();
 
     // Should have warning about high retry count
-    assert!(warnings
-        .iter()
-        .any(|w| w.contains("max_retries") && w.contains("very high")));
+    assert!(
+        warnings
+            .iter()
+            .any(|w| w.contains("max_retries") && w.contains("very high"))
+    );
 }
 
 #[test]
@@ -206,9 +209,11 @@ fn test_config_validation_with_zero_cache_ttl() {
     let warnings = config.validate();
 
     // Should have warning about zero TTL
-    assert!(warnings
-        .iter()
-        .any(|w| w.contains("ttl_seconds") && w.contains("expire immediately")));
+    assert!(
+        warnings
+            .iter()
+            .any(|w| w.contains("ttl_seconds") && w.contains("expire immediately"))
+    );
 }
 
 #[test]
@@ -231,7 +236,9 @@ fn test_config_validation_with_excessive_cache_size() {
     let warnings = config.validate();
 
     // Should have warning about large cache size
-    assert!(warnings
-        .iter()
-        .any(|w| w.contains("max_entries") && w.contains("very large")));
+    assert!(
+        warnings
+            .iter()
+            .any(|w| w.contains("max_entries") && w.contains("very large"))
+    );
 }
