@@ -93,7 +93,7 @@ Output the refined post as JSON (preserve the exact format):
 
 # === Narrative 1: Feature Showcase ===
 [narratives.feature]
-name = "potential_posts_feature"
+name = "feature_showcase"
 description = "Generate Discord post showcasing a Botticelli feature"
 template = "potential_posts"
 
@@ -134,7 +134,7 @@ Output only the post text as JSON:
 
 # === Narrative 2: Use Cases ===
 [narratives.usecase]
-name = "potential_posts_usecase"
+name = "usecase_showcase"
 description = "Generate Discord post about real-world Botticelli use cases"
 template = "potential_posts"
 
@@ -175,7 +175,7 @@ Output only the post text as JSON:
 
 # === Narrative 3: Tutorial ===
 [narratives.tutorial]
-name = "potential_posts_tutorial"
+name = "tutorial_guide"
 description = "Generate Discord post with tutorial or how-to content"
 template = "potential_posts"
 
@@ -216,7 +216,7 @@ Output only the post text as JSON:
 
 # === Narrative 4: Community ===
 [narratives.community]
-name = "potential_posts_community"
+name = "community_engagement"
 description = "Generate Discord post for community engagement"
 template = "potential_posts"
 
@@ -257,7 +257,7 @@ Output only the post text as JSON:
 
 # === Narrative 5: Problem-Solution ===
 [narratives.problem]
-name = "potential_posts_problemsolution"
+name = "problem_solution"
 description = "Generate Discord post about problems Botticelli solves"
 template = "potential_posts"
 

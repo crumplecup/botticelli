@@ -149,7 +149,6 @@ pub async fn run_narrative(
 
     #[cfg(not(feature = "database"))]
 
-
     tracing::info!(
         path = %source.path().display(),
         narrative_name = ?source.name(),
@@ -192,10 +191,7 @@ pub async fn run_narrative(
     let narrative: Box<dyn botticelli::NarrativeProvider> = {
         if let Some(name) = source.name() {
             // Load as MultiNarrative for composition support
-            Box::new(botticelli::MultiNarrative::from_file(
-                source.path(),
-                name,
-            )?)
+            Box::new(botticelli::MultiNarrative::from_file(source.path(), name)?)
         } else {
             // Load as single Narrative for backwards compatibility
             let content = std::fs::read_to_string(source.path()).map_err(|e| {

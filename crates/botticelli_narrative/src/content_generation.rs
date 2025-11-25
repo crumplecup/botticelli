@@ -120,13 +120,17 @@ impl ContentGenerationProcessor {
 #[async_trait]
 impl ActProcessor for ContentGenerationProcessor {
     async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
-        let table_name = &context.narrative_metadata.name();
-
         // Determine processing mode: Template or Inference
         let processing_mode = if let Some(template) = &context.narrative_metadata.template() {
             ProcessingMode::Template(template.clone())
         } else {
             ProcessingMode::Inference
+        };
+
+        // Use template name as table name, or fallback to narrative name for inference
+        let table_name = match &processing_mode {
+            ProcessingMode::Template(template) => template.as_str(),
+            ProcessingMode::Inference => context.narrative_metadata.name(),
         };
 
         tracing::info!(
