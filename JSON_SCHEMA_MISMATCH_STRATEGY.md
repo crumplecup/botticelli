@@ -305,14 +305,54 @@ Return ONLY the JSON object, no markdown formatting.
 
 ## Decision Log
 
-| Issue               | Decision                           | Rationale                      |
-| ------------------- | ---------------------------------- | ------------------------------ |
-| Extra JSON fields   | Ignore silently                    | Flexibility, LLM metadata      |
-| Missing JSON fields | Allow NULL                         | Optional columns, partial data |
-| Type mismatches     | Strict validation + better prompts | Data integrity                 |
-| Required fields     | Pre-validate                       | Clear errors, better UX        |
-| Name mismatches     | Strict + schema in prompt          | Predictability                 |
-| Complex types       | JSONB support                      | Preserve structure             |
+| Issue               | Decision                                              | Status      | Rationale                      |
+| ------------------- | ----------------------------------------------------- | ----------- | ------------------------------ |
+| Extra JSON fields   | Ignore silently                                       | ✅ **DONE** | Flexibility, LLM metadata      |
+| Missing JSON fields | Allow NULL                                            | ✅ **DONE** | Optional columns, partial data |
+| Type mismatches     | Best-effort coercion + improved prompts (Option B+C)  | ✅ **DONE** | Balance flexibility & quality  |
+| Required fields     | Pre-validation with retry option (Option A+C)         | ⏳ TODO     | Clear errors, better UX        |
+| Name mismatches     | Fuzzy matching (Option A)                             | ✅ **DONE** | Handle case/underscore diffs   |
+| Complex types       | JSONB support (Option A)                              | ✅ **DONE** | Preserve structure             |
+
+## Implementation Status
+
+### Phase 1: Lenient Insertion (✅ DONE)
+
+**Location:** `crates/botticelli_narrative/src/storage_actor.rs`
+
+- `handle_insert_content()` - Filters extra fields (line 345-356)
+- Missing fields automatically get NULL (standard SQL behavior)
+- Fuzzy matching via `find_column_match()` (line 346)
+
+### Phase 2: Type Coercion (✅ DONE)
+
+**Locations:**
+- `crates/botticelli_narrative/src/storage_actor.rs::json_value_to_sql()` (line 504+)
+  - String → integer/float parsing
+  - Boolean → integer coercion
+  - Number type widening
+  - Fallback to NULL on failure
+
+- `crates/botticelli_database/src/schema_inference.rs::coerce_value()` (new)
+  - Comprehensive type coercion for schema inference
+  - Handles arrays, JSONB, timestamps
+  - Structured logging for diagnostics
+
+### Phase 3: Enhanced Prompts (✅ DONE)
+
+**Location:** `crates/botticelli_narrative/narratives/discord/generation_carousel.toml`
+
+- `ensure_json_schema` act - Schema conformance check
+- `audit_json` act - Self-audit for compliance
+- Clear field requirements and constraints in prompts
+
+### Phase 4: Required Field Validation (⏳ TODO)
+
+**Needed:**
+1. Query table constraints before insertion
+2. Pre-validate required fields exist and are non-NULL
+3. Return clear error messages on failure
+4. Optional: LLM retry with field-specific prompts
 
 ---
 
