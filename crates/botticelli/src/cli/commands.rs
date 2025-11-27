@@ -66,6 +66,17 @@ pub enum Commands {
     /// Content management commands
     #[command(subcommand)]
     Content(ContentCommands),
+
+    /// Run the bot server with generation, curation, and posting bots
+    Server {
+        /// Override config file path
+        #[arg(long)]
+        config: Option<PathBuf>,
+
+        /// Enable only specific bots (comma-separated: generation,curation,posting)
+        #[arg(long)]
+        only: Option<String>,
+    },
 }
 
 /// Content management subcommands

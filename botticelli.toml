@@ -217,6 +217,44 @@ api_url = "http://localhost:8080"
 model = "mistralai/Mistral-7B-Instruct-v0.2" # Must match the model you started
 
 # ============================================================================
+# Bot Server Configuration
+# ============================================================================
+# Configuration for automated content generation, curation, and posting bots.
+# These bots run independently as background services orchestrated by the
+# bot server.
+
+[bot_server]
+# Enable/disable the bot server
+enabled = false
+
+# Generation bot configuration
+[bot_server.generation]
+enabled = true
+narrative = "discord/generation_carousel"  # Path relative to narratives/
+narrative_name = "batch_generate"
+interval_hours = 24  # Run once per day
+model = "gemini-2.5-flash-lite"  # High RPD limit model
+
+# Curation bot configuration
+[bot_server.curation]
+enabled = true
+narrative = "discord/curation"
+narrative_name = "curate"
+check_interval_hours = 12  # Check for new content every 12 hours
+batch_size = 10  # Process up to 10 items per batch
+model = "gemini-2.5-flash"  # Balanced model
+
+# Posting bot configuration
+[bot_server.posting]
+enabled = true
+narrative = "discord/posting"
+narrative_name = "post"
+base_interval_hours = 6  # Base posting interval (every 6 hours)
+jitter_percent = 30  # ±30% randomization (4.2-7.8 hours)
+channel_id = "1234567890"  # Discord channel ID for posts
+model = "gemini-2.5-flash-lite"  # Lightweight model
+
+# ============================================================================
 # Additional Providers
 # ============================================================================
 # Add your custom providers or override defaults here.
