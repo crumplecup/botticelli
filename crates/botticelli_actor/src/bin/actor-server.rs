@@ -156,18 +156,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Load actor configuration
             let actor_config = ActorConfig::from_file(&actor_instance.config_file)?;
 
-            // Create Discord platform if channel_id is provided
-            if let Some(channel_id) = &actor_instance.channel_id {
-                let platform = DiscordPlatform::new(&discord_token, channel_id)?;
+            // Create platform (Discord if channel_id provided, NoOp otherwise)
+            let platform: Arc<dyn botticelli_actor::Platform> =
+                if let Some(channel_id) = &actor_instance.channel_id {
+                    info!(
+                        actor = %actor_instance.name,
+                        channel_id = %channel_id,
+                        "Creating Discord platform for actor"
+                    );
+                    Arc::new(DiscordPlatform::new(&discord_token, channel_id)?)
+                } else {
+                    info!(
+                        actor = %actor_instance.name,
+                        "No channel_id specified, using NoOpPlatform (actor will not post)"
+                    );
+                    Arc::new(botticelli_actor::NoOpPlatform::new())
+                };
 
-                // Build actor with platform
-                let actor = Actor::builder()
-                    .config(actor_config)
-                    .skills(SkillRegistry::new())
-                    .platform(std::sync::Arc::new(platform))
-                    .build()?;
+            // Build actor with platform
+            let actor = Actor::builder()
+                .config(actor_config)
+                .skills(SkillRegistry::new())
+                .platform(platform)
+                .build()?;
 
-                info!(actor = %actor_instance.name, "Actor created successfully");
+            info!(actor = %actor_instance.name, "Actor created successfully");
 
                 // Load previous state from database if available
                 let mut loaded_last_run = None;
@@ -246,12 +259,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                     }
                 }
-            } else {
-                warn!(
-                    actor = %actor_instance.name,
-                    "No channel_id specified, actor will not post"
-                );
-            }
         }
 
         // Set up graceful shutdown signal handler

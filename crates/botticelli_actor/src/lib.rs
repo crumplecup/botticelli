@@ -88,5 +88,7 @@ pub use discord_server::{
     DiscordServerState, DiscordTaskScheduler,
 };
 
+pub use platforms::NoOpPlatform;
+
 #[cfg(feature = "discord")]
 pub use platforms::{DiscordPlatform, DiscordPlatformBuilder};
