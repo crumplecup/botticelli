@@ -1,7 +1,7 @@
 # Actor Integration Progress
 
 **Date**: 2025-11-27
-**Status**: In Progress - Storage Actor Complete, Ready for Phase 2
+**Status**: Migration to Ractor - Actix incompatible with test environment
 
 ---
 
@@ -182,6 +182,48 @@ posted_at = "NOW()"
 - ✅ Zero compiler warnings
 - ✅ `just check botticelli_narrative` passes
 - ✅ `just check botticelli` passes
+
+---
+
+## Test Results 🧪
+
+### Generation Carousel Test (2025-11-27)
+
+**Command**: `just narrate generation_carousel.batch_generate`
+
+**What Worked**:
+- ✅ Multi-narrative TOML file loading
+- ✅ Carousel mode iterating through 5 narratives × 3 iterations
+- ✅ Narrative composition (nested narratives)
+- ✅ Act reuse across narratives (shared acts defined once)
+- ✅ Database table targeting with `target = "potential_discord_posts"`
+- ✅ BOTTICELLI_CONTEXT.md injection via file loading
+- ✅ Rate limiting at 80% of quota (budget multipliers)
+- ✅ Content generation tracking (started/completed/failed)
+
+**Issues Found & Fixed**:
+- ❌ UTF-8 boundary panic when logging previews with emojis
+  - **Fixed**: Replaced byte-index slicing with char_indices()
+  - Affected: executor.rs (3 locations), extraction.rs (1 location)
+  
+**Issues Remaining**:
+- ⚠️ LLM not consistently outputting valid JSON
+  - Some responses lack JSON entirely (critique acts)
+  - Some responses have truncated JSON (EOF while parsing)
+  - Need to strengthen prompts with explicit JSON instructions
+  
+**Observations**:
+- Generation phase successfully creates ~15 posts per carousel iteration
+- Critique phase fails ~40% of the time (no JSON in response)
+- Refine phase fails ~30% of the time (malformed JSON)
+- Budget multiplier (80%) successfully prevents rate limit violations
+- Database tracking shows which narratives succeeded/failed
+
+**Next Steps**:
+1. Strengthen JSON prompts in critique/refine acts
+2. Consider adding retry logic for malformed JSON responses
+3. Test curation phase (Stage 2)
+4. Implement posting phase (Stage 3)
 
 ---
 
