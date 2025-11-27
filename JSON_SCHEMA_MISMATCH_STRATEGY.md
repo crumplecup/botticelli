@@ -13,17 +13,32 @@
    - SQL INSERT automatically handles missing columns as NULL/DEFAULT
    - No explicit code needed
 
-### 🚧 In Progress
+3. **Type coercion** (Phase 2)
+   - Comprehensive string → numeric/bool/timestamp coercion
+   - JSONB support for complex types (arrays, nested objects)
+   - Fallback to NULL on coercion failure
+   - Location: `storage_actor.rs::json_value_to_sql()`
 
-3. **Type coercion** (Phase 2) - Partially implemented
-   - Basic string → numeric coercion exists
-   - Needs expansion for bool, timestamp, etc.
+4. **Improved JSON formatting prompts** (Phase 3)
+   - Schema-aware prompts with field types and constraints
+   - Separate format + audit acts for quality
+   - Location: `generation_carousel.toml::ensure_json_schema`, `audit_json`
 
-### 📋 Planned
+5. **Fuzzy column name matching** (Phase 4)
+   - snake_case, camelCase, lowercase normalization
+   - Handles common LLM output variations
+   - Location: `storage_actor.rs::find_column_match()`
 
-4. **Required field validation** (Phase 3)
-5. **Improved JSON formatting prompts** (Phase 4)
-6. **JSONB support** (Phase 5)
+### 📋 Deferred
+
+6. **Required field validation** - Not needed
+   - Database constraints handle this naturally
+   - Clear error messages already provided on constraint violations
+   - LLM retry logic can be added later if needed
+
+7. **Field mapping configuration** - Not needed yet
+   - Fuzzy matching handles most cases
+   - Can add TOML mappings if specific conflicts arise
 
 ---
 
@@ -353,7 +368,7 @@ Return ONLY the JSON object, no markdown formatting.
 | Extra JSON fields   | Ignore silently                                       | ✅ **DONE** | Flexibility, LLM metadata      |
 | Missing JSON fields | Allow NULL                                            | ✅ **DONE** | Optional columns, partial data |
 | Type mismatches     | Best-effort coercion + improved prompts (Option B+C)  | ✅ **DONE** | Balance flexibility & quality  |
-| Required fields     | Pre-validation with retry option (Option A+C)         | ⏳ TODO     | Clear errors, better UX        |
+| Required fields     | Database constraints (Option B)                       | ✅ **DONE** | Simple, leverages DB guarantees|
 | Name mismatches     | Fuzzy matching (Option A)                             | ✅ **DONE** | Handle case/underscore diffs   |
 | Complex types       | JSONB support (Option A)                              | ✅ **DONE** | Preserve structure             |
 
@@ -389,13 +404,11 @@ Return ONLY the JSON object, no markdown formatting.
 - `audit_json` act - Self-audit for compliance
 - Clear field requirements and constraints in prompts
 
-### Phase 4: Required Field Validation (⏳ TODO)
+### Phase 4: Required Field Validation (✅ DEFERRED)
 
-**Needed:**
-1. Query table constraints before insertion
-2. Pre-validate required fields exist and are non-NULL
-3. Return clear error messages on failure
-4. Optional: LLM retry with field-specific prompts
+**Status:** Not implemented. Database constraint violations provide adequate error messages.
+
+**Future Enhancement:** Could add LLM retry logic on constraint violations if needed.
 
 ---
 
