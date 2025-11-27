@@ -817,29 +817,72 @@ Botticelli does NOT have a template engine (no Jinja, Tera, Handlebars, etc.). T
 3. Create `curation_actor.toml` for automated runs
 4. Test end-to-end pipeline
 
-### Phase 4: Posting Actor (Day 6-7)
+### Phase 4: Posting Actor (Day 6-7) - ✅ MVP COMPLETED
+
+**Status**: Basic posting narrative implemented and tested successfully
 
 **Tasks:**
 
-1. Create `discord_poster.toml` narrative
-2. Implement interval checking
-3. Add time window constraints
-4. Test posting to test channel
-5. Create `posting_actor.toml` config
-6. Deploy to production channel
+1. ✅ Create `discord_poster.toml` narrative
+2. 🔲 Implement interval checking (deferred - LLM-based logic not practical for production)
+3. 🔲 Add time window constraints (deferred - requires actor-server features)
+4. ✅ Test posting to test channel
+5. 🔲 Create `posting_actor.toml` config (deferred - actors/ directory not set up)
+6. 🔲 Deploy to production channel (pending actor infrastructure)
 
-**Files to create:**
+**Files created:**
 
-- `crates/botticelli_narrative/narratives/discord/discord_poster.toml`
-- `actors/posting_actor.toml`
+- ✅ `crates/botticelli_narrative/narratives/discord/discord_poster.toml` - Working posting narrative
+
+**Implementation notes:**
+
+The posting narrative uses a simple three-act structure:
+1. **get_channel**: Creates or retrieves the "content-test" Discord channel
+2. **extract_content**: Queries `approved_discord_posts` table for posts with `review_status = 'pending'`, extracts text_content via LLM
+3. **post_to_channel**: Posts the content to Discord using `messages.send` bot command
+
+Database schema uses `approved_discord_posts` table (created via schema inference by curate_and_approve narrative):
+- Columns: text_content, source, tags, content_type, curation_score, selected_at, generated_at, source_narrative, source_act, generation_model, review_status, rating
+- Query filter: `WHERE review_status = 'pending'`
+- Sort order: `ORDER BY curation_score DESC, selected_at ASC`
+
+**Tested successfully:**
+- Fetched highest-scored approved post (score: 48)
+- Posted 1,688-character introduction post to Discord
+- Message ID: 1443633391206666242
+- Channel ID: 1443633120430788659 (content-test)
+
+**Limitations:**
+
+1. **No automatic status tracking**: Posts must be marked as 'posted' manually via SQL to prevent duplicates:
+   ```sql
+   UPDATE approved_discord_posts SET review_status = 'posted'
+   WHERE <condition to identify posted content>;
+   ```
+   This is because database update bot commands don't exist yet.
+
+2. **No interval checking**: The narrative will post immediately when run. Interval logic would require:
+   - Database table to track post history with timestamps
+   - LLM-based time calculations (not practical)
+   - OR actor-server scheduling features (not implemented)
+
+3. **No time window constraints**: Would require actor-server configuration features.
 
 **Success criteria:**
 
-- Posts only approved content
-- Respects minimum interval (2 hours)
-- Stays within time window
-- Records post history correctly
-- Handles "no posts available" gracefully
+- ✅ Posts approved content successfully
+- 🔲 Respects minimum interval (deferred to actor infrastructure)
+- 🔲 Stays within time window (deferred to actor infrastructure)
+- 🔲 Records post history (deferred - needs database update commands)
+- 🔲 Handles "no posts available" gracefully (untested - all posts consumed)
+
+**Next steps:**
+
+1. Implement database update bot commands (e.g., `database.update_table`)
+2. Add post history tracking table
+3. Set up actor-server infrastructure
+4. Create `posting_actor.toml` config with scheduling
+5. Test automated posting with interval constraints
 
 ### Phase 5: Integration & Monitoring (Day 8-10)
 
