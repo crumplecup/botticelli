@@ -725,3 +725,26 @@ The bots run narratives **via CLI subprocess** rather than direct narrative exec
 - ✅ State isolation between runs
 - ✅ Can use `just narrate` commands
 - ⚠️ Need proper error handling for subprocess failures
+
+---
+
+## Implementation Status (2025-11-27 Evening)
+
+### Phase 5 Complete
+
+✅ **Configuration**: Added comprehensive bot server config to `botticelli.toml`
+✅ **CLI Command**: Added `server` subcommand to launch bot orchestration
+
+### Current Blockers
+
+The `botticelli_server` crate exists but has compilation errors:
+1. Reserved keyword `gen` used as identifier (Rust 2024 edition issue)
+2. Missing `new_server` error constructor
+3. Bot constructors need narrative paths and config
+4. Incomplete bot server implementation
+
+**Next Steps:**
+1. Fix compilation errors in `botticelli_server`
+2. Update bot constructors to match current requirements
+3. Wire configuration from `botticelli.toml` to bot creation
+4. Test end-to-end pipeline
