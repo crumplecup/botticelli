@@ -1,0 +1,65 @@
+# Discord Post Curation with Auto-Approval
+# Analyzes potential posts, selects best 2-3, and stores to approved_discord_posts table
+#
+# Flow: potential_discord_posts -> analysis -> approved_discord_posts (via schema inference)
+
+[narrative]
+name = "curate_and_approve"
+description = "Curate potential Discord posts and auto-store approved ones"
+target = "approved_discord_posts"
+
+[toc]
+order = ["analyze_and_select"]
+
+[acts.analyze_and_select]
+model = "gemini-2.5-flash"
+temperature = 0.3
+max_tokens = 8000  # Increased to allow for thoughts + output (input ~5000 tokens)
+
+[[acts.analyze_and_select.input]]
+type = "table"
+table_name = "potential_discord_posts"
+format = "markdown"
+limit = 10
+order_by = "generated_at DESC"
+required = false
+history_retention = "drop"  # Drop table from history after initial read to save tokens
+
+[[acts.analyze_and_select.input]]
+type = "text"
+content = """
+You are a content curator for Botticelli's technical Discord community.
+
+Analyze the potential Discord posts from the table above.
+
+For each post:
+1. Score (1-10) on: Engagement, Clarity, Value, Tone, Polish
+2. Calculate total score (max 50)
+3. Identify strengths and weaknesses
+
+Then select the TOP 2-3 posts with highest scores.
+
+Output ONLY the selected posts as a JSON array. Each post should include:
+- text_content: The full post text
+- content_type: "discord_post"
+- source: "curation_pipeline"
+- tags: ["approved", "curated"]
+- curation_score: Total score (integer)
+- curation_notes: Brief explanation of why this post was selected
+- selected_at: Current timestamp
+
+Output format:
+[
+  {
+    "text_content": "Full post content here...",
+    "content_type": "discord_post",
+    "source": "curation_pipeline",
+    "tags": ["approved", "curated"],
+    "curation_score": 45,
+    "curation_notes": "Excellent engagement and clarity, strong technical value",
+    "selected_at": "2025-11-25T20:00:00Z"
+  }
+]
+
+CRITICAL: Return ONLY valid JSON array. Include 2-3 posts maximum.
+"""

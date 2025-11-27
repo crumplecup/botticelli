@@ -1,0 +1,50 @@
+# Discord Content Posting Narrative
+# Posts approved content from approved_discord_posts table to Discord channel
+
+[narrative]
+name = "discord_poster"
+description = "Post approved Discord content to channel"
+skip_content_generation = true
+model = "gemini-2.5-flash"
+
+[toc]
+order = ["get_channel", "extract_content", "post_to_channel"]
+
+# Define bot command for getting or creating content-test channel
+[bots.get_channel]
+platform = "discord"
+command = "channels.get_or_create"
+guild_id = "${TEST_GUILD_ID}"
+name = "content-test"
+channel_type = "text"
+
+# Fetch one approved post that hasn't been posted yet
+[tables.next_post]
+table_name = "approved_discord_posts"
+where_clause = "review_status = 'pending'"
+order_by = "curation_score DESC, selected_at ASC"
+limit = 1
+format = "markdown"
+
+# Define bot command for posting to Discord
+[bots.post_message]
+platform = "discord"
+command = "messages.send"
+guild_id = "${TEST_GUILD_ID}"
+channel_id = "${get_channel.id}"
+content = "{{extract_content}}"
+
+[acts]
+# Act 1: Get or create the content-test channel
+get_channel = ["bots.get_channel"]
+
+# Act 2: Fetch the next approved post and extract text_content
+extract_content = [
+  "tables.next_post",
+  """Extract the text_content from the approved post above.
+
+Output ONLY the text_content field value, nothing else (no explanation, no prefix, no JSON)."""
+]
+
+# Act 3: Post to Discord channel
+post_to_channel = ["bots.post_message"]
