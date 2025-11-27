@@ -150,10 +150,27 @@ impl ProcessorRegistry {
     /// all processor errors concatenated together.
     #[tracing::instrument(skip(self, context), fields(act = %context.execution.act_name, processor_count = self.processors.len()))]
     pub async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
+        tracing::debug!(
+            act = %context.execution.act_name,
+            processor_count = self.processors.len(),
+            "ProcessorRegistry: Starting processor execution"
+        );
+
         let mut errors = Vec::new();
 
         for processor in &self.processors {
+            tracing::debug!(
+                processor = processor.name(),
+                act = %context.execution.act_name,
+                "Checking if processor should process"
+            );
             if processor.should_process(context) {
+                tracing::info!(
+                    processor = processor.name(),
+                    act = %context.execution.act_name,
+                    "Processor will process this act"
+                );
+
                 if let Err(e) = processor.process(context).await {
                     tracing::warn!(
                         processor = processor.name(),

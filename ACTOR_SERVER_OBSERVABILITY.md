@@ -1,7 +1,7 @@
-# Actor Server: Observability & API Strategy
+# Actor Server: Multi-Phase Narrative Automation
 
-**Date**: 2025-11-24
-**Status**: Optional Enhancement Planning
+**Date**: 2025-11-27
+**Status**: In Progress - Migrating to Ractor
 
 ## Table of Contents
 
@@ -52,16 +52,294 @@
 
 ## Executive Summary
 
-This document outlines two complementary enhancements for the actor-server binary that add **operational visibility** and **programmatic control**:
+This document outlines the architecture for a long-running actor server that hosts three independent narrative-execution actors for automated Discord content posting:
 
-- **Phase 1: Observability** - Metrics, monitoring, and health checks for operational insight
-- **Phase 2: HTTP API** - REST endpoints for runtime control and introspection
+- **Generation Actor** - Runs content generation carousel, outputs to `potential_posts`
+- **Curation Actor** - Reviews and approves posts, outputs to `approved_posts`  
+- **Posting Actor** - Posts approved content to Discord on schedule
 
-Both phases are **optional enhancements** that add operational capabilities without changing core functionality. The actor-server is already production-ready; these features enable advanced operational workflows.
+The system uses **Ractor** (not actix) for actor framework, **PostgreSQL** for inter-actor communication via shared tables, and **NoOpPlatform** for generation/curation actors (no Discord posting until final stage).
+
+**Current Status**: Migrating from actix to Ractor to resolve runtime conflicts in tests.
 
 ---
 
-## Phase 1: Observability & Metrics
+## Architecture Overview
+
+### Three-Phase Pipeline
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                   Actor Server (Long-Running)                     │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  ┌─────────────────┐      ┌──────────────────┐     ┌───────────┐│
+│  │ Generation      │      │ Curation         │     │ Posting   ││
+│  │ Actor           │      │ Actor            │     │ Actor     ││
+│  ├─────────────────┤      ├──────────────────┤     ├───────────┤│
+│  │ Narrative:      │      │ Narrative:       │     │ Narrative:││
+│  │ generation_     │      │ curation_        │     │ posting_  ││
+│  │ carousel.toml   │      │ workflow.toml    │     │ schedule. ││
+│  │                 │      │                  │     │ toml      ││
+│  │ Platform:       │      │ Platform:        │     │ Platform: ││
+│  │ NoOpPlatform    │      │ NoOpPlatform     │     │ Discord   ││
+│  │                 │      │                  │     │           ││
+│  │ Schedule:       │      │ Schedule:        │     │ Schedule: ││
+│  │ Every 2 hours   │      │ Every 4 hours    │     │ Hourly    ││
+│  │                 │      │                  │     │           ││
+│  │ Output Table:   │      │ Input Table:     │     │ Input:    ││
+│  │ potential_posts │──────▶ potential_posts  │     │ approved_ ││
+│  │                 │      │ Output Table:    │     │ posts     ││
+│  │                 │      │ approved_posts   │─────▶           ││
+│  └─────────────────┘      └──────────────────┘     └───────────┘│
+│                                                                    │
+└────────────────────────────────────┬───────────────────────────────┘
+                                     │
+                          ┌──────────▼──────────┐
+                          │ PostgreSQL Database │
+                          │                     │
+                          │ • potential_posts   │
+                          │ • approved_posts    │
+                          │ • content_metadata  │
+                          └─────────────────────┘
+```
+
+### Communication Pattern
+
+**Database as Message Bus**: Actors communicate exclusively through shared database tables.
+
+- Generation writes → `potential_posts`
+- Curation reads `potential_posts`, writes → `approved_posts`
+- Posting reads `approved_posts`, posts to Discord
+
+**No direct actor-to-actor messaging** - completely decoupled, scales independently.
+
+### Actor Framework: Ractor
+
+Using **Ractor** (not actix) because:
+- ✅ Works with tokio runtime (no nested runtime issues)
+- ✅ Supervision tree support
+- ✅ Location transparency (can distribute later)
+- ✅ Better test compatibility
+- ✅ Active development
+
+**Migration Status**: Currently removing actix dependencies and implementing Ractor-based narrative actors.
+
+---
+
+## Implementation Phases
+
+### Phase 1: Ractor Migration ✅ (In Progress)
+
+**Goal**: Replace actix with Ractor throughout the codebase
+
+**Files Being Modified**:
+1. `crates/botticelli_actor/Cargo.toml` - Remove actix, add ractor
+2. `crates/botticelli_narrative/src/narrative_actor.rs` - Implement Ractor actor
+3. `crates/botticelli_narrative/src/storage_actor.rs` - Convert to Ractor (if needed)
+4. `crates/botticelli_actor/src/bin/actor-server.rs` - Use Ractor runtime
+
+**Ractor Actor Pattern**:
+```rust
+use ractor::{Actor, ActorRef, ActorProcessingErr};
+
+pub struct NarrativeActor {
+    narrative_path: PathBuf,
+    narrative_name: String,
+    schedule: Schedule,
+}
+
+#[derive(Clone)]
+pub enum NarrativeActorMessage {
+    Execute,           // Scheduled execution trigger
+    Pause,             // Pause execution
+    Resume,            // Resume execution
+    GetStatus,         // Query status
+    Shutdown,          // Graceful shutdown
+}
+
+#[async_trait::async_trait]
+impl Actor for NarrativeActor {
+    type Msg = NarrativeActorMessage;
+    type State = NarrativeActorState;
+    type Arguments = NarrativeActorConfig;
+
+    async fn pre_start(
+        &self,
+        myself: ActorRef<Self::Msg>,
+        args: Self::Arguments,
+    ) -> Result<Self::State, ActorProcessingErr> {
+        // Initialize narrative, load config
+        // Start timer task for scheduled execution
+    }
+
+    async fn handle(
+        &self,
+        myself: ActorRef<Self::Msg>,
+        message: Self::Msg,
+        state: &mut Self::State,
+    ) -> Result<(), ActorProcessingErr> {
+        match message {
+            NarrativeActorMessage::Execute => {
+                // Load narrative, execute, save to database
+            }
+            NarrativeActorMessage::Pause => {
+                state.paused = true;
+            }
+            // ... other messages
+        }
+    }
+}
+```
+
+### Phase 2: Narrative Actor Implementation
+
+**Goal**: Create Ractor-based actor that runs narratives on schedule
+
+**Components**:
+1. `NarrativeActor` - Main actor implementation
+2. `Schedule` - Parse and calculate next execution time
+3. Timer task - Sends `Execute` message on schedule
+4. Narrative execution - Load TOML, run, save results
+
+**Schedule Syntax**:
+```toml
+[actors.generation]
+narrative = "narratives/discord/generation_carousel.toml"
+narrative_name = "batch_generate"
+schedule = "every 2 hours"
+platform = "noop"  # NoOpPlatform
+enabled = true
+
+[actors.curation]
+narrative = "narratives/discord/curation_workflow.toml"
+narrative_name = "curate"
+schedule = "every 4 hours"
+platform = "noop"
+enabled = true
+
+[actors.posting]
+narrative = "narratives/discord/posting_schedule.toml"
+narrative_name = "post"
+schedule = "every 1 hour"
+platform = "discord"
+channel_id = "1234567890"
+enabled = true
+```
+
+**Schedule Parsing**:
+```rust
+pub enum Schedule {
+    Interval(Duration),         // "every 2 hours"
+    Cron(String),               // "0 9 * * *" (daily at 9am)
+    Immediate,                  // Run once on startup
+}
+
+impl Schedule {
+    pub fn from_str(s: &str) -> Result<Self, ScheduleError> {
+        if s.starts_with("every ") {
+            // Parse "every 2 hours", "every 30 minutes"
+        } else if s.contains(" ") {
+            // Parse cron expression
+        } else if s == "immediate" {
+            Ok(Schedule::Immediate)
+        }
+    }
+
+    pub fn next_execution(&self, from: DateTime<Utc>) -> DateTime<Utc> {
+        match self {
+            Schedule::Interval(duration) => from + *duration,
+            Schedule::Cron(expr) => /* calculate from cron */,
+            Schedule::Immediate => from,
+        }
+    }
+}
+```
+
+### Phase 3: Actor Server Integration
+
+**Goal**: Load multiple actors from config, manage lifecycle
+
+**Configuration** (`actor_server.toml`):
+```toml
+[server]
+database_url = "postgresql://localhost/botticelli"
+metrics_port = 9090    # Prometheus metrics
+health_port = 8080     # Health checks
+api_port = 3000        # Control API (optional)
+
+[actors.generation]
+narrative = "narratives/discord/generation_carousel.toml"
+narrative_name = "batch_generate"
+schedule = "every 2 hours"
+platform = "noop"
+enabled = true
+
+[actors.curation]
+narrative = "narratives/discord/curation_workflow.toml"
+narrative_name = "curate"
+schedule = "every 4 hours"
+platform = "noop"
+enabled = true
+
+[actors.posting]
+narrative = "narratives/discord/posting_schedule.toml"
+narrative_name = "post"
+schedule = "every 1 hour"
+platform = "discord"
+channel_id = "1234567890"
+enabled = true
+```
+
+**Server Implementation**:
+```rust
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load configuration
+    let config = ActorServerConfig::load("actor_server.toml")?;
+
+    // Start Ractor runtime
+    let (actor_system, handles) = ractor::Actor::spawn_system().await?;
+
+    // Spawn narrative actors
+    let mut actor_refs = Vec::new();
+    for (name, actor_config) in config.actors {
+        if !actor_config.enabled {
+            continue;
+        }
+
+        let (actor_ref, handle) = Actor::spawn(
+            Some(name.clone()),
+            NarrativeActor::new(actor_config),
+            actor_config.clone(),
+        ).await?;
+
+        actor_refs.push((name, actor_ref));
+        handles.push(handle);
+    }
+
+    info!("Started {} actors", actor_refs.len());
+
+    // Wait for shutdown signal
+    tokio::signal::ctrl_c().await?;
+    info!("Shutting down...");
+
+    // Graceful shutdown
+    for (name, actor_ref) in actor_refs {
+        actor_ref.send_message(NarrativeActorMessage::Shutdown)?;
+    }
+
+    Ok(())
+}
+```
+
+### Phase 4: Observability (Optional Enhancement)
+
+See sections below for Prometheus metrics, health checks, and HTTP API.
+
+---
+
+## Phase 1: Observability & Metrics (Optional)
 
 **Goal**: Enable operators to monitor actor health, performance, and execution patterns in production.
 

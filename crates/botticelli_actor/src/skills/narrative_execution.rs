@@ -3,7 +3,10 @@
 use crate::{ActorError, ActorErrorKind, Skill, SkillContext, SkillOutput, SkillResult};
 use async_trait::async_trait;
 use botticelli_models::GeminiClient;
-use botticelli_narrative::{MultiNarrative, Narrative, NarrativeExecutor, NarrativeProvider};
+use botticelli_narrative::{
+    MultiNarrative, Narrative, NarrativeExecutor, NarrativeProvider, ProcessorRegistry,
+};
+use ractor::Actor;
 use serde_json::json;
 use std::path::Path;
 
@@ -107,14 +110,45 @@ impl Skill for NarrativeExecutionSkill {
             )))
         })?;
 
-        // Create executor with the client
-        let executor = NarrativeExecutor::new(client);
+        // Spawn storage actor for database operations
+        tracing::debug!("Spawning storage actor");
+        let storage_actor = botticelli_narrative::StorageActor::new(context.db_pool.clone());
+        let (storage_ref, _handle) = Actor::spawn(None, storage_actor, context.db_pool.clone())
+            .await
+            .map_err(|e| {
+                ActorError::new(ActorErrorKind::Narrative(format!(
+                    "Failed to spawn storage actor: {}",
+                    e
+                )))
+            })?;
+
+        // Create processor registry with content generation processor
+        tracing::debug!("Creating processor registry");
+        let processor =
+            botticelli_narrative::ContentGenerationProcessor::new(storage_ref.clone());
+        let mut registry = ProcessorRegistry::new();
+        registry.register(Box::new(processor));
+
+        // Create executor with the client and processors
+        let executor = NarrativeExecutor::with_processors(client, registry);
 
         tracing::info!(narrative_name = narrative.name(), "Executing narrative");
 
         let result = executor.execute(&narrative).await.map_err(|e| {
             ActorError::new(ActorErrorKind::Narrative(format!(
                 "Narrative execution failed: {}",
+                e
+            )))
+        })?;
+
+        // Shutdown the storage actor
+        tracing::debug!("Shutting down storage actor");
+        storage_ref.stop(None);
+
+        tracing::debug!("Waiting for storage actor to stop");
+        _handle.await.map_err(|e| {
+            ActorError::new(ActorErrorKind::Narrative(format!(
+                "Storage actor shutdown error: {}",
                 e
             )))
         })?;

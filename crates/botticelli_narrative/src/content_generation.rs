@@ -236,8 +236,19 @@ impl ActProcessor for ContentGenerationProcessor {
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
         // Don't process if user explicitly opted out
         if *context.narrative_metadata.skip_content_generation() {
+            tracing::debug!(
+                act = %context.execution.act_name,
+                "Skipping content generation (skip_content_generation = true)"
+            );
             return false;
         }
+
+        tracing::debug!(
+            act = %context.execution.act_name,
+            template = ?context.narrative_metadata.template(),
+            target = ?context.narrative_metadata.target(),
+            "Content generation processor will process this act"
+        );
 
         // Otherwise, process (with template OR inference mode)
         true
