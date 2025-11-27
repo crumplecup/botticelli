@@ -337,7 +337,7 @@ impl StorageActor {
         let required_columns: Vec<&str> = schema
             .columns
             .iter()
-            .filter(|col| !col.is_nullable && col.column_default.is_none())
+            .filter(|col| col.is_nullable == "NO" && col.column_default.is_none())
             .map(|col| col.name.as_str())
             .collect();
 
@@ -397,7 +397,7 @@ impl StorageActor {
             values.push(format!("'{}'", m));
         }
 
-        columns.push("created_at".to_string());
+        columns.push("generated_at".to_string());
         values.push("NOW()".to_string());
 
         // Execute INSERT
@@ -531,6 +531,8 @@ fn find_column_match<'a>(
 }
 
 /// Format table schema as human-readable string for LLM prompts
+/// Formats schema for LLM prompts (reserved for Phase 2 improved prompts)
+#[allow(dead_code)]
 fn format_schema_for_prompt(schema: &botticelli_database::TableSchema) -> String {
     let mut result = String::from("{\n");
     
@@ -540,7 +542,7 @@ fn format_schema_for_prompt(schema: &botticelli_database::TableSchema) -> String
             continue;
         }
         
-        let required = if !col.is_nullable && col.column_default.is_none() {
+        let required = if col.is_nullable == "NO" && col.column_default.is_none() {
             "required"
         } else {
             "optional"
