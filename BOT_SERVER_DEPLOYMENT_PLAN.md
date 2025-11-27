@@ -53,7 +53,8 @@ The bot server runs three independent actors that work together to create a cont
 8. **Bot Actor Skeletons** - Created GenerationBot, CurationBot, PostingBot in `botticelli_server/src/bots/`
    - Ractor-based actors with message handlers
    - Jitter calculation for natural posting rhythm
-   - Placeholders for narrative execution integration
+   - **CurationBot fully implemented** (spawns `botticelli run` CLI subprocess)
+   - Architecture: Bots spawn CLI rather than re-implementing narrative loading
 
 ### ✅ Completed Narratives
 
