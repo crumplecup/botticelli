@@ -1,18 +1,39 @@
 # JSON Schema Mismatch Strategy
 
-## Problem Statement
+## Implementation Status
 
-When inserting JSON content into database tables, we encounter mismatches between the JSON structure and the table schema:
+### ✅ Completed
+
+1. **Extra JSON fields → Ignored** (Phase 1)
+   - Fuzzy column matching with snake_case/camelCase support
+   - Fields not matching any column are logged and skipped
+   - Location: `storage_actor.rs:344-356`
+
+2. **Missing JSON fields → NULL** (Phase 1)
+   - SQL INSERT automatically handles missing columns as NULL/DEFAULT
+   - No explicit code needed
+
+### 🚧 In Progress
+
+3. **Type coercion** (Phase 2) - Partially implemented
+   - Basic string → numeric coercion exists
+   - Needs expansion for bool, timestamp, etc.
+
+### 📋 Planned
+
+4. **Required field validation** (Phase 3)
+5. **Improved JSON formatting prompts** (Phase 4)
+6. **JSONB support** (Phase 5)
+
+---
+
+## Original Problem Statement
+
+When inserting JSON content into database tables, we encountered mismatches between the JSON structure and the table schema:
 
 1. **Extra JSON fields**: JSON contains fields like `created_at` that don't exist in target table
 2. **Missing JSON fields**: JSON lacks fields that exist as columns in the table
 3. **Type mismatches**: JSON field types don't align with column types
-
-Current behavior (line 344-348 in `storage_actor.rs`):
-
-- Attempts to insert ALL JSON fields
-- Fails if JSON contains fields not in table
-- Fails if required table columns are missing from JSON
 
 ## Immediate Fix (As Requested)
 
