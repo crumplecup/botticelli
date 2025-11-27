@@ -530,6 +530,41 @@ fn find_column_match<'a>(
     None
 }
 
+/// Format table schema as human-readable string for LLM prompts
+fn format_schema_for_prompt(schema: &botticelli_database::TableSchema) -> String {
+    let mut result = String::from("{\n");
+    
+    for col in &schema.columns {
+        // Skip auto-generated metadata columns
+        if col.name == "source_narrative" || col.name == "source_act" || col.name == "model" {
+            continue;
+        }
+        
+        let required = if !col.is_nullable && col.column_default.is_none() {
+            "required"
+        } else {
+            "optional"
+        };
+        
+        let type_hint = match col.data_type.as_str() {
+            "integer" | "bigint" | "smallint" => "integer",
+            "real" | "double precision" | "numeric" => "number",
+            "boolean" => "boolean",
+            "text" | "varchar" | "char" => "string",
+            "jsonb" | "json" => "object or array",
+            other => other,
+        };
+        
+        result.push_str(&format!(
+            "  \"{}\": {} ({}),\n",
+            col.name, type_hint, required
+        ));
+    }
+    
+    result.push_str("}\n");
+    result
+}
+
 /// Converts a JSON value to SQL literal based on column type with best-effort coercion
 fn json_value_to_sql(value: &JsonValue, col_type: &str) -> String {
     use serde_json::Value;

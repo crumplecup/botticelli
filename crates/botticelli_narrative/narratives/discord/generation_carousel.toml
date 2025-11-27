@@ -93,20 +93,26 @@ max_tokens = 700
 [[acts.format_json.input]]
 type = "text"
 content = """
-Format this content as valid JSON matching this schema:
+Format this content as valid JSON matching this exact schema:
 
-Schema:
+Required Schema (potential_discord_posts table):
 {
-  "text_content": "string (required)",
-  "content_type": "discord_post",
-  "source": "generation_carousel", 
-  "tags": ["array of strings"]
+  "text_content": string (required, 10-2000 characters),
+  "content_type": string (optional, defaults to "discord_post"),
+  "source": string (optional, e.g., "generation_carousel"),
+  "tags": array of strings (optional, relevant keywords)
 }
+
+IMPORTANT:
+- Use exact field names (snake_case): text_content, content_type, source, tags
+- text_content must be a string, not an object
+- All values must match their specified types
+- Only include fields from the schema above
 
 Content to format:
 {{refine}}
 
-Output ONLY valid JSON. No markdown blocks, no explanations.
+Output ONLY valid JSON. No markdown blocks (```json), no explanations.
 """
 
 [acts.audit_json]
@@ -119,13 +125,20 @@ type = "text"
 content = """
 Audit this JSON for schema compliance and fix any issues:
 
-Required schema:
+Required Schema (potential_discord_posts table):
 {
-  "text_content": "string (required)",
-  "content_type": "discord_post",
-  "source": "generation_carousel",
-  "tags": ["array of strings"]
+  "text_content": string (required, 10-2000 characters),
+  "content_type": string (optional),
+  "source": string (optional),
+  "tags": array of strings (optional)
 }
+
+VALIDATION CHECKLIST:
+- ✓ All field names use snake_case (text_content not textContent)
+- ✓ text_content is a plain string (not nested object)
+- ✓ All values match their types (string, array, etc.)
+- ✓ No extra fields outside the schema
+- ✓ No markdown code blocks in the JSON
 
 JSON to audit:
 {{format_json}}
