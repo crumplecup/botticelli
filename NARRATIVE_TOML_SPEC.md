@@ -121,11 +121,22 @@ command = "channels.create_message"
 guild_id = "1234567890"
 channel_id = "9876543210"
 content = "Hello from Botticelli!"
+
+# Example: Drop large bot command results from history
+[bots.fetch_all_members]
+platform = "discord"
+command = "members.list"
+guild_id = "1234567890"
+history_retention = "drop"  # Remove after processing to save tokens
 ```
 
 Fields:
 - `platform` (string): Platform name (e.g., "discord", "slack")
 - `command` (string): Command to execute (e.g., "server.get_stats")
+- `history_retention` (string, optional): Controls conversation history retention (default: "full")
+  - `"full"` - Retain entire result (default)
+  - `"summary"` - Replace with `[Bot command: platform.command]` after processing
+  - `"drop"` - Remove from history after processing
 - Additional fields are passed as command arguments (flattened)
 
 Reference in acts: `"bots.get_server_stats"`
@@ -193,6 +204,13 @@ order_by = "post_count DESC"
 limit = 100
 format = "json"
 alias = "top_users"
+
+# Example: Optimize token usage in multi-act narratives
+[tables.large_dataset]
+table_name = "analytics_data"
+limit = 1000
+format = "json"
+history_retention = "summary"  # Replace with [Table: analytics_data, 1000 rows] after processing
 ```
 
 Fields:
@@ -205,6 +223,10 @@ Fields:
 - `format` (string, optional): Output format - "json", "markdown", or "csv" (default: "json")
 - `alias` (string, optional): Alias for referencing results in future acts (e.g., `{{alias}}`)
 - `sample` (integer, optional): Random sample N rows (mutually exclusive with order_by)
+- `history_retention` (string, optional): Controls how this input is retained in conversation history (default: "full")
+  - `"full"` - Retain entire input unchanged (default)
+  - `"summary"` - Replace with concise summary like `[Table: name, N rows]` after processing
+  - `"drop"` - Remove from conversation history after processing
 
 Reference in acts: `"tables.recent_posts"`
 
@@ -212,6 +234,27 @@ Reference in acts: `"tables.recent_posts"`
 - Table and column names are validated (alphanumeric + underscore only)
 - WHERE clauses are sanitized to prevent SQL injection
 - Row limits are enforced to prevent excessive data transfer
+
+**History Retention for Token Optimization**:
+
+In multi-act narratives, large table inputs can cause token explosion as they're re-sent with every subsequent act. Use `history_retention` to control this behavior:
+
+- **Use `"full"` when**:
+  - Single-act narratives (no subsequent acts)
+  - Small result sets (< 5KB)
+  - Subsequent acts need to re-examine the data
+
+- **Use `"summary"` when**:
+  - Multi-act narratives with large data
+  - Subsequent acts only need the decision/result, not raw data
+  - Token optimization is important (can reduce usage by 80%+)
+
+- **Use `"drop"` when**:
+  - Input is truly one-time (never referenced again)
+  - Maximum token savings needed
+  - Data was only used for initial decision
+
+**Auto-summarization**: Inputs exceeding 10KB are automatically summarized even with `history_retention = "full"` to prevent token overflow.
 
 #### `[media.name]` - Media File Definitions
 
