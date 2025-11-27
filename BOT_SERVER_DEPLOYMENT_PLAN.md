@@ -109,37 +109,17 @@ The bot server runs three independent actors that work together to create a cont
 
 ---
 
-### Phase 2: Update Posting Narrative
+### Phase 2: Update Posting Narrative ✅
 
-**Goal**: Add automatic status tracking to prevent duplicate posts
+**Status**: COMPLETE
 
-**File to modify**: `crates/botticelli_narrative/narratives/discord/discord_poster.toml`
+**What was done**:
+- Added `mark_posted` act using `database.update_table` command
+- Updates `review_status` from 'pending' to 'posted'
+- Processes exactly 1 post (matching the query limit)
+- Prevents duplicate posting by tracking posted status
 
-**Changes needed**:
-
-```toml
-# Add fourth act to mark content as posted
-[acts.mark_posted]
-[[acts.mark_posted.input]]
-type = "bot_command"
-platform = "database"
-command = "update_table"
-
-[acts.mark_posted.input.args]
-table_name = "approved_discord_posts"
-where_clause = "review_status = 'pending'"
-limit = 1
-
-[acts.mark_posted.input.args.updates]
-review_status = "posted"
-posted_at = "NOW()"
-```
-
-**Update narrative TOC**:
-```toml
-[narrative.toc]
-order = ["get_channel", "extract_content", "post_to_channel", "mark_posted"]
-```
+**File modified**: `crates/botticelli_narrative/narratives/discord/discord_poster.toml`
 
 **Testing**:
 1. Run posting narrative twice
