@@ -16,6 +16,7 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
 use serde_json::Value as JsonValue;
+use std::collections::HashMap;
 
 /// Storage actor handling all database operations for content generation.
 pub struct StorageActor {
@@ -340,11 +341,18 @@ impl StorageActor {
         let mut columns = Vec::new();
         let mut values = Vec::new();
 
-        // Add content fields from JSON
+        // Add content fields from JSON (with fuzzy matching)
         for (key, value) in obj {
-            columns.push(key.clone());
-            let col_type = column_types.get(key.as_str()).copied().unwrap_or("text");
-            values.push(json_value_to_sql(value, col_type));
+            if let Some((col_name, col_type)) = find_column_match(key, &column_types) {
+                columns.push(col_name.to_string());
+                values.push(json_value_to_sql(value, col_type));
+            } else {
+                tracing::debug!(
+                    field = %key,
+                    table = %table_name,
+                    "Ignoring extra JSON field not in table schema"
+                );
+            }
         }
 
         // Add metadata columns
@@ -427,20 +435,169 @@ impl StorageActor {
 }
 
 /// Convert a JSON value to SQL literal string.
+/// Converts JSON field name to potential database column name variations
+fn field_name_variations(field: &str) -> Vec<String> {
+    vec![
+        field.to_string(),                          // exact match
+        field.to_lowercase(),                       // lowercase
+        to_snake_case(field),                       // snake_case
+        to_camel_case(field),                       // camelCase
+    ]
+}
+
+/// Convert string to snake_case
+fn to_snake_case(s: &str) -> String {
+    let mut result = String::new();
+    for (i, ch) in s.chars().enumerate() {
+        if ch.is_uppercase() && i > 0 {
+            result.push('_');
+        }
+        result.push(ch.to_lowercase().next().unwrap());
+    }
+    result
+}
+
+/// Convert string to camelCase
+fn to_camel_case(s: &str) -> String {
+    let mut result = String::new();
+    let mut capitalize_next = false;
+    for ch in s.chars() {
+        if ch == '_' {
+            capitalize_next = true;
+        } else if capitalize_next {
+            result.push(ch.to_uppercase().next().unwrap());
+            capitalize_next = false;
+        } else {
+            result.push(ch);
+        }
+    }
+    result
+}
+
+/// Find matching column name using fuzzy matching
+fn find_column_match<'a>(
+    field: &str,
+    column_types: &'a HashMap<&str, &str>,
+) -> Option<(&'a str, &'a str)> {
+    for variant in field_name_variations(field) {
+        if let Some(&col_type) = column_types.get(variant.as_str()) {
+            if variant != field {
+                tracing::debug!(
+                    json_field = %field,
+                    db_column = %variant,
+                    "Fuzzy matched field name"
+                );
+            }
+            return Some((
+                column_types.iter()
+                    .find(|(k, _)| **k == variant)
+                    .map(|(k, _)| *k)
+                    .unwrap(),
+                col_type
+            ));
+        }
+    }
+    None
+}
+
+/// Converts a JSON value to SQL literal based on column type with best-effort coercion
 fn json_value_to_sql(value: &JsonValue, col_type: &str) -> String {
-    match value {
-        JsonValue::Null => "NULL".to_string(),
-        JsonValue::Bool(b) => b.to_string(),
-        JsonValue::Number(n) => n.to_string(),
-        JsonValue::String(s) => {
-            if col_type == "jsonb" || col_type == "json" {
-                format!("'{}'::jsonb", s.replace('\'', "''"))
-            } else {
-                format!("'{}'", s.replace('\'', "''"))
+    use serde_json::Value;
+    
+    match col_type.to_lowercase().as_str() {
+        "integer" | "int" | "int4" | "bigint" | "int8" | "smallint" | "int2" => {
+            match value {
+                Value::Number(n) => n.to_string(),
+                Value::String(s) => {
+                    // Try to parse string as integer
+                    if let Ok(i) = s.parse::<i64>() {
+                        tracing::debug!(value = %s, parsed = i, "Coerced string to integer");
+                        i.to_string()
+                    } else {
+                        tracing::warn!(value = %s, col_type = %col_type, "Failed to coerce string to integer, using NULL");
+                        "NULL".to_string()
+                    }
+                }
+                Value::Bool(b) => (*b as i32).to_string(),
+                Value::Null => "NULL".to_string(),
+                _ => {
+                    tracing::warn!(value = ?value, col_type = %col_type, "Cannot coerce to integer, using NULL");
+                    "NULL".to_string()
+                }
             }
         }
-        JsonValue::Array(_) | JsonValue::Object(_) => {
-            format!("'{}'::jsonb", value.to_string().replace('\'', "''"))
+        "real" | "float4" | "double precision" | "float8" | "numeric" | "decimal" => {
+            match value {
+                Value::Number(n) => n.to_string(),
+                Value::String(s) => {
+                    if let Ok(f) = s.parse::<f64>() {
+                        tracing::debug!(value = %s, parsed = f, "Coerced string to float");
+                        f.to_string()
+                    } else {
+                        tracing::warn!(value = %s, col_type = %col_type, "Failed to coerce string to float, using NULL");
+                        "NULL".to_string()
+                    }
+                }
+                Value::Bool(b) => (*b as i32 as f64).to_string(),
+                Value::Null => "NULL".to_string(),
+                _ => {
+                    tracing::warn!(value = ?value, col_type = %col_type, "Cannot coerce to float, using NULL");
+                    "NULL".to_string()
+                }
+            }
+        }
+        "boolean" | "bool" => {
+            match value {
+                Value::Bool(b) => b.to_string(),
+                Value::Number(n) => {
+                    if let Some(i) = n.as_i64() {
+                        (i != 0).to_string()
+                    } else {
+                        "true".to_string()
+                    }
+                }
+                Value::String(s) => {
+                    let lower = s.to_lowercase();
+                    match lower.as_str() {
+                        "true" | "t" | "yes" | "y" | "1" => "true".to_string(),
+                        "false" | "f" | "no" | "n" | "0" => "false".to_string(),
+                        _ => {
+                            tracing::warn!(value = %s, "Cannot coerce string to boolean, using false");
+                            "false".to_string()
+                        }
+                    }
+                }
+                Value::Null => "NULL".to_string(),
+                _ => "false".to_string(),
+            }
+        }
+        "jsonb" | "json" => {
+            // Store complex types as JSONB
+            match value {
+                Value::Null => "NULL".to_string(),
+                Value::String(s) => format!("'{}'::jsonb", s.replace('\'', "''")),
+                Value::Array(_) | Value::Object(_) => {
+                    format!("'{}'::jsonb", value.to_string().replace('\'', "''"))
+                }
+                _ => {
+                    // Wrap primitives in JSON
+                    format!("'{}'::jsonb", value.to_string().replace('\'', "''"))
+                }
+            }
+        }
+        "text" | "varchar" | "char" | _ => {
+            // Default: convert to text
+            match value {
+                Value::Null => "NULL".to_string(),
+                Value::String(s) => format!("'{}'", s.replace('\'', "''")),
+                Value::Bool(b) => format!("'{}'", b),
+                Value::Number(n) => format!("'{}'", n),
+                Value::Array(_) | Value::Object(_) => {
+                    // Serialize complex types to JSON string for text columns
+                    tracing::debug!("Storing complex type as JSON string in text column");
+                    format!("'{}'", value.to_string().replace('\'', "''"))
+                }
+            }
         }
     }
 }
