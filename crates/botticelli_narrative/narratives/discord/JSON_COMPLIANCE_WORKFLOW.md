@@ -129,6 +129,25 @@ If posts fail to store:
 4. **Act 5 failures** - Validation logic needs adjustment
 5. **UTF-8 panics** - Check string truncation uses `.chars().take(N).collect()` not byte slicing
 
+## Curation Phase Results (2025-11-28)
+
+**Status**: ✅ JSON compliance workflow successfully applied to curation
+
+The 4-act curation workflow now follows the same pattern as generation:
+1. `analyze` - Evaluate potential posts (plain text)
+2. `select` - Choose top 2-3 posts (plain text)
+3. `format_json` - Convert to JSON (temp 0.1, 3000 tokens)
+4. `audit_json` - Validate and fix JSON (temp 0.1, 3000 tokens)
+
+**Success Rate**: JSON parsing successful after increasing `max_tokens` to 3000
+
+**Database Integration Issue**: Existing `approved_discord_posts` table has NOT NULL `selected_at` column from previous schema. This causes insertion failure when JSON doesn't include that field.
+
+**Solution**: Per JSON_SCHEMA_MISMATCH_STRATEGY Phase 1 - code now allows missing fields and inserts NULL, but PostgreSQL NOT NULL constraints must be handled via:
+- Schema migrations (production)
+- Manual table drops (development)
+- ALTER TABLE to make columns nullable
+
 ## Current Issues (2025-11-28)
 
 ### Architecture Issue: Processor Applied to All Acts

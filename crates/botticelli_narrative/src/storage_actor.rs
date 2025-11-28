@@ -366,6 +366,7 @@ impl StorageActor {
         }
         
         // Validate required fields before INSERT
+        // Per JSON_SCHEMA_MISMATCH_STRATEGY: Allow missing fields (will be NULL)
         let missing_required: Vec<&str> = required_columns
             .iter()
             .filter(|&&col| !provided_columns.contains(col) && col != "source_narrative" && col != "source_act" && col != "model")
@@ -373,16 +374,17 @@ impl StorageActor {
             .collect();
         
         if !missing_required.is_empty() {
-            tracing::error!(
+            tracing::warn!(
                 table = %table_name,
                 missing_fields = ?missing_required,
                 provided_fields = ?provided_columns,
-                "JSON missing required NOT NULL fields"
+                "JSON missing some table fields - will use NULL for missing fields"
             );
-            return Err(botticelli_error::BackendError::new(format!(
-                "JSON missing required fields for table '{}': {:?}",
-                table_name, missing_required
-            )).into());
+            // Add NULL values for missing required fields
+            for &missing_col in &missing_required {
+                columns.push(missing_col.to_string());
+                values.push("NULL".to_string());
+            }
         }
 
         // Add metadata columns

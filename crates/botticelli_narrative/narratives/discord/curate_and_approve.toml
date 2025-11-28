@@ -1,65 +1,129 @@
 # Discord Post Curation with Auto-Approval
 # Analyzes potential posts, selects best 2-3, and stores to approved_discord_posts table
 #
-# Flow: potential_discord_posts -> analysis -> approved_discord_posts (via schema inference)
+# Flow: potential_discord_posts -> analyze -> select -> format JSON -> audit JSON -> approved_discord_posts
+# 
+# Uses same JSON compliance workflow as generation_carousel
 
-[narrative]
+[narratives.curate_content]
 name = "curate_and_approve"
 description = "Curate potential Discord posts and auto-store approved ones"
 target = "approved_discord_posts"
 
-[toc]
-order = ["analyze_and_select"]
+[narratives.curate_content.toc]
+order = ["analyze", "select", "format_json", "audit_json"]
 
-[acts.analyze_and_select]
-model = "gemini-2.5-flash"
+# Act 1: Analyze all posts (plain text output)
+[acts.analyze]
+model = "gemini-2.5-flash-lite"
 temperature = 0.3
-max_tokens = 8000  # Increased to allow for thoughts + output (input ~5000 tokens)
+max_tokens = 2000
 
-[[acts.analyze_and_select.input]]
+[[acts.analyze.input]]
 type = "table"
 table_name = "potential_discord_posts"
 format = "markdown"
 limit = 10
 order_by = "generated_at DESC"
 required = false
-history_retention = "drop"  # Drop table from history after initial read to save tokens
+history_retention = "drop"
 
-[[acts.analyze_and_select.input]]
+[[acts.analyze.input]]
 type = "text"
 content = """
 You are a content curator for Botticelli's technical Discord community.
 
 Analyze the potential Discord posts from the table above.
 
-For each post:
+For each post, provide:
 1. Score (1-10) on: Engagement, Clarity, Value, Tone, Polish
-2. Calculate total score (max 50)
-3. Identify strengths and weaknesses
+2. Total score (max 50)
+3. Key strengths
+4. Any weaknesses
 
-Then select the TOP 2-3 posts with highest scores.
+Output plain text analysis for each post. DO NOT output JSON yet.
+"""
 
-Output ONLY the selected posts as a JSON array. Each post should include:
-- text_content: The full post text
-- content_type: "discord_post"
-- source: "curation_pipeline"
-- tags: ["approved", "curated"]
-- curation_score: Total score (integer)
-- curation_notes: Brief explanation of why this post was selected
-- selected_at: Current timestamp
+# Act 2: Select top posts (plain text output)
+[acts.select]
+model = "gemini-2.5-flash-lite"
+temperature = 0.3
+max_tokens = 2000
 
-Output format:
+[[acts.select.input]]
+type = "text"
+content = """
+Based on your analysis above, select the TOP 2-3 posts with highest scores.
+
+For each selected post, output:
+- The full text_content
+- Why it was selected (curation notes)
+- Its total score
+
+Output as plain text. DO NOT format as JSON yet.
+"""
+
+# Act 3: Format as JSON (low temperature for strict formatting)
+[acts.format_json]
+model = "gemini-2.5-flash-lite"
+temperature = 0.1
+max_tokens = 3000  # Increased to handle 2-3 full posts without truncation
+
+[[acts.format_json.input]]
+type = "text"
+content = """
+Convert the selected posts above into a JSON array matching this EXACT schema:
+
+```json
 [
   {
-    "text_content": "Full post content here...",
+    "text_content": "string (the full post content)",
     "content_type": "discord_post",
     "source": "curation_pipeline",
     "tags": ["approved", "curated"],
     "curation_score": 45,
-    "curation_notes": "Excellent engagement and clarity, strong technical value",
-    "selected_at": "2025-11-25T20:00:00Z"
+    "curation_notes": "Brief explanation"
   }
 ]
+```
 
-CRITICAL: Return ONLY valid JSON array. Include 2-3 posts maximum.
+CRITICAL RULES:
+- Output ONLY valid JSON array
+- Include 2-3 posts maximum
+- Use ONLY the field names shown above (do NOT add extra fields like selected_at)
+- NO explanatory text before or after JSON
+- Ensure all JSON brackets/braces are balanced
+
+Output the JSON array now:
+"""
+
+# Act 4: Audit and fix JSON compliance (low temperature)
+[acts.audit_json]
+model = "gemini-2.5-flash-lite"
+temperature = 0.1
+max_tokens = 3000  # Increased to handle 2-3 full posts without truncation
+
+[[acts.audit_json.input]]
+type = "text"
+content = """
+Validate the JSON array above against the schema requirements:
+
+Required fields:
+- text_content (string, 10-2000 chars)
+- content_type (must be "discord_post")
+- source (must be "curation_pipeline")
+- tags (array with "approved" and "curated")
+- curation_score (integer 1-50)
+- curation_notes (string)
+
+Check for:
+1. Valid JSON syntax (balanced brackets, proper quotes)
+2. All required fields present
+3. Correct data types
+4. Reasonable field values
+
+If any issues found, output the CORRECTED JSON array.
+If JSON is valid, output it unchanged.
+
+Output ONLY the valid JSON array, nothing else:
 """

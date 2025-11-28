@@ -367,7 +367,7 @@ narrate PATTERN:
         NARRATIVE_NAME="${PATTERN##*.}"
         
         echo "🔍 Searching for multi-narrative file: ${FILE_PART}"
-        NARRATIVE_FILE=$(find ./crates/botticelli_narrative/narratives -name "${FILE_PART}.toml" | head -1)
+        NARRATIVE_FILE=$(find ./crates/botticelli_narrative/narratives -type f -path "*/${FILE_PART}.toml" | head -1)
         
         if [ -z "$NARRATIVE_FILE" ]; then
             echo "❌ No narrative file found matching '${FILE_PART}'"

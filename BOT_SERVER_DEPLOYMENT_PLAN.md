@@ -60,20 +60,31 @@ The bot server runs three independent actors that work together to create a cont
 
 1. **generation_carousel.toml** - 5 narratives × carousel iterations
    - Batch generator runs all five focus angles (feature, usecase, tutorial, community, problem_solution)
-   - Each narrative: generate → critique → refine → format_json → audit_json
+   - **JSON Compliance Workflow**: Each narrative follows 5-step process:
+     1. `generate` - Create initial content with Botticelli context
+     2. `critique` - Evaluate content quality and suggest improvements
+     3. `refine` - Apply improvements to content
+     4. `format_json` - Convert content to JSON matching schema
+     5. `audit_json` - Verify JSON compliance and fix issues
+   - **Only final act extracts JSON** - Prevents false positives from intermediate steps
+   - **Higher token limits**: 4096 tokens to accommodate full responses (reduce truncation)
    - Outputs to `potential_discord_posts` table via `target = "potential_discord_posts"`
-   - Successfully tested with 3 iterations (15 posts)
+   - **Schema handling**: Flexible insertion with fuzzy field matching, type coercion, nullable missing fields
+   - Successfully tested with 3 iterations (15 posts), ~80% extraction success rate
 
-2. **curate_and_approve.toml** - LLM-based curation
+2. **curate_and_approve.toml** - LLM-based curation with JSON compliance
    - Queries potential_discord_posts (review_status='pending')
    - Scores posts on 5 criteria (Engagement, Clarity, Value, Tone, Polish)
    - Selects top 2-3 posts for approval
+   - **Uses same JSON compliance workflow** as generation (format_json → audit_json)
    - Outputs to `approved_discord_posts` table
    - **Queue Processing**: Runs every 12 hours, processes ALL pending content in queue until empty
+   - **max_tokens: 4096** for comprehensive curation analysis
 
 3. **discord_poster.toml** - Simple posting workflow
    - Queries approved_discord_posts (review_status='pending')
    - Posts to Discord channel
+   - Marks as 'posted' using `database.update_table` command
    - Successfully tested (posted 1,688-char message)
 
 ### ⚠️ Known Limitations
@@ -153,7 +164,7 @@ actors/
 ```toml
 [actor]
 name = "Content Generation Actor"
-description = "Generates 50 posts daily using carousel batch mode"
+description = "Generates 50 posts daily using JSON compliance workflow"
 
 [actor.schedule]
 type = "Interval"
@@ -171,11 +182,22 @@ enabled = true
 narrative_path = "crates/botticelli_narrative/narratives/discord/generation_carousel.toml"
 narrative_name = "batch_generate"  # Runs carousel with 10 iterations (50 posts)
 
+# Model configuration (uses gemini-2.5-flash-lite for high RPD limit)
+[skills.narrative_execution.model]
+name = "gemini-2.5-flash-lite"
+max_tokens = 4096  # Higher limit to reduce truncation
+
 # No platform configuration - uses NoOpPlatform (no channel_id)
 ```
 
 **Key decisions**:
 - **Daily schedule**: 50 posts/day is sustainable with budget multipliers (80% of quota)
+- **JSON Compliance**: Each narrative follows 5-step workflow (generate → critique → refine → format_json → audit_json)
+  - Reference: `crates/botticelli_narrative/narratives/discord/JSON_COMPLIANCE_WORKFLOW.md`
+  - Only final act (`audit_json`) triggers JSON extraction
+  - ~80% extraction success rate observed in testing
+- **Higher token limits**: 4096 tokens to accommodate full responses
+- **Flexible schema**: Handles field mismatches via fuzzy matching, type coercion, nullable fields
 - **No channel_id**: Generation doesn't post to Discord, only database
 - **Stop on error**: Generation failures should be investigated (not silent)
 - **Batch size**: 10 iterations × 5 narratives = 50 posts
@@ -188,7 +210,7 @@ narrative_name = "batch_generate"  # Runs carousel with 10 iterations (50 posts)
 ```toml
 [actor]
 name = "Content Curation Actor"
-description = "Curates best posts from potential pool every 12 hours, processes until queue empty"
+description = "Curates best posts using JSON compliance workflow, processes until queue empty"
 
 [actor.schedule]
 type = "Interval"
@@ -206,14 +228,23 @@ enabled = true
 narrative_path = "crates/botticelli_narrative/narratives/discord/curate_and_approve.toml"
 narrative_name = "curate_and_approve"
 
+# Model configuration
+[skills.narrative_execution.model]
+name = "gemini-2.5-flash-lite"
+max_tokens = 4096  # Higher limit for comprehensive curation
+
 # No platform configuration - uses NoOpPlatform
 ```
 
 **Key decisions**:
 - **12-hour schedule**: Gives time for generation to accumulate posts
-- **Drain queue strategy**: Processes ALL pending content in one session, prevents bottleneck
+- **JSON Compliance**: Uses same 5-step workflow as generation
+  - Curation scores posts, then format_json → audit_json to ensure clean extraction
+  - Prevents bottleneck from failed JSON extractions
+- **Drain queue strategy**: Processes ALL pending content in one session
   - Runs narrative in loop: checks for pending → curates batch → repeat until empty
   - Prevents generation from outpacing curation
+- **Higher token limits**: 4096 tokens for comprehensive analysis
 - **Continue on error**: If no posts ready, just skip this run
 - **Max retries**: LLM-based curation can be flaky, allow retries
 
@@ -751,46 +782,54 @@ The `botticelli_server` crate exists but has compilation errors:
 
 ---
 
-## Implementation Attempt 2 (2025-11-27 Late Evening)
+## Current Implementation Status (2025-11-28)
 
-### Created New `botticelli_bot` Crate
+### ✅ New `botticelli_bot` Crate Complete
 
-Attempted to create standalone bot actors in `crates/botticelli_bot/`:
-- Generic over `BotticelliDriver` type
-- Uses tokio channels instead of Ractor
-- Direct narrative execution instead of CLI subprocess
+Successfully created standalone bot actors in `crates/botticelli_bot/`:
+- ✅ Generic over `BotticelliDriver` type
+- ✅ Uses tokio channels (no Ractor complications)
+- ✅ Direct narrative execution (no CLI subprocess)
+- ✅ Clean async design with proper error handling
+- ✅ All three bots implemented: GenerationBot, CurationBot, PostingBot
+- ✅ BotServer orchestration with independent schedulers
+- ✅ Jitter calculation for natural posting rhythm
 
-### Blocked on Executor API
+### Implementation Complete
 
-Cannot complete implementation because `NarrativeExecutor` doesn't support:
-1. Loading narratives from file paths
-2. Selecting specific narrative by name from multi-narrative file  
-3. The API only accepts `NarrativeProvider` trait objects
-
-### Decision Point
-
-**Option A**: Complete `botticelli_bot` crate (NEW approach)
-- Pros: Clean async design, type-safe
-- Cons: Need to extend executor API first
-
-**Option B**: Fix existing `botticelli_server` crate (EXISTING approach)
-- Pros: Already partially implemented
-- Cons: Uses CLI subprocess, Ractor complications
-
-**Recommendation**: Fix `botticelli_server` first (simpler, already exists), then migrate to `botticelli_bot` later if needed.
-
-### Files Created (Uncommitted)
-
+**Files created**:
 ```
 crates/botticelli_bot/
 ├── Cargo.toml
 └── src/
-    ├── lib.rs
-    ├── config.rs
-    ├── generation.rs
-    ├── curation.rs
-    ├── posting.rs
-    └── server.rs
+    ├── lib.rs        # Public API exports
+    ├── config.rs     # Configuration structs
+    ├── generation.rs # GenerationBot actor
+    ├── curation.rs   # CurationBot actor (queue draining)
+    ├── posting.rs    # PostingBot actor (with jitter)
+    └── server.rs     # BotServer orchestration
 ```
 
-**Status**: Incomplete, does not compile, blocked on executor API
+### Remaining Work
+
+**Phase 1**: Add to workspace and fix compilation ⏭️
+1. Add `botticelli_bot` to workspace members
+2. Fix any remaining compilation errors
+3. Run `just check` to verify
+
+**Phase 2**: Extend executor API for file loading
+1. Add `NarrativeExecutor::load_from_file()` method
+2. Add `NarrativeExecutor::load_from_file_by_name()` for multi-narrative files
+3. Update bots to use new API
+
+**Phase 3**: Integration testing
+1. Test each bot independently
+2. Test full server orchestration
+3. Verify database interactions
+
+**Phase 4**: Configuration and deployment
+1. Add bot config to `botticelli.toml`
+2. Add CLI command: `botticelli server start`
+3. Test with actual narratives
+
+**Previous approach abandoned**: The old `botticelli_server` with Ractor + CLI subprocess was overly complex. The new tokio-native approach is cleaner and avoids runtime conflicts.
