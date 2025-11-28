@@ -144,6 +144,9 @@ fn extract_from_code_block(response: &str, language: &str) -> Option<String> {
             let content = &response[content_start..content_start + end];
             return Some(content.trim().to_string());
         }
+        // No closing fence found - likely truncated response
+        // Return content from opening fence to end
+        return Some(response[content_start..].trim().to_string());
     }
 
     // Try without language specifier
@@ -159,6 +162,9 @@ fn extract_from_code_block(response: &str, language: &str) -> Option<String> {
             let content = &response[skip_to..skip_to + end];
             return Some(content.trim().to_string());
         }
+        // No closing fence found - likely truncated response
+        // Return content from opening fence to end
+        return Some(response[skip_to..].trim().to_string());
     }
 
     None
