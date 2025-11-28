@@ -571,7 +571,37 @@ fn format_schema_for_prompt(schema: &botticelli_database::TableSchema) -> String
 fn json_value_to_sql(value: &JsonValue, col_type: &str) -> String {
     use serde_json::Value;
     
-    match col_type.to_lowercase().as_str() {
+    let col_type_lower = col_type.to_lowercase();
+    
+    // Handle PostgreSQL array types (e.g., _text = text[], _int4 = integer[])
+    if col_type_lower.starts_with('_') {
+        match value {
+            Value::Array(arr) => {
+                // Convert JSON array to PostgreSQL ARRAY constructor
+                let elements: Vec<String> = arr.iter().map(|v| {
+                    match v {
+                        Value::String(s) => format!("'{}'", s.replace('\'', "''")),
+                        Value::Number(n) => n.to_string(),
+                        Value::Bool(b) => b.to_string(),
+                        Value::Null => "NULL".to_string(),
+                        _ => format!("'{}'", v.to_string().replace('\'', "''")),
+                    }
+                }).collect();
+                return format!("ARRAY[{}]", elements.join(", "));
+            }
+            Value::Null => return "NULL".to_string(),
+            _ => {
+                tracing::warn!(
+                    value = ?value,
+                    col_type = %col_type,
+                    "Expected array for array column type, using empty array"
+                );
+                return "ARRAY[]".to_string();
+            }
+        }
+    }
+    
+    match col_type_lower.as_str() {
         "integer" | "int" | "int4" | "bigint" | "int8" | "smallint" | "int2" => {
             match value {
                 Value::Number(n) => n.to_string(),

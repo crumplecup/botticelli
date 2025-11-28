@@ -453,12 +453,8 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 for (idx, output) in response.outputs.iter().enumerate() {
                     match output {
                         botticelli_core::Output::Text(text) => {
-                            let preview = text
-                                .char_indices()
-                                .take(100)
-                                .last()
-                                .map(|(idx, _)| &text[..=idx])
-                                .unwrap_or(text);
+                            let preview: String = text.chars().take(100).collect();
+                            let preview = preview.as_str();
                             tracing::debug!(
                                 output_index = idx,
                                 text_length = text.len(),

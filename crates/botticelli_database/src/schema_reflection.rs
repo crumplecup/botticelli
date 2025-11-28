@@ -54,7 +54,10 @@ pub fn reflect_table_schema(
         r#"
         SELECT 
             column_name as name,
-            data_type,
+            CASE 
+                WHEN data_type = 'ARRAY' THEN udt_name
+                ELSE data_type
+            END as data_type,
             is_nullable,
             character_maximum_length,
             column_default
