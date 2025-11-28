@@ -17,15 +17,17 @@ impl BotConfig {
     /// Load bot configuration from a TOML file.
     pub fn from_file(path: impl AsRef<Path>) -> BotticelliResult<Self> {
         let content = std::fs::read_to_string(path.as_ref()).map_err(|e| {
-            botticelli_error::BotticelliError::from(
-                ConfigError::new(format!("Failed to read config file: {}", e))
-            )
+            botticelli_error::BotticelliError::from(ConfigError::new(format!(
+                "Failed to read config file: {}",
+                e
+            )))
         })?;
-        
+
         toml::from_str(&content).map_err(|e| {
-            botticelli_error::BotticelliError::from(
-                ConfigError::new(format!("Failed to parse config: {}", e))
-            )
+            botticelli_error::BotticelliError::from(ConfigError::new(format!(
+                "Failed to parse config: {}",
+                e
+            )))
         })
     }
 }

@@ -1,8 +1,9 @@
 # Bot Server Deployment Plan
 
-**Status**: ✅ Implementation Complete - Ready for Testing  
+**Status**: ✅ Implementation Complete - VALIDATED  
 **Created**: 2025-11-27  
 **Updated**: 2025-11-28  
+**Tested**: 2025-11-28 (3+ minute successful run)  
 **Goal**: Deploy multi-phase bot server with generation, curation, and posting actors
 
 ## Implementation Status
@@ -20,10 +21,12 @@
 - ✅ Feature flags (`bots` feature) properly configured
 - ✅ Dependencies and workspace setup complete
 
-**Ready to Test:**
-1. Generation bot → Creates posts using carousel (configurable count)
-2. Curation bot → Processes pending posts until queue empty
-3. Posting bot → Posts approved content with human-like jitter
+**Test Results (2025-11-28):**
+1. ✅ Generation bot → Successfully completed carousel with rate limit handling
+2. ✅ Curation bot → Started and checked for pending content  
+3. ✅ Posting bot → Scheduled posts with jitter (2-4 hour intervals)
+4. ✅ Rate limiting → 429 errors handled gracefully with automatic retries
+5. ✅ Server lifecycle → Clean startup and shutdown (Ctrl+C)
 
 **How to Run:**
 ```bash

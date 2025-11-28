@@ -88,17 +88,17 @@ impl<D: BotticelliDriver> PostingBot<D> {
 
     async fn check_approved_content(&self) -> Result<bool, Box<dyn std::error::Error>> {
         let mut conn = self.database.get()?;
-        
-        use diesel::prelude::*;
+
         use diesel::dsl::sql;
+        use diesel::prelude::*;
         use diesel::sql_types::BigInt;
-        
+
         let count: i64 = diesel::select(sql::<BigInt>(
-            "COUNT(*) FROM approved_discord_posts WHERE posted_at IS NULL"
+            "COUNT(*) FROM approved_discord_posts WHERE posted_at IS NULL",
         ))
         .get_result(&mut conn)
         .unwrap_or(0);
-        
+
         Ok(count > 0)
     }
 
@@ -106,10 +106,10 @@ impl<D: BotticelliDriver> PostingBot<D> {
     pub fn calculate_next_post_time(&self) -> Duration {
         let base = Duration::from_secs(self.config.base_interval_hours * 3600);
         let jitter_secs = self.config.jitter_minutes * 60;
-        
+
         let mut rng = rand::thread_rng();
         let jitter = rng.gen_range(0..=jitter_secs);
-        
+
         // Add or subtract jitter randomly
         if rng.gen_bool(0.5) {
             base + Duration::from_secs(jitter)

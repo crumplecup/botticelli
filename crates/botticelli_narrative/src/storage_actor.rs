@@ -154,7 +154,8 @@ impl Actor for StorageActor {
                 narrative_name,
                 reply,
             } => {
-                let result = self.handle_start_generation(table_name, narrative_file, narrative_name);
+                let result =
+                    self.handle_start_generation(table_name, narrative_file, narrative_name);
                 let _ = reply.send(result);
             }
             StorageMessage::CreateTableFromTemplate {
@@ -332,7 +333,7 @@ impl StorageActor {
             .iter()
             .map(|col| (col.name.as_str(), col.data_type.as_str()))
             .collect();
-        
+
         // Track required (NOT NULL) columns, excluding auto-generated ones
         let required_columns: Vec<&str> = schema
             .columns
@@ -364,15 +365,20 @@ impl StorageActor {
                 );
             }
         }
-        
+
         // Validate required fields before INSERT
         // Per JSON_SCHEMA_MISMATCH_STRATEGY: Allow missing fields (will be NULL)
         let missing_required: Vec<&str> = required_columns
             .iter()
-            .filter(|&&col| !provided_columns.contains(col) && col != "source_narrative" && col != "source_act" && col != "model")
+            .filter(|&&col| {
+                !provided_columns.contains(col)
+                    && col != "source_narrative"
+                    && col != "source_act"
+                    && col != "model"
+            })
             .copied()
             .collect();
-        
+
         if !missing_required.is_empty() {
             tracing::warn!(
                 table = %table_name,
@@ -444,15 +450,14 @@ impl StorageActor {
             error_message: error_message.clone(),
         };
 
-        repo.complete_generation(&table_name, update)
-            .map_err(|e| {
-                tracing::warn!(
-                    error = %e,
-                    table = %table_name,
-                    "Failed to update tracking record"
-                );
-                e
-            })?;
+        repo.complete_generation(&table_name, update).map_err(|e| {
+            tracing::warn!(
+                error = %e,
+                table = %table_name,
+                "Failed to update tracking record"
+            );
+            e
+        })?;
 
         tracing::info!(
             table = %table_name,
@@ -470,10 +475,10 @@ impl StorageActor {
 /// Converts JSON field name to potential database column name variations
 fn field_name_variations(field: &str) -> Vec<String> {
     vec![
-        field.to_string(),                          // exact match
-        field.to_lowercase(),                       // lowercase
-        to_snake_case(field),                       // snake_case
-        to_camel_case(field),                       // camelCase
+        field.to_string(),    // exact match
+        field.to_lowercase(), // lowercase
+        to_snake_case(field), // snake_case
+        to_camel_case(field), // camelCase
     ]
 }
 
@@ -521,11 +526,12 @@ fn find_column_match<'a>(
                 );
             }
             return Some((
-                column_types.iter()
+                column_types
+                    .iter()
                     .find(|(k, _)| **k == variant)
                     .map(|(k, _)| *k)
                     .unwrap(),
-                col_type
+                col_type,
             ));
         }
     }
@@ -537,19 +543,19 @@ fn find_column_match<'a>(
 #[allow(dead_code)]
 fn format_schema_for_prompt(schema: &botticelli_database::TableSchema) -> String {
     let mut result = String::from("{\n");
-    
+
     for col in &schema.columns {
         // Skip auto-generated metadata columns
         if col.name == "source_narrative" || col.name == "source_act" || col.name == "model" {
             continue;
         }
-        
+
         let required = if col.is_nullable == "NO" && col.column_default.is_none() {
             "required"
         } else {
             "optional"
         };
-        
+
         let type_hint = match col.data_type.as_str() {
             "integer" | "bigint" | "smallint" => "integer",
             "real" | "double precision" | "numeric" => "number",
@@ -558,13 +564,13 @@ fn format_schema_for_prompt(schema: &botticelli_database::TableSchema) -> String
             "jsonb" | "json" => "object or array",
             other => other,
         };
-        
+
         result.push_str(&format!(
             "  \"{}\": {} ({}),\n",
             col.name, type_hint, required
         ));
     }
-    
+
     result.push_str("}\n");
     result
 }
@@ -572,23 +578,24 @@ fn format_schema_for_prompt(schema: &botticelli_database::TableSchema) -> String
 /// Converts a JSON value to SQL literal based on column type with best-effort coercion
 fn json_value_to_sql(value: &JsonValue, col_type: &str) -> String {
     use serde_json::Value;
-    
+
     let col_type_lower = col_type.to_lowercase();
-    
+
     // Handle PostgreSQL array types (e.g., _text = text[], _int4 = integer[])
     if col_type_lower.starts_with('_') {
         match value {
             Value::Array(arr) => {
                 // Convert JSON array to PostgreSQL ARRAY constructor
-                let elements: Vec<String> = arr.iter().map(|v| {
-                    match v {
+                let elements: Vec<String> = arr
+                    .iter()
+                    .map(|v| match v {
                         Value::String(s) => format!("'{}'", s.replace('\'', "''")),
                         Value::Number(n) => n.to_string(),
                         Value::Bool(b) => b.to_string(),
                         Value::Null => "NULL".to_string(),
                         _ => format!("'{}'", v.to_string().replace('\'', "''")),
-                    }
-                }).collect();
+                    })
+                    .collect();
                 return format!("ARRAY[{}]", elements.join(", "));
             }
             Value::Null => return "NULL".to_string(),
@@ -602,7 +609,7 @@ fn json_value_to_sql(value: &JsonValue, col_type: &str) -> String {
             }
         }
     }
-    
+
     match col_type_lower.as_str() {
         "integer" | "int" | "int4" | "bigint" | "int8" | "smallint" | "int2" => {
             match value {
@@ -625,51 +632,47 @@ fn json_value_to_sql(value: &JsonValue, col_type: &str) -> String {
                 }
             }
         }
-        "real" | "float4" | "double precision" | "float8" | "numeric" | "decimal" => {
-            match value {
-                Value::Number(n) => n.to_string(),
-                Value::String(s) => {
-                    if let Ok(f) = s.parse::<f64>() {
-                        tracing::debug!(value = %s, parsed = f, "Coerced string to float");
-                        f.to_string()
-                    } else {
-                        tracing::warn!(value = %s, col_type = %col_type, "Failed to coerce string to float, using NULL");
-                        "NULL".to_string()
-                    }
-                }
-                Value::Bool(b) => (*b as i32 as f64).to_string(),
-                Value::Null => "NULL".to_string(),
-                _ => {
-                    tracing::warn!(value = ?value, col_type = %col_type, "Cannot coerce to float, using NULL");
+        "real" | "float4" | "double precision" | "float8" | "numeric" | "decimal" => match value {
+            Value::Number(n) => n.to_string(),
+            Value::String(s) => {
+                if let Ok(f) = s.parse::<f64>() {
+                    tracing::debug!(value = %s, parsed = f, "Coerced string to float");
+                    f.to_string()
+                } else {
+                    tracing::warn!(value = %s, col_type = %col_type, "Failed to coerce string to float, using NULL");
                     "NULL".to_string()
                 }
             }
-        }
-        "boolean" | "bool" => {
-            match value {
-                Value::Bool(b) => b.to_string(),
-                Value::Number(n) => {
-                    if let Some(i) = n.as_i64() {
-                        (i != 0).to_string()
-                    } else {
-                        "true".to_string()
-                    }
-                }
-                Value::String(s) => {
-                    let lower = s.to_lowercase();
-                    match lower.as_str() {
-                        "true" | "t" | "yes" | "y" | "1" => "true".to_string(),
-                        "false" | "f" | "no" | "n" | "0" => "false".to_string(),
-                        _ => {
-                            tracing::warn!(value = %s, "Cannot coerce string to boolean, using false");
-                            "false".to_string()
-                        }
-                    }
-                }
-                Value::Null => "NULL".to_string(),
-                _ => "false".to_string(),
+            Value::Bool(b) => (*b as i32 as f64).to_string(),
+            Value::Null => "NULL".to_string(),
+            _ => {
+                tracing::warn!(value = ?value, col_type = %col_type, "Cannot coerce to float, using NULL");
+                "NULL".to_string()
             }
-        }
+        },
+        "boolean" | "bool" => match value {
+            Value::Bool(b) => b.to_string(),
+            Value::Number(n) => {
+                if let Some(i) = n.as_i64() {
+                    (i != 0).to_string()
+                } else {
+                    "true".to_string()
+                }
+            }
+            Value::String(s) => {
+                let lower = s.to_lowercase();
+                match lower.as_str() {
+                    "true" | "t" | "yes" | "y" | "1" => "true".to_string(),
+                    "false" | "f" | "no" | "n" | "0" => "false".to_string(),
+                    _ => {
+                        tracing::warn!(value = %s, "Cannot coerce string to boolean, using false");
+                        "false".to_string()
+                    }
+                }
+            }
+            Value::Null => "NULL".to_string(),
+            _ => "false".to_string(),
+        },
         "jsonb" | "json" => {
             // Store complex types as JSONB
             match value {

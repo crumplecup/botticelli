@@ -93,9 +93,12 @@ max_tokens = 1200
 [[acts.format_json.input]]
 type = "text"
 content = """
-Format this content as valid JSON matching this exact schema:
+Format this content as valid JSON matching this exact schema.
 
-Required Schema (potential_discord_posts table):
+Content to format:
+{{refine}}
+
+Required Schema:
 {
   "text_content": string (required, 10-2000 characters),
   "content_type": string (optional, defaults to "discord_post"),
@@ -103,16 +106,24 @@ Required Schema (potential_discord_posts table):
   "tags": array of strings (optional, relevant keywords)
 }
 
-IMPORTANT:
-- Use exact field names (snake_case): text_content, content_type, source, tags
-- text_content must be a string, not an object
-- All values must match their specified types
-- Only include fields from the schema above
+CRITICAL RULES:
+1. Output ONLY the JSON object - no markdown blocks (```json), no explanations, no surrounding text
+2. Start your response with { and end with }
+3. Use exact field names (text_content not textContent)
+4. Ensure all strings are properly quoted and escaped
+5. Arrays must have proper comma separation
+6. Do not truncate - complete the JSON fully
+7. text_content must be a plain string, not a nested object
 
-Content to format:
-{{refine}}
+Example output format:
+{
+  "text_content": "Your Discord post content here...",
+  "content_type": "discord_post",
+  "source": "generation_carousel",
+  "tags": ["feature", "automation", "ai"]
+}
 
-Output ONLY valid JSON. No markdown blocks (```json), no explanations.
+Now format the content above as JSON.
 """
 
 [acts.audit_json]
@@ -123,9 +134,12 @@ max_tokens = 1200
 [[acts.audit_json.input]]
 type = "text"
 content = """
-Audit this JSON for schema compliance and fix any issues:
+Audit this JSON for schema compliance and fix any issues.
 
-Required Schema (potential_discord_posts table):
+JSON to audit:
+{{format_json}}
+
+Required Schema:
 {
   "text_content": string (required, 10-2000 characters),
   "content_type": string (optional),
@@ -134,17 +148,31 @@ Required Schema (potential_discord_posts table):
 }
 
 VALIDATION CHECKLIST:
+- ✓ Starts with { and ends with } (no markdown blocks)
 - ✓ All field names use snake_case (text_content not textContent)
 - ✓ text_content is a plain string (not nested object)
 - ✓ All values match their types (string, array, etc.)
 - ✓ No extra fields outside the schema
-- ✓ No markdown code blocks in the JSON
+- ✓ No explanatory text before or after JSON
+- ✓ JSON is complete (not truncated mid-string)
 
-JSON to audit:
-{{format_json}}
+CRITICAL RULES:
+1. Output ONLY the JSON object - no markdown (```json), no explanations
+2. Start with { and end with }
+3. If valid, output it unchanged
+4. If invalid, output the corrected version
+5. Ensure all strings are properly quoted and escaped
+6. Do not truncate - complete the JSON fully
 
-If valid, output it unchanged. If invalid, output the corrected JSON.
-Output ONLY valid JSON. No markdown blocks, no explanations.
+Example valid output:
+{
+  "text_content": "Your Discord post content here...",
+  "content_type": "discord_post",
+  "source": "generation_carousel",
+  "tags": ["feature", "automation"]
+}
+
+Now audit the JSON above and output the valid/corrected version.
 """
 
 # === Narrative 1: Feature Showcase ===

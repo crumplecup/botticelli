@@ -4,8 +4,8 @@ use crate::{
     ActorConfig, ActorError, ActorErrorKind, ActorResult, KnowledgeTable, Platform, SkillContext,
     SkillContextBuilder, SkillOutput, SkillRegistry,
 };
-use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
+use diesel::r2d2::{ConnectionManager, Pool};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -61,7 +61,10 @@ impl Actor {
     /// - Knowledge tables cannot be loaded
     /// - Unrecoverable error occurs with stop_on_unrecoverable=true
     #[tracing::instrument(skip(self, pool), fields(actor_name = %self.config.name()))]
-    pub async fn execute(&self, pool: &Pool<ConnectionManager<PgConnection>>) -> ActorResult<ExecutionResult> {
+    pub async fn execute(
+        &self,
+        pool: &Pool<ConnectionManager<PgConnection>>,
+    ) -> ActorResult<ExecutionResult> {
         tracing::info!("Starting actor execution");
 
         // Get connection from pool for knowledge loading

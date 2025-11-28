@@ -43,7 +43,7 @@ impl CurationBot {
     #[instrument(skip(self))]
     async fn process_curation_queue(&self) -> Result<(), Box<dyn std::error::Error>> {
         info!("Starting queue processing cycle");
-        
+
         // Load narrative with database connection
         let mut conn = establish_connection()?;
         let narrative = MultiNarrative::from_file_with_db(
@@ -51,11 +51,11 @@ impl CurationBot {
             &self.args.narrative_name,
             &mut conn,
         )?;
-        
+
         // Create executor with Gemini client
         let client = GeminiClient::new()?;
         let executor = NarrativeExecutor::new(client);
-        
+
         // Execute the narrative
         match executor.execute(&narrative).await {
             Ok(_) => {
@@ -111,20 +111,20 @@ impl Actor for CurationBot {
                     warn!("Curation loop already running");
                     return Ok(());
                 }
-                
+
                 info!("Starting curation loop");
                 state.running = true;
-                
+
                 // Spawn background task for periodic checks
                 let check_interval = self.args.check_interval;
                 let myself_clone = myself.clone();
-                
+
                 let handle = tokio::spawn(async move {
                     let mut timer = time::interval(check_interval);
-                    
+
                     loop {
                         timer.tick().await;
-                        
+
                         if let Err(e) = myself_clone.send_message(CurationMessage::ProcessQueue) {
                             error!(error = ?e, "Failed to send ProcessQueue message");
                             break;

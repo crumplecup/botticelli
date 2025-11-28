@@ -284,8 +284,7 @@ where
             .unwrap_or(toml_str);
         botticelli_error::BackendError::new(format!(
             "Failed to parse TOML: {} (TOML: {}...)",
-            e,
-            preview
+            e, preview
         ))
         .into()
     })

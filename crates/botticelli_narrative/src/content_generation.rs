@@ -19,14 +19,12 @@ fn unwrap_call_result<T>(
 ) -> BotticelliResult<T> {
     match result {
         Ok(CallResult::Success(inner)) => inner,
-        Ok(CallResult::Timeout) => Err(botticelli_error::BackendError::new(
-            "Storage actor call timed out",
-        )
-        .into()),
-        Ok(CallResult::SenderError) => Err(botticelli_error::BackendError::new(
-            "Storage actor sender error",
-        )
-        .into()),
+        Ok(CallResult::Timeout) => {
+            Err(botticelli_error::BackendError::new("Storage actor call timed out").into())
+        }
+        Ok(CallResult::SenderError) => {
+            Err(botticelli_error::BackendError::new("Storage actor sender error").into())
+        }
         Err(e) => Err(botticelli_error::BackendError::new(format!(
             "Failed to send message to storage actor: {}",
             e
@@ -146,7 +144,9 @@ impl ActProcessor for ContentGenerationProcessor {
                                     table_name: table_name.clone(),
                                     template: template.clone(),
                                     narrative_name: Some(context.narrative_name.to_string()),
-                                    description: Some(context.narrative_metadata.description().to_string()),
+                                    description: Some(
+                                        context.narrative_metadata.description().to_string(),
+                                    ),
                                     reply,
                                 },
                                 None,
@@ -162,7 +162,9 @@ impl ActProcessor for ContentGenerationProcessor {
                                     table_name: table_name.clone(),
                                     json_sample: parsed_json.clone(),
                                     narrative_name: Some(context.narrative_name.to_string()),
-                                    description: Some(context.narrative_metadata.description().to_string()),
+                                    description: Some(
+                                        context.narrative_metadata.description().to_string(),
+                                    ),
                                     reply,
                                 },
                                 None,

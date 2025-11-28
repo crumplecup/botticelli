@@ -363,7 +363,8 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 } {
                     // Recursively execute the referenced narrative with the same multi context
                     tracing::debug!("Recursively executing referenced narrative from multi");
-                    let nested_execution = Box::pin(self.execute_impl_with_multi(ref_narrative, multi)).await?;
+                    let nested_execution =
+                        Box::pin(self.execute_impl_with_multi(ref_narrative, multi)).await?;
 
                     // Collect all responses from the nested execution
                     let nested_responses: Vec<String> = nested_execution
@@ -528,10 +529,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 // Extract text from response
                 let response_text = extract_text_from_outputs(&response.outputs)?;
 
-                let preview = response_text
-                    .chars()
-                    .take(200)
-                    .collect::<String>();
+                let preview = response_text.chars().take(200).collect::<String>();
                 tracing::debug!(
                     response_length = response_text.len(),
                     response_preview = preview,

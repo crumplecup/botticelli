@@ -141,8 +141,7 @@ impl Skill for NarrativeExecutionSkill {
 
         // Create processor registry with content generation processor
         tracing::debug!("Creating processor registry");
-        let processor =
-            botticelli_narrative::ContentGenerationProcessor::new(storage_ref.clone());
+        let processor = botticelli_narrative::ContentGenerationProcessor::new(storage_ref.clone());
         let mut registry = ProcessorRegistry::new();
         registry.register(Box::new(processor));
 
@@ -206,39 +205,45 @@ impl Skill for NarrativeExecutionSkill {
 
         // Execute narrative with appropriate type (MultiNarrative or single Narrative)
         // Both implement NarrativeProvider trait
-        let (result, executed_narrative_name, executed_act_count) = if let Some(multi) = multi_for_composition {
-            // Get target narrative name from original parameter
-            let target_name = narrative_name.as_ref().expect("multi_for_composition implies narrative_name is Some");
+        let (result, executed_narrative_name, executed_act_count) =
+            if let Some(multi) = multi_for_composition {
+                // Get target narrative name from original parameter
+                let target_name = narrative_name
+                    .as_ref()
+                    .expect("multi_for_composition implies narrative_name is Some");
 
-            tracing::info!(
-                narrative_name = target_name,
-                "Executing multi-narrative with composition context"
-            );
+                tracing::info!(
+                    narrative_name = target_name,
+                    "Executing multi-narrative with composition context"
+                );
 
-            let result = executor.execute(&multi).await.map_err(|e| {
-                ActorError::new(ActorErrorKind::Narrative(format!(
-                    "Multi-narrative execution failed: {}",
-                    e
-                )))
-            })?;
+                let result = executor.execute(&multi).await.map_err(|e| {
+                    ActorError::new(ActorErrorKind::Narrative(format!(
+                        "Multi-narrative execution failed: {}",
+                        e
+                    )))
+                })?;
 
-            let act_count = multi.get_narrative(target_name).map(|n| n.acts().len()).unwrap_or(0);
+                let act_count = multi
+                    .get_narrative(target_name)
+                    .map(|n| n.acts().len())
+                    .unwrap_or(0);
 
-            (result, target_name.to_string(), act_count)
-        } else if let Some(narrative) = narrative_for_single {
-            tracing::info!(narrative_name = narrative.name(), "Executing narrative");
+                (result, target_name.to_string(), act_count)
+            } else if let Some(narrative) = narrative_for_single {
+                tracing::info!(narrative_name = narrative.name(), "Executing narrative");
 
-            let result = executor.execute(&narrative).await.map_err(|e| {
-                ActorError::new(ActorErrorKind::Narrative(format!(
-                    "Narrative execution failed: {}",
-                    e
-                )))
-            })?;
+                let result = executor.execute(&narrative).await.map_err(|e| {
+                    ActorError::new(ActorErrorKind::Narrative(format!(
+                        "Narrative execution failed: {}",
+                        e
+                    )))
+                })?;
 
-            (result, narrative.name().to_string(), narrative.acts().len())
-        } else {
-            unreachable!("Either narrative_for_single or multi_for_composition must be Some");
-        };
+                (result, narrative.name().to_string(), narrative.acts().len())
+            } else {
+                unreachable!("Either narrative_for_single or multi_for_composition must be Some");
+            };
 
         // Shutdown the storage actor
         tracing::debug!("Shutting down storage actor");

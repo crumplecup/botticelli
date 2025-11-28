@@ -53,6 +53,7 @@ impl NarrativeSource {
 #[derive(Debug, Clone, Default)]
 pub struct ExecutionOptions {
     save: bool,
+    #[cfg(feature = "discord")]
     process_discord: bool,
     #[cfg(feature = "database")]
     state_dir: Option<PathBuf>,
@@ -71,6 +72,9 @@ impl ExecutionOptions {
     }
 
     /// Whether to process Discord infrastructure (guilds, channels, etc.).
+    ///
+    /// Available with the `discord` feature.
+    #[cfg(feature = "discord")]
     pub fn process_discord(&self) -> bool {
         self.process_discord
     }
@@ -93,6 +97,7 @@ impl ExecutionOptions {
 #[derive(Debug, Clone, Default)]
 pub struct ExecutionOptionsBuilder {
     save: bool,
+    #[cfg(feature = "discord")]
     process_discord: bool,
     #[cfg(feature = "database")]
     state_dir: Option<PathBuf>,
@@ -107,6 +112,9 @@ impl ExecutionOptionsBuilder {
     }
 
     /// Set whether to process Discord infrastructure.
+    ///
+    /// Available with the `discord` feature.
+    #[cfg(feature = "discord")]
     pub fn process_discord(mut self, process_discord: bool) -> Self {
         self.process_discord = process_discord;
         self
@@ -125,6 +133,7 @@ impl ExecutionOptionsBuilder {
     pub fn build(self) -> ExecutionOptions {
         ExecutionOptions {
             save: self.save,
+            #[cfg(feature = "discord")]
             process_discord: self.process_discord,
             #[cfg(feature = "database")]
             state_dir: self.state_dir,
@@ -340,14 +349,16 @@ pub async fn run_narrative(
             // Start storage actor with Ractor
             tracing::info!("Starting storage actor");
             let pool = create_pool()?;
-            
+
             let actor = StorageActor::new(pool.clone());
-            let (actor_ref, _handle) = ractor::Actor::spawn(None, actor, pool)
-                .await
-                .map_err(|e| {
-                    botticelli_error::BackendError::new(format!("Failed to spawn storage actor: {}", e))
+            let (actor_ref, _handle) =
+                ractor::Actor::spawn(None, actor, pool).await.map_err(|e| {
+                    botticelli_error::BackendError::new(format!(
+                        "Failed to spawn storage actor: {}",
+                        e
+                    ))
                 })?;
-            
+
             tracing::info!("Storage actor started");
 
             // Create content generation processor with storage actor
@@ -414,6 +425,7 @@ pub async fn run_narrative(
 
         #[cfg(not(feature = "database"))]
         {
+            #[cfg(feature = "discord")]
             if options.process_discord() {
                 tracing::warn!("Discord processing requires database feature");
             }

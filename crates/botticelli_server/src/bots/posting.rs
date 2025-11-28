@@ -47,10 +47,11 @@ impl PostingBot {
     #[instrument(skip(self))]
     fn calculate_next_delay(&self) -> Duration {
         let mut rng = rand::thread_rng();
-        let jitter_range = (self.args.base_interval.as_secs_f64() * self.args.jitter_percent) as i64;
+        let jitter_range =
+            (self.args.base_interval.as_secs_f64() * self.args.jitter_percent) as i64;
         let jitter = rng.gen_range(-jitter_range..=jitter_range);
         let next_secs = (self.args.base_interval.as_secs() as i64 + jitter).max(60); // Minimum 1 minute
-        
+
         let delay = Duration::from_secs(next_secs as u64);
         debug!(
             base_secs = self.args.base_interval.as_secs(),
@@ -64,7 +65,7 @@ impl PostingBot {
     #[instrument(skip(self))]
     async fn post_next_content(&self) -> Result<(), Box<dyn std::error::Error>> {
         info!("Posting next approved content");
-        
+
         // Load narrative with database connection
         let mut conn = establish_connection()?;
         let narrative = MultiNarrative::from_file_with_db(
@@ -72,11 +73,11 @@ impl PostingBot {
             &self.args.narrative_name,
             &mut conn,
         )?;
-        
+
         // Create executor with Gemini client
         let client = GeminiClient::new()?;
         let executor = NarrativeExecutor::new(client);
-        
+
         // Execute the narrative
         match executor.execute(&narrative).await {
             Ok(_) => {
@@ -133,19 +134,21 @@ impl Actor for PostingBot {
                     warn!("Posting loop already running");
                     return Ok(());
                 }
-                
+
                 info!("Starting posting loop");
                 state.running = true;
-                
+
                 // Spawn background task with jittered intervals
                 let myself_clone = myself.clone();
-                let bot_clone = Self { args: self.args.clone() };
-                
+                let bot_clone = Self {
+                    args: self.args.clone(),
+                };
+
                 let handle = tokio::spawn(async move {
                     loop {
                         let delay = bot_clone.calculate_next_delay();
                         time::sleep(delay).await;
-                        
+
                         if let Err(e) = myself_clone.send_message(PostingMessage::PostNext) {
                             error!(error = ?e, "Failed to send PostNext message");
                             break;

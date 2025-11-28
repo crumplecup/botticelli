@@ -43,7 +43,7 @@ impl GenerationBot {
     #[instrument(skip(self))]
     async fn run_generation_cycle(&self) -> Result<(), Box<dyn std::error::Error>> {
         info!("Running generation cycle");
-        
+
         // Load narrative with database connection
         let mut conn = establish_connection()?;
         let multi_narrative = MultiNarrative::from_file_with_db(
@@ -51,17 +51,17 @@ impl GenerationBot {
             &self.args.narrative_name,
             &mut conn,
         )?;
-        
+
         tracing::debug!(
             narrative_key = %self.args.narrative_name,
             narrative_name = %multi_narrative.name(),
             "Loaded multi-narrative structure"
         );
-        
+
         // Create executor with Gemini client
         let client = GeminiClient::new()?;
         let executor = NarrativeExecutor::new(client);
-        
+
         // Execute the narrative
         match executor.execute(&multi_narrative).await {
             Ok(_) => {
@@ -117,10 +117,10 @@ impl Actor for GenerationBot {
                     warn!("Generation loop already running");
                     return Ok(());
                 }
-                
+
                 info!("Starting generation loop");
                 state.running = true;
-                
+
                 // Spawn background task for periodic execution
                 let interval = self.args.interval;
                 let myself_clone = myself.clone();

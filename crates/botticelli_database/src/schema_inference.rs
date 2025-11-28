@@ -127,22 +127,12 @@ pub fn infer_column_type(value: &JsonValue) -> (&'static str, bool) {
         JsonValue::Bool(_) => ("BOOLEAN", false),
         JsonValue::Null => ("TEXT", true), // Nullable, type inferred from other rows
         JsonValue::Array(arr) => {
+            // Use JSONB for all arrays to avoid PostgreSQL array format conversion issues
+            // (JSON uses ["a","b"] while PostgreSQL arrays use {"a", "b"})
             if arr.is_empty() {
-                ("JSONB", true) // Unknown array type
+                ("JSONB", true) // Unknown array type, nullable
             } else {
-                // Check first element to determine array type
-                match &arr[0] {
-                    JsonValue::String(_) => ("TEXT[]", false),
-                    JsonValue::Number(n) => {
-                        if n.is_i64() || n.is_u64() {
-                            ("BIGINT[]", false)
-                        } else {
-                            ("DOUBLE PRECISION[]", false)
-                        }
-                    }
-                    JsonValue::Bool(_) => ("BOOLEAN[]", false),
-                    _ => ("JSONB", false), // Complex array
-                }
+                ("JSONB", false) // Store JSON arrays as JSONB
             }
         }
         JsonValue::Object(_) => ("JSONB", false),
@@ -297,7 +287,11 @@ pub fn coerce_value(value: &JsonValue, target_type: &str) -> DatabaseResult<Json
                 JsonValue::String(s) => {
                     let lower = s.to_lowercase();
                     Ok(JsonValue::Bool(
-                        lower == "true" || lower == "yes" || lower == "1" || lower == "t" || lower == "y",
+                        lower == "true"
+                            || lower == "yes"
+                            || lower == "1"
+                            || lower == "t"
+                            || lower == "y",
                     ))
                 }
                 _ => {
@@ -342,7 +336,10 @@ pub fn coerce_value(value: &JsonValue, target_type: &str) -> DatabaseResult<Json
         }
         _ => {
             // Unknown type - pass through as-is
-            debug!(target_type, "Unknown PostgreSQL type, passing value through");
+            debug!(
+                target_type,
+                "Unknown PostgreSQL type, passing value through"
+            );
             Ok(value.clone())
         }
     }

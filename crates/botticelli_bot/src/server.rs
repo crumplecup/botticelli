@@ -137,22 +137,22 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
                 // Calculate next post time with jitter
                 let base = std::time::Duration::from_secs(base_interval_hours * 3600);
                 let jitter_secs = jitter_minutes * 60;
-                
+
                 let next_post = {
                     let mut rng = rand::thread_rng();
                     let jitter = rng.gen_range(0..=jitter_secs);
-                    
+
                     if rng.gen_bool(0.5) {
                         base + std::time::Duration::from_secs(jitter)
                     } else {
                         base.saturating_sub(std::time::Duration::from_secs(jitter))
                     }
                 };
-                
+
                 info!(delay_secs = next_post.as_secs(), "Next post scheduled");
-                
+
                 sleep(next_post).await;
-                
+
                 if tx.send(PostingMessage::PostNext).await.is_err() {
                     error!("Posting bot channel closed");
                     break;

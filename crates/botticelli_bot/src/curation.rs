@@ -91,17 +91,17 @@ impl<D: BotticelliDriver> CurationBot<D> {
     async fn check_pending_count(&self) -> Result<usize, Box<dyn std::error::Error>> {
         // Query potential_discord_posts for records with status = "pending"
         let mut conn = self.database.get()?;
-        
-        use diesel::prelude::*;
+
         use diesel::dsl::sql;
+        use diesel::prelude::*;
         use diesel::sql_types::BigInt;
-        
+
         let count: i64 = diesel::select(sql::<BigInt>(
-            "COUNT(*) FROM potential_discord_posts WHERE status = 'pending'"
+            "COUNT(*) FROM potential_discord_posts WHERE status = 'pending'",
         ))
         .get_result(&mut conn)
         .unwrap_or(0);
-        
+
         Ok(count as usize)
     }
 }

@@ -37,14 +37,14 @@ impl BotServer {
 
         // Define narrative paths (relative to workspace root)
         let narratives_dir = PathBuf::from("./crates/botticelli_narrative/narratives/discord");
-        
+
         // Spawn generation bot
         let generation_args = GenerationBotArgs {
             interval: generation_interval,
             narrative_path: narratives_dir.join("generation_carousel.toml"),
             narrative_name: "batch_generate".to_string(),
         };
-        
+
         let (generation_ref, _) = Actor::spawn(
             Some("generation_bot".to_string()),
             GenerationBot::new(generation_args.clone()),
@@ -53,7 +53,9 @@ impl BotServer {
         .await
         .map_err(|e| {
             error!(error = ?e, "Failed to spawn generation bot");
-            BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed("Failed to spawn generation bot".to_string())))
+            BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed(
+                "Failed to spawn generation bot".to_string(),
+            )))
         })?;
 
         self.generation_ref = Some(generation_ref.clone());
@@ -61,7 +63,9 @@ impl BotServer {
             .send_message(GenerationMessage::Start)
             .map_err(|e| {
                 error!(error = ?e, "Failed to start generation bot");
-                BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed("Failed to start generation bot".to_string())))
+                BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed(
+                    "Failed to start generation bot".to_string(),
+                )))
             })?;
 
         // Spawn curation bot
@@ -70,7 +74,7 @@ impl BotServer {
             narrative_path: narratives_dir.join("curation.toml"),
             narrative_name: "curate_and_approve".to_string(),
         };
-        
+
         let (curation_ref, _) = Actor::spawn(
             Some("curation_bot".to_string()),
             CurationBot::new(curation_args.clone()),
@@ -79,7 +83,9 @@ impl BotServer {
         .await
         .map_err(|e| {
             error!(error = ?e, "Failed to spawn curation bot");
-            BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed("Failed to spawn curation bot".to_string())))
+            BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed(
+                "Failed to spawn curation bot".to_string(),
+            )))
         })?;
 
         self.curation_ref = Some(curation_ref.clone());
@@ -87,7 +93,9 @@ impl BotServer {
             .send_message(CurationMessage::Start)
             .map_err(|e| {
                 error!(error = ?e, "Failed to start curation bot");
-                BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed("Failed to start curation bot".to_string())))
+                BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed(
+                    "Failed to start curation bot".to_string(),
+                )))
             })?;
 
         // Spawn posting bot
@@ -97,7 +105,7 @@ impl BotServer {
             narrative_path: narratives_dir.join("posting.toml"),
             narrative_name: "post_approved".to_string(),
         };
-        
+
         let (posting_ref, _) = Actor::spawn(
             Some("posting_bot".to_string()),
             PostingBot::new(posting_args.clone()),
@@ -106,7 +114,9 @@ impl BotServer {
         .await
         .map_err(|e| {
             error!(error = ?e, "Failed to spawn posting bot");
-            BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed("Failed to spawn posting bot".to_string())))
+            BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed(
+                "Failed to spawn posting bot".to_string(),
+            )))
         })?;
 
         self.posting_ref = Some(posting_ref.clone());
@@ -114,7 +124,9 @@ impl BotServer {
             .send_message(PostingMessage::Start)
             .map_err(|e| {
                 error!(error = ?e, "Failed to start posting bot");
-                BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed("Failed to start posting bot".to_string())))
+                BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed(
+                    "Failed to start posting bot".to_string(),
+                )))
             })?;
 
         info!("All bots started");
@@ -151,9 +163,7 @@ impl BotServer {
 
     /// Returns whether the server is running.
     pub fn is_running(&self) -> bool {
-        self.generation_ref.is_some()
-            || self.curation_ref.is_some()
-            || self.posting_ref.is_some()
+        self.generation_ref.is_some() || self.curation_ref.is_some() || self.posting_ref.is_some()
     }
 }
 
