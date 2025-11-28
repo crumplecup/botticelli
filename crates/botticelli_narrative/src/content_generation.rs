@@ -243,14 +243,23 @@ impl ActProcessor for ContentGenerationProcessor {
             return false;
         }
 
+        // Only process the last act by default (Phase 1 of JSON extraction strategy)
+        if !context.is_last_act {
+            tracing::debug!(
+                act = %context.execution.act_name,
+                "Skipping content generation (not the last act)"
+            );
+            return false;
+        }
+
         tracing::debug!(
             act = %context.execution.act_name,
             template = ?context.narrative_metadata.template(),
             target = ?context.narrative_metadata.target(),
-            "Content generation processor will process this act"
+            "Content generation processor will process this act (last act)"
         );
 
-        // Otherwise, process (with template OR inference mode)
+        // Process the last act (with template OR inference mode)
         true
     }
 

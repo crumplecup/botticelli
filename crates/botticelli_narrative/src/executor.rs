@@ -531,11 +531,15 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     "Processing act with registered processors"
                 );
 
+                // Determine if this is the last act in the narrative
+                let is_last_act = sequence_number == narrative.act_names().len() - 1;
+
                 // Build processor context
                 let context = ProcessorContext {
                     execution: &act_execution,
                     narrative_metadata: narrative.metadata(),
                     narrative_name: narrative.name(),
+                    is_last_act,
                 };
 
                 if let Err(e) = registry.process(&context).await {

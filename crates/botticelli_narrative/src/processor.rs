@@ -22,6 +22,9 @@ pub struct ProcessorContext<'a> {
 
     /// Full narrative name for tracking
     pub narrative_name: &'a str,
+
+    /// Whether this is the last act in the narrative
+    pub is_last_act: bool,
 }
 
 /// Trait for processing act execution results with narrative context.
@@ -276,6 +279,7 @@ mod tests {
             execution,
             narrative_metadata: metadata,
             narrative_name,
+            is_last_act: true, // Default to true for tests
         }
     }
 
