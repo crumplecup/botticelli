@@ -280,6 +280,37 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
         Box::pin(async move { self.execute_impl(narrative).await })
     }
 
+    /// Execute a narrative by loading it from a TOML file and selecting a specific narrative by name.
+    ///
+    /// This is a convenience method for bots that need to execute narratives dynamically.
+    /// It loads a multi-narrative file and executes the specified narrative within it.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - The file cannot be loaded
+    /// - The narrative name is not found
+    /// - Execution fails
+    pub async fn execute_narrative_by_name(
+        &self,
+        path: &str,
+        narrative_name: &str,
+    ) -> BotticelliResult<NarrativeExecution> {
+        use crate::MultiNarrative;
+        use std::path::Path;
+
+        let multi = MultiNarrative::from_file(Path::new(path), narrative_name)?;
+
+        let narrative = multi.get_narrative(narrative_name).ok_or_else(|| {
+            NarrativeError::new(NarrativeErrorKind::TomlParse(format!(
+                "Narrative '{}' not found in {}",
+                narrative_name, path
+            )))
+        })?;
+
+        self.execute(narrative).await
+    }
+
     #[tracing::instrument(skip(self, narrative), fields(narrative_name = narrative.name(), act_count = narrative.act_names().len()))]
     async fn execute_impl<N: NarrativeProvider + ?Sized>(
         &self,

@@ -77,7 +77,7 @@ impl<D: BotticelliDriver> PostingBot<D> {
 
         self.executor
             .execute_narrative_by_name(
-                &self.config.narrative_path,
+                &self.config.narrative_path.to_string_lossy(),
                 &self.config.narrative_name,
             )
             .await?;

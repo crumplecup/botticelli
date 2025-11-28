@@ -80,9 +80,13 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         });
 
         // Spawn schedulers
-        self.spawn_generation_scheduler(gen_tx);
-        self.spawn_curation_scheduler(cur_tx);
-        self.spawn_posting_scheduler(post_tx).await;
+        Self::spawn_generation_scheduler_static(self.schedule.generation_interval, gen_tx);
+        Self::spawn_curation_scheduler_static(self.schedule.curation_interval, cur_tx);
+        Self::spawn_posting_scheduler_static(
+            self.config.posting.base_interval_hours,
+            self.config.posting.jitter_minutes,
+            post_tx,
+        );
 
         // Wait for posting bot (it drives the main loop)
         posting_handle.await?;
@@ -91,10 +95,12 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         Ok(())
     }
 
-    fn spawn_generation_scheduler(&self, tx: mpsc::Sender<GenerationMessage>) {
-        let mut interval = interval(self.schedule.generation_interval);
-        
+    fn spawn_generation_scheduler_static(
+        generation_interval: std::time::Duration,
+        tx: mpsc::Sender<GenerationMessage>,
+    ) {
         tokio::spawn(async move {
+            let mut interval = interval(generation_interval);
             loop {
                 interval.tick().await;
                 if tx.send(GenerationMessage::Generate).await.is_err() {
@@ -105,10 +111,12 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         });
     }
 
-    fn spawn_curation_scheduler(&self, tx: mpsc::Sender<CurationMessage>) {
-        let mut interval = interval(self.schedule.curation_interval);
-        
+    fn spawn_curation_scheduler_static(
+        curation_interval: std::time::Duration,
+        tx: mpsc::Sender<CurationMessage>,
+    ) {
         tokio::spawn(async move {
+            let mut interval = interval(curation_interval);
             loop {
                 interval.tick().await;
                 if tx.send(CurationMessage::CheckForContent).await.is_err() {
@@ -119,23 +127,26 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         });
     }
 
-    async fn spawn_posting_scheduler(self, tx: mpsc::Sender<PostingMessage>) {
-        let base_interval_hours = self.config.posting.base_interval_hours;
-        let jitter_minutes = self.config.posting.jitter_minutes;
-        
+    fn spawn_posting_scheduler_static(
+        base_interval_hours: u64,
+        jitter_minutes: u64,
+        tx: mpsc::Sender<PostingMessage>,
+    ) {
         tokio::spawn(async move {
             loop {
                 // Calculate next post time with jitter
                 let base = std::time::Duration::from_secs(base_interval_hours * 3600);
                 let jitter_secs = jitter_minutes * 60;
                 
-                let mut rng = rand::thread_rng();
-                let jitter = rng.gen_range(0..=jitter_secs);
-                
-                let next_post = if rng.gen_bool(0.5) {
-                    base + std::time::Duration::from_secs(jitter)
-                } else {
-                    base.saturating_sub(std::time::Duration::from_secs(jitter))
+                let next_post = {
+                    let mut rng = rand::thread_rng();
+                    let jitter = rng.gen_range(0..=jitter_secs);
+                    
+                    if rng.gen_bool(0.5) {
+                        base + std::time::Duration::from_secs(jitter)
+                    } else {
+                        base.saturating_sub(std::time::Duration::from_secs(jitter))
+                    }
                 };
                 
                 info!(delay_secs = next_post.as_secs(), "Next post scheduled");

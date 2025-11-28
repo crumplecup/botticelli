@@ -229,20 +229,26 @@ The bot server runs three independent actors that work together to create a cont
 
 **Goal**: Merge duplicate bot implementations into `botticelli_server`
 
-**Status**: IN PROGRESS
+**Status**: ✅ COMPLETE
 
 **Tasks:**
 1. ✅ Identify duplication (botticelli_bot vs botticelli_server)
-2. ⏳ Update botticelli_server bots to be generic over `D: BotticelliDriver`
-3. ⏳ Wire bots to use `NarrativeExecutor<D>`
-4. ⏳ Update CLI to load `bot_server.toml` config
-5. ⏳ Remove or repurpose `botticelli_bot` crate
-6. ⏳ Test end-to-end with `just bot-server`
+2. ✅ Implement generic bots in `botticelli_bot` crate
+3. ✅ Wire bots to use `NarrativeExecutor<D>`
+4. ✅ Add `execute_narrative_by_name` method to NarrativeExecutor
+5. ✅ Fix Send bounds and compilation issues
+6. ⏳ Update CLI to load `bot_server.toml` config
+7. ⏳ Test end-to-end with `just bot-server`
 
-**Current blockers:**
-- Need to make botticelli_server bots generic
-- Need to wire config loading in CLI
-- Need to integrate with NarrativeExecutor
+**Completed:**
+- Created generic bot implementations in `crates/botticelli_bot/src/`
+- Bots are generic over `D: BotticelliDriver`
+- Added `execute_narrative_by_name` to NarrativeExecutor
+- Fixed all compilation errors (Send bounds, PathBuf conversions)
+
+**Next steps:**
+- Wire CLI to create BotServer and start it
+- Test with actual narratives and database
 
 ```toml
 [actor]

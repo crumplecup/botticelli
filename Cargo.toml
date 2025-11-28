@@ -13,8 +13,9 @@ members = [
   "crates/botticelli",
   "crates/botticelli_server",
   "crates/botticelli_security",
-  "crates/botticelli_cache", "crates/botticelli_actor",
-    # "crates/botticelli_bot",  # TODO: Re-enable after implementing execute_narrative_by_name
+  "crates/botticelli_cache",
+  "crates/botticelli_actor",
+  "crates/botticelli_bot",
 ]
 resolver = "2"
 
