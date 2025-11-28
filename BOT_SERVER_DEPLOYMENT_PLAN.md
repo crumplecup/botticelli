@@ -1,8 +1,26 @@
 # Bot Server Deployment Plan
 
-**Status**: Planning  
+**Status**: Implementation Complete - Ready for Testing  
 **Created**: 2025-11-27  
+**Updated**: 2025-11-28  
 **Goal**: Deploy multi-phase bot server with generation, curation, and posting actors
+
+## Implementation Status
+
+**Completed Components:**
+- ✅ Bot trait hierarchy in `botticelli_interface`
+- ✅ Concrete bot implementations in `botticelli_bot` (GenerationBot, CurationBot, PostingBot)
+- ✅ Server orchestration with `BotServer<D>`
+- ✅ Configuration support via `bot_server.toml`
+- ✅ Just command (`just bot-server`)
+- ✅ JSON compliance workflow integrated
+- ✅ Schema inference for table creation
+- ✅ All narratives use improved JSON extraction
+
+**Ready to Test:**
+1. Generation bot → Creates 50 posts using carousel
+2. Curation bot → Processes pending posts until queue empty
+3. Posting bot → Posts approved content with human-like jitter
 
 ---
 
