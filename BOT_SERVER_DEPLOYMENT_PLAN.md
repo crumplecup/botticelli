@@ -39,6 +39,27 @@ The bot server runs three independent actors that work together to create a cont
 
 ---
 
+## Architecture Issue: Duplicate Bot Implementations
+
+**Problem**: Two separate bot server implementations exist:
+1. `botticelli_bot` - Generic bots with `NarrativeExecutor<D>` integration
+2. `botticelli_server` - Bots already wired to CLI `server` command
+
+**Analysis**:
+- `botticelli_server` is actively used by the CLI
+- `botticelli_bot` was created as a generic abstraction
+- Need to consolidate into single implementation
+- Should live in `botticelli_server` per your guidance ("all server-related logic should live in this crate")
+
+**Resolution Strategy**:
+1. Keep `botticelli_server` as the implementation home
+2. Update `botticelli_server` bots to be generic over `D: BotticelliDriver`
+3. Remove `botticelli_bot` crate (or repurpose for client-side bots if needed)
+4. Ensure bots use `NarrativeExecutor<D>` for narrative execution
+5. Wire up config file loading in `handle_server_command`
+
+---
+
 ## Current Status
 
 ### ✅ Completed Infrastructure
@@ -145,21 +166,83 @@ The bot server runs three independent actors that work together to create a cont
 
 ---
 
-### Phase 3: Create Actor Configurations
+### Phase 3: Implement BotActor Trait ✅
 
-**Goal**: Define TOML configs for each actor with schedules and skills
+**Status**: COMPLETE - Bot implementations exist in `crates/botticelli_bot/src/`
 
-**Directory structure**:
-```
-actors/
-├── generation_actor.toml      # Daily content generation
-├── curation_actor.toml         # Every 12 hours
-└── posting_actor.toml          # Every 2 hours
-```
+**What exists:**
+- `GenerationBot<D>` - Message-driven bot with NarrativeExecutor integration
+- `CurationBot<D>` - Queue-processing bot with database queries
+- `PostingBot<D>` - Posting bot with jitter calculation
+- Generic over `D: BotticelliDriver` for backend flexibility
+- Message passing pattern using tokio::sync::mpsc channels
 
-#### Generation Actor Config
+**Architecture:**
+- Bots use `NarrativeExecutor<D>` to run narratives
+- CurationBot queries database to check pending content count
+- PostingBot calculates jitter for human-like posting rhythm
 
-**File**: `actors/generation_actor.toml`
+**Next step**: Implement BotServer to orchestrate bots (Phase 4)
+
+---
+
+### Phase 4: Implement BotServer Orchestration ✅
+
+**Status**: COMPLETE - BotServer exists in `crates/botticelli_bot/src/server.rs`
+
+**What exists:**
+- `BotServer<D>` orchestrates all three bots
+- Spawns each bot in separate tokio task
+- Separate scheduler tasks for each bot using tokio intervals
+- PostingBot uses jitter calculation for natural rhythm
+- Generic over `D: BotticelliDriver`
+
+**Architecture:**
+- Message passing via tokio::sync::mpsc channels
+- Independent schedulers trigger bots via messages
+- CurationBot processes full queue on each trigger
+- PostingBot calculates next interval with jitter
+
+**Next step**: Create unified configuration file (Phase 5)
+
+---
+
+### Phase 5: Create Bot Configuration File ✅
+
+**Status**: COMPLETE
+
+**What was done:**
+- Created `bot_server.toml` in project root
+- Configured all three bots with schedules:
+  - Generation: 24 hours (daily)
+  - Curation: 12 hours (twice daily, processes full queue)
+  - Posting: 2 hours ± 30 min jitter
+- Points to existing narrative files
+
+**File created**: `bot_server.toml`
+
+**Next step**: Consolidate bot implementations (Phase 6)
+
+---
+
+### Phase 6: Consolidate Bot Implementations
+
+**Goal**: Merge duplicate bot implementations into `botticelli_server`
+
+**Status**: IN PROGRESS
+
+**Tasks:**
+1. ✅ Identify duplication (botticelli_bot vs botticelli_server)
+2. ⏳ Update botticelli_server bots to be generic over `D: BotticelliDriver`
+3. ⏳ Wire bots to use `NarrativeExecutor<D>`
+4. ⏳ Update CLI to load `bot_server.toml` config
+5. ⏳ Remove or repurpose `botticelli_bot` crate
+6. ⏳ Test end-to-end with `just bot-server`
+
+**Current blockers:**
+- Need to make botticelli_server bots generic
+- Need to wire config loading in CLI
+- Need to integrate with NarrativeExecutor
 
 ```toml
 [actor]

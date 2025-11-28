@@ -1,0 +1,33 @@
+# Bot Server Configuration
+# This file configures the three-phase content pipeline:
+# 1. Generation: Creates raw content posts
+# 2. Curation: Reviews and approves quality posts  
+# 3. Posting: Publishes approved content to Discord
+
+[generation]
+# Path to generation narrative (relative to project root)
+narrative_path = "crates/botticelli_narrative/narratives/discord/generation_carousel.toml"
+# Which narrative to run from the file
+narrative_name = "batch_generate"
+# Run once per day (24 hours)
+interval_hours = 24
+
+[curation]
+# Path to curation narrative
+narrative_path = "crates/botticelli_narrative/narratives/discord/curate_and_approve.toml"
+# Which narrative to run
+narrative_name = "curate"
+# Check for new content every 12 hours
+check_interval_hours = 12
+# Process posts in batches (curation narrative handles this)
+batch_size = 10
+
+[posting]
+# Path to posting narrative
+narrative_path = "crates/botticelli_narrative/narratives/discord/discord_poster.toml"
+# Which narrative to run
+narrative_name = "post"
+# Base interval between posts (2 hours)
+base_interval_hours = 2
+# Add ±30 minutes of jitter for natural rhythm
+jitter_minutes = 30
