@@ -1,55 +1,90 @@
 # Botticelli
 
-A unified Rust library and CLI for executing multi-act LLM narratives with support for multiple backends (Gemini, Anthropic, etc.) and optional PostgreSQL persistence.
+A Rust framework for orchestrating multi-LLM workflows with TOML-defined narratives, automated content pipelines, and social media integration.
 
 ## Overview
 
-Botticelli enables you to define complex, multi-step LLM workflows in TOML files called "narratives." Each narrative consists of multiple "acts" that execute sequentially, with each act seeing the outputs from previous acts as context. This enables powerful workflows like:
+Botticelli enables you to define complex, multi-step LLM workflows in TOML files called "narratives." Each narrative consists of multiple "acts" that execute sequentially, with each act seeing the outputs from previous acts as context. Beyond simple workflows, Botticelli includes a bot server architecture for automated content generation, curation, and social media posting.
 
-- Generate content → Critique → Improve
-- Analyze image → Summarize → Translate
-- Research topic → Draft outline → Write sections
-- Transcribe audio → Summarize → Extract action items
+### Core Capabilities
+
+- **Narrative Execution**: TOML-defined multi-act LLM workflows with context passing
+- **Content Pipelines**: Generate → Critique → Refine → Curate → Post
+- **Bot Server**: Long-running actors for automated content workflows
+- **Social Integration**: Discord bot commands and automated posting
+- **Database-Driven**: PostgreSQL-backed content storage and tracking
+
+### Example Workflows
+
+- Generate content → Critique → Improve → Store in database
+- Curate stored content → Select best posts → Approve for publishing
+- Scheduled posting → Pull approved content → Post to Discord
+- Discord commands → Query data → Format response → Reply
 
 ## Features
 
 - 🎭 **Multi-Act Narratives**: Define sequential LLM workflows in TOML
-- 🔄 **Context Passing**: Each act sees all previous outputs
+- 🔄 **Narrative Composition**: Reference narratives within narratives, use carousels for iteration
 - 🎨 **Multimodal Support**: Text, images, audio, video, and documents
-- 🔌 **Multiple Backends**: Gemini (more coming soon)
+- 🔌 **Multiple Backends**: Gemini (Anthropic, OpenAI, and others planned)
 - ⚙️ **Per-Act Configuration**: Different models, temperature, max_tokens per act
-- 💾 **Optional Persistence**: Store executions in PostgreSQL
-- 🖥️ **CLI Interface**: Easy command-line execution
+- 💾 **Database Integration**: PostgreSQL storage with automatic schema inference
+- 🤖 **Bot Server**: Automated content generation, curation, and posting actors
+- 📱 **Social Platforms**: Discord integration (Twitter, Reddit planned)
+- 🖥️ **CLI Interface**: Flexible command-line execution with Just recipes
+- ⚡ **Rate Limiting**: Intelligent rate limiting with budget multipliers
 - 🦀 **Type-Safe**: Full Rust type safety throughout
 
 ## Workspace Architecture
 
 Botticelli is organized as a Cargo workspace with focused, independent crates:
 
-### Foundation Crates
+### Foundation Layer
 
-- **botticelli_error** - Error types with location tracking
-- **botticelli_core** - Core data structures (Input, Output, Message)
-- **botticelli_interface** - Trait definitions (BotticelliDriver, NarrativeRepository)
+- **botticelli_error** - Error types with caller location tracking
+- **botticelli_core** - Core data structures (Input, Output, Message, Role)
+- **botticelli_interface** - Trait definitions for drivers and repositories
 
-### Core Feature Crates
+### Narrative Execution Layer
 
-- **botticelli_rate_limit** - Rate limiting and automatic retry logic
-- **botticelli_storage** - Content-addressable file storage
-- **botticelli_narrative** - Narrative execution engine
+- **botticelli_narrative** - Narrative execution engine with composition support
+- **botticelli_rate_limit** - Rate limiting with budget multipliers and tier management
+- **botticelli_storage** - Content-addressable file storage with hash verification
+- **botticelli_cache** - Caching layer for database queries and LLM responses
 
-### Optional Feature Crates
+### Backend Integration Layer
 
 - **botticelli_models** - LLM provider implementations (feature-gated)
-  - `gemini` - Google Gemini models
-  - More providers coming soon
-- **botticelli_database** - PostgreSQL persistence layer
-- **botticelli_social** - Social platform integrations (Discord)
-- **botticelli_tui** - Terminal UI for content review
+  - `gemini` - Google Gemini models (1.5 Pro, 1.5 Flash, 2.0 Flash, etc.)
+  - Anthropic Claude (planned)
+  - OpenAI GPT (planned)
+  - Local models via Ollama (planned)
+
+### Data Persistence Layer
+
+- **botticelli_database** - PostgreSQL with automatic schema inference and table management
+- **botticelli_security** - Authentication, authorization, and security context
+
+### Social Integration Layer
+
+- **botticelli_social** - Social platform integrations
+  - Discord bot commands and automated posting
+  - Twitter integration (planned)
+  - Reddit integration (planned)
+
+### Server & Bot Layer
+
+- **botticelli_server** - Server infrastructure with health checks and metrics
+- **botticelli_bot** - Content generation, curation, and posting bots
+- **botticelli_actor** - Actor-based architecture for long-running processes
+
+### User Interface Layer
+
+- **botticelli_tui** - Terminal UI for content review and approval
 
 ### Facade Crate
 
-- **botticelli** - Main crate that re-exports everything for convenience
+- **botticelli** - Main binary and library crate that orchestrates everything
 
 ### Using the Workspace
 
@@ -539,31 +574,70 @@ cargo fmt -- --check
 
 ```
 botticelli/
-├── src/
-│   ├── lib.rs              # Library exports
-│   ├── main.rs             # CLI implementation
-│   ├── core.rs             # Core types (Input, Output, etc.)
-│   ├── error.rs            # Error handling
-│   ├── interface/          # Traits (BotticelliDriver, etc.)
-│   ├── models/             # Backend implementations
-│   │   └── gemini.rs       # Gemini client
-│   ├── narrative/          # Narrative system
-│   │   ├── core.rs         # Narrative, Metadata, Toc
-│   │   ├── provider.rs     # NarrativeProvider trait
-│   │   ├── executor.rs     # NarrativeExecutor
-│   │   ├── repository.rs   # NarrativeRepository trait
-│   │   ├── in_memory_repository.rs
-│   │   └── toml.rs         # TOML parsing
-│   └── database/           # PostgreSQL backend
-│       ├── narrative_models.rs
-│       ├── narrative_repository.rs
-│       └── narrative_conversions.rs
-├── narrations/             # Example narratives
-│   ├── mint.toml
-│   └── showcase.toml
-├── migrations/             # Database migrations
-├── tests/                  # Integration tests
-└── Cargo.toml
+├── crates/                          # Workspace crates
+│   ├── botticelli/                  # Main binary and facade
+│   │   ├── src/
+│   │   │   ├── main.rs              # CLI entry point
+│   │   │   ├── commands/            # CLI commands (run, server, etc.)
+│   │   │   └── config.rs            # Configuration management
+│   │   └── Cargo.toml
+│   ├── botticelli_core/             # Core data types
+│   │   ├── src/
+│   │   │   ├── input.rs             # Input variants (Text, Image, etc.)
+│   │   │   ├── output.rs            # Output types
+│   │   │   ├── message.rs           # Message structure
+│   │   │   └── role.rs              # Role enum (User, Assistant, System)
+│   │   └── Cargo.toml
+│   ├── botticelli_narrative/        # Narrative execution engine
+│   │   ├── src/
+│   │   │   ├── core.rs              # Narrative, Act, Toc
+│   │   │   ├── executor.rs          # Execution logic
+│   │   │   ├── processor.rs         # Content generation processors
+│   │   │   ├── extraction.rs        # JSON extraction and validation
+│   │   │   └── toml.rs              # TOML parsing with multi-narrative support
+│   │   ├── narratives/              # Built-in narratives
+│   │   │   ├── discord/             # Discord content workflows
+│   │   │   │   ├── generation_carousel.toml
+│   │   │   │   ├── curate_and_approve.toml
+│   │   │   │   └── json_compliance.toml
+│   │   │   └── examples/            # Example narratives
+│   │   └── Cargo.toml
+│   ├── botticelli_database/         # PostgreSQL integration
+│   │   ├── src/
+│   │   │   ├── connection.rs        # Connection management
+│   │   │   ├── repository.rs        # Repository implementations
+│   │   │   ├── schema_inference.rs  # Automatic schema creation
+│   │   │   └── table_registry.rs    # Dynamic table management
+│   │   └── Cargo.toml
+│   ├── botticelli_models/           # LLM backend implementations
+│   │   ├── src/
+│   │   │   ├── gemini/              # Google Gemini client
+│   │   │   └── traits.rs            # Backend traits
+│   │   └── Cargo.toml
+│   ├── botticelli_social/           # Social platform integrations
+│   │   ├── src/
+│   │   │   ├── discord/             # Discord API wrapper
+│   │   │   └── commands/            # Bot commands
+│   │   └── Cargo.toml
+│   ├── botticelli_bot/              # Bot implementations
+│   │   ├── src/
+│   │   │   ├── generation.rs        # Content generation bot
+│   │   │   ├── curation.rs          # Content curation bot
+│   │   │   └── posting.rs           # Scheduled posting bot
+│   │   └── Cargo.toml
+│   ├── botticelli_server/           # Server infrastructure
+│   │   ├── src/
+│   │   │   ├── health.rs            # Health checks
+│   │   │   └── orchestrator.rs      # Bot orchestration
+│   │   └── Cargo.toml
+│   └── ...                          # Other crates
+├── migrations/                      # Diesel database migrations
+├── scripts/                         # Utility scripts
+├── examples/                        # Example programs
+├── .env.example                     # Environment variable template
+├── botticelli.toml                  # Application configuration
+├── justfile                         # Task runner recipes
+└── Cargo.toml                       # Workspace manifest
 ```
 
 ## Contributing
@@ -581,15 +655,47 @@ Contributions are welcome! Please:
 
 ## Roadmap
 
-- [ ] Additional LLM backends (Anthropic Claude, OpenAI, Hugging Face)
-- [ ] Streaming token output during execution
-- [ ] Parallel execution of independent acts
-- [ ] Variable substitution in prompts
-- [ ] Conditional act execution
-- [ ] Web UI for narrative management
-- [ ] Export/import execution results
-- [ ] Retry logic with exponential backoff
-- [ ] Cost tracking per execution
+### LLM Backend Expansion
+- [ ] **Anthropic Claude** integration (Claude 3.5 Sonnet, Opus)
+- [ ] **OpenAI GPT** support (GPT-4, GPT-4 Turbo)
+- [ ] **Local models** via Ollama (Llama 3, Mistral, etc.)
+- [ ] **Hugging Face** inference API support
+
+### Social Platform Integration
+- [ ] **Twitter/X** bot commands and automated posting
+- [ ] **Reddit** integration for subreddit management
+- [ ] **Telegram** bot support
+- [ ] **Mastodon** integration
+
+### Bot Server Enhancements
+- [ ] **Observability**: Structured metrics, tracing, and dashboards
+- [ ] **Health monitoring**: Detailed health checks and status reporting
+- [ ] **Dynamic configuration**: Hot-reload of bot parameters
+- [ ] **Content approval workflow**: Human-in-the-loop via web UI or TUI
+- [ ] **Multi-platform posting**: Cross-post approved content to multiple platforms
+- [ ] **A/B testing**: Track engagement metrics and optimize content strategies
+
+### Narrative System Improvements
+- [ ] **Streaming output**: Real-time token streaming during execution
+- [ ] **Parallel execution**: Run independent acts concurrently
+- [ ] **Variable substitution**: Template variables in prompts and content
+- [ ] **Conditional execution**: If/else logic and dynamic branching
+- [ ] **Retry policies**: Configurable retry with exponential backoff
+- [ ] **Cost tracking**: Per-execution token usage and cost analysis
+
+### Developer Experience
+- [ ] **Web UI**: Browser-based narrative editor and execution monitor
+- [ ] **Narrative templates**: Library of reusable workflow patterns
+- [ ] **Testing framework**: Unit tests for narratives with mock responses
+- [ ] **Documentation generator**: Auto-generate docs from narrative TOML
+- [ ] **Migration tools**: Upgrade narratives between schema versions
+
+### Production Readiness
+- [ ] **Docker images**: Official container images for easy deployment
+- [ ] **Kubernetes operators**: Native k8s deployment and scaling
+- [ ] **Backup/restore**: Database backup automation and point-in-time recovery
+- [ ] **Multi-tenancy**: Isolated workspaces for multiple users/organizations
+- [ ] **API server**: RESTful API for narrative execution and management
 
 ## License
 
