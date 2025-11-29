@@ -182,7 +182,6 @@ test-db:
 
 # Run the full test suite: local + doc tests
 test-all: test test-doc
-    @echo "✅ All local tests passed!"
 
 # Run tests and show coverage (requires cargo-tarpaulin)
 test-coverage:
@@ -191,7 +190,6 @@ test-coverage:
 
 # Run complete test suite including API tests (for pre-merge)
 test-pre-merge: test test-doc test-api-gemini
-    @echo "✅ All pre-merge tests passed!"
 
 # Code Quality
 # ============
@@ -316,7 +314,7 @@ db-check:
     #!/usr/bin/env bash
     set +u
     echo "🔍 Checking database connection..."
-    diesel database setup --database-url="${DATABASE_URL}" || echo "✅ Database already exists"
+    diesel database setup --database-url="${DATABASE_URL}" && echo "✅ Database setup complete" || echo "⚠️  Database setup failed or already exists"
 
 # Setup database from scratch
 db-setup:
@@ -715,7 +713,7 @@ update-deps:
 # Generate OmniBOR artifact tree for supply chain transparency
 omnibor:
     @command -v omnibor >/dev/null 2>&1 || (echo "Installing omnibor-cli..." && cargo install omnibor-cli)
-    omnibor --help || echo "⚠️  OmniBOR installed, see documentation for usage"
+    omnibor --help > /dev/null && echo "✅ OmniBOR installed" || echo "❌ OmniBOR not found - install with: cargo install omnibor"
 
 # Run all security checks
 security: audit omnibor
