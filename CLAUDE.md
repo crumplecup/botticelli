@@ -2,16 +2,16 @@
 
 ## Quick Reference
 
-| Category      | Key Rule                                                | Section                                           |
-| ------------- | ------------------------------------------------------- | ------------------------------------------------- |
+| Category      | Key Rule                                                   | Section                                           |
+| ------------- | ---------------------------------------------------------- | ------------------------------------------------- |
 | **Testing**   | No `#[cfg(test)]` in source files → use `tests/` directory | [Testing](#testing)                               |
-| **Errors**    | Use `derive_more::Display` + `derive_more::Error`      | [Error Handling](#error-handling)                 |
-| **Tracing**   | All public functions have `#[instrument]`             | [Logging](#logging-and-tracing)                   |
-| **Builders**  | Always use builders, never struct literals            | [Type Construction](#type-construction)           |
-| **Imports**   | `use crate::{Type}` not `use crate::module::Type`     | [Module Organization](#module-organization)       |
-| **lib.rs**    | Only `mod` and `pub use` statements                   | [Module Organization](#module-organization)       |
-| **Workspace** | No re-exports between workspace crates                | [Workspace Organization](#workspace-organization) |
-| **Commits**   | Fix all errors/warnings before committing             | [Workflow](#workflow)                             |
+| **Errors**    | Use `derive_more::Display` + `derive_more::Error`          | [Error Handling](#error-handling)                 |
+| **Tracing**   | All public functions have `#[instrument]`                  | [Logging](#logging-and-tracing)                   |
+| **Builders**  | Always use builders, never struct literals                 | [Type Construction](#type-construction)           |
+| **Imports**   | `use crate::{Type}` not `use crate::module::Type`          | [Module Organization](#module-organization)       |
+| **lib.rs**    | Only `mod` and `pub use` statements                        | [Module Organization](#module-organization)       |
+| **Workspace** | No re-exports between workspace crates                     | [Workspace Organization](#workspace-organization) |
+| **Commits**   | Fix all errors/warnings before committing                  | [Workflow](#workflow)                             |
 
 ---
 
@@ -20,6 +20,9 @@
 ### Development Cycle
 
 1. **Plan** → Use planning document (.md) with implementation steps
+
+- Add the planning document to PLANNING_INDEX.md for tracking.
+
 2. **For each step:**
    - Generate code
    - Fix cargo check errors/warnings
@@ -35,7 +38,7 @@ Fix all issues before committing, even if "unrelated":
 ```bash
 # only run these after code changes:
 cargo check                    # Basic compilation
-just check-all                 # clippy, fmt & test
+just check-all [package]                 # clippy, fmt & test
 # only run this if markdown files changed:
 markdownlint-cli2 "**/*.md"   # Markdown (if changed)
 ```
@@ -44,6 +47,7 @@ Use `just` recipes (not raw `cargo` commands) to ensure justfile stays current.
 
 Pre-merge commits, in addition:
 
+- run `just check-all`
 - run `just audit`
 - run `just check-features`
 
