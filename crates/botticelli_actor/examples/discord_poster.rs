@@ -25,7 +25,7 @@ use botticelli_actor::skills::{
 use botticelli_actor::{
     Actor, ActorConfigBuilder, DiscordPlatform, ExecutionConfigBuilder, Skill, SkillRegistry,
 };
-use botticelli_database::establish_connection;
+use botticelli_database::create_pool;
 use std::sync::Arc;
 use tracing::{error, info};
 
@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!(channel_id = %channel_id, "Loaded configuration");
 
     // Connect to database
-    let mut conn = establish_connection().expect("Failed to connect to database");
+    let pool = create_pool().expect("Failed to create database pool");
     info!("Connected to database");
 
     // Create actor configuration

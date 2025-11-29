@@ -39,6 +39,7 @@ struct RecoverableErrorSkill {
 }
 
 impl RecoverableErrorSkill {
+    #[allow(dead_code)]
     fn new(fail_count: u32) -> Self {
         Self {
             attempts: AtomicU32::new(0),
