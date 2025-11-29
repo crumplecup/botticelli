@@ -640,6 +640,20 @@ botticelli/
 └── Cargo.toml                       # Workspace manifest
 ```
 
+## Documentation
+
+Comprehensive guides and references:
+
+- **[Observability Guide](OBSERVABILITY.md)** - Metrics, tracing, and monitoring
+- **[Narrative TOML Spec](NARRATIVE_TOML_SPEC.md)** - Complete narrative configuration reference
+- **[Discord Setup Guide](DISCORD_SETUP.md)** - Configure Discord bot integration
+- **[PostgreSQL Setup](POSTGRES.md)** - Database configuration
+- **[Media Storage](MEDIA_STORAGE.md)** - Media storage configuration
+- **[Gemini Integration](GEMINI.md)** - Google Gemini API setup
+- **[Usage Tiers](USAGE_TIERS.md)** - API rate limiting and tier management
+- **[Testing Patterns](TESTING_PATTERNS.md)** - Testing strategies for narratives
+- **[Planning Index](PLANNING_INDEX.md)** - Index of planning and strategy documents
+
 ## Contributing
 
 Contributions are welcome! Please:
