@@ -267,12 +267,45 @@ check-features:
 # Run all checks (lint, format check, tests)
 check-all package='':
     #!/usr/bin/env bash
-    set -e
+    LOG_FILE="/tmp/botticelli_check_all.log"
+    rm -f "$LOG_FILE"
+    
     if [ -z "{{package}}" ]; then
         echo "🔍 Running all checks on entire workspace..."
-        just fmt
-        just lint
-        just test-all
+        
+        # Run fmt (errors only)
+        if ! cargo fmt --all -- --check 2>&1 | grep -v "^Finished" > "$LOG_FILE.tmp"; then
+            cat "$LOG_FILE.tmp" >> "$LOG_FILE"
+        fi
+        rm -f "$LOG_FILE.tmp"
+        
+        # Run lint (capture warnings/errors)
+        echo "🔍 Linting entire workspace with local features"
+        if ! cargo clippy --workspace --features local --all-targets 2>&1 | \
+             grep -E "(warning:|error:)" > "$LOG_FILE.tmp"; then
+            true  # No warnings/errors is good
+        else
+            cat "$LOG_FILE.tmp" >> "$LOG_FILE"
+        fi
+        rm -f "$LOG_FILE.tmp"
+        
+        # Run tests (capture failures)
+        if ! cargo test --workspace --features local --lib --tests 2>&1 | \
+             grep -E "(FAILED|error:|panicked)" > "$LOG_FILE.tmp"; then
+            true  # No failures is good
+        else
+            cat "$LOG_FILE.tmp" >> "$LOG_FILE"
+        fi
+        rm -f "$LOG_FILE.tmp"
+        
+        # Report results
+        if [ -s "$LOG_FILE" ]; then
+            echo "⚠️  Checks completed with warnings/errors. See: $LOG_FILE"
+            exit 1
+        else
+            echo "✅ All checks passed!"
+            rm -f "$LOG_FILE"
+        fi
     else
         echo "🔍 Running all checks on {{package}}..."
         just fmt

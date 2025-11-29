@@ -197,9 +197,9 @@ State survives server restarts, ensuring reliable operation.
 See the `examples/` directory:
 
 - `actor_server.toml` - Server configuration
-- `actors/daily_poster.toml` - Daily content posting
-- `actors/trending.toml` - Hourly trending topics
-- `actors/welcome.toml` - Startup welcome message
+- `crates/botticelli_actor/actors/daily_poster.toml` - Daily content posting
+- `crates/botticelli_actor/actors/trending.toml` - Hourly trending topics
+- `crates/botticelli_actor/actors/welcome.toml` - Startup welcome message
 
 ## License
 
