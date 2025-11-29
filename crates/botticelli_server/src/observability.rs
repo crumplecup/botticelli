@@ -5,8 +5,7 @@
 use opentelemetry::{global, KeyValue};
 use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::{
-    metrics::MeterProvider,
-    trace::{self, TracerProvider},
+    trace::{self, Config as TraceConfig},
     Resource,
 };
 use tracing_opentelemetry::OpenTelemetryLayer;
@@ -66,7 +65,7 @@ pub fn init_observability(
                 .tonic()
                 .with_endpoint(&config.otlp_endpoint),
         )
-        .with_trace_config(trace::Config::default().with_resource(resource.clone()))
+        .with_trace_config(TraceConfig::default().with_resource(resource.clone()))
         .install_batch(opentelemetry_sdk::runtime::Tokio)?;
 
     // Initialize metrics

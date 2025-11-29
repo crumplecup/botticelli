@@ -43,8 +43,6 @@ pub fn init_observability() -> Result<(), Box<dyn std::error::Error>> {
 ///
 /// This ensures all spans are flushed before exit
 pub fn shutdown_observability() {
-    // Flush and shutdown the tracer provider
-    if let Err(e) = global::shutdown_tracer_provider().shutdown() {
-        eprintln!("Error shutting down tracer provider: {}", e);
-    }
+    // Shutdown the global tracer provider
+    opentelemetry::global::shutdown_tracer_provider();
 }
