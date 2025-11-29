@@ -639,7 +639,7 @@ groups:
 
 ### Phase 5: Dashboards
 
-**Step 1: Create Grafana Dashboards**
+**Step 1: Configure Backend Dashboards**
 
 **Dashboard 1: Bot Server Overview**
 - Server uptime and restart count
@@ -832,8 +832,8 @@ monthly_budget_usd = 250.0
 # Start Prometheus
 docker run -p 9090:9090 -v ./prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
 
-# Start Grafana
-docker run -p 3000:3000 grafana/grafana
+# Start SigNoz (includes integrated dashboard)
+docker run -p 3301:3301 signoz/signoz
 
 # Start Jaeger (distributed tracing)
 docker run -p 16686:16686 -p 4317:4317 jaegertracing/all-in-one
@@ -846,12 +846,12 @@ just bot-server
 
 **Option 1: Self-Hosted Stack**
 - Prometheus for metrics
-- Grafana for dashboards
+- Integrated dashboards (built into backend)
 - Jaeger or Tempo for traces
 - Alertmanager for notifications
 
 **Option 2: Cloud-Native Observability**
-- Grafana Cloud (metrics + dashboards + alerts)
+- SigNoz Cloud (metrics + traces + logs + integrated dashboard + alerts)
 - Honeycomb (traces + events)
 - Datadog (all-in-one, expensive)
 
@@ -860,7 +860,7 @@ just bot-server
 - Prometheus (metrics)
 - Loki (logs)
 - Tempo (traces)
-- Grafana (visualization)
+- Backend built-in dashboards (SigNoz/Uptrace/Jaeger)
 
 ## Testing Strategy
 
@@ -933,7 +933,7 @@ async fn test_trace_propagation() {
 - [ ] Add metrics to ContentCurationBot
 - [ ] Add metrics to ContentPostingBot
 - [ ] Add metrics to narrative executor
-- [ ] Create first Grafana dashboard
+- [ ] Configure backend dashboard views
 
 ### Week 3: API & Cost Tracking
 - [ ] Add API request metrics
@@ -1005,7 +1005,8 @@ async fn test_trace_propagation() {
 ## References
 
 - [Prometheus Documentation](https://prometheus.io/docs/)
-- [Grafana Dashboards](https://grafana.com/docs/grafana/latest/dashboards/)
+- [SigNoz Dashboards](https://signoz.io/docs/userguide/dashboards/)
+- [Uptrace Dashboards](https://uptrace.dev/get/dashboards.html)
 - [OpenTelemetry Rust](https://github.com/open-telemetry/opentelemetry-rust)
 - [Tracing Crate](https://docs.rs/tracing/)
 - [The Three Pillars of Observability](https://www.oreilly.com/library/view/distributed-systems-observability/9781492033431/ch04.html)

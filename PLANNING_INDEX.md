@@ -31,6 +31,10 @@ This index tracks all planning documents in the workspace. When documents are co
 ### Infrastructure & Configuration
 - **BUDGET_MULTIPLIER_DESIGN.md** - `e0a7ebc` (2025-11-24)
   - Design for API rate limit budget multipliers
+- **OPENTELEMETRY_INTEGRATION_PLAN.md** - `current` (2025-11-29)
+  - Comprehensive OpenTelemetry observability integration plan
+- **BOT_SERVER_OBSERVABILITY_STRATEGY.md** - `current` (2025-11-28)
+  - Original observability strategy (pre-OpenTelemetry research)
 
 ### Testing & Quality
 - **TESTING_PATTERNS.md** - `718bf35` (2025-11-22)

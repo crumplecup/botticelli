@@ -23,12 +23,19 @@ tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 futures = "0.3"
 chrono = { workspace = true }
 cron = "0.12"
 ractor = { workspace = true }
 rand = "0.8"
 diesel = { workspace = true }
+
+# Observability
+opentelemetry = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+tracing-opentelemetry = { workspace = true }
 
 [dev-dependencies]
 

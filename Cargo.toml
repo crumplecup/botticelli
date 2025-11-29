@@ -34,6 +34,12 @@ botticelli_error = { path = "crates/botticelli_error", version = "0.2.0" }
 botticelli_core = { path = "crates/botticelli_core", version = "0.2.0" }
 botticelli_interface = { path = "crates/botticelli_interface", version = "0.2.0" }
 
+# Observability (OpenTelemetry)
+opentelemetry = "0.31"
+opentelemetry-otlp = { version = "0.31", features = ["tokio"] }
+opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
+tracing-opentelemetry = "0.32"
+
 # Internal crates (Phase 2 rate limiting)
 botticelli_rate_limit = { path = "crates/botticelli_rate_limit", version = "0.2.0" }
 
@@ -88,6 +94,7 @@ strum = { version = "0.27", features = ["derive"] }
 governor = "0.10"
 tokio-retry2 = { version = "0.7", features = ["jitter"] }
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
 regex = "1"
 anyhow = "1"
 

@@ -49,6 +49,8 @@ mod bots;
 mod client;
 mod config;
 mod convert;
+mod metrics;
+mod observability;
 mod request;
 mod response;
 mod schedule;
@@ -64,6 +66,8 @@ pub use bots::{
 pub use botticelli_error::{ServerError, ServerErrorKind};
 pub use client::ServerClient;
 pub use config::ServerConfig;
+pub use metrics::{BotMetrics, NarrativeMetrics, PipelineMetrics, ServerMetrics};
+pub use observability::{init_observability, shutdown_observability, ObservabilityConfig};
 pub use request::{ChatCompletionRequest, Message};
 pub use response::{
     ChatCompletionChunk, ChatCompletionResponse, Choice, ChoiceMessage, ChunkChoice, Delta, Usage,
