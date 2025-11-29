@@ -1,6 +1,8 @@
 //! Content selection skill for querying and ranking content from database.
 
-use crate::{ActorError, ActorErrorKind, Skill, SkillContext, SkillOutput, SkillOutputBuilder, SkillResult};
+use crate::{
+    ActorError, ActorErrorKind, Skill, SkillContext, SkillOutput, SkillOutputBuilder, SkillResult,
+};
 use async_trait::async_trait;
 use serde_json::json;
 

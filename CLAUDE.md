@@ -12,6 +12,7 @@
 | **lib.rs**    | Only `mod` and `pub use` statements                        | [Module Organization](#module-organization)       |
 | **Workspace** | No re-exports between workspace crates                     | [Workspace Organization](#workspace-organization) |
 | **Commits**   | Fix all errors/warnings before committing                  | [Workflow](#workflow)                             |
+| **Linting**   | Never use `#[allow]` - fix root cause instead              | [Linting](#linting)                               |
 
 ---
 
@@ -755,12 +756,66 @@ just check-features                  # All combinations
 
 ## Linting
 
-Workflow:
+### The `#[allow]` Anti-Pattern
+
+**Never use `#[allow(clippy::...)]` or `#[allow(dead_code)]`** - these hide real problems that must be fixed.
+
+#### Why `#[allow]` is Harmful
+
+1. **Hides Feature Gate Issues**: Dead code warnings often indicate missing `#[cfg(feature = "...")]` gates
+2. **Masks Design Problems**: Unused code suggests incorrect API design or missing functionality
+3. **Prevents Refactoring**: You can't safely refactor what you don't know exists
+4. **Accumulates Technical Debt**: Each `allow` is a postponed problem that compounds over time
+
+#### The Dead Code Problem
+
+```rust
+// ❌ BAD: Hiding the symptom
+#[allow(dead_code)]
+pub struct Config {
+    database_url: String,  // Only used with "database" feature
+}
+
+// ✅ GOOD: Fix the root cause with feature gates
+pub struct Config {
+    #[cfg(feature = "database")]
+    database_url: String,
+}
+
+// ✅ GOOD: Or make it actually used
+pub struct Config {
+    database_url: String,
+}
+
+impl Config {
+    pub fn database_url(&self) -> &str {  // Now used via getter
+        &self.database_url
+    }
+}
+```
+
+#### Correct Solutions (in order of preference)
+
+1. **Feature gate the code**: `#[cfg(feature = "...")]` if truly conditional
+2. **Make it public with getters**: Expose via proper encapsulation
+3. **Use `pub(crate)`**: Limit visibility appropriately  
+4. **Delete it**: If genuinely unused, remove it
+5. **Document why**: Only if ALL above are impossible (extremely rare)
+
+#### Legitimate Exceptions (Rare)
+
+Only two cases permit `#[allow]`:
+
+1. **Intentional API**: `#[allow(clippy::new_without_default)]` when `Default` semantics don't match `new()`
+2. **External macro limitations**: When derive macros generate unavoidable warnings
+
+Even these should have a comment explaining why the exception is necessary.
+
+### Workflow
 
 - Let linter complete (don't deny all warnings immediately)
-- Fix all issues in single pass
+- Fix all issues in single pass - address root causes, never add `#[allow]`
 - After markdown edits: `markdownlint-cli2` (not `markdownlint`)
-- Fix or add exception as appropriate
 - Don't run cargo clippy/test after markdown-only changes
 
 ---

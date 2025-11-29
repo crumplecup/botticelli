@@ -1,7 +1,7 @@
 //! Tests for platform trait and basic implementations.
 
 #[cfg(feature = "discord")]
-use botticelli_actor::DiscordPlatform;
+use botticelli_actor::{DiscordPlatform, Platform, PlatformCapability, PlatformMessage};
 
 #[cfg(feature = "discord")]
 #[tokio::test]

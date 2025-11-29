@@ -98,16 +98,6 @@ impl MockGeminiClient {
         }
     }
 
-    /// Create a mock client with custom behavior.
-    pub fn new_with_behavior(behavior: MockBehavior) -> Self {
-        Self {
-            behavior,
-            call_count: Arc::new(Mutex::new(0)),
-            model_name: "mock-gemini".to_string(),
-            rate_limits: Self::default_rate_limits(),
-        }
-    }
-
     /// Get default rate limits for mock client.
     fn default_rate_limits() -> RateLimitConfig {
         #[cfg(feature = "gemini")]
@@ -136,11 +126,6 @@ impl MockGeminiClient {
     /// Get the number of times generate() was called.
     pub fn call_count(&self) -> usize {
         *self.call_count.lock().unwrap()
-    }
-
-    /// Reset the call count to zero.
-    pub fn reset_call_count(&self) {
-        *self.call_count.lock().unwrap() = 0;
     }
 
     /// Get the next response based on the configured behavior.

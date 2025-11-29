@@ -14,7 +14,7 @@
 //! # Example with External Implementation
 //!
 //! ```rust,no_run
-//! use botticelli_server::{ServerClient, ServerConfig};
+//! use botticelli_server::{ServerClient, ServerConfigBuilder};
 //! // Server implementation from external crate:
 //! // use botticelli_mistral::{MistralLauncher, MistralConfig, MistralModelManager, MistralModelSpec};
 //! // use botticelli_server::{InferenceServer, ServerLauncher, ModelManagerTrait};
@@ -22,7 +22,10 @@
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!     // Assuming server is already running at localhost:8080
-//!     let config = ServerConfig::new("http://localhost:8080", "mistral-7b");
+//!     let config = ServerConfigBuilder::default()
+//!         .base_url("http://localhost:8080")
+//!         .model("mistral-7b")
+//!         .build()?;
 //!     let client = ServerClient::new(config);
 //!
 //!     // Use client to interact with the server...
@@ -67,7 +70,7 @@ pub use bots::{
 };
 pub use botticelli_error::{ServerError, ServerErrorKind};
 pub use client::ServerClient;
-pub use config::ServerConfig;
+pub use config::{ServerConfig, ServerConfigBuilder};
 pub use metrics::{
     BotMetrics, MetricsCollector, MetricsSnapshot, NarrativeMetrics, PipelineMetrics, ServerMetrics,
 };

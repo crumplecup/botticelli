@@ -20,7 +20,7 @@ async fn test_streaming_basic() -> botticelli_error::BotticelliResult<()> {
 
     let client = GeminiClient::new()?;
 
-    let request = create_test_request("Say 'ok'", None, Some(10))?;
+    let request = create_test_request("Say 'ok'", None, Some(10));
 
     let mut stream = client.generate_stream(&request).await?;
 
@@ -69,7 +69,7 @@ async fn test_streaming_with_standard_model() -> botticelli_error::BotticelliRes
     let client = GeminiClient::new()?;
 
     // Explicitly use standard flash model
-    let request = create_test_request("Say 'ok'", Some("gemini-2.0-flash".to_string()), Some(10))?;
+    let request = create_test_request("Say 'ok'", Some("gemini-2.0-flash".to_string()), Some(10));
 
     let mut stream = client.generate_stream(&request).await?;
 
@@ -112,7 +112,7 @@ async fn test_streaming_with_live_model() -> botticelli_error::BotticelliResult<
         "Say 'ok'",
         Some("gemini-2.5-flash-live".to_string()),
         Some(10),
-    )?;
+    );
 
     let mut stream = client.generate_stream(&request).await?;
 
@@ -150,7 +150,7 @@ async fn test_streaming_finish_reasons() -> botticelli_error::BotticelliResult<(
 
     let client = GeminiClient::new()?;
 
-    let request = create_test_request("Say 'ok'", None, Some(10))?;
+    let request = create_test_request("Say 'ok'", None, Some(10));
 
     let mut stream = client.generate_stream(&request).await?;
 
@@ -184,7 +184,7 @@ async fn test_streaming_vs_non_streaming_consistency() -> botticelli_error::Bott
 
     let client = GeminiClient::new()?;
 
-    let request = create_test_request("Say 'ok'", None, Some(10))?;
+    let request = create_test_request("Say 'ok'", None, Some(10));
 
     // Get streaming response
     let mut stream = client.generate_stream(&request).await?;
@@ -193,7 +193,7 @@ async fn test_streaming_vs_non_streaming_consistency() -> botticelli_error::Bott
     while let Some(chunk_result) = stream.next().await {
         let chunk = chunk_result?;
         if let Output::Text(t) = &chunk.content {
-            streaming_text.push_str(t);
+            streaming_text.push_str(&t);
         }
         if chunk.is_final {
             break;
@@ -248,7 +248,7 @@ async fn test_rate_limit_comparison() -> botticelli_error::BotticelliResult<()> 
     // Try 3 requests to standard model
     let mut standard_success = 0;
     for i in 0..3 {
-        let request = create_test_request("ok", Some("gemini-2.0-flash".to_string()), Some(10))?;
+        let request = create_test_request("ok", Some("gemini-2.0-flash".to_string()), Some(10));
 
         match client.generate_stream(&request).await {
             Ok(mut stream) => {
@@ -274,7 +274,7 @@ async fn test_rate_limit_comparison() -> botticelli_error::BotticelliResult<()> 
     let mut live_success = 0;
     for i in 0..3 {
         let request =
-            create_test_request("ok", Some("gemini-2.0-flash-live".to_string()), Some(10))?;
+            create_test_request("ok", Some("gemini-2.0-flash-live".to_string()), Some(10));
 
         match client.generate_stream(&request).await {
             Ok(mut stream) => {

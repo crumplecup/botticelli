@@ -28,8 +28,7 @@ impl SkillOutputBuilder {
     ///
     /// Returns error if required fields are missing.
     pub fn build(&self) -> Result<SkillOutput, String> {
-        self.build_internal()
-            .map_err(|e| e.to_string())
+        self.build_internal().map_err(|e| e.to_string())
     }
 }
 

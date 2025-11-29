@@ -4,49 +4,6 @@ use botticelli_actor::{
     ActorConfigBuilder, ActorError, ActorErrorKind, ExecutionConfigBuilder, SkillInfoBuilder,
 };
 
-/// Skill that always fails with unrecoverable errors.
-#[allow(dead_code)]
-struct UnrecoverableErrorSkill;
-
-#[async_trait]
-impl Skill for UnrecoverableErrorSkill {
-    fn name(&self) -> &str {
-        "unrecoverable_error"
-    }
-
-    fn description(&self) -> &str {
-        "Skill that always fails with unrecoverable errors"
-    }
-
-    async fn execute(&self, _context: &SkillContext) -> Result<SkillOutput, ActorError> {
-        Err(ActorError::new(ActorErrorKind::AuthenticationFailed(
-            "Authentication failed".to_string(),
-        )))
-    }
-}
-
-/// Skill that succeeds immediately.
-struct SuccessSkill;
-
-#[async_trait]
-impl Skill for SuccessSkill {
-    fn name(&self) -> &str {
-        "success"
-    }
-
-    fn description(&self) -> &str {
-        "Skill that always succeeds"
-    }
-
-    async fn execute(&self, _context: &SkillContext) -> Result<SkillOutput, ActorError> {
-        Ok(SkillOutputBuilder::default()
-            .skill_name(self.name())
-            .data(serde_json::json!({"status": "success"}))
-            .build()
-            .expect("Valid skill output"))
-    }
-}
-
 #[test]
 fn test_recoverable_error_classification() {
     // Test that error kinds are correctly classified as recoverable
@@ -88,8 +45,8 @@ fn test_skill_info_builder() {
         .build()
         .expect("Valid skill info");
 
-    assert_eq!(info.name, "test_skill");
-    assert_eq!(info.description, "A test skill");
+    assert_eq!(info.name(), "test_skill");
+    assert_eq!(info.description(), "A test skill");
 }
 
 #[test]

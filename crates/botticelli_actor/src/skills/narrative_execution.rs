@@ -1,6 +1,8 @@
 //! Narrative execution skill for running narrative workflows.
 
-use crate::{ActorError, ActorErrorKind, Skill, SkillContext, SkillOutput, SkillOutputBuilder, SkillResult};
+use crate::{
+    ActorError, ActorErrorKind, Skill, SkillContext, SkillOutput, SkillOutputBuilder, SkillResult,
+};
 use async_trait::async_trait;
 use botticelli_database::{DatabaseTableQueryRegistry, TableQueryExecutor, establish_connection};
 use botticelli_models::GeminiClient;
