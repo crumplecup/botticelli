@@ -70,11 +70,13 @@ Implement production-grade observability by bridging our existing `tracing` inst
 **Dependencies:**
 ```toml
 [dependencies]
-opentelemetry = "0.28"
-opentelemetry-sdk = "0.28"
-opentelemetry-otlp = { version = "0.28", features = ["tonic", "logs"] }
-opentelemetry-appender-tracing = "0.28"
-opentelemetry-semantic-conventions = "0.28"
+opentelemetry = "0.31"
+opentelemetry-sdk = "0.31"
+opentelemetry-stdout = "0.31"  # For development/testing
+opentelemetry-otlp = { version = "0.31", features = ["tonic", "logs"] }  # For production
+opentelemetry-appender-tracing = "0.31"
+opentelemetry-semantic-conventions = "0.31"
+tracing-opentelemetry = "0.22"  # Note: version mismatch with OTel is normal
 ```
 
 **Code Changes:**
@@ -136,13 +138,20 @@ pub fn init_telemetry(
         .with_resource(resource)
         .install_batch(Tokio)?;
 
-    // Bridge tracing to OpenTelemetry
-    let otel_layer = OpenTelemetryTracingBridge::new(&logger_provider);
+    // Create tracer for spans
+    let tracer = tracer_provider.tracer("botticelli");
+    
+    // Create tracing-opentelemetry layer for spans
+    let telemetry_layer = tracing_opentelemetry::layer().with_tracer(tracer);
+    
+    // Create log bridge layer
+    let otel_log_layer = OpenTelemetryTracingBridge::new(&logger_provider);
 
     // Initialize subscriber (keep console output for dev)
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer())
-        .with(otel_layer)
+        .with(telemetry_layer)          // Spans to OTel
+        .with(otel_log_layer)            // Logs to OTel
         .init();
 
     Ok(TelemetryGuard {
@@ -459,11 +468,23 @@ After full implementation:
 4. **Alerting:** Who gets paged for what failures?
 5. **Cost:** What's the budget for observability infrastructure?
 
-## Next Steps
+## Implementation Status
 
-1. [ ] Review and approve this plan
-2. [ ] Create feature branch: `feature/opentelemetry-integration`
-3. [ ] Implement Phase 1 (basic export)
+### Phase 0: Foundation (COMPLETED)
+- ✅ Added `observability` feature flag
+- ✅ Added OpenTelemetry dependencies (v0.31)
+- ✅ Created `telemetry` module placeholder
+- ⚠️ **Blocker**: OpenTelemetry v0.31 has breaking API changes from v0.28 docs
+  - Need to research current v0.31+ API patterns
+  - Pipeline builders have different signatures
+  - Runtime and provider APIs changed
+  - See: https://github.com/open-telemetry/opentelemetry-rust/releases
+
+### Next Steps
+
+1. [ ] Research OpenTelemetry Rust v0.31 API changes
+2. [ ] Find working examples for v0.31 OTLP export
+3. [ ] Update telemetry.rs with correct v0.31 implementation
 4. [ ] Test locally with Jaeger
 5. [ ] Add metrics collection (Phase 2)
 6. [ ] Deploy SigNoz staging environment

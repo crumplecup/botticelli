@@ -94,3 +94,7 @@ pub use botticelli_social::*;
 
 #[cfg(feature = "tui")]
 pub use botticelli_tui::*;
+
+// OpenTelemetry telemetry module
+#[cfg(feature = "observability")]
+pub mod telemetry;

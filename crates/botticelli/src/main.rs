@@ -8,6 +8,8 @@
 use clap::Parser;
 
 mod cli;
+#[cfg(feature = "observability")]
+mod observability;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -29,17 +31,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse command-line arguments
     let cli = Cli::parse();
 
-    // Initialize tracing
-    let log_level = if cli.verbose {
-        tracing::Level::DEBUG
-    } else {
-        tracing::Level::INFO
-    };
+    // Initialize observability
+    #[cfg(feature = "observability")]
+    {
+        observability::init_observability()?;
+    }
 
-    tracing_subscriber::fmt()
-        .with_max_level(log_level)
-        .with_target(false)
-        .init();
+    #[cfg(not(feature = "observability"))]
+    {
+        let log_level = if cli.verbose {
+            tracing::Level::DEBUG
+        } else {
+            tracing::Level::INFO
+        };
+
+        tracing_subscriber::fmt()
+            .with_max_level(log_level)
+            .with_target(false)
+            .init();
+    }
 
     // Execute the requested command
     match cli.command {
@@ -127,6 +137,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             handle_server_command(config, only).await?;
         }
     }
+
+    // Graceful shutdown of observability
+    #[cfg(feature = "observability")]
+    observability::shutdown_observability();
 
     Ok(())
 }

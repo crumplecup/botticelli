@@ -35,10 +35,18 @@ dirs = { workspace = true }
 ractor = { workspace = true, optional = true }
 diesel = { workspace = true, optional = true }
 
+# OpenTelemetry dependencies (optional)
+opentelemetry = { version = "0.31", optional = true }
+opentelemetry_sdk = { version = "0.31", optional = true }
+opentelemetry-otlp = { version = "0.31", features = ["tonic", "logs"], optional = true }
+opentelemetry-appender-tracing = { version = "0.31", optional = true }
+
 # TUI dependencies (optional, only when both tui and server features are enabled)
 ratatui = { version = "0.29", optional = true }
 crossterm = { version = "0.29", optional = true }
 dotenvy.workspace = true
+opentelemetry-stdout = { version = "0.31", optional = true }
+tracing-opentelemetry = { version = "0.22", optional = true }
 
 [features]
 default = []
@@ -58,6 +66,14 @@ tui = ["botticelli_tui", "botticelli_database", "dep:ratatui", "dep:crossterm"]
 # Bot server feature (generation/curation/posting actors)
 bots = ["botticelli_bot", "gemini", "database", "discord", "dep:diesel"]
 
+# Observability feature (OpenTelemetry integration)
+observability = [
+  "dep:opentelemetry",
+  "dep:opentelemetry_sdk",
+  "dep:opentelemetry-stdout",
+  "dep:tracing-opentelemetry",
+]
+
 # Convenience feature for all providers
 all-providers = ["gemini"]
 
@@ -73,6 +89,8 @@ local = [
 
 # Convenience feature for all optional features
 all = ["gemini", "database", "discord", "tui", "bots"]
+opentelemetry-stdout = ["dep:opentelemetry-stdout"]
+tracing-opentelemetry = ["dep:tracing-opentelemetry"]
 
 [dev-dependencies]
 dotenvy = { workspace = true }
