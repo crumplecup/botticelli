@@ -8,6 +8,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod api;
 mod config;
 mod curation;
 mod generation;
@@ -15,9 +16,10 @@ mod metrics;
 mod posting;
 mod server;
 
+pub use api::{ApiState, create_router};
 pub use config::{BotConfig, BotSchedule, CurationConfig, GenerationConfig, PostingConfig};
 pub use curation::{CurationBot, CurationMessage};
 pub use generation::{GenerationBot, GenerationMessage};
-pub use metrics::BotMetrics;
+pub use metrics::{BotMetricSnapshot, BotMetrics, MetricsSnapshot};
 pub use posting::{PostingBot, PostingMessage};
 pub use server::BotServer;

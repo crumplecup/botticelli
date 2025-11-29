@@ -56,12 +56,14 @@ pub async fn handle_server_command(
 
     info!("Starting bot server with configured intervals");
 
+    // Start server with metrics on port 9090
     server
-        .start()
+        .start(Some(9090))
         .await
         .map_err(|e| ServerError::new(ServerErrorKind::ServerStartFailed(e.to_string())))?;
 
-    info!("Bot server running. Press Ctrl+C to stop.");
+    info!("Bot server running. Metrics available at http://localhost:9090/metrics");
+    info!("Press Ctrl+C to stop.");
 
     // Keep server running
     tokio::signal::ctrl_c()

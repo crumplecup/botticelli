@@ -1,11 +1,14 @@
 use crate::{
-    CurationBot, CurationBotArgs, CurationMessage, GenerationBot, GenerationBotArgs,
-    GenerationMessage, PostingBot, PostingBotArgs, PostingMessage,
+    create_metrics_router, ApiState, CurationBot, CurationBotArgs, CurationMessage, GenerationBot,
+    GenerationBotArgs, GenerationMessage, MetricsCollector, PostingBot, PostingBotArgs,
+    PostingMessage,
 };
 use botticelli_error::{BotticelliError, BotticelliResult, ServerError, ServerErrorKind};
 use ractor::{Actor, ActorRef};
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::task::JoinHandle;
 use tracing::{error, info, instrument};
 
 /// Bot server that orchestrates generation, curation, and posting actors.
@@ -13,27 +16,63 @@ pub struct BotServer {
     generation_ref: Option<ActorRef<GenerationMessage>>,
     curation_ref: Option<ActorRef<CurationMessage>>,
     posting_ref: Option<ActorRef<PostingMessage>>,
+    metrics_collector: Arc<MetricsCollector>,
+    metrics_server_handle: Option<JoinHandle<()>>,
 }
 
 impl BotServer {
-    /// Creates a new bot server.
+    /// Creates a new bot server with metrics collection.
     pub fn new() -> Self {
         Self {
             generation_ref: None,
             curation_ref: None,
             posting_ref: None,
+            metrics_collector: Arc::new(MetricsCollector::new()),
+            metrics_server_handle: None,
         }
     }
 
-    /// Starts all bots with their respective intervals.
+    /// Gets a reference to the metrics collector.
+    pub fn metrics(&self) -> Arc<MetricsCollector> {
+        Arc::clone(&self.metrics_collector)
+    }
+
+    /// Starts all bots with their respective intervals and the metrics HTTP server.
     #[instrument(skip(self))]
     pub async fn start(
         &mut self,
         generation_interval: Duration,
         curation_interval: Duration,
         posting_interval: Duration,
+        metrics_port: Option<u16>,
     ) -> BotticelliResult<()> {
         info!("Starting bot server");
+
+        // Start metrics HTTP server if port is provided
+        if let Some(port) = metrics_port {
+            info!(port = port, "Starting metrics HTTP server");
+            let state = ApiState::new(Arc::clone(&self.metrics_collector));
+            let app = create_metrics_router(state);
+            let addr = format!("0.0.0.0:{}", port);
+            
+            let listener = tokio::net::TcpListener::bind(&addr)
+                .await
+                .map_err(|e| {
+                    error!(error = ?e, addr = %addr, "Failed to bind metrics server");
+                    BotticelliError::from(ServerError::new(ServerErrorKind::ServerStartFailed(
+                        format!("Failed to bind metrics server: {}", e),
+                    )))
+                })?;
+
+            let handle = tokio::spawn(async move {
+                if let Err(e) = axum::serve(listener, app).await {
+                    error!(error = ?e, "Metrics server error");
+                }
+            });
+
+            self.metrics_server_handle = Some(handle);
+            info!(port = port, "Metrics HTTP server started");
+        }
 
         // Define narrative paths (relative to workspace root)
         let narratives_dir = PathBuf::from("./crates/botticelli_narrative/narratives/discord");

@@ -1,5 +1,6 @@
 //! Metrics collection for bot operations.
 
+use serde::Serialize;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -189,4 +190,52 @@ impl BotMetrics {
         let successes = total_executions.saturating_sub(total_failures);
         successes as f64 / total_executions as f64
     }
+
+    /// Creates a serializable snapshot of current metrics.
+    pub fn snapshot(&self) -> MetricsSnapshot {
+        MetricsSnapshot {
+            generation: BotMetricSnapshot {
+                executions: self.generation_executions(),
+                failures: self.generation_failures(),
+                seconds_since_success: self
+                    .generation_time_since_success()
+                    .map(|d| d.as_secs()),
+            },
+            curation: BotMetricSnapshot {
+                executions: self.curation_executions(),
+                failures: self.curation_failures(),
+                seconds_since_success: self.curation_time_since_success().map(|d| d.as_secs()),
+            },
+            posting: BotMetricSnapshot {
+                executions: self.posting_executions(),
+                failures: self.posting_failures(),
+                seconds_since_success: self.posting_time_since_success().map(|d| d.as_secs()),
+            },
+            overall_success_rate: self.overall_success_rate(),
+        }
+    }
+}
+
+/// Serializable snapshot of bot metrics.
+#[derive(Debug, Clone, Serialize)]
+pub struct MetricsSnapshot {
+    /// Generation bot metrics
+    pub generation: BotMetricSnapshot,
+    /// Curation bot metrics
+    pub curation: BotMetricSnapshot,
+    /// Posting bot metrics
+    pub posting: BotMetricSnapshot,
+    /// Overall success rate across all bots
+    pub overall_success_rate: f64,
+}
+
+/// Serializable snapshot of individual bot metrics.
+#[derive(Debug, Clone, Serialize)]
+pub struct BotMetricSnapshot {
+    /// Number of executions
+    pub executions: u64,
+    /// Number of failures
+    pub failures: u64,
+    /// Seconds since last success
+    pub seconds_since_success: Option<u64>,
 }

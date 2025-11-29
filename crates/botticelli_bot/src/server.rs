@@ -45,9 +45,37 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
     }
 
     /// Starts the bot server and all bot actors.
+    ///
+    /// Optionally starts a metrics HTTP server on the specified port.
     #[instrument(skip(self))]
-    pub async fn start(self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn start(self, metrics_port: Option<u16>) -> Result<(), Box<dyn std::error::Error>> {
         info!("Starting bot server");
+
+        // Start metrics HTTP server if requested
+        if let Some(port) = metrics_port {
+            let metrics = Arc::clone(&self.metrics);
+            tokio::spawn(async move {
+                let state = crate::ApiState::new(metrics);
+                let app = crate::create_router(state);
+                let addr = format!("0.0.0.0:{}", port);
+                
+                info!(port = port, "Starting metrics HTTP server");
+                
+                let listener = match tokio::net::TcpListener::bind(&addr).await {
+                    Ok(l) => l,
+                    Err(e) => {
+                        error!(error = ?e, "Failed to bind metrics server");
+                        return;
+                    }
+                };
+
+                if let Err(e) = axum::serve(listener, app).await {
+                    error!(error = ?e, "Metrics server error");
+                }
+            });
+            
+            info!(port = port, "Metrics HTTP server started at http://0.0.0.0:{}/metrics", port);
+        }
 
         // Create channels
         let (gen_tx, gen_rx) = mpsc::channel(32);

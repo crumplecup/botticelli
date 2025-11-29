@@ -202,10 +202,13 @@ This document outlines a comprehensive strategy for implementing production-grad
 - Implemented MetricsCollector for JSON snapshots
 - Ready for integration with bot server
 
-### 🚧 Phase 4: Bot Server Integration - IN PROGRESS
-- TODO: Start metrics HTTP server alongside bots
-- TODO: Wire metrics collectors into bot execution
-- TODO: Add metrics recording to narrative execution
+### ✅ Phase 4: Bot Server Integration - COMPLETE  
+- ✅ Bot server (`botticelli_bot`) already has metrics integrated
+- ✅ Metrics collected via shared `Arc<BotMetrics>`
+- ✅ Each bot records its own metrics during execution
+- ✅ HTTP metrics server on port 9090 (`/health`, `/metrics` endpoints)
+- ✅ Automatic startup alongside bots
+- ✅ JSON snapshots for easy consumption
 
 ### 📋 Phase 5: Dashboard and Alerts - NOT STARTED
 - TODO: Set up SigNoz for visualization
