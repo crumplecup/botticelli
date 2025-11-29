@@ -12,6 +12,7 @@ mod message;
 mod output;
 mod request;
 mod role;
+mod telemetry;
 
 pub use budget::{BudgetConfig, BudgetConfigBuilder};
 pub use input::{HistoryRetention, Input, TableFormat};
@@ -20,3 +21,4 @@ pub use message::{Message, MessageBuilder};
 pub use output::{Output, ToolCall, ToolCallBuilder};
 pub use request::{GenerateRequest, GenerateRequestBuilder, GenerateResponse};
 pub use role::Role;
+pub use telemetry::{init_telemetry, shutdown_telemetry};
