@@ -16,8 +16,8 @@ derive_more = { workspace = true, features = ["display", "from"] }
 derive-getters = { workspace = true }
 derive_setters = { workspace = true }
 derive_builder = { workspace = true }
-opentelemetry = "0.27"
-opentelemetry_sdk = "0.27"
-opentelemetry-stdout = "0.27"
-tracing-opentelemetry = "0.28"
+opentelemetry = "0.31"
+opentelemetry_sdk = "0.31"
+opentelemetry-stdout = "0.31"
+tracing-opentelemetry = "0.32"
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }

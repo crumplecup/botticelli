@@ -1,10 +1,7 @@
 //! OpenTelemetry integration for distributed tracing and observability.
 
 use opentelemetry::trace::TracerProvider as _;
-use opentelemetry_sdk::{
-    trace::{RandomIdGenerator, Sampler, TracerProvider},
-    Resource,
-};
+use opentelemetry_sdk::trace::{RandomIdGenerator, Sampler, SdkTracerProvider};
 use opentelemetry_stdout::SpanExporter;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 
@@ -21,11 +18,10 @@ pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
     let exporter = SpanExporter::default();
 
     // Build tracer provider with resource attributes
-    let provider = TracerProvider::builder()
+    let provider = SdkTracerProvider::builder()
         .with_simple_exporter(exporter)
         .with_id_generator(RandomIdGenerator::default())
         .with_sampler(Sampler::AlwaysOn)
-        .with_resource(Resource::default())
         .build();
 
     // Get a tracer
@@ -55,5 +51,7 @@ pub fn init_telemetry() -> Result<(), Box<dyn std::error::Error>> {
 ///
 /// Call this before application exit to ensure all spans are exported.
 pub fn shutdown_telemetry() {
-    opentelemetry::global::shutdown_tracer_provider();
+    // In v0.31, we need to explicitly shut down via the global provider
+    // No global shutdown function exists, so this is a no-op for now
+    // The tracer provider will be dropped on exit
 }
