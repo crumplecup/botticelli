@@ -43,6 +43,6 @@ pub fn init_observability() -> Result<(), Box<dyn std::error::Error>> {
 ///
 /// This ensures all spans are flushed before exit
 pub fn shutdown_observability() {
-    // Shutdown the global tracer provider
-    opentelemetry::global::shutdown_tracer_provider();
+    // In v0.31, providers are dropped automatically and flush on drop
+    // No explicit shutdown needed for stdout exporter
 }

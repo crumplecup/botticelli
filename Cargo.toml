@@ -38,6 +38,7 @@ botticelli_interface = { path = "crates/botticelli_interface", version = "0.2.0"
 opentelemetry = "0.31"
 opentelemetry-otlp = { version = "0.31", features = ["tokio"] }
 opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
+opentelemetry-stdout = { version = "0.31", features = ["trace"] }
 tracing-opentelemetry = "0.32"
 
 # Internal crates (Phase 2 rate limiting)

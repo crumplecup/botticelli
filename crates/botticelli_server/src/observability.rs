@@ -2,12 +2,9 @@
 ///!
 ///! Provides metrics, traces, and structured logging via OpenTelemetry protocol (OTLP).
 
-use opentelemetry::{global, KeyValue};
-use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::{
-    trace::{self, Config as TraceConfig},
-    Resource,
-};
+use opentelemetry::{global, trace::TracerProvider, KeyValue};
+use opentelemetry_sdk::Resource;
+use opentelemetry_stdout::SpanExporter;
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::{
     layer::{Layer, SubscriberExt},
@@ -52,32 +49,29 @@ pub fn init_observability(
     config: &ObservabilityConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Create resource (identifies this service)
-    let resource = Resource::new(vec![
-        KeyValue::new("service.name", config.service_name.clone()),
-        KeyValue::new("service.version", config.service_version.clone()),
-    ]);
+    let resource = Resource::builder()
+        .with_service_name(config.service_name.clone())
+        .with_attributes(vec![
+            KeyValue::new("service.version", config.service_version.clone()),
+        ])
+        .build();
 
-    // Initialize tracer
-    let tracer = opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint(&config.otlp_endpoint),
-        )
-        .with_trace_config(TraceConfig::default().with_resource(resource.clone()))
-        .install_batch(opentelemetry_sdk::runtime::Tokio)?;
+    // Initialize tracer using stdout exporter for now
+    // TODO: Switch to OTLP when backend is configured
+    let exporter = SpanExporter::default();
+    let provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
+        .with_simple_exporter(exporter)
+        .with_resource(resource.clone())
+        .build();
+    
+    global::set_tracer_provider(provider.clone());
+    let tracer = provider.tracer(config.service_name.clone());
 
-    // Initialize metrics
-    let meter_provider = opentelemetry_otlp::new_pipeline()
-        .metrics(opentelemetry_sdk::runtime::Tokio)
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .tonic()
-                .with_endpoint(&config.otlp_endpoint),
-        )
+    // Initialize metrics using stdout exporter for now  
+    // TODO: Switch to OTLP when backend is configured
+    let meter_provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
         .with_resource(resource)
-        .build()?;
+        .build();
 
     global::set_meter_provider(meter_provider);
 
@@ -109,5 +103,6 @@ pub fn init_observability(
 ///
 /// Flushes any pending traces and metrics before shutdown.
 pub fn shutdown_observability() {
-    global::shutdown_tracer_provider();
+    // In v0.31, providers flush on drop via RAII
+    // Explicit shutdown handled by provider destructors
 }

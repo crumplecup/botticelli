@@ -35,25 +35,25 @@ impl BotMetrics {
             executions: meter
                 .u64_counter("bot.executions")
                 .with_description("Total bot executions")
-                .init(),
+                .build(),
             failures: meter
                 .u64_counter("bot.failures")
                 .with_description("Total bot failures")
-                .init(),
+                .build(),
             duration: meter
                 .f64_histogram("bot.duration")
                 .with_unit("seconds")
                 .with_description("Bot execution duration")
-                .init(),
+                .build(),
             queue_depth: meter
                 .u64_gauge("bot.queue_depth")
                 .with_description("Pending content count in queue")
-                .init(),
+                .build(),
             time_since_success: meter
                 .u64_gauge("bot.time_since_success")
                 .with_unit("seconds")
                 .with_description("Time since last successful execution")
-                .init(),
+                .build(),
         }
     }
 
@@ -110,25 +110,25 @@ impl NarrativeMetrics {
             executions: meter
                 .u64_counter("narrative.executions")
                 .with_description("Narrative execution count")
-                .init(),
+                .build(),
             duration: meter
                 .f64_histogram("narrative.duration")
                 .with_unit("seconds")
                 .with_description("Narrative execution duration")
-                .init(),
+                .build(),
             act_duration: meter
                 .f64_histogram("narrative.act.duration")
                 .with_unit("seconds")
                 .with_description("Act execution duration")
-                .init(),
+                .build(),
             json_success: meter
                 .u64_counter("narrative.json.success")
                 .with_description("JSON extraction successes")
-                .init(),
+                .build(),
             json_failures: meter
                 .u64_counter("narrative.json.failures")
                 .with_description("JSON extraction failures")
-                .init(),
+                .build(),
         }
     }
 
@@ -189,20 +189,20 @@ impl PipelineMetrics {
             generated: meter
                 .u64_counter("pipeline.generated")
                 .with_description("Posts generated")
-                .init(),
+                .build(),
             curated: meter
                 .u64_counter("pipeline.curated")
                 .with_description("Posts curated")
-                .init(),
+                .build(),
             published: meter
                 .u64_counter("pipeline.published")
                 .with_description("Posts published")
-                .init(),
+                .build(),
             stage_latency: meter
                 .f64_histogram("pipeline.stage.latency")
                 .with_unit("seconds")
                 .with_description("Pipeline stage latency")
-                .init(),
+                .build(),
         }
     }
 

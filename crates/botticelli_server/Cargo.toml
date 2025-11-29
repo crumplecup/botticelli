@@ -35,6 +35,7 @@ diesel = { workspace = true }
 opentelemetry = { workspace = true }
 opentelemetry-otlp = { workspace = true }
 opentelemetry_sdk = { workspace = true }
+opentelemetry-stdout = { workspace = true }
 tracing-opentelemetry = { workspace = true }
 
 [dev-dependencies]
