@@ -1,73 +1,49 @@
 # Inline Test Module Cleanup
 
-## Issue
+## Overview
 
-We have inline `#[cfg(test)] mod tests` blocks in 14 source files, violating CLAUDE.md policy that all tests must be in `tests/` directories.
-
-## Violations by Crate
-
-### botticelli_server (1 file)
-- `src/schedule.rs`
-
-### botticelli_core (1 file)
-- `src/budget.rs`
-
-### botticelli_database (3 files)
-- `src/schema_docs.rs`
-- `src/schema_inference.rs`
-- `src/schema_reflection.rs`
-
-### botticelli_models (4 files)
-- `tests/test_utils/mock_gemini.rs` (acceptable - already in tests/)
-- `src/gemini/live_client.rs`
-- `src/gemini/live_rate_limit.rs`
-- `src/gemini/live_protocol.rs`
-
-### botticelli_social (1 file)
-- `src/database/commands.rs`
-
-### botticelli_narrative (5 files)
-- `src/table_reference.rs`
-- `src/state.rs`
-- `src/processor.rs`
-- `src/extraction.rs`
-- `src/core.rs`
-
-## Migration Strategy
-
-For each file:
-
-1. **Extract tests** - Move test functions to `tests/{module}_test.rs`
-2. **Public API** - Make tested items `pub` or `pub(crate)` as needed
-3. **Test helpers** - Move to `tests/test_utils/`
-4. **Verify** - Run `just check-all` to ensure no regressions
-
-## Benefits
-
-- ✅ Centralized test location
-- ✅ Cleaner source files
-- ✅ No feature gate confusion
-- ✅ Better CI organization
-- ✅ Follows CLAUDE.md standards
+Per CLAUDE.md guidelines, all tests must be in `tests/` directories at crate roots, not inline `#[cfg(test)] mod tests` within source files.
 
 ## Status
 
-**In Progress** - Migrating inline test modules
-
 ### Completed
-- ✅ `botticelli_core/src/budget.rs` → `tests/budget_test.rs` (verified passing)
+- ✅ botticelli_core/src/rate_limit.rs → tests/rate_limit_test.rs (already done)
+- ✅ botticelli_server/src/schedule.rs → tests/schedule_test.rs
 
 ### Remaining
-- ⏳ `botticelli_database/src/schema_docs.rs`
-- ⏳ `botticelli_database/src/schema_inference.rs`
-- ⏳ `botticelli_database/src/schema_reflection.rs`
-- ⏳ `botticelli_models/src/gemini/live_client.rs`
-- ⏳ `botticelli_models/src/gemini/live_rate_limit.rs`
-- ⏳ `botticelli_models/src/gemini/live_protocol.rs`
-- ⏳ `botticelli_server/src/schedule.rs`
-- ⏳ `botticelli_social/src/database/commands.rs`
-- ⏳ `botticelli_narrative/src/table_reference.rs`
-- ⏳ `botticelli_narrative/src/state.rs`
-- ⏳ `botticelli_narrative/src/processor.rs`
-- ⏳ `botticelli_narrative/src/extraction.rs`
-- ⏳ `botticelli_narrative/src/core.rs` (test helper method)
+
+**botticelli_database:**
+- `src/schema_docs.rs` - mod tests
+- `src/schema_reflection.rs` - mod tests  
+- `src/schema_inference.rs` - mod tests
+
+**botticelli_models:**
+- `src/gemini/live_protocol.rs` - mod tests
+- `src/gemini/live_rate_limit.rs` - mod tests
+- `src/gemini/live_client.rs` - mod tests
+
+**botticelli_narrative:**
+- `src/extraction.rs` - mod tests
+- `src/processor.rs` - mod tests
+- `src/state.rs` - mod tests
+- `src/table_reference.rs` - mod tests
+
+**botticelli_social:**
+- `src/database/commands.rs` - mod tests
+
+## Process
+
+For each file:
+1. Extract test module to `tests/{module}_test.rs`
+2. Add necessary imports (use crate-level exports)
+3. Remove `#[cfg(test)] mod tests` from source
+4. Verify with `just check {package}`
+5. Commit with message: `refactor(tests): move {module} tests to tests/ directory`
+
+## Benefits
+
+- Cleaner source files (no test clutter)
+- Centralized test organization
+- Easier to find and maintain tests
+- Follows Rust best practices
+- Enforces crate-level API usage in tests
