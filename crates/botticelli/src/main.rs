@@ -8,8 +8,6 @@
 use clap::Parser;
 
 mod cli;
-#[cfg(feature = "observability")]
-mod observability;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -34,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize observability
     #[cfg(feature = "observability")]
     {
-        observability::init_observability()?;
+        botticelli::init_observability()?;
     }
 
     #[cfg(not(feature = "observability"))]
@@ -142,7 +140,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Graceful shutdown of observability
     #[cfg(feature = "observability")]
-    observability::shutdown_observability();
+    botticelli::shutdown_observability();
 
     Ok(())
 }

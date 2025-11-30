@@ -1,0 +1,66 @@
+# Botticelli Observability Stack
+# 
+# This docker-compose file sets up a complete observability stack for Botticelli:
+# - Jaeger: Distributed tracing and metrics collection
+# - PostgreSQL: Database for bot state persistence
+#
+# Usage with Podman:
+#   podman-compose up -d
+#
+# Usage with Docker:
+#   docker-compose up -d
+#
+# Access Jaeger UI: http://localhost:16686
+
+version: '3.8'
+
+services:
+  # Jaeger all-in-one: collector, query service, and UI
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: botticelli-jaeger
+    ports:
+      # Jaeger UI
+      - "16686:16686"
+      # OTLP gRPC receiver
+      - "4317:4317"
+      # OTLP HTTP receiver
+      - "4318:4318"
+      # Jaeger Thrift receiver (legacy)
+      - "14268:14268"
+      # Jaeger gRPC receiver (legacy)
+      - "14250:14250"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    networks:
+      - botticelli
+
+  # PostgreSQL database for bot state persistence
+  postgres:
+    image: postgres:16-alpine
+    container_name: botticelli-postgres
+    environment:
+      - POSTGRES_USER=botticelli
+      - POSTGRES_PASSWORD=botticelli
+      - POSTGRES_DB=botticelli
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - botticelli
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botticelli"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  botticelli:
+    driver: bridge
+
+volumes:
+  postgres_data:

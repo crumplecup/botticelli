@@ -36,6 +36,9 @@ botticelli_narrative = { path = "../botticelli_narrative", features = ["database
 botticelli_server = { path = "../botticelli_server" }
 botticelli_social = { path = "../botticelli_social", features = ["database", "discord"], optional = true }
 
+# Optional main crate for observability
+botticelli = { path = "../botticelli", optional = true, default-features = false }
+
 # Optional Discord platform support
 serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"], optional = true }
 
@@ -43,6 +46,8 @@ serenity = { version = "0.12", default-features = false, features = ["client", "
 default = []
 discord = ["serenity", "botticelli_social"]
 local = ["discord"]
+observability = ["botticelli", "botticelli/observability"]
+otel-otlp = ["observability", "botticelli/otel-otlp"]
 
 [[example]]
 name = "discord_poster"

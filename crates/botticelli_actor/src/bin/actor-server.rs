@@ -61,12 +61,24 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize tracing subscriber
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-        )
-        .init();
+    // Initialize observability (tracing + metrics + optional OTLP export)
+    #[cfg(feature = "observability")]
+    {
+        let config = botticelli::ObservabilityConfig::new("botticelli-actor-server")
+            .with_version(env!("CARGO_PKG_VERSION"));
+        botticelli::init_observability_with_config(config)?;
+        info!("Observability initialized (OTEL_EXPORTER={:?})", std::env::var("OTEL_EXPORTER").unwrap_or_else(|_| "stdout".to_string()));
+    }
+
+    // Fallback to basic tracing if observability feature not enabled
+    #[cfg(not(feature = "observability"))]
+    {
+        tracing_subscriber::fmt()
+            .with_env_filter(
+                EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+            )
+            .init();
+    }
 
     let args = Args::parse();
     info!("Starting Botticelli Actor Server");

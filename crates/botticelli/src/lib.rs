@@ -82,6 +82,16 @@ pub use botticelli_narrative::{
 pub use botticelli_rate_limit::*;
 pub use botticelli_storage::*;
 
+// Observability module (OpenTelemetry integration)
+#[cfg(feature = "observability")]
+pub mod observability;
+
+#[cfg(feature = "observability")]
+pub use observability::{
+    ExporterBackend, ObservabilityConfig, init_observability, init_observability_with_config,
+    shutdown_observability,
+};
+
 // Re-export optional crates based on features
 #[cfg(feature = "gemini")]
 pub use botticelli_models::*;
