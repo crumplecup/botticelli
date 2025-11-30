@@ -61,64 +61,93 @@ Traces will flow to Jaeger, and you'll see them in Grafana!
 
 The starter setup uses **trace-derived metrics** from Jaeger. For the specific metrics you want (LLM API failures, JSON parsing failures), you need to add **custom metrics** to your code.
 
-### Step 1: Add OpenTelemetry Metrics Dependency
+### Good News: You Already Have Metrics Infrastructure! ✅
 
-```toml
-# Cargo.toml
-[dependencies]
-opentelemetry = { version = "0.28", features = ["metrics"] }
-opentelemetry-otlp = { version = "0.31", features = ["metrics"], optional = true }
-opentelemetry_sdk = { version = "0.28", features = ["metrics"] }
-```
+Your codebase already has:
+- ✅ OpenTelemetry v0.31 configured in `crates/botticelli/src/observability.rs`
+- ✅ Metrics collection in `crates/botticelli_server/src/metrics.rs`
+- ✅ Automatic OTLP export when `OTEL_EXPORTER=otlp`
 
-### Step 2: Initialize Metrics in Your Code
+**Current metrics you already collect**:
+- `narrative.json.success` - JSON extraction successes
+- `narrative.json.failures` - JSON extraction failures
+- `narrative.executions` - Narrative execution count
+- `narrative.duration` - Narrative execution duration
+- `bot.executions` - Bot execution count
+- `bot.failures` - Bot failure count
 
-Add to `crates/botticelli_narrative/src/lib.rs`:
+### Step 1: Verify Metrics Export is Enabled
+
+Your observability is already initialized! Just make sure metrics are enabled:
 
 ```rust
-use opentelemetry::metrics::{Counter, Histogram, Meter};
-use opentelemetry::{global, KeyValue};
+// In your main.rs or server initialization:
+use botticelli::observability::{init_observability_with_config, ObservabilityConfig, ExporterBackend};
+
+// Initialize with OTLP and metrics enabled
+let config = ObservabilityConfig::new("bot-server")
+    .with_exporter(ExporterBackend::Otlp {
+        endpoint: "http://localhost:4317".to_string(),
+    })
+    .with_metrics(true);  // This is already the default!
+
+init_observability_with_config(config)?;
+```
+
+Or just use environment variables (easier):
+
+```bash
+export OTEL_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+cargo run --features otel-otlp
+```
+
+### Step 2: Add LLM API Metrics
+
+The one missing piece is LLM API call tracking. Add to `botticelli_models`:
+
+Create `crates/botticelli_models/src/metrics.rs`:
+
+```rust
+//! Metrics for LLM API calls.
+
+use opentelemetry::{global, metrics::{Counter, Histogram, Meter}, KeyValue};
 use std::sync::OnceLock;
 
-static METRICS: OnceLock<BotMetrics> = OnceLock::new();
+static METRICS: OnceLock<LlmMetrics> = OnceLock::new();
 
-pub struct BotMetrics {
-    pub llm_requests: Counter<u64>,
-    pub llm_errors: Counter<u64>,
-    pub json_parse_attempts: Counter<u64>,
-    pub json_parse_failures: Counter<u64>,
-    pub narrative_duration: Histogram<f64>,
+/// Metrics for LLM API interactions.
+pub struct LlmMetrics {
+    _meter: Meter,
+    pub requests: Counter<u64>,
+    pub errors: Counter<u64>,
+    pub duration: Histogram<f64>,
+    pub tokens_used: Counter<u64>,
 }
 
-impl BotMetrics {
+impl LlmMetrics {
     fn init() -> Self {
-        let meter = global::meter("botticelli");
+        let meter = global::meter("botticelli_llm");
         
         Self {
-            llm_requests: meter
-                .u64_counter("llm_requests_total")
+            _meter: meter.clone(),
+            requests: meter
+                .u64_counter("llm.requests")
                 .with_description("Total LLM API requests")
-                .init(),
-            
-            llm_errors: meter
-                .u64_counter("llm_errors_total")
+                .build(),
+            errors: meter
+                .u64_counter("llm.errors")
                 .with_description("Failed LLM API requests")
-                .init(),
-            
-            json_parse_attempts: meter
-                .u64_counter("json_parse_attempts_total")
-                .with_description("JSON parse attempts")
-                .init(),
-            
-            json_parse_failures: meter
-                .u64_counter("json_parse_failures_total")
-                .with_description("JSON parse failures")
-                .init(),
-            
-            narrative_duration: meter
-                .f64_histogram("narrative_duration_seconds")
-                .with_description("Narrative execution duration")
-                .init(),
+                .build(),
+            duration: meter
+                .f64_histogram("llm.duration")
+                .with_unit("seconds")
+                .with_description("LLM API call duration")
+                .build(),
+            tokens_used: meter
+                .u64_counter("llm.tokens")
+                .with_description("Total tokens used")
+                .build(),
         }
     }
     
@@ -128,131 +157,202 @@ impl BotMetrics {
 }
 ```
 
-### Step 3: Instrument Your Code
+### Step 3: Instrument LLM Calls
 
-**LLM API Calls** (in `botticelli_models`):
+Add to `crates/botticelli_models/src/lib.rs`:
 
 ```rust
-// In generate() method
-let metrics = BotMetrics::get();
-
-metrics.llm_requests.add(1, &[
-    KeyValue::new("model", model.to_string()),
-]);
-
-match result {
-    Ok(response) => response,
-    Err(e) => {
-        metrics.llm_errors.add(1, &[
-            KeyValue::new("model", model.to_string()),
-            KeyValue::new("error_type", error_type(&e)),
-        ]);
-        return Err(e);
-    }
-}
+mod metrics;
+pub use metrics::LlmMetrics;
 ```
 
-**JSON Parsing** (in `botticelli_narrative/src/extraction.rs`):
+In your Gemini client `generate()` method:
 
 ```rust
-pub fn parse_json<T: DeserializeOwned>(json_str: &str) -> Result<T, Error> {
-    let metrics = BotMetrics::get();
-    
-    metrics.json_parse_attempts.add(1, &[]);
-    
-    match serde_json::from_str(json_str) {
-        Ok(value) => Ok(value),
-        Err(e) => {
-            metrics.json_parse_failures.add(1, &[
-                KeyValue::new("error", "parse_error"),
-            ]);
-            Err(Error::from(e))
-        }
-    }
-}
-```
+use crate::LlmMetrics;
 
-**Narrative Execution** (in `botticelli_narrative/src/executor.rs`):
-
-```rust
-pub async fn execute<N>(&self, narrative: &N) -> Result<NarrativeExecution>
-where N: NarrativeProvider
-{
+pub async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse> {
+    let metrics = LlmMetrics::get();
     let start = std::time::Instant::now();
-    let metrics = BotMetrics::get();
     
-    let result = self.execute_impl(narrative).await;
+    let labels = &[
+        KeyValue::new("model", request.model().to_string()),
+        KeyValue::new("provider", "gemini"),
+    ];
+    
+    metrics.requests.add(1, labels);
+    
+    let result = self.generate_impl(request).await;
     
     let duration = start.elapsed().as_secs_f64();
-    metrics.narrative_duration.record(duration, &[
-        KeyValue::new("narrative", narrative.name().to_string()),
-        KeyValue::new("success", result.is_ok().to_string()),
-    ]);
+    metrics.duration.record(duration, labels);
+    
+    match &result {
+        Ok(response) => {
+            // Track token usage if available
+            if let Some(usage) = response.usage() {
+                metrics.tokens_used.add(
+                    usage.total_tokens as u64,
+                    &[KeyValue::new("model", request.model().to_string())]
+                );
+            }
+        }
+        Err(e) => {
+            let error_labels = &[
+                KeyValue::new("model", request.model().to_string()),
+                KeyValue::new("provider", "gemini"),
+                KeyValue::new("error_type", classify_error(e)),
+            ];
+            metrics.errors.add(1, error_labels);
+        }
+    }
     
     result
 }
-```
 
-### Step 4: Export Metrics
-
-Add metrics export to your observability initialization (where you init tracing):
-
-```rust
-use opentelemetry_otlp::WithExportConfig;
-use opentelemetry_sdk::metrics::SdkMeterProvider;
-
-pub fn init_observability() -> Result<()> {
-    // Existing trace setup...
-    
-    // Add metrics
-    let metrics_exporter = opentelemetry_otlp::new_exporter()
-        .tonic()
-        .with_endpoint("http://localhost:4317");
-    
-    let meter_provider = opentelemetry_otlp::new_pipeline()
-        .metrics(opentelemetry_sdk::runtime::Tokio)
-        .with_exporter(metrics_exporter)
-        .with_period(std::time::Duration::from_secs(10))
-        .build()?;
-    
-    global::set_meter_provider(meter_provider);
-    
-    Ok(())
+fn classify_error(e: &Error) -> String {
+    // Classify error: "rate_limit", "auth", "network", "unknown"
+    // Based on error type
+    "unknown".to_string()  // Implement based on your error types
 }
 ```
 
-### Step 5: Create Advanced Dashboards
+### Step 4: JSON Parsing Metrics (Already Done!)
 
-Once metrics are flowing, create dashboards in Grafana for:
+Good news: JSON parsing metrics are **already implemented** in `botticelli_server/src/metrics.rs`:
+
+```rust
+// Already exists!
+pub fn record_json_extraction(&self, narrative_name: &str, success: bool) {
+    let labels = &[KeyValue::new("narrative_name", narrative_name.to_string())];
+    if success {
+        self.json_success.add(1, labels);
+    } else {
+        self.json_failures.add(1, labels);
+    }
+}
+```
+
+Just make sure you're calling it in your extraction code!
+
+### Step 5: Verify Metrics are Flowing
+
+Your observability setup **already handles metrics export**! The code in `observability.rs` does this:
+
+```rust
+// This already exists in your codebase!
+fn init_metrics(resource: &Resource, exporter: &ExporterBackend) -> Result<...> {
+    match exporter {
+        ExporterBackend::Otlp { endpoint } => {
+            let exporter = opentelemetry_otlp::MetricExporter::builder()
+                .with_tonic()
+                .with_endpoint(endpoint.clone())
+                .build()?;
+
+            let reader = opentelemetry_sdk::metrics::PeriodicReader::builder(exporter)
+                .build();
+
+            let meter_provider = SdkMeterProvider::builder()
+                .with_reader(reader)
+                .with_resource(resource.clone())
+                .build();
+
+            global::set_meter_provider(meter_provider);
+        }
+        // ... stdout exporter for dev
+    }
+}
+```
+
+**To verify metrics are working:**
+
+1. Start the observability stack:
+   ```bash
+   podman-compose -f docker-compose.observability.yml up -d
+   ```
+
+2. Run your bot with OTLP export:
+   ```bash
+   OTEL_EXPORTER=otlp cargo run --release --features otel-otlp
+   ```
+
+3. Check Prometheus targets:
+   - Visit http://localhost:9090/targets
+   - Should see `jaeger` target UP
+
+4. Query metrics in Prometheus:
+   - Visit http://localhost:9090/graph
+   - Try query: `narrative_json_failures`
+   - Or: `bot_executions`
+
+### Step 6: Create Dashboards with Your Actual Metrics
+
+Once metrics are flowing, create dashboards in Grafana using **your actual metric names**:
 
 **LLM API Health Dashboard**:
 ```promql
-# Error rate
-rate(llm_errors_total[5m]) / rate(llm_requests_total[5m]) * 100
+# Error rate (after you add LlmMetrics)
+rate(llm_errors[5m]) / rate(llm_requests[5m]) * 100
 
 # Request rate by model
-sum(rate(llm_requests_total[1m])) by (model)
+sum(rate(llm_requests[1m])) by (model)
 
-# P95 latency (from spans)
-histogram_quantile(0.95, rate(narrative_duration_seconds_bucket[5m]))
+# P95 latency
+histogram_quantile(0.95, rate(llm_duration_bucket[5m]))
+
+# Token usage by model
+sum(rate(llm_tokens[1m])) by (model)
 ```
 
-**JSON Parsing Dashboard**:
+**JSON Parsing Dashboard** (using existing metrics):
 ```promql
 # Failure rate
-rate(json_parse_failures_total[5m]) / rate(json_parse_attempts_total[5m]) * 100
+rate(narrative_json_failures[5m]) / (rate(narrative_json_success[5m]) + rate(narrative_json_failures[5m])) * 100
 
-# Failure count by error type
-sum(rate(json_parse_failures_total[1m])) by (error)
+# Failure count by narrative
+sum(rate(narrative_json_failures[1m])) by (narrative_name)
+
+# Success count by narrative
+sum(rate(narrative_json_success[1m])) by (narrative_name)
 ```
 
-**Narrative Performance Dashboard**:
+**Narrative Performance Dashboard** (using existing metrics):
 ```promql
-# Execution time by narrative
-histogram_quantile(0.95, sum(rate(narrative_duration_seconds_bucket[5m])) by (le, narrative))
+# Execution time P95 by narrative
+histogram_quantile(0.95, rate(narrative_duration_bucket[5m]))
 
 # Success rate
-sum(rate(narrative_duration_seconds_count{success="true"}[5m])) / sum(rate(narrative_duration_seconds_count[5m]))
+sum(rate(narrative_executions{success="true"}[5m])) / sum(rate(narrative_executions[5m])) * 100
+
+# Act duration P95
+histogram_quantile(0.95, rate(narrative_act_duration_bucket[5m]))
+```
+
+**Bot Health Dashboard** (using existing metrics):
+```promql
+# Bot failure rate
+rate(bot_failures[5m]) / rate(bot_executions[5m]) * 100
+
+# Bot execution rate by type
+sum(rate(bot_executions[1m])) by (bot_type)
+
+# Queue depth
+bot_queue_depth
+
+# Time since last success
+bot_time_since_success
+```
+
+**Pipeline Dashboard** (using existing metrics):
+```promql
+# Content generation rate
+rate(pipeline_generated[5m])
+
+# Content publication rate
+rate(pipeline_published[5m])
+
+# Pipeline stage latency P95
+histogram_quantile(0.95, rate(pipeline_stage_latency_bucket[5m]))
 ```
 
 ## Dashboard Examples
@@ -311,29 +411,57 @@ expr: (rate(llm_errors_total[5m]) / rate(llm_requests_total[5m])) * 100 > 10
 
 3. Configure notification channels (email, Slack, Discord)
 
-## Current Limitations
+## What You Already Have vs What's Missing
 
-**Without custom metrics** (what you have now):
-- ✅ Individual trace inspection
-- ✅ Basic trace volume/error stats
-- ❌ No aggregated metrics per operation type
-- ❌ No custom business metrics
-- ❌ Limited historical analysis
+**✅ Already Implemented** (in your codebase):
+- ✅ OpenTelemetry v0.31 observability infrastructure
+- ✅ Automatic OTLP export (traces + metrics)
+- ✅ JSON parsing metrics (`narrative.json.success/failures`)
+- ✅ Narrative execution metrics (`narrative.executions/duration`)
+- ✅ Bot execution metrics (`bot.executions/failures/duration`)
+- ✅ Pipeline metrics (`pipeline.generated/curated/published`)
+- ✅ Queue depth tracking (`bot.queue_depth`)
 
-**With custom metrics** (after instrumentation):
-- ✅ All the above
-- ✅ Real-time dashboards
-- ✅ Alerting on thresholds
-- ✅ Historical trend analysis
-- ✅ Service-level objectives (SLOs)
+**❌ Missing** (need to add):
+- ❌ LLM API call metrics (`llm.requests/errors/duration`)
+- ❌ LLM token usage tracking (`llm.tokens`)
+- ❌ Error classification by type
+- ❌ Grafana dashboards (but infrastructure is ready!)
 
-## Next Steps
+**Your metrics are already being collected!** You just need to:
+1. Start the observability stack
+2. Run your bot with `OTEL_EXPORTER=otlp`
+3. Create Grafana dashboards with the PromQL queries above
 
-1. **Now**: Use the starter setup to explore Jaeger traces in Grafana
-2. **Phase 1**: Add basic metrics counters (5-10 key metrics)
-3. **Phase 2**: Build dashboards for those metrics
-4. **Phase 3**: Set up alerting rules
-5. **Phase 4**: Add advanced metrics (histograms, exemplars)
+## Next Steps (Revised Based on Your Code)
+
+### Immediate (5 minutes):
+```bash
+# Start the full stack
+podman-compose -f docker-compose.observability.yml up -d
+
+# Run bot with OTLP export
+OTEL_EXPORTER=otlp OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
+cargo run --release --features otel-otlp -p botticelli_server --bin bot-server
+
+# Check metrics are flowing
+open http://localhost:9090  # Query: narrative_json_failures
+open http://localhost:3000  # Grafana dashboards
+```
+
+### Short Term (1-2 hours):
+1. Add `LlmMetrics` to `botticelli_models` (code provided above)
+2. Instrument Gemini client `generate()` method
+3. Create custom Grafana dashboards using your actual metric names
+
+### Medium Term (this week):
+1. Build dashboards for:
+   - LLM API health (error rates, latency, token usage)
+   - JSON parsing success/failure rates
+   - Narrative execution performance
+   - Bot health and queue depth
+2. Set up alerting rules (LLM error rate > 10%, JSON parse failures spike, etc.)
+3. Add error classification (rate limit, auth, network, unknown)
 
 ## Troubleshooting
 
