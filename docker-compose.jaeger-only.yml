@@ -1,0 +1,39 @@
+# Botticelli Observability Stack - Jaeger Only
+# 
+# Use this if you already have PostgreSQL running locally.
+# This starts only Jaeger for distributed tracing.
+#
+# Usage with Podman:
+#   podman-compose -f docker-compose.jaeger-only.yml up -d
+#
+# Usage with Docker:
+#   docker-compose -f docker-compose.jaeger-only.yml up -d
+#
+# Access Jaeger UI: http://localhost:16686
+
+version: '3.8'
+
+services:
+  # Jaeger all-in-one: collector, query service, and UI
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: botticelli-jaeger
+    ports:
+      # Jaeger UI
+      - "16686:16686"
+      # OTLP gRPC receiver
+      - "4317:4317"
+      # OTLP HTTP receiver
+      - "4318:4318"
+      # Jaeger Thrift receiver (legacy)
+      - "14268:14268"
+      # Jaeger gRPC receiver (legacy)
+      - "14250:14250"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=info
+    restart: unless-stopped
+
+networks:
+  default:
+    name: botticelli

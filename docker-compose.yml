@@ -38,6 +38,8 @@ services:
       - botticelli
 
   # PostgreSQL database for bot state persistence
+  # NOTE: If you already have PostgreSQL running locally on port 5432,
+  # either comment out this service or change the port mapping below
   postgres:
     image: postgres:16-alpine
     container_name: botticelli-postgres
@@ -46,7 +48,8 @@ services:
       - POSTGRES_PASSWORD=botticelli
       - POSTGRES_DB=botticelli
     ports:
-      - "5432:5432"
+      # Changed from 5432:5432 to avoid conflicts with local PostgreSQL
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped

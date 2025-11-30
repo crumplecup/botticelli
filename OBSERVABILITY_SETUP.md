@@ -6,19 +6,27 @@ This guide shows how to set up distributed tracing and metrics collection for Bo
 
 ### 1. Start the Observability Stack
 
-Using Podman:
+**Option A: Jaeger Only** (if you already have PostgreSQL):
 ```bash
-podman-compose up -d
+# Podman
+podman-compose -f docker-compose.jaeger-only.yml up -d
+
+# Docker
+docker-compose -f docker-compose.jaeger-only.yml up -d
 ```
 
-Using Docker:
+**Option B: Full Stack** (Jaeger + PostgreSQL):
 ```bash
+# Podman
+podman-compose up -d
+
+# Docker
 docker-compose up -d
 ```
 
 This starts:
 - **Jaeger**: Distributed tracing UI on http://localhost:16686
-- **PostgreSQL**: Database for bot state persistence
+- **PostgreSQL**: Database for bot state persistence (port 5433 to avoid conflicts)
 
 ### 2. Configure Environment
 

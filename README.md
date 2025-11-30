@@ -309,8 +309,11 @@ Botticelli includes production-ready OpenTelemetry integration for distributed t
 Start the observability stack with Podman:
 
 ```bash
-# Start Jaeger and PostgreSQL
-podman-compose up -d
+# If you already have PostgreSQL running locally (port 5432):
+podman-compose -f docker-compose.jaeger-only.yml up -d
+
+# OR, if you need both Jaeger and PostgreSQL:
+podman-compose up -d  # PostgreSQL on port 5433
 
 # Configure environment
 export OTEL_EXPORTER=otlp
