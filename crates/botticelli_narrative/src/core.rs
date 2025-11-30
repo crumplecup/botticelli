@@ -386,3 +386,75 @@ impl NarrativeProvider for Narrative {
         self.source_path.as_deref()
     }
 }
+
+/// Source of a narrative for execution.
+///
+/// This enum handles both single narratives and multi-narrative files with composition.
+/// When a narrative uses composition (references other narratives), the full MultiNarrative
+/// context must be preserved to resolve those references during execution.
+#[derive(Debug, Clone)]
+pub enum NarrativeSource {
+    /// Single narrative without composition.
+    ///
+    /// Used when:
+    /// - Loading a single-narrative TOML file
+    /// - Extracting a narrative from multi-narrative file that doesn't use composition
+    Single(Narrative),
+
+    /// Multi-narrative with full context for composition.
+    ///
+    /// Used when a narrative has composition acts that reference other narratives
+    /// in the same file. Preserves the entire MultiNarrative to enable reference resolution.
+    MultiWithContext {
+        /// Complete MultiNarrative with all narratives from the file
+        multi: crate::MultiNarrative,
+        /// Name of the specific narrative to execute
+        execute_name: String,
+    },
+}
+
+impl NarrativeSource {
+    /// Get the primary narrative to execute.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the specified narrative name is not found in the MultiNarrative.
+    pub fn get_narrative(&self) -> Result<&Narrative, NarrativeError> {
+        match self {
+            Self::Single(n) => Ok(n),
+            Self::MultiWithContext {
+                multi,
+                execute_name,
+            } => multi.get_narrative(execute_name).ok_or_else(|| {
+                NarrativeError::new(NarrativeErrorKind::TomlParse(format!(
+                    "Narrative '{}' not found in MultiNarrative",
+                    execute_name
+                )))
+            }),
+        }
+    }
+
+    /// Get the full multi-narrative context (if available).
+    ///
+    /// Returns `Some(&MultiNarrative)` if this source has composition context,
+    /// or `None` for single narratives without composition.
+    pub fn get_multi_context(&self) -> Option<&crate::MultiNarrative> {
+        match self {
+            Self::Single(_) => None,
+            Self::MultiWithContext { multi, .. } => Some(multi),
+        }
+    }
+
+    /// Check if this source provides multi-narrative context.
+    pub fn has_composition_context(&self) -> bool {
+        matches!(self, Self::MultiWithContext { .. })
+    }
+
+    /// Get the name of the narrative being executed.
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Single(n) => n.name(),
+            Self::MultiWithContext { execute_name, .. } => execute_name,
+        }
+    }
+}

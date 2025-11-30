@@ -58,7 +58,7 @@ mod extraction;
 mod storage_actor;
 
 pub use carousel::{CarouselConfig, CarouselResult, CarouselState};
-pub use core::{Narrative, NarrativeMetadata, NarrativeToc};
+pub use core::{Narrative, NarrativeMetadata, NarrativeSource, NarrativeToc};
 pub use executor::{BotCommandRegistry, NarrativeExecutor};
 pub use history_retention::{
     AUTO_SUMMARY_THRESHOLD, apply_retention_to_inputs, should_auto_summarize, summarize_input,
