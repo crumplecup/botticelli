@@ -20,4 +20,4 @@ continue_on_error = true
 [skills.narrative_execution]
 enabled = true
 narrative_path = "crates/botticelli_narrative/narratives/discord/curate_and_approve.toml"
-# narrative_name not needed - using single narrative file
+narrative_name = "curate_content"  # Multi-narrative file, must specify name
