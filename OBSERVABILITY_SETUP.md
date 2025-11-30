@@ -1,12 +1,27 @@
 # Observability Setup Guide
 
-This guide shows how to set up distributed tracing and metrics collection for Botticelli using OpenTelemetry and Jaeger.
+This guide shows how to set up distributed tracing, metrics collection, and dashboards for Botticelli using OpenTelemetry, Jaeger, Prometheus, and Grafana.
 
 ## Quick Start
 
 ### 1. Start the Observability Stack
 
-**Option A: Jaeger Only** (if you already have PostgreSQL):
+**Recommended: Full Observability Stack** (Jaeger + Prometheus + Grafana):
+```bash
+# Using just recipes (recommended)
+just obs-up
+
+# Or directly with podman/docker
+podman-compose -f docker-compose.observability.yml up -d
+docker-compose -f docker-compose.observability.yml up -d
+```
+
+This starts:
+- **Jaeger**: Distributed tracing UI on http://localhost:16686
+- **Prometheus**: Metrics collection on http://localhost:9090
+- **Grafana**: Visualization dashboards on http://localhost:3000 (admin/admin)
+
+**Alternative: Jaeger Only** (if you already have PostgreSQL):
 ```bash
 # Podman
 podman-compose -f docker-compose.jaeger-only.yml up -d
@@ -15,20 +30,36 @@ podman-compose -f docker-compose.jaeger-only.yml up -d
 docker-compose -f docker-compose.jaeger-only.yml up -d
 ```
 
-**Option B: Full Stack** (Jaeger + PostgreSQL):
-```bash
-# Podman
-podman-compose up -d
-
-# Docker
-docker-compose up -d
-```
-
 This starts:
 - **Jaeger**: Distributed tracing UI on http://localhost:16686
 - **PostgreSQL**: Database for bot state persistence (port 5433 to avoid conflicts)
 
-### 2. Configure Environment
+### 2. Verify Stack Health
+
+Wait 30-60 seconds for services to fully initialize, then run:
+```bash
+just test-observability
+```
+
+This comprehensive test validates:
+- Container health (all services running)
+- Service endpoints (HTTP APIs responding)
+- Prometheus targets (metrics scraping configured)
+- Grafana datasources (Prometheus + Jaeger connected)
+- Grafana dashboards (3 dashboards provisioned)
+- Metrics availability (ready to receive data)
+- Trace ingestion (Jaeger collecting traces)
+
+Expected output:
+```
+✓ Jaeger UI accessible at http://localhost:16686
+✓ Prometheus has 2/2 targets UP
+✓ Grafana datasources: 2 configured (Prometheus + Jaeger)
+✓ Grafana dashboards: 3 found
+⚠ Metric 'narrative_json_failures' not found (bot not running yet)
+```
+
+### 3. Configure Environment
 
 Copy the example environment file:
 ```bash
@@ -37,7 +68,7 @@ cp .env.example .env
 
 Edit `.env` and set:
 ```bash
-# Enable OTLP exporter
+# Enable OTLP exporter for traces + metrics
 OTEL_EXPORTER=otlp
 
 # Point to Jaeger collector
@@ -47,7 +78,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 RUST_LOG=info,botticelli=debug
 ```
 
-### 3. Build with Observability
+### 4. Build with Observability
 
 ```bash
 # Build with OTLP support
@@ -57,7 +88,7 @@ cargo build --release --features otel-otlp
 cargo build --release -p botticelli_actor --bin actor-server --features otel-otlp,discord
 ```
 
-### 4. Run and View Traces
+### 5. Run and View Data
 
 Run your bot:
 ```bash
@@ -68,41 +99,70 @@ source .env
 cargo run --release -p botticelli_actor --bin actor-server --features otel-otlp,discord
 ```
 
-View traces in Jaeger:
+**View Traces in Jaeger:**
 1. Open http://localhost:16686
 2. Select "botticelli-actor-server" from the service dropdown
 3. Click "Find Traces"
 4. Explore your distributed traces!
 
+**View Metrics in Prometheus:**
+1. Open http://localhost:9090
+2. Try queries like:
+   - `rate(llm_api_requests_total[5m])` - API request rate
+   - `llm_api_errors_total / llm_api_requests_total` - Error rate
+   - `histogram_quantile(0.95, rate(llm_api_duration_seconds_bucket[5m]))` - 95th percentile latency
+
+**View Dashboards in Grafana:**
+1. Open http://localhost:3000 (login: admin/admin)
+2. Navigate to **Dashboards** → **Botticelli** folder
+3. Choose from 3 pre-configured dashboards:
+   - **LLM API Performance** - Request rates, errors, latency, token usage
+   - **Narrative Execution** - JSON parsing, act duration, execution flow
+   - **Bot Pipeline** - Generation → Curation → Publishing flow
+
+See [OBSERVABILITY_DASHBOARDS.md](OBSERVABILITY_DASHBOARDS.md) for dashboard details.
+
 ## Architecture
 
 ```
-┌─────────────────┐
-│  Botticelli     │
-│  Application    │
-│  (with #[inst-  │
-│   rument])      │
-└────────┬────────┘
-         │ OpenTelemetry SDK
-         │ (traces + metrics)
-         ▼
-┌─────────────────┐
-│  OTLP Exporter  │
-│  (gRPC/Tonic)   │
-└────────┬────────┘
-         │ Port 4317
-         ▼
-┌─────────────────┐
-│  Jaeger         │
-│  Collector      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Jaeger UI      │
-│  Port 16686     │
-└─────────────────┘
+┌─────────────────────────────────────────────────┐
+│         Botticelli Application                  │
+│  (#[instrument] + metrics::counter!())          │
+└──────────────┬──────────────────────────────────┘
+               │ OpenTelemetry SDK
+               │ (traces + metrics)
+               ▼
+┌──────────────────────────────────────────────────┐
+│           OTLP Exporter (gRPC)                   │
+└──────────────┬───────────────────────────────────┘
+               │ Port 4317
+               ▼
+       ┌───────────────┐
+       │               │
+       ▼               ▼
+┌─────────────┐  ┌─────────────┐
+│   Jaeger    │  │ Prometheus  │
+│ (Traces)    │  │ (Metrics)   │
+│ Port 16686  │  │ Port 9090   │
+└──────┬──────┘  └──────┬──────┘
+       │                │
+       │                │ Scrapes Jaeger metrics
+       │                └─────────┐
+       │                          │
+       ▼                          ▼
+┌──────────────────────────────────────┐
+│         Grafana Dashboards           │
+│  Jaeger Datasource + Prometheus      │
+│            Port 3000                 │
+└──────────────────────────────────────┘
 ```
+
+**Data Flow:**
+1. Application emits traces → OTLP → Jaeger
+2. Application emits metrics → OTLP → Prometheus (via scraping)
+3. Prometheus scrapes Jaeger's internal metrics
+4. Grafana queries both Prometheus + Jaeger datasources
+5. Pre-configured dashboards visualize everything
 
 ## Feature Flags
 
@@ -159,38 +219,94 @@ RUST_LOG=info,botticelli_actor=debug,botticelli_narrative=trace
 
 ## Metrics
 
-Botticelli automatically collects and exports these metrics:
+Botticelli automatically collects and exports these metrics when running with `OTEL_EXPORTER=otlp`:
 
-### Bot Metrics
-- `bot.executions` - Total bot executions
-- `bot.failures` - Total bot failures  
-- `bot.duration` - Bot execution duration (histogram)
-- `bot.queue_depth` - Pending content in queue (gauge)
-- `bot.time_since_success` - Time since last success (gauge)
+### LLM API Metrics (NEW!)
+- `llm_api_requests_total` - Total API requests by provider/model
+- `llm_api_errors_total` - Total API errors by provider/model/error_type
+- `llm_api_duration_seconds` - Request duration histogram (p50/p95/p99)
+- `llm_api_tokens_total` - Token usage by provider/model/token_type
+
+**Labels**: `provider` (gemini/claude/openai), `model` (gemini-2.0-flash-exp, etc.), `error_type` (timeout/rate_limit/invalid_request)
 
 ### Narrative Metrics
-- `narrative.executions` - Narrative execution count
-- `narrative.duration` - Narrative execution duration
-- `narrative.act.duration` - Individual act duration
-- `narrative.json.success` - JSON extraction successes
-- `narrative.json.failures` - JSON extraction failures
+- `narrative_executions_total` - Narrative execution count
+- `narrative_duration_seconds` - Narrative execution duration
+- `narrative_act_duration_seconds` - Individual act duration
+- `narrative_json_success_total` - JSON extraction successes
+- `narrative_json_failures_total` - JSON extraction failures
+
+**Labels**: `narrative_name`, `act_name`, `extraction_type`
+
+### Bot Metrics
+- `bot_executions_total` - Total bot executions
+- `bot_failures_total` - Total bot failures  
+- `bot_duration_seconds` - Bot execution duration (histogram)
+- `bot_queue_depth` - Pending content in queue (gauge)
+- `bot_time_since_success_seconds` - Time since last success (gauge)
+
+**Labels**: `actor_name`, `skill_name`
 
 ### Pipeline Metrics
-- `pipeline.generated` - Posts generated
-- `pipeline.curated` - Posts curated
-- `pipeline.published` - Posts published
-- `pipeline.stage_latency` - Pipeline stage latency
+- `pipeline_generated_total` - Posts generated
+- `pipeline_curated_total` - Posts curated
+- `pipeline_published_total` - Posts published
+- `pipeline_stage_latency_seconds` - Pipeline stage latency
 
-All metrics include labels (tags) for filtering and aggregation.
+**Labels**: `stage` (generation/curation/publishing)
+
+All metrics include labels (tags) for filtering and aggregation in Prometheus/Grafana.
+
+## Just Recipes
+
+Convenient commands for managing the observability stack:
+
+```bash
+# Start the observability stack
+just obs-up
+
+# Stop the observability stack
+just obs-down
+
+# Restart the observability stack
+just obs-restart
+
+# View logs (all services)
+just obs-logs
+
+# View logs (specific service)
+just obs-logs jaeger
+just obs-logs prometheus
+just obs-logs grafana
+
+# Test observability integration
+just test-observability
+```
 
 ## Troubleshooting
+
+### Quick Diagnostics
+
+**Run the comprehensive test suite:**
+```bash
+just test-observability
+```
+
+This will check:
+- All containers running
+- Service endpoints accessible
+- Prometheus scraping configured
+- Grafana datasources connected
+- Dashboards provisioned
+- Metrics being collected
 
 ### Traces not appearing in Jaeger
 
 1. **Check collector is running:**
    ```bash
-   podman ps | grep jaeger
+   just obs-logs jaeger
    # or
+   podman ps | grep jaeger
    docker ps | grep jaeger
    ```
 
@@ -214,7 +330,60 @@ All metrics include labels (tags) for filtering and aggregation.
 5. **Check application logs:**
    ```bash
    RUST_LOG=debug cargo run --features otel-otlp
-   # Look for "Observability initialized" message
+   # Look for "Observability initialized (OTEL_EXPORTER="otlp")" message
+   ```
+
+### Metrics not appearing in Prometheus
+
+1. **Check Prometheus targets:**
+   ```bash
+   curl -s http://localhost:9090/api/v1/targets | jq
+   # All targets should show "up"
+   ```
+
+2. **Check if bot is running:**
+   ```bash
+   # Metrics only appear when the bot is actively running
+   ps aux | grep actor-server
+   ```
+
+3. **Query for any metrics:**
+   ```bash
+   curl -s http://localhost:9090/api/v1/label/__name__/values | jq
+   # Should show llm_*, narrative_*, bot_* metrics
+   ```
+
+4. **Check Prometheus logs:**
+   ```bash
+   just obs-logs prometheus
+   # Look for scraping errors
+   ```
+
+### Dashboards not appearing in Grafana
+
+1. **Wait for provisioning:**
+   ```bash
+   # Grafana takes 30-60 seconds to provision on first start
+   sleep 60
+   just test-observability
+   ```
+
+2. **Check provisioning logs:**
+   ```bash
+   just obs-logs grafana | grep -i provision
+   # Should show "Provisioning dashboards"
+   ```
+
+3. **Manually verify dashboards:**
+   ```bash
+   curl -u admin:admin http://localhost:3000/api/search?type=dash-db | jq
+   # Should show 3 dashboards
+   ```
+
+4. **Check dashboard files:**
+   ```bash
+   ls -la grafana/dashboards/*.json
+   # Should show 3 JSON files
    ```
 
 ### High memory usage
@@ -229,7 +398,7 @@ Batch exporter buffers spans before export. To reduce memory:
 
 OpenTelemetry has minimal overhead (<5%), but:
 
-1. **Use batch exporter** (default for OTLP) 
+1. **Use batch exporter** (default for OTLP)
 2. **Avoid excessive `#[instrument]`** on tight loops
 3. **Profile first** to confirm it's observability
 
@@ -375,9 +544,52 @@ let config = ObservabilityConfig::new("my-service")
 botticelli::init_observability_with_config(config)?;
 ```
 
+## Performance Impact
+
+OpenTelemetry has minimal overhead when properly configured:
+
+- **Tracing**: <2% CPU overhead
+- **Metrics**: <1% CPU overhead  
+- **Memory**: ~50MB for batch buffers
+- **Network**: Minimal (batched exports every 5 seconds)
+
+**Best Practices:**
+1. Use batch exporter (default for OTLP)
+2. Avoid `#[instrument]` on tight loops
+3. Use appropriate sampling in production
+4. Monitor the observability stack itself
+
+## Next Steps
+
+1. **Explore Pre-Built Dashboards**
+   - See [OBSERVABILITY_DASHBOARDS.md](OBSERVABILITY_DASHBOARDS.md) for dashboard guide
+   - Learn how to read each panel
+   - Understand key metrics and alerts
+
+2. **Add Custom Metrics**
+   - Use `metrics::counter!()` for event counts
+   - Use `metrics::histogram!()` for latency tracking
+   - Use `metrics::gauge!()` for point-in-time values
+   - See [metrics crate docs](https://docs.rs/metrics/)
+
+3. **Set Up Alerts**
+   - Configure Grafana alerts for error rates
+   - Set up notification channels (Slack/Discord/email)
+   - Define SLOs (Service Level Objectives)
+   - Monitor critical thresholds
+
+4. **Production Deployment**
+   - See Kubernetes/Docker sections below
+   - Configure persistent storage for Prometheus
+   - Set retention policies
+   - Enable authentication
+
 ## See Also
 
+- [OBSERVABILITY_DASHBOARDS.md](OBSERVABILITY_DASHBOARDS.md) - Dashboard guide and usage
+- [OBSERVABILITY.md](OBSERVABILITY.md) - Observability strategy and design
 - [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
 - [Jaeger Documentation](https://www.jaegertracing.io/docs/)
+- [Prometheus Documentation](https://prometheus.io/docs/)
+- [Grafana Documentation](https://grafana.com/docs/)
 - [OTLP Specification](https://opentelemetry.io/docs/specs/otlp/)
-- [Botticelli Observability Design](OPENTELEMETRY_INTEGRATION_PLAN.md)
