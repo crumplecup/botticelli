@@ -38,7 +38,7 @@ diesel = { workspace = true, optional = true }
 # OpenTelemetry dependencies (optional)
 opentelemetry = { version = "0.31", optional = true }
 opentelemetry_sdk = { version = "0.31", optional = true }
-opentelemetry-otlp = { version = "0.31", features = ["tonic", "logs"], optional = true }
+opentelemetry-otlp = { version = "0.31", features = ["grpc-tonic"], optional = true }
 opentelemetry-appender-tracing = { version = "0.31", optional = true }
 
 # TUI dependencies (optional, only when both tui and server features are enabled)
@@ -72,6 +72,12 @@ observability = [
   "dep:opentelemetry_sdk",
   "dep:opentelemetry-stdout",
   "dep:tracing-opentelemetry",
+]
+
+# OTLP exporter for production observability
+otel-otlp = [
+  "observability",
+  "dep:opentelemetry-otlp",
 ]
 
 # Convenience feature for all providers

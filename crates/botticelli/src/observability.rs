@@ -9,19 +9,32 @@ use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::Subscribe
 pub enum ExporterBackend {
     /// Export traces to stdout (development/debugging)
     Stdout,
+    /// Export traces via OTLP to a collector (production)
+    #[cfg(feature = "otel-otlp")]
+    Otlp {
+        /// OTLP endpoint (e.g., "http://localhost:4317")
+        endpoint: String,
+    },
 }
 
 impl ExporterBackend {
     /// Parse exporter backend from environment variable.
     ///
-    /// Reads `OTEL_EXPORTER` environment variable:
+    /// Reads `OTEL_EXPORTER` and `OTEL_EXPORTER_OTLP_ENDPOINT` environment variables:
     /// - "stdout" → Stdout (default if unset)
+    /// - "otlp" → Otlp (requires `otel-otlp` feature, reads endpoint from env)
     pub fn from_env() -> Self {
         match env::var("OTEL_EXPORTER")
             .unwrap_or_else(|_| "stdout".to_string())
             .to_lowercase()
             .as_str()
         {
+            #[cfg(feature = "otel-otlp")]
+            "otlp" => {
+                let endpoint = env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+                    .unwrap_or_else(|_| "http://localhost:4317".to_string());
+                Self::Otlp { endpoint }
+            }
             "stdout" => Self::Stdout,
             _ => Self::Stdout, // Default to stdout for unknown values
         }
@@ -134,6 +147,22 @@ pub fn init_observability_with_config(
             let exporter = SpanExporter::default();
             SdkTracerProvider::builder()
                 .with_simple_exporter(exporter)
+                .with_resource(resource)
+                .build()
+        }
+        #[cfg(feature = "otel-otlp")]
+        ExporterBackend::Otlp { ref endpoint } => {
+            use opentelemetry_otlp::WithExportConfig;
+
+            // Build OTLP span exporter with tonic
+            let exporter = opentelemetry_otlp::SpanExporter::builder()
+                .with_tonic()
+                .with_endpoint(endpoint.clone())
+                .build()
+                .map_err(|e| format!("Failed to build OTLP exporter: {}", e))?;
+
+            SdkTracerProvider::builder()
+                .with_batch_exporter(exporter)
                 .with_resource(resource)
                 .build()
         }
