@@ -24,6 +24,7 @@ use std::sync::Arc;
 use tracing::info;
 #[cfg(feature = "discord")]
 use tracing::{debug, error, warn};
+#[cfg(not(feature = "observability"))]
 use tracing_subscriber::EnvFilter;
 
 #[cfg(feature = "discord")]
@@ -61,6 +62,9 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load environment variables from .env file (if present)
+    let _ = dotenvy::dotenv();
+
     // Initialize observability (tracing + metrics + optional OTLP export)
     #[cfg(feature = "observability")]
     {
