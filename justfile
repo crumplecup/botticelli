@@ -282,7 +282,7 @@ check-features:
     
     # Run feature gate checks and capture output
     if ./scripts/feature-gate-check.sh 2>&1 | tee "$LOG_FILE"; then
-        if [ -s "$LOG_FILE" ] && grep -qE "(warning|error)" "$LOG_FILE"; then
+        if [ -s "$LOG_FILE" ] && grep -qE "^(warning:|error:|\s+\^|error\[)" "$LOG_FILE"; then
             echo "⚠️  Feature gate checks completed with warnings/errors. See: $LOG_FILE"
             exit 1
         else
