@@ -619,12 +619,41 @@ impl GeminiClient {
 
     /// Internal generate method that returns Gemini-specific errors.
     async fn generate_internal(&self, req: &GenerateRequest) -> GeminiResult<GenerateResponse> {
+        use crate::{classify_error, LlmMetrics};
+
+        // Start timing for metrics
+        let start = std::time::Instant::now();
+        let metrics = LlmMetrics::get();
+
         // Determine which model to use
         let model_name = req.model().as_ref().unwrap_or(&self.model_name);
 
+        // Record request
+        metrics.requests.add(
+            1,
+            &[
+                opentelemetry::KeyValue::new("provider", "gemini"),
+                opentelemetry::KeyValue::new("model", model_name.to_string()),
+            ],
+        );
+
         // Check if this is a live model (requires WebSocket Live API)
         if Self::is_live_model(model_name) {
-            return self.generate_via_live_api(req, model_name).await;
+            let result = self.generate_via_live_api(req, model_name).await;
+
+            // Record metrics for live API
+            let duration = start.elapsed().as_secs_f64();
+            match &result {
+                Ok(_) => {
+                    metrics.record_request("gemini", model_name, duration);
+                }
+                Err(e) => {
+                    let error_type = classify_error(e);
+                    metrics.record_error("gemini", model_name, error_type);
+                }
+            }
+
+            return result;
         }
 
         // Get or create rate-limited client for this model (REST API)
@@ -740,14 +769,33 @@ impl GeminiClient {
                 // Execute the request and parse errors
                 builder.execute().await.map_err(Self::parse_gemini_error)
             })
-            .await?;
+            .await;
 
-        // Extract text from response
-        let text = response.text();
+        // Handle result and record metrics
+        match response {
+            Ok(resp) => {
+                // Extract text from response
+                let text = resp.text();
 
-        Ok(GenerateResponse {
-            outputs: vec![Output::Text(text)],
-        })
+                // Record successful request duration
+                let duration = start.elapsed().as_secs_f64();
+                metrics.record_request("gemini", model_name, duration);
+
+                // TODO: Track token usage when available from gemini-rust response
+                // The gemini-rust crate doesn't currently expose UsageMetadata in REST API responses
+                // This would require updating the gemini-rust dependency or using direct API calls
+
+                Ok(GenerateResponse {
+                    outputs: vec![Output::Text(text)],
+                })
+            }
+            Err(e) => {
+                // Record error
+                let error_type = classify_error(&e);
+                metrics.record_error("gemini", model_name, error_type);
+                Err(e)
+            }
+        }
     }
 
     /// Parse gemini-rust errors to extract HTTP status codes.

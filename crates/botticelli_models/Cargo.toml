@@ -25,8 +25,9 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 
-# Logging
+# Logging and metrics
 tracing = { workspace = true }
+opentelemetry = { workspace = true }
 
 # Retry
 tokio-retry2 = { workspace = true }
