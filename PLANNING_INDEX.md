@@ -35,6 +35,14 @@ This index tracks all planning documents in the workspace. When documents are co
   - OpenTelemetry integration analysis and resolution strategy
 - **OBSERVABILITY_SETUP.md** - `current` (2025-11-30)
   - Complete guide for setting up observability with Jaeger and Podman
+- **QUICK_START_OBSERVABILITY.md** - `current` (2025-11-30)
+  - Quick start guide for running full observability stack
+- **OBSERVABILITY_SUMMARY.md** - `current` (2025-11-30)
+  - Summary of observability stack implementation and setup
+- **OBSERVABILITY_METRICS_JAEGER_ISSUE.md** - `current` (2025-11-30)
+  - Explanation of why Jaeger alone doesn't support metrics
+- **NARRATIVE_COMPOSITION_LOADING_ISSUE.md** - `current` (2025-11-30)
+  - Analysis and fix strategy for narrative composition loading
 
 ### Testing & Quality
 - **TESTING_PATTERNS.md** - `718bf35` (2025-11-22)

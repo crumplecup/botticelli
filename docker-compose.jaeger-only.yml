@@ -1,7 +1,10 @@
-# Botticelli Observability Stack - Jaeger Only
+# Botticelli Observability Stack - Jaeger + Prometheus + Grafana
 # 
 # Use this if you already have PostgreSQL running locally.
-# This starts only Jaeger for distributed tracing.
+# This starts the full observability stack:
+#   - Jaeger for distributed tracing
+#   - Prometheus for metrics collection
+#   - Grafana for dashboards
 #
 # Usage with Podman:
 #   podman-compose -f docker-compose.jaeger-only.yml up -d
@@ -9,7 +12,10 @@
 # Usage with Docker:
 #   docker-compose -f docker-compose.jaeger-only.yml up -d
 #
-# Access Jaeger UI: http://localhost:16686
+# Access:
+#   - Jaeger UI: http://localhost:16686
+#   - Prometheus UI: http://localhost:9090
+#   - Grafana: http://localhost:3000 (admin/admin)
 
 version: '3.8'
 
@@ -33,6 +39,46 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
       - LOG_LEVEL=info
     restart: unless-stopped
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: botticelli-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: botticelli-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+    depends_on:
+      - prometheus
+      - jaeger
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  grafana-data:
 
 networks:
   default:

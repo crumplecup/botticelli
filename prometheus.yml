@@ -29,15 +29,9 @@ scrape_configs:
         regex: '(jaeger_collector_.*|jaeger_query_.*|jaeger_tracer_.*)'
         action: keep
 
-  # Future: Botticelli application metrics
-  # Uncomment when you add metrics export to bot-server
-  # - job_name: 'bot-server'
-  #   static_configs:
-  #     - targets: ['host.docker.internal:8080']  # Adjust port
-  #   metrics_path: '/metrics'
-
-  # Future: Actor-server metrics
-  # - job_name: 'actor-server'
-  #   static_configs:
-  #     - targets: ['host.docker.internal:8081']  # Adjust port
-  #   metrics_path: '/metrics'
+  # Botticelli Actor Server metrics
+  # Use host.containers.internal for Podman, host.docker.internal for Docker
+  - job_name: 'actor-server'
+    static_configs:
+      - targets: ['host.containers.internal:9464']
+    metrics_path: '/metrics'
