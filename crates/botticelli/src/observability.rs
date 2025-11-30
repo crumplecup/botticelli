@@ -4,6 +4,36 @@ use opentelemetry_stdout::SpanExporter;
 use std::env;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
+/// Exporter backend for traces.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExporterBackend {
+    /// Export traces to stdout (development/debugging)
+    Stdout,
+}
+
+impl ExporterBackend {
+    /// Parse exporter backend from environment variable.
+    ///
+    /// Reads `OTEL_EXPORTER` environment variable:
+    /// - "stdout" → Stdout (default if unset)
+    pub fn from_env() -> Self {
+        match env::var("OTEL_EXPORTER")
+            .unwrap_or_else(|_| "stdout".to_string())
+            .to_lowercase()
+            .as_str()
+        {
+            "stdout" => Self::Stdout,
+            _ => Self::Stdout, // Default to stdout for unknown values
+        }
+    }
+}
+
+impl Default for ExporterBackend {
+    fn default() -> Self {
+        Self::Stdout
+    }
+}
+
 /// Configuration for OpenTelemetry observability.
 #[derive(Debug, Clone)]
 pub struct ObservabilityConfig {
@@ -15,16 +45,24 @@ pub struct ObservabilityConfig {
     pub log_level: String,
     /// Enable JSON-formatted logs for structured logging
     pub json_logs: bool,
+    /// Exporter backend for traces
+    pub exporter: ExporterBackend,
 }
 
 impl ObservabilityConfig {
     /// Create a new configuration with the given service name.
+    ///
+    /// Defaults:
+    /// - Exporter: Read from `OTEL_EXPORTER` env (default: stdout)
+    /// - Log level: Read from `RUST_LOG` env (default: info)
+    /// - JSON logs: false
     pub fn new(service_name: impl Into<String>) -> Self {
         Self {
             service_name: service_name.into(),
             service_version: env!("CARGO_PKG_VERSION").to_string(),
             log_level: env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
             json_logs: false,
+            exporter: ExporterBackend::from_env(),
         }
     }
 
@@ -43,6 +81,12 @@ impl ObservabilityConfig {
     /// Enable JSON-formatted logs.
     pub fn with_json_logs(mut self, enabled: bool) -> Self {
         self.json_logs = enabled;
+        self
+    }
+
+    /// Set the exporter backend.
+    pub fn with_exporter(mut self, exporter: ExporterBackend) -> Self {
+        self.exporter = exporter;
         self
     }
 }
@@ -69,7 +113,7 @@ pub fn init_observability() -> Result<(), Box<dyn std::error::Error>> {
 ///
 /// This sets up:
 /// - Tracing with OpenTelemetry bridge
-/// - Stdout exporter for development
+/// - Configurable exporter backend (stdout, OTLP)
 /// - Service name and version metadata
 /// - Configurable log format (text or JSON)
 pub fn init_observability_with_config(
@@ -84,14 +128,16 @@ pub fn init_observability_with_config(
         )])
         .build();
 
-    // Create stdout exporter for development
-    let exporter = SpanExporter::default();
-
-    // Build tracer provider with resource
-    let provider = SdkTracerProvider::builder()
-        .with_simple_exporter(exporter)
-        .with_resource(resource)
-        .build();
+    // Create tracer provider based on exporter backend
+    let provider = match config.exporter {
+        ExporterBackend::Stdout => {
+            let exporter = SpanExporter::default();
+            SdkTracerProvider::builder()
+                .with_simple_exporter(exporter)
+                .with_resource(resource)
+                .build()
+        }
+    };
 
     // Set as global provider
     global::set_tracer_provider(provider.clone());
