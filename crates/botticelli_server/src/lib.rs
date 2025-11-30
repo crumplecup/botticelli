@@ -54,7 +54,6 @@ mod client;
 mod config;
 mod convert;
 mod metrics;
-mod observability;
 mod request;
 mod response;
 mod schedule;
@@ -74,7 +73,6 @@ pub use config::{ServerConfig, ServerConfigBuilder};
 pub use metrics::{
     BotMetrics, MetricsCollector, MetricsSnapshot, NarrativeMetrics, PipelineMetrics, ServerMetrics,
 };
-pub use observability::{ObservabilityConfig, init_observability, shutdown_observability};
 pub use request::{ChatCompletionRequest, Message};
 pub use response::{
     ChatCompletionChunk, ChatCompletionResponse, Choice, ChoiceMessage, ChunkChoice, Delta, Usage,
