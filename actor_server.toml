@@ -16,7 +16,7 @@ max_consecutive_failures = 5
 # Runs every 12 hours, no channel_id (uses NoOpPlatform)
 [[actors]]
 name = "content_generator"
-config_file = "crates/botticelli_actor/actors/generation_actor.toml"
+config_file = "crates/botticelli_server/configs/generation_actor.toml"
 # No channel_id - this actor only writes to database
 enabled = true
 
@@ -28,7 +28,7 @@ seconds = 43200  # Every 12 hours
 # Runs every 6 hours, no channel_id (uses NoOpPlatform)
 [[actors]]
 name = "content_curator"
-config_file = "crates/botticelli_actor/actors/curation_actor.toml"
+config_file = "crates/botticelli_server/configs/curation_actor.toml"
 # No channel_id - this actor only writes to database
 enabled = true
 
@@ -40,7 +40,7 @@ seconds = 21600  # Every 6 hours
 # Runs every 2 hours, requires channel_id (uses DiscordPlatform)
 [[actors]]
 name = "discord_poster"
-config_file = "crates/botticelli_actor/actors/posting_actor.toml"
+config_file = "crates/botticelli_server/configs/posting_actor.toml"
 channel_id = "${DISCORD_CHANNEL_ID}"  # Set via environment variable
 enabled = true
 
