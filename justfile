@@ -260,7 +260,7 @@ obs-restart:
 
 # Run actor server with observability enabled (reads .env automatically)
 run-actor-server:
-    cargo run --bin actor_server --release --features "discord,observability"
+    cargo run --bin actor-server --release --features "discord,otel-otlp"
 
 # Container Management
 # ===================

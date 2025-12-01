@@ -71,7 +71,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "observability")]
     {
         let config = botticelli::ObservabilityConfig::new("botticelli-actor-server")
-            .with_version(env!("CARGO_PKG_VERSION"));
+            .with_version(env!("CARGO_PKG_VERSION"))
+            .with_metrics(false); // Disable metrics for now (traces only)
         botticelli::init_observability_with_config(config)?;
         info!(
             "Observability initialized (OTEL_EXPORTER={:?})",
