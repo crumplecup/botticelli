@@ -11,7 +11,7 @@ use botticelli_error::{BotticelliError, BotticelliResult, ConfigError};
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tracing::{debug, instrument};
+use tracing::{debug, info, instrument, warn};
 
 /// Model-specific rate limit overrides.
 ///
