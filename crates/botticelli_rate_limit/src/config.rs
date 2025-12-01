@@ -417,7 +417,7 @@ impl BotticelliConfig {
         debug!(provider, tier, "Looking up tier configuration");
 
         let mut tier_config = provider_config.tiers.get(tier).cloned()?;
-        
+
         // Apply budget multipliers if configured
         if let Some(budget) = &self.budget {
             if let Some(rpm) = tier_config.rpm {
@@ -429,7 +429,7 @@ impl BotticelliConfig {
             if let Some(rpd) = tier_config.rpd {
                 tier_config.rpd = Some(budget.apply_rpd(rpd as u64) as u32);
             }
-            
+
             debug!(
                 provider = provider,
                 tier = tier,
@@ -439,7 +439,7 @@ impl BotticelliConfig {
                 "Applied budget multipliers to tier"
             );
         }
-        
+
         Some(tier_config)
     }
 }
