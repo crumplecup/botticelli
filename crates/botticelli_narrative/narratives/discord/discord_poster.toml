@@ -18,11 +18,11 @@ guild_id = "${TEST_GUILD_ID}"
 name = "content-test"
 channel_type = "text"
 
-# Fetch one approved post that hasn't been posted yet
+# Fetch one approved post that hasn't been posted yet (FIFO)
 [tables.next_post]
 table_name = "approved_discord_posts"
 where_clause = "review_status = 'pending'"
-order_by = "curation_score DESC, selected_at ASC"
+order_by = "generated_at ASC"
 limit = 1
 format = "markdown"
 
