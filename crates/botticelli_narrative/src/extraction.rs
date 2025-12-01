@@ -229,41 +229,89 @@ pub fn parse_json<T>(json_str: &str) -> BotticelliResult<T>
 where
     T: serde::de::DeserializeOwned,
 {
+    use tracing::{debug, error, info, instrument, warn};
+    
     let trimmed = json_str.trim();
+    let preview = trimmed.chars().take(100).collect::<String>();
+    
+    debug!(
+        json_length = trimmed.len(),
+        starts_with = trimmed.chars().take(5).collect::<String>(),
+        "Attempting JSON parse"
+    );
     
     // Try parsing as-is first
     match serde_json::from_str::<T>(trimmed) {
-        Ok(parsed) => return Ok(parsed),
+        Ok(parsed) => {
+            debug!("JSON parsed successfully on first attempt");
+            return Ok(parsed);
+        }
         Err(e) => {
-            // Check for "trailing characters" error - usually means missing opening delimiter
             let err_msg = e.to_string();
+            
+            warn!(
+                error = %e,
+                json_preview = %preview,
+                error_contains_trailing = err_msg.contains("trailing characters"),
+                starts_with_brace = trimmed.starts_with('{'),
+                starts_with_bracket = trimmed.starts_with('['),
+                "Initial JSON parse failed"
+            );
+            
+            // Check for "trailing characters" error - usually means missing opening delimiter
             if err_msg.contains("trailing characters") {
-                tracing::warn!(
-                    error = %e,
-                    "JSON parse failed with trailing characters, attempting repair"
-                );
+                info!("Detected trailing characters error, attempting repair");
                 
                 // Try adding opening brace for object
                 if !trimmed.starts_with('{') && !trimmed.starts_with('[') {
                     let repaired_obj = format!("{{{}}}", trimmed);
-                    if let Ok(parsed) = serde_json::from_str::<T>(&repaired_obj) {
-                        tracing::info!("Successfully repaired JSON by adding opening/closing braces");
-                        return Ok(parsed);
+                    
+                    debug!(
+                        original_start = &preview[..20.min(preview.len())],
+                        repaired_start = &repaired_obj.chars().take(20).collect::<String>(),
+                        "Attempting repair: adding braces"
+                    );
+                    
+                    match serde_json::from_str::<T>(&repaired_obj) {
+                        Ok(parsed) => {
+                            info!("✅ Successfully repaired JSON by adding opening/closing braces");
+                            return Ok(parsed);
+                        }
+                        Err(repair_err) => {
+                            warn!(
+                                error = %repair_err,
+                                "Brace repair failed, trying array wrapper"
+                            );
+                        }
                     }
                     
                     // Try adding opening bracket for array
                     let repaired_arr = format!("[{{{}}}]", trimmed);
-                    if let Ok(parsed) = serde_json::from_str::<T>(&repaired_arr) {
-                        tracing::info!("Successfully repaired JSON by wrapping in array with braces");
-                        return Ok(parsed);
+                    
+                    debug!(
+                        repaired_start = &repaired_arr.chars().take(20).collect::<String>(),
+                        "Attempting repair: array wrapper"
+                    );
+                    
+                    match serde_json::from_str::<T>(&repaired_arr) {
+                        Ok(parsed) => {
+                            info!("✅ Successfully repaired JSON by wrapping in array with braces");
+                            return Ok(parsed);
+                        }
+                        Err(repair_err) => {
+                            warn!(
+                                error = %repair_err,
+                                "Array wrapper repair failed"
+                            );
+                        }
                     }
+                } else {
+                    debug!("JSON already starts with delimiter, skipping repair");
                 }
             }
             
             // Repair failed or different error, return original error
-            let preview = trimmed.chars().take(100).collect::<String>();
-            
-            tracing::error!(
+            error!(
                 error = %e,
                 json_preview = %preview,
                 "JSON parsing failed after repair attempts"
