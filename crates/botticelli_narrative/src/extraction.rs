@@ -244,7 +244,7 @@ where
     match serde_json::from_str::<T>(trimmed) {
         Ok(parsed) => {
             debug!("JSON parsed successfully on first attempt");
-            return Ok(parsed);
+            Ok(parsed)
         }
         Err(e) => {
             let err_msg = e.to_string();
@@ -296,7 +296,9 @@ where
 
                     match serde_json::from_str::<T>(&with_both) {
                         Ok(parsed) => {
-                            info!("✅ Successfully repaired JSON by adding opening and closing braces");
+                            info!(
+                                "✅ Successfully repaired JSON by adding opening and closing braces"
+                            );
                             return Ok(parsed);
                         }
                         Err(repair_err) => {
