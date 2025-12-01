@@ -3,7 +3,6 @@ mod test_utils;
 
 // Tests for the Gemini client implementation.
 
-use botticelli_core::{GenerateRequest, Input, MessageBuilder, Role};
 use botticelli_error::{BotticelliError, GeminiError, GeminiErrorKind};
 use botticelli_interface::{BotticelliDriver, Metadata, Vision};
 use botticelli_models::GeminiClient;

@@ -8,7 +8,6 @@ mod test_utils;
 //
 // Run with:
 // ```bash
-use botticelli_core::MessageBuilder;
 // cargo test --features gemini,api
 // ```
 //

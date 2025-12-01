@@ -16,7 +16,6 @@ mod test_utils;
 // This appears to be a timing or protocol issue with the Live API handshake.
 // Tests that connect to Live API are currently ignored until the handshake issue is resolved.
 
-use botticelli_core::{GenerateRequest, Input, MessageBuilder, Role};
 use botticelli_interface::{BotticelliDriver, Streaming};
 use botticelli_models::{GeminiClient, GeminiLiveClient, GenerationConfig, LiveRateLimiter};
 use futures_util::StreamExt;

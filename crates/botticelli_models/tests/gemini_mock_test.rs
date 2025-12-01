@@ -7,7 +7,6 @@
 
 mod test_utils;
 
-use botticelli_core::MessageBuilder;
 use botticelli_core::{GenerateRequest, Input, Role};
 use botticelli_error::GeminiErrorKind;
 use botticelli_interface::BotticelliDriver;

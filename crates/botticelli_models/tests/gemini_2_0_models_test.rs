@@ -5,7 +5,6 @@
 // These tests validate that older Gemini 2.0 models work correctly
 // via the Model::Custom() variant with proper "models/" prefix.
 
-use botticelli_core::{GenerateRequest, Input, MessageBuilder, Role};
 use botticelli_error::BotticelliResult;
 use botticelli_interface::BotticelliDriver;
 use botticelli_models::GeminiClient;

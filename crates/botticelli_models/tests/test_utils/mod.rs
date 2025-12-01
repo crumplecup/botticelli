@@ -5,7 +5,6 @@
 // Test utilities may not be used by all test files
 #![allow(dead_code)]
 
-use botticelli_core::{GenerateRequest, Input, MessageBuilder, Role};
 
 pub mod mock_gemini;
 

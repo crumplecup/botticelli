@@ -8,7 +8,6 @@
 // - Cost control (using cheaper models when appropriate)
 // - Feature testing across different model capabilities
 //
-use botticelli_core::MessageBuilder;
 // ## Test Strategy
 //
 // Most tests use MockGeminiClient for fast, deterministic testing without API calls.
