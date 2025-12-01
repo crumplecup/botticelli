@@ -176,6 +176,8 @@ impl TableQueryExecutor {
         conn: &mut PgConnection,
         query: &str,
     ) -> DatabaseResult<Vec<JsonValue>> {
+        use tracing::warn;
+
         // Use diesel's sql_query to execute raw SQL
         // We'll return the results as JSON strings from PostgreSQL
         let json_query = format!("SELECT row_to_json(t) as json FROM ({}) t", query);
@@ -186,11 +188,24 @@ impl TableQueryExecutor {
             json: JsonValue,
         }
 
-        let results: Vec<JsonRow> = diesel::sql_query(&json_query)
-            .load(conn)
-            .map_err(|e| DatabaseError::new(DatabaseErrorKind::Query(e.to_string())))?;
-
-        Ok(results.into_iter().map(|row| row.json).collect())
+        match diesel::sql_query(&json_query).load::<JsonRow>(conn) {
+            Ok(results) => Ok(results.into_iter().map(|row| row.json).collect()),
+            Err(e) => {
+                let err_msg = e.to_string();
+                // Handle missing column errors gracefully
+                if err_msg.contains("column") && err_msg.contains("does not exist") {
+                    warn!(
+                        error = %err_msg,
+                        query = %query,
+                        "Query references non-existent column - returning empty result set"
+                    );
+                    // Return empty result instead of propagating error
+                    Ok(Vec::new())
+                } else {
+                    Err(DatabaseError::new(DatabaseErrorKind::Query(err_msg)))
+                }
+            }
+        }
     }
 
     /// Gets the count of rows that would be returned by a query.
