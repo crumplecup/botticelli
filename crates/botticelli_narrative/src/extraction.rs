@@ -262,46 +262,47 @@ where
             if err_msg.contains("trailing characters") {
                 info!("Detected trailing characters error, attempting repair");
 
-                // Try adding opening brace for object
+                // Only try repair if missing opening delimiter
                 if !trimmed.starts_with('{') && !trimmed.starts_with('[') {
-                    let repaired_obj = format!("{{{}}}", trimmed);
+                    // Step 1: Try adding just opening brace
+                    let with_opening = format!("{{{}", trimmed);
 
                     debug!(
                         original_start = &preview[..20.min(preview.len())],
-                        repaired_start = &repaired_obj.chars().take(20).collect::<String>(),
-                        "Attempting repair: adding braces"
+                        repaired_start = &with_opening.chars().take(20).collect::<String>(),
+                        "Attempting repair: adding opening brace only"
                     );
 
-                    match serde_json::from_str::<T>(&repaired_obj) {
+                    match serde_json::from_str::<T>(&with_opening) {
                         Ok(parsed) => {
-                            info!("✅ Successfully repaired JSON by adding opening/closing braces");
+                            info!("✅ Successfully repaired JSON by adding opening brace");
                             return Ok(parsed);
                         }
                         Err(repair_err) => {
-                            warn!(
+                            debug!(
                                 error = %repair_err,
-                                "Brace repair failed, trying array wrapper"
+                                "Opening brace only failed, trying both braces"
                             );
                         }
                     }
 
-                    // Try adding opening bracket for array
-                    let repaired_arr = format!("[{{{}}}]", trimmed);
+                    // Step 2: Try adding both opening and closing brace
+                    let with_both = format!("{{{}}}", trimmed);
 
                     debug!(
-                        repaired_start = &repaired_arr.chars().take(20).collect::<String>(),
-                        "Attempting repair: array wrapper"
+                        repaired_start = &with_both.chars().take(20).collect::<String>(),
+                        "Attempting repair: adding both braces"
                     );
 
-                    match serde_json::from_str::<T>(&repaired_arr) {
+                    match serde_json::from_str::<T>(&with_both) {
                         Ok(parsed) => {
-                            info!("✅ Successfully repaired JSON by wrapping in array with braces");
+                            info!("✅ Successfully repaired JSON by adding opening and closing braces");
                             return Ok(parsed);
                         }
                         Err(repair_err) => {
                             warn!(
                                 error = %repair_err,
-                                "Array wrapper repair failed"
+                                "Both repair attempts failed, giving up"
                             );
                         }
                     }
