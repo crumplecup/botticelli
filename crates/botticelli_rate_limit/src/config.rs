@@ -420,6 +420,7 @@ impl BotticelliConfig {
 
         // Apply budget multipliers if configured
         if let Some(budget) = &self.budget {
+            let original_rpm = tier_config.rpm;
             if let Some(rpm) = tier_config.rpm {
                 tier_config.rpm = Some(budget.apply_rpm(rpm as u64) as u32);
             }
@@ -430,13 +431,19 @@ impl BotticelliConfig {
                 tier_config.rpd = Some(budget.apply_rpd(rpd as u64) as u32);
             }
 
-            debug!(
+            info!(
                 provider = provider,
                 tier = tier,
+                original_rpm = ?original_rpm,
+                adjusted_rpm = ?tier_config.rpm,
                 rpm_multiplier = budget.rpm_multiplier(),
-                tpm_multiplier = budget.tpm_multiplier(),
-                rpd_multiplier = budget.rpd_multiplier(),
                 "Applied budget multipliers to tier"
+            );
+        } else {
+            warn!(
+                provider = provider,
+                tier = tier,
+                "No budget configuration found - using full tier limits"
             );
         }
 
