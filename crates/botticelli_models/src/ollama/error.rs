@@ -28,6 +28,19 @@ impl OllamaError {
 
 pub type OllamaResult<T> = Result<T, OllamaError>;
 
+/// Conversion from GenerateResponseBuilderError to OllamaError.
+impl From<botticelli_core::GenerateResponseBuilderError> for OllamaError {
+    #[track_caller]
+    fn from(err: botticelli_core::GenerateResponseBuilderError) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind: OllamaErrorKind::Builder(err.to_string()),
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
+}
+
 /// Conversion from OllamaError to BotticelliError.
 impl From<OllamaError> for botticelli_error::BotticelliError {
     fn from(err: OllamaError) -> Self {

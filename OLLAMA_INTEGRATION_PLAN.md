@@ -4,6 +4,17 @@
 **Goal:** Add Ollama support to Botticelli using `ollama-rs` crate  
 **Strategy:** Follow the same pattern as Gemini integration
 
+## Status: IN PROGRESS
+
+- [x] Phase 1: Dependencies and Feature Gates - COMPLETE
+- [x] Phase 2: Error Handling (ModelsError hierarchy) - COMPLETE  
+- [x] Phase 3: Core Types (builders, encapsulation) - COMPLETE
+- [x] Phase 4: Driver Implementation - STUB COMPLETE (needs full implementation)
+- [ ] Phase 5: Configuration
+- [ ] Phase 6: Narrative Integration
+- [ ] Phase 7: Documentation
+- [x] Phase 8: Testing - Error handling tests complete, integration tests pending
+
 ---
 
 ## Overview

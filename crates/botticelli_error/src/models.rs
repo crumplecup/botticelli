@@ -32,6 +32,10 @@ pub enum OllamaErrorKind {
     /// Error converting between Ollama and Botticelli types
     #[display("Conversion error: {}", _0)]
     ConversionError(String),
+
+    /// Builder error when constructing responses
+    #[display("Builder error: {}", _0)]
+    Builder(String),
 }
 
 /// Model provider-specific error conditions.

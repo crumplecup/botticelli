@@ -1,9 +1,9 @@
 //! Conversion between botticelli and server API types
 
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, Output};
-use botticelli_error::{ServerError, ServerErrorKind};
 #[cfg(feature = "models")]
 use botticelli_error::{ModelsError, ModelsErrorKind};
+use botticelli_error::{ServerError, ServerErrorKind};
 use botticelli_interface::{FinishReason, StreamChunk};
 
 use crate::{
@@ -108,7 +108,10 @@ pub fn from_chat_response(
             }
             #[cfg(not(feature = "models"))]
             {
-                ServerError::new(ServerErrorKind::Api(format!("Failed to build response: {}", e)))
+                ServerError::new(ServerErrorKind::Api(format!(
+                    "Failed to build response: {}",
+                    e
+                )))
             }
         })
 }
@@ -150,7 +153,10 @@ pub fn chunk_to_stream_chunk(chunk: ChatCompletionChunk) -> Result<StreamChunk, 
             }
             #[cfg(not(feature = "models"))]
             {
-                ServerError::new(ServerErrorKind::Api(format!("Failed to build chunk: {}", e)))
+                ServerError::new(ServerErrorKind::Api(format!(
+                    "Failed to build chunk: {}",
+                    e
+                )))
             }
         })
 }
