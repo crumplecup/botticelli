@@ -97,6 +97,52 @@ rpm = 150
 tpm = 2_000_000
 rpd = 10_000
 
+# ============================================================================
+# Ollama (Local LLM Execution)
+# ============================================================================
+# Last updated: 2025-12-01
+# Source: Local execution - no API limits
+#
+# Ollama runs models locally, so there are no API rate limits or costs.
+# The only limits are hardware-based (CPU/GPU capacity).
+#
+# Install: https://ollama.ai/download
+# Pull models: ollama pull llama2
+# List models: ollama list
+
+[providers.ollama]
+default_tier = "local"
+
+[providers.ollama.tiers.local]
+name = "Local"
+# No rate limits for local execution (null = unlimited)
+rpm = null
+tpm = null
+rpd = null
+# Limit concurrent requests to avoid overwhelming local hardware
+max_concurrent = 4
+cost_per_million_input_tokens = 0.0
+cost_per_million_output_tokens = 0.0
+
+# Model-specific concurrency limits (optional)
+# Adjust based on your hardware capacity
+[providers.ollama.tiers.local.models.llama2]
+max_concurrent = 2  # Larger model, fewer concurrent requests
+
+[providers.ollama.tiers.local.models.mistral]
+max_concurrent = 4
+
+[providers.ollama.tiers.local.models.codellama]
+max_concurrent = 2
+
+[providers.ollama.tiers.local.models."deepseek-coder"]
+max_concurrent = 2
+
+[providers.ollama.tiers.local.models.phi]
+max_concurrent = 6  # Smaller model, more concurrent requests
+
+# ============================================================================
+
 [providers.gemini.tiers.payasyougo.models."gemini-2.5-flash"]
 rpm = 1_000
 tpm = 1_000_000
