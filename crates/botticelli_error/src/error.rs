@@ -2,11 +2,13 @@
 
 #[cfg(feature = "database")]
 use crate::DatabaseError;
+#[cfg(feature = "models")]
+use crate::ModelsError;
 #[cfg(feature = "tui")]
 use crate::TuiError;
 use crate::{
-    BackendError, BuilderError, ConfigError, GeminiError, HttpError, JsonError, ModelsError,
-    NarrativeError, NotImplementedError, ServerError, StorageError,
+    BackendError, BuilderError, ConfigError, GeminiError, HttpError, JsonError, NarrativeError,
+    NotImplementedError, ServerError, StorageError,
 };
 
 /// This is the foundation error enum. Additional variants will be added
@@ -48,6 +50,7 @@ pub enum BotticelliErrorKind {
     #[from(GeminiError)]
     Gemini(GeminiError),
     /// Model provider errors (Ollama, etc.)
+    #[cfg(feature = "models")]
     #[from(ModelsError)]
     Models(ModelsError),
     /// Database error (Phase 3.5)

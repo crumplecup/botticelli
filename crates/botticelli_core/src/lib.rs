@@ -25,5 +25,6 @@ pub use observability::{
 pub use output::{Output, ToolCall, ToolCallBuilder};
 pub use request::{
     GenerateRequest, GenerateRequestBuilder, GenerateResponse, GenerateResponseBuilder,
+    GenerateResponseBuilderError,
 };
 pub use role::Role;

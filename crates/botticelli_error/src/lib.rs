@@ -36,6 +36,7 @@ mod error;
 mod gemini;
 mod http;
 mod json;
+#[cfg(feature = "models")]
 mod models;
 mod narrative;
 mod not_implemented;
@@ -55,6 +56,7 @@ pub use http::HttpError;
 pub use json::JsonError;
 #[cfg(feature = "ollama")]
 pub use models::OllamaErrorKind;
+#[cfg(feature = "models")]
 pub use models::{ModelsError, ModelsErrorKind, ModelsResult};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
 pub use not_implemented::NotImplementedError;

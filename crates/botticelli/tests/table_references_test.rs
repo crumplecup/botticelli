@@ -129,13 +129,13 @@ impl botticelli::BotticelliDriver for MockDriver {
             }
         }
 
-        botticelli::GenerateResponse::builder()
+        Ok(botticelli::GenerateResponse::builder()
             .outputs(vec![Output::Text(format!(
                 "Received table data: {}",
                 table_content
             ))])
             .build()
-            .expect("Valid response")
+            .expect("Valid response"))
     }
 }
 

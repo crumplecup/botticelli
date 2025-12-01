@@ -120,10 +120,33 @@ rebuild: clean build
 # Testing
 # =======
 
-# Run LOCAL tests only (fast, no API keys required)
-# Uses local features (gemini, database, discord) but NOT api
-test:
-    cargo test --workspace --features local --lib --tests
+# Run tests: just test [package] [test_name]
+# Examples: 
+#   just test                              # Run all tests with local features
+#   just test botticelli                   # Run all tests for botticelli package
+#   just test botticelli table_references  # Run specific test in botticelli
+test PACKAGE="" TEST="":
+    #!/usr/bin/env bash
+    if [ -z "{{PACKAGE}}" ]; then
+        # No package specified - run all tests with local features
+        cargo test --workspace --features local --lib --tests
+    elif [ -z "{{TEST}}" ]; then
+        # Package specified, no test - run all tests for package
+        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
+           jq -e ".packages[] | select(.name == \"{{PACKAGE}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
+            cargo test --package {{PACKAGE}} --features local --lib --tests
+        else
+            cargo test --package {{PACKAGE}} --lib --tests
+        fi
+    else
+        # Package and test specified - run specific test
+        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
+           jq -e ".packages[] | select(.name == \"{{PACKAGE}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
+            cargo test --package {{PACKAGE}} --features local --lib --tests {{TEST}} -- --nocapture
+        else
+            cargo test --package {{PACKAGE}} --lib --tests {{TEST}} -- --nocapture
+        fi
+    fi
 
 # Run LOCAL tests with verbose output
 test-verbose:
@@ -132,10 +155,6 @@ test-verbose:
 # Run doctests (usually fast)
 test-doc:
     cargo test --workspace --features local --doc
-
-# Run a specific test by name (local only)
-test-one name:
-    cargo test --workspace --features local --lib --tests {{name}} -- --nocapture
 
 # Run tests for a specific package, optionally filtering by test name
 test-package package test_name="":

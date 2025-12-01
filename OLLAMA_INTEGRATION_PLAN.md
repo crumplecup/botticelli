@@ -628,7 +628,35 @@ processor = "ContentGenerationProcessor"
 
 ---
 
+## Implementation Status
+
+### ✅ Phase 1-8 Completed (2025-12-01)
+
+**What we built:**
+- Feature gate hierarchy (`models`, `ollama`, `gemini`)
+- `ModelsError` and `ModelsErrorKind` for provider-agnostic errors
+- `OllamaClient` with `BotticelliDriver` trait implementation
+- Message/request conversion between Botticelli and Ollama formats
+- Builder patterns for all DTOs (Message, GenerateResponse, StreamChunk)
+- Comprehensive test suite with proper error handling
+- Full observability with `#[instrument]` on all public functions
+
+**Key improvements made:**
+- Refactored `StreamChunk` with private fields and getters
+- Added `.builder()` methods to Message, GenerateResponse, StreamChunk
+- Removed all `.expect()` calls from tests (now use `?` properly)
+- Fixed all doctests to use getter methods
+- Zero clippy warnings, all tests passing
+
+**Next steps (Phase 9-12):**
+- Live API testing with actual Ollama instance
+- Streaming implementation
+- Integration with botticelli_server
+- Documentation and examples
+
+---
+
 _Last Updated: 2025-12-01_  
-_Status: Ready for Implementation_  
-_Estimated Effort: 2-3 weeks_  
+_Status: Phase 1-8 Complete, Ready for Live Testing_  
+_Estimated Remaining Effort: 1 week_  
 _Priority: High (enables cost-free development)_

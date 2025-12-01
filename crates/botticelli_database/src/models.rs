@@ -59,7 +59,7 @@ impl NewModelResponse {
             request_temperature: *request.temperature(),
             request_max_tokens: request.max_tokens().map(|t| t as i32),
             request_model: request.model().clone(),
-            response_outputs: serde_json::to_value(&response.outputs())?,
+            response_outputs: serde_json::to_value(response.outputs())?,
             duration_ms,
             error_message: None,
         })

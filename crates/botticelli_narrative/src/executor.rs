@@ -596,7 +596,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 }
 
                 // Extract text from response
-                let response_text = extract_text_from_outputs(&response.outputs())?;
+                let response_text = extract_text_from_outputs(response.outputs())?;
 
                 let preview = response_text.chars().take(200).collect::<String>();
                 tracing::debug!(

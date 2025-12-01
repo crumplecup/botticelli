@@ -2,6 +2,9 @@
 
 use crate::GeminiErrorKind;
 
+#[cfg(feature = "models")]
+use botticelli_core::GenerateResponseBuilderError;
+
 /// Ollama-specific error conditions (re-exported when ollama feature is enabled).
 #[cfg(feature = "ollama")]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
@@ -70,6 +73,15 @@ impl ModelsError {
             line: loc.line(),
             file: loc.file(),
         }
+    }
+}
+
+#[cfg(feature = "models")]
+impl From<GenerateResponseBuilderError> for ModelsError {
+    #[track_caller]
+    fn from(err: GenerateResponseBuilderError) -> Self {
+        let kind = ModelsErrorKind::Builder(err.to_string());
+        Self::new(kind)
     }
 }
 
