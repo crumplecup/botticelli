@@ -40,15 +40,29 @@ tokio-tungstenite = { workspace = true }
 
 # Feature-gated provider SDKs
 gemini-rust = { workspace = true, optional = true }
+ollama-rs = { version = "0.3", optional = true }
 
 [features]
 default = []
-gemini = ["dep:gemini-rust", "botticelli_rate_limit/gemini"]
+
+# Generic model support (Driver trait, common types)
+models = []
+
+# Provider-specific features (each implies models)
+gemini = ["dep:gemini-rust", "botticelli_rate_limit/gemini", "models"]
+ollama = ["dep:ollama-rs", "models"]
+
+# Other providers (future - not yet implemented)
 anthropic = ["botticelli_rate_limit/anthropic"]
 huggingface = []
 groq = []
 perplexity = []
-api = []  # Marker feature for tests that make real API calls
+
+# Combined features
+local = ["gemini", "ollama", "anthropic", "huggingface", "groq", "perplexity"]
+
+# Marker feature for tests that make real API calls
+api = []
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

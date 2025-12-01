@@ -9,6 +9,7 @@
 ## Overview
 
 Add local LLM support via Ollama, enabling:
+
 - Free development and testing (no API costs)
 - Privacy (no data leaves local machine)
 - No rate limits
@@ -17,94 +18,36 @@ Add local LLM support via Ollama, enabling:
 
 ---
 
-## Phase 1: Add Dependencies and Feature Gate Hierarchy
-
-### Understanding the Feature Gate Strategy
-
-We need **three levels** of feature gates:
-
-1. **`models`** - Generic LLM model support (Driver trait, common types)
-2. **`gemini`** - Gemini-specific implementation (implies `models`)
-3. **`ollama`** - Ollama-specific implementation (implies `models`)
-
-**Rationale:**
-- Code using the `Driver` trait should gate on `models` (provider-agnostic)
-- Code specific to Gemini API should gate on `gemini`
-- Code specific to Ollama API should gate on `ollama`
-- Narrative system uses `Driver`, so it needs `models` not provider-specific gates
+## Phase 1: Add Dependencies and Feature Flag
 
 ### Changes Required
 
 #### 1. Update `crates/botticelli_models/Cargo.toml`
+
 ```toml
 [dependencies]
-# Provider-specific dependencies
+# Existing
 gemini-rust = { version = "1.5", optional = true }
+
+# Add Ollama
 ollama-rs = { version = "0.3", optional = true }
 
-# Common dependencies (always needed for models)
-async-trait = "0.1"
-tokio = { version = "1.0", features = ["full"] }
-# ... other common deps
-
 [features]
-default = ["models", "gemini"]
-
-# Generic model support (Driver trait, common types)
-models = []
-
-# Provider-specific features (each implies models)
-gemini = ["dep:gemini-rust", "models"]
-ollama = ["dep:ollama-rs", "models"]
-
-# For development: enable all providers
-dev = ["gemini", "ollama"]
+default = ["gemini"]
+gemini = ["dep:gemini-rust"]
+ollama = ["dep:ollama-rs"]  # New feature
 ```
 
-#### 2. Audit Current `#[cfg(feature = "gemini")]` Usage
+#### 2. Update workspace features if needed
 
-**Need to change to `models`:**
-- Driver trait definition
-- GenerateRequest/GenerateResponse types
-- Message, Role, Input, Output types
-- Any code that works with Driver trait generically
-
-**Keep as `gemini`:**
-- GeminiClient implementation
-- Gemini-specific error types
-- Gemini API conversions
-- gemini module exports
-
-**Add as `ollama`:**
-- OllamaClient implementation
-- Ollama-specific error types
-- Ollama API conversions
-- ollama module exports
-
-#### 3. Update `crates/botticelli_narrative/Cargo.toml`
-```toml
-[dependencies]
-botticelli_models = { path = "../botticelli_models", features = ["models"] }
-
-[features]
-# Narrative doesn't need provider-specific features
-# It works with Driver trait (gated by models)
-```
-
-#### 4. Update Workspace `Cargo.toml` (if applicable)
-```toml
-[features]
-default = ["models", "gemini"]
-models = ["botticelli_models/models"]
-gemini = ["botticelli_models/gemini"]
-ollama = ["botticelli_models/ollama"]
-```
+Check `Cargo.toml` at workspace root for feature propagation.
 
 ---
 
 ## Phase 2: Create Ollama Module Structure
 
 ### File Structure
+
 ```
 crates/botticelli_models/src/
 ├── gemini/
@@ -123,6 +66,7 @@ crates/botticelli_models/src/
 ### Create Files
 
 #### `crates/botticelli_models/src/ollama/mod.rs`
+
 ```rust
 //! Ollama LLM client implementation.
 
@@ -141,6 +85,7 @@ pub use error::{OllamaError, OllamaErrorKind, OllamaResult};
 Following Gemini's error pattern with `derive_more`.
 
 ### `crates/botticelli_models/src/ollama/error.rs`
+
 ```rust
 use derive_more::{Display, Error};
 
@@ -149,16 +94,16 @@ use derive_more::{Display, Error};
 pub enum OllamaErrorKind {
     #[display("Ollama server not running at {}", _0)]
     ServerNotRunning(String),
-    
+
     #[display("Model not found: {}", _0)]
     ModelNotFound(String),
-    
+
     #[display("Failed to pull model: {}", _0)]
     ModelPullFailed(String),
-    
+
     #[display("API error: {}", _0)]
     ApiError(String),
-    
+
     #[display("Invalid configuration: {}", _0)]
     InvalidConfiguration(String),
 }
@@ -192,6 +137,7 @@ pub type OllamaResult<T> = Result<T, OllamaError>;
 ## Phase 4: Implement Type Conversions
 
 ### `crates/botticelli_models/src/ollama/conversion.rs`
+
 ```rust
 //! Type conversions between Ollama and Botticelli types.
 
@@ -201,16 +147,16 @@ use ollama_rs::generation::completion::GenerationResponse;
 /// Convert Botticelli messages to Ollama prompt.
 pub fn messages_to_prompt(messages: &[Message]) -> String {
     let mut prompt = String::new();
-    
+
     for msg in messages {
         let role_prefix = match msg.role() {
             Role::User => "User: ",
             Role::Model => "Assistant: ",
             Role::System => "System: ",
         };
-        
+
         prompt.push_str(role_prefix);
-        
+
         for input in msg.content() {
             match input {
                 Input::Text(text) => {
@@ -223,10 +169,10 @@ pub fn messages_to_prompt(messages: &[Message]) -> String {
                 }
             }
         }
-        
+
         prompt.push('\n');
     }
-    
+
     prompt
 }
 
@@ -248,6 +194,7 @@ pub fn response_to_generate_response(
 ### `crates/botticelli_models/src/ollama/client.rs`
 
 Key features to implement:
+
 1. **No rate limiting needed** (local execution)
 2. **Connection validation** (check Ollama is running)
 3. **Model management** (check model exists, pull if needed)
@@ -267,10 +214,10 @@ use tracing::{debug, info, instrument, warn};
 pub struct OllamaClient {
     /// Ollama client instance
     client: Ollama,
-    
+
     /// Model name (e.g., "llama2", "mistral", "codellama")
     model_name: String,
-    
+
     /// Ollama server URL
     base_url: String,
 }
@@ -281,7 +228,7 @@ impl OllamaClient {
     pub fn new(model_name: impl Into<String>) -> OllamaResult<Self> {
         Self::new_with_url(model_name, "http://localhost:11434")
     }
-    
+
     /// Create a new Ollama client with custom server URL.
     #[instrument(name = "ollama_client_new_with_url")]
     pub fn new_with_url(
@@ -290,51 +237,51 @@ impl OllamaClient {
     ) -> OllamaResult<Self> {
         let model_name = model_name.into();
         let base_url = base_url.into();
-        
+
         info!(
             model = %model_name,
             url = %base_url,
             "Creating Ollama client"
         );
-        
+
         let client = Ollama::new(
             base_url.clone(),
             11434, // Default Ollama port
         );
-        
+
         Ok(Self {
             client,
             model_name,
             base_url,
         })
     }
-    
+
     /// Check if Ollama server is running and model is available.
     #[instrument(skip(self))]
     pub async fn validate(&self) -> OllamaResult<()> {
         debug!("Validating Ollama server and model availability");
-        
+
         // Check if server is reachable
         match self.client.list_local_models().await {
             Ok(models) => {
                 debug!(count = models.len(), "Found local models");
-                
+
                 // Check if our model exists
                 let model_exists = models.iter()
                     .any(|m| m.name == self.model_name);
-                
+
                 if !model_exists {
                     warn!(
                         model = %self.model_name,
                         available = ?models.iter().map(|m| &m.name).collect::<Vec<_>>(),
                         "Model not found locally"
                     );
-                    
+
                     return Err(OllamaError::new(
                         OllamaErrorKind::ModelNotFound(self.model_name.clone())
                     ));
                 }
-                
+
                 info!("Ollama server and model validated");
                 Ok(())
             }
@@ -346,12 +293,12 @@ impl OllamaClient {
             }
         }
     }
-    
+
     /// Pull model if not available locally.
     #[instrument(skip(self))]
     pub async fn ensure_model(&self) -> OllamaResult<()> {
         debug!("Ensuring model is available");
-        
+
         match self.validate().await {
             Ok(()) => {
                 debug!("Model already available");
@@ -359,7 +306,7 @@ impl OllamaClient {
             }
             Err(_) => {
                 info!(model = %self.model_name, "Pulling model");
-                
+
                 self.client
                     .pull_model(self.model_name.clone(), false)
                     .await
@@ -368,7 +315,7 @@ impl OllamaClient {
                             OllamaErrorKind::ModelPullFailed(e.to_string())
                         )
                     })?;
-                
+
                 info!("Model pulled successfully");
                 Ok(())
             }
@@ -384,21 +331,21 @@ impl Driver for OllamaClient {
         request: GenerateRequest,
     ) -> BotticelliResult<GenerateResponse> {
         debug!("Generating with Ollama");
-        
+
         // Convert messages to prompt
         let prompt = messages_to_prompt(request.messages());
-        
+
         debug!(
             prompt_length = prompt.len(),
             "Converted messages to prompt"
         );
-        
+
         // Create Ollama request
         let ollama_req = OllamaRequest::new(
             self.model_name.clone(),
             prompt,
         );
-        
+
         // Execute generation (no rate limiting needed for local)
         let response = self.client
             .generate(ollama_req)
@@ -408,12 +355,12 @@ impl Driver for OllamaClient {
                     OllamaErrorKind::ApiError(e.to_string())
                 )
             })?;
-        
+
         debug!(
             response_length = response.response.len(),
             "Received response from Ollama"
         );
-        
+
         Ok(response_to_generate_response(response).into())
     }
 }
@@ -421,36 +368,20 @@ impl Driver for OllamaClient {
 
 ---
 
-## Phase 6: Update Library Exports and Feature Gates
+## Phase 6: Update Library Exports
 
 ### `crates/botticelli_models/src/lib.rs`
 
 ```rust
-// Core types and traits (gated by "models")
-#[cfg(feature = "models")]
-mod driver;
-
-#[cfg(feature = "models")]
-mod types;
-
-// Provider-specific modules (private)
+// Existing
 #[cfg(feature = "gemini")]
-mod gemini;
+pub mod gemini;
 
+// Add Ollama
 #[cfg(feature = "ollama")]
-mod ollama;
+pub mod ollama;
 
-// Re-export core types (available when "models" enabled)
-#[cfg(feature = "models")]
-pub use driver::Driver;
-
-#[cfg(feature = "models")]
-pub use types::{
-    GenerateRequest, GenerateResponse,
-    Message, Role, Input, Output,
-};
-
-// Re-export provider clients
+// Re-exports
 #[cfg(feature = "gemini")]
 pub use gemini::GeminiClient;
 
@@ -458,42 +389,14 @@ pub use gemini::GeminiClient;
 pub use ollama::OllamaClient;
 ```
 
-### Audit and Update Existing Files
-
-#### Files that need `models` gate (not `gemini`):
-- `src/driver.rs` - Driver trait definition
-- `src/types.rs` - Core types used by all providers
-- Any generic model utilities
-
-**Change from:**
-```rust
-#[cfg(feature = "gemini")]
-pub trait Driver { /* ... */ }
-```
-
-**To:**
-```rust
-#[cfg(feature = "models")]
-pub trait Driver { /* ... */ }
-```
-
-#### Files that keep `gemini` gate:
-- `src/gemini/mod.rs`
-- `src/gemini/client.rs`
-- `src/gemini/error.rs`
-- All Gemini-specific code
-
-#### Files that get `ollama` gate:
-- `src/ollama/mod.rs`
-- `src/ollama/client.rs`
-- `src/ollama/error.rs`
-- All Ollama-specific code
+Fix this part (no pub mod)
 
 ---
 
 ## Phase 7: Add Configuration Support
 
 ### Update `botticelli.toml` to support Ollama tiers
+
 ```toml
 [providers.ollama]
 default_tier = "local"
@@ -516,41 +419,22 @@ mistral = { max_concurrent = 4 }
 
 ## Phase 8: Add Tests
 
-### Test Compilation with Feature Gates
-
-```bash
-# Test generic models feature (no providers)
-cargo test --package botticelli_models --no-default-features --features models
-
-# Test with Gemini only
-cargo test --package botticelli_models --no-default-features --features gemini
-
-# Test with Ollama only  
-cargo test --package botticelli_models --no-default-features --features ollama
-
-# Test with both providers
-cargo test --package botticelli_models --features gemini,ollama
-
-# Test all features
-cargo test --package botticelli_models --all-features
-```
-
 ### `crates/botticelli_models/tests/ollama_client_test.rs`
+
 ```rust
-#![cfg(feature = "ollama")]
-
-use botticelli_models::{OllamaClient, Driver, Message, Role, Input, GenerateRequest};
-
+#[cfg(feature = "ollama")]
 #[tokio::test]
 #[ignore] // Requires Ollama running locally
 async fn test_ollama_basic_generation() {
+    use botticelli_models::{OllamaClient, Driver, Message, Role, Input};
+
     let client = OllamaClient::new("llama2")
         .expect("Failed to create client");
-    
+
     // Validate server and model
     client.validate().await
         .expect("Ollama server not available");
-    
+
     let messages = vec![
         Message::builder()
             .role(Role::User)
@@ -558,60 +442,16 @@ async fn test_ollama_basic_generation() {
             .build()
             .expect("Valid message")
     ];
-    
+
     let request = GenerateRequest::builder()
         .messages(messages)
         .build()
         .expect("Valid request");
-    
+
     let response = client.generate(request).await
         .expect("Generation failed");
-    
+
     assert!(!response.outputs().is_empty());
-}
-
-#[tokio::test]
-#[ignore]
-async fn test_ollama_model_validation() {
-    let client = OllamaClient::new("nonexistent_model")
-        .expect("Client creation should succeed");
-    
-    // Should fail - model doesn't exist
-    let result = client.validate().await;
-    assert!(result.is_err());
-}
-```
-
-### Add Feature Gate Tests
-
-Create `crates/botticelli_models/tests/feature_gates_test.rs`:
-
-```rust
-//! Verify feature gate structure works correctly
-
-#[test]
-#[cfg(all(feature = "models", not(feature = "gemini"), not(feature = "ollama")))]
-fn test_models_feature_alone() {
-    // Should compile: Driver trait and types available
-    use botticelli_models::{Driver, GenerateRequest, Message};
-    
-    // Should NOT compile: provider clients not available
-    // use botticelli_models::GeminiClient;  // Would fail
-    // use botticelli_models::OllamaClient;  // Would fail
-}
-
-#[test]
-#[cfg(feature = "gemini")]
-fn test_gemini_implies_models() {
-    // Should compile: both Driver and GeminiClient available
-    use botticelli_models::{Driver, GeminiClient};
-}
-
-#[test]
-#[cfg(feature = "ollama")]
-fn test_ollama_implies_models() {
-    // Should compile: both Driver and OllamaClient available
-    use botticelli_models::{Driver, OllamaClient};
 }
 ```
 
@@ -620,7 +460,9 @@ fn test_ollama_implies_models() {
 ## Phase 9: Update Documentation
 
 ### Create `crates/botticelli_models/src/ollama/README.md`
+
 Document:
+
 - How to install Ollama
 - How to pull models
 - Supported models
@@ -628,7 +470,9 @@ Document:
 - Troubleshooting
 
 ### Update `GEMINI.md` → Rename to `LLM_PROVIDERS.md`
+
 Add Ollama section with:
+
 - Installation instructions
 - Model recommendations
 - Configuration examples
@@ -638,6 +482,7 @@ Add Ollama section with:
 ## Phase 10: Integration with Narrative System
 
 ### Update narrative TOML to support Ollama
+
 ```toml
 [narrative]
 name = "test_ollama"
@@ -652,6 +497,7 @@ processor = "ContentGenerationProcessor"
 ```
 
 ### Update narrative executor to handle Ollama
+
 - Recognize `provider = "ollama"` in TOML
 - Instantiate `OllamaClient` instead of `GeminiClient`
 - Pass through same `Driver` trait interface
@@ -660,16 +506,8 @@ processor = "ContentGenerationProcessor"
 
 ## Testing Strategy
 
-### Feature Gate Testing Checklist
-- [ ] Build with `--no-default-features --features models` (types only)
-- [ ] Build with `--no-default-features --features gemini` (Gemini only)
-- [ ] Build with `--no-default-features --features ollama` (Ollama only)
-- [ ] Build with `--features gemini,ollama` (both providers)
-- [ ] Build with `--all-features` (everything)
-- [ ] Verify feature gate tests pass
-- [ ] Run `just check-features` (if available)
-
 ### Manual Testing Checklist
+
 - [ ] Install Ollama: `curl https://ollama.ai/install.sh | sh`
 - [ ] Pull test model: `ollama pull llama2`
 - [ ] Verify Ollama running: `ollama list`
@@ -680,10 +518,7 @@ processor = "ContentGenerationProcessor"
 - [ ] Compare output quality vs Gemini
 
 ### Integration Testing
-- [ ] Build narrative crate with only `models` feature
-- [ ] Verify narrative works with Gemini client
-- [ ] Verify narrative works with Ollama client
-- [ ] Verify narrative fails gracefully without providers
+
 - [ ] Run actor-server with Ollama-based narratives
 - [ ] Verify tracing works with Ollama
 - [ ] Test concurrent requests (max_concurrent)
@@ -708,18 +543,21 @@ processor = "ContentGenerationProcessor"
 ## Benefits After Implementation
 
 ### For Development
+
 - **No API costs** during development
 - **No rate limits** (only local compute limits)
 - **Fast iteration** (no network latency)
 - **Offline capable** (work without internet)
 
 ### For Production
+
 - **Cost savings** for high-volume use cases
 - **Privacy** (no data sent to third parties)
 - **Compliance** (data never leaves infrastructure)
 - **Predictable performance** (no API fluctuations)
 
 ### For Users
+
 - **Choice** of local vs cloud LLMs
 - **Experimentation** with different models
 - **Learning** with open models
@@ -730,16 +568,19 @@ processor = "ContentGenerationProcessor"
 ## Rollout Plan
 
 ### Week 1: Core Implementation
+
 - Days 1-2: Dependencies, structure, error types
 - Days 3-4: Client implementation and conversions
 - Day 5: Basic tests and validation
 
 ### Week 2: Integration & Testing
+
 - Days 1-2: Configuration and narrative integration
 - Days 3-4: Comprehensive testing
 - Day 5: Documentation and cleanup
 
 ### Week 3: Polish & Deploy
+
 - Days 1-2: Performance optimization
 - Days 3-4: Additional models and features
 - Day 5: Merge to main, announce feature
@@ -749,6 +590,7 @@ processor = "ContentGenerationProcessor"
 ## Future Enhancements
 
 ### Phase 2 (Later)
+
 - Streaming support (like Gemini's streaming)
 - Vision model support (models with image inputs)
 - Embeddings support (for RAG systems)
@@ -757,6 +599,7 @@ processor = "ContentGenerationProcessor"
 - Automatic model recommendation based on task
 
 ### Phase 3 (Advanced)
+
 - Model quantization options (4-bit, 8-bit)
 - Custom model fine-tuning support
 - Batch processing optimization
@@ -768,20 +611,24 @@ processor = "ContentGenerationProcessor"
 ## Risk Mitigation
 
 ### Risk: Ollama not installed
+
 **Mitigation:** Clear error messages, documentation, optional feature flag
 
 ### Risk: Model takes too long to pull
+
 **Mitigation:** Progress indicators, async pull, cache pre-pulled models
 
 ### Risk: Local hardware insufficient
+
 **Mitigation:** Recommend models by hardware tier, fallback to cloud
 
 ### Risk: Different output quality vs Gemini
+
 **Mitigation:** Document model capabilities, provide comparison guide
 
 ---
 
-*Last Updated: 2025-12-01*  
-*Status: Ready for Implementation*  
-*Estimated Effort: 2-3 weeks*  
-*Priority: High (enables cost-free development)*
+_Last Updated: 2025-12-01_  
+_Status: Ready for Implementation_  
+_Estimated Effort: 2-3 weeks_  
+_Priority: High (enables cost-free development)_
