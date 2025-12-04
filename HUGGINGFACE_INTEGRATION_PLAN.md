@@ -13,10 +13,12 @@ Integrate HuggingFace Inference API support into Botticelli using a custom `reqw
 - Simple, maintainable implementation
 
 **API Details:**
-- Base URL: `https://api-inference.huggingface.co/models/{model_id}`
+- Base URL: `https://router.huggingface.co/v1/chat/completions`
 - Authentication: `Authorization: Bearer {token}` header
-- Endpoint: POST with JSON body
-- Response: JSON with `generated_text` field
+- Format: OpenAI-compatible chat completions
+- Request: `{"model": "...", "messages": [...], "max_tokens": ...}`
+- Response: OpenAI format with `choices[0].message.content`
+- **Important**: Only works with chat-capable models (not base models like gpt2)
 
 ## Free Tier Details
 
@@ -69,11 +71,13 @@ Integrate HuggingFace Inference API support into Botticelli using a custom `reqw
 - `crates/botticelli_models/src/lib.rs` - exports
 
 **Key implementation details:**
-- Base URL: `https://api-inference.huggingface.co/models/{model_id}`
-- Authentication via `Authorization: Bearer {token}` header
-- POST requests with JSON body
-- Response parsing handles both array and object formats
+- Endpoint: `https://router.huggingface.co/v1/chat/completions`
+- Uses OpenAI-compatible chat completions format
+- Messages with roles (user/assistant/system)
+- Direct message construction (conversions module not actively used)
+- Response: `choices[0].message.content` extraction
 - Streaming falls back to non-streaming (placeholder for future)
+- Only supports chat-capable models
 
 ### Phase 6: Configuration Integration
 
@@ -213,10 +217,11 @@ api_key_env = "HUGGINGFACE_API_TOKEN"
 - `crates/botticelli_models/tests/huggingface_api_test.rs`
 
 **Tests:**
-- Basic generation test with gpt2
-- Multiple small model test (gpt2, distilgpt2)
+- ✅ Basic generation test with meta-llama/Llama-3.2-1B-Instruct
+- ✅ Multiple model test (Llama-3.2-1B-Instruct works, Mistral-7B fails as not chat model)
 - All tests feature-gated with `#[cfg_attr(not(feature = "api"), ignore)]`
 - Minimal token usage (5-10 tokens per request)
+- All API tests passing
 
 ### Phase 8: Documentation
 
@@ -261,9 +266,13 @@ async fn test_huggingface_basic_generation() -> ModelsResult<()> {
 ```
 
 **Recommended test models (free tier friendly):**
-- `microsoft/DialoGPT-small` - Conversational, small
-- `distilgpt2` - Small GPT-2 variant
-- `google/flan-t5-small` - Instruction-following, efficient
+- `meta-llama/Llama-3.2-1B-Instruct` - Small chat model (tested, works)
+- `meta-llama/Llama-3.2-3B-Instruct` - Slightly larger
+- Other Instruct/Chat models on HuggingFace router
+
+**Models that DON'T work:**
+- Base models like `gpt2`, `distilgpt2` - not chat-capable
+- Most completion-only models - router requires chat format
 
 ### Phase 8: Documentation
 
