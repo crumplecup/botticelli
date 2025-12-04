@@ -50,6 +50,8 @@ gemini-rust = { workspace = true, optional = true }
 ollama-rs = { version = "0.3", optional = true, features = ["stream"] }
 claude-client = { version = "0.3", optional = true }
 futures = { workspace = true, optional = true }
+hf-hub = { version = "0.4.3", optional = true }
+huggingface_inference_rs = { version = "0.5.0", default-features = false, optional = true }
 
 [features]
 default = []
@@ -62,8 +64,10 @@ gemini = ["dep:gemini-rust", "botticelli_rate_limit/gemini", "models"]
 ollama = ["dep:ollama-rs", "botticelli_error/ollama", "models"]
 anthropic = ["dep:claude-client", "dep:futures", "botticelli_rate_limit/anthropic", "botticelli_error/anthropic", "models"]
 
-# Other providers (future - not yet implemented)
-huggingface = []
+# Other providers
+huggingface = ["dep:huggingface_inference_rs", "botticelli_error/huggingface", "models"]
+
+# Future providers (not yet implemented)
 groq = []
 perplexity = []
 

@@ -49,6 +49,9 @@ mod ollama;
 #[cfg(feature = "anthropic")]
 mod anthropic;
 
+#[cfg(feature = "huggingface")]
+mod huggingface;
+
 #[cfg(feature = "gemini")]
 pub use gemini::{
     ClientContent, ClientContentMessage, FunctionCall, FunctionResponse, GeminiClient,
@@ -67,4 +70,11 @@ pub use anthropic::{
     AnthropicClient, AnthropicContent, AnthropicContentBlock, AnthropicImageSource,
     AnthropicMessage, AnthropicMessageBuilder, AnthropicRequest, AnthropicRequestBuilder,
     AnthropicResponse, AnthropicResponseBuilder, AnthropicUsage,
+};
+
+#[cfg(feature = "huggingface")]
+pub use huggingface::{
+    HuggingFaceClient, HuggingFaceMessage, HuggingFaceMessageBuilder, HuggingFaceRequest,
+    HuggingFaceRequestBuilder, HuggingFaceResponse, HuggingFaceResponseBuilder,
+    HuggingFaceUsage,
 };

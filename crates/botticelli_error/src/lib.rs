@@ -56,6 +56,8 @@ pub use http::HttpError;
 pub use json::JsonError;
 #[cfg(feature = "anthropic")]
 pub use models::AnthropicErrorKind;
+#[cfg(feature = "huggingface")]
+pub use models::HuggingFaceErrorKind;
 #[cfg(feature = "ollama")]
 pub use models::OllamaErrorKind;
 #[cfg(feature = "models")]

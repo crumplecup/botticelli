@@ -90,6 +90,53 @@ pub enum AnthropicErrorKind {
     InvalidRole(String),
 }
 
+/// HuggingFace-specific error conditions (re-exported when huggingface feature is enabled).
+#[cfg(feature = "huggingface")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+pub enum HuggingFaceErrorKind {
+    /// HTTP error (connection, timeout, etc.)
+    #[display("HTTP error: {}", _0)]
+    Http(String),
+
+    /// HuggingFace API returned an error
+    #[display("API error (status {}): {message}", status)]
+    /// API error with HTTP status and message
+    ApiError {
+        /// HTTP status code
+        status: u16,
+        /// Error message
+        message: String,
+    },
+
+    /// Rate limit exceeded
+    #[display("Rate limit exceeded: {}", _0)]
+    RateLimitExceeded(String),
+
+    /// Requested model not found
+    #[display("Model not found: {}", _0)]
+    ModelNotFound(String),
+
+    /// Invalid HuggingFace client configuration
+    #[display("Invalid configuration: {}", _0)]
+    InvalidConfiguration(String),
+
+    /// Error converting between HuggingFace and Botticelli types
+    #[display("Conversion error: {}", _0)]
+    ConversionError(String),
+
+    /// Builder error when constructing responses
+    #[display("Builder error: {}", _0)]
+    Builder(String),
+
+    /// Feature not supported
+    #[display("Unsupported: {}", _0)]
+    Unsupported(String),
+
+    /// Invalid input
+    #[display("Invalid input: {}", _0)]
+    InvalidInput(String),
+}
+
 /// Model provider-specific error conditions.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::From)]
 pub enum ModelsErrorKind {
@@ -111,6 +158,12 @@ pub enum ModelsErrorKind {
     #[display("Anthropic: {}", _0)]
     #[from(AnthropicErrorKind)]
     Anthropic(AnthropicErrorKind),
+
+    /// HuggingFace-specific error (will be populated when huggingface feature is enabled)
+    #[cfg(feature = "huggingface")]
+    #[display("HuggingFace: {}", _0)]
+    #[from(HuggingFaceErrorKind)]
+    HuggingFace(HuggingFaceErrorKind),
 
     /// Invalid role for message
     #[display("Invalid role: {}", _0)]
