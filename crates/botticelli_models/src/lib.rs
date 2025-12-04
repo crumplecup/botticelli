@@ -75,6 +75,5 @@ pub use anthropic::{
 #[cfg(feature = "huggingface")]
 pub use huggingface::{
     HuggingFaceDriver, HuggingFaceMetadata, HuggingFaceParameters, HuggingFaceParametersBuilder,
-    HuggingFaceRequest, HuggingFaceRequestBuilder, HuggingFaceResponse,
-    HuggingFaceResponseBuilder,
+    HuggingFaceRequest, HuggingFaceRequestBuilder, HuggingFaceResponse, HuggingFaceResponseBuilder,
 };

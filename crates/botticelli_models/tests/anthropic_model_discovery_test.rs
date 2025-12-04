@@ -1,13 +1,14 @@
-use botticelli_models::{AnthropicClient, AnthropicContentBlock, AnthropicMessage, AnthropicRequest};
+use botticelli_models::{
+    AnthropicClient, AnthropicContentBlock, AnthropicMessage, AnthropicRequest,
+};
 
 /// Test to discover which Anthropic models are available with current API key
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
 async fn test_discover_available_models() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
-    
-    let api_key = std::env::var("ANTHROPIC_API_KEY")
-        .expect("ANTHROPIC_API_KEY must be set");
+
+    let api_key = std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set");
 
     // We'll test each model individually
 
@@ -29,7 +30,7 @@ async fn test_discover_available_models() -> Result<(), Box<dyn std::error::Erro
         let content_block = AnthropicContentBlock::Text {
             text: "Hi".to_string(),
         };
-        
+
         let message = AnthropicMessage::builder()
             .role("user".to_string())
             .content(vec![content_block])
@@ -42,10 +43,10 @@ async fn test_discover_available_models() -> Result<(), Box<dyn std::error::Erro
             .build()?;
 
         print!("Testing {:<35} ... ", model);
-        
+
         // Create a new client with this specific model
         let test_client = AnthropicClient::new(api_key.clone(), model);
-        
+
         match test_client.generate_anthropic(&request).await {
             Ok(response) => {
                 println!("✓ AVAILABLE (usage: {:?})", response.usage());

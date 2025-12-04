@@ -1,8 +1,6 @@
 //! Type conversions between Botticelli and HuggingFace formats.
 
-use crate::huggingface::{
-    HuggingFaceParameters, HuggingFaceRequest, HuggingFaceResponse,
-};
+use crate::huggingface::{HuggingFaceParameters, HuggingFaceRequest, HuggingFaceResponse};
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output};
 use botticelli_error::{HuggingFaceErrorKind, ModelsError, ModelsResult};
 
@@ -26,13 +24,14 @@ pub fn to_huggingface_request(
             params_builder.temperature(*temp);
         }
 
-        let params = params_builder
-            .build()
-            .map_err(|e| {
-                ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(
-                    HuggingFaceErrorKind::RequestConversion(format!("Failed to build parameters: {}", e)),
-                ))
-            })?;
+        let params = params_builder.build().map_err(|e| {
+            ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(
+                HuggingFaceErrorKind::RequestConversion(format!(
+                    "Failed to build parameters: {}",
+                    e
+                )),
+            ))
+        })?;
         builder.parameters(Some(params));
     }
 
@@ -87,7 +86,10 @@ pub fn from_huggingface_response(resp: &HuggingFaceResponse) -> ModelsResult<Gen
         .build()
         .map_err(|e| {
             ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(
-                HuggingFaceErrorKind::ResponseConversion(format!("Failed to build response: {}", e)),
+                HuggingFaceErrorKind::ResponseConversion(format!(
+                    "Failed to build response: {}",
+                    e
+                )),
             ))
         })
 }

@@ -18,15 +18,13 @@ async fn test_anthropic_simple_generation() -> Result<(), Box<dyn std::error::Er
         )])
         .build()?;
 
-    let request = GenerateRequest::builder()
-        .messages(vec![message])
-        .build()?;
+    let request = GenerateRequest::builder().messages(vec![message]).build()?;
 
     let response = client.generate(&request).await?;
 
     assert!(!response.outputs().is_empty());
     println!("Response: {:?}", response.outputs());
-    
+
     Ok(())
 }
 
@@ -52,6 +50,6 @@ async fn test_anthropic_with_temperature() -> Result<(), Box<dyn std::error::Err
 
     assert!(!response.outputs().is_empty());
     println!("Response with temperature: {:?}", response.outputs());
-    
+
     Ok(())
 }

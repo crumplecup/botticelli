@@ -1,6 +1,6 @@
 //! HuggingFace Inference API driver using reqwest.
 
-use crate::huggingface::{conversions, HuggingFaceResponse};
+use crate::huggingface::{HuggingFaceResponse, conversions};
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliResult, HuggingFaceErrorKind, ModelsError, ModelsResult};
@@ -74,21 +74,21 @@ impl BotticelliDriver for HuggingFaceDriver {
         let hf_request = conversions::to_huggingface_request(req, &self.model)?;
 
         let url = format!("{}/{}", self.base_url, self.model);
-        
+
         let mut body = json!({
             "inputs": hf_request.inputs(),
         });
 
         if let Some(params) = hf_request.parameters() {
             let mut params_json = json!({});
-            
+
             if let Some(max_tokens) = params.max_new_tokens() {
                 params_json["max_new_tokens"] = json!(max_tokens);
             }
             if let Some(temp) = params.temperature() {
                 params_json["temperature"] = json!(temp);
             }
-            
+
             body["parameters"] = params_json;
         }
 
@@ -117,13 +117,13 @@ impl BotticelliDriver for HuggingFaceDriver {
         if !status.is_success() {
             let error_text = response.text().await.unwrap_or_default();
             error!(status = %status, error = %error_text, "API error");
-            
-            return Err(ModelsError::new(
-                botticelli_error::ModelsErrorKind::HuggingFace(
+
+            return Err(
+                ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(
                     HuggingFaceErrorKind::Api(format!("API error {}: {}", status, error_text)),
-                ),
-            )
-            .into());
+                ))
+                .into(),
+            );
         }
 
         let response_text = response.text().await.map_err(|e| {
@@ -135,12 +135,16 @@ impl BotticelliDriver for HuggingFaceDriver {
 
         debug!(response_len = response_text.len(), "Received response");
 
-        let response_json: serde_json::Value = serde_json::from_str(&response_text).map_err(|e| {
-            error!(error = ?e, response = %response_text, "Failed to parse JSON");
-            ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(
-                HuggingFaceErrorKind::ResponseConversion(format!("Failed to parse JSON: {}", e)),
-            ))
-        })?;
+        let response_json: serde_json::Value =
+            serde_json::from_str(&response_text).map_err(|e| {
+                error!(error = ?e, response = %response_text, "Failed to parse JSON");
+                ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(
+                    HuggingFaceErrorKind::ResponseConversion(format!(
+                        "Failed to parse JSON: {}",
+                        e
+                    )),
+                ))
+            })?;
 
         let generated_text = if let Some(array) = response_json.as_array() {
             array
@@ -158,12 +162,14 @@ impl BotticelliDriver for HuggingFaceDriver {
         } else if let Some(text) = response_json.get("generated_text").and_then(|v| v.as_str()) {
             text.to_string()
         } else {
-            return Err(ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(
-                HuggingFaceErrorKind::ResponseConversion(
-                    "Missing generated_text in response".to_string(),
-                ),
-            ))
-            .into());
+            return Err(
+                ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(
+                    HuggingFaceErrorKind::ResponseConversion(
+                        "Missing generated_text in response".to_string(),
+                    ),
+                ))
+                .into(),
+            );
         };
 
         let hf_response = HuggingFaceResponse::builder()
@@ -214,10 +220,8 @@ impl Streaming for HuggingFaceDriver {
                     .is_final(true)
                     .build()
                     .map_err(|e| {
-                        ModelsError::new(botticelli_error::ModelsErrorKind::Builder(
-                            e.to_string(),
-                        ))
-                        .into()
+                        ModelsError::new(botticelli_error::ModelsErrorKind::Builder(e.to_string()))
+                            .into()
                     })
             })
             .collect();
