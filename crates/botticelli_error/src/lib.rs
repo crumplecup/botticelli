@@ -58,6 +58,9 @@ pub use json::JsonError;
 pub use models::AnthropicErrorKind;
 #[cfg(feature = "huggingface")]
 pub use models::HuggingFaceErrorKind;
+
+#[cfg(feature = "groq")]
+pub use models::GroqErrorKind;
 #[cfg(feature = "ollama")]
 pub use models::OllamaErrorKind;
 #[cfg(feature = "models")]

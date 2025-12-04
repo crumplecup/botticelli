@@ -64,11 +64,9 @@ gemini = ["dep:gemini-rust", "botticelli_rate_limit/gemini", "models"]
 ollama = ["dep:ollama-rs", "botticelli_error/ollama", "models"]
 anthropic = ["dep:claude-client", "dep:futures", "botticelli_rate_limit/anthropic", "botticelli_error/anthropic", "models"]
 
-# Other providers
-huggingface = ["dep:huggingface_inference_rs", "botticelli_error/huggingface", "models"]
-
-# Future providers (not yet implemented)
-groq = []
+# OpenAI-compatible providers (use openai_compat module)
+huggingface = ["botticelli_error/huggingface", "models"]
+groq = ["botticelli_error/groq", "models"]
 perplexity = []
 
 # Combined features

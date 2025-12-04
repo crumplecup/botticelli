@@ -119,6 +119,35 @@ pub enum HuggingFaceErrorKind {
     ResponseConversion(String),
 }
 
+/// Errors specific to Groq models.
+#[cfg(feature = "groq")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+pub enum GroqErrorKind {
+    /// API error from Groq
+    #[display("API error: {}", _0)]
+    Api(String),
+
+    /// Rate limit exceeded
+    #[display("Rate limit exceeded")]
+    RateLimit,
+
+    /// Model not found
+    #[display("Model not found: {}", _0)]
+    ModelNotFound(String),
+
+    /// Invalid request
+    #[display("Invalid request: {}", _0)]
+    InvalidRequest(String),
+
+    /// Request conversion failed
+    #[display("Request conversion failed: {}", _0)]
+    RequestConversion(String),
+
+    /// Response conversion failed
+    #[display("Response conversion failed: {}", _0)]
+    ResponseConversion(String),
+}
+
 /// Model provider-specific error conditions.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::From)]
 pub enum ModelsErrorKind {
@@ -146,6 +175,11 @@ pub enum ModelsErrorKind {
     #[display("HuggingFace: {}", _0)]
     #[from(HuggingFaceErrorKind)]
     HuggingFace(HuggingFaceErrorKind),
+
+    /// Groq-specific error
+    #[cfg(feature = "groq")]
+    #[from(GroqErrorKind)]
+    Groq(GroqErrorKind),
 
     /// Invalid role for message
     #[display("Invalid role: {}", _0)]
@@ -179,3 +213,7 @@ impl ModelsError {
 
 /// Result type for model operations.
 pub type ModelsResult<T> = Result<T, ModelsError>;
+
+/// Errors specific to Groq models.
+#[cfg(feature = "groq")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]

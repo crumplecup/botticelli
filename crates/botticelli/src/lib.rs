@@ -39,6 +39,7 @@
 //! - `gemini` - Google Gemini API support
 //! - `anthropic` - Anthropic Claude API support
 //! - `huggingface` - HuggingFace Inference API support
+//! - `groq` - Groq LPU Inference API support
 //! - `ollama` - Ollama local LLM support
 //! - `database` - PostgreSQL database integration
 //! - `discord` - Discord bot integration
@@ -104,6 +105,9 @@ pub use botticelli_models::AnthropicClient;
 
 #[cfg(feature = "huggingface")]
 pub use botticelli_models::HuggingFaceDriver;
+
+#[cfg(feature = "groq")]
+pub use botticelli_models::GroqDriver;
 
 #[cfg(feature = "database")]
 pub use botticelli_database::*;

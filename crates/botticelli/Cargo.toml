@@ -58,6 +58,7 @@ gemini = ["botticelli_models", "botticelli_models/gemini"]
 ollama = ["botticelli_models", "botticelli_models/ollama"]
 anthropic = ["botticelli_models", "botticelli_models/anthropic"]
 huggingface = ["botticelli_models", "botticelli_models/huggingface"]
+groq = ["botticelli_models", "botticelli_models/groq"]
 
 # Database feature
 database = ["botticelli_database", "botticelli_narrative/database", "dep:ractor"]
@@ -86,7 +87,7 @@ otel-otlp = [
 ]
 
 # Convenience feature for all providers
-all-providers = ["gemini", "ollama", "anthropic", "huggingface"]
+all-providers = ["gemini", "ollama", "anthropic", "huggingface", "groq"]
 
 # Testing feature flags
 api = [] # Empty marker feature to gate API-consuming tests
@@ -95,6 +96,7 @@ local = [
   "ollama",
   "anthropic",
   "huggingface",
+  "groq",
   "database",
   "discord",
   "tui",

@@ -54,6 +54,9 @@ mod anthropic;
 #[cfg(feature = "huggingface")]
 mod huggingface;
 
+#[cfg(feature = "groq")]
+mod groq;
+
 #[cfg(feature = "gemini")]
 pub use gemini::{
     ClientContent, ClientContentMessage, FunctionCall, FunctionResponse, GeminiClient,
@@ -76,3 +79,6 @@ pub use anthropic::{
 
 #[cfg(feature = "huggingface")]
 pub use huggingface::HuggingFaceDriver;
+
+#[cfg(feature = "groq")]
+pub use groq::GroqDriver;
