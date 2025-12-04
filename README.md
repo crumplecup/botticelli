@@ -26,7 +26,7 @@ Botticelli enables you to define complex, multi-step LLM workflows in TOML files
 - 🎭 **Multi-Act Narratives**: Define sequential LLM workflows in TOML
 - 🔄 **Narrative Composition**: Reference narratives within narratives, use carousels for iteration
 - 🎨 **Multimodal Support**: Text, images, audio, video, and documents
-- 🔌 **Multiple Backends**: Gemini, Anthropic Claude, HuggingFace, Ollama (OpenAI planned)
+- 🔌 **Multiple Backends**: Gemini, Anthropic Claude, HuggingFace, Groq, Ollama (OpenAI planned)
 - ⚙️ **Per-Act Configuration**: Different models, temperature, max_tokens per act
 - 💾 **Database Integration**: PostgreSQL storage with automatic schema inference
 - 🤖 **Bot Server**: Automated content generation, curation, and posting actors
@@ -59,6 +59,7 @@ Botticelli is organized as a Cargo workspace with focused, independent crates:
   - `gemini` - Google Gemini models (1.5 Pro, 1.5 Flash, 2.0 Flash, etc.)
   - `anthropic` - Anthropic Claude models
   - `huggingface` - HuggingFace Inference API (thousands of models)
+  - `groq` - Groq AI LPU inference (ultra-fast, 300+ tok/s)
   - `ollama` - Local models via Ollama
   - OpenAI GPT (planned)
 
@@ -724,6 +725,7 @@ Comprehensive guides and references:
 - **[Discord Setup Guide](DISCORD_SETUP.md)** - Configure Discord bot integration
 - **[PostgreSQL Setup](POSTGRES.md)** - Database configuration
 - **[HuggingFace Setup](HUGGINGFACE.md)** - HuggingFace Inference API integration
+- **[Groq Setup](GROQ.md)** - Groq AI LPU Inference API integration
 - **[Media Storage](MEDIA_STORAGE.md)** - Media storage configuration
 - **[Gemini Integration](GEMINI.md)** - Google Gemini API setup
 - **[Usage Tiers](USAGE_TIERS.md)** - API rate limiting and tier management
