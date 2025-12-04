@@ -37,6 +37,9 @@
 //! # Cargo Features
 //!
 //! - `gemini` - Google Gemini API support
+//! - `anthropic` - Anthropic Claude API support
+//! - `huggingface` - HuggingFace Inference API support
+//! - `ollama` - Ollama local LLM support
 //! - `database` - PostgreSQL database integration
 //! - `discord` - Discord bot integration
 //! - `tui` - Terminal user interface
@@ -98,6 +101,9 @@ pub use botticelli_models::{OllamaClient, OllamaError, OllamaErrorKind, OllamaRe
 
 #[cfg(feature = "anthropic")]
 pub use botticelli_models::AnthropicClient;
+
+#[cfg(feature = "huggingface")]
+pub use botticelli_models::HuggingFaceDriver;
 
 #[cfg(feature = "database")]
 pub use botticelli_database::*;
