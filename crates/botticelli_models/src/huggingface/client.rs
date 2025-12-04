@@ -41,7 +41,7 @@ impl HuggingFaceClient {
         })?;
 
         let client = Client::new();
-        let base_url = "https://api-inference.huggingface.co/models".to_string();
+        let base_url = "https://router.huggingface.co/v1/models".to_string();
         let rate_limits = RateLimitConfig::unlimited("huggingface");
 
         Ok(Self {
