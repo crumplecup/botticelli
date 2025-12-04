@@ -1105,3 +1105,6 @@ db-backup-all:
     echo "✅ Backups created:"
     echo "   - backup_host_${timestamp}.sql"
     echo "   - backup_container_${timestamp}.sql"
+
+# Test API-based features (expensive - use sparingly)
+# Usage: just test-api [package]
