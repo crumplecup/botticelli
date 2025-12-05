@@ -4,6 +4,7 @@ mod database;
 #[cfg(feature = "discord")]
 mod discord;
 mod echo;
+mod execute_act;
 mod execute_narrative;
 mod generate;
 mod generate_llm;
@@ -17,6 +18,7 @@ pub use discord::{
     DiscordPostMessageTool,
 };
 pub use echo::EchoTool;
+pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;
 pub use server_info::ServerInfoTool;
@@ -106,8 +108,9 @@ impl Default for ToolRegistry {
         // Validation tool
         registry.register(Arc::new(ValidateNarrativeTool));
         
-        // Execution tools (Phase 3 - Framework)
+        // Execution tools (Phase 2 & 3)
         registry.register(Arc::new(GenerateTool));
+        registry.register(Arc::new(ExecuteActTool::new()));
         registry.register(Arc::new(ExecuteNarrativeTool::new()));
         
         // Execution tools (Phase 4 - Multi-backend LLM integration)

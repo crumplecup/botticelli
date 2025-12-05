@@ -30,6 +30,18 @@ pub enum McpError {
     /// Tool not allowed
     #[display("Tool not allowed: {}", _0)]
     ToolNotAllowed(String),
+
+    /// Backend unavailable
+    #[display("Backend unavailable: {}", _0)]
+    BackendUnavailable(String),
+
+    /// Unsupported model
+    #[display("Unsupported model: {}", _0)]
+    UnsupportedModel(String),
+
+    /// Execution error
+    #[display("Execution error: {}", _0)]
+    ExecutionError(String),
 }
 
 impl std::error::Error for McpError {}
