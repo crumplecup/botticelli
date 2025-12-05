@@ -26,8 +26,14 @@ anyhow = "1.0"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
+# Environment
+dotenvy = { workspace = true }
+
 # Time
 chrono = "0.4"
+
+# HTTP client (for Discord tools)
+reqwest = { version = "0.12", features = ["json"], optional = true }
 
 # Internal dependencies
 botticelli_core = { path = "../botticelli_core", version = "0.2.0" }
@@ -47,6 +53,7 @@ tokio-test = "0.4"
 [features]
 default = []
 database = ["dep:botticelli_database", "dep:diesel"]
+discord = ["dep:reqwest"]
 
 # LLM backend features
 gemini = ["dep:botticelli_interface", "dep:botticelli_models", "botticelli_models/gemini"]

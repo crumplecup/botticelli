@@ -1,6 +1,8 @@
 //! Tool implementations for MCP server.
 
 mod database;
+#[cfg(feature = "discord")]
+mod discord;
 mod echo;
 mod execute_narrative;
 mod generate;
@@ -9,6 +11,11 @@ mod server_info;
 mod validate_narrative;
 
 pub use database::QueryContentTool;
+#[cfg(feature = "discord")]
+pub use discord::{
+    DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool,
+    DiscordPostMessageTool,
+};
 pub use echo::EchoTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;
@@ -147,6 +154,43 @@ impl Default for ToolRegistry {
         // Database tool (feature-gated)
         #[cfg(feature = "database")]
         registry.register(Arc::new(QueryContentTool));
+        
+        // Discord tools (feature-gated)
+        #[cfg(feature = "discord")]
+        {
+            use crate::tools::{
+                DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool,
+                DiscordPostMessageTool,
+            };
+            
+            if let Ok(tool) = DiscordPostMessageTool::new() {
+                registry.register(Arc::new(tool));
+                tracing::info!("Discord post message tool registered");
+            } else {
+                tracing::warn!("Discord post message not available (check DISCORD_TOKEN)");
+            }
+            
+            if let Ok(tool) = DiscordGetMessagesTool::new() {
+                registry.register(Arc::new(tool));
+                tracing::info!("Discord get messages tool registered");
+            } else {
+                tracing::warn!("Discord get messages not available (check DISCORD_TOKEN)");
+            }
+            
+            if let Ok(tool) = DiscordGetGuildInfoTool::new() {
+                registry.register(Arc::new(tool));
+                tracing::info!("Discord get guild info tool registered");
+            } else {
+                tracing::warn!("Discord get guild info not available (check DISCORD_TOKEN)");
+            }
+            
+            if let Ok(tool) = DiscordGetChannelsTool::new() {
+                registry.register(Arc::new(tool));
+                tracing::info!("Discord get channels tool registered");
+            } else {
+                tracing::warn!("Discord get channels not available (check DISCORD_TOKEN)");
+            }
+        }
         
         tracing::info!("ToolRegistry initialized with {} tools", registry.tools.len());
         registry

@@ -14,6 +14,9 @@ use botticelli_mcp::ContentResource;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Load environment variables from .env file
+    let _ = dotenvy::dotenv();
+
     // Initialize tracing
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))

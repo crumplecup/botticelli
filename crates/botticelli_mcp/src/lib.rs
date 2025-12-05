@@ -45,6 +45,12 @@ pub use tools::{
     ToolRegistry, ValidateNarrativeTool,
 };
 
+#[cfg(feature = "discord")]
+pub use tools::{
+    DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool,
+    DiscordPostMessageTool,
+};
+
 // Export LLM tools based on features
 #[cfg(feature = "gemini")]
 pub use tools::GenerateGeminiTool;
