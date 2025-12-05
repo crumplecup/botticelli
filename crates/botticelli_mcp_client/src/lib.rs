@@ -8,11 +8,17 @@
 
 mod client;
 mod error;
+mod llm_adapter;
 mod schema;
 mod tool_executor;
 
 pub use client::{LlmBackend, McpClient};
 pub use error::{McpClientError, McpClientErrorKind, McpClientResult};
+pub use llm_adapter::{
+    AnthropicAdapter, FinishReason, GenerationConfig, GenerationResponse, GeminiAdapter,
+    GroqAdapter, LlmAdapter, Message, MessageRole, OllamaAdapter, ToolCall, ToolResult,
+    TokenUsage,
+};
 pub use schema::{
     AnthropicToolSchema, GeminiToolSchema, GroqToolSchema, HuggingFaceToolSchema,
     OllamaToolSchema, OpenAIToolSchema, ToolSchema, ToolSchemaConverter,
