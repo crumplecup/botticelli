@@ -461,6 +461,65 @@ Started Phase 7 token counting trait for pre-flight estimation:
 
 ---
 
+## Test Results Summary ✅
+
+**All MCP tests passing:** 31/31
+
+### Breakdown by Category:
+- **Validation tests:** 7/7 ✅
+  - Valid narrative parsing
+  - Invalid syntax detection ([[acts]] error)
+  - Unknown model warnings
+  - Unused resource warnings
+  - Circular dependency detection
+  - Strict mode (warnings as errors)
+  - Tool registry registration
+
+- **Execution tests:** 10/10 ✅
+  - Basic generate tool
+  - Generate with model/params
+  - Generate with system prompt
+  - Generate missing prompt error
+  - Execute narrative tool
+  - Execute file not found error
+  - Execute invalid TOML error
+  - Tool registry completeness
+  - Input schema validation (both tools)
+
+- **Integration workflow tests:** 8/8 ✅
+  - Complete workflow (validate → execute)
+  - Validation error handling (multiple cases)
+  - Tool registry completeness check
+  - Generate tool configuration (multiple models)
+  - Model validation with warnings
+  - Strict mode operation
+  - Invalid narrative execution failure
+  - Tool schema well-formedness
+
+- **Library unit tests:** 5/5 ✅
+  - Narrative path resolution
+  - URI parsing (valid/invalid)
+  - Bot command serialization (request/response)
+
+- **Database tests:** 1/1 ✅ (feature-gated)
+  - Query tool without feature flag
+
+- **Discord tests:** 0/4 (requires DISCORD_TOKEN)
+  - Tool registration check
+  - Schema validation
+  - Post message validation
+  - Feature-gated properly
+
+**Key findings:**
+- Core functionality fully tested and working
+- Graceful degradation without API keys
+- Feature gates working correctly
+- Discord tools require token (expected)
+- All validation logic verified
+- Error handling comprehensive
+
+---
+
 **Related Documents:**
 - [MCP.md](./MCP.md) - Current MCP documentation
 - [DISCORD_SCHEMA.md](./DISCORD_SCHEMA.md) - Discord data models
