@@ -492,147 +492,157 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 .iter()
                 .any(|input| matches!(input, Input::Text(text) if !text.trim().is_empty()));
 
-            let (response_text, model, temperature, max_tokens, token_usage, duration) = if has_text_prompt {
-                // This act needs an LLM response
-                // Build the request with conversation history + processed inputs
-                tracing::debug!(
-                    processed_inputs_count = processed_inputs.len(),
-                    "Building LLM request with processed inputs"
-                );
+            let (response_text, model, temperature, max_tokens, token_usage, duration) =
+                if has_text_prompt {
+                    // This act needs an LLM response
+                    // Build the request with conversation history + processed inputs
+                    tracing::debug!(
+                        processed_inputs_count = processed_inputs.len(),
+                        "Building LLM request with processed inputs"
+                    );
 
-                for (idx, input) in processed_inputs.iter().enumerate() {
-                    match input {
-                        Input::Text(text) => {
-                            let preview = text
-                                .char_indices()
-                                .take(100)
-                                .last()
-                                .map(|(idx, _)| &text[..=idx])
-                                .unwrap_or(text);
-                            tracing::debug!(
-                                input_index = idx,
-                                text_length = text.len(),
-                                text_preview = preview,
-                                "Processed input is Text"
-                            );
-                        }
-                        other => {
-                            tracing::debug!(
-                                input_index = idx,
-                                input_type = ?other,
-                                "Processed input is non-Text"
-                            );
+                    for (idx, input) in processed_inputs.iter().enumerate() {
+                        match input {
+                            Input::Text(text) => {
+                                let preview = text
+                                    .char_indices()
+                                    .take(100)
+                                    .last()
+                                    .map(|(idx, _)| &text[..=idx])
+                                    .unwrap_or(text);
+                                tracing::debug!(
+                                    input_index = idx,
+                                    text_length = text.len(),
+                                    text_preview = preview,
+                                    "Processed input is Text"
+                                );
+                            }
+                            other => {
+                                tracing::debug!(
+                                    input_index = idx,
+                                    input_type = ?other,
+                                    "Processed input is non-Text"
+                                );
+                            }
                         }
                     }
-                }
 
-                conversation_history.push(
-                    MessageBuilder::default()
-                        .role(Role::User)
-                        .content(processed_inputs.clone())
+                    conversation_history.push(
+                        MessageBuilder::default()
+                            .role(Role::User)
+                            .content(processed_inputs.clone())
+                            .build()
+                            .map_err(|e| {
+                                NarrativeError::new(NarrativeErrorKind::ConfigurationError(
+                                    format!("Failed to build message: {}", e),
+                                ))
+                            })?,
+                    );
+
+                    // Apply narrative-level defaults for model/temperature/max_tokens if act doesn't override
+                    let metadata = narrative.metadata();
+                    let model = config.model().clone().or_else(|| metadata.model().clone());
+                    let temperature = config.temperature().or_else(|| *metadata.temperature());
+                    let max_tokens = config.max_tokens().or_else(|| *metadata.max_tokens());
+
+                    let request = GenerateRequest::builder()
+                        .messages(conversation_history.clone())
+                        .max_tokens(max_tokens)
+                        .temperature(temperature)
+                        .model(model.clone())
                         .build()
                         .map_err(|e| {
-                            NarrativeError::new(NarrativeErrorKind::ConfigurationError(format!(
-                                "Failed to build message: {}",
-                                e
-                            )))
-                        })?,
-                );
+                            BotticelliError::from(NarrativeError::new(
+                                NarrativeErrorKind::FileRead(format!(
+                                    "Failed to build request: {}",
+                                    e
+                                )),
+                            ))
+                        })?;
 
-                // Apply narrative-level defaults for model/temperature/max_tokens if act doesn't override
-                let metadata = narrative.metadata();
-                let model = config.model().clone().or_else(|| metadata.model().clone());
-                let temperature = config.temperature().or_else(|| *metadata.temperature());
-                let max_tokens = config.max_tokens().or_else(|| *metadata.max_tokens());
+                    // Call the LLM
+                    let llm_span = tracing::info_span!(
+                        "llm_call",
+                        act = %act_name,
+                        model = ?request.model(),
+                        temperature = ?request.temperature(),
+                        max_tokens = ?request.max_tokens(),
+                        message_count = request.messages().len(),
+                        tokens = tracing::field::Empty,
+                    );
 
-                let request = GenerateRequest::builder()
-                    .messages(conversation_history.clone())
-                    .max_tokens(max_tokens)
-                    .temperature(temperature)
-                    .model(model.clone())
-                    .build()
-                    .map_err(|e| {
-                        BotticelliError::from(NarrativeError::new(NarrativeErrorKind::FileRead(
-                            format!("Failed to build request: {}", e),
-                        )))
-                    })?;
+                    let act_start = Instant::now();
+                    let response = {
+                        let _enter = llm_span.enter();
+                        tracing::info!("Calling LLM API");
+                        let result = self.driver.generate(&request).await?;
+                        let act_duration = act_start.elapsed();
 
-                // Call the LLM
-                let llm_span = tracing::info_span!(
-                    "llm_call",
-                    act = %act_name,
-                    model = ?request.model(),
-                    temperature = ?request.temperature(),
-                    max_tokens = ?request.max_tokens(),
-                    message_count = request.messages().len(),
-                    tokens = tracing::field::Empty,
-                );
-
-                let act_start = Instant::now();
-                let response = {
-                    let _enter = llm_span.enter();
-                    tracing::info!("Calling LLM API");
-                    let result = self.driver.generate(&request).await?;
+                        tracing::info!(
+                            outputs_count = result.outputs().len(),
+                            duration_ms = act_duration.as_millis(),
+                            "LLM response received"
+                        );
+                        result
+                    };
                     let act_duration = act_start.elapsed();
 
-                    tracing::info!(
-                        outputs_count = result.outputs().len(),
-                        duration_ms = act_duration.as_millis(),
-                        "LLM response received"
-                    );
-                    result
-                };
-                let act_duration = act_start.elapsed();
-
-                // Debug log the output types
-                for (idx, output) in response.outputs().iter().enumerate() {
-                    match output {
-                        botticelli_core::Output::Text(text) => {
-                            let preview: String = text.chars().take(100).collect();
-                            let preview = preview.as_str();
-                            tracing::debug!(
-                                output_index = idx,
-                                text_length = text.len(),
-                                text_preview = preview,
-                                "Output is Text variant"
-                            );
-                        }
-                        other => {
-                            tracing::debug!(
-                                output_index = idx,
-                                output_type = ?other,
-                                "Output is non-Text variant"
-                            );
+                    // Debug log the output types
+                    for (idx, output) in response.outputs().iter().enumerate() {
+                        match output {
+                            botticelli_core::Output::Text(text) => {
+                                let preview: String = text.chars().take(100).collect();
+                                let preview = preview.as_str();
+                                tracing::debug!(
+                                    output_index = idx,
+                                    text_length = text.len(),
+                                    text_preview = preview,
+                                    "Output is Text variant"
+                                );
+                            }
+                            other => {
+                                tracing::debug!(
+                                    output_index = idx,
+                                    output_type = ?other,
+                                    "Output is non-Text variant"
+                                );
+                            }
                         }
                     }
-                }
 
-                // Extract text from response
-                let response_text = extract_text_from_outputs(response.outputs())?;
+                    // Extract text from response
+                    let response_text = extract_text_from_outputs(response.outputs())?;
 
-                let preview = response_text.chars().take(200).collect::<String>();
-                tracing::debug!(
-                    response_length = response_text.len(),
-                    response_preview = preview,
-                    "Response text extracted from LLM outputs"
-                );
+                    let preview = response_text.chars().take(200).collect::<String>();
+                    tracing::debug!(
+                        response_length = response_text.len(),
+                        response_preview = preview,
+                        "Response text extracted from LLM outputs"
+                    );
 
-                (response_text, model, temperature, max_tokens, *response.usage(), Some(act_duration))
-            } else {
-                // Action-only act - no LLM call needed
-                tracing::debug!(
-                    act = %act_name,
-                    "Skipping LLM call for action-only act"
-                );
-                // Use bot command result as response if available, otherwise generic success message
-                let response_text = if let Some(result) = bot_command_result {
-                    serde_json::to_string(&result)
-                        .unwrap_or_else(|_| "Action completed successfully".to_string())
+                    (
+                        response_text,
+                        model,
+                        temperature,
+                        max_tokens,
+                        *response.usage(),
+                        Some(act_duration),
+                    )
                 } else {
-                    "Action completed successfully".to_string()
+                    // Action-only act - no LLM call needed
+                    tracing::debug!(
+                        act = %act_name,
+                        "Skipping LLM call for action-only act"
+                    );
+                    // Use bot command result as response if available, otherwise generic success message
+                    let response_text = if let Some(result) = bot_command_result {
+                        serde_json::to_string(&result)
+                            .unwrap_or_else(|_| "Action completed successfully".to_string())
+                    } else {
+                        "Action completed successfully".to_string()
+                    };
+                    (response_text, None, None, None, None, None)
                 };
-                (response_text, None, None, None, None, None)
-            };
 
             // Create the act execution (store processed inputs)
             let act_execution = ActExecution {
@@ -781,17 +791,20 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
         let total_token_usage = act_executions
             .iter()
             .filter_map(|act| act.token_usage.as_ref())
-            .fold(None, |acc: Option<botticelli_core::TokenUsageData>, usage| {
-                Some(match acc {
-                    None => *usage,
-                    Some(acc) => botticelli_core::TokenUsageData::builder()
-                        .input_tokens(acc.input_tokens() + usage.input_tokens())
-                        .output_tokens(acc.output_tokens() + usage.output_tokens())
-                        .total_tokens(acc.total_tokens() + usage.total_tokens())
-                        .build()
-                        .expect("Valid token usage"),
-                })
-            });
+            .fold(
+                None,
+                |acc: Option<botticelli_core::TokenUsageData>, usage| {
+                    Some(match acc {
+                        None => *usage,
+                        Some(acc) => botticelli_core::TokenUsageData::builder()
+                            .input_tokens(acc.input_tokens() + usage.input_tokens())
+                            .output_tokens(acc.output_tokens() + usage.output_tokens())
+                            .total_tokens(acc.total_tokens() + usage.total_tokens())
+                            .build()
+                            .expect("Valid token usage"),
+                    })
+                },
+            );
 
         let total_duration_ms = act_executions
             .iter()

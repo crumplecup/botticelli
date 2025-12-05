@@ -1,5 +1,6 @@
 //! Tool implementations for MCP server.
 
+mod bot_commands;
 mod database;
 #[cfg(feature = "discord")]
 mod discord;
@@ -15,6 +16,7 @@ mod server_info;
 mod social;
 mod validate_narrative;
 
+pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 pub use database::QueryContentTool;
 #[cfg(feature = "discord")]
 pub use discord::{
@@ -24,6 +26,7 @@ pub use echo::EchoTool;
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;
+pub use metrics::{ActMetrics, ExecutionMetrics};
 #[cfg(any(
     feature = "gemini",
     feature = "anthropic",
@@ -32,7 +35,6 @@ pub use generate::GenerateTool;
     feature = "groq"
 ))]
 pub use narrative_processor::McpProcessorCollector;
-pub use metrics::{ActMetrics, ExecutionMetrics};
 pub use server_info::ServerInfoTool;
 #[cfg(feature = "discord")]
 pub use social::{DiscordBotCommandTool, DiscordPostTool};
