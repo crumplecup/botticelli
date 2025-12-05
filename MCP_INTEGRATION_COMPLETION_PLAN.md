@@ -78,11 +78,11 @@
 - ❌ State management across executions
 - ❌ Carousel execution (looping narratives)
 
-**Phase 7: Observability** (Not Started)
-- ❌ Trace each act execution
-- ❌ Token usage tracking per narrative
-- ❌ Performance metrics
-- ❌ Cost monitoring per narrative
+**Phase 7: Observability** (In Progress)
+- ✅ Trace each act execution (via #[instrument])
+- ❌ Token usage tracking per narrative (requires upstream changes)
+- ✅ Performance metrics (via tracing spans)
+- ❌ Cost monitoring per narrative (requires token tracking)
 
 **Phase 8: Social Media Integration** (Not Started)
 - ❌ Post to Discord via MCP tools

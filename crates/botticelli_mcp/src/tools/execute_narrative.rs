@@ -43,6 +43,15 @@ use std::sync::Arc;
     feature = "huggingface",
     feature = "groq"
 ))]
+use tracing::{debug, error, instrument};
+
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "ollama",
+    feature = "huggingface",
+    feature = "groq"
+))]
 /// MCP tool for executing narrative TOML files with multi-backend LLM support.
 pub struct ExecuteNarrativeTool {
     #[cfg(feature = "gemini")]
@@ -93,18 +102,25 @@ impl ExecuteNarrativeTool {
         }
     }
 
+    #[instrument(skip(self, driver), fields(file_path, narrative_name))]
     async fn execute_with_driver<D: BotticelliDriver + Clone>(
         &self,
         driver: D,
         file_path: &str,
         narrative_name: &str,
     ) -> McpResult<Value> {
+        debug!("Starting narrative execution");
         let executor = NarrativeExecutor::new(driver);
         
         let execution = executor
             .execute_narrative_by_name(file_path, narrative_name)
             .await
-            .map_err(|e| McpError::ToolExecutionFailed(format!("Narrative execution failed: {}", e)))?;
+            .map_err(|e| {
+                error!(error = ?e, "Narrative execution failed");
+                McpError::ToolExecutionFailed(format!("Narrative execution failed: {}", e))
+            })?;
+        
+        debug!(act_count = execution.act_executions.len(), "Narrative execution completed");
 
         let acts: Vec<Value> = execution
             .act_executions
@@ -195,7 +211,9 @@ impl McpTool for ExecuteNarrativeTool {
         feature = "huggingface",
         feature = "groq"
     ))]
+    #[instrument(skip(self, input), fields(tool = "execute_narrative"))]
     async fn execute(&self, input: Value) -> McpResult<Value> {
+        debug!("Executing narrative tool");
         let file_path = input
             .get("file_path")
             .and_then(|v| v.as_str())
@@ -210,6 +228,8 @@ impl McpTool for ExecuteNarrativeTool {
             .get("backend")
             .and_then(|v| v.as_str())
             .unwrap_or("gemini");
+        
+        debug!(file_path, backend, "Processing narrative execution request");
 
         // Determine narrative name from file path (use filename without extension)
         let narrative_name = std::path::Path::new(file_path)
