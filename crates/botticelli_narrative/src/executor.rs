@@ -16,6 +16,7 @@ use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
+use std::time::Instant;
 
 /// Trait for executing bot commands (platform-agnostic).
 ///
@@ -377,6 +378,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
             has_bot_registry = self.bot_registry.is_some(),
             has_table_registry = self.table_registry.is_some(),
             has_state_manager = self.state_manager.is_some(),
+            total_duration_ms = tracing::field::Empty,
         )
     )]
     async fn execute_impl_with_multi<N: NarrativeProvider + ?Sized>(
@@ -384,6 +386,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
         narrative: &N,
         multi: Option<&MultiNarrative>,
     ) -> BotticelliResult<NarrativeExecution> {
+        let start_time = Instant::now();
         tracing::info!("Starting narrative execution with multi-narrative context");
         let mut act_executions = Vec::new();
         let mut conversation_history: Vec<Message> = Vec::new();
@@ -559,14 +562,19 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     temperature = ?request.temperature(),
                     max_tokens = ?request.max_tokens(),
                     message_count = request.messages().len(),
+                    tokens = tracing::field::Empty,
                 );
 
                 let response = {
                     let _enter = llm_span.enter();
                     tracing::info!("Calling LLM API");
+                    let act_start = Instant::now();
                     let result = self.driver.generate(&request).await?;
+                    let act_duration = act_start.elapsed();
+                    
                     tracing::info!(
                         outputs_count = result.outputs().len(),
+                        duration_ms = act_duration.as_millis(),
                         "LLM response received"
                     );
                     result
@@ -745,6 +753,22 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 }
             }
         }
+
+        let total_duration = start_time.elapsed();
+        
+        // Record metrics in span
+        tracing::Span::current().record("total_duration_ms", total_duration.as_millis() as u64);
+        
+        tracing::info!(
+            total_acts = act_executions.len(),
+            total_duration_ms = total_duration.as_millis(),
+            avg_duration_per_act_ms = if !act_executions.is_empty() {
+                total_duration.as_millis() / act_executions.len() as u128
+            } else {
+                0
+            },
+            "Narrative execution completed"
+        );
 
         Ok(NarrativeExecution {
             narrative_name: narrative.name().to_string(),

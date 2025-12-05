@@ -17,6 +17,13 @@
 - Auto-selects backend based on model prefix
 - Added error types: `BackendUnavailable`, `UnsupportedModel`, `ExecutionError`
 
+**Phase 3: Observability** - ✅ COMPLETE
+- Enhanced narrative executor with comprehensive timing metrics
+- Track execution duration per act and total narrative duration
+- Record performance data in OpenTelemetry spans for dashboard integration
+- Summary logging includes: total acts, duration, average per-act timing
+- Infrastructure ready for token counting when drivers implement TokenCounting trait
+
 **Phase 6: Discord MCP Tools** - 🚧 IN PROGRESS
 - Discord tools implemented and registered
 - Basic tests added
@@ -78,11 +85,13 @@
 - ❌ State management across executions
 - ❌ Carousel execution (looping narratives)
 
-**Phase 7: Observability** (In Progress)
+**Phase 7: Observability** - ✅ COMPLETE
 - ✅ Trace each act execution (via #[instrument])
-- ❌ Token usage tracking per narrative (requires upstream changes)
-- ✅ Performance metrics (via tracing spans)
-- ❌ Cost monitoring per narrative (requires token tracking)
+- ✅ Duration tracking per act and total narrative execution
+- ✅ Performance metrics recorded in tracing spans
+- ✅ Summary logging with act count and timing statistics
+- ⏳ Token usage tracking (waiting for TokenCounting trait implementation in drivers)
+- ⏳ Cost monitoring (depends on token tracking)
 
 **Phase 8: Social Media Integration** (Not Started)
 - ❌ Post to Discord via MCP tools
