@@ -217,6 +217,9 @@ This index tracks all planning documents in the workspace. When documents are co
 - [MCP.md](./MCP.md) - User guide and reference
 - **MCP_INTEGRATION_COMPLETION_PLAN.md** - `current` (2025-12-05)
   - Plan for completing Phases 6-8: Discord tools, observability, and workflows
+- **TOKEN_COUNTING_IMPLEMENTATION.md** - `current` (2025-12-05)
+  - Implementation plan for TokenCounting trait across all LLM backends
+  - Phase 1 complete: trait implemented for Gemini, Claude, Groq, Ollama, HuggingFace
 
 ### Archived Documents
 - **MCP_INTEGRATION_STRATEGIC_PLAN.md** - `1118d0c` (2025-12-05)
