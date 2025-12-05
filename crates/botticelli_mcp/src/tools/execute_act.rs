@@ -21,7 +21,7 @@ use tracing::{debug, error, instrument};
     feature = "huggingface",
     feature = "groq"
 ))]
-use botticelli_core::{GenerateRequest, Input, MessageBuilder, Role};
+use botticelli_core::{GenerateRequest, Input, MessageBuilder, Output, Role};
 
 #[cfg(any(
     feature = "gemini",
@@ -89,15 +89,26 @@ impl ExecuteActTool {
             #[cfg(feature = "gemini")]
             gemini_driver: botticelli_models::GeminiClient::new().ok().map(Arc::new),
             #[cfg(feature = "anthropic")]
-            anthropic_driver: botticelli_models::AnthropicClient::new().ok().map(Arc::new),
+            anthropic_driver: std::env::var("ANTHROPIC_API_KEY").ok().map(|key| {
+                Arc::new(botticelli_models::AnthropicClient::new(
+                    key,
+                    "claude-3-5-sonnet-20241022".to_string(),
+                ))
+            }),
             #[cfg(feature = "ollama")]
-            ollama_driver: botticelli_models::OllamaClient::new().ok().map(Arc::new),
-            #[cfg(feature = "huggingface")]
-            huggingface_driver: botticelli_models::HuggingFaceDriver::new()
+            ollama_driver: botticelli_models::OllamaClient::new("llama3.2")
                 .ok()
                 .map(Arc::new),
+            #[cfg(feature = "huggingface")]
+            huggingface_driver: std::env::var("HUGGINGFACE_MODEL")
+                .ok()
+                .and_then(|model| botticelli_models::HuggingFaceDriver::new(model).ok())
+                .map(Arc::new),
             #[cfg(feature = "groq")]
-            groq_driver: botticelli_models::GroqDriver::new().ok().map(Arc::new),
+            groq_driver: std::env::var("GROQ_MODEL")
+                .ok()
+                .and_then(|model| botticelli_models::GroqDriver::new(model).ok())
+                .map(Arc::new),
         }
     }
 
@@ -108,6 +119,7 @@ impl ExecuteActTool {
             return self
                 .gemini_driver
                 .clone()
+                .map(|driver| driver as Arc<dyn BotticelliDriver>)
                 .ok_or_else(|| McpError::BackendUnavailable("Gemini".into()));
         }
 
@@ -116,6 +128,7 @@ impl ExecuteActTool {
             return self
                 .anthropic_driver
                 .clone()
+                .map(|driver| driver as Arc<dyn BotticelliDriver>)
                 .ok_or_else(|| McpError::BackendUnavailable("Anthropic".into()));
         }
 
@@ -127,6 +140,7 @@ impl ExecuteActTool {
             return self
                 .ollama_driver
                 .clone()
+                .map(|driver| driver as Arc<dyn BotticelliDriver>)
                 .ok_or_else(|| McpError::BackendUnavailable("Ollama".into()));
         }
 
@@ -135,6 +149,7 @@ impl ExecuteActTool {
             return self
                 .huggingface_driver
                 .clone()
+                .map(|driver| driver as Arc<dyn BotticelliDriver>)
                 .ok_or_else(|| McpError::BackendUnavailable("HuggingFace".into()));
         }
 
@@ -143,10 +158,24 @@ impl ExecuteActTool {
             return self
                 .groq_driver
                 .clone()
+                .map(|driver| driver as Arc<dyn BotticelliDriver>)
                 .ok_or_else(|| McpError::BackendUnavailable("Groq".into()));
         }
 
         Err(McpError::UnsupportedModel(model.to_string()))
+    }
+}
+
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "ollama",
+    feature = "huggingface",
+    feature = "groq"
+))]
+impl Default for ExecuteActTool {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -293,10 +322,10 @@ impl McpTool for ExecuteActTool {
 
         // Build request
         let request = GenerateRequest::builder()
-            .model(model.to_string())
+            .model(Some(model.to_string()))
             .messages(messages)
-            .max_tokens(max_tokens)
-            .temperature(temperature)
+            .max_tokens(Some(max_tokens))
+            .temperature(Some(temperature as f32))
             .build()
             .map_err(|e| {
                 error!(error = ?e, "Failed to build request");
@@ -306,14 +335,28 @@ impl McpTool for ExecuteActTool {
         // Execute
         match driver.generate(&request).await {
             Ok(response) => {
+                // Extract text from outputs
+                let text = response
+                    .outputs()
+                    .iter()
+                    .filter_map(|output| {
+                        if let Output::Text(t) = output {
+                            Some(t.as_str())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+
                 debug!(
-                    response_len = response.text().len(),
+                    response_len = text.len(),
                     "Act executed successfully"
                 );
 
                 Ok(json!({
                     "success": true,
-                    "response": response.text(),
+                    "response": text,
                     "model": model
                 }))
             }

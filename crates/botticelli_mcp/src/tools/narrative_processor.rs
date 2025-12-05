@@ -10,7 +10,7 @@
     feature = "huggingface",
     feature = "groq"
 ))]
-use botticelli_narrative::ActProcessor;
+use botticelli_narrative::{ActProcessor, ProcessorContext};
 
 #[cfg(any(
     feature = "gemini",
@@ -19,7 +19,7 @@ use botticelli_narrative::ActProcessor;
     feature = "huggingface",
     feature = "groq"
 ))]
-use botticelli_narrative::ProcessorContext;
+use botticelli_error::BotticelliResult;
 
 #[cfg(any(
     feature = "gemini",
@@ -117,13 +117,18 @@ impl ActProcessor for McpProcessorCollector {
         "mcp_collector"
     }
 
+    fn should_process(&self, _context: &ProcessorContext<'_>) -> bool {
+        // This processor doesn't transform data, it just collects from others
+        false
+    }
+
     #[instrument(skip(self, _context), fields(processor = "mcp_collector"))]
     async fn process(
         &self,
-        _context: &ProcessorContext,
-    ) -> Result<Option<Value>, Box<dyn std::error::Error + Send + Sync>> {
+        _context: &ProcessorContext<'_>,
+    ) -> BotticelliResult<()> {
         debug!("MCP processor collector called (passthrough)");
         // This processor doesn't transform data, it just collects from others
-        Ok(None)
+        Ok(())
     }
 }

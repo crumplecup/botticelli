@@ -157,6 +157,7 @@ pub enum ModelsErrorKind {
 
     /// Builder error (derive_builder failures)
     #[display("Builder error: {}", _0)]
+    #[from(ignore)]
     Builder(String),
 
     /// Ollama-specific error (will be populated when ollama feature is enabled)
@@ -183,10 +184,12 @@ pub enum ModelsErrorKind {
 
     /// Invalid role for message
     #[display("Invalid role: {}", _0)]
+    #[from(ignore)]
     InvalidRole(String),
 
     /// Token counting failed
     #[display("Token counting failed: {}", _0)]
+    #[from(ignore)]
     TokenCountingFailed(String),
 }
 
