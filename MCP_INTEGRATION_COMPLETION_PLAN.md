@@ -24,6 +24,13 @@
 - Summary logging includes: total acts, duration, average per-act timing
 - Infrastructure ready for token counting when drivers implement TokenCounting trait
 
+**Phase 4: Advanced Execution - Processors** - 🚧 IN PROGRESS
+- Created `McpProcessorCollector` for collecting processor outputs
+- Feature-gated to LLM backends
+- Compiles cleanly with proper feature gates
+- Needs integration with execute_narrative tool
+- Needs testing
+
 **Phase 6: Discord MCP Tools** - 🚧 IN PROGRESS
 - Discord tools implemented and registered
 - Basic tests added
@@ -79,7 +86,7 @@
 **Phase 6: Advanced Execution Features** (Partially Complete)
 - ✅ Basic narrative execution
 - ✅ Multi-backend LLM support
-- ❌ Processors for structured data extraction
+- 🚧 Processors for structured data extraction (McpProcessorCollector created, needs integration)
 - ❌ Bot command integration (Discord queries in narratives)
 - ❌ Table query integration (database lookups in narratives)
 - ❌ State management across executions

@@ -8,6 +8,7 @@ mod execute_act;
 mod execute_narrative;
 mod generate;
 mod generate_llm;
+mod narrative_processor;
 mod server_info;
 mod validate_narrative;
 
@@ -21,6 +22,14 @@ pub use echo::EchoTool;
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "ollama",
+    feature = "huggingface",
+    feature = "groq"
+))]
+pub use narrative_processor::McpProcessorCollector;
 pub use server_info::ServerInfoTool;
 pub use validate_narrative::ValidateNarrativeTool;
 
