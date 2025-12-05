@@ -10,6 +10,9 @@ async fn test_save_and_list() {
     let execution = NarrativeExecution {
         narrative_name: "test".to_string(),
         act_executions: vec![],
+        total_token_usage: None,
+        total_cost_usd: None,
+        total_duration_ms: None,
     };
 
     let _id = repo.save_execution(&execution).await.unwrap();

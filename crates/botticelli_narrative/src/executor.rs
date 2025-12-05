@@ -449,6 +449,9 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                         max_tokens: *config.max_tokens(),
                         response: combined_response.clone(),
                         sequence_number,
+                        token_usage: None, // TODO: Aggregate from nested executions
+                        estimated_cost_usd: None,
+                        duration_ms: None,
                     });
 
                     // Add the combined response to conversation history
@@ -489,7 +492,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 .iter()
                 .any(|input| matches!(input, Input::Text(text) if !text.trim().is_empty()));
 
-            let (response_text, model, temperature, max_tokens) = if has_text_prompt {
+            let (response_text, model, temperature, max_tokens, token_usage, duration) = if has_text_prompt {
                 // This act needs an LLM response
                 // Build the request with conversation history + processed inputs
                 tracing::debug!(
@@ -565,10 +568,10 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     tokens = tracing::field::Empty,
                 );
 
+                let act_start = Instant::now();
                 let response = {
                     let _enter = llm_span.enter();
                     tracing::info!("Calling LLM API");
-                    let act_start = Instant::now();
                     let result = self.driver.generate(&request).await?;
                     let act_duration = act_start.elapsed();
 
@@ -579,6 +582,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     );
                     result
                 };
+                let act_duration = act_start.elapsed();
 
                 // Debug log the output types
                 for (idx, output) in response.outputs().iter().enumerate() {
@@ -613,7 +617,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     "Response text extracted from LLM outputs"
                 );
 
-                (response_text, model, temperature, max_tokens)
+                (response_text, model, temperature, max_tokens, *response.usage(), Some(act_duration))
             } else {
                 // Action-only act - no LLM call needed
                 tracing::debug!(
@@ -627,7 +631,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 } else {
                     "Action completed successfully".to_string()
                 };
-                (response_text, None, None, None)
+                (response_text, None, None, None, None, None)
             };
 
             // Create the act execution (store processed inputs)
@@ -639,6 +643,9 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 max_tokens,
                 response: response_text.clone(),
                 sequence_number,
+                token_usage,
+                estimated_cost_usd: None, // TODO: Calculate from token_usage + model pricing
+                duration_ms: duration.map(|d| d.as_millis() as u64),
             };
 
             tracing::debug!(
@@ -770,9 +777,39 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
             "Narrative execution completed"
         );
 
+        // Calculate totals
+        let total_token_usage = act_executions
+            .iter()
+            .filter_map(|act| act.token_usage.as_ref())
+            .fold(None, |acc: Option<botticelli_core::TokenUsageData>, usage| {
+                Some(match acc {
+                    None => *usage,
+                    Some(acc) => botticelli_core::TokenUsageData::builder()
+                        .input_tokens(acc.input_tokens() + usage.input_tokens())
+                        .output_tokens(acc.output_tokens() + usage.output_tokens())
+                        .total_tokens(acc.total_tokens() + usage.total_tokens())
+                        .build()
+                        .expect("Valid token usage"),
+                })
+            });
+
+        let total_duration_ms = act_executions
+            .iter()
+            .filter_map(|act| act.duration_ms)
+            .sum::<u64>();
+
+        let total_duration_ms = if total_duration_ms > 0 {
+            Some(total_duration_ms)
+        } else {
+            None
+        };
+
         Ok(NarrativeExecution {
             narrative_name: narrative.name().to_string(),
             act_executions,
+            total_token_usage,
+            total_cost_usd: None, // TODO: Calculate from total_token_usage + model pricing
+            total_duration_ms,
         })
     }
 

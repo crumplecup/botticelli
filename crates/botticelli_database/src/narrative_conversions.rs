@@ -171,6 +171,9 @@ pub fn rows_to_act_execution(
         max_tokens: act_row.max_tokens.map(|t| t as u32),
         response: act_row.response,
         sequence_number: act_row.sequence_number as usize,
+        token_usage: None, // TODO: Load from database once schema is updated
+        estimated_cost_usd: None,
+        duration_ms: None,
     })
 }
 
@@ -209,5 +212,8 @@ pub fn rows_to_narrative_execution(
     NarrativeExecution {
         narrative_name,
         act_executions,
+        total_token_usage: None, // TODO: Load from database once schema is updated
+        total_cost_usd: None,
+        total_duration_ms: None,
     }
 }

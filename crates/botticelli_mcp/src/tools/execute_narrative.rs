@@ -140,21 +140,55 @@ impl ExecuteNarrativeTool {
             .act_executions
             .iter()
             .map(|act| {
-                json!({
+                let mut act_json = json!({
                     "act_name": &act.act_name,
                     "model": &act.model,
                     "response": &act.response,
-                })
+                });
+
+                // Add observability data if available
+                if let Some(ref usage) = act.token_usage {
+                    act_json["token_usage"] = json!({
+                        "input_tokens": usage.input_tokens(),
+                        "output_tokens": usage.output_tokens(),
+                        "total_tokens": usage.total_tokens(),
+                    });
+                }
+                if let Some(cost) = act.estimated_cost_usd {
+                    act_json["estimated_cost_usd"] = json!(cost);
+                }
+                if let Some(duration) = act.duration_ms {
+                    act_json["duration_ms"] = json!(duration);
+                }
+
+                act_json
             })
             .collect();
 
-        Ok(json!({
+        let mut result = json!({
             "status": "success",
             "narrative_name": &execution.narrative_name,
             "act_count": execution.act_executions.len(),
             "acts": acts,
             "final_response": execution.act_executions.last().map(|a| a.response.as_str()).unwrap_or(""),
-        }))
+        });
+
+        // Add narrative-level observability data
+        if let Some(ref usage) = execution.total_token_usage {
+            result["total_token_usage"] = json!({
+                "input_tokens": usage.input_tokens(),
+                "output_tokens": usage.output_tokens(),
+                "total_tokens": usage.total_tokens(),
+            });
+        }
+        if let Some(cost) = execution.total_cost_usd {
+            result["total_cost_usd"] = json!(cost);
+        }
+        if let Some(duration) = execution.total_duration_ms {
+            result["total_duration_ms"] = json!(duration);
+        }
+
+        Ok(result)
     }
 }
 

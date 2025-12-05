@@ -4,7 +4,7 @@
 //! shared between the executor (in botticelli-narrative) and persistence layer
 //! (in botticelli-database).
 
-use botticelli_core::Input;
+use botticelli_core::{Input, TokenUsageData};
 use serde::{Deserialize, Serialize};
 
 /// Execution result for a single act in a narrative.
@@ -30,6 +30,18 @@ pub struct ActExecution {
 
     /// Position in the execution sequence (0-indexed).
     pub sequence_number: usize,
+
+    /// Token usage for this act (input, output, total).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_usage: Option<TokenUsageData>,
+
+    /// Estimated cost in USD for this act.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub estimated_cost_usd: Option<f64>,
+
+    /// Duration in milliseconds for this act.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub duration_ms: Option<u64>,
 }
 
 /// Complete execution result for a narrative.
@@ -40,4 +52,16 @@ pub struct NarrativeExecution {
 
     /// Ordered list of act executions.
     pub act_executions: Vec<ActExecution>,
+
+    /// Total token usage across all acts.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_token_usage: Option<TokenUsageData>,
+
+    /// Total estimated cost in USD.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_cost_usd: Option<f64>,
+
+    /// Total duration in milliseconds.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_duration_ms: Option<u64>,
 }

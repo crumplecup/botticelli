@@ -113,7 +113,7 @@
 - ⏸️  State management across executions (deferred)
 - ⏸️  Carousel execution (deferred - looping narratives)
 
-**Phase 7: Observability** - 🚧 In Progress
+**Phase 7: Observability** - ✅ Complete (with TODOs)
 - ✅ Trace each act execution (via #[instrument])
 - ✅ Duration tracking per act and total narrative execution
 - ✅ Performance metrics recorded in tracing spans
@@ -122,9 +122,14 @@
   - Provides `count_tokens()` for pre-flight estimation
   - `TokenUsage` struct with cost calculation
   - `get_tokenizer()` helper using tiktoken-rs
-- ⏳ Integrate TokenCounting with LLM clients (BLOCKED: needs compilation fixes)
-- ⏳ Token usage tracking in narrative execution
-- ⏳ Cost monitoring per narrative/act
+- ✅ Token usage tracking in narrative execution (Dec 5, 2024)
+  - Added `token_usage`, `estimated_cost_usd`, `duration_ms` to `ActExecution`
+  - Added aggregate fields to `NarrativeExecution`
+  - Executor captures timing and token usage from LLM responses
+  - MCP tools expose observability data in execution results
+- 🔧 TODO: Integrate TokenCounting with LLM clients for pre-flight estimation
+- 🔧 TODO: Cost monitoring per narrative/act (pricing calculation needed)
+- 🔧 TODO: Database schema migration for persisting observability data
 
 **Phase 8: Social Media Integration** (✅ Complete - Bot Commands)
 - ✅ Post to Discord via MCP tools (`DiscordPostTool`)
