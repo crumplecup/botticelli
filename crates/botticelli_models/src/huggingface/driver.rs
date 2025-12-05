@@ -8,7 +8,7 @@ use botticelli_interface::{BotticelliDriver, StreamChunk, Streaming};
 use botticelli_rate_limit::RateLimitConfig;
 use futures_util::stream::Stream;
 use std::pin::Pin;
-use tracing::instrument;
+use tracing::{debug, instrument};
 
 /// HuggingFace Inference API driver.
 #[derive(Debug, Clone)]
@@ -122,5 +122,16 @@ impl Streaming for HuggingFaceDriver {
             .collect();
 
         Ok(Box::pin(futures_util::stream::iter(chunks)))
+    }
+}
+
+impl botticelli_interface::TokenCounting for HuggingFaceDriver {
+    #[instrument(skip(self, text), fields(text_len = text.len()))]
+    fn count_tokens(&self, text: &str) -> Result<usize, botticelli_error::BotticelliError> {
+        // Use tiktoken approximation for HuggingFace
+        let tokenizer = crate::gpt_tokenizer()?;
+        let count = crate::count_tokens_tiktoken(text, &tokenizer);
+        debug!(token_count = count, "Counted tokens for HuggingFace");
+        Ok(count)
     }
 }

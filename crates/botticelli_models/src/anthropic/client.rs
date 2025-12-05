@@ -207,3 +207,14 @@ impl BotticelliDriver for AnthropicClient {
         Ok(response)
     }
 }
+
+impl botticelli_interface::TokenCounting for AnthropicClient {
+    #[instrument(skip(self, text), fields(text_len = text.len()))]
+    fn count_tokens(&self, text: &str) -> Result<usize, botticelli_error::BotticelliError> {
+        // Use tiktoken approximation for Claude (cl100k_base encoding)
+        let tokenizer = crate::claude_tokenizer()?;
+        let count = crate::count_tokens_tiktoken(text, &tokenizer);
+        debug!(token_count = count, "Counted tokens for Anthropic");
+        Ok(count)
+    }
+}

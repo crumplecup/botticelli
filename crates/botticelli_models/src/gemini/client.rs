@@ -46,7 +46,7 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 use std::env;
 use std::sync::{Arc, Mutex};
-use tracing::instrument;
+use tracing::{debug, instrument};
 
 use gemini_rust::{Gemini, client::Model};
 
@@ -1144,5 +1144,17 @@ impl Vision for GeminiClient {
 
     fn max_image_size_bytes(&self) -> usize {
         20 * 1024 * 1024 // 20MB
+    }
+}
+
+impl botticelli_interface::TokenCounting for GeminiClient {
+    #[instrument(skip(self, text), fields(text_len = text.len()))]
+    fn count_tokens(&self, text: &str) -> Result<usize, botticelli_error::BotticelliError> {
+        // Use simple approximation: chars / 4
+        // Gemini has a countTokens API, but it requires an async call
+        // For now, use approximation to keep the trait signature simple
+        let count = Self::estimate_tokens(text) as usize;
+        debug!(token_count = count, "Estimated tokens for Gemini");
+        Ok(count)
     }
 }

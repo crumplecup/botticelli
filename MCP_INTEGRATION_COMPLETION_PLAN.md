@@ -99,13 +99,14 @@
 - ⏸️  State management across executions (deferred)
 - ⏸️  Carousel execution (deferred - looping narratives)
 
-**Phase 7: Observability** - ✅ COMPLETE
+**Phase 7: Observability** - 🚧 In Progress
 - ✅ Trace each act execution (via #[instrument])
 - ✅ Duration tracking per act and total narrative execution
 - ✅ Performance metrics recorded in tracing spans
 - ✅ Summary logging with act count and timing statistics
-- ⏳ Token usage tracking (waiting for TokenCounting trait implementation in drivers)
-- ⏳ Cost monitoring (depends on token tracking)
+- ✅ Token counting trait implemented for all LLM backends (Dec 5, 2024)
+- ⏳ Token usage tracking integration with narrative execution
+- ⏳ Cost monitoring (depends on token tracking integration)
 
 **Phase 8: Social Media Integration** (✅ Complete - Bot Commands)
 - ✅ Post to Discord via MCP tools (`DiscordPostTool`)

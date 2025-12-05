@@ -184,6 +184,10 @@ pub enum ModelsErrorKind {
     /// Invalid role for message
     #[display("Invalid role: {}", _0)]
     InvalidRole(String),
+
+    /// Token counting failed
+    #[display("Token counting failed: {}", _0)]
+    TokenCountingFailed(String),
 }
 
 /// Model provider error with location tracking.

@@ -52,6 +52,7 @@ claude-client = { version = "0.3", optional = true }
 futures = { workspace = true, optional = true }
 hf-hub = { version = "0.4.3", optional = true }
 huggingface_inference_rs = { version = "0.5.0", default-features = false, optional = true }
+tiktoken-rs = "0.5"
 
 [features]
 default = []

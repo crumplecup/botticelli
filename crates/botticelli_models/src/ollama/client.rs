@@ -249,3 +249,15 @@ impl botticelli_interface::Streaming for OllamaClient {
         Ok(Box::pin(mapped_stream))
     }
 }
+
+impl botticelli_interface::TokenCounting for OllamaClient {
+    #[instrument(skip(self, text), fields(text_len = text.len()))]
+    fn count_tokens(&self, text: &str) -> Result<usize, botticelli_error::BotticelliError> {
+        // Use tiktoken approximation for Ollama
+        // Different models have different tokenizers, but this is a reasonable default
+        let tokenizer = crate::gpt_tokenizer()?;
+        let count = crate::count_tokens_tiktoken(text, &tokenizer);
+        debug!(token_count = count, "Counted tokens for Ollama");
+        Ok(count)
+    }
+}

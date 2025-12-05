@@ -38,11 +38,13 @@
 
 mod metrics;
 mod openai_compat;
+mod token_counting;
 
 pub use metrics::{LlmMetrics, classify_error};
 pub use openai_compat::{
     ChatMessage, ChatRequest, ChatResponse, OpenAICompatError, OpenAICompatibleClient,
 };
+pub use token_counting::{claude_tokenizer, count_tokens_tiktoken, gpt_tokenizer};
 
 #[cfg(feature = "gemini")]
 mod gemini;
