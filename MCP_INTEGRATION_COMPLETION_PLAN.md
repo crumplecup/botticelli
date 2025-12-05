@@ -11,6 +11,12 @@
 - Validation tool already implemented and working
 - Ready for user testing with Claude Desktop
 
+**Phase 2: Execution Tools** - ✅ COMPLETE
+- Added `execute_act` tool for single LLM calls without narrative overhead
+- Supports all 5 backends (gemini, anthropic, ollama, huggingface, groq)
+- Auto-selects backend based on model prefix
+- Added error types: `BackendUnavailable`, `UnsupportedModel`, `ExecutionError`
+
 **Phase 6: Discord MCP Tools** - 🚧 IN PROGRESS
 - Discord tools implemented and registered
 - Basic tests added
@@ -33,13 +39,14 @@
 2. `server_info` - Server metadata
 3. `validate_narrative` - TOML validation
 4. `generate` - Text generation framework
-5. `execute_narrative` - Narrative execution
-6. `generate_gemini` - Google Gemini
-7. `generate_anthropic` - Anthropic Claude
-8. `generate_ollama` - Local Ollama
-9. `generate_huggingface` - HuggingFace
-10. `generate_groq` - Groq
-11. `query_content` - Database queries
+5. `execute_act` - Single act execution (NEW - Phase 2)
+6. `execute_narrative` - Narrative execution
+7. `generate_gemini` - Google Gemini
+8. `generate_anthropic` - Anthropic Claude
+9. `generate_ollama` - Local Ollama
+10. `generate_huggingface` - HuggingFace
+11. `generate_groq` - Groq
+12. `query_content` - Database queries
 
 #### Existing Social Media Infrastructure
 
