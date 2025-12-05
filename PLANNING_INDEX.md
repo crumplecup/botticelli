@@ -45,12 +45,9 @@ This index tracks all planning documents in the workspace. When documents are co
   - Analysis and fix strategy for narrative composition loading
 - **PODMAN_CONTAINERIZATION.md** - `current` (2025-11-30)
   - Strategy for containerizing bot-server with Podman
-- **NARRATIVE_VALIDATOR_DESIGN.md** - `current` (2025-12-05)
+- **NARRATIVE_VALIDATOR_DESIGN.md** - `1118d0c` (2025-12-05)
   - Comprehensive design for narrative TOML validation with actionable error messages
-  - Phases 1-6 complete: validator infrastructure, CLI integration, MCP tools
-- **MCP_MULTI_LLM_IMPLEMENTATION.md** - `current` (2025-12-05)
-  - Multi-backend LLM implementation strategy for MCP server
-  - Replaces macro approach with explicit per-backend tools
+  - Phases 1-5 complete: validator infrastructure, CLI integration, MCP tools, multi-LLM execution
 
 ### Testing & Quality
 - **TESTING_PATTERNS.md** - `718bf35` (2025-11-22)
@@ -216,21 +213,16 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ## MCP Integration (Dec 2024)
 
-### Documents
-- [MCP_INTEGRATION_STRATEGIC_PLAN.md](./MCP_INTEGRATION_STRATEGIC_PLAN.md) - Complete 5-phase strategy
+### Active Documents
 - [MCP.md](./MCP.md) - User guide and reference
 
-### Status: Phase 1 MVP Complete ✅
-- Core MCP server functional
-- 3 tools implemented (echo, get_server_info, query_content)  
-- Database integration working
-- Tests passing
-- Ready for Claude Desktop
-
-### Next Steps
-- Test with Claude Desktop
-- User feedback
-- Phase 2: Resources & Prompts (if validated)
+### Archived Documents
+- **MCP_INTEGRATION_STRATEGIC_PLAN.md** - `1118d0c` (2025-12-05)
+  - Complete 5-phase strategy (Phase 1 MVP complete)
+- **MCP_COPILOT_CLI_SETUP.md** - `1118d0c` (2025-12-05)  
+  - Setup guide for MCP with GitHub Copilot CLI
+- **MCP_MULTI_LLM_IMPLEMENTATION.md** - `1118d0c` (2025-12-05)
+  - Multi-backend LLM implementation strategy for MCP server
 
 ---
 
@@ -254,4 +246,3 @@ This index tracks all planning documents in the workspace. When documents are co
 5. Plan Phase 2 (if validated)
 
 **Status:** Ready for testing and validation
-- [MCP Multi-LLM Implementation](MCP_MULTI_LLM_IMPLEMENTATION.md) - Strategy for implementing multiple LLM backends
