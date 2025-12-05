@@ -1,0 +1,42 @@
+[package]
+name = "botticelli_mcp"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT OR Apache-2.0"
+description = "Model Context Protocol (MCP) server for Botticelli"
+
+[dependencies]
+# MCP SDK - using default features which includes stdio
+rust-mcp-sdk = "0.7.4"
+
+# Async runtime
+tokio = { workspace = true, features = ["full"] }
+async-trait = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+derive_more = { workspace = true, features = ["display", "error", "from"] }
+anyhow = "1.0"
+
+# Tracing
+tracing = { workspace = true }
+
+# Time
+chrono = "0.4"
+
+# Internal dependencies
+botticelli_core = { path = "../botticelli_core", version = "0.2.0" }
+botticelli_error = { path = "../botticelli_error", version = "0.2.0" }
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

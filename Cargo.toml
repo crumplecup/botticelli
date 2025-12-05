@@ -15,7 +15,7 @@ members = [
   "crates/botticelli_security",
   "crates/botticelli_cache",
   "crates/botticelli_actor",
-  "crates/botticelli_bot",
+  "crates/botticelli_bot", "crates/botticelli_mcp",
 ]
 resolver = "2"
 
