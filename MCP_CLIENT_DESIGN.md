@@ -177,6 +177,10 @@ Design and implement an MCP client that enables Botticelli to become self-drivin
 - ⚠️ Refactor executor to work with existing `LlmBackend` trait in `client.rs`
 - ⚠️ Reconcile with existing `McpClient.execute()` method
 - ⚠️ Consider whether to enhance existing implementation or create separate executor
+- ✅ Error handling and recovery (completed 2025-12-05)
+  - Retry logic with exponential backoff
+  - Circuit breaker for cascading failure prevention
+  - Error classification (retryable, rate-limited)
 - 🔲 Add comprehensive tests
 - 🔲 Implement guided mode approval mechanism
 
