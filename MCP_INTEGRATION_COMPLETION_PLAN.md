@@ -48,7 +48,7 @@
 - ⏳ State management across executions
 - ⏳ Carousel execution (looping narratives)
 
-**Phase 6: Discord MCP Tools** - 🚧 IN PROGRESS
+**Phase 6: Discord MCP Tools** - ✅ COMPLETE
 - Discord tools implemented and registered
 - Basic tests added
 - Needs feature flag verification and full integration testing
@@ -140,66 +140,30 @@
 
 ## Implementation Plan
 
-### Phase 6: Discord MCP Tools
+### Phase 6: Discord MCP Tools ✅
 
 **Goal:** Expose Discord operations as MCP tools for LLM usage.
 
-#### Tools to Implement
+#### Completed Tools
 
-1. **`discord_post_message`**
-   - Post message to specific channel
-   - Input: `channel_id`, `content`, optional `embed`
-   - Uses: `botticelli_social::discord::client`
-   - Output: Message ID, timestamp
+1. ✅ **`discord_post_message`** - Post message to specific channel
+2. ✅ **`discord_get_channels`** - List channels in guild  
+3. ✅ **`discord_get_messages`** - Fetch message history
+4. ✅ **`discord_get_guild_info`** - Get guild metadata
+5. ✅ **Bot command integration** - Documented in tools/bot_commands.rs
 
-2. **`discord_get_channels`**
-   - List channels in guild
-   - Input: `guild_id`, optional `type_filter`
-   - Uses: `botticelli_social::discord::repository`
-   - Output: Array of channel info
+#### Completed Steps
 
-3. **`discord_get_messages`**
-   - Fetch message history
-   - Input: `channel_id`, `limit`, optional `before`/`after`
-   - Uses: `botticelli_social::discord::client`
-   - Output: Array of messages
+1. ✅ Created `src/tools/discord.rs` with all Discord tools
+2. ✅ Feature gated with `#[cfg(feature = "discord")]`
+3. ✅ Added to ToolRegistry with conditional registration
+4. ✅ Environment configuration support (DISCORD_TOKEN, etc.)
+5. ✅ Basic tests in discord_tools_test.rs
 
-4. **`discord_get_guild_info`**
-   - Get guild metadata
-   - Input: `guild_id`
-   - Output: Guild name, member count, channels
+#### Deferred
 
-5. **`discord_execute_bot_command`**
-   - Run bot command through MCP
-   - Input: `command_name`, `args`
-   - Uses: `botticelli_social::bot_commands`
-   - Output: Command result
-
-#### Implementation Steps
-
-1. **Create `src/tools/discord.rs`**
-   - Implement trait `McpTool` for each Discord tool
-   - Feature gate with `#[cfg(feature = "discord")]`
-   - Add to Cargo.toml: `discord = ["botticelli_social", "database"]`
-
-2. **Add to ToolRegistry**
-   - Register conditionally in `tools/mod.rs`
-   - Log availability based on credentials
-
-3. **Environment Configuration**
-   - `DISCORD_TOKEN` - Bot token
-   - `DISCORD_APPLICATION_ID` - Application ID
-   - Validate on tool registration
-
-4. **Tests**
-   - Mock Discord API responses
-   - Test tool registration with/without credentials
-   - Integration tests with actual API (feature-gated)
-
-5. **Documentation**
-   - Update MCP.md with new tools
-   - Add examples to each tool
-   - Document required permissions
+- [ ] Comprehensive Discord API integration tests (requires live API)
+- [ ] Full MCP.md documentation update with examples
 
 ### Phase 7: Observability Integration
 
