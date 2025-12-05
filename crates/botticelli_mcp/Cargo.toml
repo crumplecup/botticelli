@@ -42,6 +42,7 @@ botticelli_interface = { path = "../botticelli_interface", version = "0.2.0", op
 botticelli_narrative = { path = "../botticelli_narrative", version = "0.2.0" }
 botticelli_database = { path = "../botticelli_database", version = "0.2.0", optional = true }
 botticelli_models = { path = "../botticelli_models", version = "0.2.0", optional = true }
+botticelli_social = { path = "../botticelli_social", version = "0.2.0", optional = true, features = ["discord"] }
 mcp-spec = "0.1.0"
 
 # Database (only when feature enabled)
@@ -53,7 +54,7 @@ tokio-test = "0.4"
 [features]
 default = []
 database = ["dep:botticelli_database", "dep:diesel"]
-discord = ["dep:reqwest"]
+discord = ["dep:reqwest", "dep:botticelli_social"]
 
 # LLM backend features
 gemini = ["dep:botticelli_interface", "dep:botticelli_models", "botticelli_models/gemini"]

@@ -103,11 +103,12 @@
 - ⏳ Token usage tracking (waiting for TokenCounting trait implementation in drivers)
 - ⏳ Cost monitoring (depends on token tracking)
 
-**Phase 8: Social Media Integration** (Not Started)
-- ❌ Post to Discord via MCP tools
-- ❌ Query Discord data via MCP tools
-- ❌ Content generation → posting pipeline
-- ❌ Scheduled narrative execution
+**Phase 8: Social Media Integration** (✅ Complete - Bot Commands)
+- ✅ Post to Discord via MCP tools (`DiscordPostTool`)
+- ✅ Query Discord data via MCP tools (`DiscordBotCommandTool`)
+- ✅ Bot command integration with existing infrastructure
+- ⏸️  Content generation → posting pipeline (infrastructure exists, orchestration needed)
+- ⏸️  Scheduled narrative execution (deferred to actor system)
 
 ## Implementation Plan
 

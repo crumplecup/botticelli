@@ -10,6 +10,8 @@ mod generate;
 mod generate_llm;
 mod narrative_processor;
 mod server_info;
+#[cfg(feature = "discord")]
+mod social;
 mod validate_narrative;
 
 pub use database::QueryContentTool;
@@ -22,6 +24,8 @@ pub use echo::EchoTool;
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;
+#[cfg(feature = "discord")]
+pub use social::{DiscordBotCommandTool, DiscordPostTool};
 #[cfg(any(
     feature = "gemini",
     feature = "anthropic",
@@ -201,6 +205,21 @@ impl Default for ToolRegistry {
                 tracing::info!("Discord get channels tool registered");
             } else {
                 tracing::warn!("Discord get channels not available (check DISCORD_TOKEN)");
+            }
+            
+            // Social media integration tools (Phase 5)
+            if let Ok(discord_token) = std::env::var("DISCORD_TOKEN") {
+                if let Ok(tool) = DiscordBotCommandTool::new(discord_token.clone()) {
+                    registry.register(Arc::new(tool));
+                    tracing::info!("Discord bot command tool registered");
+                }
+                
+                if let Ok(tool) = DiscordPostTool::new(discord_token) {
+                    registry.register(Arc::new(tool));
+                    tracing::info!("Discord post tool registered");
+                }
+            } else {
+                tracing::warn!("Discord bot tools not available (check DISCORD_TOKEN)");
             }
         }
         
