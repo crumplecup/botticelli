@@ -1,6 +1,6 @@
 //! MCP server implementation.
 
-use crate::{tools::ToolRegistry, ResourceRegistry};
+use crate::{tools::ToolRegistry, PrometheusMetrics, ResourceRegistry};
 use mcp_server::router::CapabilitiesBuilder;
 use mcp_server::Router;
 use mcp_spec::{
@@ -14,6 +14,7 @@ use mcp_spec::{
 use serde_json::Value;
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::Arc;
 use tracing::{debug, info, instrument};
 
 /// MCP server for Botticelli implementing the Router trait.
@@ -23,12 +24,18 @@ pub struct BotticelliRouter {
     version: String,
     tools: ToolRegistry,
     resources: ResourceRegistry,
+    metrics: Arc<PrometheusMetrics>,
 }
 
 impl BotticelliRouter {
     /// Creates a new router builder.
     pub fn builder() -> BotticelliRouterBuilder {
         BotticelliRouterBuilder::default()
+    }
+
+    /// Gets the metrics collector.
+    pub fn metrics(&self) -> &Arc<PrometheusMetrics> {
+        &self.metrics
     }
 }
 
@@ -159,6 +166,7 @@ pub struct BotticelliRouterBuilder {
     version: Option<String>,
     tools: Option<ToolRegistry>,
     resources: Option<ResourceRegistry>,
+    metrics: Option<Arc<PrometheusMetrics>>,
 }
 
 impl BotticelliRouterBuilder {
@@ -186,13 +194,42 @@ impl BotticelliRouterBuilder {
         self
     }
 
+    /// Sets the metrics collector.
+    pub fn metrics(mut self, metrics: Arc<PrometheusMetrics>) -> Self {
+        self.metrics = Some(metrics);
+        self
+    }
+
     /// Builds the router.
     pub fn build(self) -> BotticelliRouter {
+        let metrics = self
+            .metrics
+            .unwrap_or_else(|| Arc::new(PrometheusMetrics::new()));
+
+        let tools = if let Some(tools) = self.tools {
+            tools
+        } else {
+            // Create default registry with metrics
+            let mut registry = ToolRegistry::with_metrics(Arc::clone(&metrics));
+            // Register default tools
+            registry.register(Arc::new(crate::tools::EchoTool));
+            registry.register(Arc::new(crate::tools::ServerInfoTool));
+            registry.register(Arc::new(crate::tools::ValidateNarrativeTool));
+            registry.register(Arc::new(crate::tools::GenerateTool));
+            registry.register(Arc::new(crate::tools::ExecuteActTool::new()));
+            registry.register(Arc::new(crate::tools::ExecuteNarrativeTool::new()));
+            registry.register(Arc::new(crate::tools::ExportMetricsTool::new(Arc::clone(
+                &metrics,
+            ))));
+            registry
+        };
+
         BotticelliRouter {
             name: self.name.unwrap_or_else(|| "botticelli".to_string()),
             version: self.version.unwrap_or_else(|| "0.1.0".to_string()),
-            tools: self.tools.unwrap_or_default(),
+            tools,
             resources: self.resources.unwrap_or_default(),
+            metrics,
         }
     }
 }

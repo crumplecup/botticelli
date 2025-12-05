@@ -41,8 +41,9 @@ pub use error::{McpError, McpResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{
-    EchoTool, ExecuteNarrativeTool, GenerateTool, McpTool, QueryContentTool, ServerInfoTool,
-    ToolRegistry, ValidateNarrativeTool,
+    ActMetrics, EchoTool, ExecutionMetrics, ExecuteNarrativeTool, ExportMetricsTool, GenerateTool,
+    McpTool, MetricsSummary, PrometheusMetrics, QueryContentTool, ServerInfoTool, ToolRegistry,
+    ValidateNarrativeTool,
 };
 
 #[cfg(feature = "discord")]

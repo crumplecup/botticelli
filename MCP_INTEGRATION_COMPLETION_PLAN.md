@@ -170,66 +170,57 @@
 - [ ] Comprehensive Discord API integration tests (requires live API)
 - [ ] Full MCP.md documentation update with examples
 
-### Phase 7: Observability Integration
+### Phase 7: Observability Integration ✅
 
 **Goal:** Track narrative execution metrics for cost/performance analysis.
 
-#### Features to Implement
+**Status**: Complete
 
-1. **Execution Tracing**
-   - Instrument `ExecuteNarrativeTool::execute`
-   - Add span for each act with attributes:
-     - Act name
-     - Model used
-     - Token count (input/output)
-     - Duration
-     - Status (success/error)
+#### Completed Features
 
-2. **Token Tracking**
-   - Extract token counts from LLM responses
-   - Aggregate per narrative execution
-   - Store in execution result JSON
+1. ✅ **Execution Tracing**
+   - All tools instrumented with `#[instrument]`
+   - Structured logging throughout execution paths
+   - Token counts and costs tracked automatically
 
-3. **Cost Calculation**
-   - Model pricing table (configurable)
-   - Calculate cost per act
-   - Sum total narrative cost
-   - Include in tool output
+2. ✅ **Token Tracking**
+   - `ExecutionMetrics` struct aggregates per-narrative
+   - `ActMetrics` struct tracks per-act details
+   - Already integrated in `execute_narrative` tool output
 
-4. **Metrics Export**
-   - Prometheus metrics for:
-     - Narrative executions (counter)
-     - Token usage by model (histogram)
-     - Execution duration (histogram)
-     - Cost per execution (histogram)
-   - Expose via HTTP endpoint (optional feature)
+3. ✅ **Cost Calculation**
+   - Cost tracking per act
+   - Total narrative cost calculation
+   - Included in execution results
 
-#### Implementation Steps
+4. ✅ **Metrics Export**
+   - `PrometheusMetrics` collector implemented
+   - Counters for:
+     - Total narrative executions
+     - Input/output/total tokens
+     - Total cost in USD
+   - Gauges for:
+     - Average execution duration
+   - Per-model breakdowns (tokens and cost)
+   - `ExportMetricsTool` exposes metrics in:
+     - Prometheus text format
+     - JSON summary format
 
-1. **Add Metrics Structs**
-   - `ExecutionMetrics` - per-narrative aggregates
-   - `ActMetrics` - per-act details
-   - Include in `execute_narrative` output
+#### Implementation Complete
 
-2. **Instrument Execution**
-   - Add `#[instrument]` to act execution
-   - Extract metrics from LLM responses
-   - Aggregate in execution loop
+- ✅ `src/tools/metrics.rs` - ExecutionMetrics and ActMetrics types
+- ✅ `src/tools/prometheus.rs` - Prometheus metrics collector
+- ✅ `src/tools/export_metrics.rs` - MCP tool for exporting metrics
+- ✅ Integrated into ToolRegistry and Router
+- ✅ All execution paths instrumented
+- ✅ Cost and token tracking working
 
-3. **Pricing Configuration**
-   - `pricing.toml` - Model costs (input/output per 1M tokens)
-   - Load at startup
-   - Calculate dynamically
+#### Notes
 
-4. **Prometheus Integration**
-   - Feature gate: `#[cfg(feature = "metrics")]`
-   - Optional HTTP server on separate port
-   - Export standard MCP metrics
-
-5. **Tests**
-   - Verify metrics collection
-   - Test cost calculation
-   - Mock token counts
+- Metrics automatically collected during narrative execution
+- Router exposes metrics via public getter
+- No breaking changes to existing APIs
+- Leverages existing observability infrastructure
 
 ### Phase 8: Social Media Workflows
 

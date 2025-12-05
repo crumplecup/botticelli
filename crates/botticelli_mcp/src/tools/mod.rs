@@ -7,10 +7,12 @@ mod discord;
 mod echo;
 mod execute_act;
 mod execute_narrative;
+mod export_metrics;
 mod generate;
 mod generate_llm;
 mod metrics;
 mod narrative_processor;
+mod prometheus;
 mod server_info;
 #[cfg(feature = "discord")]
 mod social;
@@ -25,8 +27,10 @@ pub use discord::{
 pub use echo::EchoTool;
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
+pub use export_metrics::ExportMetricsTool;
 pub use generate::GenerateTool;
 pub use metrics::{ActMetrics, ExecutionMetrics};
+pub use prometheus::{MetricsSummary, PrometheusMetrics};
 #[cfg(any(
     feature = "gemini",
     feature = "anthropic",
@@ -78,6 +82,7 @@ pub trait McpTool: Send + Sync {
 #[derive(Clone)]
 pub struct ToolRegistry {
     tools: HashMap<String, Arc<dyn McpTool>>,
+    metrics: Option<Arc<crate::PrometheusMetrics>>,
 }
 
 impl ToolRegistry {
@@ -85,6 +90,15 @@ impl ToolRegistry {
     pub fn new() -> Self {
         Self {
             tools: HashMap::new(),
+            metrics: None,
+        }
+    }
+
+    /// Creates a new tool registry with metrics collection.
+    pub fn with_metrics(metrics: Arc<crate::PrometheusMetrics>) -> Self {
+        Self {
+            tools: HashMap::new(),
+            metrics: Some(metrics),
         }
     }
 
@@ -128,6 +142,11 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(GenerateTool));
         registry.register(Arc::new(ExecuteActTool::new()));
         registry.register(Arc::new(ExecuteNarrativeTool::new()));
+
+        // Metrics tool
+        if let Some(ref metrics) = registry.metrics {
+            registry.register(Arc::new(ExportMetricsTool::new(Arc::clone(metrics))));
+        }
 
         // Execution tools (Phase 4 - Multi-backend LLM integration)
         #[cfg(feature = "gemini")]
