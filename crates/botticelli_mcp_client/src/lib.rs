@@ -6,7 +6,9 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
+mod approval;
 mod client;
+mod context;
 mod error;
 mod llm_adapter;
 mod metrics;
@@ -14,7 +16,9 @@ mod retry;
 mod schema;
 mod tool_executor;
 
+pub use approval::{ApprovalHandler, ApprovalManager, ApprovalPolicy, ConsoleApprovalHandler};
 pub use client::{LlmBackend, McpClient};
+pub use context::ContextManager;
 pub use error::{McpClientError, McpClientErrorKind, McpClientResult};
 pub use llm_adapter::{
     AnthropicAdapter, FinishReason, GenerationConfig, GenerationResponse, GeminiAdapter,

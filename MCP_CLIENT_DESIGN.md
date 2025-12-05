@@ -245,27 +245,30 @@ Design and implement an MCP client that enables Botticelli to become self-drivin
 
 ### Phase 8: CLI Integration
 
+**Status**: ✅ Basic Structure Complete
+
 **Goal**: Expose self-driving capabilities via CLI
 
-**Tasks**:
-1. Add commands to `botticelli` binary:
-   - `botticelli agent run <goal>` - Autonomous agent
-   - `botticelli agent interactive` - Guided mode
-   - `botticelli agent tools` - List available tools
-2. Configuration:
-   - Model selection
-   - Max iterations
-   - Approval mode
-   - Tool filtering
-3. Rich terminal UI:
-   - Display tool calls in real-time
-   - Show reasoning (if available)
-   - Progress indicators
-   - Interactive approval
+**Completed**:
+1. ✅ Added `mcp` subcommand to botticelli binary
+2. ✅ Argument parsing for prompt, backend, server command, max turns
+3. ✅ Feature gating (`mcp` feature)
+4. ✅ Handler skeleton in `src/cli/mcp.rs`
 
-**Files**:
-- `crates/botticelli/src/commands/agent.rs`
-- Update `crates/botticelli/src/main.rs`
+**Files Modified**:
+- `crates/botticelli/src/cli/commands.rs` - Added Mcp command variant
+- `crates/botticelli/src/cli/mod.rs` - Added mcp module
+- `crates/botticelli/src/cli/mcp.rs` - Created MCP command handler
+- `crates/botticelli/src/main.rs` - Added MCP command dispatch
+- `crates/botticelli/Cargo.toml` - Added mcp feature
+- `Cargo.toml` - Added botticelli_mcp_client to workspace
+
+**Remaining**:
+- Connect to MCP server and discover tools
+- Create LLM backend adapter from backend string
+- Implement full conversation loop
+- Rich terminal UI (tool calls, reasoning, progress)
+- Interactive approval mode
 
 ### Phase 8: Discord Bot Integration
 
