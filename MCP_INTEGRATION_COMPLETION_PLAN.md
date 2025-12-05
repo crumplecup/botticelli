@@ -25,11 +25,14 @@
 - Infrastructure ready for token counting when drivers implement TokenCounting trait
 
 **Phase 4: Advanced Execution - Processors** - 🚧 IN PROGRESS
-- Created `McpProcessorCollector` for collecting processor outputs
-- Feature-gated to LLM backends
-- Compiles cleanly with proper feature gates
-- Needs integration with execute_narrative tool
-- Needs testing
+- ✅ Created `McpProcessorCollector` for collecting processor outputs
+- ✅ Feature-gated to LLM backends  
+- ✅ Compiles cleanly with proper feature gates
+- ✅ Created `processors/` module with Discord data extraction processors
+- ✅ Implemented `DiscordGuildProcessor` for guild data storage
+- ✅ Implemented `DiscordChannelProcessor` for channel data storage
+- ⏳ Integration with execute_narrative tool
+- ⏳ Testing of processors
 
 **Phase 6: Discord MCP Tools** - 🚧 IN PROGRESS
 - Discord tools implemented and registered

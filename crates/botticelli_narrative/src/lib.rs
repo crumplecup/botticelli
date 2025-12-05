@@ -43,6 +43,7 @@ mod history_retention;
 mod in_memory_repository;
 mod multi_narrative;
 mod processor;
+pub mod processors;
 mod provider;
 mod state;
 mod table_reference;
@@ -79,3 +80,6 @@ pub use extraction::{extract_json, extract_toml, parse_json, parse_toml};
 
 #[cfg(feature = "database")]
 pub use storage_actor::{StorageActor, StorageActorState, StorageMessage};
+
+#[cfg(feature = "database")]
+pub use processors::{DiscordChannelProcessor, DiscordGuildProcessor};
