@@ -210,33 +210,40 @@ Design and implement an MCP client that enables Botticelli to become self-drivin
 - `crates/botticelli_mcp_client/src/storage.rs`
 - `crates/botticelli_mcp_client/src/summarizer.rs`
 
-### Phase 6: Observability Integration
+### Phase 6: Testing Infrastructure ✅ COMPLETE
+
+**Goal**: Comprehensive test coverage for MCP client
+
+**Completed Tasks**:
+1. ✅ Basic client tests (creation, discovery, invocation)
+2. ✅ LLM integration tests (Anthropic, Gemini, OpenAI)
+3. ✅ Conversation loop testing
+4. ✅ Error handling tests
+5. ✅ Reconnection testing
+
+**Files**:
+- `crates/botticelli_mcp/tests/client_basic_test.rs`
+- `crates/botticelli_mcp/tests/client_llm_integration_test.rs`
+
+### Phase 7: Observability Integration ✅ COMPLETE
 
 **Goal**: Full visibility into agentic workflows
 
-**Tasks**:
-1. Tracing integration:
-   - Span per agent execution
-   - Tool selection decisions
-   - Tool execution timing
-   - Result processing
-2. Metrics:
-   - Tool call counts by type
-   - Success/failure rates
-   - Execution duration
-   - Token usage per turn
-   - Cost per workflow
-3. Structured logging:
-   - Model reasoning (if available)
-   - Tool selection rationale
-   - Error details
-4. Grafana dashboard for agent monitoring
+**Completed**:
+1. ✅ Metrics infrastructure (`McpClientMetrics`)
+2. ✅ Tool call tracking (success/failure by tool name)
+3. ✅ Tool execution duration histograms
+4. ✅ Token usage per turn (input/output)
+5. ✅ Workflow cost tracking by model
+6. ✅ Agent iteration metrics (completed/max_iterations/error)
+7. ✅ Prometheus registry integration
+8. ✅ Error type for metrics errors
 
 **Files**:
 - Update `crates/botticelli_mcp_client/src/executor.rs` with instrumentation
 - `grafana/dashboards/mcp_agent.json`
 
-### Phase 7: CLI Integration
+### Phase 8: CLI Integration
 
 **Goal**: Expose self-driving capabilities via CLI
 

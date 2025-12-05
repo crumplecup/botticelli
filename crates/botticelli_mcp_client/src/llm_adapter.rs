@@ -150,6 +150,13 @@ pub struct AnthropicAdapter {
 }
 
 impl AnthropicAdapter {
+    /// Gets the API key.
+    pub fn api_key(&self) -> &str {
+        &self.api_key
+    }
+}
+
+impl AnthropicAdapter {
     /// Create a new Anthropic adapter
     pub fn new(model: impl Into<String>, api_key: impl Into<String>) -> Self {
         Self {
@@ -190,6 +197,13 @@ impl LlmAdapter for AnthropicAdapter {
 pub struct GeminiAdapter {
     model: String,
     api_key: String,
+}
+
+impl GeminiAdapter {
+    /// Gets the API key.
+    pub fn api_key(&self) -> &str {
+        &self.api_key
+    }
 }
 
 impl GeminiAdapter {
@@ -236,6 +250,13 @@ pub struct GroqAdapter {
 }
 
 impl GroqAdapter {
+    /// Gets the API key.
+    pub fn api_key(&self) -> &str {
+        &self.api_key
+    }
+}
+
+impl GroqAdapter {
     /// Create a new Groq adapter
     pub fn new(model: impl Into<String>, api_key: impl Into<String>) -> Self {
         Self {
@@ -276,6 +297,13 @@ impl LlmAdapter for GroqAdapter {
 pub struct OllamaAdapter {
     model: String,
     base_url: String,
+}
+
+impl OllamaAdapter {
+    /// Gets the base URL.
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
 }
 
 impl OllamaAdapter {

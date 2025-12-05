@@ -44,6 +44,10 @@ pub enum McpClientErrorKind {
     /// Circuit breaker open.
     #[display("Circuit breaker open for: {}", _0)]
     CircuitBreakerOpen(String),
+
+    /// Metrics registration error.
+    #[display("Metrics error: {}", _0)]
+    MetricsError(String),
 }
 
 /// MCP client error with location tracking.
@@ -73,6 +77,12 @@ impl McpClientError {
 
 /// Result type for MCP client operations.
 pub type McpClientResult<T> = Result<T, McpClientError>;
+
+impl From<prometheus::Error> for McpClientError {
+    fn from(err: prometheus::Error) -> Self {
+        McpClientError::new(McpClientErrorKind::MetricsError(err.to_string()))
+    }
+}
 
 impl McpClientErrorKind {
     /// Returns true if this error is retryable.

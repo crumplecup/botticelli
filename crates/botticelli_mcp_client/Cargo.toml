@@ -17,6 +17,7 @@ botticelli_mcp = { path = "../botticelli_mcp", version = "0.1.0" }
 async-trait.workspace = true
 derive-getters.workspace = true
 derive_more.workspace = true
+prometheus = "0.13"
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true
