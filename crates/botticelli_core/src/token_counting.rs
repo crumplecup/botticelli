@@ -3,32 +3,6 @@ use std::sync::Arc;
 
 use tiktoken_rs::CoreBPE;
 
-/// Token counting capabilities for LLM requests and responses.
-///
-/// This trait provides methods to count tokens in prompts and responses,
-/// enabling cost calculation and rate limiting.
-pub trait TokenCounting {
-    /// Count tokens in the given text.
-    ///
-    /// Returns the number of tokens that would be consumed by the text
-    /// according to the model's tokenizer.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if token counting fails.
-    fn count_tokens(&self, text: &str) -> Result<usize, Box<dyn std::error::Error + Send + Sync>>;
-
-    /// Get the tokenizer encoder for this model.
-    ///
-    /// Returns an Arc to the CoreBPE encoder, allowing for efficient
-    /// token counting across multiple requests.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the tokenizer cannot be loaded.
-    fn get_encoder(&self) -> Result<Arc<CoreBPE>, Box<dyn std::error::Error + Send + Sync>>;
-}
-
 /// Token usage statistics for a single LLM operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, derive_getters::Getters)]
 pub struct TokenUsage {

@@ -30,5 +30,5 @@ pub use request::{
     GenerateResponseBuilderError,
 };
 pub use role::Role;
-pub use token_counting::{TokenCounting, TokenUsage, get_tokenizer};
+pub use token_counting::{TokenUsage, get_tokenizer};
 pub use token_usage::{TokenUsageData, TokenUsageDataBuilder};

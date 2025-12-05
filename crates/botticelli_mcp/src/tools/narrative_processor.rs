@@ -10,7 +10,7 @@
     feature = "huggingface",
     feature = "groq"
 ))]
-use botticelli_interface::ProcessorTrait;
+use botticelli_narrative::ActProcessor;
 
 #[cfg(any(
     feature = "gemini",
@@ -112,7 +112,7 @@ impl Default for McpProcessorCollector {
     feature = "groq"
 ))]
 #[async_trait::async_trait]
-impl ProcessorTrait for McpProcessorCollector {
+impl ActProcessor for McpProcessorCollector {
     fn name(&self) -> &str {
         "mcp_collector"
     }
