@@ -124,7 +124,8 @@ fn apply_modification(toml: &str, modification: &str) -> McpResult<(String, Vec<
         return Ok((modified, changes));
     }
 
-    if lower_mod.contains("change model") || lower_mod.contains("use model") || lower_mod.contains("set model") {
+    if lower_mod.contains("change model") || lower_mod.contains("use model") || lower_mod.contains("set model") 
+        || lower_mod.contains("use gemini") || lower_mod.contains("use claude") || lower_mod.contains("use gpt") {
         let (modified, change) = change_model(toml, modification)?;
         changes.push(change);
         return Ok((modified, changes));
@@ -152,16 +153,23 @@ fn apply_modification(toml: &str, modification: &str) -> McpResult<(String, Vec<
 
 /// Add an act to the narrative.
 fn add_act(toml: &str, modification: &str) -> McpResult<(String, String)> {
-    // Extract act description (everything after "add act")
-    let desc = modification
-        .split("add")
-        .nth(1)
-        .and_then(|s| s.split("act").nth(1))
-        .map(|s| s.trim())
-        .unwrap_or("new act");
+    // Extract act description (everything after "add act" or "Add act")
+    let lower_mod = modification.to_lowercase();
+    let desc = if let Some(idx) = lower_mod.find("add act") {
+        let after_add_act = &modification[idx + "add act".len()..];
+        // Skip "that" if present
+        let trimmed = after_add_act.trim();
+        if trimmed.starts_with("that") || trimmed.starts_with("which") {
+            trimmed.split_whitespace().skip(1).collect::<Vec<_>>().join(" ")
+        } else {
+            trimmed.to_string()
+        }
+    } else {
+        modification.trim().to_string()
+    };
 
     // Generate act name
-    let act_name = extract_act_name_from_mod(desc);
+    let act_name = extract_act_name_from_mod(&desc);
 
     // Find [toc] and [acts] sections
     let mut lines: Vec<String> = toml.lines().map(|s| s.to_string()).collect();
@@ -186,7 +194,7 @@ fn add_act(toml: &str, modification: &str) -> McpResult<(String, String)> {
         .ok_or_else(|| McpError::ToolExecutionFailed("No [acts] section found".to_string()))?;
 
     // Add act definition
-    lines.insert(acts_idx + 1, format!("{} = \"{}\"", act_name, escape_toml_string(desc)));
+    lines.insert(acts_idx + 1, format!("{} = \"{}\"", act_name, escape_toml_string(&desc)));
 
     let modified = lines.join("\n");
     let change = format!("Added act '{}'", act_name);
