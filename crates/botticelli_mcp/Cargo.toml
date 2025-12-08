@@ -32,6 +32,9 @@ dotenvy = { workspace = true }
 # Time
 chrono = "0.4"
 
+# UUID generation
+uuid = { workspace = true }
+
 # HTTP client (for Discord tools)
 reqwest = { version = "0.12", features = ["json"], optional = true }
 

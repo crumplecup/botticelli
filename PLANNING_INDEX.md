@@ -48,6 +48,10 @@ This index tracks all planning documents in the workspace. When documents are co
 - **NARRATIVE_VALIDATOR_DESIGN.md** - `1118d0c` (2025-12-05)
   - Comprehensive design for narrative TOML validation with actionable error messages
   - Phases 1-5 complete: validator infrastructure, CLI integration, MCP tools, multi-LLM execution
+- **NARRATIVE_GENERATION_MCP_PLAN.md** - `current` (2025-12-08, revised)
+  - Strategy for LLM-driven narrative generation via MCP tools
+  - Stateless transformation pattern: create, modify, save narratives
+  - Phase 1 ready for implementation
 
 ### Testing & Quality
 - **TESTING_PATTERNS.md** - `718bf35` (2025-11-22)

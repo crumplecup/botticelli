@@ -41,8 +41,9 @@ pub use error::{McpError, McpResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{
-    ActMetrics, EchoTool, ExecutionMetrics, ExecuteNarrativeTool, ExportMetricsTool, GenerateTool,
-    McpTool, MetricsSummary, PrometheusMetrics, QueryContentTool, ServerInfoTool, ToolRegistry,
+    ActMetrics, CreateNarrativeTool, EchoTool, ExecutionMetrics, ExecuteNarrativeTool,
+    ExportMetricsTool, GenerateTool, McpTool, MetricsSummary, ModifyNarrativeTool,
+    PrometheusMetrics, QueryContentTool, SaveNarrativeTool, ServerInfoTool, ToolRegistry,
     ValidateNarrativeTool,
 };
 

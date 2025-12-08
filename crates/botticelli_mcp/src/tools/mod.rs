@@ -1,6 +1,7 @@
 //! Tool implementations for MCP server.
 
 mod bot_commands;
+mod create_narrative;
 mod database;
 #[cfg(feature = "discord")]
 mod discord;
@@ -13,14 +14,17 @@ mod export_metrics;
 mod generate;
 mod generate_llm;
 mod metrics;
+mod modify_narrative;
 mod narrative_processor;
 mod prometheus;
+mod save_narrative;
 mod server_info;
 #[cfg(feature = "discord")]
 mod social;
 mod validate_narrative;
 
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
+pub use create_narrative::CreateNarrativeTool;
 pub use database::QueryContentTool;
 #[cfg(feature = "discord")]
 pub use discord::{
@@ -34,7 +38,9 @@ pub use execute_narrative::ExecuteNarrativeTool;
 pub use export_metrics::ExportMetricsTool;
 pub use generate::GenerateTool;
 pub use metrics::{ActMetrics, ExecutionMetrics};
+pub use modify_narrative::ModifyNarrativeTool;
 pub use prometheus::{MetricsSummary, PrometheusMetrics};
+pub use save_narrative::SaveNarrativeTool;
 #[cfg(any(
     feature = "gemini",
     feature = "anthropic",
@@ -141,6 +147,11 @@ impl Default for ToolRegistry {
 
         // Validation tool
         registry.register(Arc::new(ValidateNarrativeTool));
+
+        // Narrative generation tools (Phase 1)
+        registry.register(Arc::new(CreateNarrativeTool));
+        registry.register(Arc::new(ModifyNarrativeTool));
+        registry.register(Arc::new(SaveNarrativeTool));
 
         // Execution tools (Phase 2 & 3)
         registry.register(Arc::new(GenerateTool));
