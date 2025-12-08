@@ -9,5 +9,11 @@
 //! social media scheduling.
 
 mod error;
+mod input;
+mod message;
+mod response;
 
 pub use error::{ChatError, ChatErrorKind, ChatResult};
+pub use input::UserInput;
+pub use message::Message;
+pub use response::Response;
