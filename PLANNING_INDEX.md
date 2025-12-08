@@ -256,3 +256,9 @@ This index tracks all planning documents in the workspace. When documents are co
 5. Plan Phase 2 (if validated)
 
 **Status:** Ready for testing and validation
+
+- **USER_INTERACTION_INTERFACE_PLAN.md** - `draft` (2025-12-08)
+  - Unified trait-based interface for user-Botticelli interactions
+  - Multi-platform architecture (TUI, web, mobile)
+  - Conversational workflows for narrative creation, bot assignment, scheduling
+  - Ready for Phase 1 implementation
