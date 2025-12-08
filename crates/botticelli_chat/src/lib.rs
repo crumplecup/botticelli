@@ -13,6 +13,7 @@ mod error;
 mod input;
 mod interface;
 mod message;
+mod parser;
 mod response;
 
 pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
@@ -20,4 +21,5 @@ pub use error::{ChatError, ChatErrorKind, ChatResult};
 pub use input::UserInput;
 pub use interface::ChatInterface;
 pub use message::Message;
+pub use parser::parse_intent;
 pub use response::Response;
