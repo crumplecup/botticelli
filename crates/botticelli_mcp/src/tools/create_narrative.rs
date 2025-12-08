@@ -1,5 +1,8 @@
 //! Tool for generating narratives from natural language descriptions.
 
+use crate::tools::narrative_validation_helpers::{
+    add_helpful_comments, auto_fix_common_issues, format_toml, format_validation_result,
+};
 use crate::tools::McpTool;
 use crate::{McpError, McpResult};
 use async_trait::async_trait;
@@ -72,7 +75,17 @@ impl McpTool for CreateNarrativeTool {
         let default_temperature = input.get("default_temperature").and_then(|v| v.as_f64());
 
         // Generate narrative TOML
-        let toml = generate_narrative_toml(description, name, default_model, default_temperature)?;
+        let mut toml = generate_narrative_toml(description, name, default_model, default_temperature)?;
+
+        // Auto-fix common issues
+        let (fixed_toml, fixes_applied) = auto_fix_common_issues(&toml);
+        toml = fixed_toml;
+
+        // Format TOML
+        toml = format_toml(&toml);
+
+        // Add helpful comments
+        let toml_with_comments = add_helpful_comments(&toml);
 
         // Validate
         let validation = validate_narrative_toml(&toml);
@@ -81,33 +94,40 @@ impl McpTool for CreateNarrativeTool {
             valid = validation.is_valid(),
             errors = validation.errors.len(),
             warnings = validation.warnings.len(),
+            fixes_applied = fixes_applied.len(),
             "Narrative generated and validated"
         );
 
-        // Format validation results
-        let errors: Vec<String> = validation.errors.iter().map(|e| e.message.clone()).collect();
-        let warnings: Vec<String> = validation
-            .warnings
-            .iter()
-            .map(|w| w.message.clone())
-            .collect();
+        // Format validation results with enhanced information
+        let validation_json = format_validation_result(&validation);
 
         // Generate summary
+        let act_count = count_acts(&toml);
         let summary = if validation.is_valid() {
-            let act_count = count_acts(&toml);
-            format!("Created narrative '{}' with {} act(s)", name, act_count)
+            if fixes_applied.is_empty() {
+                format!("✅ Created narrative '{}' with {} act(s)", name, act_count)
+            } else {
+                format!(
+                    "✅ Created narrative '{}' with {} act(s) ({} auto-fixes applied)",
+                    name,
+                    act_count,
+                    fixes_applied.len()
+                )
+            }
         } else {
-            "Generated narrative has validation errors".to_string()
+            format!(
+                "❌ Generated narrative has {} error(s) - see validation for details",
+                validation.errors.len()
+            )
         };
 
         Ok(json!({
             "toml": toml,
-            "validation": {
-                "valid": validation.is_valid(),
-                "errors": errors,
-                "warnings": warnings
-            },
-            "summary": summary
+            "toml_with_comments": toml_with_comments,
+            "validation": validation_json,
+            "summary": summary,
+            "auto_fixes_applied": fixes_applied,
+            "act_count": act_count
         }))
     }
 }

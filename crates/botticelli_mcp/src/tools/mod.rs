@@ -16,6 +16,7 @@ mod generate_llm;
 mod metrics;
 mod modify_narrative;
 mod narrative_processor;
+mod narrative_validation_helpers;
 mod prometheus;
 mod save_narrative;
 mod server_info;

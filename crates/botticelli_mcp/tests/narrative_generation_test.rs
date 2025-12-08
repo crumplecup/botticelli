@@ -141,11 +141,13 @@ analyze = "Analyze the data"
     assert!(toml.contains("summarizes"), "New act should be added");
 
     let changes = result.get("changes").unwrap().as_array().unwrap();
-    assert_eq!(changes.len(), 1, "Should report one change");
-    assert!(
-        changes[0].as_str().unwrap().contains("Added act"),
-        "Should indicate act was added"
-    );
+    assert!(!changes.is_empty(), "Should report changes");
+    
+    // Check that at least one change is about adding the act
+    let has_add_act = changes.iter().any(|change| {
+        change.as_str().unwrap().contains("Added act")
+    });
+    assert!(has_add_act, "Should indicate act was added");
 }
 
 #[tokio::test]

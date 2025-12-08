@@ -1,5 +1,8 @@
 //! Tool for modifying existing narratives based on natural language instructions.
 
+use crate::tools::narrative_validation_helpers::{
+    auto_fix_common_issues, format_toml, format_validation_result,
+};
 use crate::tools::McpTool;
 use crate::{McpError, McpResult};
 use async_trait::async_trait;
@@ -64,7 +67,17 @@ impl McpTool for ModifyNarrativeTool {
         let save_to = input.get("save_to").and_then(|v| v.as_str());
 
         // Apply modification
-        let (modified_toml, changes) = apply_modification(narrative_toml, modification)?;
+        let (mut modified_toml, mut changes) = apply_modification(narrative_toml, modification)?;
+
+        // Auto-fix common issues
+        let (fixed_toml, fixes_applied) = auto_fix_common_issues(&modified_toml);
+        if !fixes_applied.is_empty() {
+            modified_toml = fixed_toml;
+            changes.extend(fixes_applied.iter().map(|f| format!("Auto-fix: {}", f)));
+        }
+
+        // Format TOML
+        modified_toml = format_toml(&modified_toml);
 
         // Validate
         let validation = validate_narrative_toml(&modified_toml);
@@ -72,6 +85,7 @@ impl McpTool for ModifyNarrativeTool {
         debug!(
             valid = validation.is_valid(),
             changes = changes.len(),
+            auto_fixes = fixes_applied.len(),
             "Narrative modified and validated"
         );
 
@@ -85,21 +99,12 @@ impl McpTool for ModifyNarrativeTool {
             debug!(path, "Saved modified narrative to file");
         }
 
-        // Format validation results
-        let errors: Vec<String> = validation.errors.iter().map(|e| e.message.clone()).collect();
-        let warnings: Vec<String> = validation
-            .warnings
-            .iter()
-            .map(|w| w.message.clone())
-            .collect();
+        // Format validation results with enhanced information
+        let validation_json = format_validation_result(&validation);
 
         Ok(json!({
             "toml": modified_toml,
-            "validation": {
-                "valid": validation.is_valid(),
-                "errors": errors,
-                "warnings": warnings
-            },
+            "validation": validation_json,
             "changes": changes,
             "saved_to": saved_to
         }))
