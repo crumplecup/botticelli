@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "crates/botticelli_chat",
   "crates/botticelli_error",
   "crates/botticelli_core",
   "crates/botticelli_interface",

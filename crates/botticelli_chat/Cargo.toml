@@ -1,0 +1,31 @@
+[package]
+name = "botticelli_chat"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourname/botticelli"
+description = "Chat interface for user/botticelli interaction"
+
+[dependencies]
+# Error handling
+botticelli_error = { path = "../botticelli_error" }
+derive_more = { version = "1.0", features = ["display", "error", "from"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+
+# Tracing
+tracing = "0.1"
+
+# Builders
+typed-builder = "0.20"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+# Testing
+tokio = { version = "1.0", features = ["full"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
