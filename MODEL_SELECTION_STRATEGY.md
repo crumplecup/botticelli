@@ -7,7 +7,11 @@
   - GeminiModel enum (5 variants, move_up/down, friends())
   - GroqModel enum (4 variants, move_up/down, friends())
   - All tests passing
-- [ ] Step 2: Boundary constraints API
+- [x] Step 2: Boundary constraints API ✅
+  - ModelBounds struct with lower/upper bounds
+  - ModelId unified enum across families
+  - is_at_least()/is_at_most() for bound checking
+  - 10 tests passing (bounds validation, movement, comparisons)
 - [ ] Step 3: Rate limit detection
 - [ ] Step 4: Fallback selection algorithm
 - [ ] Step 5: Integration with chat interface
