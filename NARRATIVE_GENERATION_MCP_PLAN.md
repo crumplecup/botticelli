@@ -35,8 +35,9 @@
 3. ✅ Better TOML formatting and helpful comments
 4. ✅ Structured validation results with fix suggestions
 5. ✅ Created narrative_validation_helpers module (300+ lines)
-6. ✅ All tests passing (10/10)
-7. ✅ Committed to git (bf2af84)
+6. ✅ Created 15 comprehensive tests for Phase 2 features (400+ lines)
+7. ✅ All tests passing (25/25 total)
+8. ✅ Committed to git (3 commits: bf2af84, 08ad509, 3dc2012)
 
 **Next Actions**: 
 1. ⏭️ Begin Phase 3: Advanced features (resources, templates)
@@ -464,6 +465,12 @@ impl McpTool for CreateNarrativeTool {
 
 **Commits:**
 - bf2af84: feat(mcp): implement Phase 2 enhanced validation
+- 08ad509: docs: mark Phase 2 complete in narrative generation plan
+- 3dc2012: test(mcp): add comprehensive Phase 2 validation tests
+
+**Test Coverage:**
+- narrative_validation_test.rs: 15 tests covering all Phase 2 features
+- All Phase 2 functionality tested (auto-fix, formatting, comments, validation)
 
 ### Phase 3: Advanced Features (Week 3)
 
