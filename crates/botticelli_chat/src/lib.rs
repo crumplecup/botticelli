@@ -8,12 +8,14 @@
 //! botticelli on tasks like narrative generation, bot assignment, and
 //! social media scheduling.
 
+mod command;
 mod error;
 mod input;
 mod interface;
 mod message;
 mod response;
 
+pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
 pub use error::{ChatError, ChatErrorKind, ChatResult};
 pub use input::UserInput;
 pub use interface::ChatInterface;
