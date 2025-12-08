@@ -25,6 +25,17 @@ typed-builder = "0.20"
 # Time
 chrono = { version = "0.4", features = ["serde"] }
 
+# Async
+async-trait = "0.1"
+tokio = { version = "1.0", features = ["sync"] }
+
+# TUI (optional)
+ratatui = { workspace = true, optional = true }
+crossterm = { version = "0.28", optional = true }
+
+[features]
+tui = ["dep:ratatui", "dep:crossterm"]
+
 [dev-dependencies]
 # Testing
 tokio = { version = "1.0", features = ["full"] }

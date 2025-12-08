@@ -30,6 +30,14 @@ pub enum ChatErrorKind {
     /// Serialization error.
     #[display("Serialization error: {}", _0)]
     SerializationError(String),
+
+    /// Validation error.
+    #[display("Validation error: {}", _0)]
+    ValidationError(String),
+
+    /// Feature not yet implemented.
+    #[display("Not implemented: {}", _0)]
+    NotImplemented(String),
 }
 
 /// Chat error with location tracking.

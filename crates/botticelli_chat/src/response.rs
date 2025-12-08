@@ -109,4 +109,30 @@ impl Response {
     pub fn is_confirmation(&self) -> bool {
         matches!(self, Self::Confirmation { .. })
     }
+
+    /// Extract text content from response.
+    pub fn as_text(&self) -> String {
+        match self {
+            Self::Text(s) => s.clone(),
+            Self::Success { message, data } => {
+                if let Some(d) = data {
+                    format!("{}\n{}", message, d)
+                } else {
+                    message.clone()
+                }
+            }
+            Self::Error { message, details } => {
+                if let Some(d) = details {
+                    format!("Error: {}\n{}", message, d)
+                } else {
+                    format!("Error: {}", message)
+                }
+            }
+            Self::Confirmation { question, default } => {
+                format!("{} [{}]", question, if *default { "Y/n" } else { "y/N" })
+            }
+            Self::Info(s) => format!("Info: {}", s),
+            Self::Warning(s) => format!("Warning: {}", s),
+        }
+    }
 }

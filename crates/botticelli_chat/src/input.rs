@@ -83,3 +83,14 @@ impl UserInput {
         }
     }
 }
+
+impl std::fmt::Display for UserInput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Text(s) => write!(f, "{}", s),
+            Self::Confirmation(b) => write!(f, "{}", if *b { "yes" } else { "no" }),
+            Self::FilePath(p) => write!(f, "{}", p),
+            Self::Exit => write!(f, "exit"),
+        }
+    }
+}

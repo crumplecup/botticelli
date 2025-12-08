@@ -10,6 +10,7 @@
 
 mod command;
 mod error;
+mod executor;
 mod input;
 mod interface;
 mod message;
@@ -17,8 +18,13 @@ mod parser;
 mod response;
 mod state;
 
+#[cfg(feature = "tui")]
+/// TUI implementation using ratatui.
+pub mod tui;
+
 pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
 pub use error::{ChatError, ChatErrorKind, ChatResult};
+pub use executor::{CommandExecutor, NarrativeState};
 pub use input::UserInput;
 pub use interface::ChatInterface;
 pub use message::Message;
