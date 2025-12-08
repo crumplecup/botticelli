@@ -135,7 +135,26 @@ let msg = MessageBuilder::default()
     .expect("Valid message");
 ```
 
-**2. Manual builders** (`impl Type { pub fn builder() }`):
+**2. derive_new** (`#[derive(derive_new::new)]`):
+
+For simple constructors with few arguments, use `derive_new` to generate a `new()` method:
+
+```rust
+use derive_new::new;
+
+#[derive(Debug, Clone, new)]
+pub struct Config {
+    host: String,
+    port: u16,
+}
+
+// Usage:
+let config = Config::new("localhost".to_string(), 8080);
+```
+
+**3. Manual builders** (`impl Type { pub fn builder() }`):
+
+For complex types with many optional fields or validation:
 
 ```rust
 // Do not import Builder struct
@@ -197,12 +216,10 @@ Private fields + derive-based access:
 ```rust
 use derive_getters::Getters;
 use derive_setters::Setters;
-use typed_builder::TypedBuilder;
 
-#[derive(Debug, Clone, Getters, Setters, TypedBuilder)]
+#[derive(Debug, Clone, Getters, Setters)]
 #[setters(prefix = "with_")]  // Avoid getter/setter name conflicts
 pub struct SecurityContext {
-    #[builder(default)]
     /// User ID (propagated to getter docs)
     #[setters(doc = "Sets user ID")]  // Separate setter docs
     user_id: Option<UserId>,
@@ -211,11 +228,15 @@ pub struct SecurityContext {
     created_at: DateTime<Utc>,
 }
 
-// Usage:
-let ctx = SecurityContext::builder()
-    .user_id(Some(id))
-    .created_at(Utc::now())
-    .build();
+// Usage with manual constructor:
+impl SecurityContext {
+    pub fn new(user_id: Option<UserId>) -> Self {
+        Self {
+            user_id,
+            created_at: Utc::now(),
+        }
+    }
+}
 
 ctx.user_id();           // Getter
 ctx.with_user_id(new_id); // Setter
@@ -225,8 +246,7 @@ When to use:
 
 - **derive_getters**: Always for private fields
 - **derive_setters**: Mutable config/state objects
-- **typed_builder**: Prefer over manual constructors
-- **Manual constructors**: Only for complex initialization (connections, validation, resources)
+- **Manual constructors**: For initialization (connections, validation, resources)
 
 ### Exception: Error Types
 

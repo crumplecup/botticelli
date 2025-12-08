@@ -36,11 +36,17 @@
 //! # }
 //! ```
 
+mod gemini_model;
+mod groq_model;
 mod metrics;
+mod model_family;
 mod openai_compat;
 mod token_counting;
 
+pub use gemini_model::GeminiModel;
+pub use groq_model::GroqModel;
 pub use metrics::{LlmMetrics, classify_error};
+pub use model_family::ModelFamily;
 pub use openai_compat::{
     ChatMessage, ChatRequest, ChatResponse, OpenAICompatError, OpenAICompatibleClient,
 };
