@@ -3,7 +3,7 @@
 **Status**: Ready for Implementation  
 **Created**: 2025-12-08  
 **Updated**: 2025-12-08 17:40 UTC  
-**Crate**: `botticelli_interaction`  
+**Crate**: `botticelli_chat`  
 **Goal**: Trait-based chat interface for TUI, web, and mobile platforms
 
 ---
@@ -57,7 +57,7 @@ A **trait-based chat interface** that:
 
 ### Key Design Decisions
 
-1. **Crate Name**: `botticelli_interaction` (avoids collision with `botticelli_interface`)
+1. **Crate Name**: `botticelli_chat` (avoids collision with `botticelli_interface`)
 2. **Trait Strategy**: One primary trait (`ChatInterface`), split only if needed
 3. **Error Handling**: `derive_more::Display` + `derive_more::Error`
 4. **Instrumentation**: Required in implementations, documented in trait docs
@@ -68,10 +68,10 @@ A **trait-based chat interface** that:
 ## Architecture Overview
 
 ```
-botticelli_interaction/
+botticelli_chat/
 ├── src/
 │   ├── lib.rs              # mod + pub use only
-│   ├── error.rs            # InteractionError with derive_more
+│   ├── error.rs            # ChatError with derive_more
 │   ├── chat.rs             # ChatInterface trait
 │   ├── command.rs          # Command types and execution
 │   ├── message.rs          # Message and Response types
@@ -97,13 +97,13 @@ botticelli_interaction/
 /// for observability.
 pub trait ChatInterface: Send + Sync {
     /// Display a message to the user.
-    fn display_message(&mut self, message: Message) -> InteractionResult<()>;
+    fn display_message(&mut self, message: Message) -> ChatResult<()>;
     
     /// Get input from the user (async - waits for user).
-    async fn get_input(&mut self) -> InteractionResult<UserInput>;
+    async fn get_input(&mut self) -> ChatResult<UserInput>;
     
     /// Execute a command (async - calls MCP tools).
-    async fn execute_command(&mut self, command: Command) -> InteractionResult<Response>;
+    async fn execute_command(&mut self, command: Command) -> ChatResult<Response>;
     
     /// Get conversation state.
     fn state(&self) -> &ConversationState;
@@ -122,15 +122,15 @@ pub trait ChatInterface: Send + Sync {
 **Goal**: Create crate structure and dependencies
 
 **Actions**:
-1. Create `crates/botticelli_interaction/` directory
+1. Create `crates/botticelli_chat/` directory
 2. Create `Cargo.toml` with dependencies
 3. Create `src/lib.rs` skeleton
 4. Add to workspace `Cargo.toml`
-5. Run `cargo check -p botticelli_interaction`
+5. Run `cargo check -p botticelli_chat`
 
 **Files Created**:
-- `crates/botticelli_interaction/Cargo.toml`
-- `crates/botticelli_interaction/src/lib.rs`
+- `crates/botticelli_chat/Cargo.toml`
+- `crates/botticelli_chat/src/lib.rs`
 
 **Dependencies**:
 ```toml
@@ -160,11 +160,11 @@ serde_json = "1.0"
 
 **Actions**:
 1. Create `src/error.rs`
-2. Define `InteractionErrorKind` enum
-3. Define `InteractionError` wrapper
-4. Define `InteractionResult<T>` type alias
+2. Define `ChatErrorKind` enum
+3. Define `ChatError` wrapper
+4. Define `ChatResult<T>` type alias
 5. Export from `lib.rs`
-6. Run `cargo check -p botticelli_interaction`
+6. Run `cargo check -p botticelli_chat`
 
 **Code Template**:
 
@@ -175,7 +175,7 @@ use derive_more::{Display, Error};
 
 /// Specific error conditions for interaction operations.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Display)]
-pub enum InteractionErrorKind {
+pub enum ChatErrorKind {
     #[display("Failed to display message: {}", _0)]
     DisplayFailed(String),
     
@@ -198,19 +198,19 @@ pub enum InteractionErrorKind {
 /// Interaction error with location tracking.
 #[derive(Debug, Clone, Display, Error)]
 #[display("Interaction: {} at {}:{}", kind, file, line)]
-pub struct InteractionError {
+pub struct ChatError {
     /// Error kind
-    pub kind: InteractionErrorKind,
+    pub kind: ChatErrorKind,
     /// Line number where error occurred
     pub line: u32,
     /// File where error occurred
     pub file: &'static str,
 }
 
-impl InteractionError {
+impl ChatError {
     /// Create a new error with caller location.
     #[track_caller]
-    pub fn new(kind: InteractionErrorKind) -> Self {
+    pub fn new(kind: ChatErrorKind) -> Self {
         let loc = std::panic::Location::caller();
         Self {
             kind,
@@ -221,14 +221,14 @@ impl InteractionError {
 }
 
 /// Result type for interaction operations.
-pub type InteractionResult<T> = Result<T, InteractionError>;
+pub type ChatResult<T> = Result<T, ChatError>;
 ```
 
 **lib.rs Updates**:
 ```rust
 mod error;
 
-pub use error::{InteractionError, InteractionErrorKind, InteractionResult};
+pub use error::{ChatError, ChatErrorKind, ChatResult};
 ```
 
 **Success Criteria**:
@@ -251,7 +251,7 @@ pub use error::{InteractionError, InteractionErrorKind, InteractionResult};
 2. Create `src/input.rs`
 3. Define all type variants
 4. Export from `lib.rs`
-5. Run `cargo check -p botticelli_interaction`
+5. Run `cargo check -p botticelli_chat`
 
 **Code Templates**:
 
@@ -385,14 +385,14 @@ pub use message::{Message, Response};
 2. Define `ChatInterface` trait
 3. Document instrumentation requirements
 4. Export from `lib.rs`
-5. Run `cargo check -p botticelli_interaction`
+5. Run `cargo check -p botticelli_chat`
 
 **Code Template**:
 
 ```rust
 // src/chat.rs
 
-use crate::{ConversationState, InteractionResult, Message, Response, UserInput, Command};
+use crate::{ConversationState, ChatResult, Message, Response, UserInput, Command};
 
 /// Chat interface for conversational user interaction.
 /// 
@@ -408,7 +408,7 @@ use crate::{ConversationState, InteractionResult, Message, Response, UserInput, 
 /// 
 /// ```ignore
 /// #[instrument(skip(self), fields(message_type = %message.kind()))]
-/// fn display_message(&mut self, message: Message) -> InteractionResult<()> {
+/// fn display_message(&mut self, message: Message) -> ChatResult<()> {
 ///     debug!("Displaying message");
 ///     // implementation
 /// }
@@ -416,13 +416,13 @@ use crate::{ConversationState, InteractionResult, Message, Response, UserInput, 
 /// 
 /// ## Error Handling
 /// 
-/// Methods return `InteractionResult` which includes location tracking.
-/// Use `InteractionError::new()` to preserve caller location.
+/// Methods return `ChatResult` which includes location tracking.
+/// Use `ChatError::new()` to preserve caller location.
 /// 
 /// # Example Implementation
 /// 
 /// ```ignore
-/// use botticelli_interaction::{ChatInterface, Message, UserInput, Response, Command};
+/// use botticelli_chat::{ChatInterface, Message, UserInput, Response, Command};
 /// 
 /// struct MyChatInterface {
 ///     state: ConversationState,
@@ -430,7 +430,7 @@ use crate::{ConversationState, InteractionResult, Message, Response, UserInput, 
 /// 
 /// impl ChatInterface for MyChatInterface {
 ///     #[instrument(skip(self))]
-///     fn display_message(&mut self, message: Message) -> InteractionResult<()> {
+///     fn display_message(&mut self, message: Message) -> ChatResult<()> {
 ///         println!("{}: {}", message.kind(), message.content());
 ///         Ok(())
 ///     }
@@ -442,17 +442,17 @@ pub trait ChatInterface: Send + Sync {
     /// Display a message to the user.
     /// 
     /// This is synchronous as most UI frameworks can display immediately.
-    fn display_message(&mut self, message: Message) -> InteractionResult<()>;
+    fn display_message(&mut self, message: Message) -> ChatResult<()>;
     
     /// Get input from the user.
     /// 
     /// This is async as it may wait for user interaction.
-    async fn get_input(&mut self) -> InteractionResult<UserInput>;
+    async fn get_input(&mut self) -> ChatResult<UserInput>;
     
     /// Execute a command.
     /// 
     /// This is async as it may invoke MCP tools or other async operations.
-    async fn execute_command(&mut self, command: Command) -> InteractionResult<Response>;
+    async fn execute_command(&mut self, command: Command) -> ChatResult<Response>;
     
     /// Get conversation state.
     fn state(&self) -> &ConversationState;
@@ -489,7 +489,7 @@ pub use chat::ChatInterface;
 2. Define `Command` enum
 3. Define command variant types
 4. Export from `lib.rs`
-5. Run `cargo check -p botticelli_interaction`
+5. Run `cargo check -p botticelli_chat`
 
 **Code Template**:
 
@@ -627,14 +627,14 @@ pub use command::{BotCommand, Command, NarrativeCommand, SystemCommand};
 2. Define `Intent` enum
 3. Implement basic parsing logic
 4. Export from `lib.rs`
-5. Run `cargo check -p botticelli_interaction`
+5. Run `cargo check -p botticelli_chat`
 
 **Code Template**:
 
 ```rust
 // src/parser.rs
 
-use crate::{Command, InteractionError, InteractionErrorKind, InteractionResult};
+use crate::{Command, ChatError, ChatErrorKind, ChatResult};
 use crate::{NarrativeCommand, BotCommand, SystemCommand};
 
 /// User intent parsed from input.
@@ -716,7 +716,7 @@ impl IntentParser {
     /// 
     /// This is a simple implementation. A full implementation would
     /// use NLP or structured parsing to extract parameters.
-    pub fn parse_command(&self, text: &str) -> InteractionResult<Command> {
+    pub fn parse_command(&self, text: &str) -> ChatResult<Command> {
         let intent = self.parse_intent(text);
         
         match intent {
@@ -725,14 +725,14 @@ impl IntentParser {
             Intent::CreateNarrative => {
                 // Simple extraction: look for quoted name
                 // Full implementation would be more sophisticated
-                Err(InteractionError::new(
-                    InteractionErrorKind::ParseError(
+                Err(ChatError::new(
+                    ChatErrorKind::ParseError(
                         "Command parsing needs more context".to_string()
                     )
                 ))
             }
-            _ => Err(InteractionError::new(
-                InteractionErrorKind::ParseError(
+            _ => Err(ChatError::new(
+                ChatErrorKind::ParseError(
                     format!("Cannot parse intent: {:?}", intent)
                 )
             )),
@@ -757,7 +757,7 @@ pub use parser::{Intent, IntentParser};
 **Success Criteria**:
 - [ ] Parser compiles
 - [ ] Basic intent recognition works
-- [ ] Returns `InteractionResult`
+- [ ] Returns `ChatResult`
 - [ ] Documented as simple implementation
 - [ ] Exported from crate root
 
@@ -774,7 +774,7 @@ pub use parser::{Intent, IntentParser};
 2. Define `ConversationState` struct
 3. Use `typed_builder` for construction
 4. Export from `lib.rs`
-5. Run `cargo check -p botticelli_interaction`
+5. Run `cargo check -p botticelli_chat`
 
 **Code Template**:
 
@@ -868,15 +868,15 @@ pub use state::{ConversationState, Interaction};
 2. Create `tests/chat_test.rs`
 3. Create `tests/command_test.rs`
 4. Create `tests/parser_test.rs`
-5. Run `cargo test -p botticelli_interaction`
+5. Run `cargo test -p botticelli_chat`
 
 **Code Templates**:
 
 ```rust
 // tests/fixtures/mock_chat.rs
 
-use botticelli_interaction::{
-    ChatInterface, Command, ConversationState, InteractionResult,
+use botticelli_chat::{
+    ChatInterface, Command, ConversationState, ChatResult,
     Message, Response, UserInput,
 };
 
@@ -906,21 +906,21 @@ impl MockChatInterface {
 }
 
 impl ChatInterface for MockChatInterface {
-    fn display_message(&mut self, message: Message) -> InteractionResult<()> {
+    fn display_message(&mut self, message: Message) -> ChatResult<()> {
         self.messages.push(message);
         Ok(())
     }
     
-    async fn get_input(&mut self) -> InteractionResult<UserInput> {
+    async fn get_input(&mut self) -> ChatResult<UserInput> {
         self.inputs.pop()
-            .ok_or_else(|| botticelli_interaction::InteractionError::new(
-                botticelli_interaction::InteractionErrorKind::InvalidInput(
+            .ok_or_else(|| botticelli_chat::ChatError::new(
+                botticelli_chat::ChatErrorKind::InvalidInput(
                     "No input available".to_string()
                 )
             ))
     }
     
-    async fn execute_command(&mut self, _command: Command) -> InteractionResult<Response> {
+    async fn execute_command(&mut self, _command: Command) -> ChatResult<Response> {
         Ok(Response::Complete("Mock execution".to_string()))
     }
     
@@ -937,7 +937,7 @@ impl ChatInterface for MockChatInterface {
 ```rust
 // tests/chat_test.rs
 
-use botticelli_interaction::{ChatInterface, Message};
+use botticelli_chat::{ChatInterface, Message};
 
 mod fixtures;
 use fixtures::mock_chat::MockChatInterface;
@@ -967,18 +967,18 @@ async fn test_display_multiple_messages() {
 #[tokio::test]
 async fn test_get_input() {
     let mut chat = MockChatInterface::new("test-session".to_string());
-    chat.add_input(botticelli_interaction::UserInput::Text("hello".to_string()));
+    chat.add_input(botticelli_chat::UserInput::Text("hello".to_string()));
     
     let input = chat.get_input().await.expect("Should get input");
     
-    assert!(matches!(input, botticelli_interaction::UserInput::Text(_)));
+    assert!(matches!(input, botticelli_chat::UserInput::Text(_)));
 }
 ```
 
 ```rust
 // tests/command_test.rs
 
-use botticelli_interaction::{Command, NarrativeCommand, SystemCommand};
+use botticelli_chat::{Command, NarrativeCommand, SystemCommand};
 
 #[test]
 fn test_narrative_create_command() {
@@ -1001,7 +1001,7 @@ fn test_system_help_command() {
 ```rust
 // tests/parser_test.rs
 
-use botticelli_interaction::{Intent, IntentParser};
+use botticelli_chat::{Intent, IntentParser};
 
 #[test]
 fn test_parse_help_intent() {
@@ -1051,7 +1051,7 @@ fn test_parse_unknown_intent() {
 **Location**: `crates/botticelli_tui/`
 
 **Actions**:
-1. Add `botticelli_interaction` dependency to `botticelli_tui`
+1. Add `botticelli_chat` dependency to `botticelli_tui`
 2. Create `src/chat_interface.rs`
 3. Implement `ChatInterface` trait
 4. Add instrumentation
@@ -1062,9 +1062,9 @@ fn test_parse_unknown_intent() {
 ```rust
 // crates/botticelli_tui/src/chat_interface.rs
 
-use botticelli_interaction::{
-    ChatInterface, Command, ConversationState, InteractionError,
-    InteractionErrorKind, InteractionResult, Message, Response, UserInput,
+use botticelli_chat::{
+    ChatInterface, Command, ConversationState, ChatError,
+    ChatErrorKind, ChatResult, Message, Response, UserInput,
 };
 use tracing::{debug, error, instrument};
 
@@ -1093,23 +1093,23 @@ impl TuiChatInterface {
 
 impl ChatInterface for TuiChatInterface {
     #[instrument(skip(self), fields(message_type = %message.kind()))]
-    fn display_message(&mut self, message: Message) -> InteractionResult<()> {
+    fn display_message(&mut self, message: Message) -> ChatResult<()> {
         debug!(content = %message.content(), "Displaying message");
         self.message_buffer.push(message);
         Ok(())
     }
     
     #[instrument(skip(self))]
-    async fn get_input(&mut self) -> InteractionResult<UserInput> {
+    async fn get_input(&mut self) -> ChatResult<UserInput> {
         // TODO: Implement actual input reading from TUI
         // For now, return error
-        Err(InteractionError::new(
-            InteractionErrorKind::InvalidInput("Not implemented".to_string())
+        Err(ChatError::new(
+            ChatErrorKind::InvalidInput("Not implemented".to_string())
         ))
     }
     
     #[instrument(skip(self, command))]
-    async fn execute_command(&mut self, command: Command) -> InteractionResult<Response> {
+    async fn execute_command(&mut self, command: Command) -> ChatResult<Response> {
         debug!(command = ?command, "Executing command");
         
         // TODO: Integrate with MCP tools
@@ -1162,7 +1162,7 @@ pub use chat_interface::TuiChatInterface;
 
 use botticelli_mcp::{CreateNarrativeTool, McpTool};
 
-async fn execute_command(&mut self, command: Command) -> InteractionResult<Response> {
+async fn execute_command(&mut self, command: Command) -> ChatResult<Response> {
     match command {
         Command::Narrative(NarrativeCommand::Create { name, description }) => {
             debug!(name = %name, "Creating narrative");
@@ -1175,8 +1175,8 @@ async fn execute_command(&mut self, command: Command) -> InteractionResult<Respo
             
             // Execute tool and convert error
             let result = tool.execute(params).await
-                .map_err(|e| InteractionError::new(
-                    InteractionErrorKind::CommandFailed(
+                .map_err(|e| ChatError::new(
+                    ChatErrorKind::CommandFailed(
                         format!("Failed to create narrative: {}", e)
                     )
                 ))?;
@@ -1184,8 +1184,8 @@ async fn execute_command(&mut self, command: Command) -> InteractionResult<Respo
             // Extract response data
             let toml = result.get("toml")
                 .and_then(|v| v.as_str())
-                .ok_or_else(|| InteractionError::new(
-                    InteractionErrorKind::CommandFailed(
+                .ok_or_else(|| ChatError::new(
+                    ChatErrorKind::CommandFailed(
                         "No TOML in response".to_string()
                     )
                 ))?;
@@ -1196,8 +1196,8 @@ async fn execute_command(&mut self, command: Command) -> InteractionResult<Respo
         
         // Other command handlers...
         _ => {
-            Err(InteractionError::new(
-                InteractionErrorKind::CommandFailed(
+            Err(ChatError::new(
+                ChatErrorKind::CommandFailed(
                     "Command not implemented".to_string()
                 )
             ))
@@ -1219,7 +1219,7 @@ async fn execute_command(&mut self, command: Command) -> InteractionResult<Respo
 ## Complete lib.rs Structure
 
 ```rust
-// crates/botticelli_interaction/src/lib.rs
+// crates/botticelli_chat/src/lib.rs
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -1232,7 +1232,7 @@ async fn execute_command(&mut self, command: Command) -> InteractionResult<Respo
 //! # Example
 //!
 //! ```ignore
-//! use botticelli_interaction::{ChatInterface, Message};
+//! use botticelli_chat::{ChatInterface, Message};
 //!
 //! async fn example(chat: &mut impl ChatInterface) {
 //!     chat.display_message(Message::System("Hello!".to_string())).unwrap();
@@ -1249,7 +1249,7 @@ mod parser;
 mod state;
 
 // Export error types first
-pub use error::{InteractionError, InteractionErrorKind, InteractionResult};
+pub use error::{ChatError, ChatErrorKind, ChatResult};
 
 // Core trait
 pub use chat::ChatInterface;
@@ -1314,14 +1314,14 @@ pub use state::{ConversationState, Interaction};
 
 ```bash
 # After each step
-cargo check -p botticelli_interaction
+cargo check -p botticelli_chat
 
 # Before committing
-just check botticelli_interaction
-just test-package botticelli_interaction
+just check botticelli_chat
+just test-package botticelli_chat
 
 # Final verification
-just check-all botticelli_interaction
+just check-all botticelli_chat
 ```
 
 ---
@@ -1350,8 +1350,8 @@ just check-all botticelli_interaction
 ### Phase 1 Complete When:
 
 - [ ] All 10 steps completed
-- [ ] `cargo check -p botticelli_interaction` passes
-- [ ] `cargo test -p botticelli_interaction` passes
+- [ ] `cargo check -p botticelli_chat` passes
+- [ ] `cargo test -p botticelli_chat` passes
 - [ ] All CLAUDE.md compliance checks pass
 - [ ] TUI implementation functional
 - [ ] MCP integration working
