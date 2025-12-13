@@ -1,0 +1,87 @@
+# Multi-stage build for Botticelli MCP Server
+# Uses Fedora as base to match host environment
+
+# Base image with Rust and build tools
+FROM registry.fedoraproject.org/fedora:latest AS base
+
+# Install build dependencies
+RUN dnf install -y \
+    gcc \
+    gcc-c++ \
+    make \
+    cmake \
+    openssl-devel \
+    pkg-config \
+    postgresql-devel \
+    && dnf clean all
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install cargo-chef for dependency caching
+RUN cargo install cargo-chef
+
+WORKDIR /app
+
+# Planner stage - analyze dependencies
+FROM base AS planner
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+RUN cargo chef prepare --recipe-path recipe.json
+
+# Cacher stage - build dependencies only (cached layer)
+FROM base AS cacher
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json --bin botticelli-mcp
+
+# Builder stage - build application code
+FROM base AS builder
+
+# Copy pre-built dependencies from cacher
+COPY --from=cacher /app/target target
+COPY --from=cacher /root/.cargo /root/.cargo
+
+# Copy workspace files
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+
+# Build release binary with HTTP feature (dependencies already built)
+RUN cargo build --release --bin botticelli-mcp-http --features="http"
+
+# Runtime stage
+FROM registry.fedoraproject.org/fedora:latest
+
+# Install runtime dependencies
+RUN dnf install -y \
+    openssl \
+    ca-certificates \
+    postgresql \
+    postgresql-libs \
+    curl \
+    && dnf clean all
+
+# Create non-root user
+RUN useradd -m -u 1000 botticelli
+
+# Create app directory
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /app/target/release/botticelli-mcp-http /usr/local/bin/botticelli-mcp-http
+
+# Copy narrative resources
+COPY crates/botticelli_narrative/narratives ./crates/botticelli_narrative/narratives
+
+# Switch to non-root user
+USER botticelli
+
+# Default environment variables
+ENV RUST_LOG=info
+ENV MCP_PORT=3000
+
+# Expose port for HTTP server
+EXPOSE 3000
+
+# Run the HTTP MCP server
+ENTRYPOINT ["botticelli-mcp-http"]

@@ -1,0 +1,47 @@
+# Botticelli Chat Configuration
+#
+# This file configures the chat interface for local development or container deployment.
+# 
+# Precedence order:
+# 1. CLI flags (highest)
+# 2. Environment variables (BOTTICELLI_*)
+# 3. This config file
+# 4. Built-in defaults (lowest)
+
+[environment]
+# Deployment mode: "local" or "container"
+# - local: Services run on localhost (for development)
+# - container: Services run in container network (for production)
+mode = "local"
+
+[postgres]
+# PostgreSQL database connection
+# In container mode, host defaults to "postgres" (service name)
+# In local mode, host defaults to "localhost"
+host = "localhost"
+port = 5432
+user = "botticelli"
+password = "botticelli"
+database = "botticelli"
+
+[mcp_server]
+# MCP server connection
+# In container mode, host defaults to "mcp-server" (service name)
+# In local mode, host defaults to "localhost"
+host = "localhost"
+port = 3000
+
+[mcp_client]
+# MCP client behavior
+timeout_seconds = 30
+retry_attempts = 3
+
+# [chat]
+# Chat session configuration is handled separately via ChatConfig
+# Model selection and fallback settings are not part of app config
+
+[observability]
+# Logging and tracing
+rust_log = "info"
+otel_exporter = "stdout"  # "stdout" or "otlp"
+otel_endpoint = "http://localhost:4318"

@@ -1,0 +1,116 @@
+# Botticelli Chat Interface Stack
+# 
+# This docker-compose file sets up the complete chat interface stack:
+# - PostgreSQL: Database for persistence
+# - MCP Server: Model Context Protocol server for tool execution
+# - Chat TUI: Interactive chat interface
+# - Jaeger: Optional tracing (for debugging)
+#
+# Usage with Podman:
+#   podman-compose -f docker-compose.chat.yml up
+#
+# Usage with Docker:
+#   docker-compose -f docker-compose.chat.yml up
+
+version: '3.8'
+
+services:
+  # PostgreSQL database for persistence
+  postgres:
+    image: postgres:16-alpine
+    container_name: botticelli-chat-postgres
+    environment:
+      - POSTGRES_USER=botticelli
+      - POSTGRES_PASSWORD=botticelli
+      - POSTGRES_DB=botticelli
+    ports:
+      - "5433:5432"
+    volumes:
+      - chat_postgres_data:/var/lib/postgresql/data
+    networks:
+      - botticelli-chat
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botticelli"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MCP Server for tool execution
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Containerfile.mcp
+    container_name: botticelli-mcp-server
+    ports:
+      - "3000:3000"
+    environment:
+      - RUST_LOG=info
+      - MCP_PORT=3000
+      - DATABASE_URL=postgresql://botticelli:botticelli@postgres:5432/botticelli
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./crates/botticelli_narrative/narratives:/app/narratives:rw
+    networks:
+      - botticelli-chat
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Chat TUI Interface
+  chat:
+    build:
+      context: .
+      dockerfile: Containerfile.chat
+    container_name: botticelli-chat
+    stdin_open: true
+    tty: true
+    environment:
+      # Use config system for all settings
+      - RUST_LOG=info
+      - BOTTICELLI__ENVIRONMENT__MODE=container
+      - BOTTICELLI__POSTGRES__HOST=postgres
+      - BOTTICELLI__POSTGRES__PORT=5432
+      - BOTTICELLI__POSTGRES__USER=botticelli
+      - BOTTICELLI__POSTGRES__PASSWORD=botticelli
+      - BOTTICELLI__POSTGRES__DATABASE=botticelli
+      - BOTTICELLI__MCP_SERVER__HOST=mcp-server
+      - BOTTICELLI__MCP_SERVER__PORT=3000
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./chat.container.toml:/app/chat.toml:ro
+      - ./crates/botticelli_narrative/narratives:/app/narratives:rw
+    networks:
+      - botticelli-chat
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mcp-server:
+        condition: service_healthy
+
+  # Optional: Jaeger for tracing (debugging)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: botticelli-chat-jaeger
+    profiles:
+      - debug
+    ports:
+      - "16686:16686"
+      - "4318:4318"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=info
+    networks:
+      - botticelli-chat
+
+networks:
+  botticelli-chat:
+    driver: bridge
+
+volumes:
+  chat_postgres_data:

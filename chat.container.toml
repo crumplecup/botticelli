@@ -1,0 +1,31 @@
+# Botticelli Chat Configuration - Container Mode
+#
+# Optimized for containerized deployment with docker-compose.
+
+[environment]
+mode = "container"
+
+[postgres]
+# Service name in docker-compose
+host = "postgres"
+port = 5432
+user = "botticelli"
+password = "botticelli"
+database = "botticelli"
+
+[mcp_server]
+# Service name in docker-compose
+host = "mcp-server"
+port = 3000
+
+[mcp_client]
+timeout_seconds = 30
+retry_attempts = 3
+
+# [chat]
+# Chat session configuration is handled separately
+
+[observability]
+rust_log = "info"
+otel_exporter = "otlp"
+otel_endpoint = "http://jaeger:4318"

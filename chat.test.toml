@@ -1,0 +1,34 @@
+# Botticelli Chat - Test Configuration
+# This configuration is optimized for integration testing
+
+[environment]
+mode = "test"  # Test mode with appropriate defaults
+
+[postgres]
+# PostgreSQL connection - test database
+host = "localhost"
+port = 5432
+user = "botticelli"
+password = "botticelli"
+database = "botticelli_test"
+
+[mcp_server]
+# MCP server connection - test server
+host = "localhost"
+port = 3001
+
+[mcp_client]
+# Shorter timeout for tests
+timeout_seconds = 30
+# Fewer retries for faster test failures
+retry_attempts = 2
+
+[chat]
+# Chat settings
+initial_model = { Gemini = "Gemini25Flash" }
+
+[observability]
+# Tracing enabled for debugging test failures
+rust_log = "debug"
+otel_exporter = ""
+otel_endpoint = ""

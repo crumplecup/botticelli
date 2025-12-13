@@ -1,0 +1,51 @@
+# Botticelli Chat - Local Development Configuration
+# This configuration assumes services are running on localhost
+
+[environment]
+mode = "local"  # Options: local, staging, production
+
+[database]
+# PostgreSQL connection - local development instance
+url = "postgresql://botticelli:botticelli@localhost:5432/botticelli"
+# Connection pool settings
+max_connections = 5
+min_connections = 1
+connection_timeout_seconds = 30
+
+[mcp]
+# MCP server connection - local HTTP server
+server_url = "http://localhost:3000"
+# Request timeout
+timeout_seconds = 60
+# Retry configuration
+max_retries = 3
+retry_delay_ms = 1000
+
+[llm]
+# Default LLM provider for narrative generation
+default_provider = "gemini"  # Options: gemini, anthropic, groq, ollama, huggingface
+# Default model
+default_model = "gemini-1.5-flash"
+# Rate limiting
+rate_limit_tier = "free"  # Options: free, standard, premium
+
+[observability]
+# Tracing configuration
+tracing_enabled = true
+# Log level: trace, debug, info, warn, error
+log_level = "debug"
+# Jaeger endpoint for traces (optional - leave empty to disable)
+jaeger_endpoint = "http://localhost:14268/api/traces"
+
+[server]
+# Chat TUI settings
+host = "127.0.0.1"
+port = 8080
+# Enable ANSI colors
+enable_colors = true
+
+[features]
+# Feature flags for development
+enable_bot_management = true
+enable_social_scheduling = true
+enable_narrative_validation = true
