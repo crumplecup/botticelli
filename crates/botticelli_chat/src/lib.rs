@@ -23,6 +23,7 @@ mod startup;
 mod state;
 
 mod config;
+mod elicitation;
 
 #[cfg(feature = "tui")]
 mod tui;
@@ -32,6 +33,9 @@ pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
 pub use config::{
     ChatAppConfig, ConfigBuilder, EnvironmentConfig, EnvironmentMode, McpClientConfig,
     McpServerConfig, ObservabilityConfig, PostgresConfig,
+};
+pub use elicitation::{
+    ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
 pub use error::{ChatError, ChatErrorKind, ChatResult};
 pub use executor::{CommandExecutor, NarrativeState};
