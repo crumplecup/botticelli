@@ -110,7 +110,8 @@ impl CommandExecutor {
 Available Commands:
 
 Narrative Management:
-  • "create narrative about <topic>" - Start new narrative
+  • "create narrative about <topic>" - Start new narrative (AI-assisted)
+  • "create narrative interactive" - Start interactive guided creation
   • "load narrative from <path>" - Load existing narrative
   • "save narrative to <path>" - Save current narrative
   • "update model to <model>" - Change LLM model
@@ -155,6 +156,9 @@ Other:
         match command {
             NarrativeCommand::Create { prompt } => {
                 self.handle_create_narrative(prompt).await
+            }
+            NarrativeCommand::CreateInteractive => {
+                self.handle_create_narrative_interactive().await
             }
             NarrativeCommand::Load { path } => {
                 self.handle_load_narrative(path).await
@@ -467,6 +471,24 @@ Other:
              Use 'update model', 'update temperature', etc. to configure.",
             prompt
         )))
+    }
+
+    /// Handle interactive narrative creation with elicitation.
+    ///
+    /// This method is a placeholder for TUI integration.
+    /// The actual implementation requires TUI dialog integration.
+    #[instrument(skip(self))]
+    async fn handle_create_narrative_interactive(&self) -> ChatResult<Response> {
+        // Note: Full implementation requires:
+        // 1. TUI dialog implementation of ElicitationDialog trait
+        // 2. ElicitationSession with chosen mode
+        // 3. Conversion from PartialNarrative to final TOML
+        // 4. Save to database or file
+        
+        Ok(Response::text(
+            "Interactive narrative creation requires TUI integration.\n\
+             Use 'create narrative about <topic>' for AI-assisted creation via MCP."
+        ))
     }
 
     #[cfg(feature = "cli")]

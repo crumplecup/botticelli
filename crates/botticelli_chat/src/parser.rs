@@ -50,7 +50,12 @@ pub fn parse_intent(input: &str) -> ChatResult<Command> {
 }
 
 fn parse_narrative_command(input: &str) -> ChatResult<Command> {
-    // Create narrative
+    // Create narrative interactive
+    if (input.contains("create") || input.contains("new")) && input.contains("interactive") {
+        return Ok(Command::Narrative(NarrativeCommand::CreateInteractive));
+    }
+
+    // Create narrative (AI-assisted)
     if input.contains("create") || input.contains("new") || input.contains("generate") {
         // Extract prompt after keywords
         let prompt = extract_after_keywords(

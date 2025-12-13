@@ -25,6 +25,8 @@ pub enum NarrativeCommand {
         /// The natural language prompt describing the narrative.
         prompt: String,
     },
+    /// Create a narrative interactively with guided elicitation.
+    CreateInteractive,
     /// Load an existing narrative from file.
     Load {
         /// Path to the narrative TOML file.
