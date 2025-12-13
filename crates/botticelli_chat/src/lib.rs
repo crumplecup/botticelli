@@ -35,8 +35,8 @@ pub use config::{
     McpServerConfig, ObservabilityConfig, PostgresConfig,
 };
 pub use elicitation::{
-    ActElicitor, ElicitationDialog, MetadataElicitor, NarrativeElicitor, PartialAct,
-    PartialNarrative, PartialNarrativeBuilder,
+    ActElicitor, ElicitationDialog, ElicitationSession, MetadataElicitor, NarrativeElicitor,
+    PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
 pub use error::{ChatError, ChatErrorKind, ChatResult};
 pub use executor::{CommandExecutor, NarrativeState};

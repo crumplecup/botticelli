@@ -9,9 +9,11 @@ mod dialog;
 mod elicitor;
 mod metadata;
 mod partial;
+mod session;
 
 pub use acts::ActElicitor;
 pub use dialog::ElicitationDialog;
 pub use elicitor::NarrativeElicitor;
 pub use metadata::MetadataElicitor;
 pub use partial::{PartialAct, PartialNarrative, PartialNarrativeBuilder};
+pub use session::ElicitationSession;
