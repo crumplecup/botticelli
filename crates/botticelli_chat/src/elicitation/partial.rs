@@ -21,7 +21,7 @@ pub struct PartialAct {
 ///
 /// Uses builder pattern for type-safe construction.
 /// All fields are optional during elicitation.
-#[derive(Debug, Clone, Builder, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Builder, Serialize, Deserialize, Getters, Default)]
 #[builder(setter(into), default)]
 pub struct PartialNarrative {
     /// Narrative name.
@@ -47,21 +47,6 @@ pub struct PartialNarrative {
     
     /// Generated TOML content (cached).
     toml_content: Option<String>,
-}
-
-impl Default for PartialNarrative {
-    fn default() -> Self {
-        Self {
-            name: None,
-            description: None,
-            model: None,
-            temperature: None,
-            max_tokens: None,
-            act_order: Vec::new(),
-            acts: HashMap::new(),
-            toml_content: None,
-        }
-    }
 }
 
 impl PartialNarrative {
