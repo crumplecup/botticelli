@@ -8,6 +8,7 @@ mod discord;
 #[cfg(feature = "discord")]
 mod discord_workflow;
 mod echo;
+mod elicitation;
 mod execute_act;
 mod execute_narrative;
 mod export_metrics;
@@ -35,6 +36,7 @@ pub use discord::{
 #[cfg(feature = "discord")]
 pub use discord_workflow::DiscordContentWorkflowTool;
 pub use echo::EchoTool;
+pub use elicitation::{CreateNarrativeSessionTool, NarrativeRegistry};
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use export_metrics::ExportMetricsTool;
