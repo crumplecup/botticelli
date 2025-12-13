@@ -1,6 +1,6 @@
 //! Tool for generating narratives from natural language descriptions.
 
-use crate::{count_acts, escape_toml_string, extract_acts_from_description};
+use crate::NarrativeHelper;
 use crate::tools::narrative_validation_helpers::{
     add_helpful_comments, auto_fix_common_issues, format_toml, format_validation_result,
 };
@@ -103,7 +103,7 @@ impl McpTool for CreateNarrativeTool {
         let validation_json = format_validation_result(&validation);
 
         // Generate summary
-        let act_count = count_acts(&toml);
+        let act_count = NarrativeHelper::count_acts(&toml);
         let summary = if validation.is_valid() {
             if fixes_applied.is_empty() {
                 format!("✅ Created narrative '{}' with {} act(s)", name, act_count)
@@ -141,7 +141,7 @@ fn generate_narrative_toml(
     default_temperature: Option<f64>,
 ) -> McpResult<String> {
     // Parse description to extract workflow steps
-    let acts = extract_acts_from_description(description);
+    let acts = NarrativeHelper::extract_acts_from_description(description);
 
     // Build TOML
     let mut toml = String::new();
@@ -149,7 +149,10 @@ fn generate_narrative_toml(
     // [narrative] section
     toml.push_str("[narrative]\n");
     toml.push_str(&format!("name = \"{}\"\n", name));
-    toml.push_str(&format!("description = \"{}\"\n", escape_toml_string(description)));
+    toml.push_str(&format!(
+        "description = \"{}\"\n",
+        NarrativeHelper::escape_toml_string(description)
+    ));
 
     if let Some(model) = default_model {
         toml.push_str(&format!("model = \"{}\"\n", model));
@@ -175,7 +178,11 @@ fn generate_narrative_toml(
     // [acts] section
     toml.push_str("[acts]\n");
     for act in &acts {
-        toml.push_str(&format!("{} = \"{}\"\n", act.name, escape_toml_string(&act.prompt)));
+        toml.push_str(&format!(
+            "{} = \"{}\"\n",
+            act.name,
+            NarrativeHelper::escape_toml_string(&act.prompt)
+        ));
     }
 
     Ok(toml)

@@ -57,9 +57,7 @@ pub use social::{DiscordBotCommandTool, DiscordPostTool};
 pub use validate_narrative::ValidateNarrativeTool;
 
 // Export shared narrative utilities
-pub use narrative_utils::{
-    count_acts, escape_toml_string, extract_acts_from_description, is_valid_narrative_name, Act,
-};
+pub use narrative_utils::{Act, NarrativeHelper};
 
 // Export LLM tools based on features
 #[cfg(feature = "anthropic")]

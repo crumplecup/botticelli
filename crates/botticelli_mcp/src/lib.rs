@@ -46,9 +46,8 @@ pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{
     Act, ActMetrics, CreateNarrativeTool, EchoTool, ExecutionMetrics, ExecuteNarrativeTool,
     ExportMetricsTool, GenerateTool, McpTool, MetricsSummary, ModifyNarrativeTool,
-    PrometheusMetrics, QueryContentTool, SaveNarrativeTool, ServerInfoTool, ToolRegistry,
-    ValidateNarrativeTool, count_acts, escape_toml_string, extract_acts_from_description,
-    is_valid_narrative_name,
+    NarrativeHelper, PrometheusMetrics, QueryContentTool, SaveNarrativeTool, ServerInfoTool,
+    ToolRegistry, ValidateNarrativeTool,
 };
 
 #[cfg(feature = "discord")]
