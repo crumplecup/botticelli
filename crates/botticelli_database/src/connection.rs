@@ -2,12 +2,14 @@
 
 use crate::DatabaseResult;
 use botticelli_error::{DatabaseError, DatabaseErrorKind};
-use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use tracing::instrument;
 
-/// Establish a connection to the PostgreSQL database.
+/// Type alias for database connection pool.
+pub type DbPool = Pool<ConnectionManager<PgConnection>>;
+
+/// Establish a single connection to the PostgreSQL database.
 ///
 /// Reads the `DATABASE_URL` environment variable to determine the connection string.
 ///
@@ -42,7 +44,7 @@ pub fn establish_connection() -> DatabaseResult<PgConnection> {
 /// - `DATABASE_URL` environment variable is not set
 /// - Pool creation fails
 #[instrument(name = "database.create_pool")]
-pub fn create_pool() -> DatabaseResult<Pool<ConnectionManager<PgConnection>>> {
+pub fn create_pool() -> DatabaseResult<DbPool> {
     let database_url = std::env::var("DATABASE_URL").map_err(|_| {
         tracing::error!("DATABASE_URL environment variable not set");
         DatabaseError::new(DatabaseErrorKind::Connection(
@@ -50,6 +52,16 @@ pub fn create_pool() -> DatabaseResult<Pool<ConnectionManager<PgConnection>>> {
         ))
     })?;
 
+    create_pool_from_url(&database_url)
+}
+
+/// Create a connection pool from a specific database URL.
+///
+/// # Errors
+///
+/// Returns an error if pool creation fails.
+#[instrument(name = "database.create_pool_from_url", skip(database_url))]
+pub fn create_pool_from_url(database_url: &str) -> DatabaseResult<DbPool> {
     tracing::debug!("Creating PostgreSQL connection pool");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
 

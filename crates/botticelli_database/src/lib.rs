@@ -50,7 +50,7 @@ pub use actor_server_models::{
 };
 
 // Re-export connection utilities
-pub use connection::{create_pool, establish_connection};
+pub use connection::{DbPool, create_pool, create_pool_from_url, establish_connection};
 
 // Re-export content management functions
 pub use content_management::{
