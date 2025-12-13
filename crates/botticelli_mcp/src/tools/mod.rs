@@ -16,6 +16,7 @@ mod generate_llm;
 mod metrics;
 mod modify_narrative;
 mod narrative_processor;
+mod narrative_utils;
 mod narrative_validation_helpers;
 mod prometheus;
 mod save_narrative;
@@ -54,6 +55,11 @@ pub use server_info::ServerInfoTool;
 #[cfg(feature = "discord")]
 pub use social::{DiscordBotCommandTool, DiscordPostTool};
 pub use validate_narrative::ValidateNarrativeTool;
+
+// Export shared narrative utilities
+pub use narrative_utils::{
+    count_acts, escape_toml_string, extract_acts_from_description, is_valid_narrative_name, Act,
+};
 
 // Export LLM tools based on features
 #[cfg(feature = "anthropic")]

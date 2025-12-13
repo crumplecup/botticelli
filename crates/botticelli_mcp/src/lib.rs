@@ -44,10 +44,11 @@ pub use error::{McpError, McpResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{
-    ActMetrics, CreateNarrativeTool, EchoTool, ExecutionMetrics, ExecuteNarrativeTool,
+    Act, ActMetrics, CreateNarrativeTool, EchoTool, ExecutionMetrics, ExecuteNarrativeTool,
     ExportMetricsTool, GenerateTool, McpTool, MetricsSummary, ModifyNarrativeTool,
     PrometheusMetrics, QueryContentTool, SaveNarrativeTool, ServerInfoTool, ToolRegistry,
-    ValidateNarrativeTool,
+    ValidateNarrativeTool, count_acts, escape_toml_string, extract_acts_from_description,
+    is_valid_narrative_name,
 };
 
 #[cfg(feature = "discord")]
