@@ -37,6 +37,7 @@ pub use config::{
 pub use elicitation::{
     ActElicitor, CarouselElicitor, ElicitationDialog, ElicitationSession, InputElicitor,
     MetadataElicitor, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
+    ValidationElicitor,
 };
 
 #[cfg(feature = "tui")]

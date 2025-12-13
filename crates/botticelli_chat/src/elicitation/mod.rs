@@ -12,6 +12,7 @@ mod inputs;
 mod metadata;
 mod partial;
 mod session;
+mod validation;
 
 #[cfg(feature = "tui")]
 mod tui_dialog;
@@ -24,6 +25,7 @@ pub use inputs::InputElicitor;
 pub use metadata::MetadataElicitor;
 pub use partial::{PartialAct, PartialNarrative, PartialNarrativeBuilder};
 pub use session::ElicitationSession;
+pub use validation::ValidationElicitor;
 
 #[cfg(feature = "tui")]
 pub use tui_dialog::TuiElicitationDialog;
