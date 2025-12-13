@@ -24,6 +24,7 @@
 8. [⏭️ Step 8: Tests](#step-8-tests)
 9. [⏭️ Step 9: TUI Implementation](#step-9-tui-implementation)
 10. [⏭️ Step 10: Integration](#step-10-integration)
+11. [✅ Step 11: Container Infrastructure](#step-11-container-infrastructure)
 
 ---
 
@@ -1365,6 +1366,53 @@ just check-all botticelli_chat
 - [ ] Performance acceptable (< 500ms response)
 - [ ] Error messages clear and helpful
 - [ ] Code reviewed and approved
+
+---
+
+### Step 11: Container Infrastructure
+
+**Goal**: Provide containerized deployment for chat interface
+
+**Status**: ✅ Complete
+
+**Actions Taken**:
+1. Created `Containerfile.chat` - Multi-stage build for chat binary
+2. Created `docker-compose.chat.yml` - Full stack orchestration
+3. Updated `justfile` with chat commands
+
+**Deliverables**:
+
+**Container Files**:
+- `Containerfile.chat` - Optimized multi-stage build with cargo-chef caching
+- `docker-compose.chat.yml` - Stack includes:
+  - PostgreSQL (port 5433)
+  - MCP Server (internal)
+  - Chat TUI (interactive)
+  - Optional Jaeger (debug profile)
+
+**Justfile Commands**:
+- `just chat-build` - Build chat container
+- `just chat-up` - Start complete stack (interactive)
+- `just chat-up-bg` - Start in background
+- `just chat-up-debug` - Start with Jaeger tracing
+- `just chat-down` - Stop all services
+- `just chat-logs [service]` - View logs
+- `just chat-rebuild` - Rebuild and restart
+- `just chat-local` - Run locally (requires separate postgres/mcp)
+- `just chat-setup` - Complete setup from scratch
+
+**Success Criteria**:
+- [✅] Multi-stage Containerfile with dependency caching
+- [✅] Docker Compose orchestration
+- [✅] PostgreSQL with health checks
+- [✅] MCP Server integration
+- [✅] Justfile recipes for all operations
+- [✅] Non-root container user (security)
+- [✅] Volume mounts for narratives directory
+- [✅] Environment variable configuration
+- [✅] Optional Jaeger debugging support
+
+**Time Taken**: 15 minutes
 
 ---
 

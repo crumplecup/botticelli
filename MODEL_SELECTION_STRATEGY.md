@@ -12,11 +12,34 @@
   - ModelId unified enum across families
   - is_at_least()/is_at_most() for bound checking
   - 10 tests passing (bounds validation, movement, comparisons)
-- [ ] Step 3: Rate limit detection
-- [ ] Step 4: Fallback selection algorithm
-- [ ] Step 5: Integration with chat interface
-- [ ] Step 6: Configuration and persistence
-- [ ] Step 7: Testing and documentation
+- [x] Step 3: Rate limit detection ✅
+  - RateLimitDetector checks provider errors
+  - RateLimitStatus tracks reset times
+  - Extract reset duration from error messages
+  - 5 tests passing (status expiry, message parsing)
+- [x] Step 4: Fallback selection algorithm ✅
+  - ModelSelector with SelectionStrategy enum (LoyalFirst/FriendlyFirst)
+  - select_next() tries loyal/friendly based on strategy
+  - Automatic rate limit tracking on selection
+  - Respects bounds during fallback
+  - 7 tests passing (movement, bounds, tracking)
+- [x] Step 5: Integration with chat interface ✅
+  - ChatSession wrapper for model selection in conversations
+  - handle_rate_limit() auto-selects next model
+  - get_family_status() checks rate limit status
+  - 5 tests passing (creation, loyal/friendly movement, bounds, error handling)
+  - All clippy lints passing, 31 tests passing across both crates
+- [x] Step 6: Configuration and persistence ✅
+  - Added serde support to ModelBounds, ModelId, GeminiModel, GroqModel
+  - Created ChatConfig struct with model_bounds and initial_model fields
+  - Added is_within_bounds() helper for bound checking
+  - Renamed bounds constructors: lower_bound(), upper_bound(), both()
+  - 4 tests passing (default config, with/without bounds, serialization)
+  - All clippy lints passing, 35 tests passing across both crates
+- [x] Step 7: Testing and documentation ✅
+  - Integration tests with 6 scenarios (all passing)
+  - Tests cover: rate limit cascade, strategies, bounds enforcement, config serialization
+  - Located in: `crates/botticelli_chat/tests/model_selection_integration_test.rs`
 
 ---
 

@@ -29,6 +29,32 @@ This index tracks all planning documents in the workspace. When documents are co
   - Guide for using the actor system
 
 ### Infrastructure & Configuration
+- **CHAT_CONFIG_SYSTEM.md** - `current` (2025-12-08)
+  - Flexible configuration system for local development and containerized deployment
+  - Environment modes (local/container), config precedence, comprehensive tests
+  - Status: ✅ COMPLETE - Infrastructure ready, 4 phases remaining
+- **CHAT_CONFIG_COMPLETE.md** - `current` (2025-12-08)
+  - Complete implementation summary with architecture and usage
+  - Status: ✅ Reference document
+- **CHAT_CONFIG_SUMMARY.md** - `current` (2025-12-08)
+  - Quick reference and usage guide
+  - Status: ✅ Reference document
+- **CHAT_CONFIG_INTEGRATION_COMPLETE.md** - `current` (2025-12-08)
+  - Complete configuration integration with service container and health checks
+  - Status: ✅ Reference document
+- **CHAT_AUTO_START_COMPLETE.md** - `current` (2025-12-08)
+  - Automatic MCP server startup for Local mode development
+  - One-command launch with dependency management
+  - Status: ✅ COMPLETE - Feature ready
+- **CHAT_LOCAL_CONFIG_COMPLETE.md** - `current` (2025-12-09)
+  - Complete local development setup with auto-startup and integration tests
+  - Phase A (Database) and Phase B (MCP Integration) complete
+  - Comprehensive testing with 3/3 integration tests passing
+  - Status: ✅ COMPLETE - Phases A & B ready
+- **CHAT_IMPLEMENTATION_TRACKER.md** - `current` (2025-12-08)
+  - Detailed task tracker for remaining 4 phases (A-E)
+  - Time estimates, dependencies, success criteria
+  - Status: 🚧 Active tracking document
 - **BUDGET_MULTIPLIER_DESIGN.md** - `e0a7ebc` (2025-11-24)
   - Design for API rate limit budget multipliers
 - **OPENTELEMETRY_INTEGRATION_ISSUES.md** - `current` (2025-11-30)
@@ -269,3 +295,9 @@ This index tracks all planning documents in the workspace. When documents are co
   - CLAUDE.md compliant design
   - 6-hour timeline estimate
   - Ready for Phase 1 implementation
+
+- **DEMO_ACTOR_DESIGN.md** - `current` (2025-12-09)
+  - Demo actor system design for automated interaction testing
+  - Exercises all MCP tools through scripted prompts
+  - Phase 1 complete: core scenarios and executor
+  - Status: ✅ Core implementation complete, TUI integration pending
