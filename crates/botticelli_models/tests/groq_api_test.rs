@@ -1,9 +1,13 @@
+#[cfg(feature = "groq")]
 use botticelli_core::{GenerateRequest, Input, Message, Role};
+#[cfg(feature = "groq")]
 use botticelli_interface::BotticelliDriver;
+#[cfg(feature = "groq")]
 use botticelli_models::GroqDriver;
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
+#[cfg(feature = "groq")]
 async fn test_groq_basic_generation() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 
@@ -32,6 +36,7 @@ async fn test_groq_basic_generation() -> Result<(), Box<dyn std::error::Error>> 
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
+#[cfg(feature = "groq")]
 async fn test_groq_small_models() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 

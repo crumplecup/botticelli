@@ -1,9 +1,13 @@
+#[cfg(feature = "huggingface")]
 use botticelli_core::{GenerateRequest, Input, Message, Role};
+#[cfg(feature = "huggingface")]
 use botticelli_interface::BotticelliDriver;
+#[cfg(feature = "huggingface")]
 use botticelli_models::HuggingFaceDriver;
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
+#[cfg(feature = "huggingface")]
 async fn test_huggingface_basic_generation() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 
@@ -32,6 +36,7 @@ async fn test_huggingface_basic_generation() -> Result<(), Box<dyn std::error::E
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
+#[cfg(feature = "huggingface")]
 async fn test_huggingface_small_models() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 

@@ -3,13 +3,13 @@
 use derive_more::Display;
 use derive_new::new;
 
-use crate::{GeminiModel, GroqModel, ModelFamily};
+use crate::{GeminiModel, GroqModel, ModelFamily, RateLimitDetector};
 
 /// Boundary constraints for model selection.
 ///
 /// Defines upper and lower bounds to prevent using models that are
 /// too expensive/slow (upper bound) or too cheap/fast (lower bound).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, new)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, new, serde::Serialize, serde::Deserialize)]
 pub struct ModelBounds {
     /// Minimum acceptable model (None = no lower bound)
     lower: Option<ModelId>,
@@ -27,7 +27,7 @@ impl ModelBounds {
     }
 
     /// Set lower bound only.
-    pub fn no_lower_than(model: ModelId) -> Self {
+    pub fn lower_bound(model: ModelId) -> Self {
         Self {
             lower: Some(model),
             upper: None,
@@ -35,24 +35,32 @@ impl ModelBounds {
     }
 
     /// Set upper bound only.
-    pub fn no_higher_than(model: ModelId) -> Self {
+    pub fn upper_bound(model: ModelId) -> Self {
         Self {
             lower: None,
             upper: Some(model),
         }
     }
 
+    /// Set both bounds.
+    pub fn both(lower: ModelId, upper: ModelId) -> Self {
+        Self {
+            lower: Some(lower),
+            upper: Some(upper),
+        }
+    }
+
     /// Check if a model is within bounds.
     pub fn allows(&self, model: ModelId) -> bool {
-        if let Some(lower) = self.lower {
-            if !model.is_at_least(lower) {
-                return false;
-            }
+        if let Some(lower) = self.lower
+            && !model.is_at_least(lower)
+        {
+            return false;
         }
-        if let Some(upper) = self.upper {
-            if !model.is_at_most(upper) {
-                return false;
-            }
+        if let Some(upper) = self.upper
+            && !model.is_at_most(upper)
+        {
+            return false;
         }
         true
     }
@@ -71,7 +79,7 @@ impl ModelBounds {
 /// Unified model identifier across all families.
 ///
 /// Allows comparing and ordering models regardless of provider.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, serde::Serialize, serde::Deserialize)]
 pub enum ModelId {
     /// Gemini model variant
     #[display("gemini:{}", _0)]
@@ -207,6 +215,62 @@ impl GroqModel {
     }
 }
 
+/// Selection strategy for fallback behavior.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SelectionStrategy {
+    /// Try loyal movement first (within family), then friendly (cross-family)
+    LoyalFirst,
+    /// Try friendly movement first (cross-family), then loyal (within family)
+    FriendlyFirst,
+}
+
+/// Orchestrates model selection with fallback logic.
+#[derive(Debug, Clone, new)]
+pub struct ModelSelector {
+    bounds: ModelBounds,
+    strategy: SelectionStrategy,
+    detector: RateLimitDetector,
+}
+
+impl ModelSelector {
+    /// Select next model after rate limit error.
+    ///
+    /// Returns None if error is not rate-related or no valid fallback exists.
+    pub fn select_next(&mut self, current: ModelId, error: &str) -> Option<ModelId> {
+        if !self.detector.is_rate_limit_message(error) {
+            return None;
+        }
+
+        self.detector.record(current.family(), current);
+
+        match self.strategy {
+            SelectionStrategy::LoyalFirst => self
+                .try_loyal_movement(current)
+                .or_else(|| self.try_friendly_movement(current)),
+            SelectionStrategy::FriendlyFirst => self
+                .try_friendly_movement(current)
+                .or_else(|| self.try_loyal_movement(current)),
+        }
+    }
+
+    /// Get current rate limit status for a family.
+    pub fn get_status(&self, family: ModelFamily) -> Option<&crate::RateLimitStatus> {
+        self.detector.get_status(family)
+    }
+
+    fn try_loyal_movement(&self, current: ModelId) -> Option<ModelId> {
+        current
+            .move_down()
+            .filter(|&next| self.bounds.allows(next))
+    }
+
+    fn try_friendly_movement(&self, current: ModelId) -> Option<ModelId> {
+        current.friends().into_iter().find(|&friend| {
+            self.bounds.allows(friend) && !self.detector.is_rate_limited(friend.family())
+        })
+    }
+}
+
 #[cfg(test)]
 mod model_selector_test {
     use super::*;
@@ -220,7 +284,7 @@ mod model_selector_test {
 
     #[test]
     fn test_bounds_no_lower_than() {
-        let bounds = ModelBounds::no_lower_than(ModelId::Gemini(GeminiModel::Gemini25Flash));
+        let bounds = ModelBounds::lower_bound(ModelId::Gemini(GeminiModel::Gemini25Flash));
         assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Pro)));
         assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Flash)));
         assert!(!bounds.allows(ModelId::Gemini(GeminiModel::Gemini25FlashLite)));
@@ -228,7 +292,7 @@ mod model_selector_test {
 
     #[test]
     fn test_bounds_no_higher_than() {
-        let bounds = ModelBounds::no_higher_than(ModelId::Gemini(GeminiModel::Gemini25Flash));
+        let bounds = ModelBounds::upper_bound(ModelId::Gemini(GeminiModel::Gemini25Flash));
         assert!(!bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Pro)));
         assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Flash)));
         assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25FlashLite)));

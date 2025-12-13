@@ -82,3 +82,4 @@ api = []
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 dotenvy = { workspace = true }
 anyhow = { workspace = true }
+toml.workspace = true

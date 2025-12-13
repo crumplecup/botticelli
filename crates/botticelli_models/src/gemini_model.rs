@@ -7,7 +7,7 @@ use strum::EnumIter;
 ///
 /// Variants are ordered by rate limits and cost, allowing "loyal" movement
 /// up (more capable/expensive) or down (faster/cheaper) within the family.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumIter, serde::Serialize, serde::Deserialize)]
 pub enum GeminiModel {
     /// Gemini 2.5 Pro - Most restrictive, highest capability
     #[display("gemini-2.5-pro")]

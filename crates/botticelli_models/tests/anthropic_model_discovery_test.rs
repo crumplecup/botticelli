@@ -1,3 +1,4 @@
+#[cfg(feature = "anthropic")]
 use botticelli_models::{
     AnthropicClient, AnthropicContentBlock, AnthropicMessage, AnthropicRequest,
 };
@@ -5,6 +6,7 @@ use botticelli_models::{
 /// Test to discover which Anthropic models are available with current API key
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
+#[cfg(feature = "anthropic")]
 async fn test_discover_available_models() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
 

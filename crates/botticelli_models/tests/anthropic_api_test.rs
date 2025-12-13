@@ -1,10 +1,15 @@
+#[cfg(feature = "anthropic")]
 use botticelli_core::{GenerateRequest, Input, Message, Role};
+#[cfg(feature = "anthropic")]
 use botticelli_interface::BotticelliDriver;
+#[cfg(feature = "anthropic")]
 use botticelli_models::AnthropicClient;
+#[cfg(feature = "anthropic")]
 use std::env;
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
+#[cfg(feature = "anthropic")]
 async fn test_anthropic_simple_generation() -> Result<(), Box<dyn std::error::Error>> {
     let api_key =
         env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set for API tests");
@@ -30,6 +35,7 @@ async fn test_anthropic_simple_generation() -> Result<(), Box<dyn std::error::Er
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
+#[cfg(feature = "anthropic")]
 async fn test_anthropic_with_temperature() -> Result<(), Box<dyn std::error::Error>> {
     let api_key =
         env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set for API tests");
