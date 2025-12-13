@@ -387,6 +387,114 @@ container-setup: obs-up container-build container-run
     @echo "🔍 Jaeger: http://localhost:16686"
     @echo "📊 Metrics: http://localhost:9090/metrics"
 
+# Chat Interface
+# ==============
+
+# Build the chat interface container image
+chat-build:
+    @echo "🐳 Building chat interface container..."
+    podman build -t botticelli-chat:latest -f Containerfile.chat .
+
+# Start the complete chat stack (postgres, mcp-server, chat interface)
+chat-up:
+    @echo "🚀 Starting chat interface stack..."
+    podman-compose -f docker-compose.chat.yml up
+
+# Start chat stack in background
+chat-up-bg:
+    @echo "🚀 Starting chat interface stack in background..."
+    podman-compose -f docker-compose.chat.yml up -d
+
+# Start chat stack with Jaeger for debugging
+chat-up-debug:
+    @echo "🚀 Starting chat interface stack with Jaeger..."
+    podman-compose -f docker-compose.chat.yml --profile debug up
+
+# Stop the chat stack
+chat-down:
+    @echo "🛑 Stopping chat interface stack..."
+    podman-compose -f docker-compose.chat.yml down
+
+# View chat logs
+chat-logs service="":
+    #!/usr/bin/env bash
+    if [ -z "{{service}}" ]; then
+        podman-compose -f docker-compose.chat.yml logs -f
+    else
+        podman logs -f botticelli-chat-{{service}}
+    fi
+
+# Rebuild and restart chat interface
+chat-rebuild: chat-build
+    @echo "🔄 Rebuilding and restarting chat interface..."
+    podman-compose -f docker-compose.chat.yml up -d --force-recreate chat
+
+# Build MCP HTTP server binary (required for auto-start)
+build-mcp-server:
+    @echo "🔧 Building MCP HTTP server..."
+    cargo build --bin botticelli-mcp-http --features="http,database,llm"
+
+# Run chat interface locally (skip health checks for development)
+chat-local:
+    @echo "💬 Starting chat interface locally..."
+    cargo run --bin botticelli-chat --features="cli,tui" -- --skip-health-checks
+
+# Run chat interface with health checks and auto-start (builds MCP server if needed)
+chat-local-check: build-mcp-server
+    @echo "💬 Starting chat interface with health checks and auto-start..."
+    cargo run --bin botticelli-chat --features="cli,tui"
+
+# Start services in background (for testing/automation)
+chat-local-bg: build-mcp-server
+    @echo "🔧 Starting services in background..."
+    @echo "Note: Use 'pkill botticelli-chat' or 'pkill mcp-server' to stop"
+    nohup cargo run --bin botticelli-chat --features="cli,tui" > /tmp/botticelli-chat.log 2>&1 &
+    @echo "✅ Services starting... Check /tmp/botticelli-chat.log for output"
+
+# Run automated demo with actor exercising all MCP tools
+chat-demo: build-mcp-server
+    @echo "🎬 Starting Botticelli Automated Demo..."
+    cargo run --bin demo --features="demo"
+
+# Run complete workflow demo (test mode)
+demo-workflow-test:
+    @echo "🎬 Running workflow demo in test mode..."
+    cargo run --bin demo-workflow -- --test-mode
+
+# Run complete workflow demo (with database)
+# NOTE: Requires PostgreSQL and MCP server to be running.
+# Run 'just chat-local' in another terminal first, or use 'just demo-workflow-auto'
+demo-workflow: build-mcp-server
+    @echo "🎬 Running workflow demo with database validation..."
+    @echo "⚠️  Ensure 'just chat-local' is running in another terminal"
+    cargo run --bin demo-workflow
+
+# Auto-start services and run workflow demo
+demo-workflow-auto:
+    @echo "🎬 Starting services and running workflow demo..."
+    @echo "📝 Note: This will start services in the background"
+    just chat-local-bg
+    @sleep 5
+    just demo-workflow
+    @echo "✅ Demo complete. Services still running in background."
+
+# Run chat interface in container mode
+chat-container:
+    @echo "💬 Starting chat interface in container mode..."
+    cargo run --bin botticelli-chat --features="cli,tui" -- --mode container --skip-health-checks
+
+# Run chat interface with verbose logging
+chat-verbose:
+    @echo "💬 Starting chat interface with verbose logging..."
+    cargo run --bin botticelli-chat --features="cli,tui" -- --skip-health-checks --verbose
+
+# Complete chat setup: build and start all services
+chat-setup: chat-build chat-up-bg
+    @echo "✅ Chat interface running"
+    @echo "💬 Chat: Attached to terminal"
+    @echo "🗄️  PostgreSQL: localhost:5433"
+    @echo "🔧 MCP Server: Running in background"
+
 # Code Quality
 # ============
 
