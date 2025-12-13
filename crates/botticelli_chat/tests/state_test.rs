@@ -13,7 +13,7 @@ fn test_conversation_state_new() {
 
 #[test]
 fn test_conversation_state_builder() {
-    let state = ConversationState::builder().build();
+    let state = ConversationState::new();
     assert_eq!(state.history().len(), 0);
 }
 

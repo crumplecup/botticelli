@@ -20,6 +20,9 @@ use ratatui::{
 use std::io::{self, Stdout};
 use tracing::instrument;
 
+use crate::ServiceContainer;
+use std::sync::Arc;
+
 /// Terminal user interface for interactive chat.
 pub struct TuiInterface {
     messages: Vec<RenderedMessage>,
@@ -49,6 +52,16 @@ impl TuiInterface {
             input_buffer: String::new(),
             scroll_offset: 0,
             executor: CommandExecutor::new(),
+        }
+    }
+
+    /// Create a new TUI interface with services.
+    pub fn with_services(services: Arc<ServiceContainer>) -> Self {
+        Self {
+            messages: Vec::new(),
+            input_buffer: String::new(),
+            scroll_offset: 0,
+            executor: CommandExecutor::with_services(services),
         }
     }
 

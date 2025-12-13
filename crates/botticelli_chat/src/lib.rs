@@ -8,26 +8,43 @@
 //! botticelli on tasks like narrative generation, bot assignment, and
 //! social media scheduling.
 
+mod chat_config;
 mod command;
 mod error;
 mod executor;
 mod input;
 mod interface;
 mod message;
+mod model_selection;
 mod parser;
 mod response;
+mod services;
+mod startup;
 mod state;
+
+/// Application configuration module.
+pub mod config;
 
 #[cfg(feature = "tui")]
 /// TUI implementation using ratatui.
 pub mod tui;
 
+pub use chat_config::ChatConfig;
 pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
+pub use config::{
+    ChatAppConfig, ConfigBuilder, EnvironmentConfig, EnvironmentMode, McpClientConfig,
+    McpServerConfig, ObservabilityConfig, PostgresConfig,
+};
 pub use error::{ChatError, ChatErrorKind, ChatResult};
 pub use executor::{CommandExecutor, NarrativeState};
 pub use input::UserInput;
 pub use interface::ChatInterface;
 pub use message::Message;
+pub use model_selection::ChatSession;
 pub use parser::parse_intent;
 pub use response::Response;
+pub use services::ServiceContainer;
+
+#[cfg(feature = "cli")]
+pub use startup::startup_sequence;
 pub use state::ConversationState;

@@ -4,42 +4,43 @@ use crate::{ChatResult, Message};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use typed_builder::TypedBuilder;
 
 /// Conversation state tracking.
-#[derive(Debug, Clone, TypedBuilder, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConversationState {
     /// Conversation history.
-    #[builder(default)]
     history: Vec<Message>,
 
     /// Currently loaded narrative path.
-    #[builder(default)]
     current_narrative: Option<PathBuf>,
 
     /// Current bot context.
-    #[builder(default)]
     current_bot: Option<String>,
 
     /// Session start time.
-    #[builder(default = Utc::now())]
     session_start: DateTime<Utc>,
 
     /// Last activity timestamp.
-    #[builder(default = Utc::now())]
     last_activity: DateTime<Utc>,
 }
 
 impl Default for ConversationState {
     fn default() -> Self {
-        Self::builder().build()
+        Self::new()
     }
 }
 
 impl ConversationState {
     /// Create a new conversation state.
     pub fn new() -> Self {
-        Self::default()
+        let now = Utc::now();
+        Self {
+            history: Vec::new(),
+            current_narrative: None,
+            current_bot: None,
+            session_start: now,
+            last_activity: now,
+        }
     }
 
     /// Add a message to the history.
