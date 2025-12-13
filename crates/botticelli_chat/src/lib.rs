@@ -38,6 +38,9 @@ pub use elicitation::{
     ActElicitor, ElicitationDialog, ElicitationSession, MetadataElicitor, NarrativeElicitor,
     PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
+
+#[cfg(feature = "tui")]
+pub use elicitation::TuiElicitationDialog;
 pub use error::{ChatError, ChatErrorKind, ChatResult};
 pub use executor::{CommandExecutor, NarrativeState};
 pub use input::UserInput;
