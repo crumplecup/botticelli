@@ -109,17 +109,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let services = std::sync::Arc::new(botticelli_chat::ServiceContainer::new(config));
 
     // Setup terminal for TUI
-    let mut terminal = botticelli_chat::tui::setup_terminal()
+    let mut terminal = botticelli_chat::setup_terminal()
         .map_err(|e| format!("Failed to setup terminal: {}", e))?;
 
     // Create TUI interface with services
-    let mut tui = botticelli_chat::tui::TuiInterface::with_services(services);
+    let mut tui = botticelli_chat::TuiInterface::with_services(services);
 
     // Run the chat loop
     let result = tui.run(&mut terminal).await;
 
     // Restore terminal
-    botticelli_chat::tui::restore_terminal(terminal)
+    botticelli_chat::restore_terminal(terminal)
         .map_err(|e| format!("Failed to restore terminal: {}", e))?;
 
     match result {

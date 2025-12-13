@@ -11,9 +11,9 @@ use crossterm::{
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem},
     Frame, Terminal,
 };
 use std::io::{self, Stdout};
@@ -73,6 +73,8 @@ impl TuiElicitationDialog {
     /// Render the current UI state.
     #[instrument(skip(self))]
     fn render(&mut self) -> ChatResult<()> {
+        let messages = self.messages.clone();
+        
         self.terminal
             .draw(|f| {
                 let chunks = Layout::default()
@@ -81,10 +83,10 @@ impl TuiElicitationDialog {
                         Constraint::Min(3),      // Messages area
                         Constraint::Length(3),   // Input prompt area
                     ])
-                    .split(f.size());
+                    .split(f.area());
 
                 // Render messages
-                self.render_messages(f, chunks[0]);
+                Self::render_messages_static(&messages, f, chunks[0]);
 
                 // Render input prompt (placeholder for now)
                 let input_block = Block::default()
@@ -95,13 +97,14 @@ impl TuiElicitationDialog {
             })
             .map_err(|e| {
                 ChatError::new(ChatErrorKind::IoError(format!("Failed to render: {}", e)))
-            })
+            })?;
+        
+        Ok(())
     }
 
-    /// Render message history.
-    fn render_messages(&self, f: &mut Frame, area: ratatui::layout::Rect) {
-        let items: Vec<ListItem> = self
-            .messages
+    /// Render message history (static version for use in closures).
+    fn render_messages_static(messages: &[DialogMessage], f: &mut Frame, area: ratatui::layout::Rect) {
+        let items: Vec<ListItem> = messages
             .iter()
             .map(|msg| {
                 let (prefix, style) = match msg.level {
