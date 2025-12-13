@@ -138,7 +138,7 @@ impl ActElicitor {
             act_order.push(extracted.name.clone());
             acts.insert(
                 extracted.name,
-                PartialAct::new(extracted.prompt, None, None, Vec::new()),
+                PartialAct::new(extracted.prompt, None, None, Vec::new(), None),
             );
         }
 
@@ -161,7 +161,7 @@ impl ActElicitor {
             let prompt = dialog.ask_text(&format!("Enter prompt for {} (step {}/{}):", act_name, i + 1, count)).await?;
 
             act_order.push(act_name.clone());
-            acts.insert(act_name, PartialAct::new(prompt, None, None, Vec::new()));
+            acts.insert(act_name, PartialAct::new(prompt, None, None, Vec::new(), None));
         }
 
         Ok((act_order, acts))
@@ -192,7 +192,7 @@ impl ActElicitor {
             let prompt = dialog.ask_text(&format!("Enter prompt for '{}':", act_name)).await?;
 
             act_order.push(act_name.clone());
-            acts.insert(act_name, PartialAct::new(prompt, None, None, Vec::new()));
+            acts.insert(act_name, PartialAct::new(prompt, None, None, Vec::new(), None));
 
             if !dialog.ask_confirmation("Add another act?", true).await? {
                 break;

@@ -5,6 +5,7 @@
 //! abstraction.
 
 mod acts;
+mod carousel;
 mod dialog;
 mod elicitor;
 mod inputs;
@@ -16,6 +17,7 @@ mod session;
 mod tui_dialog;
 
 pub use acts::ActElicitor;
+pub use carousel::CarouselElicitor;
 pub use dialog::ElicitationDialog;
 pub use elicitor::NarrativeElicitor;
 pub use inputs::InputElicitor;

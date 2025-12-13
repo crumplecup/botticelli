@@ -35,8 +35,8 @@ pub use config::{
     McpServerConfig, ObservabilityConfig, PostgresConfig,
 };
 pub use elicitation::{
-    ActElicitor, ElicitationDialog, ElicitationSession, InputElicitor, MetadataElicitor,
-    NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
+    ActElicitor, CarouselElicitor, ElicitationDialog, ElicitationSession, InputElicitor,
+    MetadataElicitor, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
 
 #[cfg(feature = "tui")]

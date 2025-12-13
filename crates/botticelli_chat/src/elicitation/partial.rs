@@ -19,6 +19,9 @@ pub struct PartialAct {
     /// Act inputs.
     #[serde(default)]
     pub inputs: Vec<Input>,
+    /// Optional carousel configuration.
+    #[serde(default)]
+    pub carousel: Option<botticelli_narrative::CarouselConfig>,
 }
 
 /// Narrative under construction.
@@ -48,6 +51,9 @@ pub struct PartialNarrative {
     
     /// Act definitions (name -> PartialAct).
     acts: HashMap<String, PartialAct>,
+    
+    /// Optional narrative-level carousel configuration.
+    carousel: Option<botticelli_narrative::CarouselConfig>,
     
     /// Generated TOML content (cached).
     toml_content: Option<String>,
