@@ -1,0 +1,27 @@
+# Botticelli Demo Prompts
+# Run with: just chat-local-demo
+
+# Demo 1: Create a new narrative for social media content
+Create a narrative to generate social media posts for the MINT navigation center in Grants Pass, Oregon. The posts should highlight their services for homeless individuals.
+
+# Demo 2: List existing narratives in the database
+Show me all the narratives that exist in the database.
+
+# Demo 3: Load a specific narrative by ID
+Load narrative with ID 1 from the database.
+
+# Demo 4: Validate a narrative TOML file
+Validate this narrative TOML:
+```toml
+[narrative]
+name = "test_validation"
+description = "Testing validation"
+version = "1.0.0"
+
+[[narrative.steps]]
+action = "query_database"
+target = "content"
+```
+
+# Demo 5: Execute a narrative
+Execute the narrative for MINT center and generate 3 social media posts.
