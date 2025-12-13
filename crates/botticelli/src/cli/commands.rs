@@ -1,6 +1,8 @@
 //! CLI command definitions.
 
 use clap::{Parser, Subcommand, ValueEnum};
+#[cfg(feature = "mcp")]
+use clap::Args;
 use std::path::PathBuf;
 
 /// Botticelli - Unified LLM API interface with narrative execution and content management
@@ -15,6 +17,42 @@ pub struct Cli {
 
     /// Enable verbose logging
     #[arg(short, long, global = true)]
+    pub verbose: bool,
+}
+
+/// Arguments for MCP command
+#[cfg(feature = "mcp")]
+#[derive(Args, Debug, Clone)]
+pub struct McpCommandArgs {
+    /// Initial user prompt
+    pub prompt: String,
+
+    /// LLM backend to use (gemini, anthropic, openai, ollama, groq, huggingface)
+    #[arg(long, default_value = "gemini")]
+    pub backend: String,
+
+    /// Model name (e.g., gemini-2.0-flash-exp, claude-3-5-sonnet-20241022)
+    #[arg(long)]
+    pub model: Option<String>,
+
+    /// MCP server command to start (e.g., "npx -y @modelcontextprotocol/server-filesystem")
+    #[arg(long)]
+    pub server: String,
+
+    /// Arguments for the MCP server
+    #[arg(long)]
+    pub server_args: Vec<String>,
+
+    /// Maximum conversation turns
+    #[arg(long, default_value = "10")]
+    pub max_turns: usize,
+
+    /// Maximum tool calls per turn
+    #[arg(long, default_value = "5")]
+    pub max_tools_per_turn: usize,
+
+    /// Enable verbose output
+    #[arg(long)]
     pub verbose: bool,
 }
 
@@ -112,38 +150,7 @@ pub enum Commands {
 
     /// Run MCP client with tool calling capabilities
     #[cfg(feature = "mcp")]
-    Mcp {
-        /// Initial user prompt
-        prompt: String,
-
-        /// LLM backend to use (gemini, anthropic, openai, ollama, groq, huggingface)
-        #[arg(long, default_value = "gemini")]
-        backend: String,
-
-        /// Model name (e.g., gemini-2.0-flash-exp, claude-3-5-sonnet-20241022)
-        #[arg(long)]
-        model: Option<String>,
-
-        /// MCP server command to start (e.g., "npx -y @modelcontextprotocol/server-filesystem")
-        #[arg(long)]
-        server: String,
-
-        /// Arguments for the MCP server
-        #[arg(long)]
-        server_args: Vec<String>,
-
-        /// Maximum conversation turns
-        #[arg(long, default_value = "10")]
-        max_turns: usize,
-
-        /// Maximum tool calls per turn
-        #[arg(long, default_value = "5")]
-        max_tools_per_turn: usize,
-
-        /// Enable verbose output
-        #[arg(long)]
-        verbose: bool,
-    },
+    Mcp(McpCommandArgs),
 }
 
 /// Output format for validation results

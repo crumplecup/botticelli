@@ -160,29 +160,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         #[cfg(feature = "mcp")]
-        Commands::Mcp {
-            prompt,
-            backend,
-            model,
-            server,
-            server_args,
-            max_turns,
-            max_tools_per_turn,
-            verbose,
-        } => {
+        Commands::Mcp(args) => {
             use cli::handle_mcp_command;
 
-            handle_mcp_command(
-                prompt,
-                backend,
-                model,
-                server,
-                server_args,
-                max_turns,
-                max_tools_per_turn,
-                verbose,
-            )
-            .await?;
+            handle_mcp_command(args).await?;
         }
     }
 

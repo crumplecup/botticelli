@@ -42,6 +42,8 @@
 mod actor;
 mod config;
 mod content;
+mod demo;
+mod demo_workflow;
 #[cfg(feature = "discord")]
 mod discord_server;
 mod error;
@@ -64,6 +66,12 @@ pub use config::{
 pub use content::{
     Content, ContentBuilder, ContentPost, ContentPostBuilder, MediaAttachment,
     MediaAttachmentBuilder, MediaType,
+};
+pub use demo::{
+    ChatDemoExecutor, DemoExecutor, DemoScenario, create_basic_demo, create_mcp_tools_demo,
+};
+pub use demo_workflow::{
+    ValidationResult, WorkflowConfig, WorkflowConfigBuilder, WorkflowExecutor, WorkflowStage, WorkflowSummary,
 };
 pub use error::{ActorError, ActorErrorKind, ActorResult};
 pub use execution_tracker::ActorExecutionTracker;

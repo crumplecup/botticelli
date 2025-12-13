@@ -21,6 +21,7 @@ diesel = { workspace = true }
 dotenvy = { workspace = true }
 r2d2 = "0.8"
 ractor = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { workspace = true }
@@ -41,6 +42,7 @@ botticelli = { path = "../botticelli", optional = true, default-features = false
 
 # Optional Discord platform support
 serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"], optional = true }
+botticelli_mcp_client = { path = "../botticelli_mcp_client" }
 
 [features]
 default = []

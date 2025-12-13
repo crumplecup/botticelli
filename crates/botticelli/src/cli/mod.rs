@@ -13,6 +13,8 @@ mod tui_handler;
 mod validate;
 
 pub use commands::{Cli, Commands, ValidationOutputFormat};
+#[cfg(feature = "mcp")]
+pub use commands::McpCommandArgs;
 pub use content::handle_content_command;
 #[cfg(feature = "mcp")]
 pub use mcp::handle_mcp_command;
