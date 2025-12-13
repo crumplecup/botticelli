@@ -4,7 +4,7 @@ use crate::tools::narrative_validation_helpers::{
     auto_fix_common_issues, format_toml, format_validation_result,
 };
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use botticelli_narrative::validator::validate_narrative_toml;
 use serde_json::{json, Value};
@@ -57,12 +57,12 @@ impl McpTool for ModifyNarrativeTool {
         let narrative_toml = input
             .get("narrative_toml")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'narrative_toml'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'narrative_toml'".to_string()))?;
 
         let modification = input
             .get("modification")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'modification'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'modification'".to_string()))?;
 
         let save_to = input.get("save_to").and_then(|v| v.as_str());
 
@@ -94,7 +94,7 @@ impl McpTool for ModifyNarrativeTool {
         if let Some(path) = save_to {
             tokio::fs::write(path, &modified_toml)
                 .await
-                .map_err(|e| McpError::ToolExecutionFailed(format!("Failed to save file: {}", e)))?;
+                .map_err(|e| McpError::execution_failed(format!("Failed to save file: {}", e)))?;
             saved_to = Some(path.to_string());
             debug!(path, "Saved modified narrative to file");
         }
@@ -149,7 +149,7 @@ fn apply_modification(toml: &str, modification: &str) -> McpResult<(String, Vec<
     }
 
     // Default: try to parse as a general modification
-    Err(McpError::InvalidInput(format!(
+    Err(McpError::invalid_input(format!(
         "Could not understand modification: '{}'. \
          Supported: add/remove act, change model, set temperature, add bot command",
         modification
@@ -183,7 +183,7 @@ fn add_act(toml: &str, modification: &str) -> McpResult<(String, String)> {
     let toc_idx = lines
         .iter()
         .position(|line| line.trim().starts_with("order = ["))
-        .ok_or_else(|| McpError::ToolExecutionFailed("No [toc] section found".to_string()))?;
+        .ok_or_else(|| McpError::execution_failed("No [toc] section found".to_string()))?;
 
     // Add to TOC
     let toc_line = &lines[toc_idx];
@@ -196,7 +196,7 @@ fn add_act(toml: &str, modification: &str) -> McpResult<(String, String)> {
     let acts_idx = lines
         .iter()
         .position(|line| line.trim() == "[acts]")
-        .ok_or_else(|| McpError::ToolExecutionFailed("No [acts] section found".to_string()))?;
+        .ok_or_else(|| McpError::execution_failed("No [acts] section found".to_string()))?;
 
     // Add act definition
     lines.insert(acts_idx + 1, format!("{} = \"{}\"", act_name, escape_toml_string(&desc)));
@@ -243,7 +243,7 @@ fn change_model(toml: &str, modification: &str) -> McpResult<(String, String)> {
     let narrative_idx = lines
         .iter()
         .position(|line| line.trim() == "[narrative]")
-        .ok_or_else(|| McpError::ToolExecutionFailed("No [narrative] section found".to_string()))?;
+        .ok_or_else(|| McpError::execution_failed("No [narrative] section found".to_string()))?;
 
     // Find or add model line
     let mut found_model = false;
@@ -282,7 +282,7 @@ fn change_temperature(toml: &str, modification: &str) -> McpResult<(String, Stri
     let narrative_idx = lines
         .iter()
         .position(|line| line.trim() == "[narrative]")
-        .ok_or_else(|| McpError::ToolExecutionFailed("No [narrative] section found".to_string()))?;
+        .ok_or_else(|| McpError::execution_failed("No [narrative] section found".to_string()))?;
 
     // Find or add temperature line
     let mut found_temp = false;
@@ -362,7 +362,7 @@ fn extract_model_name(text: &str) -> McpResult<String> {
         return Ok("gpt-4-turbo".to_string());
     }
 
-    Err(McpError::InvalidInput(
+    Err(McpError::invalid_input(
         "Could not identify model name in modification".to_string(),
     ))
 }
@@ -379,7 +379,7 @@ fn extract_temperature(text: &str) -> McpResult<f64> {
         }
     }
 
-    Err(McpError::InvalidInput(
+    Err(McpError::invalid_input(
         "Could not extract temperature value (must be 0.0-1.0)".to_string(),
     ))
 }

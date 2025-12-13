@@ -1,7 +1,7 @@
 //! Narrative resource for TOML narrative files.
 
 use super::{McpResource, ResourceInfo};
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use std::fs;
 use std::path::PathBuf;
@@ -33,13 +33,13 @@ impl NarrativeResource {
     /// Parses a narrative URI into a name.
     fn parse_uri(&self, uri: &str) -> McpResult<String> {
         let name = uri.strip_prefix("narrative://").ok_or_else(|| {
-            McpError::ResourceNotFound(
+            McpError::resource_not_found(
                 "Invalid narrative URI: missing narrative:// scheme".to_string(),
             )
         })?;
 
         if name.is_empty() {
-            return Err(McpError::InvalidInput(
+            return Err(McpError::invalid_input(
                 "Invalid narrative URI: empty name".to_string(),
             ));
         }
@@ -59,7 +59,7 @@ impl NarrativeResource {
         debug!(path = %path.display(), "Reading narrative file");
 
         fs::read_to_string(&path).map_err(|e| {
-            McpError::ResourceNotFound(format!(
+            McpError::resource_not_found(format!(
                 "Failed to read narrative '{}' at {}: {}",
                 name,
                 path.display(),
@@ -76,7 +76,7 @@ impl NarrativeResource {
         }
 
         let entries = fs::read_dir(&self.narratives_dir).map_err(|e| {
-            McpError::ToolExecutionFailed(format!(
+            McpError::execution_failed(format!(
                 "Failed to read narratives directory {}: {}",
                 self.narratives_dir.display(),
                 e
@@ -86,7 +86,7 @@ impl NarrativeResource {
         let mut narratives = Vec::new();
         for entry in entries {
             let entry = entry.map_err(|e| {
-                McpError::ToolExecutionFailed(format!("Failed to read entry: {}", e))
+                McpError::execution_failed(format!("Failed to read entry: {}", e))
             })?;
             let path = entry.path();
 

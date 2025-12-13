@@ -1,7 +1,7 @@
 //! Database query tools for MCP server.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 use tracing::{debug, instrument};
@@ -47,7 +47,7 @@ impl McpTool for QueryContentTool {
         let table = input
             .get("table")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'table' field".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'table' field".to_string()))?;
 
         let limit = input
             .get("limit")
@@ -61,11 +61,11 @@ impl McpTool for QueryContentTool {
         {
             // Query the database
             let mut conn = establish_connection().map_err(|e| {
-                McpError::ToolExecutionFailed(format!("Database connection failed: {}", e))
+                McpError::execution_failed(format!("Database connection failed: {}", e))
             })?;
 
             let rows = list_content(&mut conn, table, None, limit as usize)
-                .map_err(|e| McpError::ToolExecutionFailed(format!("Query failed: {}", e)))?;
+                .map_err(|e| McpError::execution_failed(format!("Query failed: {}", e)))?;
 
             debug!(count = rows.len(), "Retrieved rows from database");
 

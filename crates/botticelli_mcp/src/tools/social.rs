@@ -5,7 +5,7 @@
 //! interact with social media data.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use botticelli_social::{BotCommandRegistryImpl, DiscordCommandExecutor};
 use serde_json::{json, Value};
@@ -80,7 +80,7 @@ impl McpTool for DiscordBotCommandTool {
         let command = params
             .get("command")
             .and_then(|c| c.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'command' parameter".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'command' parameter".to_string()))?;
 
         let args_obj = params
             .get("args")
@@ -97,7 +97,7 @@ impl McpTool for DiscordBotCommandTool {
             .registry
             .execute("discord", command, &args)
             .await
-            .map_err(|e| McpError::ToolExecutionFailed(format!("Bot command failed: {}", e)))?;
+            .map_err(|e| McpError::execution_failed(format!("Bot command failed: {}", e)))?;
 
         Ok(result)
     }
@@ -168,12 +168,12 @@ impl McpTool for DiscordPostTool {
         let channel_id = params
             .get("channel_id")
             .and_then(|c| c.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'channel_id' parameter".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'channel_id' parameter".to_string()))?;
 
         let content = params
             .get("content")
             .and_then(|c| c.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'content' parameter".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'content' parameter".to_string()))?;
 
         debug!(channel_id = %channel_id, content_len = content.len(), "Posting message");
 
@@ -185,7 +185,7 @@ impl McpTool for DiscordPostTool {
             .registry
             .execute("discord", "messages.send", &args)
             .await
-            .map_err(|e| McpError::ToolExecutionFailed(format!("Post failed: {}", e)))?;
+            .map_err(|e| McpError::execution_failed(format!("Post failed: {}", e)))?;
 
         Ok(result)
     }

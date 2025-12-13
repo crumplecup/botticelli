@@ -1,7 +1,7 @@
 //! Tool for saving narratives to files.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 use std::path::Path;
@@ -55,12 +55,12 @@ impl McpTool for SaveNarrativeTool {
         let narrative_toml = input
             .get("narrative_toml")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'narrative_toml'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'narrative_toml'".to_string()))?;
 
         let file_path = input
             .get("file_path")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'file_path'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'file_path'".to_string()))?;
 
         let overwrite = input
             .get("overwrite")
@@ -72,14 +72,14 @@ impl McpTool for SaveNarrativeTool {
 
         // Check extension
         if path.extension().and_then(|s| s.to_str()) != Some("toml") {
-            return Err(McpError::InvalidInput(
+            return Err(McpError::invalid_input(
                 "File path must end with .toml extension".to_string(),
             ));
         }
 
         // Check if file exists
         if path.exists() && !overwrite {
-            return Err(McpError::ToolExecutionFailed(format!(
+            return Err(McpError::execution_failed(format!(
                 "File '{}' already exists. Set overwrite=true to replace it.",
                 file_path
             )));
@@ -89,7 +89,7 @@ impl McpTool for SaveNarrativeTool {
         if let Some(parent) = path.parent() {
             if !parent.exists() {
                 tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                    McpError::ToolExecutionFailed(format!("Failed to create directories: {}", e))
+                    McpError::execution_failed(format!("Failed to create directories: {}", e))
                 })?;
                 debug!(path = ?parent, "Created parent directories");
             }
@@ -97,7 +97,7 @@ impl McpTool for SaveNarrativeTool {
 
         // Write file
         tokio::fs::write(path, narrative_toml).await.map_err(|e| {
-            McpError::ToolExecutionFailed(format!("Failed to write file: {}", e))
+            McpError::execution_failed(format!("Failed to write file: {}", e))
         })?;
 
         debug!(path = file_path, "Narrative saved to file");

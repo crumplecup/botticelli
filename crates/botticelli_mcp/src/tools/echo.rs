@@ -1,7 +1,7 @@
 //! Echo tool for testing MCP server.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 use tracing::debug;
@@ -38,7 +38,7 @@ impl McpTool for EchoTool {
         let message = input
             .get("message")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'message' field".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'message' field".to_string()))?;
 
         Ok(json!({
             "echo": message,

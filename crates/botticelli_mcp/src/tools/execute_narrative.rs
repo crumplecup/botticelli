@@ -1,7 +1,7 @@
 //! Narrative execution tool for MCP.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
@@ -128,7 +128,7 @@ impl ExecuteNarrativeTool {
             .await
             .map_err(|e| {
                 error!(error = ?e, "Narrative execution failed");
-                McpError::ToolExecutionFailed(format!("Narrative execution failed: {}", e))
+                McpError::execution_failed(format!("Narrative execution failed: {}", e))
             })?;
 
         debug!(
@@ -265,12 +265,12 @@ impl McpTool for ExecuteNarrativeTool {
         let file_path = input
             .get("file_path")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'file_path'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'file_path'".to_string()))?;
 
         let _prompt = input
             .get("prompt")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'prompt'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'prompt'".to_string()))?;
 
         let backend = input
             .get("backend")
@@ -283,7 +283,7 @@ impl McpTool for ExecuteNarrativeTool {
         let narrative_name = std::path::Path::new(file_path)
             .file_stem()
             .and_then(|s| s.to_str())
-            .ok_or_else(|| McpError::InvalidInput("Invalid file path".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Invalid file path".to_string()))?;
 
         // Select backend and execute
         match backend {
@@ -293,7 +293,7 @@ impl McpTool for ExecuteNarrativeTool {
                     self.execute_with_driver(driver, file_path, narrative_name)
                         .await
                 } else {
-                    Err(McpError::ToolExecutionFailed(
+                    Err(McpError::execution_failed(
                         "Gemini backend not available (check GEMINI_API_KEY)".to_string(),
                     ))
                 }
@@ -304,7 +304,7 @@ impl McpTool for ExecuteNarrativeTool {
                     self.execute_with_driver(driver, file_path, narrative_name)
                         .await
                 } else {
-                    Err(McpError::ToolExecutionFailed(
+                    Err(McpError::execution_failed(
                         "Anthropic backend not available (check ANTHROPIC_API_KEY)".to_string(),
                     ))
                 }
@@ -315,7 +315,7 @@ impl McpTool for ExecuteNarrativeTool {
                     self.execute_with_driver(driver, file_path, narrative_name)
                         .await
                 } else {
-                    Err(McpError::ToolExecutionFailed(
+                    Err(McpError::execution_failed(
                         "Ollama backend not available (check Ollama server)".to_string(),
                     ))
                 }
@@ -326,7 +326,7 @@ impl McpTool for ExecuteNarrativeTool {
                     self.execute_with_driver(driver, file_path, narrative_name)
                         .await
                 } else {
-                    Err(McpError::ToolExecutionFailed(
+                    Err(McpError::execution_failed(
                         "HuggingFace backend not available (check HUGGINGFACE_API_KEY)".to_string(),
                     ))
                 }
@@ -337,12 +337,12 @@ impl McpTool for ExecuteNarrativeTool {
                     self.execute_with_driver(driver, file_path, narrative_name)
                         .await
                 } else {
-                    Err(McpError::ToolExecutionFailed(
+                    Err(McpError::execution_failed(
                         "Groq backend not available (check GROQ_API_KEY)".to_string(),
                     ))
                 }
             }
-            _ => Err(McpError::InvalidInput(format!(
+            _ => Err(McpError::invalid_input(format!(
                 "Unknown or unavailable backend: {}",
                 backend
             ))),
@@ -357,7 +357,7 @@ impl McpTool for ExecuteNarrativeTool {
         feature = "groq"
     )))]
     async fn execute(&self, _input: Value) -> McpResult<Value> {
-        Err(McpError::ToolExecutionFailed(
+        Err(McpError::execution_failed(
             "Narrative execution requires at least one LLM backend feature (gemini, anthropic, ollama, huggingface, or groq)".to_string()
         ))
     }

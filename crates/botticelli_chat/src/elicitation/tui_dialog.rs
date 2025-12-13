@@ -1,7 +1,10 @@
 //! TUI implementation of ElicitationDialog.
 
+use botticelli_error::BotticelliResult;
+
+
 use crate::elicitation::ElicitationDialog;
-use crate::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use async_trait::async_trait;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
@@ -47,7 +50,7 @@ impl TuiElicitationDialog {
     ///
     /// Sets up terminal in raw mode with alternate screen.
     #[instrument]
-    pub fn new() -> ChatResult<Self> {
+    pub fn new() -> BotticelliResult<Self> {
         enable_raw_mode().map_err(|e| {
             ChatError::new(ChatErrorKind::IoError(format!("Failed to enable raw mode: {}", e)))
         })?;
@@ -72,7 +75,7 @@ impl TuiElicitationDialog {
 
     /// Render the current UI state.
     #[instrument(skip(self))]
-    fn render(&mut self) -> ChatResult<()> {
+    fn render(&mut self) -> BotticelliResult<()> {
         let messages = self.messages.clone();
         
         self.terminal
@@ -142,7 +145,7 @@ impl TuiElicitationDialog {
 
     /// Read a line of text input from the user.
     #[instrument(skip(self))]
-    fn read_line(&mut self, prompt: &str) -> ChatResult<String> {
+    fn read_line(&mut self, prompt: &str) -> BotticelliResult<String> {
         self.add_message(MessageLevel::Info, format!("❯ {}", prompt));
         self.render()?;
 
@@ -195,12 +198,12 @@ impl Drop for TuiElicitationDialog {
 #[async_trait]
 impl ElicitationDialog for TuiElicitationDialog {
     #[instrument(skip(self))]
-    async fn ask_text(&mut self, prompt: &str) -> ChatResult<String> {
+    async fn ask_text(&mut self, prompt: &str) -> BotticelliResult<String> {
         self.read_line(prompt)
     }
 
     #[instrument(skip(self))]
-    async fn ask_confirmation(&mut self, prompt: &str, default: bool) -> ChatResult<bool> {
+    async fn ask_confirmation(&mut self, prompt: &str, default: bool) -> BotticelliResult<bool> {
         let default_text = if default { "[Y/n]" } else { "[y/N]" };
         let full_prompt = format!("{} {}", prompt, default_text);
         let response = self.read_line(&full_prompt)?;
@@ -222,7 +225,7 @@ impl ElicitationDialog for TuiElicitationDialog {
     }
 
     #[instrument(skip(self, options))]
-    async fn ask_choice(&mut self, prompt: &str, options: &[&str]) -> ChatResult<usize> {
+    async fn ask_choice(&mut self, prompt: &str, options: &[&str]) -> BotticelliResult<usize> {
         self.add_message(MessageLevel::Info, prompt.to_string());
 
         for (i, option) in options.iter().enumerate() {
@@ -249,7 +252,7 @@ impl ElicitationDialog for TuiElicitationDialog {
     }
 
     #[instrument(skip(self))]
-    async fn ask_number(&mut self, prompt: &str, min: i64, max: i64) -> ChatResult<i64> {
+    async fn ask_number(&mut self, prompt: &str, min: i64, max: i64) -> BotticelliResult<i64> {
         let full_prompt = format!("{} ({}-{})", prompt, min, max);
 
         loop {
@@ -270,30 +273,30 @@ impl ElicitationDialog for TuiElicitationDialog {
     }
 
     #[instrument(skip(self))]
-    async fn ask_file_path(&mut self, prompt: &str) -> ChatResult<String> {
+    async fn ask_file_path(&mut self, prompt: &str) -> BotticelliResult<String> {
         self.read_line(prompt)
     }
 
     #[instrument(skip(self))]
-    async fn show_info(&mut self, message: &str) -> ChatResult<()> {
+    async fn show_info(&mut self, message: &str) -> BotticelliResult<()> {
         self.add_message(MessageLevel::Info, message.to_string());
         self.render()
     }
 
     #[instrument(skip(self))]
-    async fn show_warning(&mut self, message: &str) -> ChatResult<()> {
+    async fn show_warning(&mut self, message: &str) -> BotticelliResult<()> {
         self.add_message(MessageLevel::Warning, message.to_string());
         self.render()
     }
 
     #[instrument(skip(self))]
-    async fn show_error(&mut self, message: &str) -> ChatResult<()> {
+    async fn show_error(&mut self, message: &str) -> BotticelliResult<()> {
         self.add_message(MessageLevel::Error, message.to_string());
         self.render()
     }
 
     #[instrument(skip(self, validation_text))]
-    async fn show_validation(&mut self, validation_text: &str) -> ChatResult<()> {
+    async fn show_validation(&mut self, validation_text: &str) -> BotticelliResult<()> {
         self.add_message(MessageLevel::Info, validation_text.to_string());
         self.render()
     }
@@ -304,7 +307,7 @@ impl ElicitationDialog for TuiElicitationDialog {
         current: usize,
         total: usize,
         description: &str,
-    ) -> ChatResult<()> {
+    ) -> BotticelliResult<()> {
         self.add_message(
             MessageLevel::Progress,
             format!("[{}/{}] {}", current, total, description),
@@ -313,7 +316,7 @@ impl ElicitationDialog for TuiElicitationDialog {
     }
 
     #[instrument(skip(self, toml))]
-    async fn show_preview(&mut self, toml: &str) -> ChatResult<()> {
+    async fn show_preview(&mut self, toml: &str) -> BotticelliResult<()> {
         self.add_message(MessageLevel::Preview, "=== TOML Preview ===".to_string());
         for line in toml.lines() {
             self.add_message(MessageLevel::Preview, line.to_string());

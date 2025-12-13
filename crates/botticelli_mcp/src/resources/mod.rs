@@ -4,7 +4,7 @@
 //! - `content://approved_discord_posts/123` - Content by ID
 //! - `narrative://curate_content` - Narrative TOML file
 
-use crate::McpResult;
+use botticelli_error::McpResult;
 use async_trait::async_trait;
 use std::sync::Arc;
 use tracing::{debug, instrument};
@@ -104,7 +104,7 @@ impl ResourceRegistry {
             }
         }
 
-        Err(crate::McpError::ResourceNotFound(format!(
+        Err(botticelli_error::McpError::resource_not_found(format!(
             "No resource handler for URI: {}",
             uri
         )))

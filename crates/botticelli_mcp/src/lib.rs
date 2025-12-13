@@ -33,7 +33,6 @@
 #![warn(missing_docs)]
 
 mod elicitation;
-mod error;
 mod resources;
 mod server;
 pub mod tools;
@@ -44,7 +43,6 @@ pub mod http;
 pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
-pub use error::{McpError, McpResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{

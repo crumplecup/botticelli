@@ -1,7 +1,7 @@
 //! Narrative TOML validation tool for MCP.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use botticelli_narrative::validator::{validate_narrative_toml_with_config, ValidationConfig};
 use serde_json::{json, Value};
@@ -89,10 +89,10 @@ impl McpTool for ValidateNarrativeTool {
             c.to_string()
         } else if let Some(path) = file_path {
             std::fs::read_to_string(path).map_err(|e| {
-                McpError::InvalidInput(format!("Failed to read file '{}': {}", path, e))
+                McpError::invalid_input(format!("Failed to read file '{}': {}", path, e))
             })?
         } else {
-            return Err(McpError::InvalidInput(
+            return Err(McpError::invalid_input(
                 "Either 'content' or 'file_path' must be provided".to_string(),
             ));
         };

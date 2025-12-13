@@ -1,8 +1,9 @@
 //! Tool for exporting Prometheus metrics.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult, PrometheusMetrics};
+use crate::PrometheusMetrics;
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use serde_json::{json, Value};
 use std::sync::Arc;
 use tracing::{debug, instrument};
@@ -70,7 +71,7 @@ impl McpTool for ExportMetricsTool {
                     "avg_duration_ms": summary.avg_duration_ms
                 }))
             }
-            _ => Err(McpError::InvalidInput(format!(
+            _ => Err(McpError::invalid_input(format!(
                 "Unknown format: {}",
                 format
             ))),

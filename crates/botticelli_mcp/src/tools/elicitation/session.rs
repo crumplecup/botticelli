@@ -1,7 +1,7 @@
 //! MCP tool for creating narrative elicitation sessions.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 use std::sync::Arc;
@@ -110,7 +110,7 @@ impl McpTool for CreateNarrativeSessionTool {
         let description = input
             .get("description")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'description' field".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'description' field".to_string()))?;
 
         // Create initial state with description
         let state = json!({

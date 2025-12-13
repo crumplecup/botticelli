@@ -73,7 +73,7 @@ pub use generate_llm::GenerateHuggingFaceTool;
 #[cfg(feature = "ollama")]
 pub use generate_llm::GenerateOllamaTool;
 
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -138,7 +138,7 @@ impl ToolRegistry {
     pub async fn execute(&self, name: &str, input: Value) -> McpResult<Value> {
         let tool = self
             .get(name)
-            .ok_or_else(|| McpError::ToolNotFound(name.to_string()))?;
+            .ok_or_else(|| McpError::tool_not_found(name.to_string()))?;
 
         tool.execute(input).await
     }

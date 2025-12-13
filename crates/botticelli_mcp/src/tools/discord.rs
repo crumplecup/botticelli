@@ -7,7 +7,7 @@
 use crate::tools::McpTool;
 
 #[cfg(feature = "discord")]
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 
 #[cfg(feature = "discord")]
 use async_trait::async_trait;
@@ -108,20 +108,20 @@ impl DiscordClient {
             .send()
             .await
             .map_err(|e| {
-                McpError::ToolExecutionFailed(format!("Discord API request failed: {}", e))
+                McpError::execution_failed(format!("Discord API request failed: {}", e))
             })?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            return Err(McpError::ToolExecutionFailed(format!(
+            return Err(McpError::execution_failed(format!(
                 "Discord API error {}: {}",
                 status, body
             )));
         }
 
         response.json().await.map_err(|e| {
-            McpError::ToolExecutionFailed(format!("Failed to parse Discord response: {}", e))
+            McpError::execution_failed(format!("Failed to parse Discord response: {}", e))
         })
     }
 
@@ -141,20 +141,20 @@ impl DiscordClient {
             .send()
             .await
             .map_err(|e| {
-                McpError::ToolExecutionFailed(format!("Discord API request failed: {}", e))
+                McpError::execution_failed(format!("Discord API request failed: {}", e))
             })?;
 
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            return Err(McpError::ToolExecutionFailed(format!(
+            return Err(McpError::execution_failed(format!(
                 "Discord API error {}: {}",
                 status, body
             )));
         }
 
         response.json().await.map_err(|e| {
-            McpError::ToolExecutionFailed(format!("Failed to parse Discord response: {}", e))
+            McpError::execution_failed(format!("Failed to parse Discord response: {}", e))
         })
     }
 }
@@ -213,15 +213,15 @@ impl McpTool for DiscordPostMessageTool {
         let channel_id = input
             .get("channel_id")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'channel_id'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'channel_id'".to_string()))?;
 
         let content = input
             .get("content")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'content'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'content'".to_string()))?;
 
         if content.len() > 2000 {
-            return Err(McpError::InvalidInput(
+            return Err(McpError::invalid_input(
                 "Content exceeds 2000 character limit".to_string(),
             ));
         }
@@ -233,7 +233,7 @@ impl McpTool for DiscordPostMessageTool {
             .await?;
 
         let message: DiscordMessage = serde_json::from_value(response).map_err(|e| {
-            McpError::ToolExecutionFailed(format!("Failed to parse message: {}", e))
+            McpError::execution_failed(format!("Failed to parse message: {}", e))
         })?;
 
         Ok(json!({
@@ -302,7 +302,7 @@ impl McpTool for DiscordGetMessagesTool {
         let channel_id = input
             .get("channel_id")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'channel_id'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'channel_id'".to_string()))?;
 
         let limit = input
             .get("limit")
@@ -319,7 +319,7 @@ impl McpTool for DiscordGetMessagesTool {
             .await?;
 
         let messages: Vec<DiscordMessage> = serde_json::from_value(response).map_err(|e| {
-            McpError::ToolExecutionFailed(format!("Failed to parse messages: {}", e))
+            McpError::execution_failed(format!("Failed to parse messages: {}", e))
         })?;
 
         let formatted_messages: Vec<Value> = messages
@@ -396,7 +396,7 @@ impl McpTool for DiscordGetGuildInfoTool {
         let guild_id = input
             .get("guild_id")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'guild_id'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'guild_id'".to_string()))?;
 
         let response = self
             .client
@@ -404,7 +404,7 @@ impl McpTool for DiscordGetGuildInfoTool {
             .await?;
 
         let guild: DiscordGuild = serde_json::from_value(response)
-            .map_err(|e| McpError::ToolExecutionFailed(format!("Failed to parse guild: {}", e)))?;
+            .map_err(|e| McpError::execution_failed(format!("Failed to parse guild: {}", e)))?;
 
         Ok(json!({
             "status": "success",
@@ -465,7 +465,7 @@ impl McpTool for DiscordGetChannelsTool {
         let guild_id = input
             .get("guild_id")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'guild_id'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'guild_id'".to_string()))?;
 
         let response = self
             .client
@@ -473,7 +473,7 @@ impl McpTool for DiscordGetChannelsTool {
             .await?;
 
         let channels: Vec<DiscordChannel> = serde_json::from_value(response).map_err(|e| {
-            McpError::ToolExecutionFailed(format!("Failed to parse channels: {}", e))
+            McpError::execution_failed(format!("Failed to parse channels: {}", e))
         })?;
 
         let formatted_channels: Vec<Value> = channels

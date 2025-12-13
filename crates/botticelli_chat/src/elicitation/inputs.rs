@@ -1,7 +1,10 @@
 //! Input elicitor for narrative act inputs.
 
+use botticelli_error::BotticelliResult;
+
+
 use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
-use crate::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
 use botticelli_core::{HistoryRetention, Input, MediaSource, TableFormat};
 use std::collections::HashMap;
@@ -41,7 +44,7 @@ impl InputElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         act_name: &str,
-    ) -> ChatResult<Vec<Input>> {
+    ) -> BotticelliResult<Vec<Input>> {
         dialog
             .show_info(&format!("Configuring inputs for act '{}'", act_name))
             .await?;
@@ -86,7 +89,7 @@ impl InputElicitor {
                 _ => {
                     return Err(ChatError::new(ChatErrorKind::InvalidInput(
                         "Invalid input type choice".to_string(),
-                    )))
+                    )).into())
                 }
             };
 
@@ -110,14 +113,14 @@ impl InputElicitor {
 
     /// Elicit text input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_text(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<Input> {
+    async fn elicit_text(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         let text = dialog.ask_text("Enter text prompt:").await?;
         Ok(Input::Text(text))
     }
 
     /// Elicit image input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_image(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<Input> {
+    async fn elicit_image(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         let source = self.elicit_media_source(dialog, "image").await?;
         let mime = if dialog
             .ask_confirmation("Specify MIME type?", false)
@@ -133,7 +136,7 @@ impl InputElicitor {
 
     /// Elicit audio input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_audio(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<Input> {
+    async fn elicit_audio(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         let source = self.elicit_media_source(dialog, "audio").await?;
         let mime = if dialog
             .ask_confirmation("Specify MIME type?", false)
@@ -149,7 +152,7 @@ impl InputElicitor {
 
     /// Elicit video input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_video(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<Input> {
+    async fn elicit_video(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         let source = self.elicit_media_source(dialog, "video").await?;
         let mime = if dialog
             .ask_confirmation("Specify MIME type?", false)
@@ -165,7 +168,7 @@ impl InputElicitor {
 
     /// Elicit document input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_document(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<Input> {
+    async fn elicit_document(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         let source = self.elicit_media_source(dialog, "document").await?;
         let mime = if dialog
             .ask_confirmation("Specify MIME type?", false)
@@ -195,7 +198,7 @@ impl InputElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         media_type: &str,
-    ) -> ChatResult<MediaSource> {
+    ) -> BotticelliResult<MediaSource> {
         let source_options = &["URL", "Base64 data", "Binary data (raw bytes)"];
 
         let choice = dialog
@@ -220,17 +223,17 @@ impl InputElicitor {
                     .await?;
                 Err(ChatError::new(ChatErrorKind::InvalidInput(
                     "Binary data not supported in interactive mode".to_string(),
-                )))
+                )).into())
             }
             _ => Err(ChatError::new(ChatErrorKind::InvalidInput(
                 "Invalid source choice".to_string(),
-            ))),
+            )).into()),
         }
     }
 
     /// Elicit bot command input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_bot_command(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<Input> {
+    async fn elicit_bot_command(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         dialog
             .show_info("Configure bot command execution")
             .await?;
@@ -293,7 +296,7 @@ impl InputElicitor {
 
     /// Elicit table query input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_table(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<Input> {
+    async fn elicit_table(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         dialog.show_info("Configure database table query").await?;
 
         let table_name = dialog.ask_text("Enter table name:").await?;
@@ -398,7 +401,7 @@ impl InputElicitor {
 
     /// Elicit narrative reference input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_narrative(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<Input> {
+    async fn elicit_narrative(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         dialog.show_info("Configure narrative reference").await?;
 
         let name = dialog
@@ -428,7 +431,7 @@ impl InputElicitor {
     async fn elicit_history_retention(
         &self,
         dialog: &mut dyn ElicitationDialog,
-    ) -> ChatResult<HistoryRetention> {
+    ) -> BotticelliResult<HistoryRetention> {
         let retention_options = &[
             "Full (keep entire content)",
             "Summary (keep summary only)",
@@ -474,7 +477,7 @@ impl NarrativeElicitor for InputElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         partial: &mut PartialNarrative,
-    ) -> ChatResult<()> {
+    ) -> BotticelliResult<()> {
         use botticelli_mcp::PartialNarrativeBuilder;
 
         dialog.show_info("Let's configure act inputs.").await?;
@@ -486,7 +489,7 @@ impl NarrativeElicitor for InputElicitor {
                 return Err(ChatError::new(ChatErrorKind::InvalidState(format!(
                     "Act '{}' not found",
                     target
-                ))));
+                ))).into());
             }
             vec![target.clone()]
         } else {

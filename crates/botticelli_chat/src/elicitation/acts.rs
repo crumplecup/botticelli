@@ -1,7 +1,10 @@
 //! Act elicitor for narrative acts and ordering.
 
+use botticelli_error::BotticelliResult;
+
+
 use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder};
-use crate::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
 use botticelli_mcp::NarrativeHelper;
 use std::collections::HashMap;
@@ -45,7 +48,7 @@ impl NarrativeElicitor for ActElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         partial: &mut PartialNarrative,
-    ) -> ChatResult<()> {
+    ) -> BotticelliResult<()> {
         dialog.show_info("Let's define the workflow acts.").await?;
 
         let approach_options = &[
@@ -60,7 +63,7 @@ impl NarrativeElicitor for ActElicitor {
             0 => self.extract_from_description(dialog, partial).await?,
             1 => self.count_based_specification(dialog).await?,
             2 => self.one_by_one_specification(dialog).await?,
-            _ => return Err(ChatError::new(ChatErrorKind::InvalidInput("Invalid approach".to_string()))),
+            _ => return Err(ChatError::new(ChatErrorKind::InvalidInput("Invalid approach".to_string())).into()),
         };
 
         debug!(act_count = act_order.len(), "Acts defined");
@@ -106,7 +109,7 @@ impl ActElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         partial: &PartialNarrative,
-    ) -> ChatResult<(Vec<String>, HashMap<String, PartialAct>)> {
+    ) -> BotticelliResult<(Vec<String>, HashMap<String, PartialAct>)> {
         let description = partial.description().as_ref().unwrap();
         
         dialog.show_info("Analyzing description to extract workflow steps...").await?;
@@ -115,7 +118,7 @@ impl ActElicitor {
         
         if extracted_acts.is_empty() {
             dialog.show_warning("Could not extract acts from description. Try another method.").await?;
-            return Err(ChatError::new(ChatErrorKind::InvalidState("No acts extracted".to_string())));
+            return Err(ChatError::new(ChatErrorKind::InvalidState("No acts extracted".to_string())).into());
         }
 
         // Show extracted acts
@@ -128,7 +131,7 @@ impl ActElicitor {
         let confirmed = dialog.ask_confirmation("Use these acts?", true).await?;
         
         if !confirmed {
-            return Err(ChatError::new(ChatErrorKind::InvalidState("User rejected extracted acts".to_string())));
+            return Err(ChatError::new(ChatErrorKind::InvalidState("User rejected extracted acts".to_string())).into());
         }
 
         let mut act_order = Vec::new();
@@ -150,7 +153,7 @@ impl ActElicitor {
     async fn count_based_specification(
         &self,
         dialog: &mut dyn ElicitationDialog,
-    ) -> ChatResult<(Vec<String>, HashMap<String, PartialAct>)> {
+    ) -> BotticelliResult<(Vec<String>, HashMap<String, PartialAct>)> {
         let count = dialog.ask_number("How many acts?", 1, 100).await? as usize;
 
         let mut act_order = Vec::new();
@@ -172,7 +175,7 @@ impl ActElicitor {
     async fn one_by_one_specification(
         &self,
         dialog: &mut dyn ElicitationDialog,
-    ) -> ChatResult<(Vec<String>, HashMap<String, PartialAct>)> {
+    ) -> BotticelliResult<(Vec<String>, HashMap<String, PartialAct>)> {
         let mut act_order = Vec::new();
         let mut acts = HashMap::new();
 

@@ -1,7 +1,10 @@
 //! Metadata elicitor for narrative [narrative] section.
 
+use botticelli_error::BotticelliResult;
+
+
 use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder};
-use crate::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
 use botticelli_mcp::NarrativeHelper;
 use tracing::{debug, instrument};
@@ -43,7 +46,7 @@ impl NarrativeElicitor for MetadataElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         partial: &mut PartialNarrative,
-    ) -> ChatResult<()> {
+    ) -> BotticelliResult<()> {
         dialog.show_info("Let's create a new narrative!").await?;
 
         // Name

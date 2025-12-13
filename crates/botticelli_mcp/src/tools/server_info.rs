@@ -1,8 +1,8 @@
 //! Server info tool.
 
 use crate::tools::McpTool;
-use crate::McpResult;
 use async_trait::async_trait;
+use botticelli_error::McpResult;
 use serde_json::{json, Value};
 use tracing::debug;
 

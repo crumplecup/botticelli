@@ -1,6 +1,8 @@
-//! Intent parser for converting user input to commands.
+// ! Intent parser for converting user input to commands.
 
-use crate::{BotCommand, ChatError, ChatResult, Command, NarrativeCommand, SocialCommand};
+use botticelli_error::{ChatError, ChatResult};
+
+use crate::{BotCommand, Command, NarrativeCommand, SocialCommand};
 
 /// Parse user text input into a Command.
 ///

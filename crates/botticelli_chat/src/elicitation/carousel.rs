@@ -1,7 +1,10 @@
 //! Carousel elicitor for narrative looping configuration.
 
+use botticelli_error::BotticelliResult;
+
+
 use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
-use crate::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
 use botticelli_narrative::CarouselConfig;
 use tracing::{debug, instrument};
@@ -39,7 +42,7 @@ impl CarouselElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         scope_name: &str,
-    ) -> ChatResult<CarouselConfig> {
+    ) -> BotticelliResult<CarouselConfig> {
         dialog
             .show_info(&format!("Configuring carousel for {}", scope_name))
             .await?;
@@ -114,7 +117,7 @@ impl NarrativeElicitor for CarouselElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         partial: &mut PartialNarrative,
-    ) -> ChatResult<()> {
+    ) -> BotticelliResult<()> {
         use botticelli_mcp::PartialNarrativeBuilder;
 
         match &self.target_act {
@@ -171,7 +174,7 @@ impl NarrativeElicitor for CarouselElicitor {
                 if !partial.acts().contains_key(act_name) {
                     return Err(ChatError::new(ChatErrorKind::InvalidState(
                         format!("Act '{}' not found", act_name),
-                    )));
+                    )).into());
                 }
 
                 dialog

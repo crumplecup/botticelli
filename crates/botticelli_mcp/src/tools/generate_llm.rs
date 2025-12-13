@@ -19,7 +19,7 @@ use crate::tools::McpTool;
     feature = "huggingface",
     feature = "groq"
 ))]
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 
 #[cfg(any(
     feature = "gemini",
@@ -73,7 +73,7 @@ async fn execute_generation<D: BotticelliDriver>(
     let prompt = input
         .get("prompt")
         .and_then(|v| v.as_str())
-        .ok_or_else(|| McpError::InvalidInput("Missing 'prompt'".to_string()))?;
+        .ok_or_else(|| McpError::invalid_input("Missing 'prompt'".to_string()))?;
 
     let model = input
         .get("model")
@@ -102,7 +102,7 @@ async fn execute_generation<D: BotticelliDriver>(
                 .content(vec![Input::Text(sys_prompt.to_string())])
                 .build()
                 .map_err(|e| {
-                    McpError::ToolExecutionFailed(format!("Failed to build system message: {}", e))
+                    McpError::execution_failed(format!("Failed to build system message: {}", e))
                 })?,
         );
     }
@@ -113,7 +113,7 @@ async fn execute_generation<D: BotticelliDriver>(
             .content(vec![Input::Text(prompt.to_string())])
             .build()
             .map_err(|e| {
-                McpError::ToolExecutionFailed(format!("Failed to build message: {}", e))
+                McpError::execution_failed(format!("Failed to build message: {}", e))
             })?,
     );
 
@@ -124,13 +124,13 @@ async fn execute_generation<D: BotticelliDriver>(
         .max_tokens(Some(max_tokens))
         .temperature(Some(temperature))
         .build()
-        .map_err(|e| McpError::ToolExecutionFailed(format!("Failed to build request: {}", e)))?;
+        .map_err(|e| McpError::execution_failed(format!("Failed to build request: {}", e)))?;
 
     // Execute
     let response = driver
         .generate(&request)
         .await
-        .map_err(|e| McpError::ToolExecutionFailed(format!("Generation failed: {}", e)))?;
+        .map_err(|e| McpError::execution_failed(format!("Generation failed: {}", e)))?;
 
     // Extract text
     let text = response

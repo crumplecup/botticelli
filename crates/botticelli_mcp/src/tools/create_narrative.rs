@@ -5,7 +5,7 @@ use crate::tools::narrative_validation_helpers::{
     add_helpful_comments, auto_fix_common_issues, format_toml, format_validation_result,
 };
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use botticelli_narrative::validator::validate_narrative_toml;
 use serde_json::{json, Value};
@@ -64,12 +64,12 @@ impl McpTool for CreateNarrativeTool {
         let description = input
             .get("description")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'description'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'description'".to_string()))?;
 
         let name = input
             .get("name")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'name'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'name'".to_string()))?;
 
         let default_model = input.get("default_model").and_then(|v| v.as_str());
 

@@ -1,7 +1,10 @@
 //! ElicitationSession orchestrator for managing the elicitation flow.
 
+use botticelli_error::BotticelliResult;
+
+
 use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder};
-use crate::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_error::{ChatError, ChatErrorKind};
 use std::sync::Arc;
 use tracing::{debug, info, instrument, warn};
 
@@ -44,7 +47,7 @@ impl ElicitationSession {
     ///
     /// Executes each elicitor in sequence until all are complete.
     #[instrument(skip(self, dialog))]
-    pub async fn run(&mut self, dialog: &mut dyn ElicitationDialog) -> ChatResult<()> {
+    pub async fn run(&mut self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<()> {
         info!("Starting elicitation session");
 
         while self.current_index < self.elicitors.len() {
@@ -130,7 +133,7 @@ impl ElicitationSession {
     ///
     /// Useful for manual control or step-by-step execution.
     #[instrument(skip(self, dialog))]
-    pub async fn step(&mut self, dialog: &mut dyn ElicitationDialog) -> ChatResult<bool> {
+    pub async fn step(&mut self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<bool> {
         if self.current_index >= self.elicitors.len() {
             self.completed = true;
             return Ok(false); // No more steps
@@ -146,7 +149,7 @@ impl ElicitationSession {
             return Err(ChatError::new(ChatErrorKind::InvalidState(format!(
                 "Cannot run '{}' - prerequisites not met",
                 elicitor.name()
-            ))));
+            ))).into());
         }
 
         dialog.show_progress(
@@ -194,7 +197,7 @@ impl ElicitationSession {
 
     /// Preview generated TOML.
     #[instrument(skip(self, dialog))]
-    pub async fn preview(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<()> {
+    pub async fn preview(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<()> {
         if !self.has_minimum_required() {
             dialog.show_warning("Narrative is incomplete. Preview may fail.").await?;
         }
@@ -206,14 +209,14 @@ impl ElicitationSession {
             }
             Err(e) => {
                 dialog.show_error(&format!("Failed to generate TOML: {}", e)).await?;
-                Err(e)
+                Err(e.into())
             }
         }
     }
 
     /// Validate current narrative state.
     #[instrument(skip(self, dialog))]
-    pub async fn validate(&self, dialog: &mut dyn ElicitationDialog) -> ChatResult<()> {
+    pub async fn validate(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<()> {
         if !self.has_minimum_required() {
             dialog.show_warning("Narrative is incomplete. Validation may fail.").await?;
         }
@@ -241,7 +244,7 @@ impl ElicitationSession {
 
     /// Finalize and convert to complete Narrative.
     #[instrument(skip(self))]
-    pub fn finalize(&self) -> ChatResult<botticelli_narrative::Narrative> {
+    pub fn finalize(&self) -> BotticelliResult<botticelli_narrative::Narrative> {
         if !self.completed {
             warn!("Attempting to finalize incomplete session");
         }
@@ -249,10 +252,10 @@ impl ElicitationSession {
         if !self.has_minimum_required() {
             return Err(ChatError::new(ChatErrorKind::ValidationError(
                 "Narrative missing required fields".to_string(),
-            )));
+            )).into());
         }
 
-        self.partial.try_into_narrative()
+        self.partial.try_into_narrative().map_err(|e| e.into())
     }
 }
 

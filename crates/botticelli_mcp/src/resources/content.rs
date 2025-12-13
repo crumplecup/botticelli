@@ -1,7 +1,7 @@
 //! Content resource for database content.
 
 use super::{McpResource, ResourceInfo};
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use botticelli_database::{establish_connection, get_content_by_id, list_content};
 use tracing::{debug, instrument};
@@ -21,12 +21,12 @@ impl ContentResource {
     /// Parses a content URI into (table, id).
     fn parse_uri(&self, uri: &str) -> McpResult<(String, i32)> {
         let without_scheme = uri.strip_prefix("content://").ok_or_else(|| {
-            McpError::ResourceNotFound("Invalid content URI: missing content:// scheme".to_string())
+            McpError::resource_not_found("Invalid content URI: missing content:// scheme".to_string())
         })?;
 
         let parts: Vec<&str> = without_scheme.split('/').collect();
         if parts.len() != 2 {
-            return Err(McpError::InvalidInput(format!(
+            return Err(McpError::invalid_input(format!(
                 "Invalid content URI format. Expected content://table/id, got {}",
                 uri
             )));
@@ -35,7 +35,7 @@ impl ContentResource {
         let table = parts[0].to_string();
         let id = parts[1]
             .parse::<i32>()
-            .map_err(|_| McpError::InvalidInput(format!("Invalid ID in URI: {}", parts[1])))?;
+            .map_err(|_| McpError::invalid_input(format!("Invalid ID in URI: {}", parts[1])))?;
 
         Ok((table, id))
     }
@@ -44,11 +44,11 @@ impl ContentResource {
     #[instrument(skip(self))]
     fn query_content(&self, table: &str, id: i32) -> McpResult<serde_json::Value> {
         let mut conn = establish_connection().map_err(|e| {
-            McpError::ToolExecutionFailed(format!("Database connection failed: {}", e))
+            McpError::execution_failed(format!("Database connection failed: {}", e))
         })?;
 
         get_content_by_id(&mut conn, table, id as i64)
-            .map_err(|e| McpError::ResourceNotFound(format!("Content not found: {}", e)))
+            .map_err(|e| McpError::resource_not_found(format!("Content not found: {}", e)))
     }
 }
 
@@ -77,19 +77,19 @@ impl McpResource for ContentResource {
 
         // Format as JSON
         serde_json::to_string_pretty(&content).map_err(|e| {
-            McpError::ToolExecutionFailed(format!("Failed to serialize content: {}", e))
+            McpError::execution_failed(format!("Failed to serialize content: {}", e))
         })
     }
 
     #[instrument(skip(self))]
     async fn list(&self) -> McpResult<Vec<ResourceInfo>> {
         let mut conn = establish_connection().map_err(|e| {
-            McpError::ToolExecutionFailed(format!("Database connection failed: {}", e))
+            McpError::execution_failed(format!("Database connection failed: {}", e))
         })?;
 
         // List recent content (limit 20 for performance)
         let rows = list_content(&mut conn, "content", None, 20)
-            .map_err(|e| McpError::ToolExecutionFailed(format!("Failed to list content: {}", e)))?;
+            .map_err(|e| McpError::execution_failed(format!("Failed to list content: {}", e)))?;
 
         let resources = rows
             .into_iter()

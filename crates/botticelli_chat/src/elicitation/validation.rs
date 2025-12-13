@@ -1,7 +1,10 @@
 //! Validation elicitor for interactive narrative validation.
 
+use botticelli_error::BotticelliResult;
+
+
 use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
-use crate::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
 use botticelli_narrative::validator::{ValidationError, ValidationErrorKind, ValidationResult};
 use tracing::{debug, info, instrument, warn};
@@ -33,7 +36,7 @@ impl ValidationElicitor {
 
     /// Validate the partial narrative and return results.
     #[instrument(skip(self, partial))]
-    fn validate_partial(&self, partial: &PartialNarrative) -> ChatResult<ValidationResult> {
+    fn validate_partial(&self, partial: &PartialNarrative) -> BotticelliResult<ValidationResult> {
         // Generate TOML from partial narrative
         let toml = partial.to_toml()?;
 
@@ -55,7 +58,7 @@ impl ValidationElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         errors: &[ValidationError],
-    ) -> ChatResult<()> {
+    ) -> BotticelliResult<()> {
         if errors.is_empty() {
             dialog
                 .show_info("✓ No validation errors found")
@@ -119,7 +122,7 @@ impl ValidationElicitor {
         dialog: &mut dyn ElicitationDialog,
         _partial: &mut PartialNarrative,
         errors: &[ValidationError],
-    ) -> ChatResult<bool> {
+    ) -> BotticelliResult<bool> {
         let mut fixed_any = false;
 
         for error in errors {
@@ -164,7 +167,7 @@ impl ValidationElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         errors: &[ValidationError],
-    ) -> ChatResult<()> {
+    ) -> BotticelliResult<()> {
         dialog
             .show_info("Manual fixes required. Please address the following:")
             .await?;
@@ -236,7 +239,7 @@ impl NarrativeElicitor for ValidationElicitor {
         &self,
         dialog: &mut dyn ElicitationDialog,
         partial: &mut PartialNarrative,
-    ) -> ChatResult<()> {
+    ) -> BotticelliResult<()> {
         dialog.show_info("Validating narrative...").await?;
 
         // Initial validation
@@ -303,7 +306,7 @@ impl NarrativeElicitor for ValidationElicitor {
                 warn!("User chose to fix validation errors before continuing");
                 return Err(ChatError::new(ChatErrorKind::ValidationError(
                     format!("{} validation errors remain", result.errors.len()),
-                )));
+                )).into());
             }
         }
 

@@ -1,6 +1,8 @@
 //! Conversation state management.
 
-use crate::{ChatResult, Message};
+use botticelli_error::{ChatError, ChatResult};
+
+use crate::{ Message};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -116,15 +118,19 @@ impl ConversationState {
 
     /// Save state to TOML file.
     pub fn save_to_file(&self, path: impl AsRef<std::path::Path>) -> ChatResult<()> {
-        let toml_string = toml::to_string_pretty(self)?;
-        std::fs::write(path, toml_string)?;
+        let toml_string = toml::to_string_pretty(self)
+            .map_err(|e| ChatError::execution_failed(format!("TOML serialization error: {}", e)))?;
+        std::fs::write(path, toml_string)
+            .map_err(|e| ChatError::execution_failed(format!("IO error: {}", e)))?;
         Ok(())
     }
 
     /// Load state from TOML file.
     pub fn load_from_file(path: impl AsRef<std::path::Path>) -> ChatResult<Self> {
-        let content = std::fs::read_to_string(path)?;
-        let state = toml::from_str(&content)?;
+        let content = std::fs::read_to_string(path)
+            .map_err(|e| ChatError::execution_failed(format!("IO error: {}", e)))?;
+        let state = toml::from_str(&content)
+            .map_err(|e| ChatError::parse_error(format!("TOML parse error: {}", e)))?;
         Ok(state)
     }
 }

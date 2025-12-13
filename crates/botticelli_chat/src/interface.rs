@@ -1,6 +1,8 @@
 //! Chat interface trait definition.
 
-use crate::{ChatResult, Message, Response, UserInput};
+use botticelli_error::ChatResult;
+
+use crate::{ Message, Response, UserInput};
 
 /// Trait for implementing chat interfaces across different platforms.
 ///
@@ -10,7 +12,7 @@ use crate::{ChatResult, Message, Response, UserInput};
 /// # Examples
 ///
 /// ```rust,ignore
-/// use botticelli_chat::{ChatInterface, ChatResult, Message, Response, UserInput};
+/// use botticelli_chat::{ChatInterface, Message, Response, UserInput};
 /// use tracing::instrument;
 ///
 /// struct TerminalChat;

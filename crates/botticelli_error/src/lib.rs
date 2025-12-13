@@ -29,6 +29,7 @@
 
 mod backend;
 mod builder;
+mod chat;
 mod config;
 #[cfg(feature = "database")]
 mod database;
@@ -36,6 +37,7 @@ mod error;
 mod gemini;
 mod http;
 mod json;
+mod mcp;
 #[cfg(feature = "models")]
 mod models;
 mod narrative;
@@ -47,6 +49,7 @@ mod tui;
 
 pub use backend::BackendError;
 pub use builder::{BuilderError, BuilderErrorKind};
+pub use chat::{ChatError, ChatErrorKind, ChatResult};
 pub use config::ConfigError;
 #[cfg(feature = "database")]
 pub use database::{DatabaseError, DatabaseErrorKind};
@@ -54,6 +57,7 @@ pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};
 pub use gemini::{GeminiError, GeminiErrorKind, RetryableError};
 pub use http::HttpError;
 pub use json::JsonError;
+pub use mcp::{McpError, McpErrorKind, McpResult};
 #[cfg(feature = "anthropic")]
 pub use models::AnthropicErrorKind;
 #[cfg(feature = "huggingface")]

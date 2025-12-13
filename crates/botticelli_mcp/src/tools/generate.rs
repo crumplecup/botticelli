@@ -1,7 +1,7 @@
 //! Simple text generation tool for MCP.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
@@ -60,7 +60,7 @@ impl McpTool for GenerateTool {
         let prompt = input
             .get("prompt")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'prompt'".to_string()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'prompt'".to_string()))?;
 
         let model = input
             .get("model")

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use tracing::instrument;
 
 use crate::tools::NarrativeHelper;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 
 /// Partial act definition.
 #[derive(Debug, Clone, Serialize, Deserialize, derive_new::new)]
@@ -89,11 +89,11 @@ impl PartialNarrative {
     #[instrument(skip(self))]
     pub fn to_toml(&self) -> McpResult<String> {
         let name = self.name.as_ref().ok_or_else(|| {
-            McpError::InvalidInput("Missing narrative name".to_string())
+            McpError::invalid_input("Missing narrative name".to_string())
         })?;
 
         let description = self.description.as_ref().ok_or_else(|| {
-            McpError::InvalidInput(
+            McpError::invalid_input(
                 "Missing narrative description".to_string(),
             )
         })?;
@@ -159,14 +159,14 @@ impl PartialNarrative {
         let validation = self.validate()?;
 
         if !validation.is_valid() {
-            return Err(McpError::InvalidInput(format!(
+            return Err(McpError::invalid_input(format!(
                 "Narrative validation failed: {} errors",
                 validation.errors.len()
             )));
         }
 
         botticelli_narrative::Narrative::from_toml_str(&toml, self.name.as_deref()).map_err(
-            |e| McpError::ExecutionError(e.to_string()),
+            |e| McpError::execution_failed(e.to_string()),
         )
     }
 }

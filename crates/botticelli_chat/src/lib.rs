@@ -10,7 +10,6 @@
 
 mod chat_config;
 mod command;
-mod error;
 mod executor;
 mod input;
 mod interface;
@@ -44,7 +43,6 @@ pub use elicitation::{
 
 #[cfg(feature = "tui")]
 pub use elicitation::TuiElicitationDialog;
-pub use error::{ChatError, ChatErrorKind, ChatResult};
 pub use executor::{CommandExecutor, NarrativeState};
 pub use input::UserInput;
 pub use interface::ChatInterface;

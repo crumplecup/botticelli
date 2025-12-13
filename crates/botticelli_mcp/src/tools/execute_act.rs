@@ -1,7 +1,7 @@
 //! Execute a single narrative act tool.
 
 use crate::tools::McpTool;
-use crate::{McpError, McpResult};
+use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
@@ -120,7 +120,7 @@ impl ExecuteActTool {
                 .gemini_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::BackendUnavailable("Gemini".into()));
+                .ok_or_else(|| McpError::backend_unavailable("Gemini".into()));
         }
 
         #[cfg(feature = "anthropic")]
@@ -129,7 +129,7 @@ impl ExecuteActTool {
                 .anthropic_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::BackendUnavailable("Anthropic".into()));
+                .ok_or_else(|| McpError::backend_unavailable("Anthropic".into()));
         }
 
         #[cfg(feature = "ollama")]
@@ -141,7 +141,7 @@ impl ExecuteActTool {
                 .ollama_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::BackendUnavailable("Ollama".into()));
+                .ok_or_else(|| McpError::backend_unavailable("Ollama".into()));
         }
 
         #[cfg(feature = "huggingface")]
@@ -150,7 +150,7 @@ impl ExecuteActTool {
                 .huggingface_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::BackendUnavailable("HuggingFace".into()));
+                .ok_or_else(|| McpError::backend_unavailable("HuggingFace".into()));
         }
 
         #[cfg(feature = "groq")]
@@ -159,10 +159,10 @@ impl ExecuteActTool {
                 .groq_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::BackendUnavailable("Groq".into()));
+                .ok_or_else(|| McpError::backend_unavailable("Groq".into()));
         }
 
-        Err(McpError::UnsupportedModel(model.to_string()))
+        Err(McpError::unsupported_model(model.to_string()))
     }
 }
 
@@ -262,12 +262,12 @@ impl McpTool for ExecuteActTool {
         let prompt = input
             .get("prompt")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'prompt' parameter".into()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'prompt' parameter".into()))?;
 
         let model = input
             .get("model")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::InvalidInput("Missing 'model' parameter".into()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'model' parameter".into()))?;
 
         let max_tokens = input
             .get("max_tokens")
@@ -304,7 +304,7 @@ impl McpTool for ExecuteActTool {
                     .build()
                     .map_err(|e| {
                         error!(error = ?e, "Failed to build system message");
-                        McpError::ExecutionError(format!("Failed to build system message: {}", e))
+                        McpError::execution_failed(format!("Failed to build system message: {}", e))
                     })?,
             );
         }
@@ -316,7 +316,7 @@ impl McpTool for ExecuteActTool {
                 .build()
                 .map_err(|e| {
                     error!(error = ?e, "Failed to build user message");
-                    McpError::ExecutionError(format!("Failed to build user message: {}", e))
+                    McpError::execution_failed(format!("Failed to build user message: {}", e))
                 })?,
         );
 
@@ -329,7 +329,7 @@ impl McpTool for ExecuteActTool {
             .build()
             .map_err(|e| {
                 error!(error = ?e, "Failed to build request");
-                McpError::ExecutionError(format!("Failed to build request: {}", e))
+                McpError::execution_failed(format!("Failed to build request: {}", e))
             })?;
 
         // Execute
@@ -359,7 +359,7 @@ impl McpTool for ExecuteActTool {
             }
             Err(e) => {
                 error!(error = ?e, "Failed to execute act");
-                Err(McpError::ExecutionError(format!(
+                Err(McpError::execution_failed(format!(
                     "LLM execution failed: {}",
                     e
                 )))
@@ -393,6 +393,6 @@ impl McpTool for ExecuteActTool {
     }
 
     async fn execute(&self, _input: Value) -> McpResult<Value> {
-        Err(McpError::BackendUnavailable("No LLM backends enabled. Enable at least one feature: gemini, anthropic, ollama, huggingface, or groq".into()))
+        Err(McpError::backend_unavailable("No LLM backends enabled. Enable at least one feature: gemini, anthropic, ollama, huggingface, or groq".to_string()))
     }
 }

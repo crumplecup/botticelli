@@ -1,7 +1,8 @@
 //! Command executor that processes parsed commands.
 
+use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use crate::{
-    BotCommand, ChatError, ChatErrorKind, ChatResult, Command, NarrativeCommand, Response,
+    BotCommand, Command, NarrativeCommand, Response,
     SocialCommand,
 };
 use std::sync::Arc;

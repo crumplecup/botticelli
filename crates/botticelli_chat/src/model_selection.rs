@@ -1,4 +1,5 @@
-use crate::ChatError;
+
+use botticelli_error::ChatError;
 use botticelli_models::{ModelId, ModelSelector};
 
 /// Chat session with automatic model fallback.
