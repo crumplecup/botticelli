@@ -163,30 +163,29 @@ fn generate_fix_suggestion(error: &ValidationError) -> Option<String> {
 pub fn format_toml(toml: &str) -> String {
     let mut formatted = String::new();
     let mut in_section = false;
-    let mut prev_was_empty = false;
+    let mut last_was_blank = false;
 
     for line in toml.lines() {
         let trimmed = line.trim();
 
         // Skip multiple consecutive empty lines
         if trimmed.is_empty() {
-            if !prev_was_empty {
+            if !last_was_blank && !formatted.is_empty() {
                 formatted.push('\n');
-                prev_was_empty = true;
+                last_was_blank = true;
             }
             continue;
         }
 
-        prev_was_empty = false;
-
         // Add blank line before sections (except first)
         if trimmed.starts_with('[') {
-            if in_section {
+            if in_section && !last_was_blank {
                 formatted.push('\n');
             }
             in_section = true;
         }
 
+        last_was_blank = false;
         formatted.push_str(line);
         formatted.push('\n');
     }

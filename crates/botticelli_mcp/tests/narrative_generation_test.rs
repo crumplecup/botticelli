@@ -22,9 +22,8 @@ async fn test_create_simple_narrative() {
 
     // Check validation
     let validation = result.get("validation").unwrap();
-    assert_eq!(
+    assert!(
         validation.get("valid").unwrap().as_bool().unwrap(),
-        true,
         "Generated narrative should be valid"
     );
 

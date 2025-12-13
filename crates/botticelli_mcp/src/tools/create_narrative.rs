@@ -158,7 +158,7 @@ fn generate_narrative_toml(
         toml.push_str(&format!("temperature = {}\n", temp));
     }
 
-    toml.push_str("\n");
+    toml.push('\n');
 
     // [toc] section
     toml.push_str("[toc]\n");
@@ -184,7 +184,7 @@ fn generate_narrative_toml(
 fn extract_acts_from_description(description: &str) -> Vec<Act> {
     // Simple heuristic: split on common connectors
     let parts: Vec<&str> = description
-        .split(|c| c == ',' || c == ';')
+        .split([',', ';'])
         .map(|s| s.trim())
         .filter(|s| !s.is_empty())
         .collect();

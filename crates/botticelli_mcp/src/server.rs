@@ -214,6 +214,7 @@ impl BotticelliRouterBuilder {
             // Register default tools
             registry.register(Arc::new(crate::tools::EchoTool));
             registry.register(Arc::new(crate::tools::ServerInfoTool));
+            registry.register(Arc::new(crate::tools::CreateNarrativeTool));
             registry.register(Arc::new(crate::tools::ValidateNarrativeTool));
             registry.register(Arc::new(crate::tools::GenerateTool));
             registry.register(Arc::new(crate::tools::ExecuteActTool::new()));
