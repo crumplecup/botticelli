@@ -22,12 +22,10 @@ mod services;
 mod startup;
 mod state;
 
-/// Application configuration module.
-pub mod config;
+mod config;
 
 #[cfg(feature = "tui")]
-/// TUI implementation using ratatui.
-pub mod tui;
+mod tui;
 
 pub use chat_config::ChatConfig;
 pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
@@ -48,3 +46,6 @@ pub use services::ServiceContainer;
 #[cfg(feature = "cli")]
 pub use startup::startup_sequence;
 pub use state::ConversationState;
+
+#[cfg(feature = "tui")]
+pub use tui::{restore_terminal, setup_terminal, TuiInterface};

@@ -27,6 +27,7 @@ pub struct NarrativeState {
 
 impl NarrativeState {
     /// Create a new empty narrative state.
+    #[instrument]
     pub fn new() -> Self {
         Self {
             prompt: None,
@@ -39,6 +40,7 @@ impl NarrativeState {
     }
 
     /// Check if state has any content.
+    #[instrument(skip(self))]
     pub fn is_empty(&self) -> bool {
         self.prompt.is_none()
             && self.model.is_none()
@@ -64,6 +66,7 @@ pub struct CommandExecutor {
 
 impl CommandExecutor {
     /// Create a new command executor.
+    #[instrument]
     pub fn new() -> Self {
         Self {
             narrative_state: Arc::new(RwLock::new(NarrativeState::new())),
@@ -72,6 +75,7 @@ impl CommandExecutor {
     }
 
     /// Create a new command executor with services.
+    #[instrument(skip(services))]
     pub fn with_services(services: Arc<ServiceContainer>) -> Self {
         Self {
             narrative_state: Arc::new(RwLock::new(NarrativeState::new())),
@@ -80,6 +84,7 @@ impl CommandExecutor {
     }
 
     /// Get reference to services.
+    #[instrument(skip(self))]
     pub fn services(&self) -> &Arc<ServiceContainer> {
         &self.services
     }
@@ -814,129 +819,6 @@ Other:
 
         Ok(narrative_toml.to_string())
     }
-
-    #[cfg(feature = "cli")]
-    #[instrument(skip(self), fields(toml_size = toml_content.len()))]
-    #[allow(dead_code)]
-    /// Validate narrative TOML content via MCP server.
-    pub async fn call_mcp_validate_narrative(&self, toml_content: &str) -> ChatResult<String> {
-        use reqwest::Client;
-        use serde_json::json;
-        use tracing::{debug, error};
-
-        let mcp_url = self.services.config().mcp_server.server_url();
-        let endpoint = format!("{}/tools/call", mcp_url);
-
-        debug!(
-            url = %endpoint,
-            toml_size = toml_content.len(),
-            "Calling MCP validate_narrative tool"
-        );
-
-        let request_body = json!({
-            "name": "validate_narrative",
-            "parameters": {
-                "toml_content": toml_content,
-            }
-        });
-
-        debug!(request = ?request_body, "Sending MCP validation request");
-
-        let client = Client::builder()
-            .timeout(std::time::Duration::from_secs(30))
-            .build()
-            .map_err(|e| {
-                error!(error = ?e, "Failed to create HTTP client");
-                ChatError::new(ChatErrorKind::IoError(format!(
-                    "Failed to create HTTP client: {}",
-                    e
-                )))
-            })?;
-
-        let response = client
-            .post(&endpoint)
-            .header("Content-Type", "application/json")
-            .json(&request_body)
-            .send()
-            .await
-            .map_err(|e| {
-                error!(error = ?e, url = %endpoint, "HTTP request failed");
-                
-                if e.is_timeout() {
-                    ChatError::new(ChatErrorKind::IoError(
-                        "MCP server timeout (30s). Validation took too long.".to_string()
-                    ))
-                } else if e.is_connect() {
-                    ChatError::new(ChatErrorKind::IoError(format!(
-                        "Cannot connect to MCP server at {}. Is it running?",
-                        mcp_url
-                    )))
-                } else {
-                    ChatError::new(ChatErrorKind::IoError(format!(
-                        "Network error calling MCP server: {}",
-                        e
-                    )))
-                }
-            })?;
-
-        let status = response.status();
-        debug!(status = %status, "Received MCP response");
-
-        if !status.is_success() {
-            let error_text = response.text().await.unwrap_or_else(|_| String::from("<no response body>"));
-            error!(
-                status = %status,
-                error_body = %error_text,
-                "MCP server returned error"
-            );
-
-            return Err(match status.as_u16() {
-                400 => ChatError::new(ChatErrorKind::InvalidInput(format!(
-                    "Invalid TOML: {}",
-                    error_text
-                ))),
-                404 => ChatError::new(ChatErrorKind::IoError(
-                    "MCP tool 'validate_narrative' not found. Is the MCP server up to date?".to_string()
-                )),
-                _ => ChatError::new(ChatErrorKind::IoError(format!(
-                    "MCP server error ({}): {}",
-                    status, error_text
-                ))),
-            });
-        }
-
-        let result: serde_json::Value = response.json().await.map_err(|e| {
-            error!(error = ?e, "Failed to parse MCP JSON response");
-            ChatError::new(ChatErrorKind::IoError(format!(
-                "Invalid JSON from MCP server: {}",
-                e
-            )))
-        })?;
-
-        debug!(response = ?result, "Parsed MCP validation response");
-
-        // Extract validation text from response
-        let validation_text = result
-            .get("content")
-            .and_then(|c| c.as_array())
-            .and_then(|arr| arr.first())
-            .and_then(|item| item.get("text"))
-            .and_then(|t| t.as_str())
-            .ok_or_else(|| {
-                error!(response = ?result, "Invalid MCP response structure");
-                ChatError::new(ChatErrorKind::IoError(
-                    "Invalid MCP response format".to_string(),
-                ))
-            })?;
-
-        debug!(
-            result_size = validation_text.len(),
-            "Successfully extracted validation result"
-        );
-
-        Ok(validation_text.to_string())
-    }
-
 }
 
 impl Default for CommandExecutor {

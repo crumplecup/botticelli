@@ -86,6 +86,7 @@ cli = [
     "dep:tracing-subscriber",
 ]
 demo = ["cli", "dep:botticelli_actor"]
+local = ["cli"]  # For local testing
 
 [[bin]]
 name = "botticelli-chat"

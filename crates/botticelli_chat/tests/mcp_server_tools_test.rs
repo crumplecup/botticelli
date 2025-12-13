@@ -80,6 +80,7 @@ impl Drop for McpServerGuard {
 }
 
 #[tokio::test]
+#[ignore = "Requires MCP server with http,database,llm features"]
 async fn test_mcp_server_lists_tools() {
     let _server = McpServerGuard::start();
 
@@ -139,6 +140,7 @@ async fn test_mcp_server_lists_tools() {
 }
 
 #[tokio::test]
+#[ignore = "Requires MCP server with http,database,llm features"]
 async fn test_mcp_server_create_narrative_tool_structure() {
     let _server = McpServerGuard::start();
     thread::sleep(Duration::from_secs(1));
