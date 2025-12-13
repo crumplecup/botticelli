@@ -1,5 +1,6 @@
 //! Partial narrative state during elicitation.
 
+use botticelli_core::Input;
 use derive_builder::Builder;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
@@ -15,6 +16,9 @@ pub struct PartialAct {
     pub model: Option<String>,
     /// Optional temperature override.
     pub temperature: Option<f64>,
+    /// Act inputs.
+    #[serde(default)]
+    pub inputs: Vec<Input>,
 }
 
 /// Narrative under construction.
