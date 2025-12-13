@@ -28,6 +28,9 @@ mod elicitation;
 #[cfg(feature = "tui")]
 mod tui;
 
+pub use botticelli_mcp::{
+    ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
+};
 pub use chat_config::ChatConfig;
 pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
 pub use config::{
@@ -35,8 +38,7 @@ pub use config::{
     McpServerConfig, ObservabilityConfig, PostgresConfig,
 };
 pub use elicitation::{
-    ActElicitor, CarouselElicitor, ElicitationDialog, ElicitationSession, InputElicitor,
-    MetadataElicitor, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
+    ActElicitor, CarouselElicitor, ElicitationSession, InputElicitor, MetadataElicitor,
     ValidationElicitor,
 };
 

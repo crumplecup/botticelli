@@ -1,6 +1,6 @@
 //! Metadata elicitor for narrative [narrative] section.
 
-use crate::elicitation::{ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder};
+use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder};
 use crate::{ChatError, ChatErrorKind, ChatResult};
 use async_trait::async_trait;
 use botticelli_mcp::NarrativeHelper;

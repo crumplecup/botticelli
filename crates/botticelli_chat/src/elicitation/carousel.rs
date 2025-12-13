@@ -1,6 +1,6 @@
 //! Carousel elicitor for narrative looping configuration.
 
-use crate::elicitation::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
+use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
 use crate::{ChatError, ChatErrorKind, ChatResult};
 use async_trait::async_trait;
 use botticelli_narrative::CarouselConfig;
@@ -115,7 +115,7 @@ impl NarrativeElicitor for CarouselElicitor {
         dialog: &mut dyn ElicitationDialog,
         partial: &mut PartialNarrative,
     ) -> ChatResult<()> {
-        use crate::elicitation::PartialNarrativeBuilder;
+        use botticelli_mcp::PartialNarrativeBuilder;
 
         match &self.target_act {
             None => {

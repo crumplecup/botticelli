@@ -1,6 +1,6 @@
 //! Validation elicitor for interactive narrative validation.
 
-use crate::elicitation::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
+use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
 use crate::{ChatError, ChatErrorKind, ChatResult};
 use async_trait::async_trait;
 use botticelli_narrative::validator::{ValidationError, ValidationErrorKind, ValidationResult};

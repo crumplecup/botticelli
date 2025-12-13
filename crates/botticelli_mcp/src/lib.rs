@@ -32,6 +32,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod elicitation;
 mod error;
 mod resources;
 mod server;
@@ -40,6 +41,9 @@ pub mod tools;
 #[cfg(feature = "http")]
 pub mod http;
 
+pub use elicitation::{
+    ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
+};
 pub use error::{McpError, McpResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};

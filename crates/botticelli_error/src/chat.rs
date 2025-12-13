@@ -1,0 +1,135 @@
+//! Chat-specific error types.
+
+/// Chat error kinds.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+pub enum ChatErrorKind {
+    /// Command not found
+    #[display("Command not found: {}", _0)]
+    CommandNotFound(String),
+    /// Invalid command arguments
+    #[display("Invalid arguments for command {}: {}", command, reason)]
+    InvalidArguments {
+        /// Command name
+        command: String,
+        /// Reason for invalidity
+        reason: String,
+    },
+    /// Missing required argument
+    #[display("Missing required argument: {}", _0)]
+    MissingArgument(String),
+    /// Parse error
+    #[display("Parse error: {}", _0)]
+    ParseError(String),
+    /// Invalid input
+    #[display("Invalid input: {}", _0)]
+    InvalidInput(String),
+    /// Invalid state for operation
+    #[display("Invalid state: {}", _0)]
+    InvalidState(String),
+    /// Command execution failed
+    #[display("Command execution failed: {}", _0)]
+    ExecutionFailed(String),
+    /// Dialog interaction failed
+    #[display("Dialog interaction failed: {}", _0)]
+    DialogFailed(String),
+    /// Validation error
+    #[display("Validation error: {}", _0)]
+    ValidationError(String),
+    /// User cancelled operation
+    #[display("User cancelled operation")]
+    UserCancelled,
+    /// Feature not implemented
+    #[display("Not implemented: {}", _0)]
+    NotImplemented(String),
+}
+
+/// Chat error with location tracking.
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("Chat Error: {} at {}:{}", kind, file, line)]
+pub struct ChatError {
+    /// Error kind
+    pub kind: ChatErrorKind,
+    /// Line number
+    pub line: u32,
+    /// File path
+    pub file: &'static str,
+}
+
+impl ChatError {
+    /// Create a new chat error.
+    #[track_caller]
+    pub fn new(kind: ChatErrorKind) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind,
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
+
+    /// Create a command not found error.
+    #[track_caller]
+    pub fn command_not_found(command: impl Into<String>) -> Self {
+        Self::new(ChatErrorKind::CommandNotFound(command.into()))
+    }
+
+    /// Create an invalid arguments error.
+    #[track_caller]
+    pub fn invalid_arguments(command: impl Into<String>, reason: impl Into<String>) -> Self {
+        Self::new(ChatErrorKind::InvalidArguments {
+            command: command.into(),
+            reason: reason.into(),
+        })
+    }
+
+    /// Create an execution failed error.
+    #[track_caller]
+    pub fn execution_failed(message: impl Into<String>) -> Self {
+        Self::new(ChatErrorKind::ExecutionFailed(message.into()))
+    }
+
+    /// Create a dialog failed error.
+    #[track_caller]
+    pub fn dialog_failed(message: impl Into<String>) -> Self {
+        Self::new(ChatErrorKind::DialogFailed(message.into()))
+    }
+
+    /// Create a user cancelled error.
+    #[track_caller]
+    pub fn user_cancelled() -> Self {
+        Self::new(ChatErrorKind::UserCancelled)
+    }
+
+    /// Create a missing argument error.
+    #[track_caller]
+    pub fn missing_argument(arg: impl Into<String>) -> Self {
+        Self::new(ChatErrorKind::MissingArgument(arg.into()))
+    }
+
+    /// Create a parse error.
+    #[track_caller]
+    pub fn parse_error(message: impl Into<String>) -> Self {
+        Self::new(ChatErrorKind::ParseError(message.into()))
+    }
+
+    /// Create an invalid input error.
+    #[track_caller]
+    pub fn invalid_input(message: impl Into<String>) -> Self {
+        Self::new(ChatErrorKind::InvalidInput(message.into()))
+    }
+
+    /// Create an invalid state error.
+    #[track_caller]
+    pub fn invalid_state(message: impl Into<String>) -> Self {
+        Self::new(ChatErrorKind::InvalidState(message.into()))
+    }
+
+    /// Create a validation error.
+    #[track_caller]
+    pub fn validation_error(message: impl Into<String>) -> Self {
+        Self::new(ChatErrorKind::ValidationError(message.into()))
+    }
+}
+
+/// Result type for chat operations.
+pub type ChatResult<T> = std::result::Result<T, ChatError>;

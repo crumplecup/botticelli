@@ -1,7 +1,7 @@
 //! Trait for narrative component elicitors.
 
 use crate::elicitation::{ElicitationDialog, PartialNarrative};
-use crate::ChatResult;
+use crate::McpResult;
 use async_trait::async_trait;
 
 /// Trait for eliciting specific narrative components.
@@ -38,7 +38,7 @@ pub trait NarrativeElicitor: Send + Sync {
         &self,
         dialog: &mut dyn ElicitationDialog,
         partial: &mut PartialNarrative,
-    ) -> ChatResult<()>;
+    ) -> McpResult<()>;
 
     /// Check if this aspect is complete.
     ///

@@ -1,6 +1,6 @@
 //! Input elicitor for narrative act inputs.
 
-use crate::elicitation::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
+use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
 use crate::{ChatError, ChatErrorKind, ChatResult};
 use async_trait::async_trait;
 use botticelli_core::{HistoryRetention, Input, MediaSource, TableFormat};
@@ -475,7 +475,7 @@ impl NarrativeElicitor for InputElicitor {
         dialog: &mut dyn ElicitationDialog,
         partial: &mut PartialNarrative,
     ) -> ChatResult<()> {
-        use crate::elicitation::PartialNarrativeBuilder;
+        use botticelli_mcp::PartialNarrativeBuilder;
 
         dialog.show_info("Let's configure act inputs.").await?;
 

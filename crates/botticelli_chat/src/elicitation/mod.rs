@@ -6,11 +6,8 @@
 
 mod acts;
 mod carousel;
-mod dialog;
-mod elicitor;
 mod inputs;
 mod metadata;
-mod partial;
 mod session;
 mod validation;
 
@@ -19,11 +16,8 @@ mod tui_dialog;
 
 pub use acts::ActElicitor;
 pub use carousel::CarouselElicitor;
-pub use dialog::ElicitationDialog;
-pub use elicitor::NarrativeElicitor;
 pub use inputs::InputElicitor;
 pub use metadata::MetadataElicitor;
-pub use partial::{PartialAct, PartialNarrative, PartialNarrativeBuilder};
 pub use session::ElicitationSession;
 pub use validation::ValidationElicitor;
 

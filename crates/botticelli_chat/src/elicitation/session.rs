@@ -1,6 +1,6 @@
 //! ElicitationSession orchestrator for managing the elicitation flow.
 
-use crate::elicitation::{ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder};
+use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder};
 use crate::{ChatError, ChatErrorKind, ChatResult};
 use std::sync::Arc;
 use tracing::{debug, info, instrument, warn};

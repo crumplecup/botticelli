@@ -1,6 +1,6 @@
 //! Act elicitor for narrative acts and ordering.
 
-use crate::elicitation::{ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder};
+use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder};
 use crate::{ChatError, ChatErrorKind, ChatResult};
 use async_trait::async_trait;
 use botticelli_mcp::NarrativeHelper;

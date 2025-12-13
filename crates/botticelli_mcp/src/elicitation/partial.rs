@@ -1,11 +1,15 @@
 //! Partial narrative state during elicitation.
 
 use botticelli_core::Input;
+use botticelli_narrative::CarouselConfig;
 use derive_builder::Builder;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::instrument;
+
+use crate::tools::NarrativeHelper;
+use crate::{McpError, McpResult};
 
 /// Partial act definition.
 #[derive(Debug, Clone, Serialize, Deserialize, derive_new::new)]
@@ -21,7 +25,7 @@ pub struct PartialAct {
     pub inputs: Vec<Input>,
     /// Optional carousel configuration.
     #[serde(default)]
-    pub carousel: Option<botticelli_narrative::CarouselConfig>,
+    pub carousel: Option<CarouselConfig>,
 }
 
 /// Narrative under construction.
@@ -33,28 +37,28 @@ pub struct PartialAct {
 pub struct PartialNarrative {
     /// Narrative name.
     name: Option<String>,
-    
+
     /// Narrative description.
     description: Option<String>,
-    
+
     /// Default model for all acts.
     model: Option<String>,
-    
+
     /// Default temperature.
     temperature: Option<f64>,
-    
+
     /// Default max tokens.
     max_tokens: Option<u32>,
-    
+
     /// Act execution order.
     act_order: Vec<String>,
-    
+
     /// Act definitions (name -> PartialAct).
     acts: HashMap<String, PartialAct>,
-    
+
     /// Optional narrative-level carousel configuration.
-    carousel: Option<botticelli_narrative::CarouselConfig>,
-    
+    carousel: Option<CarouselConfig>,
+
     /// Generated TOML content (cached).
     toml_content: Option<String>,
 }
@@ -72,7 +76,7 @@ impl PartialNarrative {
     ///
     /// Converts to TOML and validates using existing validator.
     #[instrument(skip(self))]
-    pub fn validate(&self) -> crate::ChatResult<botticelli_narrative::validator::ValidationResult> {
+    pub fn validate(&self) -> McpResult<botticelli_narrative::validator::ValidationResult> {
         let toml = self.to_toml()?;
         Ok(botticelli_narrative::validator::validate_narrative_toml(&toml))
     }
@@ -83,18 +87,15 @@ impl PartialNarrative {
     ///
     /// Returns error if required fields are missing.
     #[instrument(skip(self))]
-    pub fn to_toml(&self) -> crate::ChatResult<String> {
-        use botticelli_mcp::NarrativeHelper;
-        use crate::{ChatError, ChatErrorKind};
-
+    pub fn to_toml(&self) -> McpResult<String> {
         let name = self.name.as_ref().ok_or_else(|| {
-            ChatError::new(ChatErrorKind::InvalidState("Missing narrative name".to_string()))
+            McpError::InvalidInput("Missing narrative name".to_string())
         })?;
 
         let description = self.description.as_ref().ok_or_else(|| {
-            ChatError::new(ChatErrorKind::InvalidState(
+            McpError::InvalidInput(
                 "Missing narrative description".to_string(),
-            ))
+            )
         })?;
 
         let mut toml = String::new();
@@ -153,18 +154,19 @@ impl PartialNarrative {
     ///
     /// Returns error if validation fails.
     #[instrument(skip(self))]
-    pub fn try_into_narrative(&self) -> crate::ChatResult<botticelli_narrative::Narrative> {
+    pub fn try_into_narrative(&self) -> McpResult<botticelli_narrative::Narrative> {
         let toml = self.to_toml()?;
         let validation = self.validate()?;
 
         if !validation.is_valid() {
-            return Err(crate::ChatError::new(crate::ChatErrorKind::ValidationError(
-                format!("Narrative validation failed: {} errors", validation.errors.len()),
+            return Err(McpError::InvalidInput(format!(
+                "Narrative validation failed: {} errors",
+                validation.errors.len()
             )));
         }
 
-        botticelli_narrative::Narrative::from_toml_str(&toml, self.name.as_deref()).map_err(|e| {
-            crate::ChatError::new(crate::ChatErrorKind::SerializationError(e.to_string()))
-        })
+        botticelli_narrative::Narrative::from_toml_str(&toml, self.name.as_deref()).map_err(
+            |e| McpError::ExecutionError(e.to_string()),
+        )
     }
 }

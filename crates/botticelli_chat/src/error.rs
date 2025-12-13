@@ -125,5 +125,12 @@ impl From<toml::ser::Error> for ChatError {
     }
 }
 
+impl From<botticelli_mcp::McpError> for ChatError {
+    fn from(err: botticelli_mcp::McpError) -> Self {
+        // Map MCP errors to appropriate Chat error kinds
+        Self::invalid_input(err.to_string())
+    }
+}
+
 /// Result type for chat operations.
 pub type ChatResult<T> = Result<T, ChatError>;
