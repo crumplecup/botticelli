@@ -147,6 +147,7 @@ impl BotticelliDriver for OllamaClient {
         let output = response_to_output(response);
         GenerateResponse::builder()
             .outputs(vec![output])
+            .stop_reason(botticelli_core::StopReason::EndTurn)
             .build()
             .map_err(|e| {
                 botticelli_error::BotticelliError::from(botticelli_error::ModelsError::new(

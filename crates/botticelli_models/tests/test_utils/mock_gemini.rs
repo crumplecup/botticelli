@@ -139,6 +139,7 @@ impl MockGeminiClient {
         match &self.behavior {
             MockBehavior::Success(text) => Ok(GenerateResponse::builder()
                 .outputs(vec![Output::Text(text.clone())])
+                .stop_reason(botticelli_core::StopReason::EndTurn)
                 .build()
                 .expect("Valid response")),
             MockBehavior::Error(error_kind) => {
@@ -154,6 +155,7 @@ impl MockGeminiClient {
                 } else {
                     Ok(GenerateResponse::builder()
                         .outputs(vec![Output::Text(success_text.clone())])
+                        .stop_reason(botticelli_core::StopReason::EndTurn)
                         .build()
                         .expect("Valid response"))
                 }
@@ -172,6 +174,7 @@ impl MockGeminiClient {
                     match &responses[current_count] {
                         MockResponse::Success(text) => Ok(GenerateResponse::builder()
                             .outputs(vec![Output::Text(text.clone())])
+                            .stop_reason(botticelli_core::StopReason::EndTurn)
                             .build()
                             .expect("Valid response")),
                         MockResponse::Error(error_kind) => {

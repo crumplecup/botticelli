@@ -505,6 +505,7 @@ impl GeminiClient {
 
             return GenerateResponse::builder()
                 .outputs(vec![Output::Text(response_text)])
+                .stop_reason(botticelli_core::StopReason::EndTurn)
                 .usage(None) // Live API doesn't expose usage data
                 .build()
                 .map_err(builder_error);
@@ -528,6 +529,7 @@ impl GeminiClient {
 
                 return GenerateResponse::builder()
                     .outputs(vec![Output::Text(response_text)])
+                    .stop_reason(botticelli_core::StopReason::EndTurn)
                     .usage(None) // Live API doesn't expose usage data
                     .build()
                     .map_err(builder_error);
@@ -606,6 +608,7 @@ impl GeminiClient {
         // Return response in GenerateResponse format
         GenerateResponse::builder()
             .outputs(vec![Output::Text(response_text)])
+            .stop_reason(botticelli_core::StopReason::EndTurn)
             .build()
             .map_err(builder_error)
     }
@@ -800,6 +803,7 @@ impl GeminiClient {
 
                 Ok(GenerateResponse::builder()
                     .outputs(vec![Output::Text(text)])
+                    .stop_reason(botticelli_core::StopReason::EndTurn)
                     .usage(None)
                     .build()
                     .map_err(builder_error)?)
