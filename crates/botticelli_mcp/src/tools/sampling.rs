@@ -111,6 +111,7 @@ Workflow:
 5. Handle errors gracefully with fallbacks
 
 Monitor execution state and provide clear feedback about progress and any issues.
-"#.to_string()
+"#
+        .to_string()
     }
 }

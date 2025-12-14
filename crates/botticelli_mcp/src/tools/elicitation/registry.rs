@@ -31,10 +31,7 @@ impl NarrativeRegistry {
         let id = Uuid::new_v4();
         debug!(narrative_id = %id, "Creating narrative session");
 
-        let mut narratives = self
-            .narratives
-            .write()
-            .expect("Registry lock poisoned");
+        let mut narratives = self.narratives.write().expect("Registry lock poisoned");
         narratives.insert(id, state);
 
         info!(narrative_id = %id, "Created narrative session");
@@ -63,10 +60,7 @@ impl NarrativeRegistry {
     /// Returns true if narrative existed and was updated.
     #[instrument(skip(self, state), fields(narrative_id = %id))]
     pub fn update(&self, id: &Uuid, state: Value) -> bool {
-        let mut narratives = self
-            .narratives
-            .write()
-            .expect("Registry lock poisoned");
+        let mut narratives = self.narratives.write().expect("Registry lock poisoned");
 
         if narratives.contains_key(id) {
             narratives.insert(*id, state);
@@ -83,10 +77,7 @@ impl NarrativeRegistry {
     /// Called after finalization. Returns the state if it existed.
     #[instrument(skip(self), fields(narrative_id = %id))]
     pub fn remove(&self, id: &Uuid) -> Option<Value> {
-        let mut narratives = self
-            .narratives
-            .write()
-            .expect("Registry lock poisoned");
+        let mut narratives = self.narratives.write().expect("Registry lock poisoned");
         let result = narratives.remove(id);
 
         if result.is_some() {
@@ -114,10 +105,7 @@ impl NarrativeRegistry {
     /// Used for testing or cleanup.
     #[instrument(skip(self))]
     pub fn clear(&self) {
-        let mut narratives = self
-            .narratives
-            .write()
-            .expect("Registry lock poisoned");
+        let mut narratives = self.narratives.write().expect("Registry lock poisoned");
         let count = narratives.len();
         narratives.clear();
         info!(count, "Cleared all narrative sessions");

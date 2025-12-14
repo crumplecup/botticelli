@@ -41,7 +41,8 @@ impl ElicitationHelper {
 
         let mut recommendations = Vec::new();
         if has_steps {
-            recommendations.push("Consider using sequential or named acts for the steps".to_string());
+            recommendations
+                .push("Consider using sequential or named acts for the steps".to_string());
         }
         if has_data {
             recommendations.push("Consider adding Table inputs for data sources".to_string());
@@ -191,7 +192,10 @@ impl ElicitationHelper {
     /// Creates an error for missing required field.
     #[track_caller]
     pub fn missing_field(field: &str) -> McpError {
-        McpError::new(McpErrorKind::InvalidInput(format!("Missing field: {}", field)))
+        McpError::new(McpErrorKind::InvalidInput(format!(
+            "Missing field: {}",
+            field
+        )))
     }
 
     /// Creates an error for invalid field value.

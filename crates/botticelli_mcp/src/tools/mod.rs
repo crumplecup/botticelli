@@ -31,10 +31,6 @@ mod validate_narrative;
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 pub use create_narrative::CreateNarrativeTool;
 pub use database::QueryContentTool;
-pub use narrative_creation::{
-    ElicitActInput, ElicitActTool, ElicitMetadataInput, ElicitMetadataTool,
-    FinalizeNarrativeInput, FinalizeNarrativeTool, StartNarrativeInput, StartNarrativeTool,
-};
 #[cfg(feature = "discord")]
 pub use discord::{
     DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool, DiscordPostMessageTool,
@@ -42,15 +38,20 @@ pub use discord::{
 #[cfg(feature = "discord")]
 pub use discord_workflow::DiscordContentWorkflowTool;
 pub use echo::EchoTool;
-pub use elicitation::{ElicitationHelper, NarrativeRegistry};
+pub use elicitation::{
+    CreateNarrativeSessionTool, ElicitActTool, ElicitMetadataTool, ElicitationHelper,
+    FinalizeNarrativeTool, NarrativeRegistry,
+};
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use export_metrics::ExportMetricsTool;
 pub use generate::GenerateTool;
 pub use metrics::{ActMetrics, ExecutionMetrics};
 pub use modify_narrative::ModifyNarrativeTool;
-pub use prometheus::{MetricsSummary, PrometheusMetrics};
-pub use save_narrative::SaveNarrativeTool;
+pub use narrative_creation::{
+    ElicitActInput, ElicitMetadataInput, FinalizeNarrativeInput, StartNarrativeInput,
+    StartNarrativeTool,
+};
 #[cfg(any(
     feature = "gemini",
     feature = "anthropic",
@@ -59,6 +60,8 @@ pub use save_narrative::SaveNarrativeTool;
     feature = "groq"
 ))]
 pub use narrative_processor::McpProcessorCollector;
+pub use prometheus::{MetricsSummary, PrometheusMetrics};
+pub use save_narrative::SaveNarrativeTool;
 pub use server_info::ServerInfoTool;
 #[cfg(feature = "discord")]
 pub use social::{DiscordBotCommandTool, DiscordPostTool};
@@ -66,9 +69,7 @@ pub use validate_narrative::ValidateNarrativeTool;
 
 // Export shared narrative utilities
 pub use narrative_utils::{Act, NarrativeHelper};
-pub use sampling::{
-    LlmSampler, SamplingHelper, SamplingSession, SessionState, ToolResponse, Turn,
-};
+pub use sampling::{LlmSampler, SamplingHelper, SamplingSession, SessionState, ToolResponse, Turn};
 
 // Export LLM tools based on features
 #[cfg(feature = "anthropic")]
@@ -82,8 +83,8 @@ pub use generate_llm::GenerateHuggingFaceTool;
 #[cfg(feature = "ollama")]
 pub use generate_llm::GenerateOllamaTool;
 
-use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -163,6 +164,15 @@ impl Default for ToolRegistry {
 
         // Validation tool
         registry.register(Arc::new(ValidateNarrativeTool));
+
+        // Narrative elicitation tools (LLM-driven creation)
+        let narrative_registry = NarrativeRegistry::new();
+        registry.register(Arc::new(CreateNarrativeSessionTool::new(
+            narrative_registry.clone(),
+        )));
+        registry.register(Arc::new(ElicitMetadataTool::new(narrative_registry.clone())));
+        registry.register(Arc::new(ElicitActTool::new(narrative_registry.clone())));
+        registry.register(Arc::new(FinalizeNarrativeTool::new(narrative_registry)));
 
         // Narrative generation tools (Phase 1)
         registry.register(Arc::new(CreateNarrativeTool));
