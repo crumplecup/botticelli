@@ -42,7 +42,7 @@ question = "Ask about the weather"
     fs::write(&narrative_path, narrative_content).unwrap();
 
     // Step 4: Execute the narrative (will fail without API keys, but validates flow)
-    let executor = ExecuteNarrativeTool;
+    let executor = ExecuteNarrativeTool::new();
     let execution_input = json!({
         "file_path": narrative_path.to_str().unwrap(),
         "prompt": "Test workflow execution"
@@ -283,7 +283,7 @@ act1 = "Hello"
 
 #[tokio::test]
 async fn test_execution_with_invalid_narrative() {
-    let executor = ExecuteNarrativeTool;
+    let executor = ExecuteNarrativeTool::new();
 
     // Create invalid narrative
     let temp_dir = std::env::temp_dir();

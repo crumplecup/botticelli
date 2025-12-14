@@ -68,7 +68,7 @@ async fn test_generate_tool_missing_prompt() {
 
 #[tokio::test]
 async fn test_execute_narrative_tool() {
-    let tool = ExecuteNarrativeTool;
+    let tool = ExecuteNarrativeTool::new();
 
     // Create a temporary test narrative
     let temp_dir = std::env::temp_dir();
@@ -113,7 +113,7 @@ act1 = "Hello world"
 
 #[tokio::test]
 async fn test_execute_narrative_tool_file_not_found() {
-    let tool = ExecuteNarrativeTool;
+    let tool = ExecuteNarrativeTool::new();
 
     let input = json!({
         "file_path": "/nonexistent/narrative.toml",
@@ -126,7 +126,7 @@ async fn test_execute_narrative_tool_file_not_found() {
 
 #[tokio::test]
 async fn test_execute_narrative_tool_invalid_toml() {
-    let tool = ExecuteNarrativeTool;
+    let tool = ExecuteNarrativeTool::new();
 
     // Create a temporary invalid narrative
     let temp_dir = std::env::temp_dir();
@@ -181,7 +181,7 @@ async fn test_generate_input_schema() {
 
 #[tokio::test]
 async fn test_execute_narrative_input_schema() {
-    let tool = ExecuteNarrativeTool;
+    let tool = ExecuteNarrativeTool::new();
     let schema = tool.input_schema();
 
     assert_eq!(schema["type"], "object");

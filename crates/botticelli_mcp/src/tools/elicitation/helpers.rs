@@ -159,6 +159,9 @@ impl ElicitationHelper {
     }
 
     #[instrument]
+    /// Validates that a partial narrative has all required components.
+    ///
+    /// Returns a list of validation errors, empty if valid.
     pub fn validate_complete(partial: &PartialNarrative) -> Vec<String> {
         let mut errors = Vec::new();
 
