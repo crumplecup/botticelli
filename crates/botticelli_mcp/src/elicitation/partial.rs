@@ -64,6 +64,11 @@ pub struct PartialNarrative {
 }
 
 impl PartialNarrative {
+    /// Create a new empty partial narrative.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Check if minimum required fields are present.
     ///
     /// Minimum: name, description, at least one act.

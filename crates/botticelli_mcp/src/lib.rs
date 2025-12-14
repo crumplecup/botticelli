@@ -50,9 +50,9 @@ pub use tools::{
     ElicitMetadataInput, ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool,
     ExecutionMetrics, ExportMetricsTool, FinalizeNarrativeInput, FinalizeNarrativeTool,
     GenerateTool, LlmSampler, McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper,
-    NarrativeRegistry, PrometheusMetrics, QueryContentTool, SamplingHelper, SamplingSession,
-    SaveNarrativeTool, ServerInfoTool, SessionState, StartNarrativeInput, StartNarrativeTool,
-    ToolRegistry, ToolResponse, Turn, ValidateNarrativeTool,
+    NarrativeRegistry, PrometheusMetrics, QueryContentTool, SamplingCoordinator, SamplingHelper,
+    SamplingSession, SaveNarrativeTool, ServerInfoTool, SessionState, StartNarrativeInput,
+    StartNarrativeTool, ToolRegistry, ToolResponse, Turn, ValidateNarrativeTool,
 };
 
 #[cfg(feature = "discord")]

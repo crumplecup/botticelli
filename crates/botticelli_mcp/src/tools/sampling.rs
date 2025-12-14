@@ -1,18 +1,72 @@
-use botticelli_core::{GenerateRequest, GenerateResponse, ToolCall};
+use crate::{NarrativeRegistry, PartialNarrative};
+use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::BotticelliResult;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use tracing::instrument;
 
+/// Coordinates LLM sampling for narrative generation.
+pub struct SamplingCoordinator {
+    sampler: Arc<dyn LlmSampler>,
+    registry: Arc<RwLock<NarrativeRegistry>>,
+}
+
+impl SamplingCoordinator {
+    /// Create a new sampling coordinator.
+    pub fn new(sampler: Arc<dyn LlmSampler>) -> Self {
+        Self {
+            sampler,
+            registry: Arc::new(RwLock::new(NarrativeRegistry::new())),
+        }
+    }
+
+    /// Generate a narrative from user description.
+    #[instrument(skip(self))]
+    pub async fn generate_narrative(&self, description: String) -> BotticelliResult<PartialNarrative> {
+        let system_prompt = SamplingHelper::narrative_generation_prompt();
+        let _session = self.sampler.sample(&system_prompt, &description).await?;
+        
+        // TODO: Extract narrative from session after LLM tool calling
+        // For now, return a placeholder
+        Ok(PartialNarrative::new())
+    }
+
+    /// Refine an existing narrative based on user feedback.
+    #[instrument(skip(self, narrative))]
+    pub async fn refine_narrative(
+        &self,
+        narrative: PartialNarrative,
+        feedback: String,
+    ) -> BotticelliResult<PartialNarrative> {
+        let system_prompt = format!(
+            "{}\n\nCurrent narrative:\n{:?}",
+            SamplingHelper::narrative_generation_prompt(),
+            narrative
+        );
+        let _session = self.sampler.sample(&system_prompt, &feedback).await?;
+        
+        // TODO: Apply refinements from LLM tool calling
+        Ok(narrative)
+    }
+
+    /// Get reference to the narrative registry.
+    pub fn registry(&self) -> &Arc<RwLock<NarrativeRegistry>> {
+        &self.registry
+    }
+}
+
 /// Trait for executing LLM sampling with tool access.
+#[async_trait::async_trait]
 pub trait LlmSampler: Send + Sync {
     /// Execute a sampling session with the given system prompt and initial user message.
     ///
     /// The LLM will orchestrate tool calls as needed through multi-turn conversation.
-    fn sample(
+    async fn sample(
         &self,
         system_prompt: &str,
         user_message: &str,
-    ) -> impl std::future::Future<Output = BotticelliResult<SamplingSession>> + Send;
+    ) -> BotticelliResult<SamplingSession>;
 }
 
 /// A multi-turn sampling session.
@@ -45,7 +99,7 @@ pub struct Turn {
     /// The response from the LLM.
     pub response: GenerateResponse,
     /// Tool calls made during this turn.
-    pub tool_calls: Vec<ToolCall>,
+    pub tool_calls: Vec<botticelli_core::ToolCall>,
     /// Tool responses received during this turn.
     pub tool_responses: Vec<ToolResponse>,
 }

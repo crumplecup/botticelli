@@ -21,6 +21,7 @@ impl Default for ChatLlmSampler {
     }
 }
 
+#[async_trait::async_trait]
 impl LlmSampler for ChatLlmSampler {
     #[instrument(skip(self))]
     async fn sample(

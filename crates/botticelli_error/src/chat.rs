@@ -44,6 +44,9 @@ pub enum ChatErrorKind {
     /// I/O error
     #[display("I/O error: {}", _0)]
     IoError(String),
+    /// Sampling error
+    #[display("Sampling error: {}", _0)]
+    SamplingError(String),
 }
 
 /// Chat error with location tracking.

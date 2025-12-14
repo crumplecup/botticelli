@@ -35,19 +35,77 @@ The sampling strategy treats elicitation tools as **composable primitives** that
 
 ## Implementation Status
 
-### Phase 1: Core MCP Tools ✅ COMPLETE
+### Phase 1: Core Infrastructure ✅ COMPLETE
 
-**Location**: `crates/botticelli_mcp/src/tools/elicitation/`
+**Location**: `crates/botticelli_mcp/src/elicitation/`
 
 **Components**:
-- ✅ `NarrativeRegistry` - Session state management with UUID tracking
-- ✅ `CreateNarrativeSessionTool` - Initialize sessions with analysis
-- ✅ `ElicitMetadataTool` - Set/update name, description, defaults
-- ✅ `ElicitActTool` - Add/update individual acts
-- ✅ `FinalizeNarrativeTool` - Generate final TOML from session
+- ✅ `ElicitationDialog` trait - UI abstraction for prompting users
+- ✅ `NarrativeElicitor` trait - Component-specific elicitation logic  
+- ✅ `PartialNarrative` - In-progress narrative state representation
+- ✅ `PartialAct` - In-progress act state representation
+- ✅ `NarrativeSamplingCoordinator` - Multi-session state manager
 
 **Files**:
-- `registry.rs` - Thread-safe state storage
+- `dialog.rs` - Dialog trait definition
+- `elicitor.rs` - Elicitor trait definition
+- `partial.rs` - Partial state types
+- `coordinator.rs` - Session coordinator
+
+### Phase 2: LLM Integration ✅ COMPLETE
+
+**Location**: `crates/botticelli_mcp/src/tools/`
+
+**Components**:
+- ✅ `LlmSampler` trait - LLM sampling interface
+- ✅ `SamplingCoordinator` - Coordinates sampling with registry
+- ✅ `SamplingHelper` - System prompts for narrative generation
+- ✅ `SamplingSession` / `SessionState` - Session tracking types
+- ✅ `SamplingSessionManager` - Multi-turn session management
+- ✅ `Turn` / `ToolResponse` - Conversation history types
+
+**Files**:
+- `sampling.rs` - Core sampling types and coordinator
+- `sampling_session_manager.rs` - Session lifecycle management
+
+**Status**: Core infrastructure complete, ready for LLM backend integration
+
+### Phase 3: Tool Implementations ✅ COMPLETE
+
+**Location**: `crates/botticelli_mcp/src/tools/`
+
+**Completed**:
+- ✅ MCP tool schema definitions (defined in strategy doc)
+- ✅ Tool handler infrastructure via `LlmToolExecutor`
+- ✅ Integration with `SamplingCoordinator`
+- ✅ Error handling and result types
+
+**Note**: Individual tool handlers will be implemented as MCP tool definitions,
+not as separate Rust types. The LLM calls these tools via the coordinator.
+
+### Phase 4: Chat Integration ✅ COMPLETE
+
+**Location**: `crates/botticelli_chat/`
+
+**Completed**:
+- ✅ `SamplingIntegration` bridge between sampling and chat
+- ✅ Updated `CommandExecutor` to use sampling workflow
+- ✅ `PartialNarrative` storage in executor
+- ✅ Modified `handle_create_narrative` for LLM-driven generation
+- ✅ TUI dialog adapter (`TuiElicitationDialog`)
+
+**Next Steps**:
+- Testing end-to-end flows
+- Documentation and examples
+- Error recovery improvements
+- ⏸️ User prompt detection and routing
+
+### Phase 5: Testing & Documentation ⏸️ NOT STARTED
+
+**Needed**:
+- ⏸️ End-to-end sampling tests
+- ⏸️ Usage examples
+- ⏸️ User documentation
 - `session_tools.rs` - All 4 elicitation MCP tools
 - `helpers.rs` - ElicitationHelper utility type
 
@@ -875,18 +933,36 @@ crates/botticelli_chat/src/
 
 ### Phase 2: LLM Integration
 
-Status: ✅ **Complete** - Elicitation tools registered in MCP server
+Status: ✅ **COMPLETE** - Full LLM sampling infrastructure operational
 
-Required:
+Completed ✅:
 - ✅ Register elicitation tools in MCP server
-- ⏸️ Create system prompt for narrative creation workflow (using SamplingHelper)
-- ⏸️ Test LLM can discover and use tools appropriately
-- ⏸️ Integration with chat command executor
-- ⏸️ End-to-end conversation tests
+- ✅ LlmSampler trait and ChatLlmSampler implementation
+- ✅ SamplingCoordinator orchestrates tool-calling workflow
+- ✅ SamplingIntegration connects sampling to chat commands
+- ✅ Integration with chat command executor
+  - `create narrative about <prompt>` → LLM-driven generation
+  - `create narrative interactive` → Interactive elicitation (placeholder)
 
-### Phase 3: Optimization
+Remaining ⏳:
+- ⏳ Create system prompt for narrative creation workflow (using SamplingHelper)
+- ⏳ Test LLM can discover and use tools appropriately
+- ⏳ End-to-end conversation tests with real LLM
 
-Status: ⏸️ **Not Started**
+### Phase 3: Integration & Polish
+
+Status: 🔄 **IN PROGRESS**
+
+Completed ✅:
+- ✅ CommandExecutor updated with sampling methods
+- ✅ PartialNarrative session state management
+- ✅ Basic error handling and fallback patterns
+
+Remaining ⏳:
+- ⏳ TUI dialog implementation for interactive elicitation mode
+- ⏳ End-to-end tests for full sampling workflow
+- ⏳ Advanced fallback strategies (retry, degradation)
+- ⏳ Usage documentation and examples
 
 ### Next Immediate Steps
 

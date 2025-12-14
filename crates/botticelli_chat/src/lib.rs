@@ -24,6 +24,7 @@ mod state;
 mod config;
 mod elicitation;
 mod sampling;
+mod sampling_integration;
 
 #[cfg(feature = "tui")]
 mod tui;
@@ -42,6 +43,7 @@ pub use elicitation::{
     ValidationElicitor,
 };
 pub use sampling::ChatLlmSampler;
+pub use sampling_integration::SamplingIntegration;
 
 #[cfg(feature = "tui")]
 pub use elicitation::TuiElicitationDialog;

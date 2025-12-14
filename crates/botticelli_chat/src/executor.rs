@@ -1,7 +1,8 @@
 //! Command executor that processes parsed commands.
 
-use crate::{BotCommand, Command, NarrativeCommand, Response, SocialCommand};
+use crate::{BotCommand, Command, NarrativeCommand, Response, SamplingIntegration, SocialCommand};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_mcp::PartialNarrative;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, instrument};
@@ -60,24 +61,33 @@ use crate::ServiceContainer;
 pub struct CommandExecutor {
     narrative_state: Arc<RwLock<NarrativeState>>,
     services: Arc<ServiceContainer>,
+    sampling: Arc<SamplingIntegration>,
+    current_narrative: Arc<RwLock<Option<PartialNarrative>>>,
 }
 
 impl CommandExecutor {
     /// Create a new command executor.
     #[instrument]
     pub fn new() -> Self {
+        let services = Arc::new(ServiceContainer::new(crate::ChatAppConfig::default()));
+        let sampling = Arc::new(SamplingIntegration::new(services.clone()));
         Self {
             narrative_state: Arc::new(RwLock::new(NarrativeState::new())),
-            services: Arc::new(ServiceContainer::new(crate::ChatAppConfig::default())),
+            services,
+            sampling,
+            current_narrative: Arc::new(RwLock::new(None)),
         }
     }
 
     /// Create a new command executor with services.
     #[instrument(skip(services))]
     pub fn with_services(services: Arc<ServiceContainer>) -> Self {
+        let sampling = Arc::new(SamplingIntegration::new(services.clone()));
         Self {
             narrative_state: Arc::new(RwLock::new(NarrativeState::new())),
             services,
+            sampling,
+            current_narrative: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -85,6 +95,18 @@ impl CommandExecutor {
     #[instrument(skip(self))]
     pub fn services(&self) -> &Arc<ServiceContainer> {
         &self.services
+    }
+
+    /// Get reference to sampling integration.
+    #[instrument(skip(self))]
+    pub fn sampling(&self) -> &Arc<SamplingIntegration> {
+        &self.sampling
+    }
+
+    /// Get current narrative being edited.
+    #[instrument(skip(self))]
+    pub async fn current_narrative(&self) -> Option<PartialNarrative> {
+        self.current_narrative.read().await.clone()
     }
 
     /// Execute a command and return a response.
@@ -410,39 +432,44 @@ Other:
     async fn handle_create_narrative(&self, prompt: String) -> ChatResult<Response> {
         use tracing::info;
 
-        info!(prompt_len = prompt.len(), "Creating narrative via MCP");
+        info!(prompt_len = prompt.len(), "Creating narrative via LLM sampling");
 
-        // Get current state for model/temperature preferences
-        let state = self.narrative_state.read().await;
-        let model = state.model.clone();
-        let temperature = state.temperature;
-        drop(state);
+        // Use LLM sampling coordinator to generate narrative
+        let partial_narrative = self.sampling.generate_narrative(prompt.clone()).await?;
 
-        // Call MCP server to create narrative
-        let narrative_toml = self
-            .call_mcp_create_narrative(&prompt, model.as_deref(), temperature)
-            .await?;
+        // Store the generated narrative
+        let mut current = self.current_narrative.write().await;
+        *current = Some(partial_narrative.clone());
+        drop(current);
 
-        // Update state with generated content
+        // Update legacy state for compatibility
         let mut state = self.narrative_state.write().await;
         state.prompt = Some(prompt.clone());
         state.path = None;
-        state.toml_content = Some(narrative_toml.clone());
         drop(state);
 
         info!(
-            toml_size = narrative_toml.len(),
-            "Narrative TOML generated via MCP"
+            narrative_name = partial_narrative.name().as_deref(),
+            "Narrative generated via LLM sampling"
         );
 
+        let metadata_info = match (partial_narrative.name(), partial_narrative.description()) {
+            (Some(name), Some(desc)) => {
+                format!("\nName: {}\nDescription: {}", name, desc)
+            }
+            (Some(name), None) => {
+                format!("\nName: {}\nDescription: N/A", name)
+            }
+            _ => String::from("\n(Metadata pending)"),
+        };
+
         Ok(Response::text(format!(
-            "Created narrative from prompt: \"{}\"\n\n\
-             Generated TOML ({} bytes)\n\
-             Use 'show narrative' to see the TOML.\n\
-             Use 'validate narrative' to check for errors.\n\
-             Use 'save narrative' to persist to database.",
-            prompt,
-            narrative_toml.len()
+            "✓ Created narrative from prompt: \"{}\"{}\n\n\
+             The LLM has planned the narrative structure.\n\
+             Continue refining with natural language requests.\n\
+             Use 'show narrative' to see current state.\n\
+             Use 'save narrative to <path>' to export as TOML.",
+            prompt, metadata_info
         )))
     }
 
@@ -463,21 +490,50 @@ Other:
     }
 
     /// Handle interactive narrative creation with elicitation.
-    ///
-    /// This method is a placeholder for TUI integration.
-    /// The actual implementation requires TUI dialog integration.
+    #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     async fn handle_create_narrative_interactive(&self) -> ChatResult<Response> {
-        // Note: Full implementation requires:
-        // 1. TUI dialog implementation of ElicitationDialog trait
-        // 2. ElicitationSession with chosen mode
-        // 3. Conversion from PartialNarrative to final TOML
-        // 4. Save to database or file
+        use tracing::info;
 
-        Ok(Response::text(
-            "Interactive narrative creation requires TUI integration.\n\
-             Use 'create narrative about <topic>' for AI-assisted creation via MCP.",
-        ))
+        info!("Starting interactive narrative creation");
+
+        // Use sampling integration for interactive mode
+        let partial_narrative = self.sampling.create_interactive().await?;
+
+        // Store the generated narrative
+        let mut current = self.current_narrative.write().await;
+        *current = Some(partial_narrative.clone());
+        drop(current);
+
+        info!(
+            narrative_name = partial_narrative.name().as_deref(),
+            "Interactive narrative creation completed"
+        );
+
+        let metadata_info = match (partial_narrative.name(), partial_narrative.description()) {
+            (Some(name), Some(desc)) => {
+                format!("\nName: {}\nDescription: {}", name, desc)
+            }
+            (Some(name), None) => {
+                format!("\nName: {}\nDescription: N/A", name)
+            }
+            _ => String::from("\n(Metadata pending)"),
+        };
+
+        Ok(Response::text(format!(
+            "✓ Created narrative interactively{}\n\n\
+             Use 'show narrative' to see current state.\n\
+             Use 'save narrative to <path>' to export as TOML.",
+            metadata_info
+        )))
+    }
+
+    #[cfg(not(feature = "cli"))]
+    #[instrument(skip(self))]
+    async fn handle_create_narrative_interactive(&self) -> ChatResult<Response> {
+        Err(ChatError::new(ChatErrorKind::NotImplemented(
+            "Interactive narrative creation (requires cli feature)".to_string(),
+        )))
     }
 
     #[cfg(feature = "cli")]

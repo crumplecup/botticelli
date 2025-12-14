@@ -22,6 +22,7 @@ mod narrative_utils;
 mod narrative_validation_helpers;
 mod prometheus;
 mod sampling;
+mod sampling_session_manager;
 mod save_narrative;
 mod server_info;
 #[cfg(feature = "discord")]
@@ -69,7 +70,11 @@ pub use validate_narrative::ValidateNarrativeTool;
 
 // Export shared narrative utilities
 pub use narrative_utils::{Act, NarrativeHelper};
-pub use sampling::{LlmSampler, SamplingHelper, SamplingSession, SessionState, ToolResponse, Turn};
+pub use sampling::{
+    LlmSampler, SamplingCoordinator, SamplingHelper, SamplingSession, SessionState, ToolResponse,
+    Turn,
+};
+pub use sampling_session_manager::SamplingSessionManager;
 
 // Export LLM tools based on features
 #[cfg(feature = "anthropic")]
