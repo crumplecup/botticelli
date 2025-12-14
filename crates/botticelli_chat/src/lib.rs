@@ -40,6 +40,9 @@ pub use elicitation::{
     ActElicitor, CarouselElicitor, ElicitationSession, InputElicitor, MetadataElicitor,
     ValidationElicitor,
 };
+
+#[cfg(feature = "tui")]
+pub use botticelli_tui::TuiElicitationDialog;
 pub use executor::{CommandExecutor, NarrativeState};
 pub use input::UserInput;
 pub use interface::ChatInterface;

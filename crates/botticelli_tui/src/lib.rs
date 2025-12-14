@@ -29,6 +29,8 @@
 //! - Integration with MCP tool calling and narrative generation
 
 mod commands;
+mod elicitation;
+mod elicitation_dialog;
 mod error;
 mod events;
 mod state;
@@ -36,6 +38,7 @@ mod tui;
 mod view;
 
 pub use commands::Command;
+pub use elicitation_dialog::TuiElicitationDialog;
 pub use error::{TuiError, TuiErrorKind, TuiResult};
 pub use events::{Event, EventHandler};
 pub use state::{AppState, ChatMessage, ConversationId, NarrativeId, ViewMode};

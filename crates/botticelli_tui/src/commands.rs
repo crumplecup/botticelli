@@ -11,8 +11,8 @@ pub enum Command {
     NewConversation,
     /// Load an existing conversation.
     LoadConversation(ConversationId),
-    /// Create a new narrative.
-    NewNarrative,
+    /// Start interactive narrative elicitation.
+    StartNarrativeElicitation,
     /// Load an existing narrative.
     LoadNarrative(NarrativeId),
     /// Save current narrative.
