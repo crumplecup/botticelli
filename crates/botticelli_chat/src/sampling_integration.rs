@@ -102,12 +102,19 @@ impl SamplingIntegration {
 /// This allows SamplingIntegration to be created synchronously while deferring
 /// the async provider initialization until first use.
 struct PlaceholderProvider {
+    #[cfg(feature = "cli")]
     services: Arc<ServiceContainer>,
 }
 
 impl PlaceholderProvider {
+    #[cfg(feature = "cli")]
     fn new(services: Arc<ServiceContainer>) -> Self {
         Self { services }
+    }
+
+    #[cfg(not(feature = "cli"))]
+    fn new(_services: Arc<ServiceContainer>) -> Self {
+        Self {}
     }
 }
 
@@ -115,7 +122,7 @@ impl PlaceholderProvider {
 impl botticelli_core::LlmProvider for PlaceholderProvider {
     async fn generate(
         &self,
-        request: &botticelli_core::GenerateRequest,
+        _request: &botticelli_core::GenerateRequest,
     ) -> Result<botticelli_core::GenerateResponse, botticelli_core::ProviderError> {
         // Lazily get the real provider from services
         #[cfg(feature = "cli")]
@@ -128,7 +135,7 @@ impl botticelli_core::LlmProvider for PlaceholderProvider {
             })?;
 
             // Delegate to real provider
-            provider.generate(request).await
+            provider.generate(_request).await
         }
 
         #[cfg(not(feature = "cli"))]

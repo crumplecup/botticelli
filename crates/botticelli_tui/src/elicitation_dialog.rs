@@ -169,13 +169,14 @@ impl TuiElicitationDialog {
                     "Event poll failed: {}",
                     e
                 )))
-            })? {
-                if let Event::Key(key) = event::read().map_err(|e| {
+            })?
+                && let Event::Key(key) = event::read().map_err(|e| {
                     TuiError::new(TuiErrorKind::EventRead(format!(
                         "Key read failed: {}",
                         e
                     )))
-                })? {
+                })?
+            {
                     match key.code {
                         KeyCode::Enter => {
                             break;
@@ -194,7 +195,6 @@ impl TuiElicitationDialog {
                         }
                         _ => {}
                     }
-                }
             }
         }
 
@@ -256,10 +256,10 @@ impl ElicitationDialog for TuiElicitationDialog {
         loop {
             let input = self.read_line("Enter number:")?;
 
-            if let Ok(choice) = input.trim().parse::<usize>() {
-                if choice > 0 && choice <= options.len() {
-                    return Ok(choice - 1);
-                }
+            if let Ok(choice) = input.trim().parse::<usize>()
+                && choice > 0 && choice <= options.len()
+            {
+                return Ok(choice - 1);
             }
 
             self.add_message(
@@ -277,10 +277,10 @@ impl ElicitationDialog for TuiElicitationDialog {
         loop {
             let input = self.read_line(&full_prompt)?;
 
-            if let Ok(num) = input.trim().parse::<i64>() {
-                if num >= min && num <= max {
-                    return Ok(num);
-                }
+            if let Ok(num) = input.trim().parse::<i64>()
+                && num >= min && num <= max
+            {
+                return Ok(num);
             }
 
             self.add_message(
