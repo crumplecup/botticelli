@@ -188,6 +188,30 @@ pub enum Input {
         #[serde(default)]
         history_retention: HistoryRetention,
     },
+
+    /// Tool call (for assistant messages with tool use).
+    ///
+    /// Represents a tool that the assistant wants to call.
+    ToolCall {
+        /// Unique ID for this tool call
+        id: String,
+        /// Name of the tool to call
+        name: String,
+        /// Arguments as JSON
+        arguments: serde_json::Value,
+    },
+
+    /// Tool result (for user messages with tool responses).
+    ///
+    /// Represents the result from executing a tool.
+    ToolResult {
+        /// ID of the tool call this responds to
+        tool_call_id: String,
+        /// Result content as string
+        content: String,
+        /// Whether this was an error
+        is_error: bool,
+    },
 }
 
 impl Input {

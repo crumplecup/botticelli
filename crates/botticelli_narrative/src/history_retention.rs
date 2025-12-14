@@ -102,6 +102,19 @@ pub fn summarize_input(input: &Input) -> String {
             debug!(summary = %summary, "Generated document summary");
             summary
         }
+        Input::ToolCall { name, .. } => {
+            // Tool calls are structural and should not be summarized
+            let summary = format!("[Tool call: {}]", name);
+            debug!(summary = %summary, "Tool call (no summarization)");
+            summary
+        }
+        Input::ToolResult { tool_call_id, is_error, .. } => {
+            // Tool results are structural and should not be summarized
+            let status = if *is_error { "error" } else { "success" };
+            let summary = format!("[Tool result: {} ({})]", tool_call_id, status);
+            debug!(summary = %summary, "Tool result (no summarization)");
+            summary
+        }
     }
 }
 
@@ -167,6 +180,14 @@ fn estimate_input_size(input: &Input) -> usize {
                 MediaSource::Base64(data) => data.len(),
                 MediaSource::Url(_) => 0, // URL itself is small
             }
+        }
+        Input::ToolCall { arguments, .. } => {
+            // Estimate size of arguments JSON
+            arguments.to_string().len()
+        }
+        Input::ToolResult { content, .. } => {
+            // Tool results are typically small
+            content.len()
         }
     }
 }

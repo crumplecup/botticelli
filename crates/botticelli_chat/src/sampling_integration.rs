@@ -16,11 +16,18 @@ impl SamplingIntegration {
     /// Create new sampling integration.
     #[instrument(skip(_services))]
     pub fn new(_services: Arc<ServiceContainer>) -> Self {
-        // TODO: Pass services to ChatLlmSampler once it needs LLM client
-        let sampler = Arc::new(ChatLlmSampler::new());
-        
         // Create tool registry with default tools
         let tool_registry = Arc::new(botticelli_mcp::ToolRegistry::default());
+        
+        // TODO: Get actual provider from services once wired up
+        // For now, create a placeholder that will fail if actually called
+        let provider: Arc<dyn botticelli_core::LlmProvider> = 
+            Arc::new(PlaceholderProvider);
+        
+        let sampler = Arc::new(ChatLlmSampler::new(
+            provider,
+            tool_registry.clone(),
+        ));
         
         let coordinator = Arc::new(SamplingCoordinator::new(
             sampler.clone(),
@@ -90,5 +97,37 @@ impl SamplingIntegration {
     /// Get reference to LLM sampler.
     pub fn sampler(&self) -> &Arc<ChatLlmSampler> {
         &self.sampler
+    }
+}
+
+/// Placeholder LLM provider that returns an error.
+///
+/// This is a temporary implementation until real providers are wired to ServiceContainer.
+struct PlaceholderProvider;
+
+#[async_trait::async_trait]
+impl botticelli_core::LlmProvider for PlaceholderProvider {
+    async fn generate(
+        &self,
+        _request: &botticelli_core::GenerateRequest,
+    ) -> Result<botticelli_core::GenerateResponse, botticelli_core::ProviderError> {
+        Err(botticelli_core::ProviderError::new(
+            "placeholder",
+            botticelli_core::ProviderErrorKind::ApiError(
+                "No LLM provider configured - add provider to ServiceContainer".to_string(),
+            ),
+        ))
+    }
+
+    fn provider_name(&self) -> &str {
+        "placeholder"
+    }
+
+    fn default_model(&self) -> &str {
+        "none"
+    }
+
+    fn supports_tools(&self) -> bool {
+        false
     }
 }

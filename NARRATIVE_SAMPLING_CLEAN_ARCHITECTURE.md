@@ -18,11 +18,17 @@
 
 ### In Progress
 - ⏳ **Phase 3: Complete Implementation**
-  - Task 3.1: Implement ChatLlmSampler (not started)
-  - Task 3.2: Add Input Variants for Tool Support (not started)
   - Task 3.3: Wire to CommandExecutor (not started)
 
 ### Completed (Latest First)
+- ✅ **Task 3.2 Complete** (2024-12-14)
+  - Added Input::ToolCall and Input::ToolResult variants
+  - Updated history retention to handle new variants
+- ✅ **Task 3.1 Complete** (2024-12-14)
+  - Implemented ChatLlmSampler with generate() and execute_tools()
+  - Builds requests from ConversationSession
+  - Calls LLM provider and tool registry
+  - All tests passing (17 tests)
 - ✅ **Task 2.3 Complete** (2024-12-14)
   - Enhanced ToolRegistry with tool_definitions() method
 - ✅ **Task 2.2 Complete** (2024-12-14)
@@ -1158,41 +1164,30 @@ impl LlmSampler for ChatLlmSampler {
 
 #### Task 3.1: Implement ChatLlmSampler
 - **File:** `crates/botticelli_chat/src/sampling.rs`
-- **Action:** Full implementation (code from Layer 5)
+- **Status:** ✅ COMPLETE (2024-12-14)
+- **Action:** Fully implemented ChatLlmSampler with LLM provider and tool registry
+  - Added provider and tool_registry fields
+  - Implemented generate() to build requests from ConversationSession and call provider
+  - Implemented execute_tools() to call tool registry and return results
+  - Added build_request() helper to convert sessions to GenerateRequest
 - **Acceptance:**
-  - [ ] Implements both generate() and execute_tools()
-  - [ ] Builds requests from sessions correctly
-  - [ ] Handles tool calls
-  - [ ] Tests with mock provider pass
+  - [x] Implements both generate() and execute_tools()
+  - [x] Builds requests from sessions correctly
+  - [x] Handles tool calls
+  - [x] Compiles and tests pass
 
 #### Task 3.2: Add Input Variants for Tool Support
 - **File:** `crates/botticelli_core/src/input.rs`
-- **Action:**
-  ```rust
-  pub enum Input {
-      Text(String),
-      Image(MediaSource),
-      // ... existing variants
-
-      /// Tool call (for assistant messages with tool use)
-      ToolCall {
-          id: String,
-          name: String,
-          arguments: serde_json::Value,
-      },
-
-      /// Tool result (for user messages with tool responses)
-      ToolResult {
-          tool_call_id: String,
-          content: String,
-          is_error: bool,
-      },
-  }
-  ```
+- **Status:** ✅ COMPLETE (2024-12-14)
+- **Action:** Added Input::ToolCall and Input::ToolResult variants
+  - Added ToolCall variant with id, name, arguments
+  - Added ToolResult variant with tool_call_id, content, is_error
+  - Updated botticelli_narrative to handle new variants in history retention
 - **Acceptance:**
-  - [ ] Variants added
-  - [ ] Serialization works
-  - [ ] Provider conversions handle new variants
+  - [x] Variants added
+  - [x] Serialization works
+  - [x] History retention handles new variants
+  - [x] All tests pass
 
 #### Task 3.3: Wire to CommandExecutor
 - **File:** `crates/botticelli_chat/src/executor.rs`
