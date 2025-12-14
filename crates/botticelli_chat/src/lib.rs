@@ -23,6 +23,7 @@ mod state;
 
 mod config;
 mod elicitation;
+mod sampling;
 
 #[cfg(feature = "tui")]
 mod tui;
@@ -40,6 +41,7 @@ pub use elicitation::{
     ActElicitor, CarouselElicitor, ElicitationSession, InputElicitor, MetadataElicitor,
     ValidationElicitor,
 };
+pub use sampling::ChatLlmSampler;
 
 #[cfg(feature = "tui")]
 pub use elicitation::TuiElicitationDialog;

@@ -21,6 +21,7 @@ mod narrative_processor;
 mod narrative_utils;
 mod narrative_validation_helpers;
 mod prometheus;
+mod sampling;
 mod save_narrative;
 mod server_info;
 #[cfg(feature = "discord")]
@@ -31,8 +32,8 @@ pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 pub use create_narrative::CreateNarrativeTool;
 pub use database::QueryContentTool;
 pub use narrative_creation::{
-    ElicitActInput, ElicitActTool, ElicitMetadataInput, ElicitMetadataTool, FinalizeNarrativeInput,
-    FinalizeNarrativeTool, StartNarrativeInput, StartNarrativeTool,
+    ElicitActInput, ElicitActTool, ElicitMetadataInput, FinalizeNarrativeInput,
+    StartNarrativeInput, StartNarrativeTool,
 };
 #[cfg(feature = "discord")]
 pub use discord::{
@@ -41,7 +42,7 @@ pub use discord::{
 #[cfg(feature = "discord")]
 pub use discord_workflow::DiscordContentWorkflowTool;
 pub use echo::EchoTool;
-pub use elicitation::{CreateNarrativeSessionTool, NarrativeRegistry};
+pub use elicitation::{ElicitationHelper, NarrativeRegistry};
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use export_metrics::ExportMetricsTool;
@@ -65,6 +66,9 @@ pub use validate_narrative::ValidateNarrativeTool;
 
 // Export shared narrative utilities
 pub use narrative_utils::{Act, NarrativeHelper};
+pub use sampling::{
+    LlmSampler, SamplingHelper, SamplingSession, SessionState, ToolResponse, Turn,
+};
 
 // Export LLM tools based on features
 #[cfg(feature = "anthropic")]

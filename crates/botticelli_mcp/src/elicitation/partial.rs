@@ -36,28 +36,28 @@ pub struct PartialAct {
 #[builder(setter(into), default)]
 pub struct PartialNarrative {
     /// Narrative name.
-    name: Option<String>,
+    pub(crate) name: Option<String>,
 
     /// Narrative description.
-    description: Option<String>,
+    pub(crate) description: Option<String>,
 
     /// Default model for all acts.
-    model: Option<String>,
+    pub(crate) model: Option<String>,
 
     /// Default temperature.
-    temperature: Option<f64>,
+    pub(crate) temperature: Option<f64>,
 
     /// Default max tokens.
-    max_tokens: Option<u32>,
+    pub(crate) max_tokens: Option<u32>,
 
     /// Act execution order.
-    act_order: Vec<String>,
+    pub(crate) act_order: Vec<String>,
 
     /// Act definitions (name -> PartialAct).
-    acts: HashMap<String, PartialAct>,
+    pub(crate) acts: HashMap<String, PartialAct>,
 
     /// Optional narrative-level carousel configuration.
-    carousel: Option<CarouselConfig>,
+    pub(crate) carousel: Option<CarouselConfig>,
 
     /// Generated TOML content (cached).
     toml_content: Option<String>,

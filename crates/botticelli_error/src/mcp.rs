@@ -41,6 +41,9 @@ pub enum McpErrorKind {
     /// Unsupported model
     #[display("Unsupported model: {}", _0)]
     UnsupportedModel(String),
+    /// Serialization error
+    #[display("Serialization error: {}", _0)]
+    SerializationError(String),
 }
 
 /// MCP error with location tracking.

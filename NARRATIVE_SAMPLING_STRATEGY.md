@@ -811,6 +811,44 @@ crates/botticelli_chat/src/
 
 ---
 
-**Status**: 📝 Draft for Review
-**Last Updated**: 2025-12-13
+**Status**: 🚧 In Progress - Phase 1
+**Last Updated**: 2025-12-14  
 **Author**: Claude + Erik (Co-authored)
+
+## Implementation Status
+
+### Completed
+- ✅ Sampling strategy design document
+- ✅ Core function implementations (carousel, validation, state, update)
+- ✅ PartialNarrative and registry structure in elicitation module
+
+### In Progress
+- 🚧 Converting elicitation functions to McpTool trait implementations
+- 🚧 Fixing compilation errors in elicitation tools
+- 🚧 Proper error handling and async support
+
+### Next Steps
+1. Fix existing elicitation tool stubs to use McpTool trait pattern
+2. Complete tool registration in server router  
+3. Test tools individually via MCP protocol
+4. Implement Phase 2 LLM integration
+
+### Known Issues (Resolved)
+- ~~Elicitation tool files use old `Tool` trait~~ - Old stubs removed
+- ~~Need async/await throughout tool implementations~~ - Cleaned up
+- ~~Image/Document source types need correct imports~~ - Fixed
+- ~~Tool registration not yet added to server router~~ - Using existing registry
+
+### Recent Updates (2025-12-14)
+- ✅ Removed broken elicitation tool stubs (create_session, elicit_acts, etc.)
+- ✅ Added sampling infrastructure (`LlmSampler`, `SamplingSession`, `Turn`)
+- ✅ Created `SamplingHelper` with system prompt templates
+- ✅ Added placeholder `ChatLlmSampler` for future implementation
+- ✅ Fixed PartialAct/PartialNarrative field visibility issues
+- ✅ Code compiles successfully
+
+### Required for Full Implementation
+1. Define `LlmClient` trait in `botticelli_core`
+2. Implement tool call extraction from LLM responses
+3. Complete `ChatLlmSampler` with multi-turn conversation logic
+4. Integration tests for sampling workflows
