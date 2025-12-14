@@ -34,6 +34,9 @@ pub struct ServiceContainer {
 
     #[cfg(feature = "cli")]
     narrative_repo: OnceCell<PostgresNarrativeRepository>,
+
+    #[cfg(feature = "cli")]
+    llm_provider: OnceCell<Arc<dyn botticelli_core::LlmProvider>>,
 }
 
 impl ServiceContainer {
@@ -50,6 +53,9 @@ impl ServiceContainer {
 
             #[cfg(feature = "cli")]
             narrative_repo: OnceCell::new(),
+
+            #[cfg(feature = "cli")]
+            llm_provider: OnceCell::new(),
         }
     }
 
@@ -192,6 +198,60 @@ impl ServiceContainer {
     /// Check if narrative repository is initialized.
     pub fn is_narrative_repo_initialized(&self) -> bool {
         self.narrative_repo.initialized()
+    }
+
+    #[cfg(feature = "cli")]
+    /// Get or initialize LLM provider.
+    ///
+    /// The provider is created lazily on first access based on config.
+    #[instrument(skip(self))]
+    pub async fn llm_provider(&self) -> ChatResult<&Arc<dyn botticelli_core::LlmProvider>> {
+        self.llm_provider
+            .get_or_try_init(|| async {
+                info!("Initializing LLM provider");
+                self.init_llm_provider()
+            })
+            .await
+    }
+
+    #[cfg(feature = "cli")]
+    #[instrument(skip(self))]
+    fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_core::LlmProvider>> {
+        use botticelli_models::{GeminiModel, ModelId};
+
+        let model_id = self.config.chat.initial_model();
+
+        debug!(model = ?model_id, "Creating LLM provider");
+
+        // Create provider based on model ID
+        let provider: Arc<dyn botticelli_core::LlmProvider> = match model_id {
+            ModelId::Gemini(model) => {
+                let client = botticelli_models::GeminiClient::new()
+                    .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(
+                        format!("Failed to create Gemini client: {}", e)
+                    )))?;
+                Arc::new(client)
+            }
+            ModelId::Claude(model) => {
+                let api_key = std::env::var("ANTHROPIC_API_KEY")
+                    .map_err(|_| ChatError::new(ChatErrorKind::ExecutionFailed(
+                        "ANTHROPIC_API_KEY not set".to_string()
+                    )))?;
+                let client = botticelli_models::AnthropicClient::new(
+                    api_key,
+                    model.to_string(),
+                );
+                Arc::new(client)
+            }
+            _ => {
+                return Err(ChatError::new(ChatErrorKind::ExecutionFailed(
+                    format!("Unsupported model: {:?}", model_id)
+                )));
+            }
+        };
+
+        info!(provider = provider.provider_name(), model = provider.default_model(), "LLM provider initialized");
+        Ok(provider)
     }
 }
 

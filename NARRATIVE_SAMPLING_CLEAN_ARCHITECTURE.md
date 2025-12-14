@@ -17,10 +17,16 @@
   - All tests passing (14 tests)
 
 ### In Progress
-- ⏳ **Phase 3: Complete Implementation**
-  - Task 3.3: Wire to CommandExecutor (not started)
+- ⏳ **Phase 4: Testing & Polish**
+  - Not started
 
 ### Completed (Latest First)
+- ✅ **Phase 3 Complete** (2024-12-14)
+- ✅ **Task 3.3 Complete** (2024-12-14)
+  - Added LLM provider to ServiceContainer with lazy initialization
+  - Provider created based on ChatConfig.initial_model
+  - Wired through SamplingIntegration via lazy PlaceholderProvider
+  - Supports Gemini and Claude models
 - ✅ **Task 3.2 Complete** (2024-12-14)
   - Added Input::ToolCall and Input::ToolResult variants
   - Updated history retention to handle new variants
@@ -1190,8 +1196,19 @@ impl LlmSampler for ChatLlmSampler {
   - [x] All tests pass
 
 #### Task 3.3: Wire to CommandExecutor
-- **File:** `crates/botticelli_chat/src/executor.rs`
-- **Action:**
+- **File:** `crates/botticelli_chat/src/services.rs`, `sampling_integration.rs`
+- **Status:** ✅ COMPLETE (2024-12-14)
+- **Action:** Wired LLM provider through ServiceContainer
+  - Added llm_provider field to ServiceContainer with lazy initialization
+  - Implemented init_llm_provider() to create provider based on ChatConfig.initial_model
+  - Supports Gemini (via GOOGLE_API_KEY env) and Claude (via ANTHROPIC_API_KEY env)
+  - Updated PlaceholderProvider to lazily delegate to real provider from services
+  - Provider initialization deferred until first actual generate() call
+- **Acceptance:**
+  - [x] Provider initialized from config
+  - [x] Wired through SamplingIntegration
+  - [x] Supports multiple providers (Gemini, Claude)
+  - [x] All tests passing
   ```rust
   impl CommandExecutor {
       pub fn new(provider: Arc<dyn LlmProvider>) -> Self {

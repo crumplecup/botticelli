@@ -14,15 +14,15 @@ pub struct SamplingIntegration {
 
 impl SamplingIntegration {
     /// Create new sampling integration.
-    #[instrument(skip(_services))]
-    pub fn new(_services: Arc<ServiceContainer>) -> Self {
+    #[instrument(skip(services))]
+    pub fn new(services: Arc<ServiceContainer>) -> Self {
         // Create tool registry with default tools
         let tool_registry = Arc::new(botticelli_mcp::ToolRegistry::default());
         
-        // TODO: Get actual provider from services once wired up
-        // For now, create a placeholder that will fail if actually called
+        // Get provider from services (will be initialized on first use)
+        // For now, use placeholder until first actual sampling call
         let provider: Arc<dyn botticelli_core::LlmProvider> = 
-            Arc::new(PlaceholderProvider);
+            Arc::new(PlaceholderProvider::new(services.clone()));
         
         let sampler = Arc::new(ChatLlmSampler::new(
             provider,
@@ -100,34 +100,61 @@ impl SamplingIntegration {
     }
 }
 
-/// Placeholder LLM provider that returns an error.
+/// Placeholder LLM provider that lazily initializes the real provider from ServiceContainer.
 ///
-/// This is a temporary implementation until real providers are wired to ServiceContainer.
-struct PlaceholderProvider;
+/// This allows SamplingIntegration to be created synchronously while deferring
+/// the async provider initialization until first use.
+struct PlaceholderProvider {
+    services: Arc<ServiceContainer>,
+}
+
+impl PlaceholderProvider {
+    fn new(services: Arc<ServiceContainer>) -> Self {
+        Self { services }
+    }
+}
 
 #[async_trait::async_trait]
 impl botticelli_core::LlmProvider for PlaceholderProvider {
     async fn generate(
         &self,
-        _request: &botticelli_core::GenerateRequest,
+        request: &botticelli_core::GenerateRequest,
     ) -> Result<botticelli_core::GenerateResponse, botticelli_core::ProviderError> {
-        Err(botticelli_core::ProviderError::new(
-            "placeholder",
-            botticelli_core::ProviderErrorKind::ApiError(
-                "No LLM provider configured - add provider to ServiceContainer".to_string(),
-            ),
-        ))
+        // Lazily get the real provider from services
+        #[cfg(feature = "cli")]
+        {
+            let provider = self.services
+                .llm_provider()
+                .await
+                .map_err(|e| botticelli_core::ProviderError::new(
+                    "service",
+                    botticelli_core::ProviderErrorKind::ApiError(e.to_string()),
+                ))?;
+            
+            // Delegate to real provider
+            provider.generate(request).await
+        }
+        
+        #[cfg(not(feature = "cli"))]
+        {
+            Err(botticelli_core::ProviderError::new(
+                "placeholder",
+                botticelli_core::ProviderErrorKind::ApiError(
+                    "LLM provider requires 'cli' feature".to_string(),
+                ),
+            ))
+        }
     }
 
     fn provider_name(&self) -> &str {
-        "placeholder"
+        "lazy-provider"
     }
 
     fn default_model(&self) -> &str {
-        "none"
+        "deferred"
     }
 
     fn supports_tools(&self) -> bool {
-        false
+        true
     }
 }
