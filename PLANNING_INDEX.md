@@ -301,3 +301,27 @@ This index tracks all planning documents in the workspace. When documents are co
   - Exercises all MCP tools through scripted prompts
   - Phase 1 complete: core scenarios and executor
   - Status: ✅ Core implementation complete, TUI integration pending
+
+- **TUI_REDESIGN_PLAN.md** - `current` (2025-12-14)
+  - Comprehensive TUI redesign for multi-view interface
+  - Clean architecture with ratatui: chat, narrative browser, editor views
+  - All 7 phases complete: foundation, state, UI components, events, integration, testing, documentation
+  - Status: ✅ COMPLETE - 665 lines, zero dead code, all checks pass
+
+- **NARRATIVE_SAMPLING_CLEAN_ARCHITECTURE.md** - `current` (2025-12-14)
+  - Clean architecture refactor for narrative sampling and LLM providers
+  - Phases 1-4 complete: ConversationSession, LlmSampler trait, SamplingCoordinator, testing
+  - Fixed Gemini stop_reason implementation (SAFETY, STOP_SEQUENCE, etc.)
+  - Status: ✅ COMPLETE - All providers refactored, tests passing
+
+- **CLEAN_SAMPLING_USAGE_GUIDE.md** - `current` (2025-12-14)
+  - Usage guide for refactored sampling architecture
+  - Examples for basic generation, tool calling, and narrative workflows
+  - Component documentation: LlmProvider, ConversationSession, LlmSampler, SamplingCoordinator
+  - Status: ✅ Reference document
+
+- **MCP_TYPE_SYSTEM_STRATEGY.md** - `current` (2025-12-14)
+  - Strategy for implementing MCP specification in Rust type system
+  - Compile-time verification of protocol compliance
+  - Phased approach: core types, validation, integration
+  - Status: 📋 Planning document for future implementation
