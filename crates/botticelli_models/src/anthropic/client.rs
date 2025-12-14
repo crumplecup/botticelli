@@ -173,8 +173,18 @@ impl AnthropicClient {
             )
         });
 
+        // Map Anthropic stop_reason to our StopReason
+        let stop_reason = match response.stop_reason() {
+            Some("end_turn") => botticelli_core::StopReason::EndTurn,
+            Some("max_tokens") => botticelli_core::StopReason::MaxTokens,
+            Some("tool_use") => botticelli_core::StopReason::ToolUse,
+            Some("stop_sequence") => botticelli_core::StopReason::StopSequence,
+            _ => botticelli_core::StopReason::Other,
+        };
+
         GenerateResponse::builder()
             .outputs(outputs)
+            .stop_reason(stop_reason)
             .usage(usage)
             .build()
             .map_err(|e| ModelsError::new(AnthropicErrorKind::Builder(e.to_string()).into()))

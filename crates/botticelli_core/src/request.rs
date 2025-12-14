@@ -1,6 +1,6 @@
 //! Request and response types for LLM generation.
 
-use crate::{Message, Output};
+use crate::{Message, Output, StopReason};
 use serde::{Deserialize, Serialize};
 
 /// Generic generation request (multimodal-safe).
@@ -104,10 +104,11 @@ impl GenerateRequestBuilder {
 /// # Examples
 ///
 /// ```
-/// use botticelli_core::{GenerateResponse, Output};
+/// use botticelli_core::{GenerateResponse, Output, StopReason};
 ///
 /// let response = GenerateResponse::builder()
 ///     .outputs(vec![Output::Text("Hello! How can I help?".to_string())])
+///     .stop_reason(StopReason::EndTurn)
 ///     .build();
 ///
 /// assert_eq!(response.outputs().len(), 1);
@@ -125,6 +126,8 @@ impl GenerateRequestBuilder {
 pub struct GenerateResponse {
     /// The generated outputs from the model
     outputs: Vec<Output>,
+    /// Why the generation stopped (per MCP spec)
+    stop_reason: StopReason,
     /// Token usage information (if available from provider)
     #[builder(default)]
     usage: Option<crate::TokenUsageData>,

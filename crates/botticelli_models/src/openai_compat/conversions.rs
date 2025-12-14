@@ -71,8 +71,23 @@ pub fn from_chat_response(response: &ChatResponse) -> Result<GenerateResponse, O
             }
         });
 
+    // Map finish_reason to StopReason
+    let stop_reason = response
+        .choices
+        .first()
+        .and_then(|choice| choice.finish_reason.as_ref())
+        .map(|reason| match reason.as_str() {
+            "stop" => botticelli_core::StopReason::EndTurn,
+            "length" => botticelli_core::StopReason::MaxTokens,
+            "tool_calls" | "function_call" => botticelli_core::StopReason::ToolUse,
+            "content_filter" => botticelli_core::StopReason::ContentFilter,
+            _ => botticelli_core::StopReason::Other,
+        })
+        .unwrap_or(botticelli_core::StopReason::EndTurn);
+
     GenerateResponse::builder()
         .outputs(vec![output])
+        .stop_reason(stop_reason)
         .usage(usage)
         .build()
         .map_err(|e| OpenAICompatError::Builder(format!("Failed to build response: {}", e)))

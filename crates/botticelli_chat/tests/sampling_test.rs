@@ -31,6 +31,7 @@ impl LlmProvider for MockTextProvider {
     ) -> Result<GenerateResponse, ProviderError> {
         Ok(GenerateResponseBuilder::default()
             .outputs(vec![Output::Text(self.response_text.clone())])
+            .stop_reason(botticelli_core::StopReason::EndTurn)
             .build()
             .expect("Valid response"))
     }
@@ -77,6 +78,7 @@ impl LlmProvider for MockToolProvider {
 
         Ok(GenerateResponseBuilder::default()
             .outputs(vec![Output::ToolCalls(vec![tool_call])])
+            .stop_reason(botticelli_core::StopReason::ToolUse)
             .build()
             .expect("Valid response"))
     }

@@ -25,7 +25,7 @@ pub use observability::{
     ExporterBackend, ObservabilityConfig, init_observability, init_observability_with_config,
     shutdown_observability,
 };
-pub use output::{Output, ToolCall, ToolCallBuilder};
+pub use output::{Output, StopReason, ToolCall, ToolCallBuilder};
 pub use provider::{LlmProvider, ProviderError, ProviderErrorKind};
 pub use request::{
     GenerateRequest, GenerateRequestBuilder, GenerateResponse, GenerateResponseBuilder,

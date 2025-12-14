@@ -24,6 +24,13 @@
   - Task 4.4: Documentation (not started)
 
 ### Completed (Latest First)
+- ✅ **Task 4.2 Complete + MCP Compliance Fix** (2024-12-14)
+  - Added StopReason enum per MCP specification
+  - Updated GenerateResponse to require stop_reason field
+  - Updated Anthropic and OpenAI providers to map stop reasons
+  - Added 6 comprehensive integration tests
+  - Tests cover full sampling loops, tool execution, multi-turn conversations, error handling
+  - All tests passing (26 tests total)
 - ✅ **Task 4.1 Started** (2024-12-14)
   - Added 6 comprehensive tests for ChatLlmSampler with mock providers
   - Tests cover text responses, tool calls, tool execution, request building

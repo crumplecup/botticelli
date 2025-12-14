@@ -99,3 +99,38 @@ impl ToolCall {
         }
     }
 }
+
+/// Reason why generation stopped.
+///
+/// Per MCP specification, this indicates why the model stopped generating.
+///
+/// # Examples
+///
+/// ```
+/// use botticelli_core::StopReason;
+///
+/// let reason = StopReason::EndTurn;
+/// assert_eq!(format!("{:?}", reason), "EndTurn");
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StopReason {
+    /// Model finished generating naturally (end of turn).
+    EndTurn,
+    /// Maximum token limit reached.
+    MaxTokens,
+    /// Model requested tool use.
+    ToolUse,
+    /// Content filtered/blocked.
+    ContentFilter,
+    /// User-initiated stop.
+    StopSequence,
+    /// Other/unknown reason.
+    Other,
+}
+
+impl Default for StopReason {
+    fn default() -> Self {
+        StopReason::EndTurn
+    }
+}
