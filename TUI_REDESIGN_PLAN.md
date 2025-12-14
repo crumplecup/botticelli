@@ -1,6 +1,28 @@
 # Botticelli TUI Redesign: Comprehensive Planning Document
 
-**Status:** Phase 4 - Task 4.1 Complete (2024-12-14)
+**Status:** Phase 4 - Task 4.2 Complete (2024-12-14)
+
+## Progress Summary
+
+### Completed
+- ✅ Phase 1: Foundation (Dependencies, Core Types)
+- ✅ Phase 2: State Management (AppState with conversation and narrative support)
+- ✅ Phase 3: UI Components (ChatView, NarrativeBrowserView, NarrativeEditorView)
+- ✅ Phase 4.1: Event Loop (EventHandler, keyboard input)
+- ✅ Phase 4.2: View Rendering (All three views have functional rendering)
+
+### Current State
+- New `botticelli_tui` crate with clean architecture
+- Old TUI code removed from `botticelli_chat`
+- Binary updated to use new TUI
+- All views render with proper layouts
+- Navigation commands implemented (up/down, select)
+- Mode switching between Chat/Browser/Editor
+
+### Next Steps
+- Phase 5: Integration (Connect to actual data sources)
+- Phase 6: Polish (Help system, error messages, keyboard shortcuts)
+- Phase 7: Testing (Unit and integration tests)
 
 ## Executive Summary
 

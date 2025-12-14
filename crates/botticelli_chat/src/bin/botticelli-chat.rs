@@ -112,11 +112,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting TUI interface");
 
     // Create service container with configuration
-    let services = std::sync::Arc::new(botticelli_chat::ServiceContainer::new(config));
+    let _services = std::sync::Arc::new(botticelli_chat::ServiceContainer::new(config));
 
     // Create and run new TUI app
-    let mut app = botticelli_chat::App::new(services)
-        .map_err(|e| format!("Failed to create TUI app: {}", e))?;
+    let mut app = botticelli_tui::App::new();
 
     // Run the app
     let result = app.run();

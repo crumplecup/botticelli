@@ -15,6 +15,12 @@ pub struct AppState {
     conversations: HashMap<ConversationId, Vec<ChatMessage>>,
     /// Input buffer for current view.
     input_buffer: String,
+    /// List of narrative names.
+    narrative_list: Vec<String>,
+    /// Selected narrative index in browser.
+    selected_narrative: Option<usize>,
+    /// Editor content buffer.
+    editor_content: String,
 }
 
 impl AppState {
@@ -77,6 +83,63 @@ impl AppState {
     pub fn clear_input(&mut self) {
         self.input_buffer.clear();
     }
+
+    /// Gets the list of narratives.
+    pub fn narrative_list(&self) -> &[String] {
+        &self.narrative_list
+    }
+
+    /// Sets the narrative list.
+    pub fn set_narrative_list(&mut self, list: Vec<String>) {
+        self.narrative_list = list;
+    }
+
+    /// Gets the selected narrative index.
+    pub fn selected_narrative(&self) -> Option<usize> {
+        self.selected_narrative
+    }
+
+    /// Sets the selected narrative index.
+    pub fn set_selected_narrative(&mut self, idx: Option<usize>) {
+        self.selected_narrative = idx;
+    }
+
+    /// Moves selection up in narrative browser.
+    pub fn select_previous_narrative(&mut self) {
+        if let Some(idx) = self.selected_narrative {
+            if idx > 0 {
+                self.selected_narrative = Some(idx - 1);
+            }
+        } else if !self.narrative_list.is_empty() {
+            self.selected_narrative = Some(0);
+        }
+    }
+
+    /// Moves selection down in narrative browser.
+    pub fn select_next_narrative(&mut self) {
+        if let Some(idx) = self.selected_narrative {
+            if idx < self.narrative_list.len().saturating_sub(1) {
+                self.selected_narrative = Some(idx + 1);
+            }
+        } else if !self.narrative_list.is_empty() {
+            self.selected_narrative = Some(0);
+        }
+    }
+
+    /// Gets the editor content.
+    pub fn editor_content(&self) -> &str {
+        &self.editor_content
+    }
+
+    /// Sets the editor content.
+    pub fn set_editor_content(&mut self, content: String) {
+        self.editor_content = content;
+    }
+
+    /// Clears the editor content.
+    pub fn clear_editor_content(&mut self) {
+        self.editor_content.clear();
+    }
 }
 
 /// View mode for the TUI.
@@ -100,6 +163,9 @@ impl Default for AppState {
             current_narrative: None,
             conversations: HashMap::new(),
             input_buffer: String::new(),
+            narrative_list: Vec::new(),
+            selected_narrative: None,
+            editor_content: String::new(),
         }
     }
 }

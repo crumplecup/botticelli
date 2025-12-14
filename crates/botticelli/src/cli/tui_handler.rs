@@ -4,13 +4,13 @@ use botticelli::BotticelliResult;
 
 /// Launch the terminal user interface for a table.
 #[cfg(all(feature = "tui", feature = "database"))]
-pub async fn launch_tui(table: &str) -> BotticelliResult<()> {
-    use botticelli_tui::{DatabaseBackend, run_tui};
+pub async fn launch_tui(_table: &str) -> BotticelliResult<()> {
+    use botticelli_tui::App;
 
-    tracing::info!(table = %table, "Launching TUI");
+    tracing::info!("Launching TUI");
 
-    let mut backend = DatabaseBackend::new()?;
-    run_tui(&mut backend, table.to_string())?;
+    let mut app = App::new();
+    app.run()?;
 
     Ok(())
 }

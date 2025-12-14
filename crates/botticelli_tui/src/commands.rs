@@ -17,6 +17,12 @@ pub enum Command {
     LoadNarrative(NarrativeId),
     /// Save current narrative.
     SaveNarrative,
+    /// Navigate up in lists.
+    NavigateUp,
+    /// Navigate down in lists.
+    NavigateDown,
+    /// Select the current item in a list.
+    SelectNarrative,
     /// Quit the application.
     Quit,
 }

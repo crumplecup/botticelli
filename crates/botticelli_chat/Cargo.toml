@@ -19,6 +19,9 @@ botticelli_mcp = { path = "../botticelli_mcp" }
 botticelli_narrative = { path = "../botticelli_narrative" }
 botticelli_core = { path = "../botticelli_core" }
 
+# TUI (for binary with tui feature)
+botticelli_tui = { path = "../botticelli_tui", optional = true }
+
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
@@ -82,6 +85,7 @@ botticelli_actor = { path = "../botticelli_actor", optional = true }
 
 [features]
 tui = [
+    "dep:botticelli_tui",
     "dep:ratatui",
     "dep:crossterm",
     "dep:tui-tree-widget",

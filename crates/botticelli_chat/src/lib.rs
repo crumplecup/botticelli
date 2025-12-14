@@ -26,9 +26,6 @@ mod elicitation;
 mod sampling;
 mod sampling_integration;
 
-#[cfg(feature = "tui")]
-mod tui;
-
 pub use botticelli_mcp::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
@@ -44,9 +41,6 @@ pub use elicitation::{
 };
 pub use sampling::ChatLlmSampler;
 pub use sampling_integration::SamplingIntegration;
-
-#[cfg(feature = "tui")]
-pub use elicitation::TuiElicitationDialog;
 pub use executor::{CommandExecutor, NarrativeState};
 pub use input::UserInput;
 pub use interface::ChatInterface;
@@ -59,6 +53,3 @@ pub use services::ServiceContainer;
 #[cfg(feature = "cli")]
 pub use startup::startup_sequence;
 pub use state::ConversationState;
-
-#[cfg(feature = "tui")]
-pub use tui::App;

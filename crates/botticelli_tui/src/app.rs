@@ -165,6 +165,25 @@ impl App {
                 debug!("Saving narrative");
                 // TODO: Save narrative
             }
+            Command::NavigateUp => {
+                debug!("Navigating up");
+                self.state.select_previous_narrative();
+            }
+            Command::NavigateDown => {
+                debug!("Navigating down");
+                self.state.select_next_narrative();
+            }
+            Command::SelectNarrative => {
+                debug!("Selecting narrative");
+                if let Some(idx) = self.state.selected_narrative() {
+                    if let Some(name) = self.state.narrative_list().get(idx) {
+                        debug!(narrative = %name, "Loading narrative for editing");
+                        // TODO: Load narrative content
+                        self.state.set_editor_content(format!("Content of: {}", name));
+                        self.state.set_mode(ViewMode::NarrativeEditor);
+                    }
+                }
+            }
             Command::Quit => {
                 debug!("Quitting application");
                 self.should_quit = true;

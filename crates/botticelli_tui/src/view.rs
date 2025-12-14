@@ -80,13 +80,54 @@ impl View for ChatView {
     }
 }
 
-/// Narrative browser view stub.
+/// Narrative browser view implementation.
 #[derive(Debug, Default)]
 pub struct NarrativeBrowserView;
 
 impl View for NarrativeBrowserView {
-    fn render(&self, _frame: &mut Frame, _state: &AppState) -> TuiResult<()> {
-        // TODO: Implement in Phase 3
+    fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
+        use ratatui::layout::{Constraint, Direction, Layout};
+        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(30), Constraint::Percentage(70)])
+            .split(frame.area());
+
+        // Narrative list
+        let narratives: Vec<ListItem> = state
+            .narrative_list()
+            .iter()
+            .enumerate()
+            .map(|(i, name)| {
+                let prefix = if Some(i) == state.selected_narrative() {
+                    "> "
+                } else {
+                    "  "
+                };
+                ListItem::new(format!("{}{}", prefix, name))
+            })
+            .collect();
+
+        let list_widget = List::new(narratives)
+            .block(Block::default().title("Narratives").borders(Borders::ALL));
+        frame.render_widget(list_widget, chunks[0]);
+
+        // Preview area
+        let preview_text = if let Some(idx) = state.selected_narrative() {
+            if let Some(name) = state.narrative_list().get(idx) {
+                format!("Preview of: {}\n\n(Full preview to be implemented)", name)
+            } else {
+                String::from("No narrative selected")
+            }
+        } else {
+            String::from("Select a narrative to preview")
+        };
+
+        let preview_widget = Paragraph::new(preview_text)
+            .block(Block::default().title("Preview").borders(Borders::ALL));
+        frame.render_widget(preview_widget, chunks[1]);
+
         Ok(())
     }
 
@@ -99,18 +140,63 @@ impl View for NarrativeBrowserView {
 
         match (key.code, key.modifiers) {
             (KeyCode::Char('c'), KeyModifiers::CONTROL) => Ok(Some(Command::Quit)),
+            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => {
+                Ok(Some(Command::NavigateUp))
+            }
+            (KeyCode::Down | KeyCode::Char('j'), KeyModifiers::NONE) => {
+                Ok(Some(Command::NavigateDown))
+            }
+            (KeyCode::Enter, KeyModifiers::NONE) => Ok(Some(Command::SelectNarrative)),
             _ => Ok(None),
         }
     }
 }
 
-/// Narrative editor view stub.
+/// Narrative editor view implementation.
 #[derive(Debug, Default)]
 pub struct NarrativeEditorView;
 
 impl View for NarrativeEditorView {
-    fn render(&self, _frame: &mut Frame, _state: &AppState) -> TuiResult<()> {
-        // TODO: Implement in Phase 3
+    fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
+        use ratatui::layout::{Constraint, Direction, Layout};
+        use ratatui::widgets::{Block, Borders, Paragraph};
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Min(1),
+                Constraint::Length(3),
+            ])
+            .split(frame.area());
+
+        // Title bar
+        let title_text = if let Some(idx) = state.selected_narrative() {
+            if let Some(name) = state.narrative_list().get(idx) {
+                format!("Editing: {}", name)
+            } else {
+                String::from("No narrative loaded")
+            }
+        } else {
+            String::from("No narrative selected")
+        };
+
+        let title_widget = Paragraph::new(title_text)
+            .block(Block::default().title("Narrative Editor").borders(Borders::ALL));
+        frame.render_widget(title_widget, chunks[0]);
+
+        // Editor content
+        let content_text = state.editor_content();
+        let content_widget = Paragraph::new(content_text)
+            .block(Block::default().title("Content").borders(Borders::ALL));
+        frame.render_widget(content_widget, chunks[1]);
+
+        // Status bar
+        let status_text = "Ctrl+S: Save | Ctrl+C: Quit | Esc: Back to Browser";
+        let status_widget = Paragraph::new(status_text)
+            .block(Block::default().borders(Borders::ALL));
+        frame.render_widget(status_widget, chunks[2]);
+
         Ok(())
     }
 
@@ -123,6 +209,10 @@ impl View for NarrativeEditorView {
 
         match (key.code, key.modifiers) {
             (KeyCode::Char('c'), KeyModifiers::CONTROL) => Ok(Some(Command::Quit)),
+            (KeyCode::Char('s'), KeyModifiers::CONTROL) => Ok(Some(Command::SaveNarrative)),
+            (KeyCode::Esc, KeyModifiers::NONE) => {
+                Ok(Some(Command::SwitchMode(crate::ViewMode::NarrativeBrowser)))
+            }
             _ => Ok(None),
         }
     }
