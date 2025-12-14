@@ -1,23 +1,22 @@
-use crate::{ConversationSession, ConversationTurn, SessionState, ToolResult};
+use crate::{ConversationSession, ConversationTurn, SessionState, ToolRegistry, ToolResult};
 use botticelli_core::{GenerateResponse, ToolCall};
 use botticelli_error::BotticelliResult;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use tracing::{debug, error, instrument};
 
 /// Coordinates LLM sampling for narrative generation.
 pub struct SamplingCoordinator {
     sampler: Arc<dyn LlmSampler>,
-    registry: Arc<RwLock<NarrativeRegistry>>,
+    tool_registry: Arc<ToolRegistry>,
 }
 
 impl SamplingCoordinator {
     /// Create a new sampling coordinator.
-    pub fn new(sampler: Arc<dyn LlmSampler>) -> Self {
+    pub fn new(sampler: Arc<dyn LlmSampler>, tool_registry: Arc<ToolRegistry>) -> Self {
         Self {
             sampler,
-            registry: Arc::new(RwLock::new(NarrativeRegistry::new())),
+            tool_registry,
         }
     }
 
@@ -33,8 +32,8 @@ impl SamplingCoordinator {
             attachments: None,
         });
         
-        // Get tool definitions (TODO: from registry)
-        let tools = vec![];
+        // Get tool definitions from registry
+        let tools = self.tool_registry.tool_definitions();
         
         // Run sampling
         let _result = self.sampler.sample(&mut session, &tools)
@@ -67,7 +66,9 @@ impl SamplingCoordinator {
             attachments: None,
         });
         
-        let tools = vec![];
+        // Get tool definitions from registry
+        let tools = self.tool_registry.tool_definitions();
+        
         let _result = self.sampler.sample(&mut session, &tools)
             .await
             .map_err(|e| botticelli_error::ChatError::new(
@@ -78,9 +79,9 @@ impl SamplingCoordinator {
         Ok(narrative)
     }
 
-    /// Get reference to the narrative registry.
-    pub fn registry(&self) -> &Arc<RwLock<NarrativeRegistry>> {
-        &self.registry
+    /// Get reference to the tool registry.
+    pub fn tool_registry(&self) -> &Arc<ToolRegistry> {
+        &self.tool_registry
     }
 }
 
@@ -286,8 +287,8 @@ impl SamplingError {
     }
 }
 
-// Import PartialNarrative and NarrativeRegistry
-use crate::{NarrativeRegistry, PartialNarrative};
+// Import PartialNarrative
+use crate::PartialNarrative;
 
 /// Helper for LLM sampling operations.
 pub struct SamplingHelper;

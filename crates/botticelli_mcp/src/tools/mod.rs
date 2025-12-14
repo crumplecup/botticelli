@@ -157,6 +157,20 @@ impl ToolRegistry {
 
         tool.execute(input).await
     }
+
+    /// Get tool definitions for LLM function calling.
+    ///
+    /// Converts all registered tools into the format expected by LLMs.
+    pub fn tool_definitions(&self) -> Vec<crate::ToolDefinition> {
+        self.tools
+            .values()
+            .map(|tool| crate::ToolDefinition {
+                name: tool.name().to_string(),
+                description: tool.description().to_string(),
+                input_schema: tool.input_schema(),
+            })
+            .collect()
+    }
 }
 
 impl Default for ToolRegistry {

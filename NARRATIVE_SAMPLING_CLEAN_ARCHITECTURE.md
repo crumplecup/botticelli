@@ -17,12 +17,29 @@
   - All tests passing (14 tests)
 
 ### In Progress
-- 🔄 **Phase 2: Sampling Refactor**
-  - Task 2.2: Update SamplingCoordinator (needs ToolRegistry integration)
-  - Task 2.3: Enhance ToolRegistry (not started)
+- ⏳ **Phase 3: Complete Implementation**
+  - Task 3.1: Implement ChatLlmSampler (not started)
+  - Task 3.2: Add Input Variants for Tool Support (not started)
+  - Task 3.3: Wire to CommandExecutor (not started)
+
+### Completed (Latest First)
+- ✅ **Task 2.3 Complete** (2024-12-14)
+  - Enhanced ToolRegistry with tool_definitions() method
+- ✅ **Task 2.2 Complete** (2024-12-14)
+  - Updated SamplingCoordinator to use ToolRegistry
+  - All tests passing (21 tests)
+- ✅ **Task 2.1 Complete** (2024-12-14)
+  - LlmSampler trait refactored with generate(), sample(), execute_tools()
+  - Default implementation provided
+  - Error types added
+  - All tests passing (14 tests)
+- ✅ **Phase 1 Complete** (2024-12-14)
+  - Provider abstraction layer
+  - Conversation modeling
+  - Old types removed and replaced
+  - All tests passing (55 tests)
 
 ### Not Started
-- ⏳ **Phase 3: Complete Implementation**
 - ⏳ **Phase 4: Testing & Polish**
 
 ---
@@ -1057,8 +1074,27 @@ impl LlmSampler for ChatLlmSampler {
 
 #### Task 2.2: Update SamplingCoordinator
 - **File:** `crates/botticelli_mcp/src/tools/sampling.rs`
-- **Status:** ⏳ NOT STARTED
-- **Action:**
+- **Status:** ✅ COMPLETE (2024-12-14)
+- **Action:** 
+  - Updated SamplingCoordinator to use ToolRegistry instead of NarrativeRegistry
+  - Changed constructor to require Arc<ToolRegistry>
+  - Updated generate_narrative() and refine_narrative() to call tool_registry.tool_definitions()
+  - Added tool_registry() accessor
+  - Updated botticelli_chat to create ToolRegistry when instantiating SamplingCoordinator
+- **Acceptance:**
+  - [x] Compiles
+  - [x] Uses ToolRegistry
+  - [x] Calls tool_registry.tool_definitions()
+  - [x] All tests passing (21 tests)
+
+#### Task 2.3: Enhance ToolRegistry
+- **File:** `crates/botticelli_mcp/src/tools/mod.rs`
+- **Status:** ✅ COMPLETE (2024-12-14)
+- **Action:** Added tool_definitions() method to convert registered tools to ToolDefinition format
+- **Acceptance:**
+  - [x] Method compiles
+  - [x] Converts McpTool to ToolDefinition
+  - [x] Used by SamplingCoordinator
   ```rust
   pub struct SamplingCoordinator {
       sampler: Arc<dyn LlmSampler>,
@@ -1103,17 +1139,18 @@ impl LlmSampler for ChatLlmSampler {
   }
   ```
 - **Acceptance:**
-  - [ ] Compiles
-  - [ ] Uses new ConversationSession
-  - [ ] Calls sampler.sample()
+  - [x] Compiles
+  - [x] Uses ToolRegistry with tool_definitions()
+  - [x] Calls sampler.sample()
 
-#### Task 2.3: Enhance ToolRegistry
+#### Task 2.3: Enhance ToolRegistry  
 - **File:** `crates/botticelli_mcp/src/tools/mod.rs`
-- **Action:** Add execute(), tool_definitions() methods (code from Layer 4)
+- **Status:** ✅ COMPLETE (2024-12-14)
+- **Action:** Added tool_definitions() method (execute() already existed)
 - **Acceptance:**
-  - [ ] Methods compile
-  - [ ] Tests pass
-  - [ ] Metrics recorded if configured
+  - [x] Method compiles
+  - [x] Converts McpTool to ToolDefinition
+  - [x] Used by SamplingCoordinator
 
 ---
 

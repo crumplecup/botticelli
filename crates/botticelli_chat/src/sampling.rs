@@ -1,5 +1,5 @@
-use botticelli_error::BotticelliResult;
-use botticelli_mcp::{LlmSampler, SamplingSession};
+use botticelli_core::GenerateResponse;
+use botticelli_mcp::{ConversationSession, LlmSampler, SamplingError, ToolDefinition};
 use tracing::instrument;
 
 /// Placeholder for chat LLM sampler implementation.
@@ -23,18 +23,19 @@ impl Default for ChatLlmSampler {
 
 #[async_trait::async_trait]
 impl LlmSampler for ChatLlmSampler {
-    #[instrument(skip(self))]
-    async fn sample(
+    #[instrument(skip(self, _session, _available_tools))]
+    async fn generate(
         &self,
-        _system_prompt: &str,
-        _user_message: &str,
-    ) -> BotticelliResult<SamplingSession> {
-        // TODO: Implement full sampling loop with:
-        // 1. LLM client for generation
-        // 2. Tool call extraction from responses
-        // 3. Tool execution
-        // 4. Multi-turn conversation management
+        _session: &ConversationSession,
+        _available_tools: &[ToolDefinition],
+    ) -> Result<GenerateResponse, SamplingError> {
+        // TODO: Implement single-turn generation with:
+        // 1. Convert session to GenerateRequest
+        // 2. Call LLM provider
+        // 3. Return GenerateResponse
 
-        unimplemented!("ChatLlmSampler requires LlmClient trait implementation")
+        unimplemented!("ChatLlmSampler::generate requires LlmProvider implementation")
     }
+
+    // Note: sample() and execute_tools() use default implementations from trait
 }

@@ -18,7 +18,14 @@ impl SamplingIntegration {
     pub fn new(_services: Arc<ServiceContainer>) -> Self {
         // TODO: Pass services to ChatLlmSampler once it needs LLM client
         let sampler = Arc::new(ChatLlmSampler::new());
-        let coordinator = Arc::new(SamplingCoordinator::new(sampler.clone()));
+        
+        // Create tool registry with default tools
+        let tool_registry = Arc::new(botticelli_mcp::ToolRegistry::default());
+        
+        let coordinator = Arc::new(SamplingCoordinator::new(
+            sampler.clone(),
+            tool_registry,
+        ));
         
         debug!("Initialized sampling integration");
         Self { coordinator, sampler }
