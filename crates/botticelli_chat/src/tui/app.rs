@@ -125,12 +125,30 @@ impl TuiApp {
                 let buf = frame.buffer_mut();
                 self.state.narratives_state.render(area, buf);
             }
-            _ => {
-                // Other tabs show placeholder for now
-                let tab_name = self.state.tab_name();
-                let content = Paragraph::new(format!("{} tab coming soon...", tab_name))
-                    .block(Block::default().borders(Borders::ALL).title(tab_name));
-                frame.render_widget(content, area);
+            Tab::Chat => {
+                // Render chat tab
+                let buf = frame.buffer_mut();
+                self.state.chat_state.render(area, buf);
+            }
+            Tab::Bots => {
+                // Render bots tab
+                let buf = frame.buffer_mut();
+                self.state.bots_state.render(area, buf);
+            }
+            Tab::Database => {
+                // Render database tab
+                let buf = frame.buffer_mut();
+                self.state.database_state.render(area, buf);
+            }
+            Tab::Schedule => {
+                // Render schedule tab
+                let buf = frame.buffer_mut();
+                self.state.schedule_state.render(area, buf);
+            }
+            Tab::Settings => {
+                // Render settings tab
+                let buf = frame.buffer_mut();
+                self.state.settings_state.render(area, buf);
             }
         }
     }

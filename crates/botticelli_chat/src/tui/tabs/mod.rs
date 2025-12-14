@@ -8,8 +8,8 @@ pub mod schedule;
 pub mod settings;
 
 pub use narratives::NarrativesTab;
-pub use bots::BotsTab;
-pub use database::DatabaseTab;
-pub use chat::ChatTab;
-pub use schedule::ScheduleTab;
-pub use settings::SettingsTab;
+pub use bots::{BotsTab, BotInfo, BotStatus};
+pub use database::{DatabaseTab, TableInfo, ColumnDisplay, ViewMode, ContentFilter};
+pub use chat::{ChatTab, DisplayMessage};
+pub use schedule::{ScheduleTab, ScheduledTask, TaskSchedule, TaskStatus};
+pub use settings::{SettingsTab, SettingsCategory, SettingItem};

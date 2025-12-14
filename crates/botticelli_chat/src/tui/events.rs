@@ -68,7 +68,46 @@ impl EventHandler {
 
                 Some(EventResult::Handled)
             }
-            _ => None, // Other tabs not yet implemented
+            Tab::Chat => {
+                // Chat tab handles its own input
+                if state.chat_state.handle_key(key) {
+                    Some(EventResult::Handled)
+                } else {
+                    None
+                }
+            }
+            Tab::Bots => {
+                // Bots tab handles its own input
+                if state.bots_state.handle_key(key.code) {
+                    Some(EventResult::Handled)
+                } else {
+                    None
+                }
+            }
+            Tab::Database => {
+                // Database tab handles its own input
+                if state.database_state.handle_key(key.code) {
+                    Some(EventResult::Handled)
+                } else {
+                    None
+                }
+            }
+            Tab::Schedule => {
+                // Schedule tab handles its own input
+                if state.schedule_state.handle_key(key.code) {
+                    Some(EventResult::Handled)
+                } else {
+                    None
+                }
+            }
+            Tab::Settings => {
+                // Settings tab handles its own input
+                if state.settings_state.handle_key(key.code) {
+                    Some(EventResult::Handled)
+                } else {
+                    None
+                }
+            }
         }
     }
 

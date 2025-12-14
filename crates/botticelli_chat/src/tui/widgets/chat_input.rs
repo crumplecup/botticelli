@@ -16,6 +16,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::widgets::{Block, Borders};
 
 /// Rich text input widget for chat
+#[derive(Debug)]
 pub struct ChatInput {
     #[cfg(feature = "tui")]
     textarea: TextArea<'static>,
