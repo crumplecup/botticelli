@@ -1,21 +1,25 @@
 //! Application state management.
 
-use crate::ServiceContainer;
+use crate::{
+    ServiceContainer,
+    tui::tabs::{BotsTab, DatabaseTab, ScheduleTab, SettingsTab},
+};
 use std::sync::Arc;
 
 /// Main application state.
-#[derive(Debug, Clone)]
 pub struct AppState {
     /// Currently active tab
     pub active_tab: Tab,
 
-    /// Tab-specific state
+    /// Tab widgets
+    pub bots_tab: BotsTab,
+    pub database_tab: DatabaseTab,
+    pub schedule_tab: ScheduleTab,
+    pub settings_tab: SettingsTab,
+
+    /// Tab-specific state (simple types)
     pub narratives_state: NarrativesTabState,
-    pub bots_state: BotsTabState,
-    pub database_state: DatabaseTabState,
     pub chat_state: ChatTabState,
-    pub schedule_state: ScheduleTabState,
-    pub settings_state: SettingsTabState,
 
     /// Global state
     pub status: StatusInfo,
@@ -27,12 +31,12 @@ impl AppState {
     pub fn new() -> Self {
         Self {
             active_tab: Tab::Chat,
+            bots_tab: BotsTab::new(),
+            database_tab: DatabaseTab::new(),
+            schedule_tab: ScheduleTab::new(),
+            settings_tab: SettingsTab::new(),
             narratives_state: NarrativesTabState::default(),
-            bots_state: BotsTabState::default(),
-            database_state: DatabaseTabState::default(),
             chat_state: ChatTabState::default(),
-            schedule_state: ScheduleTabState::default(),
-            settings_state: SettingsTabState::default(),
             status: StatusInfo::default(),
             modal: None,
         }
@@ -184,19 +188,7 @@ pub struct NarrativesTabState {
     pub filter: Option<String>,
 }
 
-/// Bots tab state.
-#[derive(Debug, Clone, Default)]
-pub struct BotsTabState {
-    /// Selected bot index
-    pub selected_index: usize,
-}
 
-/// Database tab state.
-#[derive(Debug, Clone, Default)]
-pub struct DatabaseTabState {
-    /// Selected table index
-    pub selected_index: usize,
-}
 
 /// Chat tab state.
 #[derive(Debug, Clone, Default)]
@@ -225,18 +217,4 @@ pub enum MessageRole {
     User,
     /// Assistant message
     Assistant,
-}
-
-/// Schedule tab state.
-#[derive(Debug, Clone, Default)]
-pub struct ScheduleTabState {
-    /// Selected schedule index
-    pub selected_index: usize,
-}
-
-/// Settings tab state.
-#[derive(Debug, Clone, Default)]
-pub struct SettingsTabState {
-    /// Selected setting index
-    pub selected_index: usize,
 }

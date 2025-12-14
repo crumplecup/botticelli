@@ -163,11 +163,11 @@ impl App {
     fn render_active_tab(frame: &mut Frame, area: Rect, state: &mut AppState) {
         match state.active_tab {
             Tab::Narratives => Self::render_narratives_tab(frame, area),
-            Tab::Bots => Self::render_bots_tab(frame, area),
-            Tab::Database => Self::render_database_tab(frame, area),
+            Tab::Bots => Self::render_bots_tab(frame, area, state),
+            Tab::Database => Self::render_database_tab(frame, area, state),
             Tab::Chat => Self::render_chat_tab(frame, area),
-            Tab::Schedule => Self::render_schedule_tab(frame, area),
-            Tab::Settings => Self::render_settings_tab(frame, area),
+            Tab::Schedule => Self::render_schedule_tab(frame, area, state),
+            Tab::Settings => Self::render_settings_tab(frame, area, state),
         }
     }
 
@@ -295,16 +295,12 @@ impl App {
         frame.render_widget(placeholder, area);
     }
 
-    fn render_bots_tab(frame: &mut Frame, area: Rect) {
-        let placeholder = Paragraph::new("Bots Tab - Coming Soon")
-            .block(Block::default().borders(Borders::ALL).title("Bots"));
-        frame.render_widget(placeholder, area);
+    fn render_bots_tab(frame: &mut Frame, area: Rect, state: &mut AppState) {
+        state.bots_tab.render(area, frame.buffer_mut());
     }
 
-    fn render_database_tab(frame: &mut Frame, area: Rect) {
-        let placeholder = Paragraph::new("Database Tab - Coming Soon")
-            .block(Block::default().borders(Borders::ALL).title("Database"));
-        frame.render_widget(placeholder, area);
+    fn render_database_tab(frame: &mut Frame, area: Rect, state: &mut AppState) {
+        state.database_tab.render(area, frame.buffer_mut());
     }
 
     fn render_chat_tab(frame: &mut Frame, area: Rect) {
@@ -313,16 +309,12 @@ impl App {
         frame.render_widget(placeholder, area);
     }
 
-    fn render_schedule_tab(frame: &mut Frame, area: Rect) {
-        let placeholder = Paragraph::new("Schedule Tab - Coming Soon")
-            .block(Block::default().borders(Borders::ALL).title("Schedule"));
-        frame.render_widget(placeholder, area);
+    fn render_schedule_tab(frame: &mut Frame, area: Rect, state: &mut AppState) {
+        state.schedule_tab.render(area, frame.buffer_mut());
     }
 
-    fn render_settings_tab(frame: &mut Frame, area: Rect) {
-        let placeholder = Paragraph::new("Settings Tab - Coming Soon")
-            .block(Block::default().borders(Borders::ALL).title("Settings"));
-        frame.render_widget(placeholder, area);
+    fn render_settings_tab(frame: &mut Frame, area: Rect, state: &mut AppState) {
+        state.settings_tab.render(area, frame.buffer_mut());
     }
 
     /// Handle keyboard/mouse events.
@@ -409,25 +401,25 @@ impl App {
     }
 
     /// Handle events for active tab.
-    fn handle_tab_event(&mut self, _key: crossterm::event::KeyEvent) -> ChatResult<()> {
+    fn handle_tab_event(&mut self, key: crossterm::event::KeyEvent) -> ChatResult<()> {
         match self.state.active_tab {
             Tab::Narratives => {
                 // TODO: Delegate to narratives tab handler
             }
             Tab::Bots => {
-                // TODO: Delegate to bots tab handler
+                self.state.bots_tab.handle_key(key.code);
             }
             Tab::Database => {
-                // TODO: Delegate to database tab handler
+                self.state.database_tab.handle_key(key.code);
             }
             Tab::Chat => {
                 // TODO: Delegate to chat tab handler
             }
             Tab::Schedule => {
-                // TODO: Delegate to schedule tab handler
+                self.state.schedule_tab.handle_key(key.code);
             }
             Tab::Settings => {
-                // TODO: Delegate to settings tab handler
+                self.state.settings_tab.handle_key(key.code);
             }
         }
 
