@@ -11,6 +11,7 @@ mod media;
 mod message;
 mod observability;
 mod output;
+mod provider;
 mod request;
 mod role;
 mod token_counting;
@@ -25,6 +26,7 @@ pub use observability::{
     shutdown_observability,
 };
 pub use output::{Output, ToolCall, ToolCallBuilder};
+pub use provider::{LlmProvider, ProviderError, ProviderErrorKind};
 pub use request::{
     GenerateRequest, GenerateRequestBuilder, GenerateResponse, GenerateResponseBuilder,
     GenerateResponseBuilderError,

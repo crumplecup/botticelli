@@ -71,8 +71,8 @@ pub use validate_narrative::ValidateNarrativeTool;
 // Export shared narrative utilities
 pub use narrative_utils::{Act, NarrativeHelper};
 pub use sampling::{
-    LlmSampler, SamplingCoordinator, SamplingHelper, SamplingSession, SessionState, ToolResponse,
-    Turn,
+    LlmSampler, SamplingCoordinator, SamplingError, SamplingErrorKind, SamplingHelper,
+    SamplingResult, ToolDefinition,
 };
 pub use sampling_session_manager::SamplingSessionManager;
 

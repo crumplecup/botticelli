@@ -1,10 +1,10 @@
-use crate::{NarrativeRegistry, PartialNarrative};
-use botticelli_core::{GenerateRequest, GenerateResponse};
+use crate::{ConversationSession, ConversationTurn, SessionState, ToolResult};
+use botticelli_core::{GenerateResponse, ToolCall};
 use botticelli_error::BotticelliResult;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::instrument;
+use tracing::{debug, error, instrument};
 
 /// Coordinates LLM sampling for narrative generation.
 pub struct SamplingCoordinator {
@@ -25,7 +25,23 @@ impl SamplingCoordinator {
     #[instrument(skip(self))]
     pub async fn generate_narrative(&self, description: String) -> BotticelliResult<PartialNarrative> {
         let system_prompt = SamplingHelper::narrative_generation_prompt();
-        let _session = self.sampler.sample(&system_prompt, &description).await?;
+        
+        // Create session with user message
+        let mut session = ConversationSession::new(system_prompt);
+        session.add_turn(ConversationTurn::UserMessage {
+            content: description,
+            attachments: None,
+        });
+        
+        // Get tool definitions (TODO: from registry)
+        let tools = vec![];
+        
+        // Run sampling
+        let _result = self.sampler.sample(&mut session, &tools)
+            .await
+            .map_err(|e| botticelli_error::ChatError::new(
+                botticelli_error::ChatErrorKind::ExecutionFailed(e.to_string())
+            ))?;
         
         // TODO: Extract narrative from session after LLM tool calling
         // For now, return a placeholder
@@ -44,7 +60,19 @@ impl SamplingCoordinator {
             SamplingHelper::narrative_generation_prompt(),
             narrative
         );
-        let _session = self.sampler.sample(&system_prompt, &feedback).await?;
+        
+        let mut session = ConversationSession::new(system_prompt);
+        session.add_turn(ConversationTurn::UserMessage {
+            content: feedback,
+            attachments: None,
+        });
+        
+        let tools = vec![];
+        let _result = self.sampler.sample(&mut session, &tools)
+            .await
+            .map_err(|e| botticelli_error::ChatError::new(
+                botticelli_error::ChatErrorKind::ExecutionFailed(e.to_string())
+            ))?;
         
         // TODO: Apply refinements from LLM tool calling
         Ok(narrative)
@@ -56,62 +84,210 @@ impl SamplingCoordinator {
     }
 }
 
-/// Trait for executing LLM sampling with tool access.
+/// Trait for LLM sampling with tool support.
+///
+/// Provides both low-level (single generation) and high-level (full session)
+/// interfaces for maximum flexibility.
 #[async_trait::async_trait]
 pub trait LlmSampler: Send + Sync {
-    /// Execute a sampling session with the given system prompt and initial user message.
+    /// Low-level: Generate a single response with optional tools.
     ///
-    /// The LLM will orchestrate tool calls as needed through multi-turn conversation.
+    /// This is the core primitive. The high-level `sample()` method
+    /// is built on top of this by calling it in a loop.
+    async fn generate(
+        &self,
+        session: &ConversationSession,
+        available_tools: &[ToolDefinition],
+    ) -> Result<GenerateResponse, SamplingError>;
+
+    /// High-level: Run a complete sampling session.
+    ///
+    /// Starts with the initial session state and runs until:
+    /// - The model stops calling tools (returns text)
+    /// - Maximum turns reached
+    /// - Error occurs
+    ///
+    /// Default implementation uses generate() in a loop, but can be
+    /// overridden for custom behavior (streaming, custom termination, etc.)
     async fn sample(
         &self,
-        system_prompt: &str,
-        user_message: &str,
-    ) -> BotticelliResult<SamplingSession>;
+        session: &mut ConversationSession,
+        available_tools: &[ToolDefinition],
+    ) -> Result<SamplingResult, SamplingError> {
+        while session.is_active() {
+            // Generate next response
+            let response = self.generate(session, available_tools).await?;
+
+            // Process response based on outputs
+            let has_tool_calls = !response.outputs().is_empty() 
+                && response.outputs().iter().any(|o| matches!(o, botticelli_core::Output::ToolCalls(_)));
+
+            if has_tool_calls {
+                // Extract tool calls from outputs
+                let mut all_calls = vec![];
+                let mut thinking_text = String::new();
+                
+                for output in response.outputs() {
+                    match output {
+                        botticelli_core::Output::Text(text) => {
+                            if !thinking_text.is_empty() {
+                                thinking_text.push(' ');
+                            }
+                            thinking_text.push_str(text);
+                        }
+                        botticelli_core::Output::ToolCalls(calls) => {
+                            all_calls.extend(calls.clone());
+                        }
+                        _ => {}
+                    }
+                }
+
+                let thinking = if thinking_text.is_empty() {
+                    None
+                } else {
+                    Some(thinking_text)
+                };
+
+                session.add_turn(ConversationTurn::AssistantToolCalls {
+                    calls: all_calls.clone(),
+                    thinking,
+                });
+
+                // Execute tools
+                let results = self.execute_tools(&all_calls).await?;
+                session.add_turn(ConversationTurn::ToolResults { results });
+
+                // Continue loop for next turn
+            } else {
+                // Model is done (no tool calls)
+                let text = response.outputs().iter()
+                    .filter_map(|o| match o {
+                        botticelli_core::Output::Text(t) => Some(t.as_str()),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ");
+
+                if !text.is_empty() {
+                    session.add_turn(ConversationTurn::AssistantMessage {
+                        content: text.clone(),
+                    });
+                }
+
+                session.state = SessionState::Completed;
+                return Ok(SamplingResult::Completed {
+                    final_response: text,
+                });
+            }
+        }
+
+        // Session ended without completion
+        Err(SamplingError::new(SamplingErrorKind::MaxTurnsExceeded {
+            max: session.max_turns,
+        }))
+    }
+
+    /// Execute tool calls and return results.
+    ///
+    /// Default implementation returns errors - must be overridden
+    /// to provide actual tool execution.
+    async fn execute_tools(
+        &self,
+        _calls: &[ToolCall],
+    ) -> Result<Vec<ToolResult>, SamplingError> {
+        Err(SamplingError::new(SamplingErrorKind::NoToolRegistry))
+    }
 }
 
-/// A multi-turn sampling session.
+/// Result of a sampling session.
 #[derive(Debug, Clone)]
-pub struct SamplingSession {
-    /// Session identifier.
-    pub id: String,
-    /// Conversation history.
-    pub history: Vec<Turn>,
-    /// Current state.
-    pub state: SessionState,
+pub enum SamplingResult {
+    /// Session completed successfully with final text
+    Completed {
+        /// Final response from the assistant
+        final_response: String,
+    },
 }
 
-/// State of a sampling session.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SessionState {
-    /// Session is active and accepting input.
-    Active,
-    /// Session completed successfully.
-    Completed,
-    /// Session failed with error.
-    Failed(String),
-}
-
-/// A single turn in the conversation.
-#[derive(Debug, Clone)]
-pub struct Turn {
-    /// The request sent to the LLM.
-    pub request: GenerateRequest,
-    /// The response from the LLM.
-    pub response: GenerateResponse,
-    /// Tool calls made during this turn.
-    pub tool_calls: Vec<botticelli_core::ToolCall>,
-    /// Tool responses received during this turn.
-    pub tool_responses: Vec<ToolResponse>,
-}
-
-/// Response from a tool execution.
+/// Tool definition for LLM function calling.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolResponse {
-    /// ID of the tool call this responds to.
-    pub tool_call_id: String,
-    /// Result of the tool execution.
-    pub result: serde_json::Value,
+pub struct ToolDefinition {
+    /// Unique tool name
+    pub name: String,
+
+    /// Human-readable description
+    pub description: String,
+
+    /// JSON Schema for input validation
+    pub input_schema: serde_json::Value,
 }
+
+/// Errors from sampling operations.
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("Sampling: {} at {}:{}", kind, file, line)]
+pub struct SamplingError {
+    /// Error kind
+    pub kind: SamplingErrorKind,
+    /// Line number
+    pub line: u32,
+    /// File name
+    pub file: &'static str,
+}
+
+/// Types of sampling errors.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+pub enum SamplingErrorKind {
+    /// Max turns exceeded
+    #[display("Max turns exceeded: {}", max)]
+    MaxTurnsExceeded {
+        /// Maximum turns allowed
+        max: usize,
+    },
+
+    /// Tool execution failed
+    #[display("Tool execution failed: {} - {}", tool_name, reason)]
+    ToolExecutionFailed {
+        /// Tool name
+        tool_name: String,
+        /// Reason for failure
+        reason: String,
+    },
+
+    /// Unknown tool
+    #[display("Unknown tool: {}", name)]
+    UnknownTool {
+        /// Tool name
+        name: String,
+    },
+
+    /// Provider error
+    #[display("Provider error: {}", _0)]
+    ProviderError(String),
+
+    /// No tool registry configured
+    #[display("No tool registry configured")]
+    NoToolRegistry,
+
+    /// Request building failed
+    #[display("Request building failed: {}", _0)]
+    RequestBuildingFailed(String),
+}
+
+impl SamplingError {
+    /// Create a new sampling error with location tracking.
+    #[track_caller]
+    pub fn new(kind: SamplingErrorKind) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind,
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
+}
+
+// Import PartialNarrative and NarrativeRegistry
+use crate::{NarrativeRegistry, PartialNarrative};
 
 /// Helper for LLM sampling operations.
 pub struct SamplingHelper;

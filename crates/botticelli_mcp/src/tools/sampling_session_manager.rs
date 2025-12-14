@@ -1,4 +1,4 @@
-use crate::{LlmSampler, SamplingSession};
+use crate::{ConversationSession, ConversationTurn, LlmSampler, ToolDefinition};
 use botticelli_error::{BotticelliResult, ChatError};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -9,7 +9,7 @@ use tracing::{debug, instrument};
 /// This is a simplified session manager that delegates LLM conversation
 /// management to the LlmSampler implementation.
 pub struct SamplingSessionManager {
-    sessions: Arc<RwLock<std::collections::HashMap<String, SamplingSession>>>,
+    sessions: Arc<RwLock<std::collections::HashMap<String, ConversationSession>>>,
 }
 
 impl SamplingSessionManager {
@@ -21,17 +21,27 @@ impl SamplingSessionManager {
     }
 
     /// Start a new sampling session.
-    #[instrument(skip(self, sampler))]
+    #[instrument(skip(self, sampler, system_prompt, user_message))]
     pub async fn start_session(
         &self,
         sampler: Arc<dyn LlmSampler>,
-        system_prompt: &str,
-        user_message: &str,
-    ) -> BotticelliResult<SamplingSession> {
+        system_prompt: impl Into<String>,
+        user_message: impl Into<String>,
+        available_tools: &[ToolDefinition],
+    ) -> BotticelliResult<ConversationSession> {
         debug!("Starting new sampling session");
 
-        // Delegate to sampler
-        let session = sampler.sample(system_prompt, user_message).await?;
+        // Create session with user message
+        let mut session = ConversationSession::new(system_prompt);
+        session.add_turn(ConversationTurn::UserMessage {
+            content: user_message.into(),
+            attachments: None,
+        });
+
+        // Run sampling
+        let _result = sampler.sample(&mut session, available_tools)
+            .await
+            .map_err(|e| ChatError::validation_error(e.to_string()))?;
 
         // Store session
         self.sessions
@@ -44,7 +54,7 @@ impl SamplingSessionManager {
 
     /// Get session state.
     #[instrument(skip(self))]
-    pub async fn get_session(&self, session_id: &str) -> BotticelliResult<SamplingSession> {
+    pub async fn get_session(&self, session_id: &str) -> BotticelliResult<ConversationSession> {
         self.sessions
             .read()
             .await
