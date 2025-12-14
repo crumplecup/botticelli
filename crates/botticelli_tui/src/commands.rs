@@ -23,6 +23,10 @@ pub enum Command {
     NavigateDown,
     /// Select the current item in a list.
     SelectNarrative,
+    /// Append character to input buffer.
+    AppendChar(char),
+    /// Delete last character from input buffer.
+    DeleteChar,
     /// Quit the application.
     Quit,
 }

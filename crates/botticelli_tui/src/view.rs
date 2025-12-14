@@ -74,6 +74,10 @@ impl View for ChatView {
                     Ok(None)
                 }
             }
+            (KeyCode::Backspace, KeyModifiers::NONE) => Ok(Some(Command::DeleteChar)),
+            (KeyCode::Char(c), KeyModifiers::NONE | KeyModifiers::SHIFT) => {
+                Ok(Some(Command::AppendChar(c)))
+            }
             (KeyCode::Char('c'), KeyModifiers::CONTROL) => Ok(Some(Command::Quit)),
             _ => Ok(None),
         }

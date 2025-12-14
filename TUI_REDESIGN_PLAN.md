@@ -1507,23 +1507,54 @@ match result {
 - Separated concerns: state management, event handling, view rendering, command processing
 - Created clean View trait for extensibility
 
-### Phase 3: Chat View Integration (IN PROGRESS)
-**Status:** Not Started  
-**Next:** Integrate ConversationSession into ChatView
+### Phase 3: UI Components ✅ COMPLETE
+**Status:** Complete  
+**Date:** 2024-12-14
 
-- ⬜ Task 3.1: Add ConversationSession to App
-- ⬜ Task 3.2: Implement SendMessage command with actual LLM integration
-- ⬜ Task 3.3: Add message history rendering with scrolling
-- ⬜ Task 3.4: Handle input properly (char insertion, backspace, cursor movement)
-- ⬜ Task 3.5: Add conversation loading/saving
+- ✅ Task 3.1: Implement ChatView with message display and input buffer
+- ✅ Task 3.2: Implement NarrativeBrowserView with list navigation
+- ✅ Task 3.3: Implement NarrativeEditorView with content display
 
-### Phase 4: Narrative Views (NOT STARTED)
-- ⬜ NarrativeBrowserView implementation
-- ⬜ NarrativeEditorView implementation
-- ⬜ Narrative loading/saving integration
+**Files Created:**
+- All views implemented in view.rs with basic rendering
+
+### Phase 4: Event Handling & State Updates ✅ COMPLETE
+**Status:** Complete  
+**Date:** 2024-12-14
+
+- ✅ Task 4.1: Input handling per view (keyboard shortcuts)
+- ✅ Task 4.2: Rendering logic for all views
+- ✅ Task 4.3: State update logic (navigation, input buffer, mode switching)
+
+**Features Implemented:**
+- Global keyboard shortcuts (Alt+1/2/3 for tab switching, Ctrl+Q to quit)
+- Chat input handling (typing, backspace, Enter to send)
+- Narrative browser navigation (j/k/arrow keys, Enter to edit)
+- Narrative editor controls (Ctrl+S to save, Esc to go back)
+- Input buffer management with character append and delete
+
+**Files Updated:**
+- commands.rs: Added AppendChar, DeleteChar commands
+- app.rs: Added handle_global_input() method, enhanced command handling
+- view.rs: Enhanced input handling for ChatView with typing support
+
+### Phase 5: Integration (NOT STARTED)
+**Next:** Wire up actual backend services
+
+- ⬜ Task 5.1: Add ConversationSession to App
+- ⬜ Task 5.2: Implement SendMessage command with actual LLM integration
+- ⬜ Task 5.3: Add message history rendering with scrolling
+- ⬜ Task 5.4: Add conversation loading/saving
+- ⬜ Task 5.5: Narrative loading/saving integration
+- ⬜ Task 5.6: Add cursor movement in input
+
+### Phase 6: Narrative Views Enhancement (NOT STARTED)
+- ⬜ Advanced NarrativeBrowserView features (search, filter)
+- ⬜ Enhanced NarrativeEditorView (syntax highlighting, validation)
+- ⬜ Narrative TOML parsing display
 
 ### Phase 5: Settings View (NOT STARTED)
-- ⬜ Settings view stub
+- ⬜ Settings view implementation
 - ⬜ Configuration display/editing
 
 ### Phase 6: Polish (NOT STARTED)
@@ -1532,4 +1563,4 @@ match result {
 - ⬜ Help overlay
 - ⬜ Keyboard shortcut hints
 
-**Current Focus:** Basic foundation complete, ready for Phase 3 integration
+**Current Focus:** Basic TUI refactor complete with event handling and state updates. Ready for Phase 5 backend integration or Phase 6 polish.

@@ -64,7 +64,10 @@ impl App {
             // Handle events
             match self.events.next()? {
                 Event::Key(key) => {
-                    if let Some(cmd) = self.current_view().handle_input(key, &self.state)? {
+                    // Check for global shortcuts first
+                    if let Some(cmd) = self.handle_global_input(key)? {
+                        self.handle_command(cmd)?;
+                    } else if let Some(cmd) = self.current_view().handle_input(key, &self.state)? {
                         self.handle_command(cmd)?;
                     }
                 }
@@ -130,6 +133,31 @@ impl App {
         }
     }
 
+    /// Handles global keyboard shortcuts (tab switching, quit, etc.).
+    #[instrument(skip(self))]
+    fn handle_global_input(
+        &self,
+        key: crossterm::event::KeyEvent,
+    ) -> TuiResult<Option<Command>> {
+        use crossterm::event::{KeyCode, KeyModifiers};
+
+        match (key.code, key.modifiers) {
+            // Tab switching
+            (KeyCode::Char('1'), KeyModifiers::ALT) => {
+                Ok(Some(Command::SwitchMode(ViewMode::Chat)))
+            }
+            (KeyCode::Char('2'), KeyModifiers::ALT) => {
+                Ok(Some(Command::SwitchMode(ViewMode::NarrativeBrowser)))
+            }
+            (KeyCode::Char('3'), KeyModifiers::ALT) => {
+                Ok(Some(Command::SwitchMode(ViewMode::Settings)))
+            }
+            // Global quit
+            (KeyCode::Char('q'), KeyModifiers::CONTROL) => Ok(Some(Command::Quit)),
+            _ => Ok(None),
+        }
+    }
+
     /// Handles a command.
     #[instrument(skip(self))]
     fn handle_command(&mut self, cmd: Command) -> TuiResult<()> {
@@ -182,6 +210,19 @@ impl App {
                         self.state.set_editor_content(format!("Content of: {}", name));
                         self.state.set_mode(ViewMode::NarrativeEditor);
                     }
+                }
+            }
+            Command::AppendChar(c) => {
+                debug!(char = %c, "Appending character");
+                self.state.append_input(&c.to_string());
+            }
+            Command::DeleteChar => {
+                debug!("Deleting character");
+                let current = self.state.input_buffer().to_string();
+                if !current.is_empty() {
+                    let mut chars: Vec<char> = current.chars().collect();
+                    chars.pop();
+                    self.state.set_input_buffer(chars.into_iter().collect());
                 }
             }
             Command::Quit => {
