@@ -61,4 +61,4 @@ pub use startup::startup_sequence;
 pub use state::ConversationState;
 
 #[cfg(feature = "tui")]
-pub use tui::{restore_terminal, setup_terminal, TuiInterface};
+pub use tui::App;

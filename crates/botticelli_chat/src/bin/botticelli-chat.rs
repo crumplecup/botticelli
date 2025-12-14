@@ -114,19 +114,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create service container with configuration
     let services = std::sync::Arc::new(botticelli_chat::ServiceContainer::new(config));
 
-    // Setup terminal for TUI
-    let mut terminal = botticelli_chat::setup_terminal()
-        .map_err(|e| format!("Failed to setup terminal: {}", e))?;
+    // Create and run new TUI app
+    let mut app = botticelli_chat::App::new(services)
+        .map_err(|e| format!("Failed to create TUI app: {}", e))?;
 
-    // Create TUI interface with services
-    let mut tui = botticelli_chat::TuiInterface::with_services(services);
-
-    // Run the chat loop
-    let result = tui.run(&mut terminal).await;
-
-    // Restore terminal
-    botticelli_chat::restore_terminal(terminal)
-        .map_err(|e| format!("Failed to restore terminal: {}", e))?;
+    // Run the app
+    let result = app.run();
 
     match result {
         Ok(()) => {

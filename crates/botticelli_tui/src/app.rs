@@ -1,191 +1,182 @@
-//! Application state and core TUI types.
+use std::io;
 
-/// Application mode determines which view is displayed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum AppMode {
-    /// List view - browse content items
-    List,
-    /// Detail view - view single content item
-    Detail,
-    /// Edit view - edit tags, rating, status
-    Edit,
-    /// Compare view - side-by-side comparison
-    Compare,
-    /// Export view - export options
-    Export,
-}
+use crossterm::{
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use ratatui::{backend::CrosstermBackend, Terminal};
+use tracing::{debug, instrument};
 
-/// Content row representation for TUI display.
-#[derive(Debug, Clone, PartialEq)]
-pub struct ContentRow {
-    /// Row ID
-    pub id: i64,
-    /// Review status (pending, approved, rejected)
-    pub review_status: String,
-    /// User rating (1-5)
-    pub rating: Option<i32>,
-    /// Tags
-    pub tags: Vec<String>,
-    /// Content preview (first 50 chars)
-    pub preview: String,
-    /// Full content (for detail view)
-    pub content: serde_json::Value,
-    /// Source narrative
-    pub source_narrative: Option<String>,
-    /// Source act
-    pub source_act: Option<String>,
-}
+use crate::{
+    AppState, ChatView, Command, Event, EventHandler, NarrativeBrowserView, NarrativeEditorView,
+    TuiError, TuiErrorKind, TuiResult, View, ViewMode,
+};
 
-/// Edit buffer for inline editing.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EditBuffer {
-    /// Tags being edited
-    pub tags: String,
-    /// Rating being edited (1-5)
-    pub rating: Option<i32>,
-    /// Status being edited
-    pub status: String,
-    /// Which field is currently focused
-    pub focused_field: EditField,
-}
-
-/// Edit field focus.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum EditField {
-    /// Tags field
-    Tags,
-    /// Rating field
-    Rating,
-    /// Status field
-    Status,
-}
-
-/// Main application state.
+/// Main TUI application coordinator.
+#[derive(Debug)]
 pub struct App {
-    /// Current mode
-    pub mode: AppMode,
-    /// Table name being viewed
-    pub table_name: String,
-    /// List of content items
-    pub content_items: Vec<ContentRow>,
-    /// Currently selected index in list
-    pub selected_index: usize,
-    /// Items selected for comparison
-    pub compare_selection: Vec<usize>,
-    /// Edit buffer (when in Edit mode)
-    pub edit_buffer: Option<EditBuffer>,
-    /// Status message to display
-    pub status_message: String,
-    /// Whether to quit the application
-    pub should_quit: bool,
+    /// Application state.
+    state: AppState,
+    /// Event handler.
+    events: EventHandler,
+    /// Chat view.
+    chat_view: ChatView,
+    /// Narrative browser view.
+    narrative_browser_view: NarrativeBrowserView,
+    /// Narrative editor view.
+    narrative_editor_view: NarrativeEditorView,
+    /// Whether the app should quit.
+    should_quit: bool,
 }
 
 impl App {
-    /// Create a new App instance with empty state.
-    pub fn new(table_name: String) -> Self {
+    /// Creates a new TUI application.
+    pub fn new() -> Self {
         Self {
-            mode: AppMode::List,
-            table_name,
-            content_items: Vec::new(),
-            selected_index: 0,
-            compare_selection: Vec::new(),
-            edit_buffer: None,
-            status_message: String::from("Press ? for help"),
+            state: AppState::default(),
+            events: EventHandler::default(),
+            chat_view: ChatView,
+            narrative_browser_view: NarrativeBrowserView,
+            narrative_editor_view: NarrativeEditorView,
             should_quit: false,
         }
     }
 
-    /// Set content items from external source.
-    pub fn set_content(&mut self, items: Vec<ContentRow>) {
-        self.content_items = items;
-        if self.selected_index >= self.content_items.len() && !self.content_items.is_empty() {
-            self.selected_index = self.content_items.len() - 1;
+    /// Runs the TUI application.
+    #[instrument(skip(self))]
+    pub fn run(&mut self) -> TuiResult<()> {
+        debug!("Setting up terminal");
+        let mut terminal = self.setup_terminal()?;
+
+        debug!("Starting event loop");
+        while !self.should_quit {
+            // Render current view
+            terminal
+                .draw(|frame| {
+                    if let Err(e) = self.render(frame) {
+                        tracing::error!(error = ?e, "Render failed");
+                    }
+                })
+                .map_err(|e| {
+                    TuiError::new(TuiErrorKind::Rendering(format!("Draw failed: {}", e)))
+                })?;
+
+            // Handle events
+            match self.events.next()? {
+                Event::Key(key) => {
+                    if let Some(cmd) = self.current_view().handle_input(key, &self.state)? {
+                        self.handle_command(cmd)?;
+                    }
+                }
+                Event::Resize(_, _) => {
+                    // Terminal will handle resize automatically
+                }
+                Event::Tick => {
+                    // Periodic update - could refresh data here
+                }
+            }
+        }
+
+        debug!("Restoring terminal");
+        self.restore_terminal(terminal)?;
+
+        Ok(())
+    }
+
+    /// Sets up the terminal for TUI rendering.
+    fn setup_terminal(&self) -> TuiResult<Terminal<CrosstermBackend<io::Stdout>>> {
+        enable_raw_mode()
+            .map_err(|e| TuiError::new(TuiErrorKind::TerminalSetup(format!("{}", e))))?;
+
+        let mut stdout = io::stdout();
+        execute!(stdout, EnterAlternateScreen)
+            .map_err(|e| TuiError::new(TuiErrorKind::TerminalSetup(format!("{}", e))))?;
+
+        let backend = CrosstermBackend::new(stdout);
+        Terminal::new(backend)
+            .map_err(|e| TuiError::new(TuiErrorKind::TerminalSetup(format!("{}", e))))
+    }
+
+    /// Restores the terminal to its original state.
+    fn restore_terminal(
+        &self,
+        mut terminal: Terminal<CrosstermBackend<io::Stdout>>,
+    ) -> TuiResult<()> {
+        disable_raw_mode()
+            .map_err(|e| TuiError::new(TuiErrorKind::TerminalRestore(format!("{}", e))))?;
+
+        execute!(terminal.backend_mut(), LeaveAlternateScreen)
+            .map_err(|e| TuiError::new(TuiErrorKind::TerminalRestore(format!("{}", e))))?;
+
+        terminal
+            .show_cursor()
+            .map_err(|e| TuiError::new(TuiErrorKind::TerminalRestore(format!("{}", e))))?;
+
+        Ok(())
+    }
+
+    /// Renders the current view.
+    fn render(&self, frame: &mut ratatui::Frame) -> TuiResult<()> {
+        self.current_view().render(frame, &self.state)
+    }
+
+    /// Gets the current view based on mode.
+    fn current_view(&self) -> &dyn View {
+        match self.state.mode() {
+            ViewMode::Chat => &self.chat_view,
+            ViewMode::NarrativeBrowser => &self.narrative_browser_view,
+            ViewMode::NarrativeEditor => &self.narrative_editor_view,
+            ViewMode::Settings => &self.chat_view, // TODO: Settings view
         }
     }
 
-    /// Move selection up.
-    pub fn select_previous(&mut self) {
-        if !self.content_items.is_empty() && self.selected_index > 0 {
-            self.selected_index -= 1;
-        }
-    }
+    /// Handles a command.
+    #[instrument(skip(self))]
+    fn handle_command(&mut self, cmd: Command) -> TuiResult<()> {
+        debug!(command = ?cmd, "Handling command");
 
-    /// Move selection down.
-    pub fn select_next(&mut self) {
-        if self.selected_index < self.content_items.len().saturating_sub(1) {
-            self.selected_index += 1;
-        }
-    }
-
-    /// Enter detail view for selected item.
-    pub fn enter_detail(&mut self) {
-        if !self.content_items.is_empty() {
-            self.mode = AppMode::Detail;
-        }
-    }
-
-    /// Return to list view.
-    pub fn return_to_list(&mut self) {
-        self.mode = AppMode::List;
-        self.edit_buffer = None;
-        self.compare_selection.clear();
-    }
-
-    /// Enter edit mode for selected item.
-    pub fn enter_edit(&mut self) {
-        if let Some(item) = self.content_items.get(self.selected_index) {
-            self.edit_buffer = Some(EditBuffer {
-                tags: item.tags.join(", "),
-                rating: item.rating,
-                status: item.review_status.clone(),
-                focused_field: EditField::Tags,
-            });
-            self.mode = AppMode::Edit;
-        }
-    }
-
-    /// Get current edit buffer data for saving.
-    pub fn get_edit_data(&self) -> Option<(i64, Vec<String>, Option<i32>, String)> {
-        if let Some(buffer) = &self.edit_buffer {
-            let item_id = self.content_items[self.selected_index].id;
-            let tags: Vec<String> = buffer
-                .tags
-                .split(',')
-                .map(|s| s.trim().to_string())
-                .filter(|s| !s.is_empty())
-                .collect();
-            Some((item_id, tags, buffer.rating, buffer.status.clone()))
-        } else {
-            None
-        }
-    }
-
-    /// Toggle item in comparison selection.
-    pub fn toggle_compare(&mut self) {
-        if let Some(pos) = self
-            .compare_selection
-            .iter()
-            .position(|&i| i == self.selected_index)
-        {
-            self.compare_selection.remove(pos);
-        } else {
-            self.compare_selection.push(self.selected_index);
+        match cmd {
+            Command::SendMessage(msg) => {
+                debug!(message = %msg, "Sending message");
+                // TODO: Integrate with conversation session
+                self.state.clear_input();
+            }
+            Command::SwitchMode(mode) => {
+                debug!(mode = ?mode, "Switching mode");
+                self.state.set_mode(mode);
+            }
+            Command::NewConversation => {
+                debug!("Creating new conversation");
+                // TODO: Create conversation
+            }
+            Command::LoadConversation(id) => {
+                debug!(conversation_id = ?id, "Loading conversation");
+                self.state.set_current_conversation(Some(id));
+            }
+            Command::NewNarrative => {
+                debug!("Creating new narrative");
+                // TODO: Create narrative
+            }
+            Command::LoadNarrative(id) => {
+                debug!(narrative_id = ?id, "Loading narrative");
+                self.state.set_current_narrative(Some(id));
+            }
+            Command::SaveNarrative => {
+                debug!("Saving narrative");
+                // TODO: Save narrative
+            }
+            Command::Quit => {
+                debug!("Quitting application");
+                self.should_quit = true;
+            }
         }
 
-        if self.compare_selection.len() >= 2 {
-            self.mode = AppMode::Compare;
-        }
+        Ok(())
     }
+}
 
-    /// Get selected item ID for deletion.
-    pub fn get_selected_id(&self) -> Option<i64> {
-        self.content_items
-            .get(self.selected_index)
-            .map(|item| item.id)
-    }
-
-    /// Quit the application.
-    pub fn quit(&mut self) {
-        self.should_quit = true;
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
     }
 }

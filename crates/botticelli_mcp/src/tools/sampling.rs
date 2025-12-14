@@ -3,7 +3,7 @@ use botticelli_core::{GenerateResponse, ToolCall};
 use botticelli_error::BotticelliResult;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tracing::{debug, error, instrument};
+use tracing::instrument;
 
 /// Coordinates LLM sampling for narrative generation.
 pub struct SamplingCoordinator {

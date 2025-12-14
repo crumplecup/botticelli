@@ -32,6 +32,9 @@ tracing = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }
 
+# UUID
+uuid = { workspace = true }
+
 # System utilities
 dirs = { workspace = true }
 

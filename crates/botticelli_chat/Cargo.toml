@@ -46,6 +46,11 @@ tokio = { version = "1.0", features = ["sync"] }
 # TUI (optional)
 ratatui = { workspace = true, optional = true }
 crossterm = { version = "0.28", optional = true }
+tui-tree-widget = { version = "0.22", optional = true }
+tui-textarea = { version = "0.6", optional = true }
+tui-logger = { version = "0.12", optional = true }
+directories = { version = "5.0", optional = true }
+walkdir = { version = "2.5", optional = true }
 
 # CLI (optional - for binary)
 clap = { version = "4.5", features = ["derive", "env"], optional = true }
@@ -76,7 +81,15 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = tr
 botticelli_actor = { path = "../botticelli_actor", optional = true }
 
 [features]
-tui = ["dep:ratatui", "dep:crossterm"]
+tui = [
+    "dep:ratatui",
+    "dep:crossterm",
+    "dep:tui-tree-widget",
+    "dep:tui-textarea",
+    "dep:tui-logger",
+    "dep:directories",
+    "dep:walkdir",
+]
 cli = [
     "dep:clap",
     "dep:dotenvy",
@@ -110,3 +123,4 @@ botticelli_interface = { path = "../botticelli_interface" }
 botticelli_storage = { path = "../botticelli_storage" }
 botticelli_mcp_client = { path = "../botticelli_mcp_client" }
 diesel = { workspace = true, features = ["postgres"] }
+color-eyre = "0.6"

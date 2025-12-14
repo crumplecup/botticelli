@@ -1,25 +1,18 @@
-//! Terminal User Interface for content review.
+//! Terminal User Interface for Botticelli.
 //!
-//! Provides an interactive TUI for reviewing, editing, and managing generated content
-//! stored in custom tables. Built with ratatui for terminal rendering.
+//! Provides an interactive TUI for chat, narrative management, and settings.
+//! Built with ratatui for terminal rendering.
 
 mod app;
-mod backend;
-#[cfg(feature = "database")]
-mod database_backend;
+mod commands;
 mod error;
 mod events;
-#[cfg(feature = "database")]
-mod runner;
-#[cfg(feature = "database")]
-mod ui;
-mod views;
+mod state;
+mod view;
 
-pub use app::{App, AppMode, ContentRow, EditBuffer, EditField};
-pub use backend::TuiBackend;
-#[cfg(feature = "database")]
-pub use database_backend::DatabaseBackend;
+pub use app::App;
+pub use commands::Command;
 pub use error::{TuiError, TuiErrorKind, TuiResult};
 pub use events::{Event, EventHandler};
-#[cfg(feature = "database")]
-pub use runner::run_tui;
+pub use state::{AppState, ChatMessage, ConversationId, NarrativeId, ViewMode};
+pub use view::{ChatView, NarrativeBrowserView, NarrativeEditorView, View};

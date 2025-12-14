@@ -33,6 +33,10 @@ pub fn messages_to_prompt(messages: &[Message]) -> String {
                     // Ollama supports vision models, but handle separately
                     prompt.push_str("[Media/Data content]\n");
                 }
+                Input::ToolCall { .. } | Input::ToolResult { .. } => {
+                    // Ollama doesn't natively support tool calling in this format
+                    prompt.push_str("[Tool interaction]\n");
+                }
             }
         }
 

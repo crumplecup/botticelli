@@ -174,7 +174,7 @@ impl AnthropicClient {
         });
 
         // Map Anthropic stop_reason to our StopReason
-        let stop_reason = match response.stop_reason() {
+        let stop_reason = match response.stop_reason().as_deref() {
             Some("end_turn") => botticelli_core::StopReason::EndTurn,
             Some("max_tokens") => botticelli_core::StopReason::MaxTokens,
             Some("tool_use") => botticelli_core::StopReason::ToolUse,

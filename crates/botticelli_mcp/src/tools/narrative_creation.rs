@@ -1,7 +1,7 @@
 //! MCP tools for iterative narrative creation through LLM-guided elicitation.
 
-use crate::{ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder};
-use botticelli_error::{BotticelliResult, BuilderError, BuilderErrorKind, McpError};
+use crate::{PartialNarrative, PartialNarrativeBuilder};
+use botticelli_error::{BotticelliResult, BuilderError, BuilderErrorKind};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -143,116 +143,4 @@ impl StartNarrativeTool {
     }
 }
 
-/// Tool for eliciting narrative metadata.
-#[derive(Debug, Clone)]
-pub struct ElicitMetadataTool<E: NarrativeElicitor> {
-    registry: NarrativeRegistry,
-    elicitor: E,
-}
 
-impl<E: NarrativeElicitor> ElicitMetadataTool<E> {
-    /// Creates a new tool instance.
-    pub fn new(registry: NarrativeRegistry, elicitor: E) -> Self {
-        Self { registry, elicitor }
-    }
-
-    /// Executes the tool.
-    #[instrument(skip(self, dialog))]
-    pub async fn execute(
-        &self,
-        input: ElicitMetadataInput,
-        dialog: &mut dyn ElicitationDialog,
-    ) -> BotticelliResult<JsonValue> {
-        let mut partial = self
-            .registry
-            .get_session(&input.session_id)
-            .await?
-            .ok_or_else(|| McpError::session_not_found(input.session_id.clone()))?;
-
-        self.elicitor.elicit(dialog, &mut partial).await?;
-        self.registry
-            .update_session(&input.session_id, partial)
-            .await?;
-
-        Ok(serde_json::json!({
-            "status": "metadata_complete",
-            "session_id": input.session_id,
-            "next_step": "elicit_acts"
-        }))
-    }
-}
-
-/// Tool for eliciting a narrative act.
-#[derive(Debug, Clone)]
-pub struct ElicitActTool<E: NarrativeElicitor> {
-    registry: NarrativeRegistry,
-    elicitor: E,
-}
-
-impl<E: NarrativeElicitor> ElicitActTool<E> {
-    /// Creates a new tool instance.
-    pub fn new(registry: NarrativeRegistry, elicitor: E) -> Self {
-        Self { registry, elicitor }
-    }
-
-    /// Executes the tool.
-    #[instrument(skip(self, dialog))]
-    pub async fn execute(
-        &self,
-        input: ElicitActInput,
-        dialog: &mut dyn ElicitationDialog,
-    ) -> BotticelliResult<JsonValue> {
-        let mut partial = self
-            .registry
-            .get_session(&input.session_id)
-            .await?
-            .ok_or_else(|| McpError::session_not_found(input.session_id.clone()))?;
-
-        self.elicitor.elicit(dialog, &mut partial).await?;
-        self.registry
-            .update_session(&input.session_id, partial)
-            .await?;
-
-        Ok(serde_json::json!({
-            "status": "act_complete",
-            "session_id": input.session_id,
-            "act_number": input.act_number
-        }))
-    }
-}
-
-/// Tool for finalizing and validating a narrative.
-#[derive(Debug, Clone)]
-pub struct FinalizeNarrativeTool {
-    registry: NarrativeRegistry,
-}
-
-impl FinalizeNarrativeTool {
-    /// Creates a new tool instance.
-    pub fn new(registry: NarrativeRegistry) -> Self {
-        Self { registry }
-    }
-
-    /// Executes the tool.
-    #[instrument(skip(self))]
-    pub async fn execute(&self, input: FinalizeNarrativeInput) -> BotticelliResult<JsonValue> {
-        let partial = self
-            .registry
-            .remove_session(&input.session_id)
-            .await?
-            .ok_or_else(|| McpError::session_not_found(input.session_id.clone()))?;
-
-        let narrative = partial
-            .try_into_narrative()
-            .map_err(|e| McpError::invalid_input(e.to_string()))?;
-        let toml = toml::to_string_pretty(&narrative).map_err(|e| {
-            McpError::execution_failed(format!("Failed to serialize narrative: {}", e))
-        })?;
-
-        Ok(serde_json::json!({
-            "status": "complete",
-            "session_id": input.session_id,
-            "narrative": toml
-        }))
-    }
-}

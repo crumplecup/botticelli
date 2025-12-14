@@ -1,5 +1,7 @@
 # Botticelli TUI Redesign: Comprehensive Planning Document
 
+**Status:** Updated 2024-12-14 with ecosystem research findings
+
 ## Executive Summary
 
 **Problem:** Current TUI is a simple chat interface that hides most of Botticelli's capabilities. Users can't discover or access:
@@ -14,6 +16,10 @@
 **Solution:** Multi-pane, discoverable TUI following familiar patterns while exposing Botticelli's unique features.
 
 **Philosophy:** "Don't reinvent the wheel for common patterns; showcase what makes Botticelli special."
+
+**Ecosystem Strategy:** Leverage proven ratatui libraries for UI mechanics, own our unique Botticelli features.
+
+**See also:** [TUI_ECOSYSTEM_RESEARCH.md](./TUI_ECOSYSTEM_RESEARCH.md) for detailed ecosystem analysis
 
 ---
 
@@ -375,6 +381,51 @@ Schedule
 
 ---
 
+## Dependencies & Libraries
+
+### Core Dependencies
+
+```toml
+[dependencies]
+# Base TUI framework
+ratatui = "0.29"
+crossterm = "0.28"
+
+# Widget Libraries (ecosystem)
+tui-tree-widget = "0.22"      # Tree navigation for files/hierarchies
+tui-textarea = "0.6"          # Rich multi-line text editor
+tui-logger = "0.12"           # Real-time log viewing widget
+
+# Optional (evaluate during implementation)
+ratatui-explorer = "0.1"      # File browser widget
+tui-popup = "0.1"             # Modal dialogs
+
+# Utilities
+directories = "5.0"           # XDG directory support
+
+[dev-dependencies]
+color_eyre = "0.6"            # Beautiful error displays
+```
+
+### Library Usage Strategy
+
+**tui-tree-widget:**
+- Navigation panels for narratives, bots, database tables
+- Replaces custom tree implementation (saves 200+ lines)
+- Built-in expansion, selection, keyboard nav
+
+**tui-textarea:**
+- Multi-line chat input with undo/redo
+- Query editor for database tab
+- Rich editing experience (search, copy/paste)
+
+**tui-logger:**
+- Debug/monitoring tab
+- Bot execution logs
+- Real-time log filtering
+
+---
+
 ## Component Architecture
 
 ### 1. App State Management
@@ -430,21 +481,69 @@ pub enum Modal {
 ```rust
 // crates/botticelli_chat/src/tui/tabs/narratives.rs
 
+use tui_tree_widget::{TreeItem, TreeState};
+
 pub struct NarrativesTabState {
     /// List of discovered narratives
     pub narratives: Vec<NarrativeEntry>,
 
-    /// Currently selected narrative
-    pub selected_index: usize,
+    /// Tree widget state (from tui-tree-widget)
+    pub tree_state: TreeState<String>,
 
-    /// Navigation tree state
-    pub tree: TreeState,
+    /// Tree items built from narratives
+    pub tree_items: Vec<TreeItem<'static, String>>,
 
     /// Filter/search
     pub filter: Option<String>,
 
     /// View mode
     pub view_mode: NarrativeViewMode,
+}
+
+impl NarrativesTabState {
+    pub fn build_tree(&mut self) {
+        // Group narratives by category
+        let mut categories: HashMap<String, Vec<NarrativeEntry>> = HashMap::new();
+        for narrative in &self.narratives {
+            categories.entry(narrative.category.clone())
+                .or_default()
+                .push(narrative.clone());
+        }
+
+        // Build tree items
+        self.tree_items = categories.into_iter()
+            .map(|(category, items)| {
+                let children: Vec<_> = items.into_iter()
+                    .map(|n| TreeItem::new_leaf(n.name.clone()))
+                    .collect();
+                TreeItem::new(category, children).unwrap()
+            })
+            .collect();
+    }
+
+    pub fn render_tree(&mut self, area: Rect, buf: &mut Buffer) {
+        use tui_tree_widget::Tree;
+
+        let tree = Tree::new(&self.tree_items)
+            .block(Block::default()
+                .borders(Borders::ALL)
+                .title("Narratives"))
+            .highlight_style(Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD));
+
+        tree.render(area, buf, &mut self.tree_state);
+    }
+
+    pub fn handle_key(&mut self, key: KeyCode) {
+        match key {
+            KeyCode::Down => self.tree_state.key_down(),
+            KeyCode::Up => self.tree_state.key_up(),
+            KeyCode::Right => self.tree_state.toggle_selected(),
+            KeyCode::Left => self.tree_state.close(),
+            _ => {}
+        }
+    }
 }
 
 pub struct NarrativeEntry {
@@ -475,15 +574,67 @@ pub enum NarrativeViewMode {
 ```rust
 // crates/botticelli_chat/src/tui/widgets/mod.rs
 
+use tui_tree_widget::{Tree, TreeState};
+use tui_textarea::TextArea;
+
 pub trait Widget {
     fn render(&self, area: Rect, buf: &mut Buffer, state: &AppState);
     fn handle_event(&mut self, event: &Event, state: &mut AppState) -> EventResult;
 }
 
-pub struct NavigationPanel<T> {
-    pub items: Vec<NavItem<T>>,
-    pub selected: usize,
+/// Navigation panel using tui-tree-widget
+pub struct NavigationPanel {
+    pub tree_state: TreeState<String>,
+    pub tree_items: Vec<TreeItem<'static, String>>,
     pub title: String,
+}
+
+impl NavigationPanel {
+    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        let tree = Tree::new(&self.tree_items)
+            .block(Block::default()
+                .borders(Borders::ALL)
+                .title(&self.title))
+            .highlight_style(Style::default().fg(Color::Yellow));
+
+        tree.render(area, buf, &mut self.tree_state);
+    }
+}
+
+/// Rich text input using tui-textarea
+pub struct ChatInput {
+    pub textarea: TextArea<'static>,
+}
+
+impl ChatInput {
+    pub fn new() -> Self {
+        let mut textarea = TextArea::default();
+        textarea.set_block(Block::default()
+            .borders(Borders::ALL)
+            .title("Chat Input (Ctrl+Enter to send)"));
+        textarea.set_placeholder_text("Type your message...");
+        Self { textarea }
+    }
+
+    pub fn render(&self, area: Rect, buf: &mut Buffer) {
+        self.textarea.widget().render(area, buf);
+    }
+
+    pub fn handle_input(&mut self, input: crossterm::event::KeyEvent) -> bool {
+        // Returns true if message should be sent
+        if input.code == KeyCode::Enter && input.modifiers.contains(KeyModifiers::CONTROL) {
+            return true;
+        }
+        self.textarea.input(input);
+        false
+    }
+
+    pub fn take_content(&mut self) -> String {
+        let content = self.textarea.lines().join("\n");
+        self.textarea.select_all();
+        self.textarea.delete_str(0, content.len());
+        content
+    }
 }
 
 pub struct ContentArea {
@@ -553,11 +704,31 @@ pub enum Action {
 
 ## Implementation Roadmap
 
-### Phase 1: Foundation (Week 1)
+**Revised Timeline:** 3-4 weeks (down from 5 weeks by using ecosystem libraries)
 
-**Goal:** Refactor TUI into modular architecture
+### Phase 1: Foundation + Library Integration (Week 1)
 
-#### Task 1.1: Create Module Structure
+**Goal:** Refactor TUI into modular architecture and integrate core libraries
+
+#### Task 1.1: Add Dependencies
+- **File:** `crates/botticelli_chat/Cargo.toml`
+- **Action:** Add ratatui ecosystem dependencies
+  ```toml
+  [dependencies]
+  tui-tree-widget = "0.22"
+  tui-textarea = "0.6"
+  tui-logger = "0.12"
+  directories = "5.0"
+
+  [dev-dependencies]
+  color_eyre = "0.6"
+  ```
+- **Acceptance:**
+  - [ ] Dependencies compile
+  - [ ] No version conflicts
+  - [ ] Examples from docs work
+
+#### Task 1.2: Create Module Structure
 - **Files:** Create directory structure
   ```
   crates/botticelli_chat/src/tui/
@@ -576,7 +747,8 @@ pub enum Action {
   │   └── settings.rs
   └── widgets/
       ├── mod.rs
-      ├── navigation_panel.rs
+      ├── navigation_panel.rs  # Uses tui-tree-widget
+      ├── chat_input.rs        # Uses tui-textarea
       ├── status_bar.rs
       ├── tab_bar.rs
       └── modal.rs
@@ -594,9 +766,129 @@ pub enum Action {
   - [ ] Tab switching logic works
   - [ ] Service container integrated
 
-#### Task 1.3: Create Base Widgets
-- **Files:** Widget trait and implementations
-- **Action:** Navigation panel, status bar, tab bar
+#### Task 1.3: Create Navigation Panel Widget
+- **File:** `crates/botticelli_chat/src/tui/widgets/navigation_panel.rs`
+- **Action:** Wrapper around tui-tree-widget
+  ```rust
+  use tui_tree_widget::{Tree, TreeItem, TreeState};
+
+  pub struct NavigationPanel {
+      tree_state: TreeState<String>,
+      tree_items: Vec<TreeItem<'static, String>>,
+      title: String,
+  }
+
+  impl NavigationPanel {
+      pub fn new(title: impl Into<String>) -> Self {
+          Self {
+              tree_state: TreeState::default(),
+              tree_items: Vec::new(),
+              title: title.into(),
+          }
+      }
+
+      pub fn set_items(&mut self, items: Vec<TreeItem<'static, String>>) {
+          self.tree_items = items;
+      }
+
+      pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+          let tree = Tree::new(&self.tree_items)
+              .block(Block::default()
+                  .borders(Borders::ALL)
+                  .title(&self.title))
+              .highlight_style(Style::default()
+                  .fg(Color::Yellow)
+                  .add_modifier(Modifier::BOLD));
+
+          tree.render(area, buf, &mut self.tree_state);
+      }
+
+      pub fn handle_key(&mut self, key: KeyCode) {
+          match key {
+              KeyCode::Down | KeyCode::Char('j') => self.tree_state.key_down(),
+              KeyCode::Up | KeyCode::Char('k') => self.tree_state.key_up(),
+              KeyCode::Right | KeyCode::Char('l') => self.tree_state.open(),
+              KeyCode::Left | KeyCode::Char('h') => self.tree_state.close(),
+              KeyCode::Enter | KeyCode::Char(' ') => self.tree_state.toggle_selected(),
+              _ => {}
+          }
+      }
+
+      pub fn selected(&self) -> Option<&Vec<String>> {
+          self.tree_state.selected()
+      }
+  }
+  ```
+- **Acceptance:**
+  - [ ] Widget compiles
+  - [ ] Renders tree correctly
+  - [ ] Keyboard navigation works (vim keys + arrows)
+  - [ ] Can get selected item
+
+#### Task 1.4: Create Chat Input Widget
+- **File:** `crates/botticelli_chat/src/tui/widgets/chat_input.rs`
+- **Action:** Wrapper around tui-textarea
+  ```rust
+  use tui_textarea::TextArea;
+
+  pub struct ChatInput {
+      textarea: TextArea<'static>,
+  }
+
+  impl ChatInput {
+      pub fn new() -> Self {
+          let mut textarea = TextArea::default();
+          textarea.set_block(Block::default()
+              .borders(Borders::ALL)
+              .title("Input (Ctrl+Enter to send, Ctrl+Z to undo)"));
+          textarea.set_placeholder_text("Type your message...");
+
+          Self { textarea }
+      }
+
+      pub fn render(&self, area: Rect, buf: &mut Buffer) {
+          self.textarea.widget().render(area, buf);
+      }
+
+      pub fn handle_input(&mut self, event: KeyEvent) -> InputResult {
+          // Ctrl+Enter sends message
+          if event.code == KeyCode::Enter
+             && event.modifiers.contains(KeyModifiers::CONTROL) {
+              return InputResult::SendMessage;
+          }
+
+          // Regular input
+          self.textarea.input(event);
+          InputResult::Continue
+      }
+
+      pub fn take_content(&mut self) -> String {
+          let content = self.textarea.lines().join("\n");
+          self.textarea.select_all();
+          self.textarea.cut();
+          content
+      }
+
+      pub fn is_empty(&self) -> bool {
+          self.textarea.lines().iter().all(|l| l.trim().is_empty())
+      }
+  }
+
+  pub enum InputResult {
+      SendMessage,
+      Continue,
+  }
+  ```
+- **Acceptance:**
+  - [ ] Widget compiles
+  - [ ] Multi-line editing works
+  - [ ] Undo/redo works (Ctrl+Z/Y)
+  - [ ] Ctrl+Enter sends message
+  - [ ] Content can be extracted
+
+#### Task 1.5: Create Base Widgets
+- **Files:** Status bar, tab bar, modal
+- **Action:** Custom widgets for app-specific UI
 - **Acceptance:**
   - [ ] Widgets render correctly
   - [ ] Event handling works
@@ -604,12 +896,14 @@ pub enum Action {
 
 ### Phase 2: Narratives Tab (Week 2)
 
-**Goal:** Full-featured narrative browser and manager
+**Goal:** Full-featured narrative browser and manager using tree widget
 
 #### Task 2.1: Narrative Discovery
 - **File:** `crates/botticelli_chat/src/tui/tabs/narratives.rs`
 - **Action:** Scan narratives directory, extract metadata
   ```rust
+  use tui_tree_widget::TreeItem;
+
   async fn discover_narratives(path: &Path) -> Result<Vec<NarrativeEntry>> {
       let mut narratives = Vec::new();
       for entry in walkdir::WalkDir::new(path) {
@@ -627,26 +921,95 @@ pub enum Action {
       }
       Ok(narratives)
   }
+
+  fn build_tree_items(narratives: &[NarrativeEntry]) -> Vec<TreeItem<'static, String>> {
+      // Group by category
+      let mut categories: HashMap<String, Vec<&NarrativeEntry>> = HashMap::new();
+      for narrative in narratives {
+          categories.entry(narrative.category.clone())
+              .or_default()
+              .push(narrative);
+      }
+
+      // Build tree structure
+      let mut items = Vec::new();
+
+      // Add "Recent" category first
+      let recent: Vec<_> = narratives.iter()
+          .sorted_by_key(|n| n.last_modified)
+          .rev()
+          .take(10)
+          .map(|n| TreeItem::new_leaf(format!("{} ({})", n.name, n.metadata.model.as_deref().unwrap_or("default"))))
+          .collect();
+
+      if !recent.is_empty() {
+          items.push(TreeItem::new("📌 Recent", recent).unwrap());
+      }
+
+      // Add category groups
+      for (category, cat_narratives) in categories {
+          let children: Vec<_> = cat_narratives.iter()
+              .map(|n| TreeItem::new_leaf(n.name.clone()))
+              .collect();
+
+          let label = format!("📁 {} ({})", category, children.len());
+          items.push(TreeItem::new(label, children).unwrap());
+      }
+
+      items
+  }
   ```
 - **Acceptance:**
   - [ ] Finds all .toml files in narratives/
   - [ ] Extracts name, model, act count
   - [ ] Categorizes by directory
-  - [ ] Caches results
+  - [ ] Builds tree structure
+  - [ ] "Recent" section shows 10 most recent
 
-#### Task 2.2: Narrative List View
-- **Action:** Render narrative list with metadata
+#### Task 2.2: Narrative Tree View with Navigation Panel
+- **Action:** Use NavigationPanel widget with narrative tree
 - **Layout:**
   ```
-  Name                          Model              Acts  Modified
-  ──────────────────────────────────────────────────────────────
-  showcase.toml                 claude-3-5-sonnet  3     2024-12-14
-  discord/daily_showcase.toml   gemini-pro         5     2024-12-13
+  ┌─ Narratives ────────────────┐
+  │ ▼ 📌 Recent                 │
+  │   ├─ showcase.toml (claude) │
+  │   └─ daily.toml (gemini)    │
+  │ ▼ 📁 Discord (40)           │
+  │   ├─ daily_showcase.toml    │
+  │   ├─ welcome.toml           │
+  │   └─ ...                    │
+  │ ▶ 📁 Examples (10)          │
+  │ ▶ 📁 Tests (5)              │
+  └─────────────────────────────┘
+  ```
+- **Code:**
+  ```rust
+  impl NarrativesTab {
+      fn render_navigation(&mut self, area: Rect, buf: &mut Buffer) {
+          // Build tree items on first render or when narratives change
+          if self.tree_items.is_empty() {
+              self.tree_items = build_tree_items(&self.narratives);
+          }
+
+          self.nav_panel.set_items(self.tree_items.clone());
+          self.nav_panel.render(area, buf);
+      }
+
+      fn handle_navigation_key(&mut self, key: KeyCode) {
+          self.nav_panel.handle_key(key);
+
+          // Update selected narrative based on tree selection
+          if let Some(path) = self.nav_panel.selected() {
+              self.selected_narrative = self.find_narrative_by_path(path);
+          }
+      }
+  }
   ```
 - **Acceptance:**
-  - [ ] List renders
-  - [ ] Selection works (up/down keys)
-  - [ ] Shows metadata
+  - [ ] Tree renders with categories
+  - [ ] Selection works (arrows, vim keys)
+  - [ ] Expansion/collapse works (Enter, Space)
+  - [ ] Selected narrative updates
   - [ ] Filtering works
 
 #### Task 2.3: Narrative Detail View
@@ -696,24 +1059,144 @@ pub enum Action {
 - Save to TOML
 - Test connections (DB, MCP)
 
-### Phase 4: Chat Tab Enhancement (Week 4)
+### Phase 4: Chat Tab Enhancement (Week 3-4)
 
-#### Task 4.1: Preserve Current Chat
-- Keep existing chat interface
-- Add to tab system
-- Add conversation history
+#### Task 4.1: Integrate Rich Chat Input
+- **File:** `crates/botticelli_chat/src/tui/tabs/chat.rs`
+- **Action:** Replace simple input with ChatInput widget (tui-textarea)
+  ```rust
+  use crate::widgets::ChatInput;
+
+  pub struct ChatTab {
+      messages: Vec<ChatMessage>,
+      input: ChatInput,
+      scroll_offset: usize,
+  }
+
+  impl ChatTab {
+      fn handle_key(&mut self, event: KeyEvent) -> Option<Message> {
+          match self.input.handle_input(event) {
+              InputResult::SendMessage => {
+                  if !self.input.is_empty() {
+                      let content = self.input.take_content();
+                      return Some(Message::SendChat(content));
+                  }
+              }
+              InputResult::Continue => {}
+          }
+          None
+      }
+  }
+  ```
+- **Acceptance:**
+  - [ ] Multi-line input works
+  - [ ] Undo/redo works
+  - [ ] Ctrl+Enter sends
+  - [ ] Message history preserved
 
 #### Task 4.2: Add Tool Call Visibility
-- Show when LLM calls tools
-- Display tool results
-- Show thinking/reasoning
+- **Action:** Show tool calls in chat messages
+  ```rust
+  enum ChatMessage {
+      User { content: String },
+      Assistant { content: String },
+      ToolCall {
+          tool_name: String,
+          input: serde_json::Value
+      },
+      ToolResult {
+          tool_name: String,
+          output: serde_json::Value,
+          is_error: bool,
+      },
+      Thinking { content: String },
+  }
+  ```
+- **Rendering:**
+  ```
+  You: Create a narrative about space
 
-#### Task 4.3: Prompt Management
-- Save frequently used prompts
-- Load system prompts
-- Quick prompt selection
+  Assistant: I'll help create that narrative...
 
-### Phase 5: Polish & Features (Week 5)
+  🔧 Tool: create_narrative_session
+     Input: {"description": "space narrative"}
+
+  ✅ Result: {"session_id": "123", "status": "created"}
+
+  Assistant: I've created a session. What should...
+  ```
+- **Acceptance:**
+  - [ ] Tool calls visible
+  - [ ] Results shown
+  - [ ] Errors highlighted
+  - [ ] Thinking/reasoning shown
+
+#### Task 4.3: Add Conversation History
+- **Action:** Save conversations to XDG data directory
+  ```rust
+  use directories::ProjectDirs;
+
+  fn save_conversation(messages: &[ChatMessage]) -> Result<()> {
+      if let Some(proj_dirs) = ProjectDirs::from("com", "botticelli", "Botticelli") {
+          let data_dir = proj_dirs.data_dir();
+          let convo_file = data_dir.join("conversations")
+              .join(format!("{}.json", Utc::now().timestamp()));
+
+          std::fs::create_dir_all(convo_file.parent().unwrap())?;
+          let json = serde_json::to_string_pretty(&messages)?;
+          std::fs::write(convo_file, json)?;
+      }
+      Ok(())
+  }
+  ```
+- **Acceptance:**
+  - [ ] Conversations saved to XDG data dir
+  - [ ] Can load previous conversations
+  - [ ] History browsable in UI
+
+### Phase 5: Monitoring & Polish (Week 4)
+
+#### Task 5.0: Add Logger Tab
+- **File:** `crates/botticelli_chat/src/tui/tabs/logs.rs`
+- **Action:** Integrate tui-logger widget
+  ```rust
+  use tui_logger::{TuiLoggerWidget, TuiLoggerLevelOutput};
+
+  pub struct LogsTab {
+      // tui-logger manages state internally
+  }
+
+  impl LogsTab {
+      pub fn new() -> Self {
+          // Initialize tui-logger
+          tui_logger::init_logger(log::LevelFilter::Debug).unwrap();
+          tui_logger::set_default_level(log::LevelFilter::Info);
+
+          Self {}
+      }
+
+      pub fn render(&self, area: Rect, buf: &mut Buffer) {
+          let widget = TuiLoggerWidget::default()
+              .block(Block::default()
+                  .title("Logs")
+                  .borders(Borders::ALL))
+              .output_separator(':')
+              .output_timestamp(Some("%H:%M:%S".to_string()))
+              .output_level(Some(TuiLoggerLevelOutput::Abbreviated))
+              .output_target(true)
+              .output_file(false);
+
+          widget.render(area, buf);
+      }
+  }
+  ```
+- **Acceptance:**
+  - [ ] Real-time log viewing
+  - [ ] Log level filtering
+  - [ ] Scrollable log history
+  - [ ] Integrated with existing tracing
+
+### Phase 6: Polish & Features (Ongoing)
 
 #### Task 5.1: Help System
 - Comprehensive help modal
@@ -845,6 +1328,45 @@ match result {
 
 ---
 
+## Learning from Ecosystem
+
+### Apps to Study
+
+**Oatmeal** - Terminal chat with LLM support
+- Highly relevant to our chat tab
+- Study their message rendering
+- Learn LLM integration patterns
+- **Action:** Find and review source code
+
+**Yōzefu** - Kafka cluster browser
+- Multi-tab data navigation
+- Similar to our database tab
+- Table rendering patterns
+
+### Best Practices Applied
+
+**Architecture:**
+- ✅ MVC pattern (App → State → Render)
+- ✅ Event-driven message passing
+- ✅ Component-based organization
+
+**Configuration:**
+- ✅ XDG directories for user config
+- ✅ Workspace config in repo
+- ✅ Environment variables for secrets
+
+**Logging:**
+- ✅ tui-logger widget for real-time viewing
+- ✅ File-based logs for debugging
+- ✅ Don't interfere with TUI
+
+**Error Handling:**
+- ✅ color_eyre for beautiful error displays (dev)
+- ✅ Keep botticelli_error for production
+- ✅ Modal dialogs for user-facing errors
+
+---
+
 ## Success Metrics
 
 ### User Experience
@@ -891,4 +1413,115 @@ match result {
 3. **Start Phase 1** - Create modular foundation
 4. **Iterate** - Build tab by tab, test with users
 
-**Ready to begin?** I can start with Phase 1, Task 1.1: Creating the module structure and base architecture.
+---
+
+## Time Savings from Ecosystem
+
+### Original Estimate
+- Phase 1: 1 week (foundation)
+- Phase 2: 1 week (narratives)
+- Phase 3: 1 week (other tabs)
+- Phase 4: 1 week (chat)
+- Phase 5: 1 week (polish)
+- **Total: 5 weeks**
+
+### Revised with Libraries
+- Phase 1: 1 week (foundation + library integration)
+- Phase 2: 1 week (narratives using tree widget)
+- Phase 3: 1 week (other tabs, logger widget)
+- Phase 4: Concurrent with Phase 3
+- **Total: 3-4 weeks**
+
+### Savings Breakdown
+- **tui-tree-widget:** 2-3 days saved (200+ lines not written)
+- **tui-textarea:** 1-2 days saved (rich editing for free)
+- **tui-logger:** 1 day saved (monitoring tab ready)
+- **Best practices:** Fewer bugs, faster development
+- **Total saved: 1-2 weeks**
+
+### What We're NOT Building
+- ❌ Custom tree navigation logic
+- ❌ Text editing with undo/redo
+- ❌ Log filtering and display
+- ❌ File browser (if we use ratatui-explorer)
+
+### What We ARE Building
+- ✅ Botticelli domain logic
+- ✅ Narrative management
+- ✅ Bot orchestration
+- ✅ Database integration
+- ✅ LLM sampling integration
+- ✅ Our unique features
+
+---
+
+## Next Steps
+
+1. **Review updated plan** - Any changes needed?
+2. **Study Oatmeal** - Learn from similar app
+3. **Start Phase 1** - Add dependencies, create modules
+4. **Iterate quickly** - Libraries accelerate development
+
+**Ready to begin?** I can start with Phase 1, Task 1.1: Adding dependencies and creating the module structure.
+
+---
+
+## Implementation Tracking
+
+**Started:** 2024-12-14
+
+### Phase 1: Foundation ✅ COMPLETE
+**Status:** Complete  
+**Date:** 2024-12-14
+
+- ✅ Task 1.1: Add dependencies (uuid) to Cargo.toml
+- ✅ Task 1.2: Create module structure (app, commands, error, events, state, view)
+- ✅ Task 1.3: Define core types (AppState, ViewMode, ChatMessage, ConversationId, NarrativeId)
+
+### Phase 2: Core Types & Event Loop ✅ COMPLETE
+**Status:** Complete  
+**Date:** 2024-12-14
+
+- ✅ Task 2.1: Implement AppState with mode tracking, conversation management, input buffer
+- ✅ Task 2.2: Create Command enum for TUI actions
+- ✅ Task 2.3: Implement EventHandler with keyboard/resize/tick events
+- ✅ Task 2.4: Create App coordinator with event loop, terminal setup/restore, command handling
+- ✅ Task 2.5: Implement View trait with ChatView (basic rendering)
+- ✅ Task 2.6: Add stub views (NarrativeBrowserView, NarrativeEditorView)
+
+**Files Refactored:**
+- Deleted: app.rs, backend.rs, database_backend.rs, events.rs, ui.rs, views.rs, runner.rs (old architecture)
+- Created: app.rs, commands.rs, events.rs, state.rs, view.rs (new architecture)
+- Updated: lib.rs (new module structure), Cargo.toml (uuid dependency)
+
+**Architecture Changes:**
+- Moved from monolithic tui.rs to modular architecture
+- Separated concerns: state management, event handling, view rendering, command processing
+- Created clean View trait for extensibility
+
+### Phase 3: Chat View Integration (IN PROGRESS)
+**Status:** Not Started  
+**Next:** Integrate ConversationSession into ChatView
+
+- ⬜ Task 3.1: Add ConversationSession to App
+- ⬜ Task 3.2: Implement SendMessage command with actual LLM integration
+- ⬜ Task 3.3: Add message history rendering with scrolling
+- ⬜ Task 3.4: Handle input properly (char insertion, backspace, cursor movement)
+- ⬜ Task 3.5: Add conversation loading/saving
+
+### Phase 4: Narrative Views (NOT STARTED)
+- ⬜ NarrativeBrowserView implementation
+- ⬜ NarrativeEditorView implementation
+- ⬜ Narrative loading/saving integration
+
+### Phase 5: Settings View (NOT STARTED)
+- ⬜ Settings view stub
+- ⬜ Configuration display/editing
+
+### Phase 6: Polish (NOT STARTED)
+- ⬜ Better error display
+- ⬜ Loading indicators
+- ⬜ Help overlay
+- ⬜ Keyboard shortcut hints
+
+**Current Focus:** Basic foundation complete, ready for Phase 3 integration

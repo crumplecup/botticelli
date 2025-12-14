@@ -217,41 +217,25 @@ impl ServiceContainer {
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_core::LlmProvider>> {
-        use botticelli_models::{GeminiModel, ModelId};
+        use botticelli_models::ModelId;
 
         let model_id = self.config.chat.initial_model();
 
         debug!(model = ?model_id, "Creating LLM provider");
 
         // Create provider based on model ID
-        let provider: Arc<dyn botticelli_core::LlmProvider> = match model_id {
-            ModelId::Gemini(model) => {
-                let client = botticelli_models::GeminiClient::new()
-                    .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(
-                        format!("Failed to create Gemini client: {}", e)
-                    )))?;
-                Arc::new(client)
+        match model_id {
+            ModelId::Gemini(_) => {
+                Err(ChatError::new(ChatErrorKind::ExecutionFailed(
+                    "Gemini provider not yet implemented with new LlmProvider trait".into()
+                )))
             }
-            ModelId::Claude(model) => {
-                let api_key = std::env::var("ANTHROPIC_API_KEY")
-                    .map_err(|_| ChatError::new(ChatErrorKind::ExecutionFailed(
-                        "ANTHROPIC_API_KEY not set".to_string()
-                    )))?;
-                let client = botticelli_models::AnthropicClient::new(
-                    api_key,
-                    model.to_string(),
-                );
-                Arc::new(client)
+            ModelId::Groq(_) => {
+                Err(ChatError::new(ChatErrorKind::ExecutionFailed(
+                    "Groq provider not yet implemented with new LlmProvider trait".into()
+                )))
             }
-            _ => {
-                return Err(ChatError::new(ChatErrorKind::ExecutionFailed(
-                    format!("Unsupported model: {:?}", model_id)
-                )));
-            }
-        };
-
-        info!(provider = provider.provider_name(), model = provider.default_model(), "LLM provider initialized");
-        Ok(provider)
+        }
     }
 }
 

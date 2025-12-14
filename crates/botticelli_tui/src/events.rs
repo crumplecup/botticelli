@@ -1,47 +1,53 @@
-//! Event handling for TUI.
-
-use crate::{TuiError, TuiErrorKind};
-use botticelli_error::{BotticelliError, BotticelliResult};
-use crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
 use std::time::Duration;
 
-/// Event types for the TUI.
-#[derive(Debug, Clone, PartialEq, Eq)]
+use crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
+
+use crate::{TuiError, TuiErrorKind, TuiResult};
+
+/// TUI events.
+#[derive(Debug, Clone)]
 pub enum Event {
-    /// Tick event for periodic updates
-    Tick,
-    /// Key press event
+    /// Keyboard input.
     Key(KeyEvent),
+    /// Terminal resize.
+    Resize(u16, u16),
+    /// Tick for periodic updates.
+    Tick,
 }
 
-/// Event handler that polls for terminal events.
+/// Event handler for the TUI.
+#[derive(Debug)]
 pub struct EventHandler {
-    /// Tick rate in milliseconds
+    /// Tick rate for periodic updates.
     tick_rate: Duration,
 }
 
 impl EventHandler {
-    /// Create a new event handler with specified tick rate in milliseconds.
-    pub fn new(tick_rate_ms: u64) -> Self {
-        Self {
-            tick_rate: Duration::from_millis(tick_rate_ms),
-        }
+    /// Creates a new event handler.
+    pub fn new(tick_rate: Duration) -> Self {
+        Self { tick_rate }
     }
 
-    /// Get the next event, blocking until an event is available or timeout.
-    #[tracing::instrument(skip(self))]
-    pub fn next(&self) -> BotticelliResult<Option<Event>> {
+    /// Polls for the next event.
+    pub fn next(&self) -> TuiResult<Event> {
         if event::poll(self.tick_rate).map_err(|e| {
-            BotticelliError::from(TuiError::new(TuiErrorKind::EventPoll(e.to_string())))
+            TuiError::new(TuiErrorKind::EventPoll(format!("Failed to poll events: {}", e)))
         })? {
             match event::read().map_err(|e| {
-                BotticelliError::from(TuiError::new(TuiErrorKind::EventRead(e.to_string())))
+                TuiError::new(TuiErrorKind::EventRead(format!("Failed to read event: {}", e)))
             })? {
-                CrosstermEvent::Key(key) => Ok(Some(Event::Key(key))),
-                _ => Ok(None),
+                CrosstermEvent::Key(key) => Ok(Event::Key(key)),
+                CrosstermEvent::Resize(w, h) => Ok(Event::Resize(w, h)),
+                _ => Ok(Event::Tick),
             }
         } else {
-            Ok(Some(Event::Tick))
+            Ok(Event::Tick)
         }
+    }
+}
+
+impl Default for EventHandler {
+    fn default() -> Self {
+        Self::new(Duration::from_millis(250))
     }
 }
