@@ -17,10 +17,18 @@
   - All tests passing (14 tests)
 
 ### In Progress
-- ⏳ **Phase 4: Testing & Polish**
-  - Not started
+- 🔄 **Phase 4: Testing & Polish**
+  - Task 4.1: Comprehensive Unit Tests (in progress)
+  - Task 4.2: Integration Tests (not started)
+  - Task 4.3: Error Handling Audit (not started)
+  - Task 4.4: Documentation (not started)
 
 ### Completed (Latest First)
+- ✅ **Task 4.1 Started** (2024-12-14)
+  - Added 6 comprehensive tests for ChatLlmSampler with mock providers
+  - Tests cover text responses, tool calls, tool execution, request building
+  - Updated Input variant handling in database conversions
+  - All tests passing (20 tests total)
 - ✅ **Phase 3 Complete** (2024-12-14)
 - ✅ **Task 3.3 Complete** (2024-12-14)
   - Added LLM provider to ServiceContainer with lazy initialization

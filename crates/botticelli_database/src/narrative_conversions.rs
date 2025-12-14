@@ -129,6 +129,39 @@ pub fn input_to_new_row(
             filename: None,
             media_ref_id: None,
         },
+        Input::ToolCall { name, arguments, .. } => {
+            // Store tool call as JSON in text_content
+            let json = serde_json::json!({
+                "name": name,
+                "arguments": arguments
+            });
+            NewActInputRow {
+                act_execution_id,
+                input_order: order as i32,
+                input_type: "tool_call".to_string(),
+                text_content: Some(json.to_string()),
+                mime_type: None,
+                filename: None,
+                media_ref_id: None,
+            }
+        },
+        Input::ToolResult { tool_call_id, content, is_error } => {
+            // Store tool result as JSON in text_content
+            let json = serde_json::json!({
+                "tool_call_id": tool_call_id,
+                "content": content,
+                "is_error": is_error
+            });
+            NewActInputRow {
+                act_execution_id,
+                input_order: order as i32,
+                input_type: "tool_result".to_string(),
+                text_content: Some(json.to_string()),
+                mime_type: None,
+                filename: None,
+                media_ref_id: None,
+            }
+        },
     };
     Ok(row)
 }
@@ -144,6 +177,8 @@ fn input_type_string(input: &Input) -> String {
         Input::BotCommand { .. } => "bot_command".to_string(),
         Input::Table { .. } => "table".to_string(),
         Input::Narrative { .. } => "narrative".to_string(),
+        Input::ToolCall { .. } => "tool_call".to_string(),
+        Input::ToolResult { .. } => "tool_result".to_string(),
     }
 }
 
