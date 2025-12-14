@@ -3,10 +3,10 @@
 use botticelli_chat::ChatLlmSampler;
 use botticelli_core::{
     GenerateRequest, GenerateResponse, GenerateResponseBuilder, LlmProvider, Output, ProviderError,
-    ProviderErrorKind, ToolCall,
+    ToolCall,
 };
 use botticelli_mcp::{
-    ConversationSession, ConversationTurn, LlmSampler, SamplingError, ToolDefinition, ToolRegistry,
+    ConversationSession, ConversationTurn, LlmSampler, ToolDefinition, ToolRegistry,
 };
 use std::sync::Arc;
 
