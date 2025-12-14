@@ -1,9 +1,9 @@
 //! Terminal UI implementation for chat interface.
 
 use crate::{
-    parse_intent, ChatError, ChatErrorKind, ChatInterface, ChatResult, CommandExecutor, Message,
-    Response, UserInput,
+    parse_intent, ChatInterface, CommandExecutor, Message, Response, UserInput,
 };
+use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,

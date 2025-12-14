@@ -16,6 +16,7 @@ mod generate;
 mod generate_llm;
 mod metrics;
 mod modify_narrative;
+mod narrative_creation;
 mod narrative_processor;
 mod narrative_utils;
 mod narrative_validation_helpers;
@@ -29,6 +30,10 @@ mod validate_narrative;
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 pub use create_narrative::CreateNarrativeTool;
 pub use database::QueryContentTool;
+pub use narrative_creation::{
+    ElicitActInput, ElicitActTool, ElicitMetadataInput, ElicitMetadataTool, FinalizeNarrativeInput,
+    FinalizeNarrativeTool, StartNarrativeInput, StartNarrativeTool,
+};
 #[cfg(feature = "discord")]
 pub use discord::{
     DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool, DiscordPostMessageTool,

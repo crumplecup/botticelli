@@ -260,7 +260,7 @@ impl InputElicitor {
 
                 // Try to parse as JSON value
                 let json_value = serde_json::from_str(&value)
-                    .unwrap_or_else(|_| serde_json::Value::String(value));
+                    .unwrap_or(serde_json::Value::String(value));
 
                 args.insert(key, json_value);
             }

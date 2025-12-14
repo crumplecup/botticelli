@@ -1,4 +1,7 @@
-use botticelli_chat::{ChatAppConfig, ChatResult, ServiceContainer};
+#![cfg(feature = "cli")]
+
+use botticelli_chat::{ChatAppConfig, ServiceContainer};
+use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 
 use std::path::PathBuf;
 
@@ -19,7 +22,7 @@ fn load_test_config() -> ChatResult<ChatAppConfig> {
     eprintln!("Config exists: {}", config_path.exists());
     
     ChatAppConfig::load(Some(&config_path)).map_err(|e| {
-        botticelli_chat::ChatError::new(botticelli_chat::ChatErrorKind::IoError(format!(
+        ChatError::new(ChatErrorKind::IoError(format!(
             "Failed to load config from {:?}: {}",
             config_path,
             e
@@ -80,7 +83,7 @@ async fn test_database_connection() -> ChatResult<()> {
 
     // Test that we can get a connection
     let _conn = pool.get().map_err(|e| {
-        botticelli_chat::ChatError::new(botticelli_chat::ChatErrorKind::IoError(format!(
+        ChatError::new(ChatErrorKind::IoError(format!(
             "Failed to get connection: {}",
             e
         )))

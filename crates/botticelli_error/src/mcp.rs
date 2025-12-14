@@ -106,6 +106,12 @@ impl McpError {
         Self::new(McpErrorKind::Session(message.into()))
     }
 
+    /// Create a session not found error.
+    #[track_caller]
+    pub fn session_not_found(session_id: impl Into<String>) -> Self {
+        Self::new(McpErrorKind::Session(format!("Session not found: {}", session_id.into())))
+    }
+
     /// Create a resource not found error.
     #[track_caller]
     pub fn resource_not_found(resource: impl Into<String>) -> Self {

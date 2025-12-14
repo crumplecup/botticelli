@@ -1,10 +1,7 @@
 //! TUI implementation of ElicitationDialog.
 
-use botticelli_error::BotticelliResult;
-
-
-use crate::elicitation::ElicitationDialog;
-use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_error::{BotticelliResult, ChatError, ChatErrorKind};
+use botticelli_mcp::ElicitationDialog;
 use async_trait::async_trait;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
@@ -52,17 +49,17 @@ impl TuiElicitationDialog {
     #[instrument]
     pub fn new() -> BotticelliResult<Self> {
         enable_raw_mode().map_err(|e| {
-            ChatError::new(ChatErrorKind::IoError(format!("Failed to enable raw mode: {}", e)))
+            ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to enable raw mode: {}", e)))
         })?;
 
         let mut stdout = io::stdout();
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture).map_err(|e| {
-            ChatError::new(ChatErrorKind::IoError(format!("Failed to setup terminal: {}", e)))
+            ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to setup terminal: {}", e)))
         })?;
 
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend).map_err(|e| {
-            ChatError::new(ChatErrorKind::IoError(format!("Failed to create terminal: {}", e)))
+            ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to create terminal: {}", e)))
         })?;
 
         debug!("TUI elicitation dialog initialized");
@@ -99,7 +96,7 @@ impl TuiElicitationDialog {
                 f.render_widget(input_block, chunks[1]);
             })
             .map_err(|e| {
-                ChatError::new(ChatErrorKind::IoError(format!("Failed to render: {}", e)))
+                ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to render: {}", e)))
             })?;
         
         Ok(())
@@ -153,10 +150,10 @@ impl TuiElicitationDialog {
 
         loop {
             if event::poll(std::time::Duration::from_millis(100)).map_err(|e| {
-                ChatError::new(ChatErrorKind::IoError(format!("Event poll failed: {}", e)))
+                ChatError::new(ChatErrorKind::ExecutionFailed(format!("Event poll failed: {}", e)))
             })? {
                 if let Event::Key(key) = event::read().map_err(|e| {
-                    ChatError::new(ChatErrorKind::IoError(format!("Key read failed: {}", e)))
+                    ChatError::new(ChatErrorKind::ExecutionFailed(format!("Key read failed: {}", e)))
                 })? {
                     match key.code {
                         KeyCode::Enter => {
@@ -166,7 +163,8 @@ impl TuiElicitationDialog {
                             if key.modifiers.contains(KeyModifiers::CONTROL) && c == 'c' {
                                 return Err(ChatError::new(ChatErrorKind::InvalidInput(
                                     "User cancelled".to_string(),
-                                )));
+                                ))
+                                .into());
                             }
                             input.push(c);
                         }

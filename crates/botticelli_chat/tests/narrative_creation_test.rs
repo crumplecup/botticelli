@@ -1,3 +1,5 @@
+#![cfg(feature = "cli")]
+
 //! End-to-end integration test for narrative creation workflow
 //!
 //! Tests the complete flow:
@@ -7,7 +9,10 @@
 //! 4. Can save narrative to database
 //! 5. Can load narrative from database
 
-use botticelli_chat::{ChatAppConfig, ChatError, ChatErrorKind, ChatResult, startup_sequence};
+use botticelli_chat::ChatAppConfig;
+#[cfg(feature = "cli")]
+use botticelli_chat::startup_sequence;
+use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use std::sync::Once;
 
 static INIT: Once = Once::new();
@@ -23,6 +28,7 @@ async fn init_test_environment() -> ChatResult<ChatAppConfig> {
     });
     
     // Run startup sequence to ensure services are ready
+    #[cfg(feature = "cli")]
     startup_sequence(&config).await?;
     
     Ok(config)
@@ -182,7 +188,7 @@ async fn test_create_narrative_call() -> ChatResult<()> {
     
     // Parse the JSON response from create_narrative
     let narrative_result: serde_json::Value = serde_json::from_str(content_text).map_err(|e| {
-        ChatError::new(ChatErrorKind::SerializationError(format!(
+        ChatError::new(ChatErrorKind::ValidationError(format!(
             "Failed to parse narrative result: {}",
             e
         )))
@@ -205,7 +211,7 @@ async fn test_create_narrative_call() -> ChatResult<()> {
     
     // Verify TOML is valid
     let _parsed: toml::Value = toml::from_str(toml_content).map_err(|e| {
-        ChatError::new(ChatErrorKind::SerializationError(format!(
+        ChatError::new(ChatErrorKind::ValidationError(format!(
             "Invalid TOML generated: {}",
             e
         )))

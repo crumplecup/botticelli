@@ -1,9 +1,7 @@
 //! Tests for elicitation system.
 
-use botticelli_chat::{
-    ChatError, ChatResult, ElicitationDialog, MetadataElicitor, NarrativeElicitor,
-    PartialNarrativeBuilder,
-};
+use botticelli_chat::{ElicitationDialog, MetadataElicitor, NarrativeElicitor, PartialNarrativeBuilder};
+use botticelli_error::{BotticelliResult, ChatError};
 use async_trait::async_trait;
 use std::collections::VecDeque;
 
@@ -56,52 +54,52 @@ impl MockDialog {
 
 #[async_trait]
 impl ElicitationDialog for MockDialog {
-    async fn ask_text(&mut self, _prompt: &str) -> ChatResult<String> {
+    async fn ask_text(&mut self, _prompt: &str) -> BotticelliResult<String> {
         self.text_responses
             .pop_front()
-            .ok_or_else(|| ChatError::invalid_state("No text response available"))
+            .ok_or_else(|| ChatError::invalid_state("No text response available").into())
     }
 
-    async fn ask_confirmation(&mut self, _prompt: &str, _default: bool) -> ChatResult<bool> {
+    async fn ask_confirmation(&mut self, _prompt: &str, _default: bool) -> BotticelliResult<bool> {
         self.confirmation_responses
             .pop_front()
-            .ok_or_else(|| ChatError::invalid_state("No confirmation response available"))
+            .ok_or_else(|| ChatError::invalid_state("No confirmation response available").into())
     }
 
-    async fn ask_choice(&mut self, _prompt: &str, _options: &[&str]) -> ChatResult<usize> {
+    async fn ask_choice(&mut self, _prompt: &str, _options: &[&str]) -> BotticelliResult<usize> {
         self.choice_responses
             .pop_front()
-            .ok_or_else(|| ChatError::invalid_state("No choice response available"))
+            .ok_or_else(|| ChatError::invalid_state("No choice response available").into())
     }
 
-    async fn ask_number(&mut self, _prompt: &str, _min: i64, _max: i64) -> ChatResult<i64> {
+    async fn ask_number(&mut self, _prompt: &str, _min: i64, _max: i64) -> BotticelliResult<i64> {
         self.number_responses
             .pop_front()
-            .ok_or_else(|| ChatError::invalid_state("No number response available"))
+            .ok_or_else(|| ChatError::invalid_state("No number response available").into())
     }
 
-    async fn ask_file_path(&mut self, _prompt: &str) -> ChatResult<String> {
+    async fn ask_file_path(&mut self, _prompt: &str) -> BotticelliResult<String> {
         self.text_responses
             .pop_front()
-            .ok_or_else(|| ChatError::invalid_state("No file path response available"))
+            .ok_or_else(|| ChatError::invalid_state("No file path response available").into())
     }
 
-    async fn show_info(&mut self, message: &str) -> ChatResult<()> {
+    async fn show_info(&mut self, message: &str) -> BotticelliResult<()> {
         self.messages.push(format!("INFO: {}", message));
         Ok(())
     }
 
-    async fn show_warning(&mut self, message: &str) -> ChatResult<()> {
+    async fn show_warning(&mut self, message: &str) -> BotticelliResult<()> {
         self.messages.push(format!("WARNING: {}", message));
         Ok(())
     }
 
-    async fn show_error(&mut self, message: &str) -> ChatResult<()> {
+    async fn show_error(&mut self, message: &str) -> BotticelliResult<()> {
         self.messages.push(format!("ERROR: {}", message));
         Ok(())
     }
 
-    async fn show_validation(&mut self, validation_text: &str) -> ChatResult<()> {
+    async fn show_validation(&mut self, validation_text: &str) -> BotticelliResult<()> {
         self.messages
             .push(format!("VALIDATION: {}", validation_text));
         Ok(())
@@ -112,7 +110,7 @@ impl ElicitationDialog for MockDialog {
         current: usize,
         total: usize,
         description: &str,
-    ) -> ChatResult<()> {
+    ) -> BotticelliResult<()> {
         self.messages.push(format!(
             "PROGRESS: {}/{} - {}",
             current, total, description
@@ -120,7 +118,7 @@ impl ElicitationDialog for MockDialog {
         Ok(())
     }
 
-    async fn show_preview(&mut self, toml: &str) -> ChatResult<()> {
+    async fn show_preview(&mut self, toml: &str) -> BotticelliResult<()> {
         self.messages.push(format!("PREVIEW: {}", toml));
         Ok(())
     }

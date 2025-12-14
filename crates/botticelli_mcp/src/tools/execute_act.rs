@@ -120,7 +120,7 @@ impl ExecuteActTool {
                 .gemini_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("Gemini".into()));
+                .ok_or_else(|| McpError::backend_unavailable("Gemini"));
         }
 
         #[cfg(feature = "anthropic")]
@@ -129,7 +129,7 @@ impl ExecuteActTool {
                 .anthropic_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("Anthropic".into()));
+                .ok_or_else(|| McpError::backend_unavailable("Anthropic"));
         }
 
         #[cfg(feature = "ollama")]
@@ -141,7 +141,7 @@ impl ExecuteActTool {
                 .ollama_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("Ollama".into()));
+                .ok_or_else(|| McpError::backend_unavailable("Ollama"));
         }
 
         #[cfg(feature = "huggingface")]
@@ -150,7 +150,7 @@ impl ExecuteActTool {
                 .huggingface_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("HuggingFace".into()));
+                .ok_or_else(|| McpError::backend_unavailable("HuggingFace"));
         }
 
         #[cfg(feature = "groq")]
@@ -159,7 +159,7 @@ impl ExecuteActTool {
                 .groq_driver
                 .clone()
                 .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("Groq".into()));
+                .ok_or_else(|| McpError::backend_unavailable("Groq"));
         }
 
         Err(McpError::unsupported_model(model.to_string()))
@@ -262,12 +262,12 @@ impl McpTool for ExecuteActTool {
         let prompt = input
             .get("prompt")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::invalid_input("Missing 'prompt' parameter".into()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'prompt' parameter"))?;
 
         let model = input
             .get("model")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::invalid_input("Missing 'model' parameter".into()))?;
+            .ok_or_else(|| McpError::invalid_input("Missing 'model' parameter"))?;
 
         let max_tokens = input
             .get("max_tokens")

@@ -4,9 +4,9 @@
 //! and verifying the expected outcomes.
 
 use botticelli_chat::{
-    ChatAppConfig, ChatResult, Command, CommandExecutor, NarrativeCommand,
-    ServiceContainer,
+    ChatAppConfig, Command, CommandExecutor, NarrativeCommand, ServiceContainer,
 };
+use botticelli_error::ChatResult;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;

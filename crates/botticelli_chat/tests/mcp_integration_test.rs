@@ -1,7 +1,3 @@
-use botticelli_chat::{ChatAppConfig, CommandExecutor, EnvironmentMode, ServiceContainer};
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::time::sleep;
 
 /// Integration test that validates MCP server startup and communication
 #[tokio::test]

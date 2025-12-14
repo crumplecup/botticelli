@@ -41,6 +41,9 @@ pub enum ChatErrorKind {
     /// Feature not implemented
     #[display("Not implemented: {}", _0)]
     NotImplemented(String),
+    /// I/O error
+    #[display("I/O error: {}", _0)]
+    IoError(String),
 }
 
 /// Chat error with location tracking.

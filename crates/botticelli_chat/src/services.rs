@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 #[cfg(feature = "cli")]
 use {
-    crate::{ChatError, ChatErrorKind, ChatResult},
+    botticelli_error::{ChatError, ChatErrorKind, ChatResult},
     tokio::sync::OnceCell,
     tracing::{debug, info, instrument},
 };

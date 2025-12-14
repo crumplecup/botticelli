@@ -1,7 +1,8 @@
 //! Demo mode binary that exercises chat interface with automated prompts.
 
 use botticelli_actor::{create_mcp_tools_demo, ChatDemoExecutor, DemoExecutor};
-use botticelli_chat::{ChatAppConfig, ChatError, ChatErrorKind, ChatResult, ServiceContainer};
+use botticelli_chat::{ChatAppConfig, ServiceContainer};
+use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{error, info, instrument};

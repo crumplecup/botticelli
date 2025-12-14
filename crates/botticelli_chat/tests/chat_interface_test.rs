@@ -1,6 +1,7 @@
 //! Tests for ChatInterface trait and mock implementation.
 
-use botticelli_chat::{ChatInterface, ChatResult, Message, Response, UserInput};
+use botticelli_chat::{ChatInterface, Message, Response, UserInput};
+use botticelli_error::{ChatError, ChatResult};
 use std::collections::VecDeque;
 
 /// Mock chat interface for testing.
@@ -45,7 +46,7 @@ impl ChatInterface for MockChatInterface {
     fn receive_input(&mut self) -> ChatResult<UserInput> {
         self.input_queue
             .pop_front()
-            .ok_or_else(|| botticelli_chat::ChatError::invalid_input("No input queued"))
+            .ok_or_else(|| ChatError::invalid_input("No input queued"))
     }
 
     fn send_response(&mut self, response: Response) -> ChatResult<()> {

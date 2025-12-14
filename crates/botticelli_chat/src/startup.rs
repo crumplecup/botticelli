@@ -2,7 +2,8 @@
 
 #[cfg(feature = "cli")]
 use {
-    crate::{ChatAppConfig, ChatError, ChatErrorKind, ChatResult, EnvironmentMode},
+    crate::{ChatAppConfig, EnvironmentMode},
+    botticelli_error::{ChatError, ChatErrorKind, ChatResult},
     diesel::prelude::*,
     tracing::{debug, error, info, instrument},
 };
@@ -66,7 +67,7 @@ async fn setup_postgres(config: &crate::ChatAppConfig) -> ChatResult<()> {
         Err(e) => {
             error!(error = ?e, "PostgreSQL connection failed");
             
-            Err(ChatError::new(ChatErrorKind::IoError(format!(
+            Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                 "PostgreSQL connection failed: {}\n\n\
                 Please ensure PostgreSQL is running:\n\
                   sudo systemctl start postgresql\n\
@@ -111,7 +112,7 @@ fn ensure_database_exists(conn: &mut diesel::PgConnection, db_name: &str) -> Cha
             sql_query(&create_query)
                 .execute(conn)
                 .map_err(|e| {
-                    ChatError::new(ChatErrorKind::IoError(format!(
+                    ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                         "Failed to create database: {}",
                         e
                     )))
@@ -134,7 +135,7 @@ fn ensure_tables_exist(db_url: &str) -> ChatResult<()> {
 
     // Try to connect to the database
     let mut conn = PgConnection::establish(db_url).map_err(|e| {
-        ChatError::new(ChatErrorKind::IoError(format!(
+        ChatError::new(ChatErrorKind::ExecutionFailed(format!(
             "Failed to connect to database: {}",
             e
         )))
@@ -165,7 +166,7 @@ fn ensure_tables_exist(db_url: &str) -> ChatResult<()> {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     error!(error = %stderr, "Migration failed");
                     
-                    Err(ChatError::new(ChatErrorKind::IoError(format!(
+                    Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                         "Failed to run migrations: {}",
                         stderr
                     ))))
@@ -173,7 +174,7 @@ fn ensure_tables_exist(db_url: &str) -> ChatResult<()> {
                 Err(e) => {
                     error!(error = ?e, "Failed to execute diesel command");
                     
-                    Err(ChatError::new(ChatErrorKind::IoError(format!(
+                    Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                         "Failed to execute diesel migration: {}\n\n\
                         Please install diesel_cli:\n\
                           cargo install diesel_cli --no-default-features --features postgres",
@@ -255,14 +256,14 @@ async fn check_mcp_health(url: &str) -> ChatResult<()> {
         }
         Ok(response) => {
             debug!(status = %response.status(), "MCP server returned non-success status");
-            Err(ChatError::new(ChatErrorKind::IoError(format!(
+            Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                 "MCP server unhealthy: {}",
                 response.status()
             ))))
         }
         Err(e) => {
             debug!(error = ?e, "MCP server not reachable");
-            Err(ChatError::new(ChatErrorKind::IoError(format!(
+            Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                 "MCP server not reachable: {}",
                 e
             ))))
@@ -282,7 +283,7 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
     let is_local = matches!(config.environment.mode, EnvironmentMode::Local);
     
     if !is_local {
-        return Err(ChatError::new(ChatErrorKind::IoError(
+        return Err(ChatError::new(ChatErrorKind::ExecutionFailed(
             "Cannot auto-start MCP server in container mode. \
             Please ensure the MCP server container is running.".to_string()
         )));
@@ -346,7 +347,7 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
             }
             Err(e) => {
                 error!(error = ?e, "Failed to start MCP server binary");
-                Err(ChatError::new(ChatErrorKind::IoError(format!(
+                Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                     "Failed to start MCP server: {}",
                     e
                 ))))
@@ -355,7 +356,7 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
     } else {
         // No binary found, provide helpful error
         error!("MCP server binary not found");
-        Err(ChatError::new(ChatErrorKind::IoError(
+        Err(ChatError::new(ChatErrorKind::ExecutionFailed(
             "MCP server binary not found.\n\n\
             Please build it first:\n\
               cargo build --bin botticelli-mcp-http --features=\"http,database,llm\"\n\n\

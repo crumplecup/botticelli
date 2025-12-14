@@ -1,6 +1,7 @@
 //! Discord content workflow orchestration.
 
-use crate::{McpError, McpResult, ToolRegistry};
+use crate::ToolRegistry;
+use botticelli_error::{McpError, McpResult};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use tracing::{debug, error, info, instrument};
