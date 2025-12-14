@@ -24,7 +24,11 @@ impl NarrativeRegistry {
 
     /// Starts a new narrative creation session.
     #[instrument(skip(self))]
-    pub async fn create_session(&self, session_id: String, description: String) -> BotticelliResult<()> {
+    pub async fn create_session(
+        &self,
+        session_id: String,
+        description: String,
+    ) -> BotticelliResult<()> {
         let mut sessions = self.sessions.write().await;
         let partial = PartialNarrativeBuilder::default()
             .description(Some(description))
@@ -36,14 +40,21 @@ impl NarrativeRegistry {
 
     /// Retrieves a session.
     #[instrument(skip(self))]
-    pub async fn get_session(&self, session_id: &str) -> BotticelliResult<Option<PartialNarrative>> {
+    pub async fn get_session(
+        &self,
+        session_id: &str,
+    ) -> BotticelliResult<Option<PartialNarrative>> {
         let sessions = self.sessions.read().await;
         Ok(sessions.get(session_id).cloned())
     }
 
     /// Updates a session.
     #[instrument(skip(self, partial))]
-    pub async fn update_session(&self, session_id: &str, partial: PartialNarrative) -> BotticelliResult<()> {
+    pub async fn update_session(
+        &self,
+        session_id: &str,
+        partial: PartialNarrative,
+    ) -> BotticelliResult<()> {
         let mut sessions = self.sessions.write().await;
         sessions.insert(session_id.to_string(), partial);
         Ok(())
@@ -51,7 +62,10 @@ impl NarrativeRegistry {
 
     /// Removes a session.
     #[instrument(skip(self))]
-    pub async fn remove_session(&self, session_id: &str) -> BotticelliResult<Option<PartialNarrative>> {
+    pub async fn remove_session(
+        &self,
+        session_id: &str,
+    ) -> BotticelliResult<Option<PartialNarrative>> {
         let mut sessions = self.sessions.write().await;
         Ok(sessions.remove(session_id))
     }
@@ -153,12 +167,12 @@ impl<E: NarrativeElicitor> ElicitMetadataTool<E> {
             .registry
             .get_session(&input.session_id)
             .await?
-            .ok_or_else(|| {
-                McpError::session_not_found(input.session_id.clone())
-            })?;
+            .ok_or_else(|| McpError::session_not_found(input.session_id.clone()))?;
 
         self.elicitor.elicit(dialog, &mut partial).await?;
-        self.registry.update_session(&input.session_id, partial).await?;
+        self.registry
+            .update_session(&input.session_id, partial)
+            .await?;
 
         Ok(serde_json::json!({
             "status": "metadata_complete",
@@ -192,12 +206,12 @@ impl<E: NarrativeElicitor> ElicitActTool<E> {
             .registry
             .get_session(&input.session_id)
             .await?
-            .ok_or_else(|| {
-                McpError::session_not_found(input.session_id.clone())
-            })?;
+            .ok_or_else(|| McpError::session_not_found(input.session_id.clone()))?;
 
         self.elicitor.elicit(dialog, &mut partial).await?;
-        self.registry.update_session(&input.session_id, partial).await?;
+        self.registry
+            .update_session(&input.session_id, partial)
+            .await?;
 
         Ok(serde_json::json!({
             "status": "act_complete",
@@ -226,13 +240,14 @@ impl FinalizeNarrativeTool {
             .registry
             .remove_session(&input.session_id)
             .await?
-            .ok_or_else(|| {
-                McpError::session_not_found(input.session_id.clone())
-            })?;
+            .ok_or_else(|| McpError::session_not_found(input.session_id.clone()))?;
 
-        let narrative = partial.try_into_narrative().map_err(|e| McpError::invalid_input(e.to_string()))?;
-        let toml = toml::to_string_pretty(&narrative)
-            .map_err(|e| McpError::execution_failed(format!("Failed to serialize narrative: {}", e)))?;
+        let narrative = partial
+            .try_into_narrative()
+            .map_err(|e| McpError::invalid_input(e.to_string()))?;
+        let toml = toml::to_string_pretty(&narrative).map_err(|e| {
+            McpError::execution_failed(format!("Failed to serialize narrative: {}", e))
+        })?;
 
         Ok(serde_json::json!({
             "status": "complete",

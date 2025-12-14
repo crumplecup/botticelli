@@ -1,8 +1,8 @@
 //! Tool for saving narratives to files.
 
 use crate::tools::McpTool;
-use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use serde_json::{json, Value};
 use std::path::Path;
 use tracing::{debug, instrument};
@@ -96,9 +96,9 @@ impl McpTool for SaveNarrativeTool {
         }
 
         // Write file
-        tokio::fs::write(path, narrative_toml).await.map_err(|e| {
-            McpError::execution_failed(format!("Failed to write file: {}", e))
-        })?;
+        tokio::fs::write(path, narrative_toml)
+            .await
+            .map_err(|e| McpError::execution_failed(format!("Failed to write file: {}", e)))?;
 
         debug!(path = file_path, "Narrative saved to file");
 

@@ -27,9 +27,7 @@ fn test_handle_rate_limit_loyal_movement() {
     );
     let mut session = ChatSession::new(selector, ModelId::Gemini(GeminiModel::Gemini25Flash));
 
-    let next = session
-        .handle_rate_limit("rate limit exceeded")
-        .unwrap();
+    let next = session.handle_rate_limit("rate limit exceeded").unwrap();
     assert_eq!(next, ModelId::Gemini(GeminiModel::Gemini20FlashThinking));
 }
 
@@ -42,9 +40,7 @@ fn test_handle_rate_limit_friendly_movement() {
     );
     let mut session = ChatSession::new(selector, ModelId::Gemini(GeminiModel::Gemini25Flash));
 
-    let next = session
-        .handle_rate_limit("rate limit exceeded")
-        .unwrap();
+    let next = session.handle_rate_limit("rate limit exceeded").unwrap();
     // Should try a Groq friend (actual friend determined by friends() method)
     assert!(matches!(next, ModelId::Groq(_)));
 }
@@ -53,7 +49,11 @@ fn test_handle_rate_limit_friendly_movement() {
 fn test_handle_rate_limit_with_lower_bound() {
     let bounds = ModelBounds::lower_bound(ModelId::Gemini(GeminiModel::Gemini20Flash));
 
-    let selector = ModelSelector::new(bounds, SelectionStrategy::LoyalFirst, RateLimitDetector::new());
+    let selector = ModelSelector::new(
+        bounds,
+        SelectionStrategy::LoyalFirst,
+        RateLimitDetector::new(),
+    );
     let mut session = ChatSession::new(selector, ModelId::Gemini(GeminiModel::Gemini20Flash));
 
     // Can move down from Flash within bounds

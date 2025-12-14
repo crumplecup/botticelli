@@ -1,4 +1,3 @@
-
 use std::io::{BufRead, BufReader};
 use std::process::{Child, Command, Stdio};
 use std::thread;
@@ -178,7 +177,10 @@ async fn test_mcp_server_create_narrative_tool_structure() {
     );
 
     let input_schema = &create_narrative["inputSchema"];
-    assert_eq!(input_schema["type"], "object", "inputSchema should be object");
+    assert_eq!(
+        input_schema["type"], "object",
+        "inputSchema should be object"
+    );
 
     // Verify required parameters exist
     let properties = input_schema["properties"]

@@ -77,10 +77,7 @@ fn create_summary(validation: &ValidationResult) -> String {
             format!("✅ Valid narrative with {} warning(s)", warning_count)
         }
     } else if fixable_count == error_count {
-        format!(
-            "❌ {} error(s) - all have fix suggestions",
-            error_count
-        )
+        format!("❌ {} error(s) - all have fix suggestions", error_count)
     } else if fixable_count > 0 {
         format!(
             "❌ {} error(s) ({} fixable, {} need manual review)",
@@ -89,10 +86,7 @@ fn create_summary(validation: &ValidationResult) -> String {
             error_count - fixable_count
         )
     } else {
-        format!(
-            "❌ {} error(s) - manual review required",
-            error_count
-        )
+        format!("❌ {} error(s) - manual review required", error_count)
     }
 }
 
@@ -241,13 +235,15 @@ pub fn auto_fix_common_issues(toml: &str) -> (String, Vec<String>) {
         // Find all act names
         let act_names = extract_act_names(&fixed);
         if !act_names.is_empty() {
-            let toc = format!("[toc]\norder = [{}]\n\n", 
-                act_names.iter()
+            let toc = format!(
+                "[toc]\norder = [{}]\n\n",
+                act_names
+                    .iter()
                     .map(|name| format!("\"{}\"", name))
                     .collect::<Vec<_>>()
                     .join(", ")
             );
-            
+
             // Insert before [acts] if present
             if let Some(acts_pos) = fixed.find("[acts]") {
                 fixed.insert_str(acts_pos, &toc);
@@ -310,9 +306,10 @@ mod tests {
 
     #[test]
     fn test_format_toml() {
-        let toml = "[narrative]\nname = \"test\"\n\n\n[toc]\norder = [\"act1\"]\n[acts]\nact1 = \"test\"";
+        let toml =
+            "[narrative]\nname = \"test\"\n\n\n[toc]\norder = [\"act1\"]\n[acts]\nact1 = \"test\"";
         let formatted = format_toml(toml);
-        
+
         // Should not have triple blank lines
         assert!(!formatted.contains("\n\n\n"));
         // Should have blank line before [acts]
@@ -323,7 +320,7 @@ mod tests {
     fn test_auto_fix_missing_toc() {
         let toml = "[narrative]\nname = \"test\"\n\n[acts]\nact1 = \"test\"\nact2 = \"test2\"";
         let (fixed, fixes) = auto_fix_common_issues(toml);
-        
+
         assert!(fixed.contains("[toc]"));
         assert!(fixed.contains("order = [\"act1\", \"act2\"]"));
         assert!(!fixes.is_empty());
@@ -333,7 +330,7 @@ mod tests {
     fn test_extract_act_names() {
         let toml = "[acts]\nfetch = \"Get data\"\nanalyze = \"Process\"";
         let names = extract_act_names(toml);
-        
+
         assert_eq!(names.len(), 2);
         assert!(names.contains(&"fetch".to_string()));
         assert!(names.contains(&"analyze".to_string()));

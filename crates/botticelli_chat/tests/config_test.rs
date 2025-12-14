@@ -76,7 +76,7 @@ fn test_mcp_server_url_generation() {
 #[test]
 fn test_environment_mode_serialization() {
     use serde::Serialize;
-    
+
     #[derive(Serialize)]
     struct Wrapper {
         mode: EnvironmentMode,

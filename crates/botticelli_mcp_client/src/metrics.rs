@@ -1,6 +1,6 @@
 use prometheus::{
-    register_counter_vec_with_registry, register_histogram_vec_with_registry, CounterVec,
-    HistogramVec, Registry,
+    CounterVec, HistogramVec, Registry, register_counter_vec_with_registry,
+    register_histogram_vec_with_registry,
 };
 use std::sync::Arc;
 use tracing::instrument;

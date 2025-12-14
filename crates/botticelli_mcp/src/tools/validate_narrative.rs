@@ -1,8 +1,8 @@
 //! Narrative TOML validation tool for MCP.
 
 use crate::tools::McpTool;
-use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use botticelli_narrative::validator::{validate_narrative_toml_with_config, ValidationConfig};
 use serde_json::{json, Value};
 use std::path::PathBuf;

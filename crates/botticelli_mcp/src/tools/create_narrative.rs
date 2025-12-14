@@ -1,12 +1,12 @@
 //! Tool for generating narratives from natural language descriptions.
 
-use crate::NarrativeHelper;
 use crate::tools::narrative_validation_helpers::{
     add_helpful_comments, auto_fix_common_issues, format_toml, format_validation_result,
 };
 use crate::tools::McpTool;
-use botticelli_error::{McpError, McpResult};
+use crate::NarrativeHelper;
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use botticelli_narrative::validator::validate_narrative_toml;
 use serde_json::{json, Value};
 use tracing::{debug, instrument};
@@ -76,7 +76,8 @@ impl McpTool for CreateNarrativeTool {
         let default_temperature = input.get("default_temperature").and_then(|v| v.as_f64());
 
         // Generate narrative TOML
-        let mut toml = generate_narrative_toml(description, name, default_model, default_temperature)?;
+        let mut toml =
+            generate_narrative_toml(description, name, default_model, default_temperature)?;
 
         // Auto-fix common issues
         let (fixed_toml, fixes_applied) = auto_fix_common_issues(&toml);
@@ -187,4 +188,3 @@ fn generate_narrative_toml(
 
     Ok(toml)
 }
-

@@ -1,8 +1,8 @@
 //! Echo tool for testing MCP server.
 
 use crate::tools::McpTool;
-use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use serde_json::{json, Value};
 use tracing::debug;
 

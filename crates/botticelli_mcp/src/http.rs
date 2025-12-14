@@ -92,8 +92,7 @@ pub async fn create_server(router: BotticelliRouter, port: u16) -> Result<(), st
         .route("/tools/list", get(list_tools))
         .route("/resources/list", get(list_resources))
         .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::new().include_headers(true)),
+            TraceLayer::new_for_http().make_span_with(DefaultMakeSpan::new().include_headers(true)),
         )
         .layer(CorsLayer::permissive())
         .with_state(state);
@@ -182,10 +181,14 @@ async fn call_tool(
     }
 
     // Call the tool through router
-    match state.router.call_tool(&request.name, request.parameters).await {
+    match state
+        .router
+        .call_tool(&request.name, request.parameters)
+        .await
+    {
         Ok(content) => {
             debug!(content_blocks = content.len(), "Tool call succeeded");
-            
+
             let blocks = content
                 .into_iter()
                 .map(|c| {
@@ -200,7 +203,7 @@ async fn call_tool(
                         }
                         Err(_) => "[Content serialization error]".to_string(),
                     };
-                    
+
                     ContentBlock {
                         content_type: "text".to_string(),
                         text,

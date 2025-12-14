@@ -232,9 +232,8 @@ impl McpTool for DiscordPostMessageTool {
             .post(&format!("/channels/{}/messages", channel_id), body)
             .await?;
 
-        let message: DiscordMessage = serde_json::from_value(response).map_err(|e| {
-            McpError::execution_failed(format!("Failed to parse message: {}", e))
-        })?;
+        let message: DiscordMessage = serde_json::from_value(response)
+            .map_err(|e| McpError::execution_failed(format!("Failed to parse message: {}", e)))?;
 
         Ok(json!({
             "status": "success",
@@ -318,9 +317,8 @@ impl McpTool for DiscordGetMessagesTool {
             ))
             .await?;
 
-        let messages: Vec<DiscordMessage> = serde_json::from_value(response).map_err(|e| {
-            McpError::execution_failed(format!("Failed to parse messages: {}", e))
-        })?;
+        let messages: Vec<DiscordMessage> = serde_json::from_value(response)
+            .map_err(|e| McpError::execution_failed(format!("Failed to parse messages: {}", e)))?;
 
         let formatted_messages: Vec<Value> = messages
             .into_iter()
@@ -472,9 +470,8 @@ impl McpTool for DiscordGetChannelsTool {
             .get(&format!("/guilds/{}/channels", guild_id))
             .await?;
 
-        let channels: Vec<DiscordChannel> = serde_json::from_value(response).map_err(|e| {
-            McpError::execution_failed(format!("Failed to parse channels: {}", e))
-        })?;
+        let channels: Vec<DiscordChannel> = serde_json::from_value(response)
+            .map_err(|e| McpError::execution_failed(format!("Failed to parse channels: {}", e)))?;
 
         let formatted_channels: Vec<Value> = channels
             .into_iter()

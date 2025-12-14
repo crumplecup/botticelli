@@ -21,7 +21,11 @@ async fn test_create_narrative_includes_auto_fixes() {
         "Should include auto_fixes_applied"
     );
 
-    let fixes = result.get("auto_fixes_applied").unwrap().as_array().unwrap();
+    let fixes = result
+        .get("auto_fixes_applied")
+        .unwrap()
+        .as_array()
+        .unwrap();
     // Should have at least formatting improvements
     assert!(!fixes.is_empty(), "Should report auto-fixes applied");
 }
@@ -45,11 +49,7 @@ async fn test_create_narrative_includes_comments_version() {
     );
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
-    let toml_with_comments = result
-        .get("toml_with_comments")
-        .unwrap()
-        .as_str()
-        .unwrap();
+    let toml_with_comments = result.get("toml_with_comments").unwrap().as_str().unwrap();
 
     // Clean version should not have comments
     assert!(
@@ -218,10 +218,7 @@ act1 = "Test act""#;
 
     // If trailing comma was present, should be mentioned
     if existing_toml.contains(",]") {
-        assert!(
-            has_auto_fix_info,
-            "Should mention trailing comma auto-fix"
-        );
+        assert!(has_auto_fix_info, "Should mention trailing comma auto-fix");
     }
 }
 
@@ -291,8 +288,7 @@ analyze = "Analyze data""#;
     // Should have error about empty TOC
     if !errors.is_empty() {
         let has_suggestion = errors.iter().any(|error| {
-            error.get("suggestion").is_some()
-                && !error.get("suggestion").unwrap().is_null()
+            error.get("suggestion").is_some() && !error.get("suggestion").unwrap().is_null()
         });
 
         assert!(
@@ -330,10 +326,7 @@ async fn test_auto_fix_adds_missing_sections() {
     assert!(toml.contains("[acts]"), "Should have [acts] section");
 
     // Should report fixes applied
-    assert!(
-        !auto_fixes.is_empty(),
-        "Should report auto-fixes applied"
-    );
+    assert!(!auto_fixes.is_empty(), "Should report auto-fixes applied");
 }
 
 #[tokio::test]
@@ -422,11 +415,7 @@ async fn test_comments_include_all_section_types() {
 
     let result = tool.execute(input).await.expect("Tool execution failed");
 
-    let toml_with_comments = result
-        .get("toml_with_comments")
-        .unwrap()
-        .as_str()
-        .unwrap();
+    let toml_with_comments = result.get("toml_with_comments").unwrap().as_str().unwrap();
 
     // Check for header comments
     assert!(

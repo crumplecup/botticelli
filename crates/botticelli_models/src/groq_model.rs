@@ -7,7 +7,9 @@ use strum::EnumIter;
 ///
 /// Variants are ordered by rate limits and cost, allowing "loyal" movement
 /// up (more capable/expensive) or down (faster/cheaper) within the family.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumIter, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumIter, serde::Serialize, serde::Deserialize,
+)]
 pub enum GroqModel {
     /// Llama 3.3 70B Versatile - Most capable
     #[display("llama-3.3-70b-versatile")]
@@ -61,7 +63,7 @@ impl GroqModel {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
         let current_idx = all.iter().position(|m| m == self)?;
-        
+
         if current_idx == 0 {
             None
         } else {
@@ -74,7 +76,7 @@ impl GroqModel {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
         let current_idx = all.iter().position(|m| m == self)?;
-        
+
         if current_idx == all.len() - 1 {
             None
         } else {

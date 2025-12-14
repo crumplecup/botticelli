@@ -37,7 +37,7 @@ impl ModelFamily {
         use strum::IntoEnumIterator;
         let all: Vec<_> = ModelFamily::iter().collect();
         let current_idx = all.iter().position(|f| f == self).unwrap_or(0);
-        
+
         // Start after current, wrap around, exclude current
         let mut result = Vec::new();
         for i in 1..all.len() {
@@ -57,7 +57,10 @@ mod model_family_test {
     fn test_fallback_order_excludes_self() {
         for family in ModelFamily::iter() {
             let fallbacks = family.fallback_order();
-            assert!(!fallbacks.contains(&family), "Fallback should not include self");
+            assert!(
+                !fallbacks.contains(&family),
+                "Fallback should not include self"
+            );
         }
     }
 
@@ -65,7 +68,7 @@ mod model_family_test {
     fn test_fallback_order_starts_after_current() {
         let order = ModelFamily::Gemini.fallback_order();
         assert_eq!(order[0], ModelFamily::Groq);
-        
+
         let order = ModelFamily::Groq.fallback_order();
         assert_eq!(order[0], ModelFamily::Perplexity);
     }

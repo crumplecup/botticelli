@@ -4,8 +4,8 @@ use crate::tools::narrative_validation_helpers::{
     auto_fix_common_issues, format_toml, format_validation_result,
 };
 use crate::tools::McpTool;
-use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use botticelli_narrative::validator::validate_narrative_toml;
 use serde_json::{json, Value};
 use tracing::{debug, instrument};
@@ -129,8 +129,13 @@ fn apply_modification(toml: &str, modification: &str) -> McpResult<(String, Vec<
         return Ok((modified, changes));
     }
 
-    if lower_mod.contains("change model") || lower_mod.contains("use model") || lower_mod.contains("set model") 
-        || lower_mod.contains("use gemini") || lower_mod.contains("use claude") || lower_mod.contains("use gpt") {
+    if lower_mod.contains("change model")
+        || lower_mod.contains("use model")
+        || lower_mod.contains("set model")
+        || lower_mod.contains("use gemini")
+        || lower_mod.contains("use claude")
+        || lower_mod.contains("use gpt")
+    {
         let (modified, change) = change_model(toml, modification)?;
         changes.push(change);
         return Ok((modified, changes));
@@ -165,7 +170,11 @@ fn add_act(toml: &str, modification: &str) -> McpResult<(String, String)> {
         // Skip "that" if present
         let trimmed = after_add_act.trim();
         if trimmed.starts_with("that") || trimmed.starts_with("which") {
-            trimmed.split_whitespace().skip(1).collect::<Vec<_>>().join(" ")
+            trimmed
+                .split_whitespace()
+                .skip(1)
+                .collect::<Vec<_>>()
+                .join(" ")
         } else {
             trimmed.to_string()
         }
@@ -199,7 +208,10 @@ fn add_act(toml: &str, modification: &str) -> McpResult<(String, String)> {
         .ok_or_else(|| McpError::execution_failed("No [acts] section found".to_string()))?;
 
     // Add act definition
-    lines.insert(acts_idx + 1, format!("{} = \"{}\"", act_name, escape_toml_string(&desc)));
+    lines.insert(
+        acts_idx + 1,
+        format!("{} = \"{}\"", act_name, escape_toml_string(&desc)),
+    );
 
     let modified = lines.join("\n");
     let change = format!("Added act '{}'", act_name);

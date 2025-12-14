@@ -79,7 +79,9 @@ impl ModelBounds {
 /// Unified model identifier across all families.
 ///
 /// Allows comparing and ordering models regardless of provider.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Display, serde::Serialize, serde::Deserialize,
+)]
 pub enum ModelId {
     /// Gemini model variant
     #[display("gemini:{}", _0)]
@@ -259,9 +261,7 @@ impl ModelSelector {
     }
 
     fn try_loyal_movement(&self, current: ModelId) -> Option<ModelId> {
-        current
-            .move_down()
-            .filter(|&next| self.bounds.allows(next))
+        current.move_down().filter(|&next| self.bounds.allows(next))
     }
 
     fn try_friendly_movement(&self, current: ModelId) -> Option<ModelId> {

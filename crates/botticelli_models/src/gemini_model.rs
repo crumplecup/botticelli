@@ -7,7 +7,9 @@ use strum::EnumIter;
 ///
 /// Variants are ordered by rate limits and cost, allowing "loyal" movement
 /// up (more capable/expensive) or down (faster/cheaper) within the family.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumIter, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumIter, serde::Serialize, serde::Deserialize,
+)]
 pub enum GeminiModel {
     /// Gemini 2.5 Pro - Most restrictive, highest capability
     #[display("gemini-2.5-pro")]
@@ -73,7 +75,7 @@ impl GeminiModel {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
         let current_idx = all.iter().position(|m| m == self)?;
-        
+
         if current_idx == 0 {
             None
         } else {
@@ -88,7 +90,7 @@ impl GeminiModel {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
         let current_idx = all.iter().position(|m| m == self)?;
-        
+
         if current_idx == all.len() - 1 {
             None
         } else {

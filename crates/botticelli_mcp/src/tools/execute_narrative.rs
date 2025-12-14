@@ -1,8 +1,8 @@
 //! Narrative execution tool for MCP.
 
 use crate::tools::McpTool;
-use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use serde_json::{json, Value};
 
 #[cfg(any(

@@ -74,11 +74,14 @@ async fn test_create_multiple_acts() {
     let result = tool.execute(input).await.expect("Tool execution failed");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
-    
+
     // Should detect "then" pattern and create multiple acts
     assert!(toml.contains("fetch"), "Missing fetch act");
     assert!(toml.contains("analyze"), "Missing analyze act");
-    assert!(toml.contains("generate") || toml.contains("report"), "Missing report act");
+    assert!(
+        toml.contains("generate") || toml.contains("report"),
+        "Missing report act"
+    );
 }
 
 #[tokio::test]
@@ -141,11 +144,11 @@ analyze = "Analyze the data"
 
     let changes = result.get("changes").unwrap().as_array().unwrap();
     assert!(!changes.is_empty(), "Should report changes");
-    
+
     // Check that at least one change is about adding the act
-    let has_add_act = changes.iter().any(|change| {
-        change.as_str().unwrap().contains("Added act")
-    });
+    let has_add_act = changes
+        .iter()
+        .any(|change| change.as_str().unwrap().contains("Added act"));
     assert!(has_add_act, "Should indicate act was added");
 }
 
@@ -316,7 +319,10 @@ async fn test_full_workflow() {
     // Verify file exists and is valid
     assert!(file_path.exists(), "File should be created");
     let saved = std::fs::read_to_string(&file_path).expect("Should read saved file");
-    assert!(saved.contains("user_trends"), "Should contain narrative name");
+    assert!(
+        saved.contains("user_trends"),
+        "Should contain narrative name"
+    );
 
     // Clean up
     std::fs::remove_file(&file_path).ok();

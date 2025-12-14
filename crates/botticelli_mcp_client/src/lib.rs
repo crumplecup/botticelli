@@ -21,14 +21,13 @@ pub use client::{LlmBackend, McpClient};
 pub use context::ContextManager;
 pub use error::{McpClientError, McpClientErrorKind, McpClientResult};
 pub use llm_adapter::{
-    AnthropicAdapter, FinishReason, GenerationConfig, GenerationResponse, GeminiAdapter,
-    GroqAdapter, LlmAdapter, Message, MessageRole, OllamaAdapter, ToolCall, ToolResult,
-    TokenUsage,
+    AnthropicAdapter, FinishReason, GeminiAdapter, GenerationConfig, GenerationResponse,
+    GroqAdapter, LlmAdapter, Message, MessageRole, OllamaAdapter, TokenUsage, ToolCall, ToolResult,
 };
 pub use metrics::McpClientMetrics;
-pub use retry::{retry_with_backoff, CircuitBreaker, CircuitState, RetryConfig};
+pub use retry::{CircuitBreaker, CircuitState, RetryConfig, retry_with_backoff};
 pub use schema::{
-    AnthropicToolSchema, GeminiToolSchema, GroqToolSchema, HuggingFaceToolSchema,
-    OllamaToolSchema, OpenAIToolSchema, ToolSchema, ToolSchemaConverter,
+    AnthropicToolSchema, GeminiToolSchema, GroqToolSchema, HuggingFaceToolSchema, OllamaToolSchema,
+    OpenAIToolSchema, ToolSchema, ToolSchemaConverter,
 };
 pub use tool_executor::ToolDefinition;

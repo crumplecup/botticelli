@@ -1,9 +1,9 @@
 //! Content resource for database content.
 
 use super::{McpResource, ResourceInfo};
-use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
 use botticelli_database::{establish_connection, get_content_by_id, list_content};
+use botticelli_error::{McpError, McpResult};
 use tracing::{debug, instrument};
 
 /// Resource for accessing database content.
@@ -21,7 +21,9 @@ impl ContentResource {
     /// Parses a content URI into (table, id).
     fn parse_uri(&self, uri: &str) -> McpResult<(String, i32)> {
         let without_scheme = uri.strip_prefix("content://").ok_or_else(|| {
-            McpError::resource_not_found("Invalid content URI: missing content:// scheme".to_string())
+            McpError::resource_not_found(
+                "Invalid content URI: missing content:// scheme".to_string(),
+            )
         })?;
 
         let parts: Vec<&str> = without_scheme.split('/').collect();
@@ -76,9 +78,8 @@ impl McpResource for ContentResource {
         let content = self.query_content(&table, id)?;
 
         // Format as JSON
-        serde_json::to_string_pretty(&content).map_err(|e| {
-            McpError::execution_failed(format!("Failed to serialize content: {}", e))
-        })
+        serde_json::to_string_pretty(&content)
+            .map_err(|e| McpError::execution_failed(format!("Failed to serialize content: {}", e)))
     }
 
     #[instrument(skip(self))]

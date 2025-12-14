@@ -2,7 +2,7 @@
 
 use botticelli_error::{ChatError, ChatResult};
 
-use crate::{ Message};
+use crate::Message;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;

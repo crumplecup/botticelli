@@ -1,6 +1,5 @@
 use botticelli_models::{
-    GeminiModel, ModelBounds, ModelId, ModelSelector,
-    RateLimitDetector, SelectionStrategy,
+    GeminiModel, ModelBounds, ModelId, ModelSelector, RateLimitDetector, SelectionStrategy,
 };
 
 #[test]
@@ -15,7 +14,10 @@ fn test_loyal_first_moves_down_in_family() {
     let current = ModelId::Gemini(GeminiModel::Gemini25Flash);
     let next = selector.select_next(current, "rate limit exceeded");
 
-    assert_eq!(next, Some(ModelId::Gemini(GeminiModel::Gemini20FlashThinking)));
+    assert_eq!(
+        next,
+        Some(ModelId::Gemini(GeminiModel::Gemini20FlashThinking))
+    );
 }
 
 #[test]

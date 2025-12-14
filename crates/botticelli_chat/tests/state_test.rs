@@ -44,10 +44,7 @@ fn test_set_narrative() {
     let mut state = ConversationState::new();
     state.set_narrative("test.toml");
 
-    assert_eq!(
-        state.current_narrative(),
-        Some(&PathBuf::from("test.toml"))
-    );
+    assert_eq!(state.current_narrative(), Some(&PathBuf::from("test.toml")));
 }
 
 #[test]

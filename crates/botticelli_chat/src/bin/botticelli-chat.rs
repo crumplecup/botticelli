@@ -89,14 +89,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _mcp_url = config.mcp_server.server_url();
 
     info!("All dependencies ready");
-    
+
     // Show configuration summary
     println!("\nBotticelli Chat Interface");
     println!("========================");
     println!("\nConfiguration loaded:");
     println!("  Mode:       {:?}", config.environment.mode);
-    println!("  Postgres:   {}:{}", config.postgres.host, config.postgres.port);
-    println!("  MCP Server: {}:{}", config.mcp_server.host, config.mcp_server.port);
+    println!(
+        "  Postgres:   {}:{}",
+        config.postgres.host, config.postgres.port
+    );
+    println!(
+        "  MCP Server: {}:{}",
+        config.mcp_server.host, config.mcp_server.port
+    );
     println!("\nStarting interactive chat...");
     println!("Press Ctrl+C to exit\n");
 
@@ -161,7 +167,9 @@ fn load_config(args: &Args) -> Result<ChatAppConfig, Box<dyn std::error::Error>>
             "local" => EnvironmentMode::Local,
             "container" => EnvironmentMode::Container,
             _ => {
-                return Err(format!("Invalid mode: {}. Use 'local' or 'container'", mode_str).into())
+                return Err(
+                    format!("Invalid mode: {}. Use 'local' or 'container'", mode_str).into(),
+                )
             }
         };
         builder = builder.mode(mode);

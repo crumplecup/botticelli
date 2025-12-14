@@ -8,8 +8,6 @@ use {
     tracing::{debug, error, info, instrument},
 };
 
-
-
 /// Runs startup checks and auto-setup for all required services.
 ///
 /// This function ensures that:
@@ -55,18 +53,18 @@ async fn setup_postgres(config: &crate::ChatAppConfig) -> ChatResult<()> {
     match PgConnection::establish(&postgres_url) {
         Ok(mut conn) => {
             info!("PostgreSQL is accessible");
-            
+
             // Check if our database exists
             ensure_database_exists(&mut conn, &config.postgres.database)?;
-            
+
             // Now connect to our database and ensure tables exist
             ensure_tables_exist(&db_url)?;
-            
+
             Ok(())
         }
         Err(e) => {
             error!(error = ?e, "PostgreSQL connection failed");
-            
+
             Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                 "PostgreSQL connection failed: {}\n\n\
                 Please ensure PostgreSQL is running:\n\
@@ -92,7 +90,7 @@ fn ensure_database_exists(conn: &mut diesel::PgConnection, db_name: &str) -> Cha
         "SELECT 1 FROM pg_database WHERE datname = '{}'",
         db_name.replace('\'', "''") // Basic SQL injection protection
     );
-    
+
     let result = sql_query(&check_query).execute(conn);
 
     match result {
@@ -102,22 +100,17 @@ fn ensure_database_exists(conn: &mut diesel::PgConnection, db_name: &str) -> Cha
         }
         Ok(_) | Err(_) => {
             info!(database = %db_name, "Database does not exist, creating");
-            
+
             // Create database
-            let create_query = format!(
-                "CREATE DATABASE {}",
-                db_name.replace('\'', "''")
-            );
-            
-            sql_query(&create_query)
-                .execute(conn)
-                .map_err(|e| {
-                    ChatError::new(ChatErrorKind::ExecutionFailed(format!(
-                        "Failed to create database: {}",
-                        e
-                    )))
-                })?;
-            
+            let create_query = format!("CREATE DATABASE {}", db_name.replace('\'', "''"));
+
+            sql_query(&create_query).execute(conn).map_err(|e| {
+                ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                    "Failed to create database: {}",
+                    e
+                )))
+            })?;
+
             info!(database = %db_name, "Database created successfully");
             Ok(())
         }
@@ -144,14 +137,14 @@ fn ensure_tables_exist(db_url: &str) -> ChatResult<()> {
     // Check if migrations table exists
     let migrations_exist = diesel::sql_query(
         "SELECT 1 FROM information_schema.tables \
-         WHERE table_name = '__diesel_schema_migrations'"
+         WHERE table_name = '__diesel_schema_migrations'",
     )
     .execute(&mut conn);
 
     match migrations_exist {
         Ok(0) | Err(_) => {
             info!("Running database migrations");
-            
+
             // Run diesel migrations
             let output = std::process::Command::new("diesel")
                 .args(["migration", "run"])
@@ -165,7 +158,7 @@ fn ensure_tables_exist(db_url: &str) -> ChatResult<()> {
                 Ok(output) => {
                     let stderr = String::from_utf8_lossy(&output.stderr);
                     error!(error = %stderr, "Migration failed");
-                    
+
                     Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                         "Failed to run migrations: {}",
                         stderr
@@ -173,7 +166,7 @@ fn ensure_tables_exist(db_url: &str) -> ChatResult<()> {
                 }
                 Err(e) => {
                     error!(error = ?e, "Failed to execute diesel command");
-                    
+
                     Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                         "Failed to execute diesel migration: {}\n\n\
                         Please install diesel_cli:\n\
@@ -185,7 +178,7 @@ fn ensure_tables_exist(db_url: &str) -> ChatResult<()> {
         }
         Ok(_) => {
             debug!("Migrations table exists, checking if up to date");
-            
+
             // Migrations exist, try running any pending
             let output = std::process::Command::new("diesel")
                 .args(["migration", "run"])
@@ -232,12 +225,12 @@ async fn setup_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
 
     // MCP server not running, try to start it
     info!("MCP server not running, attempting to start it");
-    
+
     start_mcp_server(config).await?;
-    
+
     // Wait a bit for server to initialize
     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-    
+
     // Verify it's now running
     check_mcp_health(&url).await
 }
@@ -249,7 +242,12 @@ async fn check_mcp_health(url: &str) -> ChatResult<()> {
     let client = reqwest::Client::new();
     let health_url = format!("{}/health", url);
 
-    match client.get(&health_url).timeout(std::time::Duration::from_secs(2)).send().await {
+    match client
+        .get(&health_url)
+        .timeout(std::time::Duration::from_secs(2))
+        .send()
+        .await
+    {
         Ok(response) if response.status().is_success() => {
             debug!("MCP server health check passed");
             Ok(())
@@ -276,60 +274,59 @@ async fn check_mcp_health(url: &str) -> ChatResult<()> {
 #[instrument(skip(config))]
 async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
     use std::process::Stdio;
-    
+
     info!("Starting MCP server in background");
-    
+
     // Check if we're in local mode
     let is_local = matches!(config.environment.mode, EnvironmentMode::Local);
-    
+
     if !is_local {
         return Err(ChatError::new(ChatErrorKind::ExecutionFailed(
             "Cannot auto-start MCP server in container mode. \
-            Please ensure the MCP server container is running.".to_string()
+            Please ensure the MCP server container is running."
+                .to_string(),
         )));
     }
-    
+
     // First, try to find a pre-built binary
     // Check multiple locations: same dir as current exe, and target/debug or target/release
-    let binary_path = std::env::current_exe()
-        .ok()
-        .and_then(|exe_path| {
-            let exe_dir = exe_path.parent()?;
-            
-            // Try same directory as current executable
-            let same_dir = exe_dir.join("botticelli-mcp-http");
-            if same_dir.exists() {
-                return Some(same_dir);
-            }
-            
-            // Try target/debug (for tests running from deps/)
-            if exe_dir.ends_with("deps") {
-                if let Some(target_dir) = exe_dir.parent() {
-                    let debug_binary = target_dir.join("botticelli-mcp-http");
-                    if debug_binary.exists() {
-                        return Some(debug_binary);
-                    }
-                }
-            }
-            
-            // Try target/release
+    let binary_path = std::env::current_exe().ok().and_then(|exe_path| {
+        let exe_dir = exe_path.parent()?;
+
+        // Try same directory as current executable
+        let same_dir = exe_dir.join("botticelli-mcp-http");
+        if same_dir.exists() {
+            return Some(same_dir);
+        }
+
+        // Try target/debug (for tests running from deps/)
+        if exe_dir.ends_with("deps") {
             if let Some(target_dir) = exe_dir.parent() {
-                if target_dir.ends_with("debug") || target_dir.ends_with("release") {
-                    if let Some(profile_parent) = target_dir.parent() {
-                        let release_binary = profile_parent.join("release/botticelli-mcp-http");
-                        if release_binary.exists() {
-                            return Some(release_binary);
-                        }
+                let debug_binary = target_dir.join("botticelli-mcp-http");
+                if debug_binary.exists() {
+                    return Some(debug_binary);
+                }
+            }
+        }
+
+        // Try target/release
+        if let Some(target_dir) = exe_dir.parent() {
+            if target_dir.ends_with("debug") || target_dir.ends_with("release") {
+                if let Some(profile_parent) = target_dir.parent() {
+                    let release_binary = profile_parent.join("release/botticelli-mcp-http");
+                    if release_binary.exists() {
+                        return Some(release_binary);
                     }
                 }
             }
-            
-            None
-        });
-    
+        }
+
+        None
+    });
+
     if let Some(binary) = binary_path {
         debug!(path = ?binary, "Found MCP server binary");
-        
+
         // Use the pre-built binary
         let child = std::process::Command::new(&binary)
             .env("MCP_HOST", &config.mcp_server.host)
@@ -338,7 +335,7 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn();
-        
+
         match child {
             Ok(proc) => {
                 info!(pid = proc.id(), "MCP server started from binary");
@@ -361,7 +358,8 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
             Please build it first:\n\
               cargo build --bin botticelli-mcp-http --features=\"http,database,llm\"\n\n\
             Or start it manually in another terminal:\n\
-              cargo run --bin botticelli-mcp-http --features=\"http,database,llm\"".to_string()
+              cargo run --bin botticelli-mcp-http --features=\"http,database,llm\""
+                .to_string(),
         )))
     }
 }

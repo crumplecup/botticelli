@@ -1,8 +1,6 @@
 //! Terminal UI implementation for chat interface.
 
-use crate::{
-    parse_intent, ChatInterface, CommandExecutor, Message, Response, UserInput,
-};
+use crate::{parse_intent, ChatInterface, CommandExecutor, Message, Response, UserInput};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
@@ -74,13 +72,13 @@ impl TuiInterface {
         self.add_welcome_message();
 
         loop {
-            terminal
-                .draw(|f| self.render(f))
-                .map_err(|e| ChatError::new(ChatErrorKind::IoError(format!("Render failed: {}", e))))?;
+            terminal.draw(|f| self.render(f)).map_err(|e| {
+                ChatError::new(ChatErrorKind::IoError(format!("Render failed: {}", e)))
+            })?;
 
-            if let Event::Key(key) = event::read()
-                .map_err(|e| ChatError::new(ChatErrorKind::IoError(format!("Event read failed: {}", e))))?
-            {
+            if let Event::Key(key) = event::read().map_err(|e| {
+                ChatError::new(ChatErrorKind::IoError(format!("Event read failed: {}", e)))
+            })? {
                 match (key.code, key.modifiers) {
                     (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
                         break;
@@ -179,7 +177,9 @@ impl TuiInterface {
             Ok(command) => {
                 if command.is_exit() {
                     self.add_message(MessageRole::System, "Exiting...".to_string());
-                    return Err(ChatError::new(ChatErrorKind::InvalidState("Exit requested".to_string())));
+                    return Err(ChatError::new(ChatErrorKind::InvalidState(
+                        "Exit requested".to_string(),
+                    )));
                 }
 
                 match self.executor.execute(command).await {
@@ -187,10 +187,7 @@ impl TuiInterface {
                         self.add_message(MessageRole::Assistant, response.as_text());
                     }
                     Err(e) => {
-                        self.add_message(
-                            MessageRole::System,
-                            format!("Error: {}", e.kind),
-                        );
+                        self.add_message(MessageRole::System, format!("Error: {}", e.kind));
                     }
                 }
             }

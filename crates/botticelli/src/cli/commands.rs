@@ -1,8 +1,8 @@
 //! CLI command definitions.
 
-use clap::{Parser, Subcommand, ValueEnum};
 #[cfg(feature = "mcp")]
 use clap::Args;
+use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
 /// Botticelli - Unified LLM API interface with narrative execution and content management

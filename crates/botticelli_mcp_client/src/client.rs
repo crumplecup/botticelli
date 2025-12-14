@@ -1,9 +1,9 @@
 //! Core MCP client implementation.
 
-use crate::{tool_executor::ToolExecutor, McpClientError, McpClientErrorKind, McpClientResult};
+use crate::tool_executor::ToolDefinition;
+use crate::{McpClientError, McpClientErrorKind, McpClientResult, tool_executor::ToolExecutor};
 use botticelli_core::{Input, Message, Role};
 use derive_getters::Getters;
-use crate::tool_executor::ToolDefinition;
 use serde_json::Value;
 use tracing::{debug, info, instrument, warn};
 use typed_builder::TypedBuilder;

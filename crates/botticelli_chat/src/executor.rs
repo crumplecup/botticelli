@@ -1,10 +1,7 @@
 //! Command executor that processes parsed commands.
 
+use crate::{BotCommand, Command, NarrativeCommand, Response, SocialCommand};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
-use crate::{
-    BotCommand, Command, NarrativeCommand, Response,
-    SocialCommand,
-};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, instrument};
@@ -90,8 +87,6 @@ impl CommandExecutor {
         &self.services
     }
 
-
-
     /// Execute a command and return a response.
     #[instrument(skip(self))]
     pub async fn execute(&self, command: Command) -> ChatResult<Response> {
@@ -155,18 +150,10 @@ Other:
     #[instrument(skip(self))]
     async fn handle_narrative(&self, command: NarrativeCommand) -> ChatResult<Response> {
         match command {
-            NarrativeCommand::Create { prompt } => {
-                self.handle_create_narrative(prompt).await
-            }
-            NarrativeCommand::CreateInteractive => {
-                self.handle_create_narrative_interactive().await
-            }
-            NarrativeCommand::Load { path } => {
-                self.handle_load_narrative(path).await
-            }
-            NarrativeCommand::Save { path } => {
-                self.handle_save_narrative(path).await
-            }
+            NarrativeCommand::Create { prompt } => self.handle_create_narrative(prompt).await,
+            NarrativeCommand::CreateInteractive => self.handle_create_narrative_interactive().await,
+            NarrativeCommand::Load { path } => self.handle_load_narrative(path).await,
+            NarrativeCommand::Save { path } => self.handle_save_narrative(path).await,
             NarrativeCommand::UpdateModel { model } => {
                 let mut state = self.narrative_state.write().await;
                 state.model = Some(model.clone());
@@ -275,7 +262,7 @@ Other:
     #[instrument(skip(self))]
     async fn handle_create_bot(&self, name: &str) -> ChatResult<Response> {
         info!(bot_name = %name, "Creating new bot");
-        
+
         // For MVP, create a simple bot config stub
         // Full implementation will store in database
         Ok(Response::text(format!(
@@ -289,9 +276,13 @@ Other:
     }
 
     #[instrument(skip(self))]
-    async fn handle_assign_narrative(&self, bot_id: &str, narrative_path: &str) -> ChatResult<Response> {
+    async fn handle_assign_narrative(
+        &self,
+        bot_id: &str,
+        narrative_path: &str,
+    ) -> ChatResult<Response> {
         info!(bot_id = %bot_id, narrative_path = %narrative_path, "Assigning narrative to bot");
-        
+
         // Validate narrative exists (would check database in full implementation)
         Ok(Response::text(format!(
             "Assigned narrative '{}' to bot '{}'.\n\n\
@@ -304,7 +295,7 @@ Other:
     #[instrument(skip(self))]
     async fn handle_show_bot(&self, bot_id: &str) -> ChatResult<Response> {
         info!(bot_id = %bot_id, "Showing bot details");
-        
+
         // Full implementation would query database
         Ok(Response::text(format!(
             "Bot: {}\n\
@@ -321,7 +312,7 @@ Other:
     #[instrument(skip(self))]
     async fn handle_list_bots(&self) -> ChatResult<Response> {
         info!("Listing all bots");
-        
+
         // Full implementation would query database
         Ok(Response::text(
             "Bot Management\n\
@@ -332,7 +323,7 @@ Other:
             - Generation bots: Create new content via narratives\n\
             - Curation bots: Review and approve generated content\n\
             - Posting bots: Post approved content to social media\n\n\
-            Full database integration coming soon!"
+            Full database integration coming soon!",
         ))
     }
 
@@ -392,10 +383,7 @@ Other:
         for summary in summaries {
             output.push_str(&format!(
                 "ID: {}\nName: {}\nStatus: {:?}\nActs: {}\n",
-                summary.id,
-                summary.narrative_name,
-                summary.status,
-                summary.act_count
+                summary.id, summary.narrative_name, summary.status, summary.act_count
             ));
             if let Some(ref desc) = summary.narrative_description {
                 output.push_str(&format!("Description: {}\n", desc));
@@ -485,10 +473,10 @@ Other:
         // 2. ElicitationSession with chosen mode
         // 3. Conversion from PartialNarrative to final TOML
         // 4. Save to database or file
-        
+
         Ok(Response::text(
             "Interactive narrative creation requires TUI integration.\n\
-             Use 'create narrative about <topic>' for AI-assisted creation via MCP."
+             Use 'create narrative about <topic>' for AI-assisted creation via MCP.",
         ))
     }
 
@@ -514,7 +502,7 @@ Other:
             let mut state = self.narrative_state.write().await;
             state.prompt = Some(execution.narrative_name.clone());
             state.path = Some(format!("db:{}", id));
-            
+
             // Extract model/params from first act if available
             if let Some(first_act) = execution.act_executions.first() {
                 state.model = first_act.model.clone();
@@ -527,7 +515,9 @@ Other:
                 "Loaded narrative execution #{}\n\
                  Name: {}\n\
                  Acts: {}",
-                id, execution.narrative_name, execution.act_executions.len()
+                id,
+                execution.narrative_name,
+                execution.act_executions.len()
             );
 
             if let Some(ref tokens) = execution.total_token_usage {
@@ -670,7 +660,7 @@ Other:
             .filter(|c| c.is_alphanumeric() || *c == '_')
             .collect::<String>()
             .to_lowercase();
-        
+
         let narrative_name = if narrative_name.is_empty() {
             "narrative".to_string()
         } else {
@@ -746,7 +736,10 @@ Other:
 
         // Handle non-success status codes
         if !status.is_success() {
-            let error_text = response.text().await.unwrap_or_else(|_| String::from("<no response body>"));
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| String::from("<no response body>"));
             error!(
                 status = %status,
                 error_body = %error_text,
@@ -759,14 +752,15 @@ Other:
                     error_text
                 ))),
                 404 => ChatError::new(ChatErrorKind::IoError(
-                    "MCP tool 'create_narrative' not found. Is the MCP server up to date?".to_string()
+                    "MCP tool 'create_narrative' not found. Is the MCP server up to date?"
+                        .to_string(),
                 )),
                 500 => ChatError::new(ChatErrorKind::IoError(format!(
                     "MCP server internal error: {}. Check MCP server logs.",
                     error_text
                 ))),
                 503 => ChatError::new(ChatErrorKind::IoError(
-                    "MCP server unavailable. It may be starting up or overloaded.".to_string()
+                    "MCP server unavailable. It may be starting up or overloaded.".to_string(),
                 )),
                 _ => ChatError::new(ChatErrorKind::IoError(format!(
                     "MCP server error ({}): {}",
@@ -792,9 +786,9 @@ Other:
                 .get("message")
                 .and_then(|m| m.as_str())
                 .unwrap_or("Unknown MCP error");
-            
+
             error!(mcp_error = %error_message, "MCP returned error in response");
-            
+
             return Err(ChatError::new(ChatErrorKind::IoError(format!(
                 "MCP tool error: {}",
                 error_message
@@ -824,7 +818,8 @@ Other:
             .ok_or_else(|| {
                 error!(response = ?result, "Invalid MCP response structure");
                 ChatError::new(ChatErrorKind::IoError(
-                    "Invalid MCP response format: expected { content: [{ text: \"...\" }] }".to_string(),
+                    "Invalid MCP response format: expected { content: [{ text: \"...\" }] }"
+                        .to_string(),
                 ))
             })?;
 

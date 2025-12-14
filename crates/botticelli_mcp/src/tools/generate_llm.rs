@@ -112,9 +112,7 @@ async fn execute_generation<D: BotticelliDriver>(
             .role(Role::User)
             .content(vec![Input::Text(prompt.to_string())])
             .build()
-            .map_err(|e| {
-                McpError::execution_failed(format!("Failed to build message: {}", e))
-            })?,
+            .map_err(|e| McpError::execution_failed(format!("Failed to build message: {}", e)))?,
     );
 
     // Build request

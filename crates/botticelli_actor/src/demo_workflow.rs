@@ -9,7 +9,15 @@ use tokio::time::sleep;
 use tracing::{debug, error, info, instrument, warn};
 
 /// Configuration for demo workflow.
-#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters, derive_builder::Builder)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    derive_getters::Getters,
+    derive_setters::Setters,
+    derive_builder::Builder,
+)]
 #[setters(prefix = "with_")]
 pub struct WorkflowConfig {
     /// Database connection pool.
@@ -65,7 +73,7 @@ impl WorkflowExecutor {
     /// Creates a new workflow executor with Botticelli promotion workflow.
     pub fn new(config: WorkflowConfig) -> Self {
         let stages = Self::create_botticelli_promotion_workflow();
-        
+
         Self {
             config,
             stages,
@@ -123,7 +131,10 @@ impl WorkflowExecutor {
     /// Executes the complete workflow with validation.
     #[instrument(skip(self))]
     pub async fn execute(&mut self) -> ActorResult<WorkflowSummary> {
-        info!(total_stages = self.stages.len(), "Starting workflow execution");
+        info!(
+            total_stages = self.stages.len(),
+            "Starting workflow execution"
+        );
 
         for stage in self.stages.clone() {
             if !self.check_dependencies(&stage) {
@@ -133,7 +144,7 @@ impl WorkflowExecutor {
                     "Stage dependencies not met"
                 );
                 return Err(ActorError::new(ActorErrorKind::InvalidConfiguration(
-                    format!("Dependencies not met for stage: {}", stage.id)
+                    format!("Dependencies not met for stage: {}", stage.id),
                 )));
             }
 
@@ -165,9 +176,10 @@ impl WorkflowExecutor {
                     min_rows = stage.min_rows,
                     "Stage validation failed"
                 );
-                return Err(ActorError::new(ActorErrorKind::PlatformPermanent(
-                    format!("Validation failed for stage: {}", stage.id)
-                )));
+                return Err(ActorError::new(ActorErrorKind::PlatformPermanent(format!(
+                    "Validation failed for stage: {}",
+                    stage.id
+                ))));
             }
 
             self.completed_stages.push(stage.id.clone());
@@ -175,14 +187,20 @@ impl WorkflowExecutor {
             sleep(Duration::from_millis(self.config.stage_delay_ms)).await;
         }
 
-        info!(completed = self.completed_stages.len(), "Workflow completed successfully");
+        info!(
+            completed = self.completed_stages.len(),
+            "Workflow completed successfully"
+        );
 
         Ok(self.create_summary())
     }
 
     /// Checks if stage dependencies are met.
     fn check_dependencies(&self, stage: &WorkflowStage) -> bool {
-        stage.dependencies.iter().all(|dep| self.completed_stages.contains(dep))
+        stage
+            .dependencies
+            .iter()
+            .all(|dep| self.completed_stages.contains(dep))
     }
 
     /// Executes a single workflow stage.
@@ -200,7 +218,7 @@ impl WorkflowExecutor {
         let endpoint = &self.config.mcp_endpoint;
 
         info!(endpoint = %endpoint, "Sending prompt to MCP server");
-        
+
         // Call create_narrative tool via HTTP
         let response = client
             .post(format!("{}/tools/create_narrative", endpoint))
@@ -210,19 +228,21 @@ impl WorkflowExecutor {
             .send()
             .await
             .map_err(|e| {
-                ActorError::new(ActorErrorKind::PlatformTemporary(
-                    format!("HTTP request failed: {}", e)
-                ))
+                ActorError::new(ActorErrorKind::PlatformTemporary(format!(
+                    "HTTP request failed: {}",
+                    e
+                )))
             })?;
 
         let result: serde_json::Value = response.json().await.map_err(|e| {
-            ActorError::new(ActorErrorKind::PlatformTemporary(
-                format!("Failed to parse response: {}", e)
-            ))
+            ActorError::new(ActorErrorKind::PlatformTemporary(format!(
+                "Failed to parse response: {}",
+                e
+            )))
         })?;
 
         info!(result = ?result, "Narrative created");
-        
+
         Ok(())
     }
 
@@ -254,18 +274,19 @@ impl WorkflowExecutor {
 
         let db_pool = self.config.db_pool.as_ref().ok_or_else(|| {
             ActorError::new(ActorErrorKind::InvalidConfiguration(
-                "Database pool not configured".to_string()
+                "Database pool not configured".to_string(),
             ))
         })?;
 
         let mut conn = db_pool.get().map_err(|e| {
-            ActorError::new(ActorErrorKind::PlatformPermanent(
-                format!("Failed to get database connection: {}", e)
-            ))
+            ActorError::new(ActorErrorKind::PlatformPermanent(format!(
+                "Failed to get database connection: {}",
+                e
+            )))
         })?;
 
         let query = format!("SELECT COUNT(*) as count FROM {}", table_name);
-        
+
         #[derive(QueryableByName)]
         struct CountResult {
             #[diesel(sql_type = BigInt)]
@@ -278,7 +299,7 @@ impl WorkflowExecutor {
             Ok(count_result) => {
                 let rows_found = count_result.count as usize;
                 let passed = rows_found >= stage.min_rows;
-                
+
                 info!(
                     table = %table_name,
                     rows_found,
@@ -291,8 +312,13 @@ impl WorkflowExecutor {
                     stage_id: stage.id.clone(),
                     passed,
                     rows_found,
-                    error: if passed { None } else {
-                        Some(format!("Expected at least {} rows, found {}", stage.min_rows, rows_found))
+                    error: if passed {
+                        None
+                    } else {
+                        Some(format!(
+                            "Expected at least {} rows, found {}",
+                            stage.min_rows, rows_found
+                        ))
                     },
                 })
             }
@@ -340,19 +366,16 @@ impl WorkflowSummary {
         info!("=== Workflow Execution Summary ===");
         info!(
             "Stages: {}/{} completed",
-            self.completed_stages,
-            self.total_stages
+            self.completed_stages, self.total_stages
         );
-        
+
         for result in &self.validation_results {
             let status = if result.passed { "✓" } else { "✗" };
             info!(
                 "{} Stage: {} - {} rows",
-                status,
-                result.stage_id,
-                result.rows_found
+                status, result.stage_id, result.rows_found
             );
-            
+
             if let Some(ref error) = result.error {
                 warn!("  Error: {}", error);
             }

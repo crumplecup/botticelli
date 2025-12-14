@@ -1,8 +1,8 @@
 //! Narrative resource for TOML narrative files.
 
 use super::{McpResource, ResourceInfo};
-use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use std::fs;
 use std::path::PathBuf;
 use tracing::{debug, instrument};
@@ -85,9 +85,8 @@ impl NarrativeResource {
 
         let mut narratives = Vec::new();
         for entry in entries {
-            let entry = entry.map_err(|e| {
-                McpError::execution_failed(format!("Failed to read entry: {}", e))
-            })?;
+            let entry = entry
+                .map_err(|e| McpError::execution_failed(format!("Failed to read entry: {}", e)))?;
             let path = entry.path();
 
             if path.extension().and_then(|s| s.to_str()) == Some("toml") {

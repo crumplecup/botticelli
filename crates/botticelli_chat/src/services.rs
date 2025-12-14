@@ -25,13 +25,13 @@ use {
 /// to start quickly and only connect to dependencies when needed.
 pub struct ServiceContainer {
     config: Arc<ChatAppConfig>,
-    
+
     #[cfg(feature = "cli")]
     db_pool: OnceCell<Pool<ConnectionManager<PgConnection>>>,
-    
+
     #[cfg(feature = "cli")]
     mcp_client: OnceCell<McpClient>,
-    
+
     #[cfg(feature = "cli")]
     narrative_repo: OnceCell<PostgresNarrativeRepository>,
 }
@@ -41,13 +41,13 @@ impl ServiceContainer {
     pub fn new(config: ChatAppConfig) -> Self {
         Self {
             config: Arc::new(config),
-            
+
             #[cfg(feature = "cli")]
             db_pool: OnceCell::new(),
-            
+
             #[cfg(feature = "cli")]
             mcp_client: OnceCell::new(),
-            
+
             #[cfg(feature = "cli")]
             narrative_repo: OnceCell::new(),
         }
@@ -82,16 +82,13 @@ impl ServiceContainer {
         debug!(url = %db_url, "Creating database connection pool");
 
         let manager = ConnectionManager::<PgConnection>::new(db_url);
-        
-        Pool::builder()
-            .max_size(10)
-            .build(manager)
-            .map_err(|e| {
-                ChatError::new(ChatErrorKind::IoError(format!(
-                    "Failed to create database pool: {}",
-                    e
-                )))
-            })
+
+        Pool::builder().max_size(10).build(manager).map_err(|e| {
+            ChatError::new(ChatErrorKind::IoError(format!(
+                "Failed to create database pool: {}",
+                e
+            )))
+        })
     }
 
     #[cfg(feature = "cli")]
@@ -124,9 +121,7 @@ impl ServiceContainer {
 
         // Create basic MCP client
         // TODO: Configure with actual tools from MCP server
-        let client = McpClient::builder()
-            .max_iterations(10)
-            .build();
+        let client = McpClient::builder().max_iterations(10).build();
 
         info!("MCP client initialized");
         Ok(client)
@@ -156,7 +151,7 @@ impl ServiceContainer {
     #[instrument(skip(self))]
     async fn init_narrative_repository(&self) -> ChatResult<PostgresNarrativeRepository> {
         use diesel::prelude::*;
-        
+
         // Set DATABASE_URL from config
         let db_url = self.config.postgres.database_url();
         std::env::set_var("DATABASE_URL", &db_url);
@@ -179,18 +174,16 @@ impl ServiceContainer {
             // Production path
             std::path::PathBuf::from("/var/botticelli/media")
         };
-        
-        let storage = std::sync::Arc::new(
-            FileSystemStorage::new(storage_path).map_err(|e| {
-                ChatError::new(ChatErrorKind::IoError(format!(
-                    "Failed to create storage: {}",
-                    e
-                )))
-            })?
-        );
+
+        let storage = std::sync::Arc::new(FileSystemStorage::new(storage_path).map_err(|e| {
+            ChatError::new(ChatErrorKind::IoError(format!(
+                "Failed to create storage: {}",
+                e
+            )))
+        })?);
 
         let repo = PostgresNarrativeRepository::new(conn, storage);
-        
+
         info!("Narrative repository initialized");
         Ok(repo)
     }

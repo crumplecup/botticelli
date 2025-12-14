@@ -58,19 +58,19 @@ impl DemoScenarioBuilder {
     pub fn build(self) -> ActorResult<DemoScenario> {
         let name = self.name.ok_or_else(|| {
             ActorError::new(ActorErrorKind::InvalidConfiguration(
-                "DemoScenario requires a name".to_string()
+                "DemoScenario requires a name".to_string(),
             ))
         })?;
-        
+
         let description = self.description.ok_or_else(|| {
             ActorError::new(ActorErrorKind::InvalidConfiguration(
-                "DemoScenario requires a description".to_string()
+                "DemoScenario requires a description".to_string(),
             ))
         })?;
 
         if self.prompts.is_empty() {
             return Err(ActorError::new(ActorErrorKind::InvalidConfiguration(
-                "DemoScenario requires at least one prompt".to_string()
+                "DemoScenario requires at least one prompt".to_string(),
             )));
         }
 
@@ -102,7 +102,10 @@ impl ChatDemoExecutor {
         input_tx: mpsc::UnboundedSender<String>,
         output_rx: mpsc::UnboundedReceiver<String>,
     ) -> Self {
-        Self { input_tx, output_rx }
+        Self {
+            input_tx,
+            output_rx,
+        }
     }
 }
 
@@ -116,27 +119,34 @@ impl DemoExecutor for ChatDemoExecutor {
         let mut responses = Vec::new();
 
         for (i, prompt) in scenario.prompts.iter().enumerate() {
-            info!(prompt_num = i + 1, total = scenario.prompts.len(), "Sending prompt");
+            info!(
+                prompt_num = i + 1,
+                total = scenario.prompts.len(),
+                "Sending prompt"
+            );
             debug!(prompt = %prompt, "Prompt content");
 
             self.input_tx.send(prompt.clone()).map_err(|e| {
-                ActorError::new(ActorErrorKind::PlatformPermanent(
-                    format!("Failed to send prompt: {}", e)
-                ))
+                ActorError::new(ActorErrorKind::PlatformPermanent(format!(
+                    "Failed to send prompt: {}",
+                    e
+                )))
             })?;
 
             tokio::time::sleep(scenario.delay_between_prompts).await;
 
-            if let Ok(Some(resp)) = tokio::time::timeout(
-                Duration::from_secs(30),
-                self.output_rx.recv()
-            ).await {
+            if let Ok(Some(resp)) =
+                tokio::time::timeout(Duration::from_secs(30), self.output_rx.recv()).await
+            {
                 debug!(response_len = resp.len(), "Received response");
                 responses.push(resp);
             }
         }
 
-        info!(responses_collected = responses.len(), "Demo scenario complete");
+        info!(
+            responses_collected = responses.len(),
+            "Demo scenario complete"
+        );
         Ok(responses)
     }
 }

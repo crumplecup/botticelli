@@ -8,24 +8,22 @@ use std::path::PathBuf;
 /// Helper to load test configuration.
 fn load_test_config() -> ChatResult<ChatAppConfig> {
     // Use absolute path from workspace root
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
-        .unwrap_or_else(|_| ".".to_string());
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
     let config_path = PathBuf::from(&manifest_dir)
         .parent()
         .unwrap()
         .parent()
         .unwrap()
         .join("chat.test.toml");
-    
+
     // Print for debugging
     eprintln!("Loading config from: {:?}", config_path);
     eprintln!("Config exists: {}", config_path.exists());
-    
+
     ChatAppConfig::load(Some(&config_path)).map_err(|e| {
         ChatError::new(ChatErrorKind::IoError(format!(
             "Failed to load config from {:?}: {}",
-            config_path,
-            e
+            config_path, e
         )))
     })
 }
@@ -90,7 +88,10 @@ async fn test_database_connection() -> ChatResult<()> {
     })?;
 
     // Successfully getting a connection means the pool is working
-    assert!(services.is_db_initialized(), "DB pool should be initialized");
+    assert!(
+        services.is_db_initialized(),
+        "DB pool should be initialized"
+    );
 
     Ok(())
 }
@@ -148,7 +149,10 @@ async fn test_lazy_initialization() -> ChatResult<()> {
 
     // Access MCP client - should initialize
     let _mcp = services.mcp_client().await?;
-    assert!(services.is_mcp_initialized(), "MCP should now be initialized");
+    assert!(
+        services.is_mcp_initialized(),
+        "MCP should now be initialized"
+    );
 
     // Access DB pool - should initialize
     let _db = services.db_pool().await?;

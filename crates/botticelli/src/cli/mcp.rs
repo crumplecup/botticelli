@@ -14,12 +14,16 @@ pub async fn handle_mcp_command(args: McpCommandArgs) -> anyhow::Result<()> {
     // TODO: Create LLM backend adapter
     // TODO: Execute agentic loop
 
-    let _ = (&args.model, &args.server, &args.server_args, args.max_tools_per_turn, args.verbose);
+    let _ = (
+        &args.model,
+        &args.server,
+        &args.server_args,
+        args.max_tools_per_turn,
+        args.verbose,
+    );
 
     // Create MCP client
-    let _client = McpClient::builder()
-        .max_iterations(args.max_turns)
-        .build();
+    let _client = McpClient::builder().max_iterations(args.max_turns).build();
 
     info!("MCP client created");
     println!("MCP client command not yet fully implemented");

@@ -58,11 +58,23 @@ impl ChatAppConfig {
             .set_default("postgres.database", defaults.postgres.database)?
             .set_default("mcp_server.host", defaults.mcp_server.host)?
             .set_default("mcp_server.port", defaults.mcp_server.port as i64)?
-            .set_default("mcp_client.timeout_seconds", defaults.mcp_client.timeout_seconds as i64)?
-            .set_default("mcp_client.retry_attempts", defaults.mcp_client.retry_attempts as i64)?
+            .set_default(
+                "mcp_client.timeout_seconds",
+                defaults.mcp_client.timeout_seconds as i64,
+            )?
+            .set_default(
+                "mcp_client.retry_attempts",
+                defaults.mcp_client.retry_attempts as i64,
+            )?
             .set_default("observability.rust_log", defaults.observability.rust_log)?
-            .set_default("observability.otel_exporter", defaults.observability.otel_exporter)?
-            .set_default("observability.otel_endpoint", defaults.observability.otel_endpoint)?;
+            .set_default(
+                "observability.otel_exporter",
+                defaults.observability.otel_exporter,
+            )?
+            .set_default(
+                "observability.otel_endpoint",
+                defaults.observability.otel_endpoint,
+            )?;
 
         // Load from file if provided
         if let Some(path) = config_path {

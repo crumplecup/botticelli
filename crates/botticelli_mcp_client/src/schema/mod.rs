@@ -29,7 +29,11 @@ pub struct ToolSchema {
 
 impl ToolSchema {
     /// Create a new tool schema.
-    pub fn new(name: impl Into<String>, description: impl Into<String>, input_schema: Value) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        description: impl Into<String>,
+        input_schema: Value,
+    ) -> Self {
         Self {
             name: name.into(),
             description: description.into(),

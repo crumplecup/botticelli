@@ -33,14 +33,19 @@ impl ApprovalHandler for ConsoleApprovalHandler {
     fn request_approval(&self, tool_name: &str, args: &Value) -> McpClientResult<bool> {
         println!("\n🔒 Approval Required");
         println!("Tool: {tool_name}");
-        println!("Arguments: {}", serde_json::to_string_pretty(args).unwrap_or_default());
+        println!(
+            "Arguments: {}",
+            serde_json::to_string_pretty(args).unwrap_or_default()
+        );
         print!("Approve? (y/n): ");
         std::io::stdout().flush().ok();
 
         let mut input = String::new();
-        std::io::stdin()
-            .read_line(&mut input)
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(format!("Failed to read input: {e}"))))?;
+        std::io::stdin().read_line(&mut input).map_err(|e| {
+            McpClientError::new(McpClientErrorKind::ConnectionError(format!(
+                "Failed to read input: {e}"
+            )))
+        })?;
 
         Ok(input.trim().eq_ignore_ascii_case("y"))
     }

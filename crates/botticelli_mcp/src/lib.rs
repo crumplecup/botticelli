@@ -47,8 +47,8 @@ pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegist
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{
     Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool,
-    ElicitMetadataInput, ElicitMetadataTool, ElicitationHelper, ExecutionMetrics,
-    ExecuteNarrativeTool, ExportMetricsTool, FinalizeNarrativeInput, FinalizeNarrativeTool,
+    ElicitMetadataInput, ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool,
+    ExecutionMetrics, ExportMetricsTool, FinalizeNarrativeInput, FinalizeNarrativeTool,
     GenerateTool, LlmSampler, McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper,
     NarrativeRegistry, PrometheusMetrics, QueryContentTool, SamplingHelper, SamplingSession,
     SaveNarrativeTool, ServerInfoTool, SessionState, StartNarrativeInput, StartNarrativeTool,

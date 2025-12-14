@@ -5,8 +5,8 @@
 //! interact with social media data.
 
 use crate::tools::McpTool;
-use botticelli_error::{McpError, McpResult};
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
 use botticelli_social::{BotCommandRegistryImpl, DiscordCommandExecutor};
 use serde_json::{json, Value};
 use std::collections::HashMap;

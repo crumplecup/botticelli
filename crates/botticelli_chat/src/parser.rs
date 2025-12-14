@@ -212,7 +212,7 @@ fn extract_after_keywords(input: &str, keywords: &[&str]) -> Option<String> {
     // Find the rightmost keyword position
     let mut best_pos = None;
     let mut best_len = 0;
-    
+
     for keyword in keywords {
         if let Some(pos) = input.rfind(keyword) {
             if best_pos.is_none() || pos > best_pos.unwrap() {
@@ -221,13 +221,13 @@ fn extract_after_keywords(input: &str, keywords: &[&str]) -> Option<String> {
             }
         }
     }
-    
+
     if let Some(pos) = best_pos {
         let after = input[pos + best_len..].trim();
         if !after.is_empty() {
             return Some(after.to_string());
         }
     }
-    
+
     None
 }

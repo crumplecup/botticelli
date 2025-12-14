@@ -67,7 +67,7 @@ fn test_upper_bound_prevents_upgrade() {
         .handle_rate_limit("Rate limit exceeded")
         .expect("Should find alternative");
     assert_ne!(next, ModelId::Gemini(GeminiModel::Gemini25Pro));
-    
+
     // Continue fallback - should never hit Pro
     for _ in 0..3 {
         if let Ok(model) = session.handle_rate_limit("Rate limit exceeded") {
@@ -103,7 +103,7 @@ fn test_exhausted_all_models_within_bounds() {
     // Pro hits rate limit - with tight single-model bounds, tries to find friend
     // This will likely move to Groq since friends() returns cross-family equivalents
     let first = session.handle_rate_limit("Rate limit exceeded");
-    
+
     // Friend models from different families are considered valid alternatives
     // even with tight bounds, as they're lateral equivalents
     assert!(first.is_ok());
@@ -123,11 +123,11 @@ fn test_config_serialization_roundtrip() {
     let deserialized: ChatConfig = toml::from_str(&serialized).expect("Deserialize");
 
     assert_eq!(config.initial_model(), deserialized.initial_model());
-    
+
     // Both should have bounds
     assert!(config.model_bounds().is_some());
     assert!(deserialized.model_bounds().is_some());
-    
+
     // Compare bounds details
     let orig_bounds = config.model_bounds().unwrap();
     let deser_bounds = deserialized.model_bounds().unwrap();

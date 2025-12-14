@@ -4,8 +4,8 @@
 //! - `content://approved_discord_posts/123` - Content by ID
 //! - `narrative://curate_content` - Narrative TOML file
 
-use botticelli_error::McpResult;
 use async_trait::async_trait;
+use botticelli_error::McpResult;
 use std::sync::Arc;
 use tracing::{debug, instrument};
 

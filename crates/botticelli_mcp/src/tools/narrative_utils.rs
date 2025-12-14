@@ -108,9 +108,31 @@ impl NarrativeHelper {
     fn extract_act_name(description: &str, fallback_index: usize) -> String {
         // Common action verbs
         let verbs = [
-            "fetch", "get", "retrieve", "load", "read", "analyze", "process", "transform",
-            "generate", "create", "build", "format", "send", "post", "publish", "write", "save",
-            "store", "compare", "evaluate", "rank", "filter", "select", "choose", "extract",
+            "fetch",
+            "get",
+            "retrieve",
+            "load",
+            "read",
+            "analyze",
+            "process",
+            "transform",
+            "generate",
+            "create",
+            "build",
+            "format",
+            "send",
+            "post",
+            "publish",
+            "write",
+            "save",
+            "store",
+            "compare",
+            "evaluate",
+            "rank",
+            "filter",
+            "select",
+            "choose",
+            "extract",
             "parse",
         ];
 
@@ -125,6 +147,38 @@ impl NarrativeHelper {
 
         // Fallback
         format!("act{}", fallback_index + 1)
+    }
+
+    /// Suggest a narrative name from description.
+    ///
+    /// Extracts the first few meaningful words and formats them as a valid name.
+    #[instrument]
+    pub fn suggest_name_from_description(description: &str) -> String {
+        // Take first few words, clean and join with underscores
+        let words: Vec<&str> = description
+            .split_whitespace()
+            .take(3)
+            .filter(|w| w.len() > 2) // Skip short words
+            .collect();
+
+        if words.is_empty() {
+            return "narrative".to_string();
+        }
+
+        let name = words.join("_").to_lowercase();
+        
+        // Clean to valid chars
+        let name: String = name
+            .chars()
+            .filter(|c| c.is_ascii_alphanumeric() || *c == '_')
+            .collect();
+
+        // Ensure starts with letter
+        if name.is_empty() || !name.chars().next().unwrap().is_ascii_alphabetic() {
+            format!("narrative_{}", name)
+        } else {
+            name
+        }
     }
 
     /// Check if a narrative name is valid.
@@ -146,8 +200,7 @@ impl NarrativeHelper {
         }
 
         // All characters must be alphanumeric or underscore
-        name.chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+        name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
     }
 
     /// Escape string for TOML.

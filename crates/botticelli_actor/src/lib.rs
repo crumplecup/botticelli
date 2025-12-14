@@ -71,7 +71,8 @@ pub use demo::{
     ChatDemoExecutor, DemoExecutor, DemoScenario, create_basic_demo, create_mcp_tools_demo,
 };
 pub use demo_workflow::{
-    ValidationResult, WorkflowConfig, WorkflowConfigBuilder, WorkflowExecutor, WorkflowStage, WorkflowSummary,
+    ValidationResult, WorkflowConfig, WorkflowConfigBuilder, WorkflowExecutor, WorkflowStage,
+    WorkflowSummary,
 };
 pub use error::{ActorError, ActorErrorKind, ActorResult};
 pub use execution_tracker::ActorExecutionTracker;

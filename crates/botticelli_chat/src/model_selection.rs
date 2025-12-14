@@ -1,4 +1,3 @@
-
 use botticelli_error::ChatError;
 use botticelli_models::{ModelId, ModelSelector};
 
@@ -25,9 +24,7 @@ impl ChatSession {
         let next = self
             .selector
             .select_next(self.current_model, error_message)
-            .ok_or_else(|| {
-                ChatError::invalid_input("No available models within bounds")
-            })?;
+            .ok_or_else(|| ChatError::invalid_input("No available models within bounds"))?;
 
         tracing::info!(next = ?next, "Selected fallback model");
         self.current_model = next;

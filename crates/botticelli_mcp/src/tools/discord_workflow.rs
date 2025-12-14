@@ -42,7 +42,7 @@ impl DiscordContentWorkflowTool {
             .registry
             .get("execute_narrative")
             .ok_or_else(|| McpError::tool_not_found("execute_narrative".to_string()))?;
-        
+
         let execution_result = execute_tool
             .execute(json!({
                 "narrative_path": narrative_path.to_string_lossy(),
@@ -61,7 +61,7 @@ impl DiscordContentWorkflowTool {
             .registry
             .get("discord_post_message")
             .ok_or_else(|| McpError::tool_not_found("discord_post_message".to_string()))?;
-        
+
         let post_result = post_tool
             .execute(json!({
                 "channel_id": channel_id.clone(),
@@ -116,7 +116,9 @@ impl DiscordContentWorkflowTool {
         let narrative_path = params
             .get("narrative_path")
             .and_then(Value::as_str)
-            .ok_or_else(|| McpError::invalid_input("Missing narrative_path parameter".to_string()))?;
+            .ok_or_else(|| {
+                McpError::invalid_input("Missing narrative_path parameter".to_string())
+            })?;
 
         let channel_id = params
             .get("channel_id")
@@ -125,7 +127,11 @@ impl DiscordContentWorkflowTool {
 
         let variables = params.get("variables").cloned();
 
-        self.execute_workflow(PathBuf::from(narrative_path), channel_id.to_string(), variables)
-            .await
+        self.execute_workflow(
+            PathBuf::from(narrative_path),
+            channel_id.to_string(),
+            variables,
+        )
+        .await
     }
 }

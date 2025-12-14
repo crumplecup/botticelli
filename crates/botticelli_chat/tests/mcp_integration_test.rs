@@ -1,4 +1,3 @@
-
 /// Integration test that validates MCP server startup and communication
 #[tokio::test]
 #[cfg(feature = "cli")]

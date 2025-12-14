@@ -78,7 +78,9 @@ impl PartialNarrative {
     #[instrument(skip(self))]
     pub fn validate(&self) -> McpResult<botticelli_narrative::validator::ValidationResult> {
         let toml = self.to_toml()?;
-        Ok(botticelli_narrative::validator::validate_narrative_toml(&toml))
+        Ok(botticelli_narrative::validator::validate_narrative_toml(
+            &toml,
+        ))
     }
 
     /// Convert to TOML string.
@@ -88,15 +90,15 @@ impl PartialNarrative {
     /// Returns error if required fields are missing.
     #[instrument(skip(self))]
     pub fn to_toml(&self) -> McpResult<String> {
-        let name = self.name.as_ref().ok_or_else(|| {
-            McpError::invalid_input("Missing narrative name".to_string())
-        })?;
+        let name = self
+            .name
+            .as_ref()
+            .ok_or_else(|| McpError::invalid_input("Missing narrative name".to_string()))?;
 
-        let description = self.description.as_ref().ok_or_else(|| {
-            McpError::invalid_input(
-                "Missing narrative description".to_string(),
-            )
-        })?;
+        let description = self
+            .description
+            .as_ref()
+            .ok_or_else(|| McpError::invalid_input("Missing narrative description".to_string()))?;
 
         let mut toml = String::new();
 
@@ -165,8 +167,7 @@ impl PartialNarrative {
             )));
         }
 
-        botticelli_narrative::Narrative::from_toml_str(&toml, self.name.as_deref()).map_err(
-            |e| McpError::execution_failed(e.to_string()),
-        )
+        botticelli_narrative::Narrative::from_toml_str(&toml, self.name.as_deref())
+            .map_err(|e| McpError::execution_failed(e.to_string()))
     }
 }

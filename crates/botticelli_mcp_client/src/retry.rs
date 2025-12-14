@@ -94,7 +94,10 @@ impl CircuitBreaker {
             CircuitState::Closed => {
                 self.failure_count += 1;
                 if self.failure_count >= self.failure_threshold {
-                    warn!("Circuit breaker opening after {} failures", self.failure_count);
+                    warn!(
+                        "Circuit breaker opening after {} failures",
+                        self.failure_count
+                    );
                     self.state = CircuitState::Open;
                 }
             }
@@ -167,7 +170,10 @@ where
                 }
 
                 if err.kind.should_backoff() {
-                    debug!(backoff_ms = backoff.as_millis(), "Backing off due to rate limit");
+                    debug!(
+                        backoff_ms = backoff.as_millis(),
+                        "Backing off due to rate limit"
+                    );
                 } else {
                     debug!(backoff_ms = backoff.as_millis(), "Retrying after failure");
                 }

@@ -2,7 +2,7 @@
 
 use botticelli_error::ChatResult;
 
-use crate::{ Message, Response, UserInput};
+use crate::{Message, Response, UserInput};
 
 /// Trait for implementing chat interfaces across different platforms.
 ///

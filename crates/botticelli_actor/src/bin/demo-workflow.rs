@@ -31,7 +31,7 @@ async fn main() {
     let args = Args::parse();
 
     let log_level = if args.verbose { "debug" } else { "info" };
-    
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
