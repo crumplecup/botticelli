@@ -32,8 +32,8 @@ pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 pub use create_narrative::CreateNarrativeTool;
 pub use database::QueryContentTool;
 pub use narrative_creation::{
-    ElicitActInput, ElicitActTool, ElicitMetadataInput, FinalizeNarrativeInput,
-    StartNarrativeInput, StartNarrativeTool,
+    ElicitActInput, ElicitActTool, ElicitMetadataInput, ElicitMetadataTool,
+    FinalizeNarrativeInput, FinalizeNarrativeTool, StartNarrativeInput, StartNarrativeTool,
 };
 #[cfg(feature = "discord")]
 pub use discord::{

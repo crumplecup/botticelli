@@ -46,14 +46,13 @@ pub use elicitation::{
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{
-    Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput,
-    ElicitActTool, ElicitMetadataInput,
-    ElicitationHelper, ExecutionMetrics, ExecuteNarrativeTool, ExportMetricsTool,
-    FinalizeNarrativeInput, GenerateTool, LlmSampler, McpTool, MetricsSummary,
-    ModifyNarrativeTool, NarrativeHelper, NarrativeRegistry, PrometheusMetrics, QueryContentTool,
-    SamplingHelper, SamplingSession, SaveNarrativeTool, ServerInfoTool, SessionState,
-    StartNarrativeInput, StartNarrativeTool, ToolRegistry, ToolResponse, Turn,
-    ValidateNarrativeTool,
+    Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool,
+    ElicitMetadataInput, ElicitMetadataTool, ElicitationHelper, ExecutionMetrics,
+    ExecuteNarrativeTool, ExportMetricsTool, FinalizeNarrativeInput, FinalizeNarrativeTool,
+    GenerateTool, LlmSampler, McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper,
+    NarrativeRegistry, PrometheusMetrics, QueryContentTool, SamplingHelper, SamplingSession,
+    SaveNarrativeTool, ServerInfoTool, SessionState, StartNarrativeInput, StartNarrativeTool,
+    ToolRegistry, ToolResponse, Turn, ValidateNarrativeTool,
 };
 
 #[cfg(feature = "discord")]

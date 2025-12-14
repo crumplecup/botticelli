@@ -1,7 +1,6 @@
 use botticelli_core::{GenerateRequest, GenerateResponse, ToolCall};
 use botticelli_error::BotticelliResult;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use tracing::instrument;
 
 /// Trait for executing LLM sampling with tool access.

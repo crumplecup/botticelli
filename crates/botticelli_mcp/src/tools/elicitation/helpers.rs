@@ -2,6 +2,7 @@ use crate::{PartialAct, PartialNarrative};
 use botticelli_error::{McpError, McpErrorKind, McpResult};
 use tracing::instrument;
 
+/// Analysis results from narrative description.
 pub struct DescriptionAnalysis {
     pub suggested_name: String,
     pub detected_acts: Vec<String>,
@@ -9,9 +10,11 @@ pub struct DescriptionAnalysis {
     pub recommendations: Vec<String>,
 }
 
+/// Helper methods for narrative elicitation.
 pub struct ElicitationHelper;
 
 impl ElicitationHelper {
+    /// Analyzes a narrative description to extract structure and suggestions.
     #[instrument]
     pub fn analyze_description(description: &str) -> DescriptionAnalysis {
         let suggested_name = Self::extract_suggested_name(description);
@@ -60,6 +63,7 @@ impl ElicitationHelper {
         }
     }
 
+    /// Extracts a suggested narrative name from description.
     #[instrument]
     pub fn extract_suggested_name(description: &str) -> String {
         description
@@ -73,6 +77,7 @@ impl ElicitationHelper {
             .collect()
     }
 
+    /// Detects potential act boundaries in description.
     #[instrument]
     pub fn detect_acts_in_description(description: &str) -> Vec<String> {
         let mut acts = Vec::new();
@@ -95,6 +100,7 @@ impl ElicitationHelper {
         acts
     }
 
+    /// Extracts partial acts from description text.
     #[instrument]
     pub fn extract_acts_from_description(description: &str) -> McpResult<Vec<PartialAct>> {
         let detected = Self::detect_acts_in_description(description);
@@ -104,6 +110,7 @@ impl ElicitationHelper {
             .collect())
     }
 
+    /// Suggests input types based on act prompt.
     #[instrument]
     pub fn suggest_inputs_for_act(prompt: &str) -> Vec<String> {
         let mut suggestions = Vec::new();
@@ -122,6 +129,7 @@ impl ElicitationHelper {
         suggestions
     }
 
+    /// Validates narrative metadata completeness.
     #[instrument]
     pub fn validate_metadata(partial: &PartialNarrative) -> Vec<String> {
         let mut missing = Vec::new();
@@ -136,6 +144,7 @@ impl ElicitationHelper {
         missing
     }
 
+    /// Generates warnings for narrative metadata quality.
     #[instrument]
     pub fn metadata_warnings(partial: &PartialNarrative) -> Vec<String> {
         let mut warnings = Vec::new();
@@ -166,6 +175,7 @@ impl ElicitationHelper {
         errors
     }
 
+    /// Checks if a narrative name is valid.
     #[instrument]
     pub fn is_valid_name(name: &str) -> bool {
         !name.is_empty()
@@ -175,11 +185,13 @@ impl ElicitationHelper {
                 .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
     }
 
+    /// Creates an error for missing required field.
     #[track_caller]
     pub fn missing_field(field: &str) -> McpError {
         McpError::new(McpErrorKind::InvalidInput(format!("Missing field: {}", field)))
     }
 
+    /// Creates an error for invalid field value.
     #[track_caller]
     pub fn invalid_value(field: &str, reason: &str) -> McpError {
         McpError::new(McpErrorKind::InvalidInput(format!(
@@ -188,6 +200,7 @@ impl ElicitationHelper {
         )))
     }
 
+    /// Creates a serialization error.
     #[track_caller]
     pub fn serialization_error(message: &str) -> McpError {
         McpError::new(McpErrorKind::SerializationError(message.to_string()))
