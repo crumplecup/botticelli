@@ -1,6 +1,6 @@
 # Botticelli TUI Redesign: Comprehensive Planning Document
 
-**Status:** Updated 2024-12-14 with ecosystem research findings
+**Status:** Phase 4 - Task 4.1 Complete (2024-12-14)
 
 ## Executive Summary
 
@@ -1061,38 +1061,24 @@ pub enum Action {
 
 ### Phase 4: Chat Tab Enhancement (Week 3-4)
 
-#### Task 4.1: Integrate Rich Chat Input
+#### Task 4.1: Integrate Rich Chat Input ✅ COMPLETE
 - **File:** `crates/botticelli_chat/src/tui/tabs/chat.rs`
-- **Action:** Replace simple input with ChatInput widget (tui-textarea)
-  ```rust
-  use crate::widgets::ChatInput;
-
-  pub struct ChatTab {
-      messages: Vec<ChatMessage>,
-      input: ChatInput,
-      scroll_offset: usize,
-  }
-
-  impl ChatTab {
-      fn handle_key(&mut self, event: KeyEvent) -> Option<Message> {
-          match self.input.handle_input(event) {
-              InputResult::SendMessage => {
-                  if !self.input.is_empty() {
-                      let content = self.input.take_content();
-                      return Some(Message::SendChat(content));
-                  }
-              }
-              InputResult::Continue => {}
-          }
-          None
-      }
-  }
-  ```
+- **Status:** Implemented with ChatInput widget integration
+- **Implementation:**
+  - ChatMessage struct with role, content, timestamp
+  - MessageRole enum (System, User, Assistant) with styling
+  - Multi-line input using ChatInput widget
+  - Scrolling support (Ctrl+Up/Down)
+  - Clear chat (Ctrl+L)
+  - Message history with timestamps
+  - Auto-scroll to latest message
 - **Acceptance:**
-  - [ ] Multi-line input works
-  - [ ] Undo/redo works
-  - [ ] Ctrl+Enter sends
-  - [ ] Message history preserved
+  - [x] Multi-line input works
+  - [x] Undo/redo works (provided by tui-textarea)
+  - [x] Ctrl+Enter sends
+  - [x] Message history preserved
+  - [x] Scrolling with scrollbar
+  - [x] Clear chat command
 
 #### Task 4.2: Add Tool Call Visibility
 - **Action:** Show tool calls in chat messages
