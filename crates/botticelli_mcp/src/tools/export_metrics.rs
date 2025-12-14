@@ -55,14 +55,14 @@ impl McpTool for ExportMetricsTool {
 
         match format {
             "prometheus" => {
-                let metrics_text = self.metrics.export_prometheus();
+                let metrics_text = self.metrics.export_prometheus()?;
                 Ok(json!({
                     "format": "prometheus",
                     "metrics": metrics_text
                 }))
             }
             "summary" => {
-                let summary = self.metrics.summary();
+                let summary = self.metrics.summary()?;
                 Ok(json!({
                     "format": "summary",
                     "total_executions": summary.total_executions,

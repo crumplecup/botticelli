@@ -81,13 +81,19 @@ impl McpProcessorCollector {
     }
 
     /// Get collected processor outputs.
-    pub fn outputs(&self) -> Vec<(String, Value)> {
-        self.outputs.lock().unwrap().clone()
+    pub fn outputs(&self) -> Result<Vec<(String, Value)>, botticelli_error::McpError> {
+        self.outputs
+            .lock()
+            .map(|guard| guard.clone())
+            .map_err(|_| botticelli_error::McpError::mutex_poisoned("processor outputs"))
     }
 
     /// Clear collected outputs.
-    pub fn clear(&self) {
-        self.outputs.lock().unwrap().clear();
+    pub fn clear(&self) -> Result<(), botticelli_error::McpError> {
+        self.outputs
+            .lock()
+            .map(|mut guard| guard.clear())
+            .map_err(|_| botticelli_error::McpError::mutex_poisoned("processor outputs"))
     }
 }
 

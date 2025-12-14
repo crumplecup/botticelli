@@ -37,8 +37,10 @@ impl PrometheusMetrics {
 
     /// Export metrics in Prometheus text format.
     #[instrument(skip(self))]
-    pub fn export_prometheus(&self) -> String {
-        let executions = self.executions.lock().unwrap();
+    pub fn export_prometheus(&self) -> Result<String, botticelli_error::McpError> {
+        let executions = self.executions
+            .lock()
+            .map_err(|_| botticelli_error::McpError::mutex_poisoned("metrics"))?;
 
         let mut output = String::new();
 
@@ -116,13 +118,15 @@ impl PrometheusMetrics {
         }
 
         debug!(metrics_size = output.len(), "Exported Prometheus metrics");
-        output
+        Ok(output)
     }
 
     /// Get summary statistics.
     #[instrument(skip(self))]
-    pub fn summary(&self) -> MetricsSummary {
-        let executions = self.executions.lock().unwrap();
+    pub fn summary(&self) -> Result<MetricsSummary, botticelli_error::McpError> {
+        let executions = self.executions
+            .lock()
+            .map_err(|_| botticelli_error::McpError::mutex_poisoned("metrics"))?;
 
         let total_executions = executions.len();
         let total_tokens: u64 = executions.iter().map(|e| e.total_tokens()).sum();
@@ -133,12 +137,12 @@ impl PrometheusMetrics {
             0
         };
 
-        MetricsSummary {
+        Ok(MetricsSummary {
             total_executions,
             total_tokens,
             total_cost_usd: total_cost,
             avg_duration_ms: avg_duration,
-        }
+        })
     }
 }
 

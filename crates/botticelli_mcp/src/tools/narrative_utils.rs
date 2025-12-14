@@ -174,10 +174,9 @@ impl NarrativeHelper {
             .collect();
 
         // Ensure starts with letter
-        if name.is_empty() || !name.chars().next().unwrap().is_ascii_alphabetic() {
-            format!("narrative_{}", name)
-        } else {
-            name
+        match name.chars().next() {
+            Some(first) if first.is_ascii_alphabetic() => name,
+            _ => format!("narrative_{}", name),
         }
     }
 
@@ -194,13 +193,13 @@ impl NarrativeHelper {
         }
 
         // Must start with letter
-        let first_char = name.chars().next().unwrap();
-        if !first_char.is_ascii_alphabetic() {
-            return false;
+        match name.chars().next() {
+            Some(first) if first.is_ascii_alphabetic() => {
+                // All characters must be alphanumeric or underscore
+                name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+            }
+            _ => false,
         }
-
-        // All characters must be alphanumeric or underscore
-        name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
     }
 
     /// Escape string for TOML.

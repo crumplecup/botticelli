@@ -44,6 +44,9 @@ pub enum McpErrorKind {
     /// Serialization error
     #[display("Serialization error: {}", _0)]
     SerializationError(String),
+    /// Mutex poisoned (internal error)
+    #[display("Mutex poisoned: {}", _0)]
+    MutexPoisoned(String),
 }
 
 /// MCP error with location tracking.
@@ -134,6 +137,12 @@ impl McpError {
     #[track_caller]
     pub fn unsupported_model(model: impl Into<String>) -> Self {
         Self::new(McpErrorKind::UnsupportedModel(model.into()))
+    }
+
+    /// Create a mutex poisoned error.
+    #[track_caller]
+    pub fn mutex_poisoned(context: impl Into<String>) -> Self {
+        Self::new(McpErrorKind::MutexPoisoned(context.into()))
     }
 }
 
