@@ -842,8 +842,12 @@ server-status:
 # TUI (Terminal User Interface)
 # ==============================
 
+# Launch chat TUI interface
+tui:
+    cargo run --bin botticelli-chat --features="cli,tui" -- --skip-health-checks
+
 # Launch TUI for a specific table
-tui table:
+tui-table table:
     cargo run -p botticelli --release --features tui -- tui {{table}}
 
 # Launch TUI server management view

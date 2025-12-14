@@ -152,9 +152,83 @@ impl AppState {
     }
 
     /// Handle key event.
-    pub async fn handle_key(&mut self, _key: crossterm::event::KeyEvent) -> crate::TuiResult<()> {
-        // TODO: Implement key handling
-        Ok(())
+    pub async fn handle_key(&mut self, key: crossterm::event::KeyEvent) -> crate::TuiResult<()> {
+        use crossterm::event::{KeyCode, KeyModifiers};
+
+        match key.code {
+            KeyCode::Char(_c) if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                // Control key combinations are handled by EventHandler (Ctrl+C for quit)
+                Ok(())
+            }
+            KeyCode::Char(c) => {
+                // Regular character input
+                self.append_input(&c.to_string());
+                Ok(())
+            }
+            KeyCode::Backspace => {
+                // Delete last character
+                if !self.input_buffer.is_empty() {
+                    self.input_buffer.pop();
+                }
+                Ok(())
+            }
+            KeyCode::Enter => {
+                // Submit input based on current mode
+                match self.mode {
+                    ViewMode::Chat => {
+                        if !self.input_buffer.is_empty() {
+                            let message = self.input_buffer.clone();
+                            self.clear_input();
+                            
+                            // Add user message to conversation
+                            let conv_id = self.current_conversation.unwrap_or_else(|| {
+                                let id = Uuid::new_v4();
+                                self.current_conversation = Some(id);
+                                id
+                            });
+                            
+                            let mut messages = self.conversation_messages(&conv_id)
+                                .cloned()
+                                .unwrap_or_default();
+                            messages.push(ChatMessage::user(message));
+                            self.update_conversation(conv_id, messages);
+                            
+                            // TODO: Send message to LLM and handle response
+                        }
+                    }
+                    ViewMode::NarrativeEditor => {
+                        // In editor, Enter adds newline
+                        self.append_input("\n");
+                    }
+                    ViewMode::NarrativeBrowser => {
+                        // In browser, Enter selects narrative
+                        // This is handled by SelectNarrative command
+                    }
+                    ViewMode::Settings => {
+                        // TODO: Handle settings input
+                    }
+                }
+                Ok(())
+            }
+            KeyCode::Up => {
+                if self.mode == ViewMode::NarrativeBrowser {
+                    self.select_previous_narrative();
+                }
+                Ok(())
+            }
+            KeyCode::Down => {
+                if self.mode == ViewMode::NarrativeBrowser {
+                    self.select_next_narrative();
+                }
+                Ok(())
+            }
+            KeyCode::Esc => {
+                // Switch back to chat view
+                self.set_mode(ViewMode::Chat);
+                Ok(())
+            }
+            _ => Ok(()),
+        }
     }
 
     /// Handle mouse event.
@@ -208,9 +282,37 @@ impl Default for AppState {
 #[derive(Debug, Clone)]
 pub struct ChatMessage {
     /// Message content.
-    pub content: String,
+    content: String,
     /// Whether this is from the user.
-    pub is_user: bool,
+    is_user: bool,
+}
+
+impl ChatMessage {
+    /// Create a new user message.
+    pub fn user(content: String) -> Self {
+        Self {
+            content,
+            is_user: true,
+        }
+    }
+
+    /// Create a new assistant message.
+    pub fn assistant(content: String) -> Self {
+        Self {
+            content,
+            is_user: false,
+        }
+    }
+
+    /// Get the message content.
+    pub fn content(&self) -> &str {
+        &self.content
+    }
+
+    /// Check if this is a user message.
+    pub fn is_user(&self) -> bool {
+        self.is_user
+    }
 }
 
 /// Conversation identifier.

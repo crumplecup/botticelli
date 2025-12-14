@@ -34,10 +34,10 @@ impl View for ChatView {
             if let Some(msgs) = state.conversation_messages(&conv_id) {
                 msgs.iter()
                     .map(|m| {
-                        if m.is_user {
-                            format!("You: {}", m.content)
+                        if m.is_user() {
+                            format!("You: {}", m.content())
                         } else {
-                            format!("Bot: {}", m.content)
+                            format!("Bot: {}", m.content())
                         }
                     })
                     .collect::<Vec<_>>()
