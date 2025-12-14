@@ -9,9 +9,9 @@
 //! 4. Can save narrative to database
 //! 5. Can load narrative from database
 
-use botticelli_chat::ChatAppConfig;
 #[cfg(feature = "cli")]
 use botticelli_chat::startup_sequence;
+use botticelli_chat::ChatAppConfig;
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use std::sync::Once;
 
@@ -20,17 +20,20 @@ static INIT: Once = Once::new();
 /// Initializes test environment - runs startup sequence once
 async fn init_test_environment() -> ChatResult<ChatAppConfig> {
     let config = ChatAppConfig::load(None).map_err(|e| {
-        ChatError::new(ChatErrorKind::IoError(format!("Failed to load config: {}", e)))
+        ChatError::new(ChatErrorKind::IoError(format!(
+            "Failed to load config: {}",
+            e
+        )))
     })?;
-    
+
     INIT.call_once(|| {
         // This will only run once across all tests
     });
-    
+
     // Run startup sequence to ensure services are ready
     #[cfg(feature = "cli")]
     startup_sequence(&config).await?;
-    
+
     Ok(config)
 }
 
@@ -42,23 +45,25 @@ async fn test_mcp_server_accessible() -> ChatResult<()> {
 
     let base_url = format!("http://{}:{}", mcp_config.host, mcp_config.port);
     let client = reqwest::Client::new();
-    
+
     // Test health endpoint
     let response = client
         .get(&format!("{}/health", base_url))
         .send()
         .await
-        .map_err(|e| ChatError::new(ChatErrorKind::IoError(
-            format!("MCP server health check failed at {}:{}. Error: {}", 
-                mcp_config.host, mcp_config.port, e)
-        )))?;
-    
+        .map_err(|e| {
+            ChatError::new(ChatErrorKind::IoError(format!(
+                "MCP server health check failed at {}:{}. Error: {}",
+                mcp_config.host, mcp_config.port, e
+            )))
+        })?;
+
     assert!(
         response.status().is_success(),
         "MCP server health check returned: {}",
         response.status()
     );
-    
+
     println!("✅ MCP server is accessible at {}", base_url);
     Ok(())
 }
@@ -71,7 +76,7 @@ async fn test_mcp_server_has_create_narrative_tool() -> ChatResult<()> {
 
     let base_url = format!("http://{}:{}", mcp_config.host, mcp_config.port);
     let client = reqwest::Client::new();
-    
+
     // Test tools list endpoint
     let response = client
         .get(&format!("{}/tools/list", base_url))
@@ -83,20 +88,20 @@ async fn test_mcp_server_has_create_narrative_tool() -> ChatResult<()> {
                 e
             )))
         })?;
-    
+
     assert!(
         response.status().is_success(),
         "MCP tools list returned: {}",
         response.status()
     );
-    
-    let tools: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| {
-            ChatError::new(ChatErrorKind::IoError(format!("Failed to parse tools response: {}", e)))
-        })?;
-    
+
+    let tools: serde_json::Value = response.json().await.map_err(|e| {
+        ChatError::new(ChatErrorKind::IoError(format!(
+            "Failed to parse tools response: {}",
+            e
+        )))
+    })?;
+
     // Check that create_narrative tool exists
     let has_create_narrative = tools
         .get("tools")
@@ -110,13 +115,13 @@ async fn test_mcp_server_has_create_narrative_tool() -> ChatResult<()> {
             })
         })
         .unwrap_or(false);
-    
+
     assert!(
         has_create_narrative,
         "MCP server does not have create_narrative tool. Available tools: {}",
         tools
     );
-    
+
     println!("✅ MCP server has create_narrative tool");
     Ok(())
 }
@@ -129,7 +134,7 @@ async fn test_create_narrative_call() -> ChatResult<()> {
 
     let base_url = format!("http://{}:{}", mcp_config.host, mcp_config.port);
     let client = reqwest::Client::new();
-    
+
     // Build request payload
     let payload = serde_json::json!({
         "name": "create_narrative",
@@ -138,7 +143,7 @@ async fn test_create_narrative_call() -> ChatResult<()> {
             "description": "A test narrative about a brave explorer"
         }
     });
-    
+
     // Call create_narrative tool
     let response = client
         .post(&format!("{}/tools/call", base_url))
@@ -151,27 +156,30 @@ async fn test_create_narrative_call() -> ChatResult<()> {
                 e
             )))
         })?;
-    
+
     // Get response body for debugging
     let status = response.status();
     let body_text = response.text().await.map_err(|e| {
-        ChatError::new(ChatErrorKind::IoError(format!("Failed to read response: {}", e)))
+        ChatError::new(ChatErrorKind::IoError(format!(
+            "Failed to read response: {}",
+            e
+        )))
     })?;
-    
+
     assert!(
         status.is_success(),
         "create_narrative call returned: {} - Body: {}",
         status,
         body_text
     );
-    
+
     let result: serde_json::Value = serde_json::from_str(&body_text).map_err(|e| {
         ChatError::new(ChatErrorKind::IoError(format!(
             "Failed to parse create_narrative response: {}",
             e
         )))
     })?;
-    
+
     // Verify response has content
     // Get the content text (which is a JSON string containing the narrative result)
     let content_text = result
@@ -185,7 +193,7 @@ async fn test_create_narrative_call() -> ChatResult<()> {
                 result
             )))
         })?;
-    
+
     // Parse the JSON response from create_narrative
     let narrative_result: serde_json::Value = serde_json::from_str(content_text).map_err(|e| {
         ChatError::new(ChatErrorKind::ValidationError(format!(
@@ -193,7 +201,7 @@ async fn test_create_narrative_call() -> ChatResult<()> {
             e
         )))
     })?;
-    
+
     // Verify the narrative was created successfully
     let toml_content = narrative_result
         .get("toml")
@@ -203,12 +211,9 @@ async fn test_create_narrative_call() -> ChatResult<()> {
                 "Response missing 'toml' field".to_string(),
             ))
         })?;
-    
-    assert!(
-        !toml_content.is_empty(),
-        "MCP returned empty TOML content"
-    );
-    
+
+    assert!(!toml_content.is_empty(), "MCP returned empty TOML content");
+
     // Verify TOML is valid
     let _parsed: toml::Value = toml::from_str(toml_content).map_err(|e| {
         ChatError::new(ChatErrorKind::ValidationError(format!(
@@ -216,17 +221,23 @@ async fn test_create_narrative_call() -> ChatResult<()> {
             e
         )))
     })?;
-    
+
     println!("✅ MCP server successfully created valid narrative");
-    println!("TOML preview: {}", &toml_content[..toml_content.len().min(200)]);
-    
+    println!(
+        "TOML preview: {}",
+        &toml_content[..toml_content.len().min(200)]
+    );
+
     // Verify expected sections exist
     assert!(
         toml_content.contains("[narrative]"),
         "TOML missing [narrative] section"
     );
     assert!(toml_content.contains("[toc]"), "TOML missing [toc] section");
-    assert!(toml_content.contains("[acts]"), "TOML missing [acts] section");
-    
+    assert!(
+        toml_content.contains("[acts]"),
+        "TOML missing [acts] section"
+    );
+
     Ok(())
 }

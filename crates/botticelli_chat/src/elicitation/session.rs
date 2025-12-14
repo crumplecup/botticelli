@@ -2,9 +2,10 @@
 
 use botticelli_error::BotticelliResult;
 
-
-use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder};
 use botticelli_error::{ChatError, ChatErrorKind};
+use botticelli_mcp::{
+    ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder,
+};
 use std::sync::Arc;
 use tracing::{debug, info, instrument, warn};
 
@@ -15,13 +16,13 @@ use tracing::{debug, info, instrument, warn};
 pub struct ElicitationSession {
     /// Current partial narrative being constructed.
     partial: PartialNarrative,
-    
+
     /// Ordered list of elicitors to run.
     elicitors: Vec<Arc<dyn NarrativeElicitor>>,
-    
+
     /// Current elicitor index.
     current_index: usize,
-    
+
     /// Whether session is complete.
     completed: bool,
 }
@@ -33,8 +34,11 @@ impl ElicitationSession {
     /// before each elicitor runs.
     #[instrument(skip(elicitors))]
     pub fn new(elicitors: Vec<Arc<dyn NarrativeElicitor>>) -> Self {
-        info!(elicitor_count = elicitors.len(), "Creating elicitation session");
-        
+        info!(
+            elicitor_count = elicitors.len(),
+            "Creating elicitation session"
+        );
+
         Self {
             partial: PartialNarrativeBuilder::default().build().unwrap(),
             elicitors,
@@ -59,22 +63,26 @@ impl ElicitationSession {
                     elicitor = elicitor.name(),
                     "Elicitor prerequisites not met, skipping"
                 );
-                
-                dialog.show_warning(&format!(
-                    "Skipping '{}' - prerequisites not met",
-                    elicitor.name()
-                )).await?;
-                
+
+                dialog
+                    .show_warning(&format!(
+                        "Skipping '{}' - prerequisites not met",
+                        elicitor.name()
+                    ))
+                    .await?;
+
                 self.current_index += 1;
                 continue;
             }
 
             // Show progress
-            dialog.show_progress(
-                self.current_index + 1,
-                self.elicitors.len(),
-                &format!("Running: {}", elicitor.description()),
-            ).await?;
+            dialog
+                .show_progress(
+                    self.current_index + 1,
+                    self.elicitors.len(),
+                    &format!("Running: {}", elicitor.description()),
+                )
+                .await?;
 
             // Run elicitor
             debug!(
@@ -85,11 +93,16 @@ impl ElicitationSession {
 
             match elicitor.elicit(dialog, &mut self.partial).await {
                 Ok(()) => {
-                    info!(elicitor = elicitor.name(), "Elicitor completed successfully");
-                    
+                    info!(
+                        elicitor = elicitor.name(),
+                        "Elicitor completed successfully"
+                    );
+
                     // Show suggestion if available
                     if let Some(suggestion) = elicitor.suggest_next(&self.partial) {
-                        dialog.show_info(&format!("💡 Next: {}", suggestion)).await?;
+                        dialog
+                            .show_info(&format!("💡 Next: {}", suggestion))
+                            .await?;
                     }
                 }
                 Err(e) => {
@@ -98,24 +111,24 @@ impl ElicitationSession {
                         error = ?e,
                         "Elicitor failed"
                     );
-                    
-                    dialog.show_error(&format!(
-                        "Failed during '{}': {}",
-                        elicitor.name(),
-                        e
-                    )).await?;
+
+                    dialog
+                        .show_error(&format!("Failed during '{}': {}", elicitor.name(), e))
+                        .await?;
 
                     // Ask if user wants to retry or skip
                     let retry = dialog.ask_confirmation("Retry this step?", true).await?;
-                    
+
                     if retry {
                         continue; // Don't increment index, retry same elicitor
                     } else {
                         // Skip to next
-                        dialog.show_warning(&format!(
-                            "Skipping '{}'. You may need to complete this manually.",
-                            elicitor.name()
-                        )).await?;
+                        dialog
+                            .show_warning(&format!(
+                                "Skipping '{}'. You may need to complete this manually.",
+                                elicitor.name()
+                            ))
+                            .await?;
                     }
                 }
             }
@@ -142,21 +155,21 @@ impl ElicitationSession {
         let elicitor = &self.elicitors[self.current_index];
 
         if !elicitor.can_run(&self.partial) {
-            warn!(
-                elicitor = elicitor.name(),
-                "Elicitor prerequisites not met"
-            );
+            warn!(elicitor = elicitor.name(), "Elicitor prerequisites not met");
             return Err(ChatError::new(ChatErrorKind::InvalidState(format!(
                 "Cannot run '{}' - prerequisites not met",
                 elicitor.name()
-            ))).into());
+            )))
+            .into());
         }
 
-        dialog.show_progress(
-            self.current_index + 1,
-            self.elicitors.len(),
-            &format!("Running: {}", elicitor.description()),
-        ).await?;
+        dialog
+            .show_progress(
+                self.current_index + 1,
+                self.elicitors.len(),
+                &format!("Running: {}", elicitor.description()),
+            )
+            .await?;
 
         elicitor.elicit(dialog, &mut self.partial).await?;
 
@@ -199,7 +212,9 @@ impl ElicitationSession {
     #[instrument(skip(self, dialog))]
     pub async fn preview(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<()> {
         if !self.has_minimum_required() {
-            dialog.show_warning("Narrative is incomplete. Preview may fail.").await?;
+            dialog
+                .show_warning("Narrative is incomplete. Preview may fail.")
+                .await?;
         }
 
         match self.partial.to_toml() {
@@ -208,7 +223,9 @@ impl ElicitationSession {
                 Ok(())
             }
             Err(e) => {
-                dialog.show_error(&format!("Failed to generate TOML: {}", e)).await?;
+                dialog
+                    .show_error(&format!("Failed to generate TOML: {}", e))
+                    .await?;
                 Err(e.into())
             }
         }
@@ -218,7 +235,9 @@ impl ElicitationSession {
     #[instrument(skip(self, dialog))]
     pub async fn validate(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<()> {
         if !self.has_minimum_required() {
-            dialog.show_warning("Narrative is incomplete. Validation may fail.").await?;
+            dialog
+                .show_warning("Narrative is incomplete. Validation may fail.")
+                .await?;
         }
 
         let validation = self.partial.validate()?;
@@ -252,7 +271,8 @@ impl ElicitationSession {
         if !self.has_minimum_required() {
             return Err(ChatError::new(ChatErrorKind::ValidationError(
                 "Narrative missing required fields".to_string(),
-            )).into());
+            ))
+            .into());
         }
 
         self.partial.try_into_narrative().map_err(|e| e.into())

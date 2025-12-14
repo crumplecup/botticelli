@@ -2,11 +2,10 @@
 
 use botticelli_error::BotticelliResult;
 
-
-use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
-use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
 use botticelli_core::{HistoryRetention, Input, MediaSource, TableFormat};
+use botticelli_error::{ChatError, ChatErrorKind};
+use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
 use std::collections::HashMap;
 use tracing::{debug, instrument};
 
@@ -89,7 +88,8 @@ impl InputElicitor {
                 _ => {
                     return Err(ChatError::new(ChatErrorKind::InvalidInput(
                         "Invalid input type choice".to_string(),
-                    )).into())
+                    ))
+                    .into())
                 }
             };
 
@@ -122,11 +122,12 @@ impl InputElicitor {
     #[instrument(skip(self, dialog))]
     async fn elicit_image(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         let source = self.elicit_media_source(dialog, "image").await?;
-        let mime = if dialog
-            .ask_confirmation("Specify MIME type?", false)
-            .await?
-        {
-            Some(dialog.ask_text("Enter MIME type (e.g., image/png):").await?)
+        let mime = if dialog.ask_confirmation("Specify MIME type?", false).await? {
+            Some(
+                dialog
+                    .ask_text("Enter MIME type (e.g., image/png):")
+                    .await?,
+            )
         } else {
             None
         };
@@ -138,11 +139,12 @@ impl InputElicitor {
     #[instrument(skip(self, dialog))]
     async fn elicit_audio(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         let source = self.elicit_media_source(dialog, "audio").await?;
-        let mime = if dialog
-            .ask_confirmation("Specify MIME type?", false)
-            .await?
-        {
-            Some(dialog.ask_text("Enter MIME type (e.g., audio/mp3):").await?)
+        let mime = if dialog.ask_confirmation("Specify MIME type?", false).await? {
+            Some(
+                dialog
+                    .ask_text("Enter MIME type (e.g., audio/mp3):")
+                    .await?,
+            )
         } else {
             None
         };
@@ -154,11 +156,12 @@ impl InputElicitor {
     #[instrument(skip(self, dialog))]
     async fn elicit_video(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         let source = self.elicit_media_source(dialog, "video").await?;
-        let mime = if dialog
-            .ask_confirmation("Specify MIME type?", false)
-            .await?
-        {
-            Some(dialog.ask_text("Enter MIME type (e.g., video/mp4):").await?)
+        let mime = if dialog.ask_confirmation("Specify MIME type?", false).await? {
+            Some(
+                dialog
+                    .ask_text("Enter MIME type (e.g., video/mp4):")
+                    .await?,
+            )
         } else {
             None
         };
@@ -170,11 +173,12 @@ impl InputElicitor {
     #[instrument(skip(self, dialog))]
     async fn elicit_document(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
         let source = self.elicit_media_source(dialog, "document").await?;
-        let mime = if dialog
-            .ask_confirmation("Specify MIME type?", false)
-            .await?
-        {
-            Some(dialog.ask_text("Enter MIME type (e.g., application/pdf):").await?)
+        let mime = if dialog.ask_confirmation("Specify MIME type?", false).await? {
+            Some(
+                dialog
+                    .ask_text("Enter MIME type (e.g., application/pdf):")
+                    .await?,
+            )
         } else {
             None
         };
@@ -223,26 +227,31 @@ impl InputElicitor {
                     .await?;
                 Err(ChatError::new(ChatErrorKind::InvalidInput(
                     "Binary data not supported in interactive mode".to_string(),
-                )).into())
+                ))
+                .into())
             }
             _ => Err(ChatError::new(ChatErrorKind::InvalidInput(
                 "Invalid source choice".to_string(),
-            )).into()),
+            ))
+            .into()),
         }
     }
 
     /// Elicit bot command input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_bot_command(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
-        dialog
-            .show_info("Configure bot command execution")
-            .await?;
+    async fn elicit_bot_command(
+        &self,
+        dialog: &mut dyn ElicitationDialog,
+    ) -> BotticelliResult<Input> {
+        dialog.show_info("Configure bot command execution").await?;
 
         let platform = dialog
             .ask_text("Enter platform (e.g., discord, slack):")
             .await?;
 
-        let command = dialog.ask_text("Enter command (e.g., server.get_stats):").await?;
+        let command = dialog
+            .ask_text("Enter command (e.g., server.get_stats):")
+            .await?;
 
         // Arguments
         let mut args = HashMap::new();
@@ -251,7 +260,9 @@ impl InputElicitor {
             .await?
         {
             loop {
-                let key = dialog.ask_text("Argument name (or empty to finish):").await?;
+                let key = dialog
+                    .ask_text("Argument name (or empty to finish):")
+                    .await?;
                 if key.is_empty() {
                     break;
                 }
@@ -259,8 +270,8 @@ impl InputElicitor {
                 let value = dialog.ask_text(&format!("Value for '{}':", key)).await?;
 
                 // Try to parse as JSON value
-                let json_value = serde_json::from_str(&value)
-                    .unwrap_or(serde_json::Value::String(value));
+                let json_value =
+                    serde_json::from_str(&value).unwrap_or(serde_json::Value::String(value));
 
                 args.insert(key, json_value);
             }
@@ -270,10 +281,7 @@ impl InputElicitor {
             .ask_confirmation("Is this command required (halt on failure)?", false)
             .await?;
 
-        let cache_duration = if dialog
-            .ask_confirmation("Enable caching?", false)
-            .await?
-        {
+        let cache_duration = if dialog.ask_confirmation("Enable caching?", false).await? {
             let seconds = dialog
                 .ask_number("Cache duration in seconds:", 0, 86400)
                 .await?;
@@ -313,11 +321,12 @@ impl InputElicitor {
             None
         };
 
-        let where_clause = if dialog
-            .ask_confirmation("Add WHERE clause?", false)
-            .await?
-        {
-            Some(dialog.ask_text("Enter WHERE clause (without WHERE):").await?)
+        let where_clause = if dialog.ask_confirmation("Add WHERE clause?", false).await? {
+            Some(
+                dialog
+                    .ask_text("Enter WHERE clause (without WHERE):")
+                    .await?,
+            )
         } else {
             None
         };
@@ -340,7 +349,11 @@ impl InputElicitor {
             .ask_confirmation("Add ORDER BY clause?", false)
             .await?
         {
-            Some(dialog.ask_text("Enter ORDER BY clause (without ORDER BY):").await?)
+            Some(
+                dialog
+                    .ask_text("Enter ORDER BY clause (without ORDER BY):")
+                    .await?,
+            )
         } else {
             None
         };
@@ -376,10 +389,7 @@ impl InputElicitor {
         };
 
         let destructive_read = dialog
-            .ask_confirmation(
-                "Destructive read (pull and delete rows)?",
-                false,
-            )
+            .ask_confirmation("Destructive read (pull and delete rows)?", false)
             .await?;
 
         let history_retention = self.elicit_history_retention(dialog).await?;
@@ -401,7 +411,10 @@ impl InputElicitor {
 
     /// Elicit narrative reference input.
     #[instrument(skip(self, dialog))]
-    async fn elicit_narrative(&self, dialog: &mut dyn ElicitationDialog) -> BotticelliResult<Input> {
+    async fn elicit_narrative(
+        &self,
+        dialog: &mut dyn ElicitationDialog,
+    ) -> BotticelliResult<Input> {
         dialog.show_info("Configure narrative reference").await?;
 
         let name = dialog
@@ -489,7 +502,8 @@ impl NarrativeElicitor for InputElicitor {
                 return Err(ChatError::new(ChatErrorKind::InvalidState(format!(
                     "Act '{}' not found",
                     target
-                ))).into());
+                )))
+                .into());
             }
             vec![target.clone()]
         } else {
@@ -497,10 +511,7 @@ impl NarrativeElicitor for InputElicitor {
             let mut acts_to_configure = Vec::new();
             for act_name in partial.act_order() {
                 let configure = dialog
-                    .ask_confirmation(
-                        &format!("Configure inputs for act '{}'?", act_name),
-                        true,
-                    )
+                    .ask_confirmation(&format!("Configure inputs for act '{}'?", act_name), true)
                     .await?;
 
                 if configure {

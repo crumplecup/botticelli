@@ -2,11 +2,12 @@
 
 use botticelli_error::BotticelliResult;
 
-
-use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder};
-use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
+use botticelli_error::{ChatError, ChatErrorKind};
 use botticelli_mcp::NarrativeHelper;
+use botticelli_mcp::{
+    ElicitationDialog, NarrativeElicitor, PartialNarrative, PartialNarrativeBuilder,
+};
 use tracing::{debug, instrument};
 
 /// Elicits narrative metadata (name, description, model, temperature, etc.).
@@ -51,22 +52,29 @@ impl NarrativeElicitor for MetadataElicitor {
 
         // Name
         let name = loop {
-            let input = dialog.ask_text("Enter narrative name (alphanumeric and underscores):").await?;
-            
+            let input = dialog
+                .ask_text("Enter narrative name (alphanumeric and underscores):")
+                .await?;
+
             if NarrativeHelper::is_valid_name(&input) {
                 break input;
             }
-            
+
             dialog.show_error("Invalid name. Must start with letter, contain only alphanumeric and underscores, max 64 chars.").await?;
         };
 
         debug!(name = %name, "Narrative name validated");
 
         // Description
-        let description = dialog.ask_text("Enter narrative description (what does this workflow do?):").await?;
+        let description = dialog
+            .ask_text("Enter narrative description (what does this workflow do?):")
+            .await?;
 
         // Optional: Default model
-        let model = if dialog.ask_confirmation("Set a default model for all acts?", false).await? {
+        let model = if dialog
+            .ask_confirmation("Set a default model for all acts?", false)
+            .await?
+        {
             let model_options = &[
                 "gemini-2.0-flash-exp",
                 "gemini-1.5-flash",
@@ -75,9 +83,11 @@ impl NarrativeElicitor for MetadataElicitor {
                 "gpt-4o",
                 "Custom (enter manually)",
             ];
-            
-            let choice = dialog.ask_choice("Select default model:", model_options).await?;
-            
+
+            let choice = dialog
+                .ask_choice("Select default model:", model_options)
+                .await?;
+
             if choice == model_options.len() - 1 {
                 // Custom
                 Some(dialog.ask_text("Enter model name:").await?)
@@ -89,15 +99,24 @@ impl NarrativeElicitor for MetadataElicitor {
         };
 
         // Optional: Temperature
-        let temperature = if dialog.ask_confirmation("Set a default temperature?", false).await? {
-            let temp_f64 = dialog.ask_number("Enter temperature (0-20, will be divided by 10):", 0, 20).await? as f64 / 10.0;
+        let temperature = if dialog
+            .ask_confirmation("Set a default temperature?", false)
+            .await?
+        {
+            let temp_f64 = dialog
+                .ask_number("Enter temperature (0-20, will be divided by 10):", 0, 20)
+                .await? as f64
+                / 10.0;
             Some(temp_f64)
         } else {
             None
         };
 
         // Optional: Max tokens
-        let max_tokens = if dialog.ask_confirmation("Set a default max_tokens?", false).await? {
+        let max_tokens = if dialog
+            .ask_confirmation("Set a default max_tokens?", false)
+            .await?
+        {
             let tokens = dialog.ask_number("Enter max tokens:", 1, 1000000).await?;
             Some(tokens as u32)
         } else {
@@ -115,12 +134,20 @@ impl NarrativeElicitor for MetadataElicitor {
             .acts(partial.acts().clone())
             .build()
             .map_err(|e| {
-                ChatError::new(ChatErrorKind::InvalidState(format!("Failed to build partial narrative: {}", e)))
+                ChatError::new(ChatErrorKind::InvalidState(format!(
+                    "Failed to build partial narrative: {}",
+                    e
+                )))
             })?;
 
         *partial = updated;
 
-        dialog.show_info(&format!("✓ Metadata complete for '{}'", partial.name().as_ref().unwrap())).await?;
+        dialog
+            .show_info(&format!(
+                "✓ Metadata complete for '{}'",
+                partial.name().as_ref().unwrap()
+            ))
+            .await?;
 
         Ok(())
     }

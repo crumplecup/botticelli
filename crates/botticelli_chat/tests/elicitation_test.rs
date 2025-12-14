@@ -1,8 +1,10 @@
 //! Tests for elicitation system.
 
-use botticelli_chat::{ElicitationDialog, MetadataElicitor, NarrativeElicitor, PartialNarrativeBuilder};
-use botticelli_error::{BotticelliResult, ChatError};
 use async_trait::async_trait;
+use botticelli_chat::{
+    ElicitationDialog, MetadataElicitor, NarrativeElicitor, PartialNarrativeBuilder,
+};
+use botticelli_error::{BotticelliResult, ChatError};
 use std::collections::VecDeque;
 
 /// Mock dialog for testing.
@@ -111,10 +113,8 @@ impl ElicitationDialog for MockDialog {
         total: usize,
         description: &str,
     ) -> BotticelliResult<()> {
-        self.messages.push(format!(
-            "PROGRESS: {}/{} - {}",
-            current, total, description
-        ));
+        self.messages
+            .push(format!("PROGRESS: {}/{} - {}", current, total, description));
         Ok(())
     }
 
@@ -158,17 +158,11 @@ async fn test_metadata_elicitor_basic() {
     );
     assert!(partial.model().is_some(), "Model should be set");
     assert!(partial.temperature().is_some(), "Temperature should be set");
-    assert!(
-        partial.max_tokens().is_some(),
-        "Max tokens should be set"
-    );
+    assert!(partial.max_tokens().is_some(), "Max tokens should be set");
 
     // Verify dialog showed appropriate messages
     let messages = dialog.messages();
-    assert!(
-        !messages.is_empty(),
-        "Should have shown info messages"
-    );
+    assert!(!messages.is_empty(), "Should have shown info messages");
 }
 
 #[tokio::test]
@@ -187,7 +181,11 @@ async fn test_metadata_elicitor_minimal() {
         .expect("Empty partial should build");
 
     let result = elicitor.elicit(&mut dialog, &mut partial).await;
-    assert!(result.is_ok(), "Minimal elicitation should succeed: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "Minimal elicitation should succeed: {:?}",
+        result
+    );
 
     // Verify only required fields are set
     assert!(partial.name().is_some());

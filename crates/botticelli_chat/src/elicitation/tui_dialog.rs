@@ -1,8 +1,8 @@
 //! TUI implementation of ElicitationDialog.
 
+use async_trait::async_trait;
 use botticelli_error::{BotticelliResult, ChatError, ChatErrorKind};
 use botticelli_mcp::ElicitationDialog;
-use async_trait::async_trait;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
@@ -49,17 +49,26 @@ impl TuiElicitationDialog {
     #[instrument]
     pub fn new() -> BotticelliResult<Self> {
         enable_raw_mode().map_err(|e| {
-            ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to enable raw mode: {}", e)))
+            ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                "Failed to enable raw mode: {}",
+                e
+            )))
         })?;
 
         let mut stdout = io::stdout();
         execute!(stdout, EnterAlternateScreen, EnableMouseCapture).map_err(|e| {
-            ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to setup terminal: {}", e)))
+            ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                "Failed to setup terminal: {}",
+                e
+            )))
         })?;
 
         let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend).map_err(|e| {
-            ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to create terminal: {}", e)))
+            ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                "Failed to create terminal: {}",
+                e
+            )))
         })?;
 
         debug!("TUI elicitation dialog initialized");
@@ -74,14 +83,14 @@ impl TuiElicitationDialog {
     #[instrument(skip(self))]
     fn render(&mut self) -> BotticelliResult<()> {
         let messages = self.messages.clone();
-        
+
         self.terminal
             .draw(|f| {
                 let chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([
-                        Constraint::Min(3),      // Messages area
-                        Constraint::Length(3),   // Input prompt area
+                        Constraint::Min(3),    // Messages area
+                        Constraint::Length(3), // Input prompt area
                     ])
                     .split(f.area());
 
@@ -96,14 +105,21 @@ impl TuiElicitationDialog {
                 f.render_widget(input_block, chunks[1]);
             })
             .map_err(|e| {
-                ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to render: {}", e)))
+                ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                    "Failed to render: {}",
+                    e
+                )))
             })?;
-        
+
         Ok(())
     }
 
     /// Render message history (static version for use in closures).
-    fn render_messages_static(messages: &[DialogMessage], f: &mut Frame, area: ratatui::layout::Rect) {
+    fn render_messages_static(
+        messages: &[DialogMessage],
+        f: &mut Frame,
+        area: ratatui::layout::Rect,
+    ) {
         let items: Vec<ListItem> = messages
             .iter()
             .map(|msg| {
@@ -124,13 +140,12 @@ impl TuiElicitationDialog {
             })
             .collect();
 
-        let list = List::new(items)
-            .block(
-                Block::default()
-                    .title("Narrative Elicitation")
-                    .borders(Borders::ALL)
-                    .style(Style::default().fg(Color::White)),
-            );
+        let list = List::new(items).block(
+            Block::default()
+                .title("Narrative Elicitation")
+                .borders(Borders::ALL)
+                .style(Style::default().fg(Color::White)),
+        );
 
         f.render_widget(list, area);
     }
@@ -150,10 +165,16 @@ impl TuiElicitationDialog {
 
         loop {
             if event::poll(std::time::Duration::from_millis(100)).map_err(|e| {
-                ChatError::new(ChatErrorKind::ExecutionFailed(format!("Event poll failed: {}", e)))
+                ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                    "Event poll failed: {}",
+                    e
+                )))
             })? {
                 if let Event::Key(key) = event::read().map_err(|e| {
-                    ChatError::new(ChatErrorKind::ExecutionFailed(format!("Key read failed: {}", e)))
+                    ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                        "Key read failed: {}",
+                        e
+                    )))
                 })? {
                     match key.code {
                         KeyCode::Enter => {

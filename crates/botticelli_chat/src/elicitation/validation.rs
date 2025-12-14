@@ -2,10 +2,9 @@
 
 use botticelli_error::BotticelliResult;
 
-
-use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
-use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
+use botticelli_error::{ChatError, ChatErrorKind};
+use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
 use botticelli_narrative::validator::{ValidationError, ValidationErrorKind, ValidationResult};
 use tracing::{debug, info, instrument, warn};
 
@@ -60,9 +59,7 @@ impl ValidationElicitor {
         errors: &[ValidationError],
     ) -> BotticelliResult<()> {
         if errors.is_empty() {
-            dialog
-                .show_info("✓ No validation errors found")
-                .await?;
+            dialog.show_info("✓ No validation errors found").await?;
             return Ok(());
         }
 
@@ -128,18 +125,13 @@ impl ValidationElicitor {
         for error in errors {
             if let Some(fix) = self.suggest_auto_fix(&error.kind) {
                 let should_fix = dialog
-                    .ask_confirmation(
-                        &format!("Auto-fix: {}?", fix),
-                        true,
-                    )
+                    .ask_confirmation(&format!("Auto-fix: {}?", fix), true)
                     .await?;
 
                 if should_fix {
                     // Note: Actual fixes would require modifying PartialNarrative
                     // This is a placeholder for the fix logic
-                    dialog
-                        .show_info(&format!("✓ Applied fix: {}", fix))
-                        .await?;
+                    dialog.show_info(&format!("✓ Applied fix: {}", fix)).await?;
                     fixed_any = true;
                 }
             }
@@ -185,30 +177,20 @@ impl ValidationElicitor {
     /// Get guidance for fixing error kind.
     fn get_fix_guidance(&self, kind: &ValidationErrorKind) -> &'static str {
         match kind {
-            ValidationErrorKind::InvalidSyntax => {
-                "Check TOML syntax (quotes, brackets, commas)"
-            }
+            ValidationErrorKind::InvalidSyntax => "Check TOML syntax (quotes, brackets, commas)",
             ValidationErrorKind::MissingSection => {
                 "Add required [narrative] section with name and description"
             }
-            ValidationErrorKind::EmptyToc => {
-                "Add acts to table_of_contents array"
-            }
+            ValidationErrorKind::EmptyToc => "Add acts to table_of_contents array",
             ValidationErrorKind::MissingAct => {
                 "Define missing act in [[act]] section or remove from toc"
             }
-            ValidationErrorKind::EmptyPrompt => {
-                "Add inputs array to act with at least one input"
-            }
+            ValidationErrorKind::EmptyPrompt => "Add inputs array to act with at least one input",
             ValidationErrorKind::UndefinedReference => {
                 "Check that referenced resource exists (narrative, table, bot)"
             }
-            ValidationErrorKind::CircularDependency => {
-                "Remove circular narrative references"
-            }
-            ValidationErrorKind::FileNotFound => {
-                "Ensure referenced files exist at specified paths"
-            }
+            ValidationErrorKind::CircularDependency => "Remove circular narrative references",
+            ValidationErrorKind::FileNotFound => "Ensure referenced files exist at specified paths",
         }
     }
 }
@@ -283,9 +265,7 @@ impl NarrativeElicitor for ValidationElicitor {
                 self.display_errors(dialog, &result.errors).await?;
 
                 if result.errors.is_empty() {
-                    dialog
-                        .show_info("✓ All errors fixed automatically")
-                        .await?;
+                    dialog.show_info("✓ All errors fixed automatically").await?;
                     return Ok(());
                 }
             }
@@ -304,9 +284,11 @@ impl NarrativeElicitor for ValidationElicitor {
 
             if !continue_anyway {
                 warn!("User chose to fix validation errors before continuing");
-                return Err(ChatError::new(ChatErrorKind::ValidationError(
-                    format!("{} validation errors remain", result.errors.len()),
-                )).into());
+                return Err(ChatError::new(ChatErrorKind::ValidationError(format!(
+                    "{} validation errors remain",
+                    result.errors.len()
+                )))
+                .into());
             }
         }
 

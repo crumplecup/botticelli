@@ -2,11 +2,12 @@
 
 use botticelli_error::BotticelliResult;
 
-
-use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder};
-use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
+use botticelli_error::{ChatError, ChatErrorKind};
 use botticelli_mcp::NarrativeHelper;
+use botticelli_mcp::{
+    ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
+};
 use std::collections::HashMap;
 use tracing::{debug, instrument};
 
@@ -57,13 +58,20 @@ impl NarrativeElicitor for ActElicitor {
             "Enter acts one-by-one",
         ];
 
-        let approach = dialog.ask_choice("How would you like to define acts?", approach_options).await?;
+        let approach = dialog
+            .ask_choice("How would you like to define acts?", approach_options)
+            .await?;
 
         let (act_order, acts) = match approach {
             0 => self.extract_from_description(dialog, partial).await?,
             1 => self.count_based_specification(dialog).await?,
             2 => self.one_by_one_specification(dialog).await?,
-            _ => return Err(ChatError::new(ChatErrorKind::InvalidInput("Invalid approach".to_string())).into()),
+            _ => {
+                return Err(ChatError::new(ChatErrorKind::InvalidInput(
+                    "Invalid approach".to_string(),
+                ))
+                .into())
+            }
         };
 
         debug!(act_count = act_order.len(), "Acts defined");
@@ -79,12 +87,17 @@ impl NarrativeElicitor for ActElicitor {
             .acts(acts)
             .build()
             .map_err(|e| {
-                ChatError::new(ChatErrorKind::InvalidState(format!("Failed to build partial narrative: {}", e)))
+                ChatError::new(ChatErrorKind::InvalidState(format!(
+                    "Failed to build partial narrative: {}",
+                    e
+                )))
             })?;
 
         *partial = updated;
 
-        dialog.show_info(&format!("✓ Defined {} act(s)", act_order.len())).await?;
+        dialog
+            .show_info(&format!("✓ Defined {} act(s)", act_order.len()))
+            .await?;
 
         Ok(())
     }
@@ -111,14 +124,21 @@ impl ActElicitor {
         partial: &PartialNarrative,
     ) -> BotticelliResult<(Vec<String>, HashMap<String, PartialAct>)> {
         let description = partial.description().as_ref().unwrap();
-        
-        dialog.show_info("Analyzing description to extract workflow steps...").await?;
-        
+
+        dialog
+            .show_info("Analyzing description to extract workflow steps...")
+            .await?;
+
         let extracted_acts = NarrativeHelper::extract_acts_from_description(description);
-        
+
         if extracted_acts.is_empty() {
-            dialog.show_warning("Could not extract acts from description. Try another method.").await?;
-            return Err(ChatError::new(ChatErrorKind::InvalidState("No acts extracted".to_string())).into());
+            dialog
+                .show_warning("Could not extract acts from description. Try another method.")
+                .await?;
+            return Err(ChatError::new(ChatErrorKind::InvalidState(
+                "No acts extracted".to_string(),
+            ))
+            .into());
         }
 
         // Show extracted acts
@@ -129,9 +149,12 @@ impl ActElicitor {
         dialog.show_info(&info).await?;
 
         let confirmed = dialog.ask_confirmation("Use these acts?", true).await?;
-        
+
         if !confirmed {
-            return Err(ChatError::new(ChatErrorKind::InvalidState("User rejected extracted acts".to_string())).into());
+            return Err(ChatError::new(ChatErrorKind::InvalidState(
+                "User rejected extracted acts".to_string(),
+            ))
+            .into());
         }
 
         let mut act_order = Vec::new();
@@ -161,10 +184,20 @@ impl ActElicitor {
 
         for i in 0..count {
             let act_name = format!("act{}", i + 1);
-            let prompt = dialog.ask_text(&format!("Enter prompt for {} (step {}/{}):", act_name, i + 1, count)).await?;
+            let prompt = dialog
+                .ask_text(&format!(
+                    "Enter prompt for {} (step {}/{}):",
+                    act_name,
+                    i + 1,
+                    count
+                ))
+                .await?;
 
             act_order.push(act_name.clone());
-            acts.insert(act_name, PartialAct::new(prompt, None, None, Vec::new(), None));
+            acts.insert(
+                act_name,
+                PartialAct::new(prompt, None, None, Vec::new(), None),
+            );
         }
 
         Ok((act_order, acts))
@@ -180,22 +213,34 @@ impl ActElicitor {
         let mut acts = HashMap::new();
 
         loop {
-            let act_name = dialog.ask_text(&format!("Enter act name (act {} of ?):", act_order.len() + 1)).await?;
-            
+            let act_name = dialog
+                .ask_text(&format!(
+                    "Enter act name (act {} of ?):",
+                    act_order.len() + 1
+                ))
+                .await?;
+
             if !NarrativeHelper::is_valid_name(&act_name) {
                 dialog.show_error("Invalid act name. Must start with letter, alphanumeric + underscores only.").await?;
                 continue;
             }
 
             if acts.contains_key(&act_name) {
-                dialog.show_error("Act name already exists. Choose a different name.").await?;
+                dialog
+                    .show_error("Act name already exists. Choose a different name.")
+                    .await?;
                 continue;
             }
 
-            let prompt = dialog.ask_text(&format!("Enter prompt for '{}':", act_name)).await?;
+            let prompt = dialog
+                .ask_text(&format!("Enter prompt for '{}':", act_name))
+                .await?;
 
             act_order.push(act_name.clone());
-            acts.insert(act_name, PartialAct::new(prompt, None, None, Vec::new(), None));
+            acts.insert(
+                act_name,
+                PartialAct::new(prompt, None, None, Vec::new(), None),
+            );
 
             if !dialog.ask_confirmation("Add another act?", true).await? {
                 break;

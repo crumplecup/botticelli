@@ -4,7 +4,6 @@
 //! interactively. Supports multiple UI platforms (TUI, Web, Android) through
 //! abstraction.
 
-
 mod acts;
 mod carousel;
 mod inputs;

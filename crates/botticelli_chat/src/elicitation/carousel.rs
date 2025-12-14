@@ -2,10 +2,9 @@
 
 use botticelli_error::BotticelliResult;
 
-
-use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
-use botticelli_error::{ChatError, ChatErrorKind};
 use async_trait::async_trait;
+use botticelli_error::{ChatError, ChatErrorKind};
+use botticelli_mcp::{ElicitationDialog, NarrativeElicitor, PartialNarrative};
 use botticelli_narrative::CarouselConfig;
 use tracing::{debug, instrument};
 
@@ -59,10 +58,7 @@ impl CarouselElicitor {
 
         // Continue on error
         let continue_on_error = dialog
-            .ask_confirmation(
-                "Continue execution if an iteration fails?",
-                false,
-            )
+            .ask_confirmation("Continue execution if an iteration fails?", false)
             .await?;
 
         let config = CarouselConfig::new(iterations, estimated_tokens)
@@ -128,10 +124,7 @@ impl NarrativeElicitor for CarouselElicitor {
                     .await?;
 
                 let enable = dialog
-                    .ask_confirmation(
-                        "Enable carousel for entire narrative?",
-                        false,
-                    )
+                    .ask_confirmation("Enable carousel for entire narrative?", false)
                     .await?;
 
                 if !enable {
@@ -141,9 +134,7 @@ impl NarrativeElicitor for CarouselElicitor {
                     return Ok(());
                 }
 
-                let config = self
-                    .elicit_carousel_config(dialog, "narrative")
-                    .await?;
+                let config = self.elicit_carousel_config(dialog, "narrative").await?;
 
                 // Update partial narrative with carousel
                 let updated = PartialNarrativeBuilder::default()
@@ -172,38 +163,29 @@ impl NarrativeElicitor for CarouselElicitor {
             Some(act_name) => {
                 // Act-level carousel
                 if !partial.acts().contains_key(act_name) {
-                    return Err(ChatError::new(ChatErrorKind::InvalidState(
-                        format!("Act '{}' not found", act_name),
-                    )).into());
+                    return Err(ChatError::new(ChatErrorKind::InvalidState(format!(
+                        "Act '{}' not found",
+                        act_name
+                    )))
+                    .into());
                 }
 
                 dialog
-                    .show_info(&format!(
-                        "Configure carousel for act '{}'",
-                        act_name
-                    ))
+                    .show_info(&format!("Configure carousel for act '{}'", act_name))
                     .await?;
 
                 let enable = dialog
-                    .ask_confirmation(
-                        &format!("Enable carousel for act '{}'?", act_name),
-                        false,
-                    )
+                    .ask_confirmation(&format!("Enable carousel for act '{}'?", act_name), false)
                     .await?;
 
                 if !enable {
                     dialog
-                        .show_info(&format!(
-                            "Skipping carousel for act '{}'",
-                            act_name
-                        ))
+                        .show_info(&format!("Skipping carousel for act '{}'", act_name))
                         .await?;
                     return Ok(());
                 }
 
-                let config = self
-                    .elicit_carousel_config(dialog, act_name)
-                    .await?;
+                let config = self.elicit_carousel_config(dialog, act_name).await?;
 
                 // Update the act with carousel config
                 let mut updated_acts = partial.acts().clone();
@@ -231,10 +213,7 @@ impl NarrativeElicitor for CarouselElicitor {
                 *partial = updated;
 
                 dialog
-                    .show_info(&format!(
-                        "✓ Carousel configured for act '{}'",
-                        act_name
-                    ))
+                    .show_info(&format!("✓ Carousel configured for act '{}'", act_name))
                     .await?;
             }
         }
