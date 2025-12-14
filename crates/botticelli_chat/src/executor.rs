@@ -432,7 +432,10 @@ Other:
     async fn handle_create_narrative(&self, prompt: String) -> ChatResult<Response> {
         use tracing::info;
 
-        info!(prompt_len = prompt.len(), "Creating narrative via LLM sampling");
+        info!(
+            prompt_len = prompt.len(),
+            "Creating narrative via LLM sampling"
+        );
 
         // Use LLM sampling coordinator to generate narrative
         let partial_narrative = self.sampling.generate_narrative(prompt.clone()).await?;

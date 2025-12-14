@@ -151,14 +151,9 @@ impl LlmSampler for ChatLlmSampler {
             .provider
             .generate(&request)
             .await
-            .map_err(|e| {
-                SamplingError::new(SamplingErrorKind::ProviderError(e.to_string()))
-            })?;
+            .map_err(|e| SamplingError::new(SamplingErrorKind::ProviderError(e.to_string())))?;
 
-        debug!(
-            output_count = response.outputs().len(),
-            "Received response"
-        );
+        debug!(output_count = response.outputs().len(), "Received response");
 
         Ok(response)
     }

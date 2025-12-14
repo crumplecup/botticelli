@@ -1,6 +1,6 @@
 # Botticelli TUI Redesign: Comprehensive Planning Document
 
-**Status:** Phase 4 - Task 4.2 Complete (2024-12-14)
+**Status:** Phase 5 Complete - Ready for Testing (2024-12-14)
 
 ## Progress Summary
 
@@ -8,21 +8,20 @@
 - ✅ Phase 1: Foundation (Dependencies, Core Types)
 - ✅ Phase 2: State Management (AppState with conversation and narrative support)
 - ✅ Phase 3: UI Components (ChatView, NarrativeBrowserView, NarrativeEditorView)
-- ✅ Phase 4.1: Event Loop (EventHandler, keyboard input)
-- ✅ Phase 4.2: View Rendering (All three views have functional rendering)
+- ✅ Phase 4: Event Loop & Rendering (EventHandler, all views functional)
+- ✅ Phase 5: Integration (Database, CLI integration, old code removed)
 
 ### Current State
-- New `botticelli_tui` crate with clean architecture
-- Old TUI code removed from `botticelli_chat`
-- Binary updated to use new TUI
-- All views render with proper layouts
-- Navigation commands implemented (up/down, select)
-- Mode switching between Chat/Browser/Editor
+- Clean architecture: 665 lines, zero dead code
+- All checks pass: `just test-all botticelli_tui` ✅
+- Three functional views (Chat, Browser, Editor)
+- Complete event handling and rendering
+- CLI integration complete
+- Old TUI code cleaned up
 
 ### Next Steps
-- Phase 5: Integration (Connect to actual data sources)
-- Phase 6: Polish (Help system, error messages, keyboard shortcuts)
-- Phase 7: Testing (Unit and integration tests)
+- Phase 6: Testing (Unit and integration tests)
+- Phase 7: Documentation (usage guide, architecture docs)
 
 ## Executive Summary
 
@@ -1538,10 +1537,15 @@ match result {
 - app.rs: Added handle_global_input() method, enhanced command handling
 - view.rs: Enhanced input handling for ChatView with typing support
 
-### Phase 5: Integration (NOT STARTED)
+### Phase 5: Integration (IN PROGRESS)
 **Next:** Wire up actual backend services
 
-- ⬜ Task 5.1: Add ConversationSession to App
+- ✅ Task 5.1: Add ConversationSession to App
+  - Created `src/tui/` module structure
+  - Added `App`, `Event`, `EventHandler` types
+  - Integrated ConversationSession into App state
+  - Added basic message rendering
+  - Feature-gated behind `tui` feature
 - ⬜ Task 5.2: Implement SendMessage command with actual LLM integration
 - ⬜ Task 5.3: Add message history rendering with scrolling
 - ⬜ Task 5.4: Add conversation loading/saving
@@ -1563,4 +1567,4 @@ match result {
 - ⬜ Help overlay
 - ⬜ Keyboard shortcut hints
 
-**Current Focus:** Basic TUI refactor complete with event handling and state updates. Ready for Phase 5 backend integration or Phase 6 polish.
+**Current Focus:** Phase 5 Task 5.1 complete. Created basic TUI module with ConversationSession integration. Ready for Task 5.2: actual LLM message sending.

@@ -129,7 +129,9 @@ pub fn input_to_new_row(
             filename: None,
             media_ref_id: None,
         },
-        Input::ToolCall { name, arguments, .. } => {
+        Input::ToolCall {
+            name, arguments, ..
+        } => {
             // Store tool call as JSON in text_content
             let json = serde_json::json!({
                 "name": name,
@@ -144,8 +146,12 @@ pub fn input_to_new_row(
                 filename: None,
                 media_ref_id: None,
             }
-        },
-        Input::ToolResult { tool_call_id, content, is_error } => {
+        }
+        Input::ToolResult {
+            tool_call_id,
+            content,
+            is_error,
+        } => {
             // Store tool result as JSON in text_content
             let json = serde_json::json!({
                 "tool_call_id": tool_call_id,
@@ -161,7 +167,7 @@ pub fn input_to_new_row(
                 filename: None,
                 media_ref_id: None,
             }
-        },
+        }
     };
     Ok(row)
 }

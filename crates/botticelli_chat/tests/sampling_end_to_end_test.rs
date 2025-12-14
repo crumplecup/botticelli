@@ -125,18 +125,17 @@ async fn test_full_sampling_loop_with_tool_execution() {
     assert!(session.turn_count() >= 3, "Should have at least 3 turns");
 
     // Check that we have tool calls turn
-    let has_tool_calls = session.turns.iter().any(|turn| {
-        matches!(
-            turn,
-            ConversationTurn::AssistantToolCalls { .. }
-        )
-    });
+    let has_tool_calls = session
+        .turns
+        .iter()
+        .any(|turn| matches!(turn, ConversationTurn::AssistantToolCalls { .. }));
     assert!(has_tool_calls, "Should have tool calls turn");
 
     // Check that we have tool results turn
-    let has_tool_results = session.turns.iter().any(|turn| {
-        matches!(turn, ConversationTurn::ToolResults { .. })
-    });
+    let has_tool_results = session
+        .turns
+        .iter()
+        .any(|turn| matches!(turn, ConversationTurn::ToolResults { .. }));
     assert!(has_tool_results, "Should have tool results turn");
 }
 

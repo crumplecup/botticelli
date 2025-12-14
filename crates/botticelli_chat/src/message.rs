@@ -86,4 +86,13 @@ impl Message {
     pub fn is_system(&self) -> bool {
         matches!(self, Self::System { .. })
     }
+
+    /// Get the message role as a string.
+    pub fn role(&self) -> &str {
+        match self {
+            Self::User { .. } => "user",
+            Self::Assistant { .. } => "assistant",
+            Self::System { .. } => "system",
+        }
+    }
 }

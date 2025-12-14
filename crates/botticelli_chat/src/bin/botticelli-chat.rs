@@ -115,10 +115,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _services = std::sync::Arc::new(botticelli_chat::ServiceContainer::new(config));
 
     // Create and run new TUI app
-    let mut app = botticelli_tui::App::new();
+    let mut tui = botticelli_tui::Tui::new()?;
 
     // Run the app
-    let result = app.run();
+    let result = tui.run().await;
 
     match result {
         Ok(()) => {

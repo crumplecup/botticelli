@@ -108,7 +108,11 @@ pub fn summarize_input(input: &Input) -> String {
             debug!(summary = %summary, "Tool call (no summarization)");
             summary
         }
-        Input::ToolResult { tool_call_id, is_error, .. } => {
+        Input::ToolResult {
+            tool_call_id,
+            is_error,
+            ..
+        } => {
             // Tool results are structural and should not be summarized
             let status = if *is_error { "error" } else { "success" };
             let summary = format!("[Tool result: {} ({})]", tool_call_id, status);

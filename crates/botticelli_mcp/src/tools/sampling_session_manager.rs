@@ -39,7 +39,8 @@ impl SamplingSessionManager {
         });
 
         // Run sampling
-        let _result = sampler.sample(&mut session, available_tools)
+        let _result = sampler
+            .sample(&mut session, available_tools)
             .await
             .map_err(|e| ChatError::validation_error(e.to_string()))?;
 

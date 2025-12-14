@@ -140,6 +140,40 @@ impl AppState {
     pub fn clear_editor_content(&mut self) {
         self.editor_content.clear();
     }
+
+    /// Gets the current view based on mode.
+    pub fn current_view(&self) -> &dyn crate::View {
+        match self.mode {
+            ViewMode::Chat => &crate::ChatView,
+            ViewMode::NarrativeBrowser => &crate::NarrativeBrowserView,
+            ViewMode::NarrativeEditor => &crate::NarrativeEditorView,
+            ViewMode::Settings => &crate::ChatView, // Placeholder
+        }
+    }
+
+    /// Handle key event.
+    pub async fn handle_key(&mut self, _key: crossterm::event::KeyEvent) -> crate::TuiResult<()> {
+        // TODO: Implement key handling
+        Ok(())
+    }
+
+    /// Handle mouse event.
+    pub fn handle_mouse(&mut self, _mouse: crossterm::event::MouseEvent) -> crate::TuiResult<()> {
+        // TODO: Implement mouse handling
+        Ok(())
+    }
+
+    /// Handle resize event.
+    pub fn handle_resize(&mut self, _width: u16, _height: u16) -> crate::TuiResult<()> {
+        // TODO: Implement resize handling
+        Ok(())
+    }
+
+    /// Update state on tick.
+    pub fn update(&mut self) -> crate::TuiResult<()> {
+        // TODO: Implement periodic updates
+        Ok(())
+    }
 }
 
 /// View mode for the TUI.

@@ -27,7 +27,8 @@ mod sampling;
 mod sampling_integration;
 
 pub use botticelli_mcp::{
-    ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
+    ConversationSession, ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative,
+    PartialNarrativeBuilder,
 };
 pub use chat_config::ChatConfig;
 pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
@@ -39,8 +40,6 @@ pub use elicitation::{
     ActElicitor, CarouselElicitor, ElicitationSession, InputElicitor, MetadataElicitor,
     ValidationElicitor,
 };
-pub use sampling::ChatLlmSampler;
-pub use sampling_integration::SamplingIntegration;
 pub use executor::{CommandExecutor, NarrativeState};
 pub use input::UserInput;
 pub use interface::ChatInterface;
@@ -48,6 +47,8 @@ pub use message::Message;
 pub use model_selection::ChatSession;
 pub use parser::parse_intent;
 pub use response::Response;
+pub use sampling::ChatLlmSampler;
+pub use sampling_integration::SamplingIntegration;
 pub use services::ServiceContainer;
 
 #[cfg(feature = "cli")]

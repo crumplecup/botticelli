@@ -22,26 +22,33 @@ impl SamplingCoordinator {
 
     /// Generate a narrative from user description.
     #[instrument(skip(self))]
-    pub async fn generate_narrative(&self, description: String) -> BotticelliResult<PartialNarrative> {
+    pub async fn generate_narrative(
+        &self,
+        description: String,
+    ) -> BotticelliResult<PartialNarrative> {
         let system_prompt = SamplingHelper::narrative_generation_prompt();
-        
+
         // Create session with user message
         let mut session = ConversationSession::new(system_prompt);
         session.add_turn(ConversationTurn::UserMessage {
             content: description,
             attachments: None,
         });
-        
+
         // Get tool definitions from registry
         let tools = self.tool_registry.tool_definitions();
-        
+
         // Run sampling
-        let _result = self.sampler.sample(&mut session, &tools)
+        let _result = self
+            .sampler
+            .sample(&mut session, &tools)
             .await
-            .map_err(|e| botticelli_error::ChatError::new(
-                botticelli_error::ChatErrorKind::ExecutionFailed(e.to_string())
-            ))?;
-        
+            .map_err(|e| {
+                botticelli_error::ChatError::new(botticelli_error::ChatErrorKind::ExecutionFailed(
+                    e.to_string(),
+                ))
+            })?;
+
         // TODO: Extract narrative from session after LLM tool calling
         // For now, return a placeholder
         Ok(PartialNarrative::new())
@@ -59,22 +66,26 @@ impl SamplingCoordinator {
             SamplingHelper::narrative_generation_prompt(),
             narrative
         );
-        
+
         let mut session = ConversationSession::new(system_prompt);
         session.add_turn(ConversationTurn::UserMessage {
             content: feedback,
             attachments: None,
         });
-        
+
         // Get tool definitions from registry
         let tools = self.tool_registry.tool_definitions();
-        
-        let _result = self.sampler.sample(&mut session, &tools)
+
+        let _result = self
+            .sampler
+            .sample(&mut session, &tools)
             .await
-            .map_err(|e| botticelli_error::ChatError::new(
-                botticelli_error::ChatErrorKind::ExecutionFailed(e.to_string())
-            ))?;
-        
+            .map_err(|e| {
+                botticelli_error::ChatError::new(botticelli_error::ChatErrorKind::ExecutionFailed(
+                    e.to_string(),
+                ))
+            })?;
+
         // TODO: Apply refinements from LLM tool calling
         Ok(narrative)
     }
@@ -120,14 +131,17 @@ pub trait LlmSampler: Send + Sync {
             let response = self.generate(session, available_tools).await?;
 
             // Process response based on outputs
-            let has_tool_calls = !response.outputs().is_empty() 
-                && response.outputs().iter().any(|o| matches!(o, botticelli_core::Output::ToolCalls(_)));
+            let has_tool_calls = !response.outputs().is_empty()
+                && response
+                    .outputs()
+                    .iter()
+                    .any(|o| matches!(o, botticelli_core::Output::ToolCalls(_)));
 
             if has_tool_calls {
                 // Extract tool calls from outputs
                 let mut all_calls = vec![];
                 let mut thinking_text = String::new();
-                
+
                 for output in response.outputs() {
                     match output {
                         botticelli_core::Output::Text(text) => {
@@ -161,7 +175,9 @@ pub trait LlmSampler: Send + Sync {
                 // Continue loop for next turn
             } else {
                 // Model is done (no tool calls)
-                let text = response.outputs().iter()
+                let text = response
+                    .outputs()
+                    .iter()
                     .filter_map(|o| match o {
                         botticelli_core::Output::Text(t) => Some(t.as_str()),
                         _ => None,
@@ -192,10 +208,7 @@ pub trait LlmSampler: Send + Sync {
     ///
     /// Default implementation returns errors - must be overridden
     /// to provide actual tool execution.
-    async fn execute_tools(
-        &self,
-        _calls: &[ToolCall],
-    ) -> Result<Vec<ToolResult>, SamplingError> {
+    async fn execute_tools(&self, _calls: &[ToolCall]) -> Result<Vec<ToolResult>, SamplingError> {
         Err(SamplingError::new(SamplingErrorKind::NoToolRegistry))
     }
 }

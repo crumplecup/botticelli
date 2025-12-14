@@ -166,7 +166,7 @@ impl NarrativeHelper {
         }
 
         let name = words.join("_").to_lowercase();
-        
+
         // Clean to valid chars
         let name: String = name
             .chars()

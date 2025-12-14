@@ -8,8 +8,11 @@ pub trait View {
     fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()>;
 
     /// Handles keyboard input and returns a command if applicable.
-    fn handle_input(&self, key: crossterm::event::KeyEvent, state: &AppState)
-        -> TuiResult<Option<Command>>;
+    fn handle_input(
+        &self,
+        key: crossterm::event::KeyEvent,
+        state: &AppState,
+    ) -> TuiResult<Option<Command>>;
 }
 
 /// Chat view implementation.
@@ -46,8 +49,8 @@ impl View for ChatView {
             String::from("No conversation selected")
         };
 
-        let messages_widget = Paragraph::new(messages)
-            .block(Block::default().title("Chat").borders(Borders::ALL));
+        let messages_widget =
+            Paragraph::new(messages).block(Block::default().title("Chat").borders(Borders::ALL));
         frame.render_widget(messages_widget, chunks[0]);
 
         // Input area
@@ -113,8 +116,8 @@ impl View for NarrativeBrowserView {
             })
             .collect();
 
-        let list_widget = List::new(narratives)
-            .block(Block::default().title("Narratives").borders(Borders::ALL));
+        let list_widget =
+            List::new(narratives).block(Block::default().title("Narratives").borders(Borders::ALL));
         frame.render_widget(list_widget, chunks[0]);
 
         // Preview area
@@ -144,9 +147,7 @@ impl View for NarrativeBrowserView {
 
         match (key.code, key.modifiers) {
             (KeyCode::Char('c'), KeyModifiers::CONTROL) => Ok(Some(Command::Quit)),
-            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => {
-                Ok(Some(Command::NavigateUp))
-            }
+            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => Ok(Some(Command::NavigateUp)),
             (KeyCode::Down | KeyCode::Char('j'), KeyModifiers::NONE) => {
                 Ok(Some(Command::NavigateDown))
             }
@@ -185,8 +186,11 @@ impl View for NarrativeEditorView {
             String::from("No narrative selected")
         };
 
-        let title_widget = Paragraph::new(title_text)
-            .block(Block::default().title("Narrative Editor").borders(Borders::ALL));
+        let title_widget = Paragraph::new(title_text).block(
+            Block::default()
+                .title("Narrative Editor")
+                .borders(Borders::ALL),
+        );
         frame.render_widget(title_widget, chunks[0]);
 
         // Editor content
@@ -197,8 +201,8 @@ impl View for NarrativeEditorView {
 
         // Status bar
         let status_text = "Ctrl+S: Save | Ctrl+C: Quit | Esc: Back to Browser";
-        let status_widget = Paragraph::new(status_text)
-            .block(Block::default().borders(Borders::ALL));
+        let status_widget =
+            Paragraph::new(status_text).block(Block::default().borders(Borders::ALL));
         frame.render_widget(status_widget, chunks[2]);
 
         Ok(())

@@ -9,10 +9,14 @@ use crate::{TuiError, TuiErrorKind, TuiResult};
 pub enum Event {
     /// Keyboard input.
     Key(KeyEvent),
+    /// Mouse input.
+    Mouse(crossterm::event::MouseEvent),
     /// Terminal resize.
     Resize(u16, u16),
     /// Tick for periodic updates.
     Tick,
+    /// Quit signal.
+    Quit,
 }
 
 /// Event handler for the TUI.
@@ -29,19 +33,38 @@ impl EventHandler {
     }
 
     /// Polls for the next event.
-    pub fn next(&self) -> TuiResult<Event> {
+    pub async fn next(&self) -> TuiResult<Option<Event>> {
         if event::poll(self.tick_rate).map_err(|e| {
-            TuiError::new(TuiErrorKind::EventPoll(format!("Failed to poll events: {}", e)))
+            TuiError::new(TuiErrorKind::EventPoll(format!(
+                "Failed to poll events: {}",
+                e
+            )))
         })? {
             match event::read().map_err(|e| {
-                TuiError::new(TuiErrorKind::EventRead(format!("Failed to read event: {}", e)))
+                TuiError::new(TuiErrorKind::EventRead(format!(
+                    "Failed to read event: {}",
+                    e
+                )))
             })? {
-                CrosstermEvent::Key(key) => Ok(Event::Key(key)),
-                CrosstermEvent::Resize(w, h) => Ok(Event::Resize(w, h)),
-                _ => Ok(Event::Tick),
+                CrosstermEvent::Key(key) => {
+                    // Check for quit (Ctrl+C or 'q')
+                    if key.code == crossterm::event::KeyCode::Char('q')
+                        || (key.code == crossterm::event::KeyCode::Char('c')
+                            && key
+                                .modifiers
+                                .contains(crossterm::event::KeyModifiers::CONTROL))
+                    {
+                        Ok(Some(Event::Quit))
+                    } else {
+                        Ok(Some(Event::Key(key)))
+                    }
+                }
+                CrosstermEvent::Mouse(mouse) => Ok(Some(Event::Mouse(mouse))),
+                CrosstermEvent::Resize(w, h) => Ok(Some(Event::Resize(w, h))),
+                _ => Ok(Some(Event::Tick)),
             }
         } else {
-            Ok(Event::Tick)
+            Ok(Some(Event::Tick))
         }
     }
 }

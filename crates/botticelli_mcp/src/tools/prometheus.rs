@@ -38,7 +38,8 @@ impl PrometheusMetrics {
     /// Export metrics in Prometheus text format.
     #[instrument(skip(self))]
     pub fn export_prometheus(&self) -> Result<String, botticelli_error::McpError> {
-        let executions = self.executions
+        let executions = self
+            .executions
             .lock()
             .map_err(|_| botticelli_error::McpError::mutex_poisoned("metrics"))?;
 
@@ -124,7 +125,8 @@ impl PrometheusMetrics {
     /// Get summary statistics.
     #[instrument(skip(self))]
     pub fn summary(&self) -> Result<MetricsSummary, botticelli_error::McpError> {
-        let executions = self.executions
+        let executions = self
+            .executions
             .lock()
             .map_err(|_| botticelli_error::McpError::mutex_poisoned("metrics"))?;
 

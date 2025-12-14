@@ -114,7 +114,7 @@ async fn test_sampler_with_text_response() {
     assert!(result.is_ok());
     let response = result.unwrap();
     assert_eq!(response.outputs().len(), 1);
-    
+
     match &response.outputs()[0] {
         Output::Text(text) => assert_eq!(text, "Hello, world!"),
         _ => panic!("Expected text output"),
@@ -128,17 +128,17 @@ async fn test_sampler_builds_request_from_session() {
     let sampler = ChatLlmSampler::new(provider, tool_registry);
 
     let mut session = ConversationSession::new("System prompt");
-    
+
     // Add multiple turns
     session.add_turn(ConversationTurn::UserMessage {
         content: "First message".to_string(),
         attachments: None,
     });
-    
+
     session.add_turn(ConversationTurn::AssistantMessage {
         content: "First response".to_string(),
     });
-    
+
     session.add_turn(ConversationTurn::UserMessage {
         content: "Second message".to_string(),
         attachments: None,
@@ -172,7 +172,7 @@ async fn test_sampler_with_tool_call() {
     assert!(result.is_ok());
     let response = result.unwrap();
     assert_eq!(response.outputs().len(), 1);
-    
+
     match &response.outputs()[0] {
         Output::ToolCalls(calls) => {
             assert_eq!(calls.len(), 1);
@@ -240,13 +240,13 @@ async fn test_full_sampling_loop_with_text() {
 
     assert!(result.is_ok());
     let sampling_result = result.unwrap();
-    
+
     match sampling_result {
         botticelli_mcp::SamplingResult::Completed { final_response } => {
             assert_eq!(final_response, "Final answer");
         }
     }
-    
+
     // Session should have assistant response added
     assert_eq!(session.turn_count(), 2);
 }

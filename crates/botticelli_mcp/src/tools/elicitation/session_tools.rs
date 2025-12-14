@@ -266,7 +266,7 @@ impl McpTool for ElicitActTool {
 
         // Update or add act
         let mut acts = state["acts"].as_array().cloned().unwrap_or_default();
-        
+
         let mut act = json!({
             "name": act_name,
             "prompt": prompt

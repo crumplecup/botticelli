@@ -18,24 +18,21 @@ impl SamplingIntegration {
     pub fn new(services: Arc<ServiceContainer>) -> Self {
         // Create tool registry with default tools
         let tool_registry = Arc::new(botticelli_mcp::ToolRegistry::default());
-        
+
         // Get provider from services (will be initialized on first use)
         // For now, use placeholder until first actual sampling call
-        let provider: Arc<dyn botticelli_core::LlmProvider> = 
+        let provider: Arc<dyn botticelli_core::LlmProvider> =
             Arc::new(PlaceholderProvider::new(services.clone()));
-        
-        let sampler = Arc::new(ChatLlmSampler::new(
-            provider,
-            tool_registry.clone(),
-        ));
-        
-        let coordinator = Arc::new(SamplingCoordinator::new(
-            sampler.clone(),
-            tool_registry,
-        ));
-        
+
+        let sampler = Arc::new(ChatLlmSampler::new(provider, tool_registry.clone()));
+
+        let coordinator = Arc::new(SamplingCoordinator::new(sampler.clone(), tool_registry));
+
         debug!("Initialized sampling integration");
-        Self { coordinator, sampler }
+        Self {
+            coordinator,
+            sampler,
+        }
     }
 
     /// Start LLM-driven narrative generation from user description.
@@ -123,18 +120,17 @@ impl botticelli_core::LlmProvider for PlaceholderProvider {
         // Lazily get the real provider from services
         #[cfg(feature = "cli")]
         {
-            let provider = self.services
-                .llm_provider()
-                .await
-                .map_err(|e| botticelli_core::ProviderError::new(
+            let provider = self.services.llm_provider().await.map_err(|e| {
+                botticelli_core::ProviderError::new(
                     "service",
                     botticelli_core::ProviderErrorKind::ApiError(e.to_string()),
-                ))?;
-            
+                )
+            })?;
+
             // Delegate to real provider
             provider.generate(request).await
         }
-        
+
         #[cfg(not(feature = "cli"))]
         {
             Err(botticelli_core::ProviderError::new(

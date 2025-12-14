@@ -225,16 +225,12 @@ impl ServiceContainer {
 
         // Create provider based on model ID
         match model_id {
-            ModelId::Gemini(_) => {
-                Err(ChatError::new(ChatErrorKind::ExecutionFailed(
-                    "Gemini provider not yet implemented with new LlmProvider trait".into()
-                )))
-            }
-            ModelId::Groq(_) => {
-                Err(ChatError::new(ChatErrorKind::ExecutionFailed(
-                    "Groq provider not yet implemented with new LlmProvider trait".into()
-                )))
-            }
+            ModelId::Gemini(_) => Err(ChatError::new(ChatErrorKind::ExecutionFailed(
+                "Gemini provider not yet implemented with new LlmProvider trait".into(),
+            ))),
+            ModelId::Groq(_) => Err(ChatError::new(ChatErrorKind::ExecutionFailed(
+                "Groq provider not yet implemented with new LlmProvider trait".into(),
+            ))),
         }
     }
 }

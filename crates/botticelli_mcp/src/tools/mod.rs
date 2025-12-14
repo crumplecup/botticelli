@@ -189,7 +189,9 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(CreateNarrativeSessionTool::new(
             narrative_registry.clone(),
         )));
-        registry.register(Arc::new(ElicitMetadataTool::new(narrative_registry.clone())));
+        registry.register(Arc::new(ElicitMetadataTool::new(
+            narrative_registry.clone(),
+        )));
         registry.register(Arc::new(ElicitActTool::new(narrative_registry.clone())));
         registry.register(Arc::new(FinalizeNarrativeTool::new(narrative_registry)));
 

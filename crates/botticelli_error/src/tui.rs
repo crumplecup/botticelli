@@ -57,5 +57,12 @@ impl TuiError {
     }
 }
 
+impl From<std::io::Error> for TuiError {
+    #[track_caller]
+    fn from(err: std::io::Error) -> Self {
+        Self::new(TuiErrorKind::Rendering(err.to_string()))
+    }
+}
+
 /// Result type for TUI operations.
 pub type TuiResult<T> = Result<T, TuiError>;

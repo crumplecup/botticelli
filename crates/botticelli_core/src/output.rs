@@ -114,8 +114,10 @@ impl ToolCall {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum StopReason {
     /// Model finished generating naturally (end of turn).
+    #[default]
     EndTurn,
     /// Maximum token limit reached.
     MaxTokens,
@@ -127,10 +129,4 @@ pub enum StopReason {
     StopSequence,
     /// Other/unknown reason.
     Other,
-}
-
-impl Default for StopReason {
-    fn default() -> Self {
-        StopReason::EndTurn
-    }
 }

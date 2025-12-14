@@ -13,10 +13,7 @@ use async_trait::async_trait;
 #[async_trait]
 pub trait LlmProvider: Send + Sync {
     /// Generate a response from the provider.
-    async fn generate(
-        &self,
-        request: &GenerateRequest,
-    ) -> Result<GenerateResponse, ProviderError>;
+    async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, ProviderError>;
 
     /// Get the provider name for logging/debugging.
     fn provider_name(&self) -> &str;

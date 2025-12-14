@@ -55,8 +55,11 @@ fn message_to_server_message(msg: Message) -> Result<crate::Message, ServerError
             | Input::Video { .. }
             | Input::Document { .. } => None,
             // Skip bot commands, table references, narrative references, and tool interactions (not supported in text-only server)
-            Input::BotCommand { .. } | Input::Table { .. } | Input::Narrative { .. } 
-            | Input::ToolCall { .. } | Input::ToolResult { .. } => None,
+            Input::BotCommand { .. }
+            | Input::Table { .. }
+            | Input::Narrative { .. }
+            | Input::ToolCall { .. }
+            | Input::ToolResult { .. } => None,
         })
         .collect::<Vec<_>>()
         .join("\n");

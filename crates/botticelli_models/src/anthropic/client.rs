@@ -83,7 +83,10 @@ impl AnthropicClient {
 
     /// Converts a Botticelli GenerateRequest to an Anthropic API request.
     #[instrument(skip(request))]
-    pub(crate) fn convert_request(&self, request: &GenerateRequest) -> Result<AnthropicRequest, ModelsError> {
+    pub(crate) fn convert_request(
+        &self,
+        request: &GenerateRequest,
+    ) -> Result<AnthropicRequest, ModelsError> {
         debug!("Converting GenerateRequest to AnthropicRequest");
 
         let messages: Result<Vec<AnthropicMessage>, ModelsError> = request
@@ -155,7 +158,9 @@ impl AnthropicClient {
 
     /// Converts an Anthropic API response to a Botticelli GenerateResponse.
     #[instrument(skip(response))]
-    pub(crate) fn convert_response(response: &AnthropicResponse) -> Result<GenerateResponse, ModelsError> {
+    pub(crate) fn convert_response(
+        response: &AnthropicResponse,
+    ) -> Result<GenerateResponse, ModelsError> {
         debug!("Converting AnthropicResponse to GenerateResponse");
 
         let outputs: Vec<Output> = response
