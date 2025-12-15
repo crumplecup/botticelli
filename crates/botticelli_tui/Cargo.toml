@@ -15,6 +15,7 @@ botticelli_error = { workspace = true, features = ["tui"] }
 botticelli_database = { workspace = true, optional = true }
 botticelli_narrative = { workspace = true }
 botticelli_mcp = { workspace = true }
+botticelli_mcp_client = { workspace = true }
 
 # Database
 diesel = { workspace = true, optional = true }

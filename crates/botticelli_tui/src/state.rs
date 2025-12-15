@@ -280,38 +280,92 @@ impl Default for AppState {
 
 /// A chat message for display.
 #[derive(Debug, Clone)]
-pub struct ChatMessage {
-    /// Message content.
-    content: String,
-    /// Whether this is from the user.
-    is_user: bool,
+pub enum ChatMessage {
+    /// User message.
+    User { content: String },
+    /// Assistant message.
+    Assistant { content: String },
+    /// Tool call by the LLM.
+    ToolCall {
+        tool_name: String,
+        arguments: serde_json::Value,
+    },
+    /// Tool execution result.
+    ToolResult {
+        tool_name: String,
+        result: String,
+        success: bool,
+    },
+    /// Thinking/reasoning content.
+    Thinking { content: String },
 }
 
 impl ChatMessage {
     /// Create a new user message.
     pub fn user(content: String) -> Self {
-        Self {
-            content,
-            is_user: true,
-        }
+        Self::User { content }
     }
 
     /// Create a new assistant message.
     pub fn assistant(content: String) -> Self {
-        Self {
-            content,
-            is_user: false,
+        Self::Assistant { content }
+    }
+
+    /// Create a new tool call message.
+    pub fn tool_call(tool_name: String, arguments: serde_json::Value) -> Self {
+        Self::ToolCall {
+            tool_name,
+            arguments,
         }
     }
 
-    /// Get the message content.
-    pub fn content(&self) -> &str {
-        &self.content
+    /// Create a new tool result message.
+    pub fn tool_result(tool_name: String, result: String, success: bool) -> Self {
+        Self::ToolResult {
+            tool_name,
+            result,
+            success,
+        }
+    }
+
+    /// Create a new thinking message.
+    pub fn thinking(content: String) -> Self {
+        Self::Thinking { content }
+    }
+
+    /// Get message content (for User and Assistant variants).
+    pub fn content(&self) -> Option<&str> {
+        match self {
+            Self::User { content } | Self::Assistant { content } | Self::Thinking { content } => {
+                Some(content)
+            }
+            Self::ToolCall { .. } | Self::ToolResult { .. } => None,
+        }
     }
 
     /// Check if this is a user message.
     pub fn is_user(&self) -> bool {
-        self.is_user
+        matches!(self, Self::User { .. })
+    }
+
+    /// Check if this is an assistant message.
+    pub fn is_assistant(&self) -> bool {
+        matches!(self, Self::Assistant { .. })
+    }
+
+    /// Check if this is a tool call.
+    pub fn is_tool_call(&self) -> bool {
+        matches!(self, Self::ToolCall { .. })
+    }
+
+    /// Check if this is a tool result.
+    pub fn is_tool_result(&self) -> bool {
+        matches!(self, Self::ToolResult { .. })
+    }
+
+    /// Check if this is thinking content.
+    pub fn is_thinking(&self) -> bool {
+        matches!(self, Self::Thinking { .. })
     }
 }
 

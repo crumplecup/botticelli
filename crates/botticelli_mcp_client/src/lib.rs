@@ -34,5 +34,6 @@ pub use retry::{CircuitBreaker, CircuitState, RetryConfig};
 pub use tool_executor::ToolDefinition;
 pub use tool_registry::{ToolHandler, ToolRegistry};
 pub use unified_client::{
-    LlmBackend, ToolCall, UnifiedClientMetrics, UnifiedMcpClient, extract_tool_calls,
+    ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics,
+    UnifiedMcpClient, extract_tool_calls,
 };

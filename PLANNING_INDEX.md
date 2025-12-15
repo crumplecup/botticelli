@@ -302,11 +302,17 @@ This index tracks all planning documents in the workspace. When documents are co
   - Phase 1 complete: core scenarios and executor
   - Status: ✅ Core implementation complete, TUI integration pending
 
-- **TUI_REDESIGN_PLAN.md** - `current` (2025-12-14)
+- **TUI_REDESIGN_PLAN.md** - `current` (2025-12-15)
   - Comprehensive TUI redesign for multi-view interface
   - Clean architecture with ratatui: chat, narrative browser, editor views
-  - All 7 phases complete: foundation, state, UI components, events, integration, testing, documentation
-  - Status: ✅ COMPLETE - 665 lines, zero dead code, all checks pass
+  - Phases 1-7 complete: foundation, state, UI components, events, integration, testing, documentation
+  - **Phase 8 NEW**: MCP Integration Enhancement
+    - Tool call visualization in chat
+    - MCP Tools Explorer view
+    - AI-assisted narrative creation
+    - MCP settings configuration
+    - Orchestration status indicators
+  - Status: ✅ Core Complete | 🚀 Phase 8 - MCP Showcase (2-3 days estimated)
 
 - **NARRATIVE_SAMPLING_CLEAN_ARCHITECTURE.md** - `current` (2025-12-14)
   - Clean architecture refactor for narrative sampling and LLM providers

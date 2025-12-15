@@ -24,6 +24,30 @@ pub struct UnifiedMcpClient {
     max_iterations: usize,
 }
 
+/// Detailed execution result with tool call tracking.
+#[derive(Debug, Clone)]
+pub struct ExecutionResult {
+    /// Final response from the LLM
+    pub final_response: String,
+    /// Number of iterations executed
+    pub iterations: usize,
+    /// Tool calls made during execution (in order)
+    pub tool_calls: Vec<ToolCallRecord>,
+}
+
+/// Record of a single tool call and its result.
+#[derive(Debug, Clone)]
+pub struct ToolCallRecord {
+    /// Name of the tool called
+    pub tool_name: String,
+    /// Arguments passed to the tool
+    pub arguments: Value,
+    /// Result from the tool execution
+    pub result: String,
+    /// Whether the tool execution succeeded
+    pub success: bool,
+}
+
 impl UnifiedMcpClient {
     /// Connects to an external MCP server and adds it to available clients.
     #[instrument(skip(self, config), fields(server = %config.name))]
@@ -147,6 +171,101 @@ impl UnifiedMcpClient {
                 // No tool calls - we're done
                 info!(iterations, "Execution complete");
                 return Ok(response);
+            }
+        }
+    }
+
+    /// Executes an agentic loop with detailed tracking of tool calls.
+    ///
+    /// This variant returns full execution details including all tool calls made.
+    #[instrument(skip(self, backend, messages))]
+    pub async fn execute_with_tracking<B>(
+        &mut self,
+        backend: &B,
+        messages: Vec<Message>,
+    ) -> McpClientResult<ExecutionResult>
+    where
+        B: LlmBackend + std::fmt::Debug,
+    {
+        info!("Starting unified agentic execution loop with tracking");
+
+        let mut conversation = messages;
+        let mut iterations = 0;
+        let mut tool_call_records = Vec::new();
+
+        loop {
+            if iterations >= self.max_iterations {
+                warn!(iterations, "Maximum iterations exceeded");
+                return Err(McpClientError::new(
+                    McpClientErrorKind::MaxIterationsExceeded(iterations),
+                ));
+            }
+
+            iterations += 1;
+            debug!(iteration = iterations, "Executing iteration");
+
+            // Get response from LLM (with tool definitions)
+            let all_tools = self.list_all_tools();
+            let response = backend
+                .generate_with_tools(&conversation, &all_tools)
+                .await
+                .map_err(|e| McpClientError::new(McpClientErrorKind::LlmError(e.to_string())))?;
+
+            debug!("Received LLM response");
+
+            // Check if response contains tool calls
+            if let Some(tool_calls) = extract_tool_calls(&response) {
+                debug!(tool_call_count = tool_calls.len(), "Processing tool calls");
+
+                // Execute tools and track results
+                for call in tool_calls {
+                    debug!(tool = %call.name, "Executing tool");
+
+                    let result = self.execute_tool(&call.name, call.arguments.clone()).await;
+
+                    let (result_str, success) = match result {
+                        Ok(value) => {
+                            let str_value = serde_json::to_string(&value)
+                                .unwrap_or_else(|_| value.to_string());
+                            (str_value, true)
+                        }
+                        Err(e) => (format!("Error: {}", e), false),
+                    };
+
+                    // Record the tool call
+                    tool_call_records.push(ToolCallRecord {
+                        tool_name: call.name.clone(),
+                        arguments: call.arguments.clone(),
+                        result: result_str.clone(),
+                        success,
+                    });
+
+                    // Add tool result to conversation
+                    conversation.push(
+                        Message::builder()
+                            .role(Role::User)
+                            .content(vec![Input::Text(result_str)])
+                            .build()
+                            .expect("Valid user message"),
+                    );
+                }
+
+                // Add assistant message to conversation
+                conversation.push(
+                    Message::builder()
+                        .role(Role::Assistant)
+                        .content(vec![Input::Text(response.clone())])
+                        .build()
+                        .expect("Valid assistant message"),
+                );
+            } else {
+                // No tool calls - we're done
+                info!(iterations, tool_calls = tool_call_records.len(), "Execution complete");
+                return Ok(ExecutionResult {
+                    final_response: response,
+                    iterations,
+                    tool_calls: tool_call_records,
+                });
             }
         }
     }

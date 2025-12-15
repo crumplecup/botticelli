@@ -1,6 +1,6 @@
 # Botticelli TUI Redesign: Comprehensive Planning Document
 
-**Status:** ✅ COMPLETE - All Phases Implemented (2024-12-14)
+**Status:** ✅ COMPLETE - Core Implementation (2024-12-14) | 🚀 ENHANCEMENT PHASE - MCP Integration (2024-12-15)
 
 ## Progress Summary
 
@@ -32,6 +32,97 @@
 - Test coverage includes happy path and error scenarios
 - **Fixed frozen input bug**: AppState::handle_key now fully implemented with character input, backspace, enter submission, and navigation
 - ChatMessage refactored with private fields and getter methods for proper encapsulation
+
+## 🚀 NEW: MCP Self-Driving Capabilities (2024-12-15)
+
+Botticelli now has powerful MCP integration that makes it truly self-driving! The TUI should showcase these capabilities:
+
+### What's New
+1. **Tool Registry** - Internal tools discoverable by LLMs
+   - `create_narrative` - Generate narratives from descriptions
+   - `list_narratives` - Browse available narrative files
+   - `load_narrative` - Load narrative TOML
+   - `validate_narrative` - Check narrative structure
+
+2. **Agentic Orchestration** - LLMs autonomously execute multi-step workflows
+   - UnifiedMcpClient orchestrates LLM → Tool Calls → Results → LLM
+   - Supports all providers: Anthropic, Gemini, OpenAI, Groq, Ollama
+   - Max iteration safety limits
+   - Automatic tool schema conversion
+
+3. **External MCP Servers** - Connect to ecosystem servers
+   - Filesystem operations (read, write, list)
+   - Git operations (status, diff, commit)
+   - Search tools (grep, find)
+   - Cloud services (S3, etc.)
+   - Dev tools (linters, formatters)
+
+4. **Unified Client** - Seamless internal + external tool routing
+   - Single interface for all tools
+   - Automatic routing based on tool name
+   - Combined tool discovery
+   - Metrics tracking
+
+### TUI Enhancement Opportunities
+
+The current TUI should be enhanced to showcase:
+
+#### Chat View Enhancements
+- **Tool Call Visibility** - Show when LLM uses tools
+  ```
+  You: Create a space narrative and validate it
+
+  Assistant: I'll help with that...
+
+  🔧 create_narrative(description: "space narrative")
+     ✅ Created narrative with 3 acts
+
+  🔧 validate_narrative(narrative_toml: "...")
+     ✅ Validation passed
+
+  Assistant: I've created and validated a space narrative!
+  ```
+
+- **Agentic Loop Status** - Show orchestration progress
+  ```
+  ⚙️ Orchestrating... (iteration 2/10)
+  📊 Tools used: 3 | Results: 2 success, 1 pending
+  ```
+
+- **External Tool Access** - Indicate when using ecosystem tools
+  ```
+  🌐 External: filesystem.read("/narratives/example.toml")
+  ```
+
+#### New View: MCP Tools Explorer
+- Browse available tools (internal + external)
+- Show tool schemas and descriptions
+- Test tools with custom arguments
+- View tool execution history
+- Configure external server connections
+
+#### Narrative Views Enhancement
+- **AI-Assisted Creation** - Use `create_narrative` tool in UI
+  - User provides description
+  - LLM generates TOML structure
+  - Preview before saving
+
+- **Validation Integration** - Show validation in browser
+  - Real-time validation status indicators
+  - Detailed error messages from `validate_narrative`
+  - Fix suggestions from LLM
+
+#### Settings View Enhancement
+- **MCP Configuration**
+  - List connected external servers
+  - Add/remove external servers
+  - Test server connectivity
+  - View tool counts per server
+
+- **Tool Preferences**
+  - Enable/disable specific tools
+  - Set tool execution timeouts
+  - Configure approval requirements
 
 ## Executive Summary
 
@@ -1591,3 +1682,506 @@ match result {
 - ⬜ Keyboard shortcut hints
 
 **Current Status:** TUI redesign refactor COMPLETE. All phases 1-6 done. Tests compile and run (failures are due to Gemini provider not implemented, not TUI issues). Ready for future enhancement phases.
+
+---
+
+## 🆕 Phase 8: MCP Integration Enhancement (NEW - 2024-12-15)
+
+**Goal**: Showcase Botticelli's self-driving MCP capabilities in the TUI
+
+### Task 8.1: Tool Call Visualization in Chat View
+
+**What to show**: When LLM uses tools during conversation, display them visually
+
+**Implementation**:
+
+```rust
+// crates/botticelli_tui/src/view.rs
+
+#[derive(Debug, Clone)]
+pub enum ChatMessage {
+    User {
+        content: String,
+        timestamp: DateTime<Utc>,
+    },
+    Assistant {
+        content: String,
+        timestamp: DateTime<Utc>,
+    },
+    ToolCall {
+        tool_name: String,
+        arguments: serde_json::Value,
+        timestamp: DateTime<Utc>,
+    },
+    ToolResult {
+        tool_name: String,
+        result: String,
+        success: bool,
+        timestamp: DateTime<Utc>,
+    },
+    Thinking {
+        content: String,
+        timestamp: DateTime<Utc>,
+    },
+}
+
+impl ChatView {
+    fn render_tool_call(&self, tool_call: &ChatMessage, area: Rect, buf: &mut Buffer) {
+        // Render with special styling
+        // 🔧 create_narrative(description: "space narrative")
+        //    ✅ Created narrative with 3 acts
+
+        let icon = "🔧";
+        let style = Style::default().fg(Color::Cyan);
+
+        // Format: {icon} {tool_name}({args})
+        let text = format!(
+            "{} {}({})",
+            icon,
+            tool_call.tool_name,
+            serde_json::to_string_pretty(&tool_call.arguments)
+        );
+
+        Paragraph::new(text)
+            .style(style)
+            .block(Block::default().borders(Borders::LEFT).border_style(style))
+            .render(area, buf);
+    }
+
+    fn render_tool_result(&self, result: &ChatMessage, area: Rect, buf: &mut Buffer) {
+        let icon = if result.success { "✅" } else { "❌" };
+        let style = if result.success {
+            Style::default().fg(Color::Green)
+        } else {
+            Style::default().fg(Color::Red)
+        };
+
+        let text = format!("{} {}", icon, result.result);
+
+        Paragraph::new(text)
+            .style(style)
+            .block(Block::default().borders(Borders::LEFT).border_style(style))
+            .render(area, buf);
+    }
+}
+```
+
+**Integration with ConversationSession**:
+
+```rust
+// crates/botticelli_tui/src/state.rs
+
+impl AppState {
+    pub async fn send_message_with_tools(&mut self) -> TuiResult<()> {
+        let user_message = self.input_buffer.clone();
+
+        // Add user message to chat
+        self.add_message(ChatMessage::User {
+            content: user_message.clone(),
+            timestamp: Utc::now(),
+        });
+
+        // Use UnifiedMcpClient for orchestration
+        let orchestrator = UnifiedMcpClient::new(
+            self.tool_registry.clone(),
+            self.llm_adapter.clone(),
+        );
+
+        let messages = vec![Message::user(user_message)];
+
+        // Execute with tool calling enabled
+        match orchestrator.execute(messages, 10).await {
+            Ok(response) => {
+                // response contains tool_calls_made and final_message
+
+                // Add tool calls to chat
+                for tool_call in response.tool_calls_made {
+                    self.add_message(ChatMessage::ToolCall {
+                        tool_name: tool_call.name.clone(),
+                        arguments: tool_call.arguments.clone(),
+                        timestamp: Utc::now(),
+                    });
+
+                    // Add tool result
+                    self.add_message(ChatMessage::ToolResult {
+                        tool_name: tool_call.name,
+                        result: tool_call.result.unwrap_or_default(),
+                        success: tool_call.success,
+                        timestamp: Utc::now(),
+                    });
+                }
+
+                // Add final LLM response
+                self.add_message(ChatMessage::Assistant {
+                    content: response.final_message,
+                    timestamp: Utc::now(),
+                });
+            }
+            Err(e) => {
+                self.add_message(ChatMessage::Assistant {
+                    content: format!("Error: {}", e),
+                    timestamp: Utc::now(),
+                });
+            }
+        }
+
+        Ok(())
+    }
+}
+```
+
+**Acceptance Criteria**:
+- ✅ Tool calls visible in chat with special styling
+- ✅ Tool results shown inline
+- ✅ Success/failure indicated with icons
+- ✅ Arguments displayed in readable format
+- ✅ Timestamps preserved
+
+### Task 8.2: MCP Tools Explorer View
+
+**New view to browse and test tools**
+
+**Implementation**:
+
+```rust
+// crates/botticelli_tui/src/view.rs
+
+pub struct ToolsExplorerView {
+    /// Available tools (internal + external)
+    tools: Vec<ToolInfo>,
+
+    /// Selected tool index
+    selected: usize,
+
+    /// Test arguments input
+    test_args: String,
+
+    /// Last execution result
+    last_result: Option<Result<Vec<Content>, String>>,
+}
+
+impl ToolsExplorerView {
+    pub fn new(registry: Arc<ToolRegistry>, external_client: Option<ExternalMcpClient>) -> Self {
+        let mut tools = Vec::new();
+
+        // Get internal tools
+        tools.extend(registry.list_tools());
+
+        // Get external tools if available
+        if let Some(client) = external_client {
+            if let Ok(external_tools) = client.list_tools() {
+                tools.extend(external_tools);
+            }
+        }
+
+        Self {
+            tools,
+            selected: 0,
+            test_args: String::new(),
+            last_result: None,
+        }
+    }
+}
+
+impl View for ToolsExplorerView {
+    fn render(&self, area: Rect, buf: &mut Buffer, state: &AppState) {
+        // Split into 3 sections: tool list, details, test area
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Percentage(40),  // Tool list
+                Constraint::Percentage(30),  // Details
+                Constraint::Percentage(30),  // Test area
+            ])
+            .split(area);
+
+        // Render tool list
+        self.render_tool_list(chunks[0], buf);
+
+        // Render selected tool details
+        if let Some(tool) = self.tools.get(self.selected) {
+            self.render_tool_details(tool, chunks[1], buf);
+        }
+
+        // Render test area
+        self.render_test_area(chunks[2], buf);
+    }
+
+    fn handle_key(&mut self, key: KeyEvent, state: &mut AppState) -> TuiResult<()> {
+        match key.code {
+            KeyCode::Up | KeyCode::Char('k') => {
+                if self.selected > 0 {
+                    self.selected -= 1;
+                }
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if self.selected < self.tools.len() - 1 {
+                    self.selected += 1;
+                }
+            }
+            KeyCode::Enter => {
+                // Execute selected tool with test args
+                self.execute_tool(state)?;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
+```
+
+**Acceptance Criteria**:
+- ✅ Lists all available tools (internal + external)
+- ✅ Shows tool schemas and descriptions
+- ✅ Allows testing tools with custom arguments
+- ✅ Displays execution results
+- ✅ Indicates tool source (internal vs external)
+
+### Task 8.3: AI-Assisted Narrative Creation
+
+**Use LLM to generate narratives from descriptions**
+
+**Implementation**:
+
+```rust
+// crates/botticelli_tui/src/view.rs
+
+impl NarrativeBrowserView {
+    pub fn new_with_ai_assist(&mut self, state: &AppState) -> TuiResult<()> {
+        // Show dialog for narrative description
+        state.show_modal(Modal::Input {
+            title: "Create Narrative (AI-Assisted)",
+            prompt: "Describe the narrative you want to create:",
+            callback: Box::new(|description| {
+                // Use create_narrative tool
+                let tool_call = ToolCall {
+                    name: "create_narrative".to_string(),
+                    arguments: json!({
+                        "description": description,
+                        "model": "claude-3-5-sonnet-20241022",
+                    }),
+                };
+
+                // Execute via tool registry
+                // ... handle result and preview
+            }),
+        });
+
+        Ok(())
+    }
+}
+```
+
+**User Flow**:
+1. User presses `N` (new narrative) in browser
+2. Dialog appears: "Describe your narrative..."
+3. User enters: "A story about space exploration with 3 acts"
+4. LLM generates TOML structure via `create_narrative` tool
+5. Preview appears showing generated structure
+6. User can edit or save
+
+**Acceptance Criteria**:
+- ✅ AI-assisted creation available in browser
+- ✅ Preview generated TOML before saving
+- ✅ Can edit generated structure
+- ✅ Validation runs automatically
+
+### Task 8.4: MCP Settings Configuration
+
+**Configure external MCP servers and tool preferences**
+
+**Implementation**:
+
+```rust
+// crates/botticelli_tui/src/view.rs
+
+pub struct SettingsView {
+    // ... existing fields ...
+
+    /// Connected external MCP servers
+    external_servers: Vec<ExternalServerConfig>,
+
+    /// Tool execution preferences
+    tool_preferences: ToolPreferences,
+}
+
+pub struct ExternalServerConfig {
+    pub name: String,
+    pub command: String,
+    pub args: Vec<String>,
+    pub connected: bool,
+    pub tool_count: usize,
+}
+
+pub struct ToolPreferences {
+    pub enabled_tools: HashSet<String>,
+    pub timeout_seconds: u64,
+    pub require_approval: bool,
+}
+
+impl SettingsView {
+    fn render_mcp_section(&self, area: Rect, buf: &mut Buffer) {
+        // Show:
+        // - List of external servers
+        // - Connection status
+        // - Tool counts
+        // - Add/remove buttons
+
+        let text = vec![
+            Line::from(vec![
+                Span::styled("External MCP Servers:", Style::default().add_modifier(Modifier::BOLD)),
+            ]),
+            Line::from(""),
+        ];
+
+        for server in &self.external_servers {
+            let status_icon = if server.connected { "🟢" } else { "🔴" };
+            let line = Line::from(vec![
+                Span::raw(format!("{} {} ", status_icon, server.name)),
+                Span::styled(
+                    format!("({} tools)", server.tool_count),
+                    Style::default().fg(Color::Gray),
+                ),
+            ]);
+            text.push(line);
+        }
+
+        Paragraph::new(text)
+            .block(Block::default()
+                .borders(Borders::ALL)
+                .title("MCP Configuration"))
+            .render(area, buf);
+    }
+}
+```
+
+**Acceptance Criteria**:
+- ✅ List connected external servers
+- ✅ Show connection status
+- ✅ Display tool counts per server
+- ✅ Add/remove server configuration
+- ✅ Test connectivity
+- ✅ Configure tool preferences
+
+### Task 8.5: Orchestration Status Indicators
+
+**Show when LLM is orchestrating tools**
+
+**Implementation**:
+
+```rust
+// crates/botticelli_tui/src/state.rs
+
+pub struct OrchestrationStatus {
+    pub active: bool,
+    pub iteration: usize,
+    pub max_iterations: usize,
+    pub tools_used: usize,
+    pub pending_results: usize,
+}
+
+impl AppState {
+    pub fn update_orchestration_status(&mut self, status: OrchestrationStatus) {
+        self.orchestration_status = Some(status);
+    }
+}
+
+// In ChatView rendering:
+impl ChatView {
+    fn render_orchestration_status(&self, area: Rect, buf: &mut Buffer, state: &AppState) {
+        if let Some(status) = &state.orchestration_status {
+            if status.active {
+                let text = format!(
+                    "⚙️ Orchestrating... ({}/{}) | 🔧 Tools: {} | ⏳ Pending: {}",
+                    status.iteration,
+                    status.max_iterations,
+                    status.tools_used,
+                    status.pending_results
+                );
+
+                Paragraph::new(text)
+                    .style(Style::default().fg(Color::Yellow))
+                    .render(area, buf);
+            }
+        }
+    }
+}
+```
+
+**Acceptance Criteria**:
+- ✅ Shows orchestration progress
+- ✅ Displays iteration count
+- ✅ Shows tools used count
+- ✅ Indicates pending results
+- ✅ Clears when orchestration completes
+
+---
+
+## Implementation Timeline (Phase 8)
+
+**Estimated Total**: 2-3 days
+
+**Task 8.1: Tool Call Visualization** - 6 hours
+- ChatMessage enum extension
+- Rendering logic for tool calls/results
+- Integration with ConversationSession
+- Testing
+
+**Task 8.2: MCP Tools Explorer** - 8 hours
+- New view implementation
+- Tool listing and details
+- Test execution interface
+- Internal + external tool integration
+
+**Task 8.3: AI-Assisted Creation** - 4 hours
+- Dialog integration
+- Tool invocation
+- Preview and edit flow
+- Validation integration
+
+**Task 8.4: MCP Settings** - 4 hours
+- Settings UI for MCP
+- Server configuration
+- Tool preferences
+- Connectivity testing
+
+**Task 8.5: Orchestration Status** - 2 hours
+- Status tracking
+- UI indicators
+- Integration with orchestrator
+
+---
+
+## Success Metrics (Phase 8)
+
+### User Experience
+- ✅ Users can see when LLM uses tools
+- ✅ Tool calls are clearly visible and understandable
+- ✅ AI-assisted narrative creation is intuitive
+- ✅ External tool access is transparent
+- ✅ MCP configuration is manageable
+
+### Technical Quality
+- ✅ Tool visualization doesn't impact performance
+- ✅ Orchestration status updates in real-time
+- ✅ No blocking on tool execution
+- ✅ Error handling for failed tools
+- ✅ Clean separation of concerns
+
+### Feature Completeness
+- ✅ All internal tools accessible
+- ✅ External servers configurable
+- ✅ Tool testing available
+- ✅ Orchestration visible
+- ✅ Settings comprehensive
+
+---
+
+**Next Steps for Phase 8**:
+1. Start with Task 8.1 (tool visualization) - high impact, foundation for others
+2. Add Task 8.5 (orchestration status) - complements tool visualization
+3. Implement Task 8.3 (AI-assisted creation) - showcases self-driving capabilities
+4. Add Task 8.2 (tools explorer) - power user feature
+5. Complete with Task 8.4 (settings) - configuration and management
+
+This phase will transform the TUI from a simple chat interface into a comprehensive showcase of Botticelli's self-driving MCP capabilities!
