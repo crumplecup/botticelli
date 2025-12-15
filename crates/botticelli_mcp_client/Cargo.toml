@@ -19,6 +19,7 @@ derive-getters.workspace = true
 derive_more.workspace = true
 pmcp = { version = "1.8", features = ["validation"] }
 prometheus = "0.13"
+reqwest.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true

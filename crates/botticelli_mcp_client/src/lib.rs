@@ -13,6 +13,7 @@ mod metrics;
 mod retry;
 pub mod schema;
 mod tool_executor;
+mod transport;
 
 pub use approval::ApprovalHandler;
 pub use client::McpClient;
@@ -23,3 +24,4 @@ pub use llm_adapter::LlmAdapter;
 pub use metrics::McpClientMetrics;
 pub use retry::{CircuitBreaker, CircuitState, RetryConfig};
 pub use tool_executor::ToolDefinition;
+pub use transport::{HttpTransport, HttpTransportBuilder, StdioTransport, StdioTransportBuilder, Transport};

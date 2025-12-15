@@ -358,3 +358,11 @@ This index tracks all planning documents in the workspace. When documents are co
   - Ecosystem access: filesystem, git, search, cloud, dev tools
   - Strategic positioning: MCP server + client + orchestrator + multi-model
   - Status: ✅ COMPLETE - Ready for merge to dev
+
+- **MCP_CLIENT_UNIFIED_ARCHITECTURE_PLAN.md** - `current` (2025-12-15)
+  - Unified type system strategy: eliminate duplication with pmcp types
+  - Phase 1: Type unification (ToolDefinition → pmcp::Tool, Value → Content)
+  - Phase 2: Complete TODO implementations (tool execution, orchestration)
+  - Phase 3: Integration testing (real MCP servers end-to-end)
+  - Careful, methodical approach with deprecation path
+  - Status: 📋 Phase 1.1 complete (audit) - Ready for 1.2 (implementation)
