@@ -40,7 +40,7 @@ mod view;
 pub use commands::Command;
 pub use elicitation_dialog::TuiElicitationDialog;
 pub use error::{TuiError, TuiErrorKind, TuiResult};
-pub use events::{Event, EventHandler};
+pub use events::{Event, EventHandler, McpUpdate};
 pub use state::{AppState, ChatMessage, ConversationId, NarrativeId, TuiLlmBackend, ViewMode};
 pub use tui::Tui;
 pub use view::{ChatView, NarrativeBrowserView, NarrativeEditorView, View};

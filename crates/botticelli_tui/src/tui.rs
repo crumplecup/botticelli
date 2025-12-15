@@ -1,8 +1,9 @@
 //! Main TUI entry point and coordinator.
 
-use crate::{AppState, Event, EventHandler, TuiResult};
+use crate::{AppState, Event, EventHandler, McpUpdate, TuiResult};
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
+use tokio::sync::mpsc;
 
 /// Main TUI coordinator.
 ///
@@ -11,6 +12,8 @@ pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     events: EventHandler,
     state: AppState,
+    /// Receiver for MCP execution updates from async tasks
+    mcp_rx: mpsc::UnboundedReceiver<McpUpdate>,
 }
 
 impl Tui {
@@ -19,12 +22,18 @@ impl Tui {
         let backend = CrosstermBackend::new(io::stdout());
         let terminal = Terminal::new(backend)?;
         let events = EventHandler::new(std::time::Duration::from_millis(250));
-        let state = AppState::default();
+
+        // Create channel for MCP updates
+        let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
+
+        let mut state = AppState::default();
+        state.set_mcp_channel(mcp_tx);
 
         Ok(Self {
             terminal,
             events,
             state,
+            mcp_rx,
         })
     }
 
@@ -45,7 +54,12 @@ impl Tui {
             // Render current view
             self.render()?;
 
-            // Handle events
+            // Check for MCP updates (non-blocking)
+            while let Ok(update) = self.mcp_rx.try_recv() {
+                self.handle_event(Event::McpUpdate(update)).await?;
+            }
+
+            // Handle terminal events
             if let Some(event) = self.events.next().await?
                 && !self.handle_event(event).await?
             {
@@ -89,6 +103,9 @@ impl Tui {
             }
             Event::Tick => {
                 self.state.update()?;
+            }
+            Event::McpUpdate(update) => {
+                self.state.handle_mcp_update(update)?;
             }
         }
         Ok(true)

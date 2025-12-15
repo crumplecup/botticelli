@@ -83,6 +83,8 @@ pub struct AppState {
     mcp_client: Option<Arc<tokio::sync::Mutex<UnifiedMcpClient>>>,
     /// LLM backend for generation (optional).
     llm_backend: Option<Arc<TuiLlmBackend>>,
+    /// Channel to send MCP updates to UI thread.
+    mcp_channel: Option<tokio::sync::mpsc::UnboundedSender<crate::McpUpdate>>,
 }
 
 impl std::fmt::Debug for AppState {
@@ -291,22 +293,37 @@ impl AppState {
                                     .collect();
 
                                 // Execute with MCP client
-                                if let (Some(mcp_client), Some(llm_backend)) = (&self.mcp_client, &self.llm_backend) {
+                                if let (Some(mcp_client), Some(llm_backend), Some(tx)) =
+                                    (&self.mcp_client, &self.llm_backend, &self.mcp_channel)
+                                {
                                     let client = mcp_client.clone();
                                     let backend = llm_backend.clone();
+                                    let tx = tx.clone();
+                                    let conv_id = conv_id;
 
                                     // Spawn async task to execute
                                     tokio::spawn(async move {
                                         let mut client_guard = client.lock().await;
-                                        match client_guard.execute_with_tracking(backend.as_ref(), core_messages).await {
+                                        match client_guard
+                                            .execute_with_tracking(backend.as_ref(), core_messages)
+                                            .await
+                                        {
                                             Ok(result) => {
-                                                // TODO: Update conversation with results
-                                                // This needs to be sent back to the main thread via channel
                                                 info!(
                                                     iterations = result.iterations,
                                                     tool_calls = result.tool_calls.len(),
-                                                    "MCP execution complete"
+                                                    "MCP execution complete - sending to UI"
                                                 );
+
+                                                // Send result to UI thread
+                                                if let Err(e) =
+                                                    tx.send(crate::McpUpdate {
+                                                        conversation_id: conv_id,
+                                                        result,
+                                                    })
+                                                {
+                                                    error!(error = %e, "Failed to send MCP update to UI");
+                                                }
                                             }
                                             Err(e) => {
                                                 error!(error = %e, "MCP execution failed");
@@ -409,6 +426,7 @@ impl Default for AppState {
             editor_content: String::new(),
             mcp_client: None,
             llm_backend: None,
+            mcp_channel: None,
         }
     }
 }
@@ -424,9 +442,53 @@ impl AppState {
         self.llm_backend = Some(Arc::new(backend));
     }
 
+    /// Set the channel for sending MCP updates.
+    pub fn set_mcp_channel(&mut self, tx: tokio::sync::mpsc::UnboundedSender<crate::McpUpdate>) {
+        self.mcp_channel = Some(tx);
+    }
+
     /// Check if MCP integration is enabled.
     pub fn has_mcp_integration(&self) -> bool {
         self.mcp_client.is_some() && self.llm_backend.is_some()
+    }
+
+    /// Handle MCP execution update from async task.
+    pub fn handle_mcp_update(&mut self, update: crate::McpUpdate) -> crate::TuiResult<()> {
+        use crate::ChatMessage;
+
+        info!(
+            conversation_id = %update.conversation_id,
+            iterations = update.result.iterations,
+            tool_calls = update.result.tool_calls.len(),
+            "Received MCP update"
+        );
+
+        // Get or create conversation
+        let mut messages = self
+            .conversation_messages(&update.conversation_id)
+            .cloned()
+            .unwrap_or_default();
+
+        // Add tool calls and results
+        for tool_call in &update.result.tool_calls {
+            messages.push(ChatMessage::tool_call(
+                tool_call.tool_name.clone(),
+                tool_call.arguments.clone(),
+            ));
+            messages.push(ChatMessage::tool_result(
+                tool_call.tool_name.clone(),
+                tool_call.result.clone(),
+                tool_call.success,
+            ));
+        }
+
+        // Add final assistant response
+        messages.push(ChatMessage::assistant(update.result.final_response));
+
+        // Update conversation
+        self.update_conversation(update.conversation_id, messages);
+
+        Ok(())
     }
 }
 

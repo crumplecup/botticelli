@@ -4,6 +4,15 @@ use crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
 
 use crate::{TuiError, TuiErrorKind, TuiResult};
 
+/// Update from MCP execution.
+#[derive(Debug, Clone)]
+pub struct McpUpdate {
+    /// Conversation ID this update belongs to
+    pub conversation_id: uuid::Uuid,
+    /// Execution result with tool calls
+    pub result: botticelli_mcp_client::ExecutionResult,
+}
+
 /// TUI events.
 #[derive(Debug, Clone)]
 pub enum Event {
@@ -17,6 +26,8 @@ pub enum Event {
     Tick,
     /// Quit signal.
     Quit,
+    /// MCP execution completed.
+    McpUpdate(McpUpdate),
 }
 
 /// Event handler for the TUI.
