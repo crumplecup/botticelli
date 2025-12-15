@@ -72,10 +72,35 @@ impl DiscordMcpBridge {
         user_id: &str,
         content: &str,
     ) -> Result<String, DiscordMcpBridgeError> {
-        tracing::debug!("Processing Discord message through MCP");
+        use botticelli_mcp_client::{Message, MessageRole};
 
-        // TODO: Implement orchestration logic
-        // For now, return placeholder
-        Ok(format!("Received from {}: {}", user_id, content))
+        tracing::debug!(
+            channel_id = %channel_id,
+            user_id = %user_id,
+            "Processing Discord message through MCP orchestrator"
+        );
+
+        // Create initial message from user input
+        let messages = vec![Message::new(
+            MessageRole::User,
+            content.to_string(),
+            vec![], // No tool calls in initial user message
+            vec![], // No tool results in initial user message
+        )];
+
+        // Execute agentic loop through orchestrator
+        let response = self
+            .orchestrator
+            .execute(messages)
+            .await
+            .map_err(DiscordMcpBridgeError::from)?;
+
+        tracing::info!(
+            channel_id = %channel_id,
+            response_len = response.len(),
+            "Generated response through MCP orchestrator"
+        );
+
+        Ok(response)
     }
 }
