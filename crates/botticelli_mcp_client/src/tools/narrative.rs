@@ -11,11 +11,20 @@ use serde_json::{Value, json};
 /// Tool for creating narratives from TOML content.
 ///
 /// Parses TOML and validates narrative structure.
-pub struct CreateNarrativeTool;
+pub struct CreateNarrativeTool<S: botticelli_interface::NarrativeStorageOperations> {
+    storage: S,
+}
+
+impl<S: botticelli_interface::NarrativeStorageOperations> CreateNarrativeTool<S> {
+    /// Create new create narrative tool.
+    pub fn new(storage: S) -> Self {
+        Self { storage }
+    }
+}
 
 #[async_trait]
-impl ToolHandler for CreateNarrativeTool {
-    fn tool_info(&self) -> ToolInfo {
+impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for CreateNarrativeTool<S> {
+    fn tool_info() -> ToolInfo {
         ToolInfo::new(
             "create_narrative",
             Some("Create a narrative from TOML content. Returns narrative metadata.".to_string()),
@@ -51,25 +60,16 @@ impl ToolHandler for CreateNarrativeTool {
 
         let name_override = args
             .get("name")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
+            .and_then(|v| v.as_str());
 
-        match Narrative::from_toml_str(toml_content, name_override.as_deref()) {
-            Ok(narrative) => {
-                let metadata = narrative.metadata();
+        match self.storage.parse_narrative(toml_content, name_override).await {
+            Ok(narrative_data) => {
                 let result = json!({
                     "success": true,
-                    "narrative": {
-                        "name": name_override.unwrap_or_else(|| metadata.name().to_string()),
-                        "description": metadata.description(),
-                        "template": metadata.template(),
-                        "target": metadata.target(),
-                        "act_count": narrative.toc().order().len(),
-                        "acts": narrative.toc().order()
-                    }
+                    "narrative": narrative_data
                 });
 
-                tracing::debug!(name = %metadata.name(), "Narrative created successfully");
+                tracing::debug!("Narrative created successfully");
                 Ok(vec![Content::Text {
                     text: serde_json::to_string_pretty(&result)
                         .unwrap_or_else(|_| result.to_string()),
@@ -77,7 +77,7 @@ impl ToolHandler for CreateNarrativeTool {
             }
             Err(e) => {
                 tracing::error!(error = ?e, "Failed to parse narrative");
-                Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                Err(McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
                     format!("Parse error: {}", e),
                 )))
             }
@@ -88,21 +88,19 @@ impl ToolHandler for CreateNarrativeTool {
 /// Tool for listing available narratives.
 ///
 /// Lists narratives from configured directories.
-pub struct ListNarrativesTool {
-    narratives_dir: String,
+pub struct ListNarrativesTool<S: botticelli_interface::NarrativeStorageOperations> {
+    storage: S,
 }
 
-impl ListNarrativesTool {
+impl<S: botticelli_interface::NarrativeStorageOperations> ListNarrativesTool<S> {
     /// Create new list narratives tool.
-    pub fn new(narratives_dir: impl Into<String>) -> Self {
-        Self {
-            narratives_dir: narratives_dir.into(),
-        }
+    pub fn new(storage: S) -> Self {
+        Self { storage }
     }
 }
 
 #[async_trait]
-impl ToolHandler for ListNarrativesTool {
+impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for ListNarrativesTool<S> {
     fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "list_narratives",
@@ -119,34 +117,19 @@ impl ToolHandler for ListNarrativesTool {
         )
     }
 
-    #[tracing::instrument(skip(self, args), fields(tool = "list_narratives", dir = %self.narratives_dir))]
+    #[tracing::instrument(skip(self, args), fields(tool = "list_narratives"))]
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
         tracing::debug!("Listing narratives");
 
         let pattern = args
             .get("pattern")
-            .and_then(|v| v.as_str())
-            .unwrap_or("*.toml");
+            .and_then(|v| v.as_str());
 
-        let path = std::path::Path::new(&self.narratives_dir);
-        if !path.exists() {
-            return Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
-                format!("Narratives directory not found: {}", self.narratives_dir),
-            )));
-        }
-
-        let glob_pattern = format!("{}/{}", self.narratives_dir, pattern);
-        match glob::glob(&glob_pattern) {
-            Ok(entries) => {
-                let narratives: Vec<String> = entries
-                    .filter_map(|e| e.ok())
-                    .filter_map(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
-                    .collect();
-
+        match self.storage.list_narratives(pattern).await {
+            Ok(narratives) => {
                 let result = json!({
                     "success": true,
-                    "directory": self.narratives_dir,
-                    "pattern": pattern,
+                    "pattern": pattern.unwrap_or("*.toml"),
                     "count": narratives.len(),
                     "narratives": narratives
                 });
@@ -159,8 +142,8 @@ impl ToolHandler for ListNarrativesTool {
             }
             Err(e) => {
                 tracing::error!(error = ?e, "Failed to list narratives");
-                Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
-                    format!("Glob error: {}", e),
+                Err(McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
+                    format!("List error: {}", e),
                 )))
             }
         }
@@ -170,21 +153,19 @@ impl ToolHandler for ListNarrativesTool {
 /// Tool for loading narratives from file.
 ///
 /// Reads TOML file and validates narrative structure.
-pub struct LoadNarrativeTool {
-    narratives_dir: String,
+pub struct LoadNarrativeTool<S: botticelli_interface::NarrativeStorageOperations> {
+    storage: S,
 }
 
-impl LoadNarrativeTool {
+impl<S: botticelli_interface::NarrativeStorageOperations> LoadNarrativeTool<S> {
     /// Create new load narrative tool.
-    pub fn new(narratives_dir: impl Into<String>) -> Self {
-        Self {
-            narratives_dir: narratives_dir.into(),
-        }
+    pub fn new(storage: S) -> Self {
+        Self { storage }
     }
 }
 
 #[async_trait]
-impl ToolHandler for LoadNarrativeTool {
+impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for LoadNarrativeTool<S> {
     fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "load_narrative",
@@ -217,28 +198,15 @@ impl ToolHandler for LoadNarrativeTool {
                 ))
             })?;
 
-        let path = std::path::Path::new(&self.narratives_dir).join(filename);
-
-        match Narrative::from_file(&path) {
-            Ok(narrative) => {
-                let metadata = narrative.metadata();
+        match self.storage.load_narrative(filename).await {
+            Ok(narrative_data) => {
                 let result = json!({
                     "success": true,
                     "file": filename,
-                    "narrative": {
-                        "name": metadata.name(),
-                        "description": metadata.description(),
-                        "template": metadata.template(),
-                        "target": metadata.target(),
-                        "model": metadata.model(),
-                        "temperature": metadata.temperature(),
-                        "max_tokens": metadata.max_tokens(),
-                        "act_count": narrative.toc().order().len(),
-                        "acts": narrative.toc().order()
-                    }
+                    "narrative": narrative_data
                 });
 
-                tracing::debug!(name = %metadata.name(), file = %filename, "Narrative loaded successfully");
+                tracing::debug!(file = %filename, "Narrative loaded successfully");
                 Ok(vec![Content::Text {
                     text: serde_json::to_string_pretty(&result)
                         .unwrap_or_else(|_| result.to_string()),
@@ -246,7 +214,7 @@ impl ToolHandler for LoadNarrativeTool {
             }
             Err(e) => {
                 tracing::error!(error = ?e, file = %filename, "Failed to load narrative");
-                Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                Err(McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
                     format!("Load error: {}", e),
                 )))
             }
@@ -257,10 +225,19 @@ impl ToolHandler for LoadNarrativeTool {
 /// Tool for validating narrative structure.
 ///
 /// Validates TOML syntax, required fields, and act references.
-pub struct ValidateNarrativeTool;
+pub struct ValidateNarrativeTool<S: botticelli_interface::NarrativeStorageOperations> {
+    storage: S,
+}
+
+impl<S: botticelli_interface::NarrativeStorageOperations> ValidateNarrativeTool<S> {
+    /// Create new validate narrative tool.
+    pub fn new(storage: S) -> Self {
+        Self { storage }
+    }
+}
 
 #[async_trait]
-impl ToolHandler for ValidateNarrativeTool {
+impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for ValidateNarrativeTool<S> {
     fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "validate_narrative",
@@ -294,37 +271,12 @@ impl ToolHandler for ValidateNarrativeTool {
                 ))
             })?;
 
-        match Narrative::from_toml_str(toml_content, None) {
-            Ok(narrative) => {
-                let metadata = narrative.metadata();
-                let toc = narrative.toc();
-
-                // Validate all acts exist
-                let mut missing_acts = Vec::new();
-                for act_name in toc.order() {
-                    if narrative.acts().get(act_name).is_none() {
-                        missing_acts.push(act_name.clone());
-                    }
-                }
-
-                let is_valid = missing_acts.is_empty();
-                let result = json!({
-                    "valid": is_valid,
-                    "narrative_name": metadata.name(),
-                    "act_count": toc.order().len(),
-                    "acts": toc.order(),
-                    "missing_acts": missing_acts,
-                    "warnings": if !is_valid {
-                        vec![format!("Missing act definitions: {:?}", missing_acts)]
-                    } else {
-                        Vec::<String>::new()
-                    }
-                });
-
-                tracing::debug!(valid = is_valid, name = %metadata.name(), "Validation complete");
+        match self.storage.validate_narrative(toml_content).await {
+            Ok(validation_result) => {
+                tracing::debug!("Validation complete");
                 Ok(vec![Content::Text {
-                    text: serde_json::to_string_pretty(&result)
-                        .unwrap_or_else(|_| result.to_string()),
+                    text: serde_json::to_string_pretty(&validation_result)
+                        .unwrap_or_else(|_| validation_result.to_string()),
                 }])
             }
             Err(e) => {

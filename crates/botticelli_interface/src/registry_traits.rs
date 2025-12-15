@@ -63,3 +63,19 @@ pub trait DatabaseRegistryOperations: Send + Sync {
     /// Check if a table exists.
     async fn table_exists(&self, table_name: &str) -> BotticelliResult<bool>;
 }
+
+/// Specialized trait for file-based narrative storage operations.
+#[async_trait]
+pub trait NarrativeStorageOperations: Send + Sync {
+    /// List narrative files in configured directory.
+    async fn list_narratives(&self, pattern: Option<&str>) -> BotticelliResult<Vec<String>>;
+
+    /// Load narrative from file by filename.
+    async fn load_narrative(&self, filename: &str) -> BotticelliResult<Value>;
+
+    /// Validate narrative structure.
+    async fn validate_narrative(&self, toml_content: &str) -> BotticelliResult<Value>;
+
+    /// Parse narrative from TOML content.
+    async fn parse_narrative(&self, toml_content: &str, name_override: Option<&str>) -> BotticelliResult<Value>;
+}
