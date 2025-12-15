@@ -16,7 +16,7 @@ botticelli_database = { workspace = true, optional = true }
 botticelli_narrative = { workspace = true }
 botticelli_mcp = { workspace = true }
 botticelli_mcp_client = { workspace = true }
-botticelli_models = { workspace = true }
+botticelli_models = { workspace = true, features = ["anthropic"] }
 botticelli_core = { workspace = true }
 botticelli_interface = { workspace = true }
 
@@ -36,6 +36,7 @@ serde_json = { workspace = true }
 
 # Logging
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 # TUI libraries
 ratatui = { workspace = true }
