@@ -1,77 +1,71 @@
 //! Elicitation tool implementations for conversational narrative creation.
 
+use crate::tools::registry_ops::GenericRegistry;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult, ToolHandler};
 use async_trait::async_trait;
+use botticelli_error::{McpError, McpResult};
+use botticelli_mcp::RegistryOperations;
 use pmcp::{Content, ToolInfo};
 use serde_json::{Value, json};
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
-/// Registry for managing active narrative elicitation sessions.
-#[derive(Debug, Clone)]
-pub struct ElicitationRegistry {
-    sessions: Arc<RwLock<HashMap<Uuid, Value>>>,
+/// Elicitation session state wrapper implementing RegistryOperations.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, derive_getters::Getters, derive_setters::Setters)]
+#[setters(prefix = "with_")]
+pub struct ElicitationSession {
+    id: Uuid,
+    state: Value,
 }
 
-impl ElicitationRegistry {
-    /// Create a new empty registry.
-    pub fn new() -> Self {
+impl ElicitationSession {
+    /// Create a new session with generated ID.
+    pub fn new(state: Value) -> Self {
         Self {
-            sessions: Arc::new(RwLock::new(HashMap::new())),
+            id: Uuid::new_v4(),
+            state,
         }
-    }
-
-    /// Create a new elicitation session.
-    pub fn create_session(&self, state: Value) -> Uuid {
-        let id = Uuid::new_v4();
-        let mut sessions = self.sessions.write().expect("Registry lock poisoned");
-        sessions.insert(id, state);
-        tracing::info!(session_id = %id, "Created elicitation session");
-        id
-    }
-
-    /// Get session state by UUID.
-    pub fn get(&self, id: &Uuid) -> Option<Value> {
-        let sessions = self.sessions.read().expect("Registry lock poisoned");
-        sessions.get(id).cloned()
-    }
-
-    /// Update session state.
-    pub fn update(&self, id: &Uuid, state: Value) -> bool {
-        let mut sessions = self.sessions.write().expect("Registry lock poisoned");
-        if sessions.contains_key(id) {
-            sessions.insert(*id, state);
-            true
-        } else {
-            false
-        }
-    }
-
-    /// Remove and return session state.
-    pub fn remove(&self, id: &Uuid) -> Option<Value> {
-        let mut sessions = self.sessions.write().expect("Registry lock poisoned");
-        sessions.remove(id)
     }
 }
 
-impl Default for ElicitationRegistry {
-    fn default() -> Self {
-        Self::new()
+impl RegistryOperations for ElicitationSession {
+    type Key = Uuid;
+
+    fn registry_key(&self) -> Self::Key {
+        self.id
+    }
+
+    fn from_json_args(args: Value) -> McpResult<Self> {
+        let id = args
+            .get("id")
+            .and_then(|v| v.as_str())
+            .and_then(|s| Uuid::parse_str(s).ok())
+            .unwrap_or_else(Uuid::new_v4);
+        
+        let state = args.get("state").cloned().unwrap_or(json!({}));
+        
+        Ok(Self { id, state })
+    }
+
+    fn to_json(&self) -> McpResult<Value> {
+        serde_json::to_value(self).map_err(|e| McpError::serialization_error(e.to_string()))
+    }
+
+    fn update_from_json(&mut self, args: Value) -> McpResult<()> {
+        if let Some(state) = args.get("state") {
+            self.state = state.clone();
+        }
+        Ok(())
     }
 }
+
+/// Registry for managing active narrative elicitation sessions.
+pub type ElicitationRegistry = GenericRegistry<ElicitationSession>;
+
 
 /// Tool for creating a new narrative elicitation session.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_new::new)]
 pub struct CreateElicitationSessionTool {
     registry: ElicitationRegistry,
-}
-
-impl CreateElicitationSessionTool {
-    /// Create tool with registry.
-    pub fn new(registry: ElicitationRegistry) -> Self {
-        Self { registry }
-    }
 }
 
 #[async_trait]
@@ -130,7 +124,12 @@ impl ToolHandler for CreateElicitationSessionTool {
             "metadata": {}
         });
 
-        let session_id = self.registry.create_session(state);
+        let session = ElicitationSession {
+            id: Uuid::new_v4(),
+            state,
+        };
+
+        let session_id = self.registry.upsert(session);
 
         let result = json!({
             "session_id": session_id.to_string(),
@@ -149,16 +148,9 @@ impl ToolHandler for CreateElicitationSessionTool {
 }
 
 /// Tool for setting narrative metadata during elicitation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_new::new)]
 pub struct ElicitMetadataTool {
     registry: ElicitationRegistry,
-}
-
-impl ElicitMetadataTool {
-    /// Create tool with registry.
-    pub fn new(registry: ElicitationRegistry) -> Self {
-        Self { registry }
-    }
 }
 
 #[async_trait]
@@ -249,16 +241,9 @@ impl ToolHandler for ElicitMetadataTool {
 }
 
 /// Tool for adding or updating acts during elicitation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_new::new)]
 pub struct ElicitActTool {
     registry: ElicitationRegistry,
-}
-
-impl ElicitActTool {
-    /// Create tool with registry.
-    pub fn new(registry: ElicitationRegistry) -> Self {
-        Self { registry }
-    }
 }
 
 #[async_trait]
@@ -371,16 +356,9 @@ impl ToolHandler for ElicitActTool {
     }
 }
 /// Tool for executing narratives in carousel mode with multiple iterations.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_new::new)]
 pub struct ExecuteCarouselTool {
     registry: ElicitationRegistry,
-}
-
-impl ExecuteCarouselTool {
-    /// Create a new carousel execution tool.
-    pub fn new(registry: ElicitationRegistry) -> Self {
-        Self { registry }
-    }
 }
 
 #[async_trait]
@@ -404,7 +382,7 @@ impl ToolHandler for ExecuteCarouselTool {
 
     #[tracing::instrument(skip(self), fields(tool = "execute_carousel"))]
     async fn execute(&self, arguments: Value) -> McpClientResult<Vec<Content>> {
-        let narrative_toml = arguments
+        let _narrative_toml = arguments
             .get("narrative_toml")
             .and_then(|v| v.as_str())
             .ok_or_else(|| {
@@ -430,16 +408,9 @@ impl ToolHandler for ExecuteCarouselTool {
 }
 
 /// Tool for finalizing elicitation and generating TOML.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_new::new)]
 pub struct FinalizeElicitationTool {
     registry: ElicitationRegistry,
-}
-
-impl FinalizeElicitationTool {
-    /// Create tool with registry.
-    pub fn new(registry: ElicitationRegistry) -> Self {
-        Self { registry }
-    }
 }
 
 #[async_trait]
@@ -587,16 +558,9 @@ fn generate_toml_from_state(state: &Value) -> McpClientResult<String> {
 }
 
 /// Tool for creating a carousel narrative.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_new::new)]
 pub struct CreateCarouselTool {
     registry: ElicitationRegistry,
-}
-
-impl CreateCarouselTool {
-    /// Create tool with registry.
-    pub fn new(registry: ElicitationRegistry) -> Self {
-        Self { registry }
-    }
 }
 
 #[async_trait]

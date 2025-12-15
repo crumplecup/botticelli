@@ -45,6 +45,47 @@ pub async fn run_pmcp_server() -> Result<()> {
         .tool("save_narrative", McpToolAdapter::new(SaveNarrativeTool))
         .tool("modify_narrative", McpToolAdapter::new(ModifyNarrativeTool));
 
+    // Register elicitation tools
+    {
+        use crate::tools::{
+            CreateNarrativeSessionTool, ElicitActTool, ElicitMetadataTool, FinalizeNarrativeTool,
+            NarrativeRegistry,
+        };
+
+        let registry = NarrativeRegistry::new();
+
+        builder = builder
+            .tool(
+                "create_narrative_session",
+                McpToolAdapter::new(CreateNarrativeSessionTool::new(registry.clone())),
+            )
+            .tool(
+                "elicit_metadata",
+                McpToolAdapter::new(ElicitMetadataTool::new(registry.clone())),
+            )
+            .tool(
+                "elicit_act",
+                McpToolAdapter::new(ElicitActTool::new(registry.clone())),
+            )
+            .tool(
+                "finalize_narrative",
+                McpToolAdapter::new(FinalizeNarrativeTool::new(registry)),
+            );
+    }
+
+    // Register ExecuteActTool (only when LLM features are enabled)
+    #[cfg(any(
+        feature = "gemini",
+        feature = "anthropic",
+        feature = "ollama",
+        feature = "huggingface",
+        feature = "groq"
+    ))]
+    {
+        use crate::tools::ExecuteActTool;
+        builder = builder.tool("execute_act", McpToolAdapter::new(ExecuteActTool::new()));
+    }
+
     // Register ExecuteNarrativeTool (only when LLM features are enabled)
     #[cfg(any(
         feature = "gemini",
@@ -131,8 +172,8 @@ pub async fn run_pmcp_server() -> Result<()> {
     #[cfg(feature = "discord")]
     {
         use crate::tools::{
-            DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool,
-            DiscordPostMessageTool,
+            DiscordBotCommandTool, DiscordGetChannelsTool, DiscordGetGuildInfoTool,
+            DiscordGetMessagesTool, DiscordPostMessageTool, DiscordPostTool,
         };
 
         match DiscordGetChannelsTool::new() {
@@ -170,6 +211,33 @@ pub async fn run_pmcp_server() -> Result<()> {
                 tracing::warn!("Failed to initialize DiscordPostMessageTool: {}", e);
             }
         }
+
+        // Optional Discord tools that need bot token
+        if let Ok(token) = std::env::var("DISCORD_BOT_TOKEN") {
+            match DiscordPostTool::new(token.clone()) {
+                Ok(tool) => {
+                    builder = builder.tool("discord_post", McpToolAdapter::new(tool));
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to initialize DiscordPostTool: {}", e);
+                }
+            }
+
+            match DiscordBotCommandTool::new(token) {
+                Ok(tool) => {
+                    builder = builder.tool("discord_bot_command", McpToolAdapter::new(tool));
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to initialize DiscordBotCommandTool: {}", e);
+                }
+            }
+        } else {
+            tracing::info!("DISCORD_BOT_TOKEN not set, skipping discord_post and discord_bot_command tools");
+        }
+
+        // DiscordContentWorkflowTool needs a ToolRegistry - skip for now as it needs complex setup
+        // TODO: Implement proper tool registry initialization
+        tracing::info!("Skipping discord_content_workflow tool (requires ToolRegistry)");
     }
 
     // Build the server

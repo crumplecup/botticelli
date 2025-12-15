@@ -17,6 +17,7 @@ mod mcp_bridge;
 mod metrics;
 mod posting;
 mod server;
+mod tool_init;
 
 pub use api::{ApiState, create_router};
 pub use config::{BotConfig, BotSchedule, CurationConfig, GenerationConfig, PostingConfig};
@@ -27,3 +28,4 @@ pub use mcp_bridge::{DiscordMcpBridge, DiscordMcpBridgeError, DiscordMcpBridgeEr
 pub use metrics::{BotMetricSnapshot, BotMetrics, MetricsSnapshot};
 pub use posting::{PostingBot, PostingMessage};
 pub use server::BotServer;
+pub use tool_init::initialize_tools;

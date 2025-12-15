@@ -13,7 +13,7 @@ use std::sync::Arc;
 ///
 /// This is the main entry point for self-driving Botticelli operations.
 /// It manages the agentic loop: LLM → Tool Calls → Tool Execution → LLM.
-#[derive(Clone)]
+#[derive(Clone, derive_getters::Getters)]
 pub struct Orchestrator {
     /// Tool registry for executing tools
     registry: Arc<ToolRegistry>,

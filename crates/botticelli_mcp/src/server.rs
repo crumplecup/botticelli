@@ -211,17 +211,84 @@ impl BotticelliRouterBuilder {
         } else {
             // Create default registry with metrics
             let mut registry = ToolRegistry::with_metrics(Arc::clone(&metrics));
-            // Register default tools
+            
+            // Core utility tools
             registry.register(Arc::new(crate::tools::EchoTool));
             registry.register(Arc::new(crate::tools::ServerInfoTool));
+            registry.register(Arc::new(crate::tools::ExportMetricsTool::new(Arc::clone(&metrics))));
+            
+            // Narrative lifecycle tools
             registry.register(Arc::new(crate::tools::CreateNarrativeTool));
+            registry.register(Arc::new(crate::tools::ModifyNarrativeTool));
+            registry.register(Arc::new(crate::tools::SaveNarrativeTool));
             registry.register(Arc::new(crate::tools::ValidateNarrativeTool));
             registry.register(Arc::new(crate::tools::GenerateTool));
             registry.register(Arc::new(crate::tools::ExecuteActTool::new()));
             registry.register(Arc::new(crate::tools::ExecuteNarrativeTool::new()));
-            registry.register(Arc::new(crate::tools::ExportMetricsTool::new(Arc::clone(
-                &metrics,
-            ))));
+            
+            // Elicitation tools
+            let elicitation_registry = crate::tools::NarrativeRegistry::new();
+            registry.register(Arc::new(crate::tools::CreateNarrativeSessionTool::new(elicitation_registry.clone())));
+            registry.register(Arc::new(crate::tools::ElicitMetadataTool::new(elicitation_registry.clone())));
+            registry.register(Arc::new(crate::tools::ElicitActTool::new(elicitation_registry.clone())));
+            registry.register(Arc::new(crate::tools::FinalizeNarrativeTool::new(elicitation_registry)));
+            
+            // LLM generation tools
+            #[cfg(feature = "gemini")]
+            if let Ok(tool) = crate::tools::GenerateGeminiTool::new() {
+                registry.register(Arc::new(tool));
+            }
+            
+            #[cfg(feature = "anthropic")]
+            if let Ok(tool) = crate::tools::GenerateAnthropicTool::new() {
+                registry.register(Arc::new(tool));
+            }
+            
+            #[cfg(feature = "ollama")]
+            if let Ok(tool) = crate::tools::GenerateOllamaTool::new() {
+                registry.register(Arc::new(tool));
+            }
+            
+            #[cfg(feature = "huggingface")]
+            if let Ok(tool) = crate::tools::GenerateHuggingFaceTool::new() {
+                registry.register(Arc::new(tool));
+            }
+            
+            #[cfg(feature = "groq")]
+            if let Ok(tool) = crate::tools::GenerateGroqTool::new() {
+                registry.register(Arc::new(tool));
+            }
+            
+            // Database tools
+            #[cfg(feature = "database")]
+            registry.register(Arc::new(crate::tools::QueryContentTool));
+            
+            // Discord tools
+            #[cfg(feature = "discord")]
+            {
+                if let Ok(tool) = crate::tools::DiscordPostMessageTool::new() {
+                    registry.register(Arc::new(tool));
+                }
+                if let Ok(tool) = crate::tools::DiscordGetMessagesTool::new() {
+                    registry.register(Arc::new(tool));
+                }
+                if let Ok(tool) = crate::tools::DiscordGetGuildInfoTool::new() {
+                    registry.register(Arc::new(tool));
+                }
+                if let Ok(tool) = crate::tools::DiscordGetChannelsTool::new() {
+                    registry.register(Arc::new(tool));
+                }
+                if let Ok(tool) = crate::tools::DiscordBotCommandTool::new() {
+                    registry.register(Arc::new(tool));
+                }
+                if let Ok(tool) = crate::tools::DiscordPostTool::new() {
+                    registry.register(Arc::new(tool));
+                }
+                if let Ok(tool) = crate::tools::DiscordContentWorkflowTool::new() {
+                    registry.register(Arc::new(tool));
+                }
+            }
+            
             registry
         };
 
