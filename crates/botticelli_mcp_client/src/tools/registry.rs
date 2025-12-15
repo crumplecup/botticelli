@@ -106,7 +106,7 @@ pub fn register_database_tools(registry: &mut ToolRegistry, db_pool: DbPool) -> 
 
     registry.register(
         "query_table".to_string(),
-        Arc::new(QueryTableTool::new(db_pool.clone())),
+        Arc::new(QueryTableTool::new(DbOperationsImpl::new(db_pool.clone()))),
     )?;
 
     registry.register(

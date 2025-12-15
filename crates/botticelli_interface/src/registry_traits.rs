@@ -50,4 +50,16 @@ pub trait DatabaseRegistryOperations: Send + Sync {
         status_filter: Option<&str>,
         limit: i64,
     ) -> BotticelliResult<Vec<Value>>;
+
+    /// Create a new content table.
+    async fn create_table(
+        &self,
+        table_name: &str,
+        template_source: &str,
+        narrative_file: Option<&str>,
+        description: Option<&str>,
+    ) -> BotticelliResult<()>;
+
+    /// Check if a table exists.
+    async fn table_exists(&self, table_name: &str) -> BotticelliResult<bool>;
 }

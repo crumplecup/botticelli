@@ -1,8 +1,4 @@
 use async_trait::async_trait;
-#[cfg(feature = "database")]
-use botticelli_database::{
-    create_content_table, list_content, reflect_table_schema, table_exists, DbPool,
-};
 use botticelli_interface::DatabaseRegistryOperations;
 use pmcp::{Content, ToolInfo};
 use serde_json::{json, Value};
@@ -13,13 +9,21 @@ use crate::{McpClientError, McpClientErrorKind, ToolHandler};
 ///
 /// Available with the `database` feature.
 #[cfg(feature = "database")]
-#[derive(Debug, Clone, derive_new::new)]
-pub struct CreateTableTool {
-    pool: DbPool,
+#[derive(Debug, Clone)]
+pub struct CreateTableTool<D: DatabaseRegistryOperations> {
+    db_ops: D,
 }
 
+#[cfg(feature = "database")]
+impl<D: DatabaseRegistryOperations> CreateTableTool<D> {
+    pub fn new(db_ops: D) -> Self {
+        Self { db_ops }
+    }
+}
+
+#[cfg(feature = "database")]
 #[async_trait]
-impl ToolHandler for CreateTableTool {
+impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for CreateTableTool<D> {
     fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "create_table",
@@ -60,11 +64,9 @@ impl ToolHandler for CreateTableTool {
         
         let narrative_file = input["narrative_file"].as_str();
         let description = input["description"].as_str();
-        
-        let mut conn = self.pool.get()
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(format!("Connection error: {}", e))))?;
 
-        create_content_table(&mut conn, table_name, template_source, narrative_file, description)
+        self.db_ops.create_table(table_name, template_source, narrative_file, description)
+            .await
             .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Table creation error: {}", e))))?;
 
         let result = json!({
@@ -144,13 +146,21 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for QueryTableTool
 ///
 /// Available with the `database` feature.
 #[cfg(feature = "database")]
-#[derive(Debug, Clone, derive_new::new)]
-pub struct InspectTableTool {
-    pool: DbPool,
+#[derive(Debug, Clone)]
+pub struct InspectTableTool<D: DatabaseRegistryOperations> {
+    db_ops: D,
 }
 
+#[cfg(feature = "database")]
+impl<D: DatabaseRegistryOperations> InspectTableTool<D> {
+    pub fn new(db_ops: D) -> Self {
+        Self { db_ops }
+    }
+}
+
+#[cfg(feature = "database")]
 #[async_trait]
-impl ToolHandler for InspectTableTool {
+impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for InspectTableTool<D> {
     fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "inspect_table",
@@ -173,25 +183,14 @@ impl ToolHandler for InspectTableTool {
             .as_str()
             .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
 
-        let mut conn = self.pool.get()
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(format!("Connection error: {}", e))))?;
-
-        let schema = reflect_table_schema(&mut conn, table_name)
+        let schema = self.db_ops.get_schema(table_name)
+            .await
             .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Schema reflection error: {}", e))))?;
 
         let result = json!({
             "success": true,
             "table_name": table_name,
-            "schema": {
-                "table_name": schema.table_name,
-                "columns": schema.columns.iter().map(|col| {
-                    json!({
-                        "name": col.name,
-                        "data_type": col.data_type,
-                        "is_nullable": col.is_nullable
-                    })
-                }).collect::<Vec<_>>()
-            }
+            "schema": schema
         });
 
         Ok(vec![Content::Text { text: result.to_string() }])
