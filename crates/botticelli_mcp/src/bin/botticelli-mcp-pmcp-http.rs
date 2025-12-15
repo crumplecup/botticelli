@@ -1,8 +1,13 @@
 //! Botticelli MCP HTTP server using pmcp SDK.
 
 use anyhow::Result;
-use botticelli_mcp::run_pmcp_server;
 use tracing_subscriber::{self, EnvFilter};
+
+#[cfg(feature = "streamable-http")]
+use botticelli_mcp::run_pmcp_http_server;
+
+#[cfg(not(feature = "streamable-http"))]
+use botticelli_mcp::run_pmcp_server;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -18,13 +23,26 @@ async fn main() -> Result<()> {
         .with_line_number(true)
         .init();
 
-    tracing::info!("Starting Botticelli MCP HTTP server (PMCP implementation)");
-    tracing::warn!("HTTP transport not yet implemented - falling back to stdio");
-    tracing::info!("Future: Will listen on http://0.0.0.0:8080");
+    #[cfg(feature = "streamable-http")]
+    {
+        // Read host and port from environment or use defaults
+        let host = std::env::var("MCP_HTTP_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+        let port = std::env::var("MCP_HTTP_PORT")
+            .ok()
+            .and_then(|p| p.parse().ok())
+            .unwrap_or(8080);
 
-    // TODO: Implement HTTP server
-    // For now, run stdio server
-    run_pmcp_server().await?;
+        tracing::info!("Starting Botticelli MCP HTTP server (PMCP implementation)");
+        run_pmcp_http_server(&host, port).await?;
+    }
+
+    #[cfg(not(feature = "streamable-http"))]
+    {
+        tracing::warn!("HTTP transport not enabled - streamable-http feature missing");
+        tracing::info!("Falling back to stdio transport");
+        tracing::info!("To enable HTTP: cargo build --features streamable-http");
+        run_pmcp_server().await?;
+    }
 
     Ok(())
 }

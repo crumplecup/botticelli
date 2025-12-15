@@ -8,7 +8,7 @@ description = "Model Context Protocol (MCP) server for Botticelli"
 
 [dependencies]
 # MCP SDK - migrating to pmcp (battle-tested SDK)
-pmcp = "1.8"
+pmcp = { version = "1.8", features = ["streamable-http"] }
 mcp-server = "0.1.0"  # Keep during migration
 
 # Async runtime
@@ -69,8 +69,17 @@ tokio-test = "0.4"
 
 [features]
 default = []
+
+# HTTP transport using pmcp
+streamable-http = ["pmcp/streamable-http"]
+
+# Database integration
 database = ["dep:botticelli_database", "dep:diesel"]
+
+# Discord integration (includes database)
 discord = ["dep:reqwest", "dep:botticelli_social"]
+
+# HTTP server (old axum-based implementation)
 http = ["dep:axum", "dep:tower", "dep:tower-http"]
 
 # LLM backend features
