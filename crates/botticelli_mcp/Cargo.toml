@@ -7,8 +7,9 @@ license = "MIT OR Apache-2.0"
 description = "Model Context Protocol (MCP) server for Botticelli"
 
 [dependencies]
-# MCP SDK - official from Anthropic
-mcp-server = "0.1.0"
+# MCP SDK - migrating to pmcp (battle-tested SDK)
+pmcp = "1.8"
+mcp-server = "0.1.0"  # Keep during migration
 
 # Async runtime
 tokio = { workspace = true, features = ["full"] }

@@ -38,6 +38,9 @@ mod resources;
 mod server;
 pub mod tools;
 
+// PMCP migration - new implementation
+mod pmcp_server;
+
 #[cfg(feature = "http")]
 pub mod http;
 
@@ -78,6 +81,9 @@ pub use tools::GenerateOllamaTool;
 
 #[cfg(feature = "database")]
 pub use resources::ContentResource;
+
+// PMCP migration exports
+pub use pmcp_server::{run_pmcp_server, EchoHandler};
 
 // Re-export key mcp-server types for convenience
 pub use mcp_server::router::RouterService;
