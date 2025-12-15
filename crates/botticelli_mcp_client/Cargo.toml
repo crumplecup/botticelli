@@ -13,10 +13,12 @@ botticelli_core.workspace = true
 botticelli_error.workspace = true
 botticelli_interface.workspace = true
 botticelli_mcp = { path = "../botticelli_mcp", version = "0.2.0" }
+botticelli_narrative = { path = "../botticelli_narrative", version = "0.2.0" }
 
 async-trait.workspace = true
 derive-getters.workspace = true
 derive_more.workspace = true
+glob = "0.3"
 pmcp = { version = "1.8", features = ["validation"] }
 prometheus = "0.13"
 reqwest.workspace = true
