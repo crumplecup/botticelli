@@ -28,6 +28,9 @@
 //! - Responsive layout with status bar and help text
 //! - Integration with MCP tool calling and narrative generation
 
+#![warn(missing_docs)]
+#![forbid(unsafe_code)]
+
 mod commands;
 mod elicitation;
 mod elicitation_dialog;

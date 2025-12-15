@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, Input as CoreInput, Message as CoreMessage, Role};
 use botticelli_interface::BotticelliDriver;
 use botticelli_mcp_client::{
-    tools::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool},
     LlmBackend, ToolDefinition, ToolHandler, ToolRegistry, UnifiedMcpClient,
+    tools::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool},
 };
 use pmcp::{Content, ToolInfo};
 use tracing::{error, info};
@@ -267,7 +267,8 @@ impl AppState {
                                 id
                             });
 
-                            let mut messages = self.conversation_messages(&conv_id)
+                            let mut messages = self
+                                .conversation_messages(&conv_id)
                                 .cloned()
                                 .unwrap_or_default();
                             messages.push(ChatMessage::user(user_message.clone()));
@@ -278,20 +279,20 @@ impl AppState {
                                 let core_messages: Vec<CoreMessage> = messages
                                     .iter()
                                     .filter_map(|msg| match msg {
-                                        ChatMessage::User { content } => {
-                                            Some(CoreMessage::builder()
+                                        ChatMessage::User { content } => Some(
+                                            CoreMessage::builder()
                                                 .role(Role::User)
                                                 .content(vec![CoreInput::Text(content.clone())])
                                                 .build()
-                                                .ok()?)
-                                        }
-                                        ChatMessage::Assistant { content } => {
-                                            Some(CoreMessage::builder()
+                                                .ok()?,
+                                        ),
+                                        ChatMessage::Assistant { content } => Some(
+                                            CoreMessage::builder()
                                                 .role(Role::Assistant)
                                                 .content(vec![CoreInput::Text(content.clone())])
                                                 .build()
-                                                .ok()?)
-                                        }
+                                                .ok()?,
+                                        ),
                                         _ => None, // Skip tool calls/results/thinking for now
                                     })
                                     .collect();
@@ -320,12 +321,10 @@ impl AppState {
                                                 );
 
                                                 // Send result to UI thread
-                                                if let Err(e) =
-                                                    tx.send(crate::McpUpdate {
-                                                        conversation_id: conv_id,
-                                                        result,
-                                                    })
-                                                {
+                                                if let Err(e) = tx.send(crate::McpUpdate {
+                                                    conversation_id: conv_id,
+                                                    result,
+                                                }) {
                                                     error!(error = %e, "Failed to send MCP update to UI");
                                                 }
                                             }
@@ -337,7 +336,7 @@ impl AppState {
                                 } else {
                                     // Fallback: Simple LLM generation without MCP
                                     messages.push(ChatMessage::assistant(
-                                        "MCP integration not fully initialized".to_string()
+                                        "MCP integration not fully initialized".to_string(),
                                     ));
                                 }
                             } else {
@@ -440,7 +439,10 @@ struct EchoTool;
 
 #[async_trait]
 impl ToolHandler for EchoTool {
-    async fn execute(&self, args: serde_json::Value) -> botticelli_mcp_client::McpClientResult<Vec<Content>> {
+    async fn execute(
+        &self,
+        args: serde_json::Value,
+    ) -> botticelli_mcp_client::McpClientResult<Vec<Content>> {
         let message = args
             .get("message")
             .and_then(|v| v.as_str())
@@ -494,27 +496,37 @@ impl AppState {
         let narratives_dir = "narratives".to_string();
 
         registry
-            .register("create_narrative".to_string(), Arc::new(CreateNarrativeTool))
+            .register(
+                "create_narrative".to_string(),
+                Arc::new(CreateNarrativeTool),
+            )
             .expect("Failed to register create_narrative tool");
 
         registry
-            .register("validate_narrative".to_string(), Arc::new(ValidateNarrativeTool))
+            .register(
+                "validate_narrative".to_string(),
+                Arc::new(ValidateNarrativeTool),
+            )
             .expect("Failed to register validate_narrative tool");
 
         registry
-            .register("list_narratives".to_string(), Arc::new(ListNarrativesTool::new(&narratives_dir)))
+            .register(
+                "list_narratives".to_string(),
+                Arc::new(ListNarrativesTool::new(&narratives_dir)),
+            )
             .expect("Failed to register list_narratives tool");
 
         registry
-            .register("load_narrative".to_string(), Arc::new(LoadNarrativeTool::new(&narratives_dir)))
+            .register(
+                "load_narrative".to_string(),
+                Arc::new(LoadNarrativeTool::new(&narratives_dir)),
+            )
             .expect("Failed to register load_narrative tool");
 
         info!(tool_count = registry.tool_count(), "Tools registered");
 
         // Create MCP client with registry
-        let mcp_client = UnifiedMcpClient::builder()
-            .max_iterations(10)
-            .build();
+        let mcp_client = UnifiedMcpClient::builder().max_iterations(10).build();
 
         // Note: We can't add the registry to UnifiedMcpClient yet because it only
         // supports external servers. For now, external tools only.
@@ -590,22 +602,36 @@ impl AppState {
 #[derive(Debug, Clone)]
 pub enum ChatMessage {
     /// User message.
-    User { content: String },
+    User {
+        /// Message content from the user.
+        content: String,
+    },
     /// Assistant message.
-    Assistant { content: String },
+    Assistant {
+        /// Message content from the assistant.
+        content: String,
+    },
     /// Tool call by the LLM.
     ToolCall {
+        /// Name of the tool being called.
         tool_name: String,
+        /// JSON arguments for the tool.
         arguments: serde_json::Value,
     },
     /// Tool execution result.
     ToolResult {
+        /// Name of the tool that was executed.
         tool_name: String,
+        /// Result text from the tool execution.
         result: String,
+        /// Whether the tool execution succeeded.
         success: bool,
     },
     /// Thinking/reasoning content.
-    Thinking { content: String },
+    Thinking {
+        /// Thinking/reasoning text.
+        content: String,
+    },
 }
 
 impl ChatMessage {

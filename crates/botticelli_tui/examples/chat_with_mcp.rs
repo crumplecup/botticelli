@@ -62,10 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     })?;
 
     // Create Anthropic driver
-    let driver = Arc::new(AnthropicClient::new(
-        api_key,
-        "claude-3-5-sonnet-20241022",
-    ));
+    let driver = Arc::new(AnthropicClient::new(api_key, "claude-3-5-sonnet-20241022"));
 
     // Create TUI with MCP integration
     let mut tui = Tui::with_mcp(driver)?;

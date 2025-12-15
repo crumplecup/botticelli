@@ -6,15 +6,15 @@ use botticelli_mcp::ElicitationDialog;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
+    Frame, Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem},
-    Frame, Terminal,
 };
 use std::io::{self, Stdout};
 use tracing::{debug, instrument};
@@ -105,10 +105,7 @@ impl TuiElicitationDialog {
                 f.render_widget(input_block, chunks[1]);
             })
             .map_err(|e| {
-                TuiError::new(TuiErrorKind::Rendering(format!(
-                    "Failed to render: {}",
-                    e
-                )))
+                TuiError::new(TuiErrorKind::Rendering(format!("Failed to render: {}", e)))
             })?;
 
         Ok(())
@@ -165,36 +162,28 @@ impl TuiElicitationDialog {
 
         loop {
             if event::poll(std::time::Duration::from_millis(100)).map_err(|e| {
-                TuiError::new(TuiErrorKind::EventRead(format!(
-                    "Event poll failed: {}",
-                    e
-                )))
-            })?
-                && let Event::Key(key) = event::read().map_err(|e| {
-                    TuiError::new(TuiErrorKind::EventRead(format!(
-                        "Key read failed: {}",
-                        e
-                    )))
-                })?
-            {
-                    match key.code {
-                        KeyCode::Enter => {
-                            break;
-                        }
-                        KeyCode::Char(c) => {
-                            if key.modifiers.contains(KeyModifiers::CONTROL) && c == 'c' {
-                                return Err(TuiError::new(TuiErrorKind::EventRead(
-                                    "User cancelled".to_string(),
-                                ))
-                                .into());
-                            }
-                            input.push(c);
-                        }
-                        KeyCode::Backspace => {
-                            input.pop();
-                        }
-                        _ => {}
+                TuiError::new(TuiErrorKind::EventRead(format!("Event poll failed: {}", e)))
+            })? && let Event::Key(key) = event::read().map_err(|e| {
+                TuiError::new(TuiErrorKind::EventRead(format!("Key read failed: {}", e)))
+            })? {
+                match key.code {
+                    KeyCode::Enter => {
+                        break;
                     }
+                    KeyCode::Char(c) => {
+                        if key.modifiers.contains(KeyModifiers::CONTROL) && c == 'c' {
+                            return Err(TuiError::new(TuiErrorKind::EventRead(
+                                "User cancelled".to_string(),
+                            ))
+                            .into());
+                        }
+                        input.push(c);
+                    }
+                    KeyCode::Backspace => {
+                        input.pop();
+                    }
+                    _ => {}
+                }
             }
         }
 
@@ -257,7 +246,8 @@ impl ElicitationDialog for TuiElicitationDialog {
             let input = self.read_line("Enter number:")?;
 
             if let Ok(choice) = input.trim().parse::<usize>()
-                && choice > 0 && choice <= options.len()
+                && choice > 0
+                && choice <= options.len()
             {
                 return Ok(choice - 1);
             }
@@ -278,7 +268,8 @@ impl ElicitationDialog for TuiElicitationDialog {
             let input = self.read_line(&full_prompt)?;
 
             if let Ok(num) = input.trim().parse::<i64>()
-                && num >= min && num <= max
+                && num >= min
+                && num <= max
             {
                 return Ok(num);
             }

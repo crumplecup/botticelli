@@ -71,12 +71,11 @@ impl View for ChatView {
                             lines.push(Line::from(vec![
                                 Span::styled(
                                     "🔧 ",
-                                    Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                                    Style::default()
+                                        .fg(Color::Cyan)
+                                        .add_modifier(Modifier::BOLD),
                                 ),
-                                Span::styled(
-                                    tool_name.clone(),
-                                    Style::default().fg(Color::Cyan),
-                                ),
+                                Span::styled(tool_name.clone(), Style::default().fg(Color::Cyan)),
                                 Span::raw("("),
                                 Span::styled(args_str, Style::default().fg(Color::Gray)),
                                 Span::raw(")"),
