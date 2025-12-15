@@ -167,3 +167,35 @@ impl<T: RegistryOperations<Key = String>> Default for NarrativeRegistry<T> {
         Self::new()
     }
 }
+
+// Implement ElicitationRegistryOperations for the registry
+impl<T> botticelli_interface::ElicitationRegistryOperations for NarrativeRegistry<T>
+where
+    T: RegistryOperations<Key = String> + Clone,
+{
+    type Narrative = T;
+
+    fn get_narrative(&self, id: &str) -> botticelli_error::BotticelliResult<Self::Narrative> {
+        self.get(id).map_err(Into::into)
+    }
+
+    fn update_narrative<F>(&self, id: &str, updater: F) -> botticelli_error::BotticelliResult<()>
+    where
+        F: FnOnce(&mut Self::Narrative) -> botticelli_error::BotticelliResult<()>,
+    {
+        let mut narratives = self.narratives.write().expect("Registry lock poisoned");
+        let narrative = narratives
+            .get_mut(id)
+            .ok_or_else(|| botticelli_error::BotticelliError::invalid_input(format!("Narrative {} not found", id)))?;
+        
+        updater(narrative)
+    }
+
+    fn remove_narrative(&self, id: &str) -> botticelli_error::BotticelliResult<Option<Self::Narrative>> {
+        Ok(self.remove(id))
+    }
+
+    fn add_narrative(&self, narrative: Self::Narrative) -> String {
+        self.add(narrative)
+    }
+}

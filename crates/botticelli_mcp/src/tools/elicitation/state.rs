@@ -1,7 +1,6 @@
-use crate::tools::elicitation::PartialNarrativeRegistry;
 use botticelli_error::{McpError, McpResult};
+use botticelli_interface::ElicitationRegistryOperations;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, instrument};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,12 +40,12 @@ pub struct NarrativeStateSummary {
     pub has_carousel: bool,
 }
 
-#[instrument(skip(registry), fields(narrative_id, format))]
-pub async fn get_narrative_state(
-    registry: &PartialNarrativeRegistry,
+#[tracing::instrument(skip(registry), fields(narrative_id, format))]
+pub async fn get_narrative_state<R: ElicitationRegistryOperations>(
+    registry: &R,
     input: GetNarrativeStateInput,
 ) -> McpResult<GetNarrativeStateOutput> {
-    debug!("Getting narrative state");
+    tracing::debug!("Getting narrative state");
 
     let narrative_id = Uuid::parse_str(&input.narrative_id)
         .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;

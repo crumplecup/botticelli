@@ -1,7 +1,6 @@
-use crate::tools::elicitation::PartialNarrativeRegistry;
 use botticelli_error::{McpError, McpResult};
+use botticelli_interface::ElicitationRegistryOperations;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, instrument};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,12 +59,12 @@ pub struct ApplyValidationFixesOutput {
     pub remaining_errors: usize,
 }
 
-#[instrument(skip(registry), fields(narrative_id, strict))]
-pub async fn validate_narrative(
-    registry: &PartialNarrativeRegistry,
+#[tracing::instrument(skip(registry), fields(narrative_id, strict))]
+pub async fn validate_narrative<R: ElicitationRegistryOperations>(
+    registry: &R,
     input: ValidateNarrativeInput,
 ) -> McpResult<ValidateNarrativeOutput> {
-    debug!("Validating narrative");
+    tracing::debug!("Validating narrative");
 
     let narrative_id = Uuid::parse_str(&input.narrative_id)
         .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
@@ -191,11 +190,12 @@ pub async fn validate_narrative(
 }
 
 #[instrument(skip(registry), fields(narrative_id))]
-pub async fn apply_validation_fixes(
-    registry: &PartialNarrativeRegistry,
+#[tracing::instrument(skip(registry), fields(narrative_id))]
+pub async fn apply_validation_fixes<R: ElicitationRegistryOperations>(
+    registry: &R,
     input: ApplyValidationFixesInput,
 ) -> McpResult<ApplyValidationFixesOutput> {
-    debug!("Applying validation fixes");
+    tracing::debug!("Applying validation fixes");
 
     let narrative_id = Uuid::parse_str(&input.narrative_id)
         .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;

@@ -1,11 +1,11 @@
-use crate::tools::elicitation::PartialNarrativeRegistry;
 use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
+use botticelli_interface::ElicitationRegistryOperations;
 use botticelli_narrative::CarouselConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{debug, instrument};
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ElicitCarouselInput {
@@ -51,20 +51,34 @@ pub struct CarouselSummary {
 }
 
 /// MCP tool for creating carousel configurations during narrative elicitation.
-pub struct ElicitCarouselTool {
-    registry: PartialNarrativeRegistry,
+pub struct ElicitCarouselTool<R, T>
+where
+    R: ElicitationRegistryOperations<T>,
+    T: Send + Sync,
+{
+    registry: Arc<R>,
+    _phantom: std::marker::PhantomData<T>,
 }
 
-impl ElicitCarouselTool {
+impl<R, T> ElicitCarouselTool<R, T>
+where
+    R: ElicitationRegistryOperations<T>,
+    T: Send + Sync,
+{
     /// Creates a new carousel elicitation tool.
-    pub fn new(registry: PartialNarrativeRegistry) -> Self {
-        Self { registry }
+    pub fn new(registry: Arc<R>) -> Self {
+        Self {
+            registry,
+            _phantom: std::marker::PhantomData,
+        }
     }
 
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     async fn handle_carousel(&self, input: ElicitCarouselInput) -> McpResult<ElicitCarouselOutput> {
+        tracing::debug!("Creating carousel configuration");
+
         // Verify narrative exists
-        let _ = self.registry.get(&input.narrative_id)?;
+        let _ = self.registry.get_narrative(&input.narrative_id)?;
 
         // Create carousel config
         let carousel_config = CarouselConfig::new(
@@ -94,30 +108,27 @@ impl ElicitCarouselTool {
         }
 
         // Update narrative with carousel config
-        let mut update = serde_json::json!({});
-        
-        match input.level {
-            CarouselLevel::Narrative => {
-                update["carousel"] = serde_json::to_value(&carousel_config)
-                    .map_err(|e| McpError::execution_failed(format!("Failed to serialize carousel config: {}", e)))?;
-            }
-            CarouselLevel::Act => {
-                let act_name = input.act_name.as_ref().ok_or_else(|| {
-                    McpError::invalid_input("act_name required for Act level carousel")
-                })?;
-                
-                // Update the specific act's carousel
-                update["acts"] = serde_json::json!({
-                    act_name: {
-                        "carousel": carousel_config
+        self.registry.update_narrative(&input.narrative_id, |partial| {
+            match input.level {
+                CarouselLevel::Narrative => {
+                    partial.carousel = Some(carousel_config.clone());
+                }
+                CarouselLevel::Act => {
+                    let act_name = input.act_name.as_ref().ok_or_else(|| {
+                        McpError::invalid_input("act_name required for Act level carousel")
+                    })?;
+                    
+                    if let Some(act) = partial.acts.get_mut(act_name) {
+                        act.carousel = Some(carousel_config.clone());
+                    } else {
+                        return Err(McpError::invalid_input(format!("Act '{}' not found", act_name)));
                     }
-                });
+                }
             }
-        }
-        
-        self.registry.update(&input.narrative_id, update)?;
+            Ok(())
+        })?;
 
-        debug!(
+        tracing::debug!(
             narrative_id = %input.narrative_id,
             level = ?input.level,
             iterations = input.iterations,
@@ -143,7 +154,7 @@ impl ElicitCarouselTool {
 }
 
 #[async_trait]
-impl McpTool for ElicitCarouselTool {
+impl<R: ElicitationRegistryOperations + Send + Sync> McpTool for ElicitCarouselTool<R> {
     fn name(&self) -> &str {
         "elicit_carousel"
     }

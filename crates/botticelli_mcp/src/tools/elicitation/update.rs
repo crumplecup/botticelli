@@ -1,7 +1,6 @@
+use botticelli_error::McpResult;
 use crate::tools::elicitation::PartialNarrativeRegistry;
-use botticelli_error::{McpError, McpResult};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, instrument};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,12 +28,12 @@ pub struct ValidationSummary {
     pub warnings: Vec<String>,
 }
 
-#[instrument(skip(registry), fields(narrative_id, update_count = input.updates.len()))]
+#[tracing::instrument(skip(registry), fields(narrative_id, update_count = input.updates.len()))]
 pub async fn update_narrative_field(
     registry: &PartialNarrativeRegistry,
     input: UpdateNarrativeFieldInput,
 ) -> McpResult<UpdateNarrativeFieldOutput> {
-    debug!("Updating narrative fields");
+    tracing::debug!("Updating narrative fields");
 
     let narrative_id = Uuid::parse_str(&input.narrative_id)
         .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
@@ -49,7 +48,7 @@ pub async fn update_narrative_field(
                 match apply_field_update(partial, &update.path, &update.value) {
                     Ok(()) => {
                         updated_fields.push(update.path.clone());
-                        debug!(field = %update.path, "Updated field");
+                        tracing::debug!(field = %update.path, "Updated field");
                     }
                     Err(e) => {
                         errors.push(format!("Failed to update '{}': {}", update.path, e));

@@ -18,7 +18,10 @@ pub use narrative::{
     NarrativeRepository,
 };
 pub use registry::RegistryOperations;
-pub use registry_traits::{DatabaseRegistryOperations, NarrativeRegistryOperations, NarrativeStorageOperations};
+pub use registry_traits::{
+    DatabaseRegistryOperations, ElicitationRegistryOperations, NarrativeRegistryOperations,
+    NarrativeStorageOperations,
+};
 pub use table_query_view::{
     TableCountView, TableCountViewBuilder, TableQueryView, TableQueryViewBuilder,
 };
