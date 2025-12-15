@@ -13,7 +13,6 @@ mod metrics;
 mod retry;
 pub mod schema;
 mod tool_executor;
-mod transport;
 mod unified_client;
 
 pub use approval::ApprovalHandler;
@@ -25,5 +24,4 @@ pub use llm_adapter::LlmAdapter;
 pub use metrics::McpClientMetrics;
 pub use retry::{CircuitBreaker, CircuitState, RetryConfig};
 pub use tool_executor::ToolDefinition;
-pub use transport::{HttpTransport, HttpTransportBuilder, StdioTransport, StdioTransportBuilder, Transport};
 pub use unified_client::{LlmBackend, ToolCall, UnifiedClientMetrics, UnifiedMcpClient, extract_tool_calls};
