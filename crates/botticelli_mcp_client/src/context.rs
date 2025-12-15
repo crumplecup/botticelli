@@ -46,12 +46,12 @@ impl ContextManager {
 
     /// Adds a user message to history.
     pub fn add_user_message(&mut self, content: String) -> McpClientResult<()> {
-        let message = Message {
-            role: MessageRole::User,
+        let message = Message::new(
+            MessageRole::User,
             content,
-            tool_calls: Vec::new(),
-            tool_results: Vec::new(),
-        };
+            Vec::new(),
+            Vec::new(),
+        );
 
         self.history.push_back(message);
         self.truncate_history();
@@ -60,12 +60,12 @@ impl ContextManager {
 
     /// Adds an assistant message to history.
     pub fn add_assistant_message(&mut self, content: String) -> McpClientResult<()> {
-        let message = Message {
-            role: MessageRole::Assistant,
+        let message = Message::new(
+            MessageRole::Assistant,
             content,
-            tool_calls: Vec::new(),
-            tool_results: Vec::new(),
-        };
+            Vec::new(),
+            Vec::new(),
+        );
 
         self.history.push_back(message);
         self.truncate_history();
@@ -85,12 +85,12 @@ impl ContextManager {
 
         // Add system prompt if present
         if let Some(prompt) = &self.system_prompt {
-            messages.push(Message {
-                role: MessageRole::System,
-                content: prompt.clone(),
-                tool_calls: Vec::new(),
-                tool_results: Vec::new(),
-            });
+            messages.push(Message::new(
+                MessageRole::System,
+                prompt.clone(),
+                Vec::new(),
+                Vec::new(),
+            ));
         }
 
         // Add conversation history

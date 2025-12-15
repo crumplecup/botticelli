@@ -1,18 +1,37 @@
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use async_trait::async_trait;
+use derive_getters::Getters;
 use serde_json::Value;
 
 /// Represents a message in a conversation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct Message {
     /// Role of the message sender
-    pub role: MessageRole,
+    role: MessageRole,
     /// Content of the message
-    pub content: String,
+    content: String,
     /// Optional tool calls made by the assistant
-    pub tool_calls: Vec<ToolCall>,
+    tool_calls: Vec<ToolCall>,
     /// Optional tool call results
-    pub tool_results: Vec<ToolResult>,
+    tool_results: Vec<ToolResult>,
+}
+
+impl Message {
+    /// Creates a new message.
+    #[must_use]
+    pub fn new(
+        role: MessageRole,
+        content: String,
+        tool_calls: Vec<ToolCall>,
+        tool_results: Vec<ToolResult>,
+    ) -> Self {
+        Self {
+            role,
+            content,
+            tool_calls,
+            tool_results,
+        }
+    }
 }
 
 /// Role of a message sender
@@ -29,38 +48,62 @@ pub enum MessageRole {
 }
 
 /// A tool call requested by the LLM
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct ToolCall {
     /// Unique identifier for this tool call
-    pub id: String,
+    id: String,
     /// Name of the tool to call
-    pub name: String,
+    name: String,
     /// Arguments for the tool as JSON
-    pub arguments: Value,
+    arguments: Value,
+}
+
+impl ToolCall {
+    /// Creates a new tool call.
+    #[must_use]
+    pub fn new(id: String, name: String, arguments: Value) -> Self {
+        Self {
+            id,
+            name,
+            arguments,
+        }
+    }
 }
 
 /// Result from executing a tool
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct ToolResult {
     /// ID of the tool call this is responding to
-    pub tool_call_id: String,
+    tool_call_id: String,
     /// Result content as JSON
-    pub content: Value,
+    content: Value,
     /// Whether the tool execution was successful
-    pub is_error: bool,
+    is_error: bool,
+}
+
+impl ToolResult {
+    /// Creates a new tool result.
+    #[must_use]
+    pub fn new(tool_call_id: String, content: Value, is_error: bool) -> Self {
+        Self {
+            tool_call_id,
+            content,
+            is_error,
+        }
+    }
 }
 
 /// Configuration for LLM generation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct GenerationConfig {
     /// Maximum tokens to generate
-    pub max_tokens: Option<u32>,
+    max_tokens: Option<u32>,
     /// Temperature for sampling
-    pub temperature: Option<f32>,
+    temperature: Option<f32>,
     /// Top-p for nucleus sampling
-    pub top_p: Option<f32>,
+    top_p: Option<f32>,
     /// Stop sequences
-    pub stop_sequences: Vec<String>,
+    stop_sequences: Vec<String>,
 }
 
 impl Default for GenerationConfig {
@@ -75,25 +118,49 @@ impl Default for GenerationConfig {
 }
 
 /// Response from LLM generation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct GenerationResponse {
     /// Generated message
-    pub message: Message,
+    message: Message,
     /// Usage statistics
-    pub usage: TokenUsage,
+    usage: TokenUsage,
     /// Finish reason
-    pub finish_reason: FinishReason,
+    finish_reason: FinishReason,
+}
+
+impl GenerationResponse {
+    /// Creates a new generation response.
+    #[must_use]
+    pub fn new(message: Message, usage: TokenUsage, finish_reason: FinishReason) -> Self {
+        Self {
+            message,
+            usage,
+            finish_reason,
+        }
+    }
 }
 
 /// Token usage statistics
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Getters)]
 pub struct TokenUsage {
     /// Tokens in the prompt
-    pub prompt_tokens: u32,
+    prompt_tokens: u32,
     /// Tokens in the completion
-    pub completion_tokens: u32,
+    completion_tokens: u32,
     /// Total tokens used
-    pub total_tokens: u32,
+    total_tokens: u32,
+}
+
+impl TokenUsage {
+    /// Creates a new token usage record.
+    #[must_use]
+    pub fn new(prompt_tokens: u32, completion_tokens: u32, total_tokens: u32) -> Self {
+        Self {
+            prompt_tokens,
+            completion_tokens,
+            total_tokens,
+        }
+    }
 }
 
 /// Reason the model stopped generating
@@ -112,14 +179,26 @@ pub enum FinishReason {
 }
 
 /// Tool schema for LLM
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct ToolSchema {
     /// Tool name
-    pub name: String,
+    name: String,
     /// Tool description
-    pub description: String,
+    description: String,
     /// JSON schema for tool parameters
-    pub parameters: Value,
+    parameters: Value,
+}
+
+impl ToolSchema {
+    /// Creates a new tool schema.
+    #[must_use]
+    pub fn new(name: String, description: String, parameters: Value) -> Self {
+        Self {
+            name,
+            description,
+            parameters,
+        }
+    }
 }
 
 /// Adapter trait for different LLM providers

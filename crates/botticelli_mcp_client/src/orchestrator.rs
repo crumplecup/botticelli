@@ -81,38 +81,38 @@ impl Orchestrator {
                 .await?;
 
             debug!(
-                finish_reason = ?response.finish_reason,
-                tokens = response.usage.total_tokens,
+                finish_reason = ?response.finish_reason(),
+                tokens = response.usage().total_tokens(),
                 "Received LLM response"
             );
 
             // Check finish reason
-            match response.finish_reason {
+            match response.finish_reason() {
                 FinishReason::Stop => {
                     // Natural completion - return final message
                     info!(iteration, "Execution complete");
-                    return Ok(response.message.content);
+                    return Ok(response.message().content().clone());
                 }
                 FinishReason::ToolCalls => {
                     // Process tool calls
                     debug!(
-                        tool_call_count = response.message.tool_calls.len(),
+                        tool_call_count = response.message().tool_calls().len(),
                         "Processing tool calls"
                     );
 
                     let tool_results = self
-                        .execute_tools(&response.message.tool_calls)
+                        .execute_tools(response.message().tool_calls())
                         .await?;
 
                     // Add assistant message and tool results to conversation
-                    conversation.push(response.message);
+                    conversation.push(response.message().clone());
 
-                    let tool_message = Message {
-                        role: MessageRole::Tool,
-                        content: String::new(),
-                        tool_calls: Vec::new(),
+                    let tool_message = Message::new(
+                        MessageRole::Tool,
+                        String::new(),
+                        Vec::new(),
                         tool_results,
-                    };
+                    );
                     conversation.push(tool_message);
                 }
                 FinishReason::MaxTokens => {
@@ -145,11 +145,11 @@ impl Orchestrator {
 
         tool_infos
             .into_iter()
-            .map(|info| LlmToolSchema {
-                name: info.name.clone(),
-                description: info.description.clone().unwrap_or_default(),
-                parameters: info.input_schema.clone(),
-            })
+            .map(|info| LlmToolSchema::new(
+                info.name.clone(),
+                info.description.clone().unwrap_or_default(),
+                info.input_schema.clone(),
+            ))
             .collect()
     }
 
@@ -159,31 +159,31 @@ impl Orchestrator {
         let mut results = Vec::new();
 
         for call in tool_calls {
-            debug!(tool = %call.name, id = %call.id, "Executing tool");
+            debug!(tool = %call.name(), id = %call.id(), "Executing tool");
 
             let result = self
                 .registry
-                .execute_tool(&call.name, call.arguments.clone())
+                .execute_tool(call.name(), call.arguments().clone())
                 .await;
 
             let tool_result = match result {
                 Ok(content) => {
                     let content_json = content_to_json(&content)?;
-                    ToolResult {
-                        tool_call_id: call.id.clone(),
-                        content: content_json,
-                        is_error: false,
-                    }
+                    ToolResult::new(
+                        call.id().clone(),
+                        content_json,
+                        false,
+                    )
                 }
                 Err(e) => {
-                    warn!(tool = %call.name, error = ?e, "Tool execution failed");
-                    ToolResult {
-                        tool_call_id: call.id.clone(),
-                        content: serde_json::json!({
+                    warn!(tool = %call.name(), error = ?e, "Tool execution failed");
+                    ToolResult::new(
+                        call.id().clone(),
+                        serde_json::json!({
                             "error": e.to_string()
                         }),
-                        is_error: true,
-                    }
+                        true,
+                    )
                 }
             };
 

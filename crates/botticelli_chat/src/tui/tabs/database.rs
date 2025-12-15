@@ -808,7 +808,7 @@ impl DatabaseTab {
             let mut sorted_keys: Vec<_> = obj.keys().collect();
             sorted_keys.sort();
 
-            for (i, key) in sorted_keys.iter().enumerate().skip(self.detail_scroll) {
+            for (_i, key) in sorted_keys.iter().enumerate().skip(self.detail_scroll) {
                 if lines.len() > area.height as usize - 4 {
                     break;
                 }

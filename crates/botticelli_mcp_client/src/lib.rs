@@ -33,6 +33,7 @@ pub use orchestrator::{tool_info_to_provider_schema, tool_info_to_schema, Orches
 pub use retry::{CircuitBreaker, CircuitState, RetryConfig};
 pub use tool_executor::ToolDefinition;
 pub use tool_registry::{ToolHandler, ToolRegistry};
+pub use tools::register_internal_tools;
 pub use unified_client::{
     ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics,
     UnifiedMcpClient, extract_tool_calls,

@@ -42,7 +42,7 @@ impl LlmAdapter for DriverAdapter {
         // Convert messages to core format
         let core_messages: Vec<CoreMessage> = messages
             .iter()
-            .filter_map(|msg| convert_message_to_core(msg))
+            .filter_map(convert_message_to_core)
             .collect();
 
         // Create request
@@ -96,14 +96,14 @@ impl LlmAdapter for DriverAdapter {
 
 /// Convert MCP message to core message format.
 fn convert_message_to_core(msg: &Message) -> Option<CoreMessage> {
-    let role = match msg.role {
+    let role = match msg.role() {
         MessageRole::User => Role::User,
         MessageRole::Assistant => Role::Assistant,
         MessageRole::System => return None, // System handled separately
         MessageRole::Tool => return None,   // Tool results embedded differently
     };
 
-    let inputs = vec![Input::Text(msg.content.clone())];
+    let inputs = vec![Input::Text(msg.content().clone())];
 
     Some(
         CoreMessage::builder()
@@ -132,11 +132,11 @@ fn convert_response_from_core(
         Output::ToolCalls(calls) => {
             let llm_calls = calls
                 .iter()
-                .map(|call| crate::llm_adapter::ToolCall {
-                    id: call.id().clone(),
-                    name: call.name().clone(),
-                    arguments: call.arguments().clone(),
-                })
+                .map(|call| crate::llm_adapter::ToolCall::new(
+                    call.id().clone(),
+                    call.name().clone(),
+                    call.arguments().clone(),
+                ))
                 .collect();
             (String::new(), llm_calls, FinishReason::ToolCalls)
         }
@@ -150,29 +150,29 @@ fn convert_response_from_core(
         }
     };
 
-    let message = Message {
-        role: MessageRole::Assistant,
+    let message = Message::new(
+        MessageRole::Assistant,
         content,
         tool_calls,
-        tool_results: Vec::new(),
-    };
+        Vec::new(),
+    );
 
     // Extract usage if available
     let usage = if let Some(usage_data) = response.usage() {
-        TokenUsage {
-            prompt_tokens: *usage_data.input_tokens() as u32,
-            completion_tokens: *usage_data.output_tokens() as u32,
-            total_tokens: *usage_data.total_tokens() as u32,
-        }
+        TokenUsage::new(
+            *usage_data.input_tokens() as u32,
+            *usage_data.output_tokens() as u32,
+            *usage_data.total_tokens() as u32,
+        )
     } else {
         TokenUsage::default()
     };
 
-    Ok(GenerationResponse {
+    Ok(GenerationResponse::new(
         message,
         usage,
         finish_reason,
-    })
+    ))
 }
 
 /// Convert core StopReason to LlmAdapter FinishReason.

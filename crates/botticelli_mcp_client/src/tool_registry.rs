@@ -23,6 +23,14 @@ pub struct ToolRegistry {
     handlers: Arc<HashMap<String, Arc<dyn ToolHandler>>>,
 }
 
+impl std::fmt::Debug for ToolRegistry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ToolRegistry")
+            .field("tool_count", &self.handlers.len())
+            .finish()
+    }
+}
+
 impl ToolRegistry {
     /// Create a new tool registry
     #[instrument]

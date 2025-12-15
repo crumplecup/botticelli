@@ -1,6 +1,7 @@
 //! Unified MCP client for external tool execution via MCP servers.
 
 use crate::tool_executor::ToolDefinition;
+use crate::tool_registry::ToolRegistry;
 use crate::external_client::{ExternalMcpClient, ExternalServerConfig};
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use botticelli_core::{Input, Message, Role};
@@ -9,12 +10,35 @@ use std::collections::HashMap;
 use tracing::{debug, info, instrument, warn};
 use typed_builder::TypedBuilder;
 
-/// Unified MCP client that orchestrates external tool execution.
+/// Unified MCP client that orchestrates internal and external tool execution.
 ///
-/// This client connects to external MCP servers (filesystem, git, search, etc.)
-/// and routes tool calls to the appropriate server.
+/// This client:
+/// - Executes internal Botticelli tools via ToolRegistry
+/// - Connects to external MCP servers (filesystem, git, search, etc.)
+/// - Routes tool calls to the appropriate handler
+///
+/// # Example
+///
+/// ```no_run
+/// use botticelli_mcp_client::{UnifiedMcpClient, register_internal_tools};
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// // Create client with internal tools registered
+/// let mut client = UnifiedMcpClient::builder().build();
+/// register_internal_tools(client.internal_registry_mut(), "./narratives")?;
+///
+/// // Now internal narrative tools are available for LLM orchestration
+/// let tools = client.list_all_tools();
+/// assert!(tools.iter().any(|t| t.name == "create_narrative"));
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, TypedBuilder)]
 pub struct UnifiedMcpClient {
+    /// Internal tool registry for Botticelli capabilities
+    #[builder(default)]
+    internal_registry: ToolRegistry,
+
     /// External MCP server clients (by name)
     #[builder(default)]
     external_clients: HashMap<String, ExternalMcpClient>,
@@ -65,21 +89,35 @@ impl UnifiedMcpClient {
         Ok(())
     }
 
-    /// Get all available tool definitions from external servers.
+    /// Get all available tool definitions from internal registry and external servers.
     #[instrument(skip(self))]
     pub fn list_all_tools(&self) -> Vec<ToolDefinition> {
         let mut tools = Vec::new();
+
+        // Add internal tools from registry
+        for tool_info in self.internal_registry.list_tools() {
+            tools.push(ToolDefinition {
+                name: tool_info.name.clone(),
+                description: tool_info.description.clone().unwrap_or_default(),
+                input_schema: tool_info.input_schema.clone(),
+            });
+        }
 
         // Add external tools
         for client in self.external_clients.values() {
             tools.extend(client.tools());
         }
 
-        debug!(total_tools = tools.len(), "Listed all tools");
+        debug!(
+            internal_tools = self.internal_registry.tool_count(),
+            external_tools = self.external_clients.len(),
+            total_tools = tools.len(),
+            "Listed all tools"
+        );
         tools
     }
 
-    /// Execute a tool call by routing to appropriate server.
+    /// Execute a tool call by routing to internal registry or external server.
     #[instrument(skip(self, arguments), fields(tool_name))]
     pub async fn execute_tool(
         &mut self,
@@ -87,6 +125,33 @@ impl UnifiedMcpClient {
         arguments: Value,
     ) -> McpClientResult<Value> {
         debug!("Executing tool: {}", tool_name);
+
+        // Try internal registry first
+        if self.internal_registry.has_tool(tool_name) {
+            debug!("Routing to internal tool registry");
+            let content = self.internal_registry.execute_tool(tool_name, arguments).await?;
+            
+            // Convert pmcp::Content to JSON Value
+            let result = content
+                .iter()
+                .map(|c| match c {
+                    pmcp::Content::Text { text } => serde_json::json!({ "text": text }),
+                    pmcp::Content::Image { data, mime_type } => serde_json::json!({
+                        "type": "image",
+                        "data": data,
+                        "mime_type": mime_type
+                    }),
+                    pmcp::Content::Resource { uri, text, mime_type } => serde_json::json!({
+                        "type": "resource",
+                        "uri": uri,
+                        "text": text,
+                        "mime_type": mime_type
+                    }),
+                })
+                .collect::<Vec<_>>();
+            
+            return Ok(serde_json::json!(result));
+        }
 
         // Try external servers
         for (server_name, client) in &mut self.external_clients {
@@ -99,7 +164,7 @@ impl UnifiedMcpClient {
         // Tool not found anywhere
         Err(McpClientError::new(McpClientErrorKind::ToolNotFound(
             format!(
-                "Tool '{}' not found in any connected external server",
+                "Tool '{}' not found in internal registry or any external server",
                 tool_name
             ),
         )))
@@ -293,9 +358,20 @@ impl UnifiedMcpClient {
     /// Get metrics about connected servers and tool usage.
     pub fn get_metrics(&self) -> UnifiedClientMetrics {
         UnifiedClientMetrics {
+            internal_tool_count: self.internal_registry.tool_count(),
             external_server_count: self.external_clients.len(),
             total_tool_count: self.list_all_tools().len(),
         }
+    }
+
+    /// Get mutable access to internal tool registry for registration.
+    pub fn internal_registry_mut(&mut self) -> &mut ToolRegistry {
+        &mut self.internal_registry
+    }
+
+    /// Get immutable access to internal tool registry.
+    pub fn internal_registry(&self) -> &ToolRegistry {
+        &self.internal_registry
     }
 }
 
@@ -321,8 +397,8 @@ pub fn extract_tool_calls(response: &str) -> Option<Vec<ToolCall>> {
             let mut calls = Vec::new();
 
             for item in content {
-                if item.get("type").and_then(|t| t.as_str()) == Some("tool_use") {
-                    if let (Some(name), Some(input)) = (
+                if item.get("type").and_then(|t| t.as_str()) == Some("tool_use")
+                    && let (Some(name), Some(input)) = (
                         item.get("name").and_then(|n| n.as_str()),
                         item.get("input"),
                     ) {
@@ -331,7 +407,6 @@ pub fn extract_tool_calls(response: &str) -> Option<Vec<ToolCall>> {
                             arguments: input.clone(),
                         });
                     }
-                }
             }
 
             if !calls.is_empty() {
@@ -359,8 +434,10 @@ pub trait LlmBackend: Send + Sync {
 /// Metrics about the unified client state.
 #[derive(Debug, Clone)]
 pub struct UnifiedClientMetrics {
+    /// Number of internal tools registered
+    pub internal_tool_count: usize,
     /// Number of external servers connected
     pub external_server_count: usize,
-    /// Total tools available from external servers
+    /// Total tools available (internal + external)
     pub total_tool_count: usize,
 }

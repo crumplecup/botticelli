@@ -225,11 +225,10 @@ impl ExternalMcpClient {
     /// Check if server has a specific tool.
     pub fn has_tool(&self, tool_name: &str) -> bool {
         // Check allowed list first
-        if let Some(allowed) = &self.allowed_tools {
-            if !allowed.contains(&tool_name.to_string()) {
+        if let Some(allowed) = &self.allowed_tools
+            && !allowed.contains(&tool_name.to_string()) {
                 return false;
             }
-        }
 
         self.tools.iter().any(|t| t.name == tool_name)
     }

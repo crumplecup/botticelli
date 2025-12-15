@@ -21,4 +21,4 @@ pub use commands::{TuiCommand, Action};
 pub use events::{EventHandler, EventResult};
 
 // Re-export legacy API for backwards compatibility
-pub use legacy::{restore_terminal, setup_terminal, TuiInterface};
+pub use legacy::TuiInterface;
