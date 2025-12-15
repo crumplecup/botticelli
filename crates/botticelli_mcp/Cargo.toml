@@ -99,5 +99,10 @@ name = "botticelli-mcp-pmcp"
 path = "src/bin/botticelli-mcp-pmcp.rs"
 # No required features - works with any feature set
 
+[[bin]]
+name = "botticelli-mcp-pmcp-http"
+path = "src/bin/botticelli-mcp-pmcp-http.rs"
+# Placeholder for future HTTP support
+
 [package.metadata.docs.rs]
 all-features = true
