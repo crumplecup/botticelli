@@ -2,17 +2,22 @@
 
 mod carousel;
 mod helpers;
-mod registry;
+pub mod registry;
 mod session_tools;
-mod state;
+pub mod state;
 mod update;
-mod validation;
+pub mod validation;
 
 pub use carousel::ElicitCarouselTool;
 pub use helpers::ElicitationHelper;
 pub use registry::NarrativeRegistry;
 pub use session_tools::{
     CreateNarrativeSessionTool, ElicitActTool, ElicitMetadataTool, FinalizeNarrativeTool,
+};
+pub use state::{get_narrative_state, GetNarrativeStateInput, GetNarrativeStateOutput};
+pub use validation::{
+    apply_validation_fixes, validate_narrative, ApplyValidationFixesInput,
+    ApplyValidationFixesOutput, ValidateNarrativeInput, ValidateNarrativeOutput,
 };
 
 use crate::PartialNarrative;

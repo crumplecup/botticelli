@@ -14,6 +14,7 @@ mod execute_narrative;
 mod export_metrics;
 mod generate;
 mod generate_llm;
+mod get_narrative_state;
 mod metrics;
 mod modify_narrative;
 mod narrative_creation;
@@ -28,6 +29,7 @@ mod server_info;
 #[cfg(feature = "discord")]
 mod social;
 mod validate_narrative;
+mod validate_narrative_session;
 
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 pub use create_narrative::CreateNarrativeTool;
@@ -40,13 +42,16 @@ pub use discord::{
 pub use discord_workflow::DiscordContentWorkflowTool;
 pub use echo::EchoTool;
 pub use elicitation::{
-    CreateNarrativeSessionTool, ElicitActTool, ElicitCarouselTool, ElicitMetadataTool,
-    ElicitationHelper, FinalizeNarrativeTool, NarrativeRegistry,
+    ApplyValidationFixesInput, ApplyValidationFixesOutput, CreateNarrativeSessionTool,
+    ElicitActTool, ElicitCarouselTool, ElicitMetadataTool, ElicitationHelper,
+    FinalizeNarrativeTool, GetNarrativeStateInput, GetNarrativeStateOutput, NarrativeRegistry,
+    PartialNarrativeRegistry, ValidateNarrativeInput, ValidateNarrativeOutput,
 };
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use export_metrics::ExportMetricsTool;
 pub use generate::GenerateTool;
+pub use get_narrative_state::GetNarrativeStateTool;
 pub use metrics::{ActMetrics, ExecutionMetrics};
 pub use modify_narrative::ModifyNarrativeTool;
 pub use narrative_creation::{
@@ -67,6 +72,7 @@ pub use server_info::ServerInfoTool;
 #[cfg(feature = "discord")]
 pub use social::{DiscordBotCommandTool, DiscordPostTool};
 pub use validate_narrative::ValidateNarrativeTool;
+pub use validate_narrative_session::{ApplyValidationFixesTool, ValidateNarrativeSessionTool};
 
 // Export shared narrative utilities
 pub use narrative_utils::{Act, NarrativeHelper};
@@ -194,7 +200,16 @@ impl Default for ToolRegistry {
         )));
         registry.register(Arc::new(ElicitActTool::new(narrative_registry.clone())));
         registry.register(Arc::new(ElicitCarouselTool::new(narrative_registry.clone())));
-        registry.register(Arc::new(FinalizeNarrativeTool::new(narrative_registry)));
+        registry.register(Arc::new(FinalizeNarrativeTool::new(narrative_registry.clone())));
+        
+        // Wrap for the new tools that expect Arc
+        let narrative_registry_arc = Arc::new(narrative_registry);
+        registry.register(Arc::new(GetNarrativeStateTool::new(narrative_registry_arc.clone())));
+        registry.register(Arc::new(ValidateNarrativeSessionTool::new(
+            narrative_registry_arc.clone(),
+        )));
+        registry.register(Arc::new(ApplyValidationFixesTool::new(narrative_registry_arc)));
+
 
         // Narrative generation tools (Phase 1)
         registry.register(Arc::new(CreateNarrativeTool));
