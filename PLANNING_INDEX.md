@@ -333,3 +333,11 @@ This index tracks all planning documents in the workspace. When documents are co
   - Battle-tested SDK with OAuth, batching, middleware, WebSocket support
   - 13-day timeline with measurable success criteria
   - Status: 📋 Planning document - ready for implementation
+
+- **MCP_CLIENT_INTEGRATION_STRATEGY.md** - `current` (2025-12-15)
+  - Strategy for integrating pmcp Client to connect to external MCP servers
+  - Leverages existing pmcp SDK for ecosystem access (filesystem, git, search, etc.)
+  - 4 phases: Client Wrapper, Narrative Integration, Enhanced Features, Testing
+  - Enables Botticelli as complete platform: MCP server + client + orchestrator
+  - 10-day timeline with minimal risk
+  - Status: 📋 Planning document - ready for implementation
