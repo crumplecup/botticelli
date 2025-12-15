@@ -4,7 +4,6 @@
 //! enabling LLM-driven responses to Discord interactions.
 
 use botticelli_mcp_client::{McpClientError, Orchestrator};
-use serde_json::{json, Value};
 use std::sync::Arc;
 
 /// Bridge between Discord and MCP orchestration.

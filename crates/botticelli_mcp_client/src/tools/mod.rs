@@ -5,17 +5,19 @@
 
 mod elicitation;
 mod narrative;
+mod registry_ops;
 
 use crate::{McpClientResult, ToolRegistry};
 use std::sync::Arc;
 
 pub use elicitation::{
-    CreateElicitationSessionTool, ElicitActTool, ElicitMetadataTool, ElicitationRegistry,
-    FinalizeElicitationTool,
+    CreateCarouselTool, CreateElicitationSessionTool, ElicitActTool, ElicitMetadataTool,
+    ElicitationRegistry, FinalizeElicitationTool,
 };
 pub use narrative::{
     CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool,
 };
+pub use registry_ops::{GenericRegistry, GetRegistryItemTool, ListRegistryKeysTool, UpsertRegistryItemTool};
 
 /// Register all available internal tools into the registry.
 ///
@@ -75,7 +77,12 @@ pub fn register_internal_tools(
 
     registry.register(
         "finalize_elicitation".to_string(),
-        Arc::new(FinalizeElicitationTool::new(elicitation_registry)),
+        Arc::new(FinalizeElicitationTool::new(elicitation_registry.clone())),
+    )?;
+
+    registry.register(
+        "create_carousel".to_string(),
+        Arc::new(CreateCarouselTool::new(elicitation_registry)),
     )?;
 
     Ok(())

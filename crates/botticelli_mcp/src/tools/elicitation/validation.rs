@@ -1,4 +1,4 @@
-use crate::NarrativeRegistry;
+use crate::tools::elicitation::PartialNarrativeRegistry;
 use botticelli_error::{McpError, McpResult};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
@@ -62,15 +62,15 @@ pub struct ApplyValidationFixesOutput {
 
 #[instrument(skip(registry), fields(narrative_id, strict))]
 pub async fn validate_narrative(
-    registry: &NarrativeRegistry,
+    registry: &PartialNarrativeRegistry,
     input: ValidateNarrativeInput,
 ) -> McpResult<ValidateNarrativeOutput> {
     debug!("Validating narrative");
 
     let narrative_id = Uuid::parse_str(&input.narrative_id)
-        .map_err(|e| McpError::new(format!("Invalid narrative_id: {}", e)))?;
+        .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
-    let partial = registry.get_narrative(narrative_id).await?;
+    let partial = registry.get_narrative(narrative_id)?;
 
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
@@ -128,12 +128,12 @@ pub async fn validate_narrative(
         }
     }
 
-    if partial.toc.is_empty() && !partial.acts.is_empty() {
+    if partial.act_order.is_empty() && !partial.acts.is_empty() {
         warnings.push(ValidationIssue {
             severity: Severity::Medium,
-            field: "toc".to_string(),
-            message: "Table of contents is empty".to_string(),
-            suggestion: "Add TOC entries matching your acts".to_string(),
+            field: "act_order".to_string(),
+            message: "Act order is empty but acts exist".to_string(),
+            suggestion: "Define act execution order".to_string(),
             auto_fixable: true,
         });
     }
@@ -199,31 +199,19 @@ pub async fn validate_narrative(
 
 #[instrument(skip(registry), fields(narrative_id))]
 pub async fn apply_validation_fixes(
-    registry: &NarrativeRegistry,
+    registry: &PartialNarrativeRegistry,
     input: ApplyValidationFixesInput,
 ) -> McpResult<ApplyValidationFixesOutput> {
     debug!("Applying validation fixes");
 
     let narrative_id = Uuid::parse_str(&input.narrative_id)
-        .map_err(|e| McpError::new(format!("Invalid narrative_id: {}", e)))?;
+        .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
     let mut fixes_applied = Vec::new();
 
     registry
         .update_narrative(narrative_id, |partial| {
             let fix_all = input.fix_types.contains(&"all".to_string());
-
-            if fix_all || input.fix_types.contains(&"empty_toc".to_string()) {
-                if partial.toc.is_empty() && !partial.acts.is_empty() {
-                    partial.toc = partial
-                        .act_order
-                        .iter()
-                        .map(|name| name.clone())
-                        .collect();
-                    fixes_applied.push("Added TOC entries from acts".to_string());
-                    debug!("Added TOC entries");
-                }
-            }
 
             if fix_all || input.fix_types.contains(&"missing_defaults".to_string()) {
                 if partial.model.is_none() {

@@ -1,4 +1,4 @@
-use crate::NarrativeRegistry;
+use crate::tools::elicitation::PartialNarrativeRegistry;
 use botticelli_error::{McpError, McpResult};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
@@ -43,15 +43,15 @@ pub struct NarrativeStateSummary {
 
 #[instrument(skip(registry), fields(narrative_id, format))]
 pub async fn get_narrative_state(
-    registry: &NarrativeRegistry,
+    registry: &PartialNarrativeRegistry,
     input: GetNarrativeStateInput,
 ) -> McpResult<GetNarrativeStateOutput> {
     debug!("Getting narrative state");
 
     let narrative_id = Uuid::parse_str(&input.narrative_id)
-        .map_err(|e| McpError::new(format!("Invalid narrative_id: {}", e)))?;
+        .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
-    let partial = registry.get_narrative(narrative_id).await?;
+    let partial = registry.get_narrative(narrative_id)?;
 
     let acts_count = partial.acts.len();
     let acts: Vec<String> = partial.act_order.clone();
@@ -82,7 +82,7 @@ pub async fn get_narrative_state(
         match partial.to_toml() {
             Ok(toml_str) => Some(toml_str),
             Err(e) => {
-                return Err(McpError::new(format!(
+                return Err(McpError::invalid_input(format!(
                     "Failed to convert to TOML: {}",
                     e
                 )))

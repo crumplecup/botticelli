@@ -5,9 +5,11 @@ use botticelli_narrative::CarouselConfig;
 use derive_builder::Builder;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::collections::HashMap;
 use tracing::instrument;
 
+use crate::elicitation::registry::RegistryOperations;
 use crate::tools::NarrativeHelper;
 use botticelli_error::{McpError, McpResult};
 
@@ -174,5 +176,47 @@ impl PartialNarrative {
 
         botticelli_narrative::Narrative::from_toml_str(&toml, self.name.as_deref())
             .map_err(|e| McpError::execution_failed(e.to_string()))
+    }
+}
+
+impl RegistryOperations for PartialNarrative {
+    type Key = String;
+
+    fn registry_key(&self) -> Self::Key {
+        self.name.clone().unwrap_or_else(|| "unnamed".to_string())
+    }
+
+    fn from_json_args(args: Value) -> McpResult<Self> {
+        serde_json::from_value(args)
+            .map_err(|e| McpError::invalid_input(format!("Failed to deserialize PartialNarrative: {}", e)))
+    }
+
+    fn to_json(&self) -> McpResult<Value> {
+        serde_json::to_value(self)
+            .map_err(|e| McpError::execution_failed(format!("Failed to serialize PartialNarrative: {}", e)))
+    }
+
+    fn update_from_json(&mut self, args: Value) -> McpResult<()> {
+        let obj = args.as_object()
+            .ok_or_else(|| McpError::invalid_input("Expected JSON object".to_string()))?;
+
+        // Update fields present in JSON
+        if let Some(name) = obj.get("name").and_then(|v| v.as_str()) {
+            self.name = Some(name.to_string());
+        }
+        if let Some(desc) = obj.get("description").and_then(|v| v.as_str()) {
+            self.description = Some(desc.to_string());
+        }
+        if let Some(model) = obj.get("model").and_then(|v| v.as_str()) {
+            self.model = Some(model.to_string());
+        }
+        if let Some(temp) = obj.get("temperature").and_then(|v| v.as_f64()) {
+            self.temperature = Some(temp);
+        }
+        if let Some(max) = obj.get("max_tokens").and_then(|v| v.as_u64()) {
+            self.max_tokens = Some(max as u32);
+        }
+
+        Ok(())
     }
 }

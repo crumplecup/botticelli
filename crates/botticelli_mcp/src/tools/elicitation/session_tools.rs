@@ -1,6 +1,7 @@
 //! MCP tools for session-based narrative elicitation.
 
-use crate::tools::elicitation::registry::NarrativeRegistry;
+use crate::elicitation::{PartialAct, PartialNarrative};
+use crate::tools::elicitation::PartialNarrativeRegistry;
 use crate::tools::McpTool;
 use crate::NarrativeHelper;
 use async_trait::async_trait;
@@ -11,12 +12,12 @@ use uuid::Uuid;
 
 /// Tool for creating a new narrative elicitation session.
 pub struct CreateNarrativeSessionTool {
-    registry: NarrativeRegistry,
+    registry: PartialNarrativeRegistry,
 }
 
 impl CreateNarrativeSessionTool {
     /// Create tool with registry.
-    pub fn new(registry: NarrativeRegistry) -> Self {
+    pub fn new(registry: PartialNarrativeRegistry) -> Self {
         Self { registry }
     }
 }
@@ -67,17 +68,20 @@ impl McpTool for CreateNarrativeSessionTool {
         };
 
         // Initialize session state
-        let state = json!({
-            "description": description,
-            "suggested_name": suggested_name,
-            "acts": acts.iter().map(|a| json!({
-                "name": a.name,
-                "prompt": a.prompt
-            })).collect::<Vec<_>>(),
-            "metadata": {}
-        });
+        let mut partial = PartialNarrative::new();
+        partial.description = Some(description.to_string());
+        partial.name = Some(suggested_name.clone());
+        
+        // Add acts
+        for act in &acts {
+            partial.acts.insert(
+                act.name.clone(),
+                PartialAct::new(act.prompt.clone(), None, None, vec![], None),
+            );
+            partial.act_order.push(act.name.clone());
+        }
 
-        let narrative_id = self.registry.create_session(state);
+        let narrative_id = self.registry.create_session(partial);
 
         debug!(narrative_id = %narrative_id, acts = acts.len(), "Session created");
 
@@ -95,12 +99,12 @@ impl McpTool for CreateNarrativeSessionTool {
 
 /// Tool for setting narrative metadata.
 pub struct ElicitMetadataTool {
-    registry: NarrativeRegistry,
+    registry: PartialNarrativeRegistry,
 }
 
 impl ElicitMetadataTool {
     /// Create tool with registry.
-    pub fn new(registry: NarrativeRegistry) -> Self {
+    pub fn new(registry: PartialNarrativeRegistry) -> Self {
         Self { registry }
     }
 }
@@ -152,39 +156,31 @@ impl McpTool for ElicitMetadataTool {
             .and_then(|s| Uuid::parse_str(s).ok())
             .ok_or_else(|| McpError::invalid_input("Invalid narrative_id".to_string()))?;
 
-        let mut state = self
-            .registry
-            .get(&narrative_id)
-            .ok_or_else(|| McpError::invalid_input("Narrative session not found".to_string()))?;
+        // Update fields if provided
+        self.registry.update_narrative(narrative_id, |partial| {
+            if let Some(name) = input.get("name").and_then(|v| v.as_str()) {
+                partial.name = Some(name.to_string());
+            }
 
-        // Update metadata fields if provided
-        let metadata = state["metadata"].as_object().cloned().unwrap_or_default();
-        let mut metadata = metadata;
+            if let Some(desc) = input.get("description").and_then(|v| v.as_str()) {
+                partial.description = Some(desc.to_string());
+            }
 
-        if let Some(name) = input.get("name").and_then(|v| v.as_str()) {
-            metadata.insert("name".to_string(), json!(name));
-        }
+            if let Some(model) = input.get("default_model").and_then(|v| v.as_str()) {
+                partial.model = Some(model.to_string());
+            }
 
-        if let Some(desc) = input.get("description").and_then(|v| v.as_str()) {
-            metadata.insert("description".to_string(), json!(desc));
-        }
-
-        if let Some(model) = input.get("default_model").and_then(|v| v.as_str()) {
-            metadata.insert("default_model".to_string(), json!(model));
-        }
-
-        if let Some(temp) = input.get("default_temperature").and_then(|v| v.as_f64()) {
-            metadata.insert("default_temperature".to_string(), json!(temp));
-        }
-
-        state["metadata"] = json!(metadata);
-        self.registry.update(&narrative_id, state.clone());
+            if let Some(temp) = input.get("default_temperature").and_then(|v| v.as_f64()) {
+                partial.temperature = Some(temp);
+            }
+            
+            Ok(())
+        }).await?;
 
         debug!(narrative_id = %narrative_id, "Metadata updated");
 
         Ok(json!({
             "narrative_id": narrative_id.to_string(),
-            "metadata": metadata,
             "status": "updated"
         }))
     }
@@ -192,12 +188,12 @@ impl McpTool for ElicitMetadataTool {
 
 /// Tool for adding or updating an act.
 pub struct ElicitActTool {
-    registry: NarrativeRegistry,
+    registry: PartialNarrativeRegistry,
 }
 
 impl ElicitActTool {
     /// Create tool with registry.
-    pub fn new(registry: NarrativeRegistry) -> Self {
+    pub fn new(registry: PartialNarrativeRegistry) -> Self {
         Self { registry }
     }
 }
@@ -261,34 +257,32 @@ impl McpTool for ElicitActTool {
 
         let mut state = self
             .registry
-            .get(&narrative_id)
-            .ok_or_else(|| McpError::invalid_input("Narrative session not found".to_string()))?;
+            .get_narrative(narrative_id)?;
 
         // Update or add act
-        let mut acts = state["acts"].as_array().cloned().unwrap_or_default();
+        let model = input.get("model").and_then(|v| v.as_str()).map(String::from);
+        let temperature = input.get("temperature").and_then(|v| v.as_f64());
+        
+        let act = PartialAct::new(
+            prompt.to_string(),
+            model,
+            temperature,
+            vec![],
+            None,
+        );
 
-        let mut act = json!({
-            "name": act_name,
-            "prompt": prompt
-        });
+        // Add to registry
+        self.registry.update_narrative(narrative_id, |partial| {
+            partial.acts.insert(act_name.to_string(), act.clone());
+            if !partial.act_order.contains(&act_name.to_string()) {
+                partial.act_order.push(act_name.to_string());
+            }
+            Ok(())
+        }).await?;
 
-        if let Some(model) = input.get("model").and_then(|v| v.as_str()) {
-            act["model"] = json!(model);
-        }
-
-        if let Some(temp) = input.get("temperature").and_then(|v| v.as_f64()) {
-            act["temperature"] = json!(temp);
-        }
-
-        // Replace if exists, otherwise add
-        if let Some(pos) = acts.iter().position(|a| a["name"] == act_name) {
-            acts[pos] = act;
-        } else {
-            acts.push(act);
-        }
-
-        state["acts"] = json!(acts);
-        self.registry.update(&narrative_id, state.clone());
+        // Get updated count
+        let partial = self.registry.get_narrative(narrative_id)?;
+        let acts_count = partial.acts.len();
 
         debug!(narrative_id = %narrative_id, act_name, "Act updated");
 
@@ -296,19 +290,19 @@ impl McpTool for ElicitActTool {
             "narrative_id": narrative_id.to_string(),
             "act_name": act_name,
             "status": "updated",
-            "total_acts": acts.len()
+            "total_acts": acts_count
         }))
     }
 }
 
 /// Tool for finalizing and generating TOML.
 pub struct FinalizeNarrativeTool {
-    registry: NarrativeRegistry,
+    registry: PartialNarrativeRegistry,
 }
 
 impl FinalizeNarrativeTool {
     /// Create tool with registry.
-    pub fn new(registry: NarrativeRegistry) -> Self {
+    pub fn new(registry: PartialNarrativeRegistry) -> Self {
         Self { registry }
     }
 }
@@ -349,8 +343,8 @@ impl McpTool for FinalizeNarrativeTool {
             .remove(&narrative_id)
             .ok_or_else(|| McpError::invalid_input("Narrative session not found".to_string()))?;
 
-        // Generate TOML from state
-        let toml = generate_toml_from_state(&state)?;
+        // Generate TOML from PartialNarrative
+        let toml = state.to_toml()?;
 
         debug!(narrative_id = %narrative_id, "Narrative finalized");
 
@@ -360,63 +354,4 @@ impl McpTool for FinalizeNarrativeTool {
             "status": "finalized"
         }))
     }
-}
-
-/// Generate TOML from session state.
-fn generate_toml_from_state(state: &Value) -> McpResult<String> {
-    let metadata = &state["metadata"];
-    let acts = state["acts"]
-        .as_array()
-        .ok_or_else(|| McpError::invalid_input("Missing acts".to_string()))?;
-
-    let name = metadata["name"]
-        .as_str()
-        .ok_or_else(|| McpError::invalid_input("Missing name".to_string()))?;
-
-    let description = metadata["description"]
-        .as_str()
-        .unwrap_or("Generated narrative");
-
-    let mut toml = String::new();
-
-    // [narrative] section
-    toml.push_str("[narrative]\n");
-    toml.push_str(&format!("name = \"{}\"\n", name));
-    toml.push_str(&format!("description = \"{}\"\n", description));
-
-    if let Some(model) = metadata["default_model"].as_str() {
-        toml.push_str(&format!("model = \"{}\"\n", model));
-    }
-
-    if let Some(temp) = metadata["default_temperature"].as_f64() {
-        toml.push_str(&format!("temperature = {}\n", temp));
-    }
-
-    toml.push('\n');
-
-    // [toc] section
-    toml.push_str("[toc]\n");
-    toml.push_str("order = [");
-    for (i, act) in acts.iter().enumerate() {
-        if i > 0 {
-            toml.push_str(", ");
-        }
-        let act_name = act["name"].as_str().unwrap_or("unknown");
-        toml.push_str(&format!("\"{}\"", act_name));
-    }
-    toml.push_str("]\n\n");
-
-    // [acts] section
-    toml.push_str("[acts]\n");
-    for act in acts {
-        let act_name = act["name"].as_str().unwrap_or("unknown");
-        let prompt = act["prompt"].as_str().unwrap_or("");
-        toml.push_str(&format!(
-            "{} = \"{}\"\n",
-            act_name,
-            NarrativeHelper::escape_toml_string(prompt)
-        ));
-    }
-
-    Ok(toml)
 }

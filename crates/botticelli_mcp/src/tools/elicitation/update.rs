@@ -1,4 +1,4 @@
-use crate::NarrativeRegistry;
+use crate::tools::elicitation::PartialNarrativeRegistry;
 use botticelli_error::{McpError, McpResult};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
@@ -31,13 +31,13 @@ pub struct ValidationSummary {
 
 #[instrument(skip(registry), fields(narrative_id, update_count = input.updates.len()))]
 pub async fn update_narrative_field(
-    registry: &NarrativeRegistry,
+    registry: &PartialNarrativeRegistry,
     input: UpdateNarrativeFieldInput,
 ) -> McpResult<UpdateNarrativeFieldOutput> {
     debug!("Updating narrative fields");
 
     let narrative_id = Uuid::parse_str(&input.narrative_id)
-        .map_err(|e| McpError::new(format!("Invalid narrative_id: {}", e)))?;
+        .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
     let updates = input.updates;
     let mut updated_fields = Vec::new();

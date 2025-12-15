@@ -16,6 +16,7 @@ botticelli_mcp = { path = "../botticelli_mcp", version = "0.2.0" }
 botticelli_narrative = { path = "../botticelli_narrative", version = "0.2.0" }
 
 async-trait.workspace = true
+chrono.workspace = true
 derive-getters.workspace = true
 derive_more.workspace = true
 glob = "0.3"

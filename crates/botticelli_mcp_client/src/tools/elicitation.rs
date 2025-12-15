@@ -367,6 +367,63 @@ impl ToolHandler for ElicitActTool {
         }])
     }
 }
+/// Tool for executing narratives in carousel mode with multiple iterations.
+#[derive(Debug, Clone)]
+pub struct ExecuteCarouselTool {
+    registry: ElicitationRegistry,
+}
+
+impl ExecuteCarouselTool {
+    /// Create a new carousel execution tool.
+    pub fn new(registry: ElicitationRegistry) -> Self {
+        Self { registry }
+    }
+}
+
+#[async_trait]
+impl ToolHandler for ExecuteCarouselTool {
+    fn tool_info(&self) -> ToolInfo {
+        ToolInfo::new(
+            "execute_carousel",
+            Some("Execute a narrative in carousel mode with multiple iterations and budget management".to_string()),
+            json!({
+                "type": "object",
+                "properties": {
+                    "narrative_toml": {
+                        "type": "string",
+                        "description": "Complete narrative TOML with carousel configuration"
+                    }
+                },
+                "required": ["narrative_toml"]
+            }),
+        )
+    }
+
+    #[tracing::instrument(skip(self), fields(tool = "execute_carousel"))]
+    async fn execute(&self, arguments: Value) -> McpClientResult<Vec<Content>> {
+        let narrative_toml = arguments
+            .get("narrative_toml")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                    "Missing required 'narrative_toml' field".to_string(),
+                ))
+            })?;
+
+        // TODO: Parse narrative TOML and execute carousel
+        // Requires integration with NarrativeExecutor
+
+        tracing::warn!("Carousel execution requires narrative executor integration");
+
+        Ok(vec![Content::Text {
+            text: json!({
+                "status": "not_implemented",
+                "message": "Carousel execution requires full narrative executor integration",
+                "next_steps": "Need to wire NarrativeExecutor into MCP tool handler"
+            }).to_string(),
+        }])
+    }
+}
 
 /// Tool for finalizing elicitation and generating TOML.
 #[derive(Debug, Clone)]
@@ -515,6 +572,115 @@ fn generate_toml_from_state(state: &Value) -> McpClientResult<String> {
     }
 
     Ok(toml)
+}
+
+/// Tool for creating a carousel narrative.
+#[derive(Debug, Clone)]
+pub struct CreateCarouselTool {
+    registry: ElicitationRegistry,
+}
+
+impl CreateCarouselTool {
+    /// Create tool with registry.
+    pub fn new(registry: ElicitationRegistry) -> Self {
+        Self { registry }
+    }
+}
+
+#[async_trait]
+impl ToolHandler for CreateCarouselTool {
+    fn tool_info(&self) -> ToolInfo {
+        ToolInfo::new(
+            "create_carousel",
+            Some(
+                "Create a carousel narrative for iterative content generation. \
+                 Carousels execute multiple iterations with budget constraints."
+                    .to_string(),
+            ),
+            json!({
+                "type": "object",
+                "properties": {
+                    "iterations": {
+                        "type": "number",
+                        "description": "Maximum number of iterations to execute"
+                    },
+                    "estimated_tokens_per_iteration": {
+                        "type": "number",
+                        "description": "Estimated tokens per iteration for budget planning"
+                    },
+                    "continue_on_error": {
+                        "type": "boolean",
+                        "description": "Whether to continue executing on errors"
+                    },
+                    "narrative_template": {
+                        "type": "string",
+                        "description": "Narrative TOML template or path to use for each iteration"
+                    }
+                },
+                "required": ["iterations", "narrative_template"]
+            }),
+        )
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn execute(&self, arguments: Value) -> McpClientResult<Vec<Content>> {
+        let iterations: u32 = arguments["iterations"]
+            .as_u64()
+            .ok_or_else(|| {
+                McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                    "iterations must be a number".to_string(),
+                ))
+            })?
+            .try_into()
+            .map_err(|_| {
+                McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                    "iterations out of range".to_string(),
+                ))
+            })?;
+
+        let estimated_tokens = arguments
+            .get("estimated_tokens_per_iteration")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(1000);
+
+        let continue_on_error = arguments
+            .get("continue_on_error")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
+        let narrative_template = arguments["narrative_template"]
+            .as_str()
+            .ok_or_else(|| {
+                McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                    "narrative_template must be a string".to_string(),
+                ))
+            })?
+            .to_string();
+
+        // Create carousel configuration
+        let carousel_config = json!({
+            "iterations": iterations,
+            "estimated_tokens_per_iteration": estimated_tokens,
+            "continue_on_error": continue_on_error,
+            "narrative_template": narrative_template,
+            "created_at": chrono::Utc::now().to_rfc3339(),
+        });
+
+        let session_id = self.registry.create_session(carousel_config.clone());
+
+        tracing::info!(
+            session_id = %session_id,
+            iterations = iterations,
+            "Created carousel configuration"
+        );
+
+        Ok(vec![Content::Text {
+            text: format!(
+                "Created carousel with ID: {}\nIterations: {}\nEstimated tokens per iteration: {}\nContinue on error: {}\nTemplate: {}",
+                session_id, iterations, estimated_tokens, continue_on_error, narrative_template
+            ),
+        }])
+    }
 }
 
 fn escape_toml_string(s: &str) -> String {

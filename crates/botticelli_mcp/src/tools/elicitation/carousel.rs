@@ -1,4 +1,4 @@
-use crate::NarrativeRegistry;
+use crate::tools::elicitation::PartialNarrativeRegistry;
 use botticelli_error::{McpError, McpResult};
 use botticelli_narrative::CarouselConfig;
 use serde::{Deserialize, Serialize};
@@ -50,16 +50,16 @@ pub struct CarouselSummary {
 
 #[instrument(skip(registry), fields(narrative_id, level, iterations))]
 pub async fn elicit_carousel(
-    registry: &NarrativeRegistry,
+    registry: &PartialNarrativeRegistry,
     input: ElicitCarouselInput,
 ) -> McpResult<ElicitCarouselOutput> {
     debug!("Eliciting carousel configuration");
 
     let narrative_id = Uuid::parse_str(&input.narrative_id)
-        .map_err(|e| McpError::new(format!("Invalid narrative_id: {}", e)))?;
+        .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
     if input.iterations == 0 || input.iterations > 1000 {
-        return Err(McpError::new(
+        return Err(McpError::invalid_input(
             "Iterations must be between 1 and 1000".to_string(),
         ));
     }
@@ -67,14 +67,14 @@ pub async fn elicit_carousel(
     match input.level {
         CarouselLevel::Act => {
             if input.act_name.is_none() {
-                return Err(McpError::new(
+                return Err(McpError::invalid_input(
                     "act_name required when level=act".to_string(),
                 ));
             }
         }
         CarouselLevel::Narrative => {
             if input.act_name.is_some() {
-                return Err(McpError::new(
+                return Err(McpError::invalid_input(
                     "act_name should not be provided when level=narrative".to_string(),
                 ));
             }
@@ -83,10 +83,9 @@ pub async fn elicit_carousel(
 
     registry
         .update_narrative(narrative_id, |partial| {
-            let carousel = CarouselConfig {
-                iterations: input.iterations,
-                continue_on_error: input.continue_on_error,
-            };
+            let estimated_tokens = input.estimated_tokens_per_iteration.unwrap_or(1000) as u64;
+            let carousel = CarouselConfig::new(input.iterations, estimated_tokens)
+                .with_continue_on_error(input.continue_on_error);
 
             match input.level {
                 CarouselLevel::Narrative => {
@@ -98,7 +97,7 @@ pub async fn elicit_carousel(
                     let act = partial
                         .acts
                         .get_mut(act_name)
-                        .ok_or_else(|| McpError::new(format!("Act '{}' not found", act_name)))?;
+                        .ok_or_else(|| McpError::invalid_input(format!("Act '{}' not found", act_name)))?;
                     act.carousel = Some(carousel);
                     debug!(act = %act_name, "Set act-level carousel");
                 }
