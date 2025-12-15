@@ -4,7 +4,6 @@
 #![forbid(unsafe_code)]
 
 mod approval;
-mod client;
 mod context;
 mod error;
 mod external_client;
@@ -16,7 +15,6 @@ mod tool_executor;
 mod unified_client;
 
 pub use approval::ApprovalHandler;
-pub use client::McpClient;
 pub use context::ContextManager;
 pub use error::{McpClientError, McpClientErrorKind, McpClientResult};
 pub use external_client::{ExternalMcpClient, ExternalServerConfig};

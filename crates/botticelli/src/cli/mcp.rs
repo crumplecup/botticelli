@@ -1,7 +1,7 @@
 //! MCP client command handler.
 
 use crate::cli::McpCommandArgs;
-use botticelli_mcp_client::McpClient;
+use botticelli_mcp_client::UnifiedMcpClient;
 use tracing::{info, instrument};
 
 /// Handle MCP client command
@@ -22,8 +22,8 @@ pub async fn handle_mcp_command(args: McpCommandArgs) -> anyhow::Result<()> {
         args.verbose,
     );
 
-    // Create MCP client
-    let _client = McpClient::builder().max_iterations(args.max_turns).build();
+    // Create unified MCP client
+    let _client = UnifiedMcpClient::builder().max_iterations(args.max_turns).build();
 
     info!("MCP client created");
     println!("MCP client command not yet fully implemented");
