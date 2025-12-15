@@ -8,7 +8,7 @@ use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use pmcp::{Content, ToolInfo};
 use serde_json::Value;
 use std::sync::Arc;
-use tracing::{debug, info, instrument, warn};
+use tracing::instrument;
 
 /// Orchestrates LLM interactions with tool execution.
 ///
@@ -32,7 +32,7 @@ impl Orchestrator {
         adapter: Arc<dyn LlmAdapter>,
         max_iterations: usize,
     ) -> Self {
-        info!(
+        tracing::info!(
             max_iterations,
             model = adapter.model_name(),
             "Creating orchestrator"
@@ -54,21 +54,21 @@ impl Orchestrator {
     /// 5. Repeats until completion or max iterations
     #[instrument(skip(self, messages))]
     pub async fn execute(&self, messages: Vec<Message>) -> McpClientResult<String> {
-        info!("Starting agentic execution loop");
+        tracing::info!("Starting agentic execution loop");
 
         let mut conversation = messages;
         let mut iteration = 0;
 
         loop {
             if iteration >= self.max_iterations {
-                warn!(iteration, "Maximum iterations exceeded");
+                tracing::warn!(iteration, "Maximum iterations exceeded");
                 return Err(McpClientError::new(
                     McpClientErrorKind::MaxIterationsExceeded(iteration),
                 ));
             }
 
             iteration += 1;
-            debug!(iteration, "Executing iteration");
+            tracing::debug!(iteration, "Executing iteration");
 
             // Convert tool registry to LLM schemas
             let tool_schemas = self.get_tool_schemas();
@@ -80,7 +80,7 @@ impl Orchestrator {
                 .generate(conversation.clone(), tool_schemas, config)
                 .await?;
 
-            debug!(
+            tracing::debug!(
                 finish_reason = ?response.finish_reason(),
                 tokens = response.usage().total_tokens(),
                 "Received LLM response"
@@ -90,12 +90,12 @@ impl Orchestrator {
             match response.finish_reason() {
                 FinishReason::Stop => {
                     // Natural completion - return final message
-                    info!(iteration, "Execution complete");
+                    tracing::info!(iteration, "Execution complete");
                     return Ok(response.message().content().clone());
                 }
                 FinishReason::ToolCalls => {
                     // Process tool calls
-                    debug!(
+                    tracing::debug!(
                         tool_call_count = response.message().tool_calls().len(),
                         "Processing tool calls"
                     );
@@ -110,19 +110,19 @@ impl Orchestrator {
                     conversation.push(tool_message);
                 }
                 FinishReason::MaxTokens => {
-                    warn!("Hit max tokens limit");
+                    tracing::warn!("Hit max tokens limit");
                     return Err(McpClientError::new(McpClientErrorKind::LlmError(
                         "Hit max tokens limit".to_string(),
                     )));
                 }
                 FinishReason::ContentFilter => {
-                    warn!("Content filtered");
+                    tracing::warn!("Content filtered");
                     return Err(McpClientError::new(McpClientErrorKind::LlmError(
                         "Content filtered".to_string(),
                     )));
                 }
                 FinishReason::Error => {
-                    warn!("LLM error");
+                    tracing::warn!("LLM error");
                     return Err(McpClientError::new(McpClientErrorKind::LlmError(
                         "LLM returned error finish reason".to_string(),
                     )));
@@ -135,7 +135,7 @@ impl Orchestrator {
     #[instrument(skip(self))]
     fn get_tool_schemas(&self) -> Vec<LlmToolSchema> {
         let tool_infos = self.registry.list_tools();
-        debug!(tool_count = tool_infos.len(), "Converting tool schemas");
+        tracing::debug!(tool_count = tool_infos.len(), "Converting tool schemas");
 
         tool_infos
             .into_iter()
@@ -155,7 +155,7 @@ impl Orchestrator {
         let mut results = Vec::new();
 
         for call in tool_calls {
-            debug!(tool = %call.name(), id = %call.id(), "Executing tool");
+            tracing::debug!(tool = %call.name(), id = %call.id(), "Executing tool");
 
             let result = self
                 .registry
@@ -168,7 +168,7 @@ impl Orchestrator {
                     ToolResult::new(call.id().clone(), content_json, false)
                 }
                 Err(e) => {
-                    warn!(tool = %call.name(), error = ?e, "Tool execution failed");
+                    tracing::warn!(tool = %call.name(), error = ?e, "Tool execution failed");
                     ToolResult::new(
                         call.id().clone(),
                         serde_json::json!({

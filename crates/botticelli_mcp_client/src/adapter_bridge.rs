@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, Input, Message as CoreMessage, Output, Role, StopReason};
 use botticelli_interface::BotticelliDriver;
 use std::sync::Arc;
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 /// Bridges the `LlmAdapter` trait to any `BotticelliDriver` implementation.
 ///
@@ -33,7 +33,7 @@ impl LlmAdapter for DriverAdapter {
         tools: Vec<ToolSchema>,
         _config: GenerationConfig,
     ) -> McpClientResult<GenerationResponse> {
-        debug!(
+        tracing::debug!(
             message_count = messages.len(),
             tool_count = tools.len(),
             "Converting messages to core format"
@@ -57,7 +57,7 @@ impl LlmAdapter for DriverAdapter {
             })?;
 
         // Call driver
-        debug!("Calling underlying driver");
+        tracing::debug!("Calling underlying driver");
         let response = self
             .driver
             .generate(&request)
@@ -65,7 +65,7 @@ impl LlmAdapter for DriverAdapter {
             .map_err(|e| McpClientError::new(McpClientErrorKind::LlmError(e.to_string())))?;
 
         // Convert response
-        debug!("Converting response from core format");
+        tracing::debug!("Converting response from core format");
         convert_response_from_core(response)
     }
 

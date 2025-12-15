@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use botticelli_narrative::Narrative;
 use pmcp::{Content, ToolInfo};
 use serde_json::{Value, json};
-use tracing::{debug, error, instrument};
+use tracing::instrument;
 
 /// Tool for creating narratives from TOML content.
 ///
@@ -39,7 +39,7 @@ impl ToolHandler for CreateNarrativeTool {
 
     #[instrument(skip(self, args), fields(tool = "create_narrative"))]
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
-        debug!("Creating narrative from TOML");
+        tracing::debug!("Creating narrative from TOML");
 
         let toml_content = args
             .get("toml_content")
@@ -70,14 +70,14 @@ impl ToolHandler for CreateNarrativeTool {
                     }
                 });
 
-                debug!(name = %metadata.name(), "Narrative created successfully");
+                tracing::debug!(name = %metadata.name(), "Narrative created successfully");
                 Ok(vec![Content::Text {
                     text: serde_json::to_string_pretty(&result)
                         .unwrap_or_else(|_| result.to_string()),
                 }])
             }
             Err(e) => {
-                error!(error = ?e, "Failed to parse narrative");
+                tracing::error!(error = ?e, "Failed to parse narrative");
                 Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
                     format!("Parse error: {}", e),
                 )))
@@ -122,7 +122,7 @@ impl ToolHandler for ListNarrativesTool {
 
     #[instrument(skip(self, args), fields(tool = "list_narratives", dir = %self.narratives_dir))]
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
-        debug!("Listing narratives");
+        tracing::debug!("Listing narratives");
 
         let pattern = args
             .get("pattern")
@@ -152,14 +152,14 @@ impl ToolHandler for ListNarrativesTool {
                     "narratives": narratives
                 });
 
-                debug!(count = narratives.len(), "Listed narratives");
+                tracing::debug!(count = narratives.len(), "Listed narratives");
                 Ok(vec![Content::Text {
                     text: serde_json::to_string_pretty(&result)
                         .unwrap_or_else(|_| result.to_string()),
                 }])
             }
             Err(e) => {
-                error!(error = ?e, "Failed to list narratives");
+                tracing::error!(error = ?e, "Failed to list narratives");
                 Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
                     format!("Glob error: {}", e),
                 )))
@@ -207,7 +207,7 @@ impl ToolHandler for LoadNarrativeTool {
 
     #[instrument(skip(self, args), fields(tool = "load_narrative"))]
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
-        debug!("Loading narrative from file");
+        tracing::debug!("Loading narrative from file");
 
         let filename = args
             .get("filename")
@@ -239,14 +239,14 @@ impl ToolHandler for LoadNarrativeTool {
                     }
                 });
 
-                debug!(name = %metadata.name(), file = %filename, "Narrative loaded successfully");
+                tracing::debug!(name = %metadata.name(), file = %filename, "Narrative loaded successfully");
                 Ok(vec![Content::Text {
                     text: serde_json::to_string_pretty(&result)
                         .unwrap_or_else(|_| result.to_string()),
                 }])
             }
             Err(e) => {
-                error!(error = ?e, file = %filename, "Failed to load narrative");
+                tracing::error!(error = ?e, file = %filename, "Failed to load narrative");
                 Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
                     format!("Load error: {}", e),
                 )))
@@ -284,7 +284,7 @@ impl ToolHandler for ValidateNarrativeTool {
 
     #[instrument(skip(self, args), fields(tool = "validate_narrative"))]
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
-        debug!("Validating narrative");
+        tracing::debug!("Validating narrative");
 
         let toml_content = args
             .get("toml_content")
@@ -322,7 +322,7 @@ impl ToolHandler for ValidateNarrativeTool {
                     }
                 });
 
-                debug!(valid = is_valid, name = %metadata.name(), "Validation complete");
+                tracing::debug!(valid = is_valid, name = %metadata.name(), "Validation complete");
                 Ok(vec![Content::Text {
                     text: serde_json::to_string_pretty(&result)
                         .unwrap_or_else(|_| result.to_string()),
@@ -335,7 +335,7 @@ impl ToolHandler for ValidateNarrativeTool {
                     "error_type": "parse_error"
                 });
 
-                error!(error = ?e, "Validation failed");
+                tracing::error!(error = ?e, "Validation failed");
                 Ok(vec![Content::Text {
                     text: serde_json::to_string_pretty(&result)
                         .unwrap_or_else(|_| result.to_string()),

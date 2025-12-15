@@ -10,7 +10,7 @@ use crate::tools::{
 };
 use anyhow::Result;
 use pmcp::Server;
-use tracing::{info, instrument, warn};
+use tracing::{info, instrument};
 
 /// Runs the PMCP-based MCP server.
 #[instrument]
@@ -70,7 +70,7 @@ pub async fn run_pmcp_server() -> Result<()> {
                 builder = builder.tool("generate_anthropic", McpToolAdapter::new(tool));
             }
             Err(e) => {
-                warn!("Failed to initialize GenerateAnthropicTool: {}", e);
+                tracing::warn!("Failed to initialize GenerateAnthropicTool: {}", e);
             }
         }
     }
@@ -83,7 +83,7 @@ pub async fn run_pmcp_server() -> Result<()> {
                 builder = builder.tool("generate_gemini", McpToolAdapter::new(tool));
             }
             Err(e) => {
-                warn!("Failed to initialize GenerateGeminiTool: {}", e);
+                tracing::warn!("Failed to initialize GenerateGeminiTool: {}", e);
             }
         }
     }
@@ -96,7 +96,7 @@ pub async fn run_pmcp_server() -> Result<()> {
                 builder = builder.tool("generate_ollama", McpToolAdapter::new(tool));
             }
             Err(e) => {
-                warn!("Failed to initialize GenerateOllamaTool: {}", e);
+                tracing::warn!("Failed to initialize GenerateOllamaTool: {}", e);
             }
         }
     }
@@ -109,7 +109,7 @@ pub async fn run_pmcp_server() -> Result<()> {
                 builder = builder.tool("generate_groq", McpToolAdapter::new(tool));
             }
             Err(e) => {
-                warn!("Failed to initialize GenerateGroqTool: {}", e);
+                tracing::warn!("Failed to initialize GenerateGroqTool: {}", e);
             }
         }
     }
@@ -122,7 +122,7 @@ pub async fn run_pmcp_server() -> Result<()> {
                 builder = builder.tool("generate_huggingface", McpToolAdapter::new(tool));
             }
             Err(e) => {
-                warn!("Failed to initialize GenerateHuggingFaceTool: {}", e);
+                tracing::warn!("Failed to initialize GenerateHuggingFaceTool: {}", e);
             }
         }
     }
@@ -140,7 +140,7 @@ pub async fn run_pmcp_server() -> Result<()> {
                 builder = builder.tool("discord_get_channels", McpToolAdapter::new(tool));
             }
             Err(e) => {
-                warn!("Failed to initialize DiscordGetChannelsTool: {}", e);
+                tracing::warn!("Failed to initialize DiscordGetChannelsTool: {}", e);
             }
         }
 
@@ -149,7 +149,7 @@ pub async fn run_pmcp_server() -> Result<()> {
                 builder = builder.tool("discord_get_messages", McpToolAdapter::new(tool));
             }
             Err(e) => {
-                warn!("Failed to initialize DiscordGetMessagesTool: {}", e);
+                tracing::warn!("Failed to initialize DiscordGetMessagesTool: {}", e);
             }
         }
 
@@ -158,7 +158,7 @@ pub async fn run_pmcp_server() -> Result<()> {
                 builder = builder.tool("discord_get_guild_info", McpToolAdapter::new(tool));
             }
             Err(e) => {
-                warn!("Failed to initialize DiscordGetGuildInfoTool: {}", e);
+                tracing::warn!("Failed to initialize DiscordGetGuildInfoTool: {}", e);
             }
         }
 
@@ -167,7 +167,7 @@ pub async fn run_pmcp_server() -> Result<()> {
                 builder = builder.tool("discord_post_message", McpToolAdapter::new(tool));
             }
             Err(e) => {
-                warn!("Failed to initialize DiscordPostMessageTool: {}", e);
+                tracing::warn!("Failed to initialize DiscordPostMessageTool: {}", e);
             }
         }
     }

@@ -4,7 +4,7 @@ use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::io::Write;
-use tracing::{debug, warn};
+
 
 /// Tool approval policy.
 #[derive(Debug, Clone)]
@@ -89,17 +89,17 @@ impl ApprovalManager {
     /// Requests approval for a tool call.
     pub fn request_approval(&self, tool_name: &str, args: &Value) -> McpClientResult<bool> {
         if !self.requires_approval(tool_name) {
-            debug!(tool = tool_name, "Tool auto-approved");
+            tracing::debug!(tool = tool_name, "Tool auto-approved");
             return Ok(true);
         }
 
-        debug!(tool = tool_name, "Requesting approval");
+        tracing::debug!(tool = tool_name, "Requesting approval");
         let approved = self.handler.request_approval(tool_name, args)?;
 
         if approved {
-            debug!(tool = tool_name, "Tool call approved");
+            tracing::debug!(tool = tool_name, "Tool call approved");
         } else {
-            warn!(tool = tool_name, "Tool call denied");
+            tracing::warn!(tool = tool_name, "Tool call denied");
         }
 
         Ok(approved)

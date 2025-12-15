@@ -4,7 +4,7 @@ use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use serde_json::Value;
 use serde_json::json;
 use std::collections::HashMap;
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 /// Represents a tool definition for LLM context.
 #[derive(Debug, Clone)]
@@ -29,14 +29,14 @@ impl ToolExecutor {
     pub fn new(tools: Vec<ToolDefinition>) -> Self {
         let tools: HashMap<String, ToolDefinition> =
             tools.into_iter().map(|t| (t.name.clone(), t)).collect();
-        debug!(tool_count = tools.len(), "Created tool executor");
+        tracing::debug!(tool_count = tools.len(), "Created tool executor");
         Self { tools }
     }
 
     /// Executes a tool with the given arguments.
     #[instrument(skip(self), fields(tool_name))]
     pub async fn execute(&self, tool_name: &str, _arguments: Value) -> McpClientResult<Value> {
-        debug!("Executing tool");
+        tracing::debug!("Executing tool");
 
         let _tool = self.tools.get(tool_name).ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::ToolNotFound(tool_name.to_string()))
@@ -44,7 +44,7 @@ impl ToolExecutor {
 
         // TODO: Actual tool execution will integrate with MCP server
         // For now, return placeholder
-        debug!("Tool found, execution not yet implemented");
+        tracing::debug!("Tool found, execution not yet implemented");
         Ok(json!({"status": "success", "tool": tool_name}))
     }
 

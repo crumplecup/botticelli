@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
-use tracing::{debug, info, instrument, warn};
+use tracing::instrument;
 use typed_builder::TypedBuilder;
 
 /// Custom transport for external child process communication.
@@ -123,7 +123,7 @@ impl ExternalMcpClient {
     /// Connect to an external MCP server by spawning the process.
     #[instrument(skip(config), fields(server_name = %config.name))]
     pub async fn connect(config: ExternalServerConfig) -> McpClientResult<Self> {
-        info!(
+        tracing::info!(
             "Spawning external MCP server: {} (command: {} {:?})",
             config.name, config.command, config.args
         );
@@ -154,7 +154,7 @@ impl ExternalMcpClient {
             ))
         })?;
 
-        info!("Process spawned successfully: {}", config.name);
+        tracing::info!("Process spawned successfully: {}", config.name);
 
         // Create custom transport and pmcp client
         let transport = ChildProcessTransport::new(stdin, stdout);
@@ -169,7 +169,7 @@ impl ExternalMcpClient {
             )))
         })?;
 
-        info!(
+        tracing::info!(
             "MCP connection established with {} (version {})",
             server_info.server_info.name, server_info.server_info.version
         );
@@ -182,7 +182,7 @@ impl ExternalMcpClient {
             )))
         })?;
 
-        info!(
+        tracing::info!(
             "Discovered {} tools from {}",
             tools_result.tools.len(),
             config.name
@@ -200,7 +200,7 @@ impl ExternalMcpClient {
             .collect();
 
         for tool in &tools {
-            debug!("  - {} ({})", tool.name, tool.description);
+            tracing::debug!("  - {} ({})", tool.name, tool.description);
         }
 
         Ok(Self {
@@ -249,7 +249,7 @@ impl ExternalMcpClient {
             )));
         }
 
-        debug!(
+        tracing::debug!(
             "Calling tool '{}' on server '{}' with args: {}",
             tool_name, self.name, arguments
         );
@@ -261,7 +261,7 @@ impl ExternalMcpClient {
 
         loop {
             attempt += 1;
-            debug!(attempt, "Executing tool call");
+            tracing::debug!(attempt, "Executing tool call");
 
             // Call via pmcp client
             let result = self
@@ -272,7 +272,7 @@ impl ExternalMcpClient {
             match result {
                 Ok(content) => {
                     if attempt > 1 {
-                        debug!(attempt, "Tool call succeeded after retry");
+                        tracing::debug!(attempt, "Tool call succeeded after retry");
                     }
 
                     // Track metrics
@@ -292,22 +292,22 @@ impl ExternalMcpClient {
                     ));
 
                     if attempt >= max_attempts {
-                        warn!(attempt, "All retry attempts exhausted");
+                        tracing::warn!(attempt, "All retry attempts exhausted");
                         return Err(err);
                     }
 
                     if !err.kind.is_retryable() {
-                        warn!("Error is not retryable, failing immediately");
+                        tracing::warn!("Error is not retryable, failing immediately");
                         return Err(err);
                     }
 
                     if err.kind.should_backoff() {
-                        debug!(
+                        tracing::debug!(
                             backoff_ms = backoff.as_millis(),
                             "Backing off due to rate limit"
                         );
                     } else {
-                        debug!(backoff_ms = backoff.as_millis(), "Retrying after failure");
+                        tracing::debug!(backoff_ms = backoff.as_millis(), "Retrying after failure");
                     }
 
                     tokio::time::sleep(backoff).await;

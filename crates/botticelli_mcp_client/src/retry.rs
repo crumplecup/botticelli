@@ -3,7 +3,6 @@
 use crate::McpClientResult;
 use std::time::Duration;
 use tokio::time::sleep;
-use tracing::{debug, instrument, warn};
 
 /// Retry configuration for tool execution.
 #[derive(Debug, Clone)]
@@ -63,7 +62,7 @@ impl CircuitBreaker {
     }
 
     /// Records a successful execution.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn record_success(&mut self) {
         match self.state {
             CircuitState::Closed => {
@@ -72,7 +71,7 @@ impl CircuitBreaker {
             CircuitState::HalfOpen => {
                 self.success_count += 1;
                 if self.success_count >= self.success_threshold {
-                    debug!("Circuit breaker closing after successful recovery");
+                    tracing::debug!("Circuit breaker closing after successful recovery");
                     self.state = CircuitState::Closed;
                     self.failure_count = 0;
                     self.success_count = 0;
@@ -88,13 +87,13 @@ impl CircuitBreaker {
     }
 
     /// Records a failed execution.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn record_failure(&mut self) {
         match self.state {
             CircuitState::Closed => {
                 self.failure_count += 1;
                 if self.failure_count >= self.failure_threshold {
-                    warn!(
+                    tracing::warn!(
                         "Circuit breaker opening after {} failures",
                         self.failure_count
                     );
@@ -102,7 +101,7 @@ impl CircuitBreaker {
                 }
             }
             CircuitState::HalfOpen => {
-                warn!("Circuit breaker reopening after failure in half-open state");
+                tracing::warn!("Circuit breaker reopening after failure in half-open state");
                 self.state = CircuitState::Open;
                 self.failure_count = self.failure_threshold;
                 self.success_count = 0;
@@ -114,10 +113,10 @@ impl CircuitBreaker {
     }
 
     /// Attempts to transition from open to half-open.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn try_reset(&mut self) {
         if self.state == CircuitState::Open {
-            debug!("Circuit breaker entering half-open state");
+            tracing::debug!("Circuit breaker entering half-open state");
             self.state = CircuitState::HalfOpen;
             self.success_count = 0;
         }
@@ -135,7 +134,7 @@ impl CircuitBreaker {
 }
 
 /// Retries an operation with exponential backoff.
-#[instrument(skip(operation))]
+#[tracing::instrument(skip(operation))]
 pub async fn retry_with_backoff<F, Fut, T>(
     config: &RetryConfig,
     mut operation: F,
@@ -149,33 +148,33 @@ where
 
     loop {
         attempt += 1;
-        debug!(attempt, "Executing operation");
+        tracing::debug!(attempt, "Executing operation");
 
         match operation().await {
             Ok(result) => {
                 if attempt > 1 {
-                    debug!(attempt, "Operation succeeded after retry");
+                    tracing::debug!(attempt, "Operation succeeded after retry");
                 }
                 return Ok(result);
             }
             Err(err) => {
                 if attempt >= config.max_attempts {
-                    warn!(attempt, "All retry attempts exhausted");
+                    tracing::warn!(attempt, "All retry attempts exhausted");
                     return Err(err);
                 }
 
                 if !err.kind.is_retryable() {
-                    warn!("Error is not retryable, failing immediately");
+                    tracing::warn!("Error is not retryable, failing immediately");
                     return Err(err);
                 }
 
                 if err.kind.should_backoff() {
-                    debug!(
+                    tracing::debug!(
                         backoff_ms = backoff.as_millis(),
                         "Backing off due to rate limit"
                     );
                 } else {
-                    debug!(backoff_ms = backoff.as_millis(), "Retrying after failure");
+                    tracing::debug!(backoff_ms = backoff.as_millis(), "Retrying after failure");
                 }
 
                 sleep(backoff).await;

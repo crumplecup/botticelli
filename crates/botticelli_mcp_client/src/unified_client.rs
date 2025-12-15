@@ -11,7 +11,7 @@ use botticelli_core::{Input, Message, Role};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Instant;
-use tracing::{debug, info, instrument, warn};
+use tracing::instrument;
 use typed_builder::TypedBuilder;
 
 /// Unified MCP client that orchestrates internal and external tool execution.
@@ -98,12 +98,12 @@ impl UnifiedMcpClient {
         config: ExternalServerConfig,
     ) -> McpClientResult<()> {
         let server_name = config.name.clone();
-        info!("Connecting to external server: {}", server_name);
+        tracing::info!("Connecting to external server: {}", server_name);
 
         let client = ExternalMcpClient::connect(config).await?;
         self.external_clients.insert(server_name.clone(), client);
 
-        info!("External server {} connected successfully", server_name);
+        tracing::info!("External server {} connected successfully", server_name);
         Ok(())
     }
 
@@ -126,7 +126,7 @@ impl UnifiedMcpClient {
             tools.extend(client.tools());
         }
 
-        debug!(
+        tracing::debug!(
             internal_tools = self.internal_registry.tool_count(),
             external_tools = self.external_clients.len(),
             total_tools = tools.len(),
@@ -145,11 +145,11 @@ impl UnifiedMcpClient {
         arguments: Value,
     ) -> McpClientResult<Value> {
         let start_time = Instant::now();
-        debug!("Executing tool: {}", tool_name);
+        tracing::debug!("Executing tool: {}", tool_name);
 
         // Check approval first
         if !self.approval_manager.request_approval(tool_name, &arguments)? {
-            warn!("Tool call denied by approval manager: {}", tool_name);
+            tracing::warn!("Tool call denied by approval manager: {}", tool_name);
             if let Some(metrics) = &self.metrics {
                 metrics.record_tool_call(tool_name, false);
             }
@@ -179,7 +179,7 @@ impl UnifiedMcpClient {
     ) -> McpClientResult<Value> {
         // Try internal registry first
         if self.internal_registry.has_tool(tool_name) {
-            debug!("Routing to internal tool registry");
+            tracing::debug!("Routing to internal tool registry");
             let content = self
                 .internal_registry
                 .execute_tool(tool_name, arguments)
@@ -214,7 +214,7 @@ impl UnifiedMcpClient {
         // Try external servers
         for (server_name, client) in &mut self.external_clients {
             if client.has_tool(tool_name) {
-                debug!(server = %server_name, "Routing to external server");
+                tracing::debug!(server = %server_name, "Routing to external server");
                 return client.call_tool(tool_name, arguments).await;
             }
         }
@@ -244,21 +244,21 @@ impl UnifiedMcpClient {
     where
         B: LlmBackend + std::fmt::Debug,
     {
-        info!("Starting unified agentic execution loop");
+        tracing::info!("Starting unified agentic execution loop");
 
         let mut conversation = messages;
         let mut iterations = 0;
 
         loop {
             if iterations >= self.max_iterations {
-                warn!(iterations, "Maximum iterations exceeded");
+                tracing::warn!(iterations, "Maximum iterations exceeded");
                 return Err(McpClientError::new(
                     McpClientErrorKind::MaxIterationsExceeded(iterations),
                 ));
             }
 
             iterations += 1;
-            debug!(iteration = iterations, "Executing iteration");
+            tracing::debug!(iteration = iterations, "Executing iteration");
 
             // Get response from LLM (with tool definitions)
             let all_tools = self.list_all_tools();
@@ -267,11 +267,11 @@ impl UnifiedMcpClient {
                 .await
                 .map_err(|e| McpClientError::new(McpClientErrorKind::LlmError(e.to_string())))?;
 
-            debug!("Received LLM response");
+            tracing::debug!("Received LLM response");
 
             // Check if response contains tool calls
             if let Some(tool_calls) = extract_tool_calls(&response) {
-                debug!(tool_call_count = tool_calls.len(), "Processing tool calls");
+                tracing::debug!(tool_call_count = tool_calls.len(), "Processing tool calls");
 
                 // Execute tools
                 let tool_results = self.execute_tools(tool_calls).await?;
@@ -296,7 +296,7 @@ impl UnifiedMcpClient {
                 }
             } else {
                 // No tool calls - we're done
-                info!(iterations, "Execution complete");
+                tracing::info!(iterations, "Execution complete");
                 return Ok(response);
             }
         }
@@ -314,7 +314,7 @@ impl UnifiedMcpClient {
     where
         B: LlmBackend + std::fmt::Debug,
     {
-        info!("Starting unified agentic execution loop with tracking");
+        tracing::info!("Starting unified agentic execution loop with tracking");
 
         let mut conversation = messages;
         let mut iterations = 0;
@@ -322,14 +322,14 @@ impl UnifiedMcpClient {
 
         loop {
             if iterations >= self.max_iterations {
-                warn!(iterations, "Maximum iterations exceeded");
+                tracing::warn!(iterations, "Maximum iterations exceeded");
                 return Err(McpClientError::new(
                     McpClientErrorKind::MaxIterationsExceeded(iterations),
                 ));
             }
 
             iterations += 1;
-            debug!(iteration = iterations, "Executing iteration");
+            tracing::debug!(iteration = iterations, "Executing iteration");
 
             // Get response from LLM (with tool definitions)
             let all_tools = self.list_all_tools();
@@ -338,15 +338,15 @@ impl UnifiedMcpClient {
                 .await
                 .map_err(|e| McpClientError::new(McpClientErrorKind::LlmError(e.to_string())))?;
 
-            debug!("Received LLM response");
+            tracing::debug!("Received LLM response");
 
             // Check if response contains tool calls
             if let Some(tool_calls) = extract_tool_calls(&response) {
-                debug!(tool_call_count = tool_calls.len(), "Processing tool calls");
+                tracing::debug!(tool_call_count = tool_calls.len(), "Processing tool calls");
 
                 // Execute tools and track results
                 for call in tool_calls {
-                    debug!(tool = %call.name, "Executing tool");
+                    tracing::debug!(tool = %call.name, "Executing tool");
 
                     let result = self.execute_tool(&call.name, call.arguments.clone()).await;
 
@@ -387,7 +387,7 @@ impl UnifiedMcpClient {
                 );
             } else {
                 // No tool calls - we're done
-                info!(
+                tracing::info!(
                     iterations,
                     tool_calls = tool_call_records.len(),
                     "Execution complete"
@@ -413,7 +413,7 @@ impl UnifiedMcpClient {
         let mut results = Vec::new();
 
         for call in tool_calls {
-            debug!(tool = %call.name, "Executing tool");
+            tracing::debug!(tool = %call.name, "Executing tool");
 
             let result = self.execute_tool(&call.name, call.arguments).await?;
 
@@ -491,7 +491,7 @@ pub fn extract_tool_calls(response: &str) -> Option<Vec<ToolCall>> {
             }
 
             if !calls.is_empty() {
-                debug!(tool_call_count = calls.len(), "Extracted tool calls");
+                tracing::debug!(tool_call_count = calls.len(), "Extracted tool calls");
                 return Some(calls);
             }
         }

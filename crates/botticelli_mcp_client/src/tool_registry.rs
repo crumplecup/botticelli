@@ -4,7 +4,7 @@ use pmcp::{Content, ToolInfo};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 /// Handler for executing tool calls
 #[async_trait]
@@ -35,7 +35,7 @@ impl ToolRegistry {
     /// Create a new tool registry
     #[instrument]
     pub fn new() -> Self {
-        debug!("Creating new tool registry");
+        tracing::debug!("Creating new tool registry");
         Self {
             handlers: Arc::new(HashMap::new()),
         }
@@ -44,7 +44,7 @@ impl ToolRegistry {
     /// Register a tool handler
     #[instrument(skip(self, handler))]
     pub fn register(&mut self, name: String, handler: Arc<dyn ToolHandler>) -> McpClientResult<()> {
-        debug!(tool_name = %name, "Registering tool");
+        tracing::debug!(tool_name = %name, "Registering tool");
 
         let handlers = Arc::make_mut(&mut self.handlers);
         if handlers.contains_key(&name) {
@@ -60,7 +60,7 @@ impl ToolRegistry {
     /// Get all registered tools
     #[instrument(skip(self))]
     pub fn list_tools(&self) -> Vec<ToolInfo> {
-        debug!("Listing all registered tools");
+        tracing::debug!("Listing all registered tools");
         self.handlers
             .values()
             .map(|handler| handler.tool_info())
@@ -74,7 +74,7 @@ impl ToolRegistry {
         name: &str,
         arguments: Value,
     ) -> McpClientResult<Vec<Content>> {
-        debug!(tool_name = %name, "Executing tool");
+        tracing::debug!(tool_name = %name, "Executing tool");
 
         let handler = self.handlers.get(name).ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::ToolNotFound(name.to_string()))

@@ -440,6 +440,8 @@ info!(table = %table_name, "Creating");          // Display format
 #[instrument(skip(connection, large_json))]     // Skip large data
 ```
 
+**Feature-gated code**: Use full path `tracing::warn!()` instead of `use tracing::warn;` to avoid orphaned imports when features are disabled.
+
 ### Audit Checklist
 
 - ✅ Every public function has `#[instrument]`
