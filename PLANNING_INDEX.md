@@ -365,4 +365,13 @@ This index tracks all planning documents in the workspace. When documents are co
   - Phase 2: Complete TODO implementations (tool execution, orchestration)
   - Phase 3: Integration testing (real MCP servers end-to-end)
   - Careful, methodical approach with deprecation path
-  - Status: 📋 Phase 1.1 complete (audit) - Ready for 1.2 (implementation)
+  - Status: ✅ COMPLETE - Unified client with internal/external routing
+
+- **MCP_CLIENT_IMPLEMENTATION_COMPLETE.md** - `current` (2025-12-15)
+  - Comprehensive implementation summary for unified MCP client
+  - Architecture: UnifiedMcpClient combining internal + external tools
+  - Features: automatic routing, agentic loops, LlmBackend trait
+  - Tool call extraction (Anthropic format), metrics tracking
+  - 9/9 tests passing, full documentation
+  - Use cases: filesystem, git, search, mixed internal/external
+  - Status: ✅ COMPLETE - Production ready, merged to dev
