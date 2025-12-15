@@ -40,8 +40,8 @@ pub use discord::{
 pub use discord_workflow::DiscordContentWorkflowTool;
 pub use echo::EchoTool;
 pub use elicitation::{
-    CreateNarrativeSessionTool, ElicitActTool, ElicitMetadataTool, ElicitationHelper,
-    FinalizeNarrativeTool, NarrativeRegistry,
+    CreateNarrativeSessionTool, ElicitActTool, ElicitCarouselTool, ElicitMetadataTool,
+    ElicitationHelper, FinalizeNarrativeTool, NarrativeRegistry,
 };
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
@@ -193,6 +193,7 @@ impl Default for ToolRegistry {
             narrative_registry.clone(),
         )));
         registry.register(Arc::new(ElicitActTool::new(narrative_registry.clone())));
+        registry.register(Arc::new(ElicitCarouselTool::new(narrative_registry.clone())));
         registry.register(Arc::new(FinalizeNarrativeTool::new(narrative_registry)));
 
         // Narrative generation tools (Phase 1)

@@ -99,24 +99,26 @@ pub fn register_internal_tools(
 #[cfg(feature = "database")]
 #[tracing::instrument(skip(registry, db_pool))]
 pub fn register_database_tools(registry: &mut ToolRegistry, db_pool: DbPool) -> McpClientResult<()> {
+    let db_ops = DbOperationsImpl::new(db_pool);
+    
     registry.register(
         "create_table".to_string(),
-        Arc::new(CreateTableTool::new(db_pool.clone())),
+        Arc::new(CreateTableTool::new(db_ops.clone())),
     )?;
 
     registry.register(
         "query_table".to_string(),
-        Arc::new(QueryTableTool::new(DbOperationsImpl::new(db_pool.clone()))),
+        Arc::new(QueryTableTool::new(db_ops.clone())),
     )?;
 
     registry.register(
         "inspect_table".to_string(),
-        Arc::new(InspectTableTool::new(db_pool.clone())),
+        Arc::new(InspectTableTool::new(db_ops.clone())),
     )?;
 
     registry.register(
         "table_exists".to_string(),
-        Arc::new(TableExistsTool::new(db_pool)),
+        Arc::new(TableExistsTool::new(db_ops)),
     )?;
 
     tracing::info!("Registered database tools");

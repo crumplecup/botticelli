@@ -1,9 +1,11 @@
 use crate::tools::elicitation::PartialNarrativeRegistry;
+use crate::tools::McpTool;
+use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
 use botticelli_narrative::CarouselConfig;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use tracing::{debug, instrument};
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ElicitCarouselInput {
@@ -48,90 +50,157 @@ pub struct CarouselSummary {
     pub budget_warnings: Vec<String>,
 }
 
-#[instrument(skip(registry), fields(narrative_id, level, iterations))]
-pub async fn elicit_carousel(
-    registry: &PartialNarrativeRegistry,
-    input: ElicitCarouselInput,
-) -> McpResult<ElicitCarouselOutput> {
-    debug!("Eliciting carousel configuration");
+/// MCP tool for creating carousel configurations during narrative elicitation.
+pub struct ElicitCarouselTool {
+    registry: PartialNarrativeRegistry,
+}
 
-    let narrative_id = Uuid::parse_str(&input.narrative_id)
-        .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
-
-    if input.iterations == 0 || input.iterations > 1000 {
-        return Err(McpError::invalid_input(
-            "Iterations must be between 1 and 1000".to_string(),
-        ));
+impl ElicitCarouselTool {
+    /// Creates a new carousel elicitation tool.
+    pub fn new(registry: PartialNarrativeRegistry) -> Self {
+        Self { registry }
     }
 
-    match input.level {
-        CarouselLevel::Act => {
-            if input.act_name.is_none() {
-                return Err(McpError::invalid_input(
-                    "act_name required when level=act".to_string(),
+    #[instrument(skip(self))]
+    async fn handle_carousel(&self, input: ElicitCarouselInput) -> McpResult<ElicitCarouselOutput> {
+        // Verify narrative exists
+        let _ = self.registry.get(&input.narrative_id)?;
+
+        // Create carousel config
+        let carousel_config = CarouselConfig::new(
+            input.iterations,
+            input.estimated_tokens_per_iteration.unwrap_or(1000) as u64
+        ).with_continue_on_error(input.continue_on_error);
+
+        // Calculate budget warnings if estimate provided
+        let mut budget_warnings = Vec::new();
+        if let Some(tokens_per_iter) = input.estimated_tokens_per_iteration {
+            let total_estimated = tokens_per_iter * input.iterations;
+            let budget_threshold = (total_estimated as f64 * input.budget_multiplier) as u32;
+            
+            if total_estimated > 10_000 {
+                budget_warnings.push(format!(
+                    "High token estimate: {} tokens across {} iterations",
+                    total_estimated, input.iterations
+                ));
+            }
+            
+            if budget_threshold > 50_000 {
+                budget_warnings.push(format!(
+                    "Budget threshold very high: {} tokens ({}x multiplier)",
+                    budget_threshold, input.budget_multiplier
                 ));
             }
         }
-        CarouselLevel::Narrative => {
-            if input.act_name.is_some() {
-                return Err(McpError::invalid_input(
-                    "act_name should not be provided when level=narrative".to_string(),
-                ));
+
+        // Update narrative with carousel config
+        let mut update = serde_json::json!({});
+        
+        match input.level {
+            CarouselLevel::Narrative => {
+                update["carousel"] = serde_json::to_value(&carousel_config)
+                    .map_err(|e| McpError::execution_failed(format!("Failed to serialize carousel config: {}", e)))?;
+            }
+            CarouselLevel::Act => {
+                let act_name = input.act_name.as_ref().ok_or_else(|| {
+                    McpError::invalid_input("act_name required for Act level carousel")
+                })?;
+                
+                // Update the specific act's carousel
+                update["acts"] = serde_json::json!({
+                    act_name: {
+                        "carousel": carousel_config
+                    }
+                });
             }
         }
+        
+        self.registry.update(&input.narrative_id, update)?;
+
+        debug!(
+            narrative_id = %input.narrative_id,
+            level = ?input.level,
+            iterations = input.iterations,
+            "Carousel configuration created"
+        );
+
+        Ok(ElicitCarouselOutput {
+            success: true,
+            carousel_config: CarouselSummary {
+                level: match input.level {
+                    CarouselLevel::Narrative => "narrative".to_string(),
+                    CarouselLevel::Act => "act".to_string(),
+                },
+                act_name: input.act_name,
+                iterations: input.iterations,
+                estimated_total_tokens: input
+                    .estimated_tokens_per_iteration
+                    .map(|t| t * input.iterations),
+                budget_warnings,
+            },
+        })
+    }
+}
+
+#[async_trait]
+impl McpTool for ElicitCarouselTool {
+    fn name(&self) -> &str {
+        "elicit_carousel"
     }
 
-    registry
-        .update_narrative(&narrative_id.to_string(), |partial| {
-            let estimated_tokens = input.estimated_tokens_per_iteration.unwrap_or(1000) as u64;
-            let carousel = CarouselConfig::new(input.iterations, estimated_tokens)
-                .with_continue_on_error(input.continue_on_error);
-
-            match input.level {
-                CarouselLevel::Narrative => {
-                    partial.carousel = Some(carousel);
-                    debug!("Set narrative-level carousel");
-                }
-                CarouselLevel::Act => {
-                    let act_name = input.act_name.as_ref().unwrap();
-                    let act = partial.acts.get_mut(act_name).ok_or_else(|| {
-                        McpError::invalid_input(format!("Act '{}' not found", act_name))
-                    })?;
-                    act.carousel = Some(carousel);
-                    debug!(act = %act_name, "Set act-level carousel");
-                }
-            }
-
-            Ok(())
-        })?;
-
-    let estimated_total_tokens = input
-        .estimated_tokens_per_iteration
-        .map(|tokens| tokens * input.iterations);
-
-    let mut budget_warnings = Vec::new();
-    if let Some(total) = estimated_total_tokens {
-        if total > 100_000 {
-            budget_warnings.push(format!(
-                "Estimated {} tokens may exceed default budget limits",
-                total
-            ));
-        }
+    fn description(&self) -> &str {
+        "Create a carousel configuration for iterative narrative refinement at narrative or act level"
     }
 
-    let level_str = match input.level {
-        CarouselLevel::Narrative => "narrative",
-        CarouselLevel::Act => "act",
-    };
+    fn input_schema(&self) -> Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "narrative_id": {
+                    "type": "string",
+                    "description": "UUID of the narrative being created"
+                },
+                "level": {
+                    "type": "string",
+                    "enum": ["narrative", "act"],
+                    "description": "Level at which to apply carousel (narrative-wide or specific act)"
+                },
+                "act_name": {
+                    "type": "string",
+                    "description": "Name of the act (required if level is 'act')"
+                },
+                "iterations": {
+                    "type": "integer",
+                    "description": "Number of carousel iterations",
+                    "minimum": 1
+                },
+                "continue_on_error": {
+                    "type": "boolean",
+                    "description": "Whether to continue if an iteration fails",
+                    "default": false
+                },
+                "estimated_tokens_per_iteration": {
+                    "type": "integer",
+                    "description": "Estimated token usage per iteration for budget tracking"
+                },
+                "budget_multiplier": {
+                    "type": "number",
+                    "description": "Safety multiplier for budget calculations",
+                    "default": 2.0,
+                    "minimum": 1.0
+                }
+            },
+            "required": ["narrative_id", "level", "iterations"]
+        })
+    }
 
-    Ok(ElicitCarouselOutput {
-        success: true,
-        carousel_config: CarouselSummary {
-            level: level_str.to_string(),
-            act_name: input.act_name,
-            iterations: input.iterations,
-            estimated_total_tokens,
-            budget_warnings,
-        },
-    })
+    async fn execute(&self, input: Value) -> McpResult<Value> {
+        let input: ElicitCarouselInput = serde_json::from_value(input)
+            .map_err(|e| McpError::invalid_input(format!("Invalid input: {}", e)))?;
+
+        let output = self.handle_carousel(input).await?;
+
+        serde_json::to_value(output)
+            .map_err(|e| McpError::execution_failed(format!("Failed to serialize output: {}", e)))
+    }
 }

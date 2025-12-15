@@ -8,6 +8,7 @@ mod state;
 mod update;
 mod validation;
 
+pub use carousel::ElicitCarouselTool;
 pub use helpers::ElicitationHelper;
 pub use registry::NarrativeRegistry;
 pub use session_tools::{
