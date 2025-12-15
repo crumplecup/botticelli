@@ -19,7 +19,7 @@ pub mod tools;
 mod unified_client;
 
 pub use adapter_bridge::DriverAdapter;
-pub use approval::ApprovalHandler;
+pub use approval::{ApprovalHandler, ApprovalManager, ApprovalPolicy, ConsoleApprovalHandler};
 pub use context::ContextManager;
 pub use error::{McpClientError, McpClientErrorKind, McpClientResult};
 pub use external_client::{ExternalMcpClient, ExternalServerConfig};

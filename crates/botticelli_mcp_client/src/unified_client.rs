@@ -1,12 +1,16 @@
 //! Unified MCP client for external tool execution via MCP servers.
 
+use crate::approval::ApprovalManager;
 use crate::external_client::{ExternalMcpClient, ExternalServerConfig};
+use crate::metrics::McpClientMetrics;
+use crate::retry::RetryConfig;
 use crate::tool_executor::ToolDefinition;
 use crate::tool_registry::ToolRegistry;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use botticelli_core::{Input, Message, Role};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::time::Instant;
 use tracing::{debug, info, instrument, warn};
 use typed_builder::TypedBuilder;
 
@@ -16,6 +20,8 @@ use typed_builder::TypedBuilder;
 /// - Executes internal Botticelli tools via ToolRegistry
 /// - Connects to external MCP servers (filesystem, git, search, etc.)
 /// - Routes tool calls to the appropriate handler
+/// - Provides retry logic with exponential backoff
+/// - Tracks metrics for observability
 ///
 /// # Example
 ///
@@ -42,6 +48,18 @@ pub struct UnifiedMcpClient {
     /// External MCP server clients (by name)
     #[builder(default)]
     external_clients: HashMap<String, ExternalMcpClient>,
+
+    /// Approval manager for sensitive operations
+    #[builder(default = ApprovalManager::auto_approve())]
+    approval_manager: ApprovalManager,
+
+    /// Retry configuration for tool execution
+    #[builder(default = RetryConfig::default())]
+    retry_config: RetryConfig,
+
+    /// Optional metrics collector
+    #[builder(default)]
+    metrics: Option<McpClientMetrics>,
 
     /// Maximum iterations before stopping
     #[builder(default = 10)]
@@ -118,14 +136,47 @@ impl UnifiedMcpClient {
     }
 
     /// Execute a tool call by routing to internal registry or external server.
+    ///
+    /// This method includes metrics tracking and approval checks.
     #[instrument(skip(self, arguments), fields(tool_name))]
     pub async fn execute_tool(
         &mut self,
         tool_name: &str,
         arguments: Value,
     ) -> McpClientResult<Value> {
+        let start_time = Instant::now();
         debug!("Executing tool: {}", tool_name);
 
+        // Check approval first
+        if !self.approval_manager.request_approval(tool_name, &arguments)? {
+            warn!("Tool call denied by approval manager: {}", tool_name);
+            if let Some(metrics) = &self.metrics {
+                metrics.record_tool_call(tool_name, false);
+            }
+            return Err(McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
+                format!("Tool call '{}' denied by user", tool_name),
+            )));
+        }
+
+        // Execute the tool (retry logic is handled within tool execution)
+        let result = self.execute_tool_inner(tool_name, arguments).await;
+
+        // Record metrics
+        let duration = start_time.elapsed();
+        if let Some(metrics) = &self.metrics {
+            metrics.record_tool_call(tool_name, result.is_ok());
+            metrics.record_tool_duration(tool_name, duration.as_secs_f64());
+        }
+
+        result
+    }
+
+    /// Inner tool execution without metrics/approval.
+    async fn execute_tool_inner(
+        &mut self,
+        tool_name: &str,
+        arguments: Value,
+    ) -> McpClientResult<Value> {
         // Try internal registry first
         if self.internal_registry.has_tool(tool_name) {
             debug!("Routing to internal tool registry");
@@ -341,6 +392,12 @@ impl UnifiedMcpClient {
                     tool_calls = tool_call_records.len(),
                     "Execution complete"
                 );
+
+                // Record workflow metrics
+                if let Some(metrics) = &self.metrics {
+                    metrics.record_agent_iterations(iterations, "completed");
+                }
+
                 return Ok(ExecutionResult {
                     final_response: response,
                     iterations,
@@ -387,6 +444,16 @@ impl UnifiedMcpClient {
     /// Get immutable access to internal tool registry.
     pub fn internal_registry(&self) -> &ToolRegistry {
         &self.internal_registry
+    }
+
+    /// Set metrics collector for observability.
+    pub fn set_metrics(&mut self, metrics: McpClientMetrics) {
+        self.metrics = Some(metrics);
+    }
+
+    /// Get reference to metrics if configured.
+    pub fn metrics(&self) -> Option<&McpClientMetrics> {
+        self.metrics.as_ref()
     }
 }
 

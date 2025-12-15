@@ -18,7 +18,7 @@ pub enum ApprovalPolicy {
 }
 
 /// Approval handler trait.
-pub trait ApprovalHandler: Send + Sync {
+pub trait ApprovalHandler: Send + Sync + std::fmt::Debug {
     /// Requests approval for a tool call.
     ///
     /// Returns `true` if approved, `false` if denied.
@@ -52,6 +52,7 @@ impl ApprovalHandler for ConsoleApprovalHandler {
 }
 
 /// Approval manager for MCP client.
+#[derive(Debug)]
 pub struct ApprovalManager {
     /// Approval policy.
     policy: ApprovalPolicy,
