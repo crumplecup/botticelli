@@ -20,6 +20,9 @@ botticelli_models = { workspace = true }
 botticelli_core = { workspace = true }
 botticelli_interface = { workspace = true }
 
+# MCP protocol
+pmcp = "1.8.6"
+
 # Database
 diesel = { workspace = true, optional = true }
 

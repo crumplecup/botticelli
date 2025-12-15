@@ -37,6 +37,30 @@ impl Tui {
         })
     }
 
+    /// Create TUI with MCP integration.
+    ///
+    /// Takes an LLM driver (Anthropic, Gemini, etc.) and initializes the full
+    /// MCP stack for tool execution.
+    pub fn with_mcp(driver: std::sync::Arc<dyn botticelli_interface::BotticelliDriver>) -> TuiResult<Self> {
+        let backend = CrosstermBackend::new(io::stdout());
+        let terminal = Terminal::new(backend)?;
+        let events = EventHandler::new(std::time::Duration::from_millis(250));
+
+        // Create channel for MCP updates
+        let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
+
+        // Initialize AppState with MCP integration
+        let mut state = AppState::with_mcp_integration(driver);
+        state.set_mcp_channel(mcp_tx);
+
+        Ok(Self {
+            terminal,
+            events,
+            state,
+            mcp_rx,
+        })
+    }
+
     /// Run the TUI event loop.
     pub async fn run(&mut self) -> TuiResult<()> {
         // Setup terminal

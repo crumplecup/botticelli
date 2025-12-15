@@ -4,7 +4,11 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, Input as CoreInput, Message as CoreMessage, Role};
 use botticelli_interface::BotticelliDriver;
-use botticelli_mcp_client::{LlmBackend, ToolDefinition, UnifiedMcpClient};
+use botticelli_mcp_client::{
+    tools::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool},
+    LlmBackend, ToolDefinition, ToolHandler, ToolRegistry, UnifiedMcpClient,
+};
+use pmcp::{Content, ToolInfo};
 use tracing::{error, info};
 use uuid::Uuid;
 
@@ -431,7 +435,97 @@ impl Default for AppState {
     }
 }
 
+/// Simple echo tool for testing.
+struct EchoTool;
+
+#[async_trait]
+impl ToolHandler for EchoTool {
+    async fn execute(&self, args: serde_json::Value) -> botticelli_mcp_client::McpClientResult<Vec<Content>> {
+        let message = args
+            .get("message")
+            .and_then(|v| v.as_str())
+            .unwrap_or("No message provided");
+
+        Ok(vec![Content::Text {
+            text: format!("Echo: {}", message),
+        }])
+    }
+
+    fn tool_info(&self) -> ToolInfo {
+        ToolInfo::new(
+            "echo",
+            Some("Echoes back the message you send. Useful for testing.".to_string()),
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "The message to echo back"
+                    }
+                },
+                "required": ["message"]
+            }),
+        )
+    }
+}
+
 impl AppState {
+    /// Create AppState with MCP integration enabled.
+    ///
+    /// Initializes:
+    /// - LLM backend with provided driver
+    /// - Tool registry with basic tools
+    /// - UnifiedMcpClient for orchestration
+    pub fn with_mcp_integration(driver: Arc<dyn BotticelliDriver>) -> Self {
+        info!("Initializing AppState with MCP integration");
+
+        // Create LLM backend
+        let llm_backend = TuiLlmBackend::new(driver);
+
+        // Create tool registry and register tools
+        let mut registry = ToolRegistry::new();
+
+        // Register echo tool for testing
+        registry
+            .register("echo".to_string(), Arc::new(EchoTool))
+            .expect("Failed to register echo tool");
+
+        // Register narrative tools
+        let narratives_dir = "narratives".to_string();
+
+        registry
+            .register("create_narrative".to_string(), Arc::new(CreateNarrativeTool))
+            .expect("Failed to register create_narrative tool");
+
+        registry
+            .register("validate_narrative".to_string(), Arc::new(ValidateNarrativeTool))
+            .expect("Failed to register validate_narrative tool");
+
+        registry
+            .register("list_narratives".to_string(), Arc::new(ListNarrativesTool::new(&narratives_dir)))
+            .expect("Failed to register list_narratives tool");
+
+        registry
+            .register("load_narrative".to_string(), Arc::new(LoadNarrativeTool::new(&narratives_dir)))
+            .expect("Failed to register load_narrative tool");
+
+        info!(tool_count = registry.tool_count(), "Tools registered");
+
+        // Create MCP client with registry
+        let mcp_client = UnifiedMcpClient::builder()
+            .max_iterations(10)
+            .build();
+
+        // Note: We can't add the registry to UnifiedMcpClient yet because it only
+        // supports external servers. For now, external tools only.
+
+        let mut state = Self::default();
+        state.set_llm_backend(llm_backend);
+        state.set_mcp_client(mcp_client);
+
+        state
+    }
+
     /// Set the MCP client for tool execution.
     pub fn set_mcp_client(&mut self, client: UnifiedMcpClient) {
         self.mcp_client = Some(Arc::new(tokio::sync::Mutex::new(client)));
