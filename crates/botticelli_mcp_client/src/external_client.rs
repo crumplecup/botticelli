@@ -3,6 +3,7 @@
 //! This module provides functionality to spawn and communicate with external
 //! MCP servers like filesystem, git, search, etc.
 
+use crate::retry::RetryConfig;
 use crate::tool_executor::ToolDefinition;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use pmcp::types::TransportMessage;
@@ -14,7 +15,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, instrument, warn};
 use typed_builder::TypedBuilder;
 
 /// Custom transport for external child process communication.
@@ -113,6 +114,9 @@ pub struct ExternalMcpClient {
 
     /// Call count for metrics
     call_count: AtomicU64,
+
+    /// Retry configuration
+    retry_config: RetryConfig,
 }
 
 impl ExternalMcpClient {
@@ -206,6 +210,7 @@ impl ExternalMcpClient {
             tools,
             allowed_tools: config.allowed_tools,
             call_count: AtomicU64::new(0),
+            retry_config: RetryConfig::default(),
         })
     }
 
@@ -231,7 +236,7 @@ impl ExternalMcpClient {
         self.tools.iter().any(|t| t.name == tool_name)
     }
 
-    /// Call a tool on the external server.
+    /// Call a tool on the external server with retry logic.
     #[instrument(skip(self, arguments), fields(server = %self.name, tool = %tool_name))]
     pub async fn call_tool(&mut self, tool_name: &str, arguments: Value) -> McpClientResult<Value> {
         // Verify tool exists and is allowed
@@ -249,29 +254,74 @@ impl ExternalMcpClient {
             tool_name, self.name, arguments
         );
 
-        // Call via pmcp client
-        let result = self
-            .client
-            .call_tool(tool_name.to_string(), arguments)
-            .await
-            .map_err(|e| {
-                McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!(
-                    "Tool '{}' failed on server '{}': {}",
-                    tool_name, self.name, e
-                )))
-            })?;
+        // Manual retry loop with exponential backoff
+        let mut attempt = 0;
+        let mut backoff = self.retry_config.initial_backoff;
+        let max_attempts = self.retry_config.max_attempts;
 
-        // Track metrics
-        self.call_count.fetch_add(1, Ordering::SeqCst);
+        loop {
+            attempt += 1;
+            debug!(attempt, "Executing tool call");
 
-        // Convert Content to JSON Value
-        // The content is typically a Vec<Content>, serialize it
-        serde_json::to_value(result.content).map_err(|e| {
-            McpClientError::new(McpClientErrorKind::SerializationError(format!(
-                "Failed to serialize tool result: {}",
-                e
-            )))
-        })
+            // Call via pmcp client
+            let result = self
+                .client
+                .call_tool(tool_name.to_string(), arguments.clone())
+                .await;
+
+            match result {
+                Ok(content) => {
+                    if attempt > 1 {
+                        debug!(attempt, "Tool call succeeded after retry");
+                    }
+
+                    // Track metrics
+                    self.call_count.fetch_add(1, Ordering::SeqCst);
+
+                    // Convert Content to JSON Value
+                    return serde_json::to_value(content.content).map_err(|e| {
+                        McpClientError::new(McpClientErrorKind::SerializationError(format!(
+                            "Failed to serialize tool result: {}",
+                            e
+                        )))
+                    });
+                }
+                Err(e) => {
+                    let err = McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
+                        format!("Tool '{}' failed on server '{}': {}", tool_name, self.name, e),
+                    ));
+
+                    if attempt >= max_attempts {
+                        warn!(attempt, "All retry attempts exhausted");
+                        return Err(err);
+                    }
+
+                    if !err.kind.is_retryable() {
+                        warn!("Error is not retryable, failing immediately");
+                        return Err(err);
+                    }
+
+                    if err.kind.should_backoff() {
+                        debug!(
+                            backoff_ms = backoff.as_millis(),
+                            "Backing off due to rate limit"
+                        );
+                    } else {
+                        debug!(backoff_ms = backoff.as_millis(), "Retrying after failure");
+                    }
+
+                    tokio::time::sleep(backoff).await;
+
+                    // Exponential backoff with cap
+                    backoff = std::cmp::min(
+                        std::time::Duration::from_secs_f64(
+                            backoff.as_secs_f64() * self.retry_config.backoff_multiplier,
+                        ),
+                        self.retry_config.max_backoff,
+                    );
+                }
+            }
+        }
     }
 
     /// Get call statistics.
