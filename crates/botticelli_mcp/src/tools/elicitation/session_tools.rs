@@ -158,7 +158,7 @@ impl McpTool for ElicitMetadataTool {
 
         // Update fields if provided
         self.registry
-            .update_narrative(narrative_id, |partial| {
+            .update_narrative(&narrative_id.to_string(), |partial| {
                 if let Some(name) = input.get("name").and_then(|v| v.as_str()) {
                     partial.name = Some(name.to_string());
                 }
@@ -176,8 +176,7 @@ impl McpTool for ElicitMetadataTool {
                 }
 
                 Ok(())
-            })
-            .await?;
+            })?;
 
         debug!(narrative_id = %narrative_id, "Metadata updated");
 
@@ -257,7 +256,7 @@ impl McpTool for ElicitActTool {
             .and_then(|v| v.as_str())
             .ok_or_else(|| McpError::invalid_input("Missing 'prompt'".to_string()))?;
 
-        let _state = self.registry.get_narrative(narrative_id)?;
+        let _state = self.registry.get_narrative(&narrative_id.to_string())?;
 
         // Update or add act
         let model = input
@@ -270,17 +269,16 @@ impl McpTool for ElicitActTool {
 
         // Add to registry
         self.registry
-            .update_narrative(narrative_id, |partial| {
+            .update_narrative(&narrative_id.to_string(), |partial| {
                 partial.acts.insert(act_name.to_string(), act.clone());
                 if !partial.act_order.contains(&act_name.to_string()) {
                     partial.act_order.push(act_name.to_string());
                 }
                 Ok(())
-            })
-            .await?;
+            })?;
 
         // Get updated count
-        let partial = self.registry.get_narrative(narrative_id)?;
+        let partial = self.registry.get_narrative(&narrative_id.to_string())?;
         let acts_count = partial.acts.len();
 
         debug!(narrative_id = %narrative_id, act_name, "Act updated");
@@ -339,7 +337,7 @@ impl McpTool for FinalizeNarrativeTool {
 
         let state = self
             .registry
-            .remove(&narrative_id)
+            .remove(&narrative_id.to_string())
             .ok_or_else(|| McpError::invalid_input("Narrative session not found".to_string()))?;
 
         // Generate TOML from PartialNarrative

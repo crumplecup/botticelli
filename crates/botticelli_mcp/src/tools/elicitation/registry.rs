@@ -1,6 +1,6 @@
 //! Registry for managing active narrative creation sessions.
 
-use botticelli_interface::{RegistryOperations, NarrativeRegistryOperations};
+use botticelli_interface::RegistryOperations;
 use botticelli_error::{McpError, McpResult};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -92,6 +92,43 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
         result
     }
 
+    /// Get narrative by key (alias for `get`).
+    ///
+    /// # Errors
+    ///
+    /// Returns error if narrative doesn't exist.
+    pub fn get_narrative(&self, key: &str) -> McpResult<T>
+    where
+        T: Clone,
+    {
+        self.get(key)
+    }
+
+    /// Update narrative with a closure.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if narrative doesn't exist or update fails.
+    pub fn update_narrative<F>(&self, key: &str, update_fn: F) -> McpResult<()>
+    where
+        F: FnOnce(&mut T) -> McpResult<()>,
+    {
+        let mut narratives = self.narratives.write().expect("Registry lock poisoned");
+        let narrative = narratives
+            .get_mut(key)
+            .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", key)))?;
+        
+        update_fn(narrative)
+    }
+
+    /// Create a new session (alias for `add`).
+    pub fn create_session(&self, item: T) -> String
+    where
+        T: Clone,
+    {
+        self.add(item)
+    }
+
     /// Get all active narrative keys.
     ///
     /// Useful for debugging and monitoring.
@@ -128,37 +165,5 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
 impl<T: RegistryOperations<Key = String>> Default for NarrativeRegistry<T> {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl<T> NarrativeRegistryOperations for NarrativeRegistry<T>
-where
-    T: RegistryOperations<Key = String> + Clone,
-{
-    type Narrative = T;
-
-    fn get_narrative(&self, id: &str) -> McpResult<Self::Narrative> {
-        self.get(id)
-    }
-
-    fn update_narrative<F>(&self, id: &str, update_fn: F) -> McpResult<()>
-    where
-        F: FnOnce(&mut Self::Narrative) -> McpResult<()>,
-    {
-        let mut narratives = self.narratives.write().expect("Registry lock poisoned");
-        let narrative = narratives
-            .get_mut(id)
-            .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", id)))?;
-        
-        update_fn(narrative)
-    }
-
-    fn create_session(&mut self, narrative: Self::Narrative) -> String {
-        self.add(narrative)
-    }
-
-    fn finalize_narrative(&self, id: &str) -> McpResult<Self::Narrative> {
-        self.remove(id)
-            .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", id)))
     }
 }

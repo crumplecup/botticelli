@@ -51,7 +51,7 @@ pub async fn get_narrative_state(
     let narrative_id = Uuid::parse_str(&input.narrative_id)
         .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
-    let partial = registry.get_narrative(narrative_id)?;
+    let partial = registry.get_narrative(&narrative_id.to_string())?;
 
     let acts_count = partial.acts.len();
     let acts: Vec<String> = partial.act_order.clone();

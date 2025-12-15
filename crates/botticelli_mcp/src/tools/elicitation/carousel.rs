@@ -1,6 +1,5 @@
 use crate::tools::elicitation::PartialNarrativeRegistry;
 use botticelli_error::{McpError, McpResult};
-use botticelli_interface::NarrativeRegistryOperations;
 use botticelli_narrative::CarouselConfig;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};
@@ -83,7 +82,7 @@ pub async fn elicit_carousel(
     }
 
     registry
-        .update_narrative(narrative_id, |partial| {
+        .update_narrative(&narrative_id.to_string(), |partial| {
             let estimated_tokens = input.estimated_tokens_per_iteration.unwrap_or(1000) as u64;
             let carousel = CarouselConfig::new(input.iterations, estimated_tokens)
                 .with_continue_on_error(input.continue_on_error);
@@ -104,8 +103,7 @@ pub async fn elicit_carousel(
             }
 
             Ok(())
-        })
-        .await?;
+        })?;
 
     let estimated_total_tokens = input
         .estimated_tokens_per_iteration

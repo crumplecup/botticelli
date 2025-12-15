@@ -44,7 +44,7 @@ pub async fn update_narrative_field(
     let mut errors = Vec::new();
 
     registry
-        .update_narrative(narrative_id, |partial| {
+        .update_narrative(&narrative_id.to_string(), |partial| {
             for update in &updates {
                 match apply_field_update(partial, &update.path, &update.value) {
                     Ok(()) => {
@@ -57,8 +57,7 @@ pub async fn update_narrative_field(
                 }
             }
             Ok(())
-        })
-        .await?;
+        })?;
 
     Ok(UpdateNarrativeFieldOutput {
         success: errors.is_empty(),

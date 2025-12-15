@@ -70,7 +70,7 @@ pub async fn validate_narrative(
     let narrative_id = Uuid::parse_str(&input.narrative_id)
         .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
-    let partial = registry.get_narrative(narrative_id)?;
+    let partial = registry.get_narrative(&narrative_id.to_string())?;
 
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
@@ -203,7 +203,7 @@ pub async fn apply_validation_fixes(
     let mut fixes_applied = Vec::new();
 
     registry
-        .update_narrative(narrative_id, |partial| {
+        .update_narrative(&narrative_id.to_string(), |partial| {
             let fix_all = input.fix_types.contains(&"all".to_string());
 
             if fix_all || input.fix_types.contains(&"missing_defaults".to_string()) {
@@ -225,8 +225,7 @@ pub async fn apply_validation_fixes(
             }
 
             Ok(())
-        })
-        .await?;
+        })?;
 
     let validation = validate_narrative(
         registry,
