@@ -20,7 +20,7 @@ pub enum DiscordMessage {
         /// Command content.
         content: String,
     },
-    
+
     /// Shutdown the bot.
     Shutdown,
 }
@@ -49,7 +49,7 @@ impl DiscordBot {
     #[tracing::instrument(skip(self, rx))]
     pub async fn run(self, mut rx: mpsc::Receiver<DiscordMessage>) {
         tracing::info!("Discord bot starting");
-        
+
         while let Some(msg) = rx.recv().await {
             match msg {
                 DiscordMessage::ProcessCommand {
@@ -62,8 +62,12 @@ impl DiscordBot {
                         user_id = %user_id,
                         "Processing Discord command"
                     );
-                    
-                    match self.bridge.handle_message(&channel_id, &user_id, &content).await {
+
+                    match self
+                        .bridge
+                        .handle_message(&channel_id, &user_id, &content)
+                        .await
+                    {
                         Ok(response) => {
                             tracing::info!(
                                 channel_id = %channel_id,
@@ -80,14 +84,14 @@ impl DiscordBot {
                         }
                     }
                 }
-                
+
                 DiscordMessage::Shutdown => {
                     tracing::info!("Discord bot shutting down");
                     break;
                 }
             }
         }
-        
+
         tracing::info!("Discord bot stopped");
     }
 }

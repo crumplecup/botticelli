@@ -4,7 +4,7 @@ use crate::{McpClientError, McpClientErrorKind, McpClientResult, ToolHandler};
 use async_trait::async_trait;
 use botticelli_mcp::RegistryOperations;
 use pmcp::{Content, ToolInfo};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::{Arc, RwLock};
@@ -206,11 +206,14 @@ where
     #[tracing::instrument(skip(self))]
     async fn execute(&self, arguments: Value) -> McpClientResult<Vec<Content>> {
         let key: T::Key = serde_json::from_value(
-            arguments.get("key").ok_or_else(|| {
-                McpClientError::new(McpClientErrorKind::InvalidToolCall(
-                    "Missing 'key' field".to_string(),
-                ))
-            })?.clone(),
+            arguments
+                .get("key")
+                .ok_or_else(|| {
+                    McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                        "Missing 'key' field".to_string(),
+                    ))
+                })?
+                .clone(),
         )
         .map_err(|e| {
             McpClientError::new(McpClientErrorKind::InvalidToolCall(format!(
@@ -264,8 +267,7 @@ where
 }
 
 #[async_trait]
-impl<T: RegistryOperations + Clone + Send + Sync + 'static> ToolHandler
-    for ListRegistryKeysTool<T>
+impl<T: RegistryOperations + Clone + Send + Sync + 'static> ToolHandler for ListRegistryKeysTool<T>
 where
     T::Key: Eq + Hash + Clone + std::fmt::Display + std::fmt::Debug + Send + Sync,
 {

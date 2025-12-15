@@ -30,11 +30,11 @@ pub enum DiscordMcpBridgeErrorKind {
     /// MCP orchestrator error occurred.
     #[display("MCP orchestrator error: {}", _0)]
     Orchestrator(String),
-    
+
     /// Invalid message format.
     #[display("Invalid message format: {}", _0)]
     InvalidFormat(String),
-    
+
     /// Missing required field in response.
     #[display("Missing required field: {}", _0)]
     MissingField(String),

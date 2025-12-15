@@ -67,7 +67,7 @@ impl<T: RegistryOperations> NarrativeRegistry<T> {
         T: Clone,
     {
         let mut narratives = self.narratives.write().expect("Registry lock poisoned");
-        
+
         let narrative = narratives
             .get_mut(&id)
             .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", id)))?;

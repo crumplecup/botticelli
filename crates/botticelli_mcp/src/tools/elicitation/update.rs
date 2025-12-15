@@ -79,12 +79,7 @@ fn apply_field_update(
 
     match parts.as_slice() {
         ["name"] => {
-            partial.name = Some(
-                value
-                    .as_str()
-                    .ok_or("name must be a string")?
-                    .to_string(),
-            );
+            partial.name = Some(value.as_str().ok_or("name must be a string")?.to_string());
         }
         ["description"] => {
             partial.description = Some(
@@ -95,19 +90,10 @@ fn apply_field_update(
             );
         }
         ["model"] => {
-            partial.model = Some(
-                value
-                    .as_str()
-                    .ok_or("model must be a string")?
-                    .to_string(),
-            );
+            partial.model = Some(value.as_str().ok_or("model must be a string")?.to_string());
         }
         ["temperature"] => {
-            partial.temperature = Some(
-                value
-                    .as_f64()
-                    .ok_or("temperature must be a number")?,
-            );
+            partial.temperature = Some(value.as_f64().ok_or("temperature must be a number")?);
         }
         ["max_tokens"] => {
             partial.max_tokens = Some(value.as_u64().ok_or("max_tokens must be a number")? as u32);
@@ -117,33 +103,21 @@ fn apply_field_update(
                 .acts
                 .get_mut(*act_name)
                 .ok_or_else(|| format!("Act '{}' not found", act_name))?;
-            act.prompt = value
-                .as_str()
-                .ok_or("prompt must be a string")?
-                .to_string();
+            act.prompt = value.as_str().ok_or("prompt must be a string")?.to_string();
         }
         ["acts", act_name, "model"] => {
             let act = partial
                 .acts
                 .get_mut(*act_name)
                 .ok_or_else(|| format!("Act '{}' not found", act_name))?;
-            act.model = Some(
-                value
-                    .as_str()
-                    .ok_or("model must be a string")?
-                    .to_string(),
-            );
+            act.model = Some(value.as_str().ok_or("model must be a string")?.to_string());
         }
         ["acts", act_name, "temperature"] => {
             let act = partial
                 .acts
                 .get_mut(*act_name)
                 .ok_or_else(|| format!("Act '{}' not found", act_name))?;
-            act.temperature = Some(
-                value
-                    .as_f64()
-                    .ok_or("temperature must be a number")?,
-            );
+            act.temperature = Some(value.as_f64().ok_or("temperature must be a number")?);
         }
         _ => {
             return Err(format!("Unsupported field path: {}", path));

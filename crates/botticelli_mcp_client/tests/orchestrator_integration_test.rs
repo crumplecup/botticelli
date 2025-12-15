@@ -1,10 +1,10 @@
+use async_trait::async_trait;
 use botticelli_mcp_client::{
     FinishReason, GenerationConfig, GenerationResponse, LlmAdapter, LlmToolCall, McpClientResult,
-    Message, MessageRole, Orchestrator, ToolHandler, ToolRegistry, TokenUsage,
+    Message, MessageRole, Orchestrator, TokenUsage, ToolHandler, ToolRegistry,
 };
-use async_trait::async_trait;
 use pmcp::{Content, ToolInfo};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::{Arc, Mutex};
 
 /// Mock LLM adapter for testing orchestrator without real API calls.
@@ -56,10 +56,7 @@ struct EchoToolHandler;
 #[async_trait]
 impl ToolHandler for EchoToolHandler {
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
-        let message = args
-            .get("message")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let message = args.get("message").and_then(|v| v.as_str()).unwrap_or("");
         Ok(vec![Content::Text {
             text: format!("Echo: {}", message),
         }])

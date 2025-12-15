@@ -71,7 +71,7 @@ impl McpTool for CreateNarrativeSessionTool {
         let mut partial = PartialNarrative::new();
         partial.description = Some(description.to_string());
         partial.name = Some(suggested_name.clone());
-        
+
         // Add acts
         for act in &acts {
             partial.acts.insert(
@@ -157,25 +157,27 @@ impl McpTool for ElicitMetadataTool {
             .ok_or_else(|| McpError::invalid_input("Invalid narrative_id".to_string()))?;
 
         // Update fields if provided
-        self.registry.update_narrative(narrative_id, |partial| {
-            if let Some(name) = input.get("name").and_then(|v| v.as_str()) {
-                partial.name = Some(name.to_string());
-            }
+        self.registry
+            .update_narrative(narrative_id, |partial| {
+                if let Some(name) = input.get("name").and_then(|v| v.as_str()) {
+                    partial.name = Some(name.to_string());
+                }
 
-            if let Some(desc) = input.get("description").and_then(|v| v.as_str()) {
-                partial.description = Some(desc.to_string());
-            }
+                if let Some(desc) = input.get("description").and_then(|v| v.as_str()) {
+                    partial.description = Some(desc.to_string());
+                }
 
-            if let Some(model) = input.get("default_model").and_then(|v| v.as_str()) {
-                partial.model = Some(model.to_string());
-            }
+                if let Some(model) = input.get("default_model").and_then(|v| v.as_str()) {
+                    partial.model = Some(model.to_string());
+                }
 
-            if let Some(temp) = input.get("default_temperature").and_then(|v| v.as_f64()) {
-                partial.temperature = Some(temp);
-            }
-            
-            Ok(())
-        }).await?;
+                if let Some(temp) = input.get("default_temperature").and_then(|v| v.as_f64()) {
+                    partial.temperature = Some(temp);
+                }
+
+                Ok(())
+            })
+            .await?;
 
         debug!(narrative_id = %narrative_id, "Metadata updated");
 
@@ -255,30 +257,27 @@ impl McpTool for ElicitActTool {
             .and_then(|v| v.as_str())
             .ok_or_else(|| McpError::invalid_input("Missing 'prompt'".to_string()))?;
 
-        let mut state = self
-            .registry
-            .get_narrative(narrative_id)?;
+        let mut state = self.registry.get_narrative(narrative_id)?;
 
         // Update or add act
-        let model = input.get("model").and_then(|v| v.as_str()).map(String::from);
+        let model = input
+            .get("model")
+            .and_then(|v| v.as_str())
+            .map(String::from);
         let temperature = input.get("temperature").and_then(|v| v.as_f64());
-        
-        let act = PartialAct::new(
-            prompt.to_string(),
-            model,
-            temperature,
-            vec![],
-            None,
-        );
+
+        let act = PartialAct::new(prompt.to_string(), model, temperature, vec![], None);
 
         // Add to registry
-        self.registry.update_narrative(narrative_id, |partial| {
-            partial.acts.insert(act_name.to_string(), act.clone());
-            if !partial.act_order.contains(&act_name.to_string()) {
-                partial.act_order.push(act_name.to_string());
-            }
-            Ok(())
-        }).await?;
+        self.registry
+            .update_narrative(narrative_id, |partial| {
+                partial.acts.insert(act_name.to_string(), act.clone());
+                if !partial.act_order.contains(&act_name.to_string()) {
+                    partial.act_order.push(act_name.to_string());
+                }
+                Ok(())
+            })
+            .await?;
 
         // Get updated count
         let partial = self.registry.get_narrative(narrative_id)?;

@@ -3,7 +3,7 @@
 use crate::{McpClientError, McpClientErrorKind, McpClientResult, ToolHandler};
 use async_trait::async_trait;
 use pmcp::{Content, ToolInfo};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
@@ -317,11 +317,14 @@ impl ToolHandler for ElicitActTool {
                 ))
             })?;
 
-        let prompt = input.get("prompt").and_then(|v| v.as_str()).ok_or_else(|| {
-            McpClientError::new(McpClientErrorKind::InvalidToolCall(
-                "Missing 'prompt'".to_string(),
-            ))
-        })?;
+        let prompt = input
+            .get("prompt")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                    "Missing 'prompt'".to_string(),
+                ))
+            })?;
 
         let mut state = self.registry.get(&session_id).ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::InvalidToolCall(
@@ -420,7 +423,8 @@ impl ToolHandler for ExecuteCarouselTool {
                 "status": "not_implemented",
                 "message": "Carousel execution requires full narrative executor integration",
                 "next_steps": "Need to wire NarrativeExecutor into MCP tool handler"
-            }).to_string(),
+            })
+            .to_string(),
         }])
     }
 }
@@ -523,11 +527,15 @@ fn suggest_name_from_description(description: &str) -> String {
 fn generate_toml_from_state(state: &Value) -> McpClientResult<String> {
     let metadata = &state["metadata"];
     let acts = state["acts"].as_array().ok_or_else(|| {
-        McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing acts".to_string()))
+        McpClientError::new(McpClientErrorKind::InvalidToolCall(
+            "Missing acts".to_string(),
+        ))
     })?;
 
     let name = metadata["name"].as_str().ok_or_else(|| {
-        McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing name".to_string()))
+        McpClientError::new(McpClientErrorKind::InvalidToolCall(
+            "Missing name".to_string(),
+        ))
     })?;
 
     let description = metadata["description"]
@@ -568,7 +576,11 @@ fn generate_toml_from_state(state: &Value) -> McpClientResult<String> {
     for act in acts {
         let act_name = act["name"].as_str().unwrap_or("unknown");
         let prompt = act["prompt"].as_str().unwrap_or("");
-        toml.push_str(&format!("{} = \"{}\"\n", act_name, escape_toml_string(prompt)));
+        toml.push_str(&format!(
+            "{} = \"{}\"\n",
+            act_name,
+            escape_toml_string(prompt)
+        ));
     }
 
     Ok(toml)

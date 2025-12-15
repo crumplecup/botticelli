@@ -17,7 +17,9 @@ pub use elicitation::{
 pub use narrative::{
     CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool,
 };
-pub use registry_ops::{GenericRegistry, GetRegistryItemTool, ListRegistryKeysTool, UpsertRegistryItemTool};
+pub use registry_ops::{
+    GenericRegistry, GetRegistryItemTool, ListRegistryKeysTool, UpsertRegistryItemTool,
+};
 
 /// Register all available internal tools into the registry.
 ///

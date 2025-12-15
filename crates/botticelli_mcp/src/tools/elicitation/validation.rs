@@ -150,11 +150,8 @@ pub async fn validate_narrative(
 
     let metadata_complete =
         partial.name.is_some() && partial.description.is_some() && partial.model.is_some();
-    let acts_complete = !partial.acts.is_empty()
-        && partial
-            .acts
-            .values()
-            .all(|act| !act.prompt.is_empty());
+    let acts_complete =
+        !partial.acts.is_empty() && partial.acts.values().all(|act| !act.prompt.is_empty());
     let inputs_partial = partial.acts.values().any(|act| !act.inputs.is_empty());
 
     let metadata_status = if metadata_complete {
@@ -167,11 +164,7 @@ pub async fn validate_narrative(
     } else {
         "incomplete"
     };
-    let inputs_status = if inputs_partial {
-        "partial"
-    } else {
-        "none"
-    };
+    let inputs_status = if inputs_partial { "partial" } else { "none" };
 
     let mut completeness_score = 0;
     if metadata_complete {
@@ -216,7 +209,8 @@ pub async fn apply_validation_fixes(
             if fix_all || input.fix_types.contains(&"missing_defaults".to_string()) {
                 if partial.model.is_none() {
                     partial.model = Some("claude-3-5-sonnet-20241022".to_string());
-                    fixes_applied.push("Set default model to claude-3-5-sonnet-20241022".to_string());
+                    fixes_applied
+                        .push("Set default model to claude-3-5-sonnet-20241022".to_string());
                 }
 
                 if partial.temperature.is_none() {

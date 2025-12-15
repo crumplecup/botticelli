@@ -94,10 +94,9 @@ pub async fn elicit_carousel(
                 }
                 CarouselLevel::Act => {
                     let act_name = input.act_name.as_ref().unwrap();
-                    let act = partial
-                        .acts
-                        .get_mut(act_name)
-                        .ok_or_else(|| McpError::invalid_input(format!("Act '{}' not found", act_name)))?;
+                    let act = partial.acts.get_mut(act_name).ok_or_else(|| {
+                        McpError::invalid_input(format!("Act '{}' not found", act_name))
+                    })?;
                     act.carousel = Some(carousel);
                     debug!(act = %act_name, "Set act-level carousel");
                 }

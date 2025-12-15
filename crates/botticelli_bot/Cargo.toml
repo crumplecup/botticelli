@@ -34,3 +34,4 @@ typed-builder = "0.20"
 
 [dev-dependencies]
 tokio-test = "0.4"
+async-trait = "0.1"

@@ -187,17 +187,20 @@ impl RegistryOperations for PartialNarrative {
     }
 
     fn from_json_args(args: Value) -> McpResult<Self> {
-        serde_json::from_value(args)
-            .map_err(|e| McpError::invalid_input(format!("Failed to deserialize PartialNarrative: {}", e)))
+        serde_json::from_value(args).map_err(|e| {
+            McpError::invalid_input(format!("Failed to deserialize PartialNarrative: {}", e))
+        })
     }
 
     fn to_json(&self) -> McpResult<Value> {
-        serde_json::to_value(self)
-            .map_err(|e| McpError::execution_failed(format!("Failed to serialize PartialNarrative: {}", e)))
+        serde_json::to_value(self).map_err(|e| {
+            McpError::execution_failed(format!("Failed to serialize PartialNarrative: {}", e))
+        })
     }
 
     fn update_from_json(&mut self, args: Value) -> McpResult<()> {
-        let obj = args.as_object()
+        let obj = args
+            .as_object()
             .ok_or_else(|| McpError::invalid_input("Expected JSON object".to_string()))?;
 
         // Update fields present in JSON

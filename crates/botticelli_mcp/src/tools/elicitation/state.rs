@@ -55,16 +55,13 @@ pub async fn get_narrative_state(
 
     let acts_count = partial.acts.len();
     let acts: Vec<String> = partial.act_order.clone();
-    let has_carousel = partial.carousel.is_some()
-        || partial.acts.values().any(|act| act.carousel.is_some());
+    let has_carousel =
+        partial.carousel.is_some() || partial.acts.values().any(|act| act.carousel.is_some());
 
     let metadata_complete =
         partial.name.is_some() && partial.description.is_some() && partial.model.is_some();
-    let acts_complete = !partial.acts.is_empty()
-        && partial
-            .acts
-            .values()
-            .all(|act| !act.prompt.is_empty());
+    let acts_complete =
+        !partial.acts.is_empty() && partial.acts.values().all(|act| !act.prompt.is_empty());
     let inputs_partial = partial.acts.values().any(|act| !act.inputs.is_empty());
 
     let mut completeness_score = 0;
