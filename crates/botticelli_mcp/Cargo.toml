@@ -91,5 +91,10 @@ name = "botticelli-mcp"
 path = "src/bin/botticelli-mcp.rs"
 required-features = ["database", "llm"]
 
+[[bin]]
+name = "botticelli-mcp-pmcp"
+path = "src/bin/botticelli-mcp-pmcp.rs"
+# No required features - works with any feature set
+
 [package.metadata.docs.rs]
 all-features = true
