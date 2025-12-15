@@ -208,3 +208,123 @@ warning: field `retry_config` is never read
 *Generated: 2025-12-15*
 *Branch: dev*
 *Crate: botticelli_mcp_client v0.2.0*
+
+---
+
+## Phase: Registry Operations Trait Implementation
+**Date**: 2025-12-15
+**Status**: ✅ Complete
+
+### Summary
+
+Implemented `RegistryOperations` trait pattern for type-safe, extensible registry handling across all MCP tools. Moved trait to `botticelli_interface` to enable cross-crate usage without circular dependencies.
+
+### Completed Work
+
+#### 1. Trait Migration to Interface Crate
+**Files Modified:**
+- `crates/botticelli_interface/src/registry.rs` - New trait definition
+- `crates/botticelli_interface/src/lib.rs` - Export trait
+- `crates/botticelli_mcp/src/elicitation/registry.rs` - Re-export from interface
+- `Cargo.toml` - Added `serde` feature to uuid
+
+#### 2. Database Registry Implementations
+**Files Created:**
+- `crates/botticelli_database/src/registry_impl.rs`
+
+**Types Implemented:**
+- `ActorRow: RegistryOperations<Key=Uuid>`
+- `ContentEntry: RegistryOperations<Key=Uuid>`
+
+#### 3. Compilation Verification
+✅ All packages compile successfully
+✅ Zero errors in affected crates
+✅ Feature combinations tested
+
+### Architecture: Trait Sandwich Pattern
+
+```
+┌─────────────────────────────────────────────────┐
+│          MCP Tool Handlers (Client)             │
+│         depend on: RegistryOperations trait     │
+└────────────────────┬────────────────────────────┘
+                     │ Trait Boundary
+┌────────────────────▼────────────────────────────┐
+│     RegistryOperations Trait (Interface)        │
+└────────────────────┬────────────────────────────┘
+                     │ Trait Boundary
+┌────────────────────▼────────────────────────────┐
+│    Concrete Implementations (Database/MCP)      │
+└─────────────────────────────────────────────────┘
+```
+
+**Benefits:**
+- Decoupling between tool handlers and concrete types
+- Testability via trait mocks
+- Extensibility - add types by implementing trait
+- Type safety - compiler enforces contracts
+- Clear boundaries between pipeline segments
+
+### Remaining Registry Work
+
+#### Implement RegistryOperations for:
+- [ ] NarrativeExecution
+- [ ] PartialNarrative  
+- [ ] ActExecution
+- [ ] Discord message types
+- [ ] Content generation types
+
+### Next Phase: Complete Tool Registration
+
+All tools must be registered with pmcp server:
+- [ ] Narrative generation tools
+- [ ] Database query tools
+- [ ] Elicitation tools (including carousel)
+- [ ] Discord interaction tools
+
+### Testing Strategy
+
+Integration tests for each boundary:
+```bash
+# Test MCP → Tool boundaries
+just test-package botticelli_mcp_client
+
+# Test Database registry operations
+just test-package botticelli_database
+
+# Full integration
+just test-api  # When ready for API calls
+```
+
+### Lessons Learned
+
+**What Went Wrong Previously:**
+1. Wholesale deletion of working features
+2. Missing abstraction layer (no trait)
+3. Trait in wrong crate (circular deps)
+
+**What Went Right This Time:**
+1. Incremental, surgical changes
+2. Trait-first design
+3. Proper crate layering
+4. Compilation gates at each step
+
+### Files Changed
+
+**Created:**
+- `crates/botticelli_interface/src/registry.rs`
+- `crates/botticelli_database/src/registry_impl.rs`
+
+**Modified:**
+- `crates/botticelli_interface/src/lib.rs`
+- `crates/botticelli_database/src/lib.rs`
+- `crates/botticelli_mcp/src/elicitation/registry.rs`
+- `Cargo.toml` (workspace - uuid serde feature)
+
+### Success Criteria Met
+
+✅ Trait accessible from all crates
+✅ Database types implement trait correctly  
+✅ No circular dependencies
+✅ All code compiles
+✅ Pattern documented for future use

@@ -126,7 +126,7 @@ dirs = "6"
 
 # Storage and hashing
 sha2 = "0.10"
-uuid = { version = "1", features = ["v4"] }
+uuid = { version = "1", features = ["v4", "serde"] }
 
 # LLM provider SDKs
 gemini-rust = "1.5"

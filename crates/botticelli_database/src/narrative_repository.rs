@@ -418,3 +418,30 @@ impl NarrativeRepository for PostgresNarrativeRepository {
 
     // Video methods use default implementations from trait (return NotImplemented)
 }
+
+// Implement NarrativeRegistryOperations trait for MCP tool integration
+#[async_trait]
+impl botticelli_interface::NarrativeRegistryOperations for PostgresNarrativeRepository {
+    async fn save_execution(&self, execution: &NarrativeExecution) -> BotticelliResult<i32> {
+        NarrativeRepository::save_execution(self, execution).await
+    }
+
+    async fn load_execution(&self, id: i32) -> BotticelliResult<NarrativeExecution> {
+        NarrativeRepository::load_execution(self, id).await
+    }
+
+    async fn update_status(&self, id: i32, status: ExecutionStatus) -> BotticelliResult<()> {
+        NarrativeRepository::update_status(self, id, status).await
+    }
+
+    async fn list_executions(
+        &self,
+        filter: &ExecutionFilter,
+    ) -> BotticelliResult<Vec<ExecutionSummary>> {
+        NarrativeRepository::list_executions(self, filter).await
+    }
+
+    async fn delete_execution(&self, id: i32) -> BotticelliResult<()> {
+        NarrativeRepository::delete_execution(self, id).await
+    }
+}

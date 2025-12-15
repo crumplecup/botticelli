@@ -45,8 +45,9 @@ pub use tools::{
     CreateTableTool, InspectTableTool, QueryTableTool, TableExistsTool, register_database_tools,
 };
 
-#[cfg(feature = "discord")]
-pub use tools::{DiscordGetMessagesTool, DiscordSendMessageTool};
+// Discord tools temporarily disabled - need proper implementation
+// #[cfg(feature = "discord")]
+// pub use tools::{DiscordGetMessagesTool, DiscordSendMessageTool};
 pub use unified_client::{
     ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics, UnifiedMcpClient,
     extract_tool_calls,

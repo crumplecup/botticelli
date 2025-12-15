@@ -34,6 +34,7 @@ mod models;
 mod narrative_conversions;
 mod narrative_models;
 mod narrative_repository;
+mod registry_impl;
 mod schema_docs;
 mod schema_inference;
 mod schema_reflection;
@@ -92,6 +93,9 @@ pub use schema_reflection::{
 // Re-export table query types
 pub use table_query::{TableQueryExecutor, format_as_csv, format_as_json, format_as_markdown};
 pub use table_query_registry::DatabaseTableQueryRegistry;
+
+// Re-export registry implementations
+pub use registry_impl::{ActorRow, ContentEntry};
 
 use botticelli_error::DatabaseError;
 use botticelli_error::DatabaseErrorKind;

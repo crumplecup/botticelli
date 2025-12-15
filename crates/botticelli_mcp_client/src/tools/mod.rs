@@ -5,8 +5,9 @@
 
 #[cfg(feature = "database")]
 mod database;
-#[cfg(feature = "discord")]
-mod discord;
+// Discord tools temporarily disabled - need proper implementation
+// #[cfg(feature = "discord")]
+// mod discord;
 mod elicitation;
 mod narrative;
 mod registry;
@@ -14,8 +15,8 @@ mod registry_ops;
 
 #[cfg(feature = "database")]
 pub use database::{CreateTableTool, InspectTableTool, QueryTableTool, TableExistsTool};
-#[cfg(feature = "discord")]
-pub use discord::{DiscordGetMessagesTool, DiscordSendMessageTool};
+// #[cfg(feature = "discord")]
+// pub use discord::{DiscordGetMessagesTool, DiscordSendMessageTool};
 pub use elicitation::{
     CreateCarouselTool, CreateElicitationSessionTool, ElicitActTool, ElicitMetadataTool,
     ElicitationRegistry, ExecuteCarouselTool, FinalizeElicitationTool,

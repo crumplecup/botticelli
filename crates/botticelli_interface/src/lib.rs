@@ -5,6 +5,8 @@
 
 mod bot_server;
 mod narrative;
+mod registry;
+mod registry_traits;
 mod table_query_view;
 mod table_view;
 mod traits;
@@ -15,6 +17,8 @@ pub use narrative::{
     ActExecution, ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution,
     NarrativeRepository,
 };
+pub use registry::RegistryOperations;
+pub use registry_traits::{DatabaseRegistryOperations, NarrativeRegistryOperations};
 pub use table_query_view::{
     TableCountView, TableCountViewBuilder, TableQueryView, TableQueryViewBuilder,
 };

@@ -215,3 +215,40 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
 
     // Video methods use default implementations (return NotImplemented)
 }
+
+// Implement NarrativeRegistryOperations trait for MCP tool integration
+#[async_trait]
+impl botticelli_interface::NarrativeRegistryOperations for InMemoryNarrativeRepository {
+    async fn save_execution(
+        &self,
+        execution: &botticelli_interface::NarrativeExecution,
+    ) -> botticelli_error::BotticelliResult<i32> {
+        botticelli_interface::NarrativeRepository::save_execution(self, execution).await
+    }
+
+    async fn load_execution(
+        &self,
+        id: i32,
+    ) -> botticelli_error::BotticelliResult<botticelli_interface::NarrativeExecution> {
+        botticelli_interface::NarrativeRepository::load_execution(self, id).await
+    }
+
+    async fn update_status(
+        &self,
+        id: i32,
+        status: botticelli_interface::ExecutionStatus,
+    ) -> botticelli_error::BotticelliResult<()> {
+        botticelli_interface::NarrativeRepository::update_status(self, id, status).await
+    }
+
+    async fn list_executions(
+        &self,
+        filter: &botticelli_interface::ExecutionFilter,
+    ) -> botticelli_error::BotticelliResult<Vec<botticelli_interface::ExecutionSummary>> {
+        botticelli_interface::NarrativeRepository::list_executions(self, filter).await
+    }
+
+    async fn delete_execution(&self, id: i32) -> botticelli_error::BotticelliResult<()> {
+        botticelli_interface::NarrativeRepository::delete_execution(self, id).await
+    }
+}

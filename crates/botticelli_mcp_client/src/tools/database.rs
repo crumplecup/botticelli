@@ -3,10 +3,10 @@ use async_trait::async_trait;
 use botticelli_database::{
     create_content_table, list_content, reflect_table_schema, table_exists, DbPool,
 };
-use botticelli_error::DatabaseError;
+use pmcp::{Content, ToolInfo};
 use serde_json::{json, Value};
 
-use crate::ToolHandler;
+use crate::{McpClientError, McpClientErrorKind, ToolHandler};
 
 /// Tool for creating database tables.
 ///
@@ -18,57 +18,61 @@ pub struct CreateTableTool {
 }
 
 #[async_trait]
-impl NarrativeTool for CreateTableTool {
-    fn name(&self) -> &str {
-        "create_table"
-    }
-
-    fn description(&self) -> &str {
-        "Create a new database table with specified schema"
-    }
-
-    fn input_schema(&self) -> Value {
-        json!({
-            "type": "object",
-            "properties": {
-                "table_name": {
-                    "type": "string",
-                    "description": "Name of the table to create"
-                },
-                "columns": {
-                    "type": "array",
-                    "description": "Column definitions",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string"},
-                            "data_type": {"type": "string"},
-                            "nullable": {"type": "boolean"}
-                        },
-                        "required": ["name", "data_type"]
+impl ToolHandler for CreateTableTool {
+    fn tool_info(&self) -> ToolInfo {
+        ToolInfo::new(
+            "create_table",
+            Some("Create a new database table with specified schema".to_string()),
+            json!({
+                "type": "object",
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Name of the table to create"
+                    },
+                    "template_source": {
+                        "type": "string",
+                        "description": "Source template for the table"
+                    },
+                    "narrative_file": {
+                        "type": "string",
+                        "description": "Optional narrative file path"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Optional table description"
                     }
-                }
-            },
-            "required": ["table_name", "columns"]
-        })
+                },
+                "required": ["table_name", "template_source"]
+            }),
+        )
     }
 
-    async fn execute(&self, input: Value) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+    async fn execute(&self, input: Value) -> Result<Vec<Content>, McpClientError> {
         let table_name = input["table_name"]
             .as_str()
-            .ok_or("Missing table_name")?;
+            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
+        
+        let template_source = input["template_source"]
+            .as_str()
+            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing template_source".to_string())))?;
+        
+        let narrative_file = input["narrative_file"].as_str();
+        let description = input["description"].as_str();
         
         let mut conn = self.pool.get()
-            .map_err(|e| DatabaseError::connection_error(e.to_string()))?;
+            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(format!("Connection error: {}", e))))?;
 
-        create_content_table(&mut conn, table_name)
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        create_content_table(&mut conn, table_name, template_source, narrative_file, description)
+            .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Table creation error: {}", e))))?;
 
-        Ok(json!({
+        let result = json!({
             "success": true,
             "table_name": table_name,
             "message": format!("Table '{}' created successfully", table_name)
-        }))
+        });
+
+        Ok(vec![Content::Text { text: result.to_string() }])
     }
 }
 
@@ -82,51 +86,50 @@ pub struct QueryTableTool {
 }
 
 #[async_trait]
-impl NarrativeTool for QueryTableTool {
-    fn name(&self) -> &str {
-        "query_table"
-    }
-
-    fn description(&self) -> &str {
-        "Query a database table and return results"
-    }
-
-    fn input_schema(&self) -> Value {
-        json!({
-            "type": "object",
-            "properties": {
-                "table_name": {
-                    "type": "string",
-                    "description": "Name of the table to query"
+impl ToolHandler for QueryTableTool {
+    fn tool_info(&self) -> ToolInfo {
+        ToolInfo::new(
+            "query_table",
+            Some("Query rows from a database table".to_string()),
+            json!({
+                "type": "object",
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Name of the table to query"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of rows to return",
+                        "default": 100
+                    }
                 },
-                "limit": {
-                    "type": "integer",
-                    "description": "Maximum number of rows to return",
-                    "default": 100
-                }
-            },
-            "required": ["table_name"]
-        })
+                "required": ["table_name"]
+            }),
+        )
     }
 
-    async fn execute(&self, input: Value) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+    async fn execute(&self, input: Value) -> Result<Vec<Content>, McpClientError> {
         let table_name = input["table_name"]
             .as_str()
-            .ok_or("Missing table_name")?;
-        let limit = input["limit"].as_i64().unwrap_or(100);
+            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
+        let limit = input["limit"].as_i64().unwrap_or(100) as usize;
+        let status_filter = input["status_filter"].as_str();
 
         let mut conn = self.pool.get()
-            .map_err(|e| DatabaseError::connection_error(e.to_string()))?;
+            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(format!("Connection error: {}", e))))?;
 
-        let rows = list_content(&mut conn, table_name, limit)
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        let rows = list_content(&mut conn, table_name, status_filter, limit)
+            .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Query error: {}", e))))?;
 
-        Ok(json!({
+        let result = json!({
             "success": true,
             "table_name": table_name,
             "row_count": rows.len(),
             "rows": rows
-        }))
+        });
+
+        Ok(vec![Content::Text { text: result.to_string() }])
     }
 }
 
@@ -141,53 +144,50 @@ pub struct InspectTableTool {
 
 #[async_trait]
 impl ToolHandler for InspectTableTool {
-    fn name(&self) -> &str {
-        "inspect_table"
+    fn tool_info(&self) -> ToolInfo {
+        ToolInfo::new(
+            "inspect_table",
+            Some("Inspect the schema of a database table".to_string()),
+            json!({
+                "type": "object",
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Name of the table to inspect"
+                    }
+                },
+                "required": ["table_name"]
+            }),
+        )
     }
 
-    fn description(&self) -> &str {
-        "Inspect the schema of a database table"
-    }
-
-    fn input_schema(&self) -> Value {
-        json!({
-            "type": "object",
-            "properties": {
-                "table_name": {
-                    "type": "string",
-                    "description": "Name of the table to inspect"
-                }
-            },
-            "required": ["table_name"]
-        })
-    }
-
-    async fn execute(&self, input: Value) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+    async fn execute(&self, input: Value) -> Result<Vec<Content>, McpClientError> {
         let table_name = input["table_name"]
             .as_str()
-            .ok_or("Missing table_name")?;
+            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
 
         let mut conn = self.pool.get()
-            .map_err(|e| DatabaseError::connection_error(e.to_string()))?;
+            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(format!("Connection error: {}", e))))?;
 
         let schema = reflect_table_schema(&mut conn, table_name)
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+            .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Schema reflection error: {}", e))))?;
 
-        Ok(json!({
+        let result = json!({
             "success": true,
             "table_name": table_name,
             "schema": {
-                "table_name": schema.table_name(),
-                "columns": schema.columns().iter().map(|col| {
+                "table_name": schema.table_name,
+                "columns": schema.columns.iter().map(|col| {
                     json!({
-                        "name": col.name(),
-                        "data_type": col.data_type(),
-                        "is_nullable": col.is_nullable(),
-                        "is_primary_key": col.is_primary_key()
+                        "name": col.name,
+                        "data_type": col.data_type,
+                        "is_nullable": col.is_nullable
                     })
                 }).collect::<Vec<_>>()
             }
-        }))
+        });
+
+        Ok(vec![Content::Text { text: result.to_string() }])
     }
 }
 
@@ -202,41 +202,39 @@ pub struct TableExistsTool {
 
 #[async_trait]
 impl ToolHandler for TableExistsTool {
-    fn name(&self) -> &str {
-        "table_exists"
+    fn tool_info(&self) -> ToolInfo {
+        ToolInfo::new(
+            "table_exists",
+            Some("Check if a database table exists".to_string()),
+            json!({
+                "type": "object",
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Name of the table to check"
+                    }
+                },
+                "required": ["table_name"]
+            }),
+        )
     }
 
-    fn description(&self) -> &str {
-        "Check if a database table exists"
-    }
-
-    fn input_schema(&self) -> Value {
-        json!({
-            "type": "object",
-            "properties": {
-                "table_name": {
-                    "type": "string",
-                    "description": "Name of the table to check"
-                }
-            },
-            "required": ["table_name"]
-        })
-    }
-
-    async fn execute(&self, input: Value) -> Result<Value, Box<dyn std::error::Error + Send + Sync>> {
+    async fn execute(&self, input: Value) -> Result<Vec<Content>, McpClientError> {
         let table_name = input["table_name"]
             .as_str()
-            .ok_or("Missing table_name")?;
+            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
 
         let mut conn = self.pool.get()
-            .map_err(|e| DatabaseError::connection_error(e.to_string()))?;
+            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(format!("Connection error: {}", e))))?;
 
         let exists = table_exists(&mut conn, table_name)
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+            .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Table check error: {}", e))))?;
 
-        Ok(json!({
+        let result = json!({
             "exists": exists,
             "table_name": table_name
-        }))
+        });
+
+        Ok(vec![Content::Text { text: result.to_string() }])
     }
 }
