@@ -1,7 +1,4 @@
-//! MCP client for tool-enabled LLM interactions.
-//!
-//! This crate provides a client that connects LLM backends with MCP tools,
-//! enabling autonomous agent behavior.
+//! MCP client for agentic orchestration and external server connections.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -10,24 +7,19 @@ mod approval;
 mod client;
 mod context;
 mod error;
+mod external_client;
 mod llm_adapter;
 mod metrics;
 mod retry;
-mod schema;
+pub mod schema;
 mod tool_executor;
 
-pub use approval::{ApprovalHandler, ApprovalManager, ApprovalPolicy, ConsoleApprovalHandler};
-pub use client::{LlmBackend, McpClient};
+pub use approval::ApprovalHandler;
+pub use client::McpClient;
 pub use context::ContextManager;
 pub use error::{McpClientError, McpClientErrorKind, McpClientResult};
-pub use llm_adapter::{
-    AnthropicAdapter, FinishReason, GeminiAdapter, GenerationConfig, GenerationResponse,
-    GroqAdapter, LlmAdapter, Message, MessageRole, OllamaAdapter, TokenUsage, ToolCall, ToolResult,
-};
+pub use external_client::{ExternalMcpClient, ExternalServerConfig};
+pub use llm_adapter::LlmAdapter;
 pub use metrics::McpClientMetrics;
-pub use retry::{CircuitBreaker, CircuitState, RetryConfig, retry_with_backoff};
-pub use schema::{
-    AnthropicToolSchema, GeminiToolSchema, GroqToolSchema, HuggingFaceToolSchema, OllamaToolSchema,
-    OpenAIToolSchema, ToolSchema, ToolSchemaConverter,
-};
+pub use retry::{CircuitBreaker, CircuitState, RetryConfig};
 pub use tool_executor::ToolDefinition;
