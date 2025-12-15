@@ -159,6 +159,11 @@ impl AppState {
         self.input_buffer.push_str(text);
     }
 
+    /// Deletes the last character from the input buffer.
+    pub fn delete_char(&mut self) {
+        self.input_buffer.pop();
+    }
+
     /// Clears the input buffer.
     pub fn clear_input(&mut self) {
         self.input_buffer.clear();

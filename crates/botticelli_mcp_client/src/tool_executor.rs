@@ -4,7 +4,6 @@ use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use serde_json::Value;
 use serde_json::json;
 use std::collections::HashMap;
-use tracing::instrument;
 
 /// Represents a tool definition for LLM context.
 #[derive(Debug, Clone)]
@@ -25,7 +24,7 @@ pub struct ToolExecutor {
 
 impl ToolExecutor {
     /// Creates a new tool executor with the given tool definitions.
-    #[instrument(skip(tools))]
+    #[tracing::instrument(skip(tools))]
     pub fn new(tools: Vec<ToolDefinition>) -> Self {
         let tools: HashMap<String, ToolDefinition> =
             tools.into_iter().map(|t| (t.name.clone(), t)).collect();
@@ -34,7 +33,7 @@ impl ToolExecutor {
     }
 
     /// Executes a tool with the given arguments.
-    #[instrument(skip(self), fields(tool_name))]
+    #[tracing::instrument(skip(self), fields(tool_name))]
     pub async fn execute(&self, tool_name: &str, _arguments: Value) -> McpClientResult<Value> {
         tracing::debug!("Executing tool");
 

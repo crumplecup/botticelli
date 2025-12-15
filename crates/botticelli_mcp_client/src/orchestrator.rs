@@ -8,7 +8,6 @@ use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use pmcp::{Content, ToolInfo};
 use serde_json::Value;
 use std::sync::Arc;
-use tracing::instrument;
 
 /// Orchestrates LLM interactions with tool execution.
 ///
@@ -26,7 +25,7 @@ pub struct Orchestrator {
 
 impl Orchestrator {
     /// Create a new orchestrator.
-    #[instrument(skip(registry, adapter))]
+    #[tracing::instrument(skip(registry, adapter))]
     pub fn new(
         registry: Arc<ToolRegistry>,
         adapter: Arc<dyn LlmAdapter>,
@@ -52,7 +51,7 @@ impl Orchestrator {
     /// 3. Executes tools via registry
     /// 4. Feeds results back to LLM
     /// 5. Repeats until completion or max iterations
-    #[instrument(skip(self, messages))]
+    #[tracing::instrument(skip(self, messages))]
     pub async fn execute(&self, messages: Vec<Message>) -> McpClientResult<String> {
         tracing::info!("Starting agentic execution loop");
 
@@ -132,7 +131,7 @@ impl Orchestrator {
     }
 
     /// Get tool schemas for LLM context.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     fn get_tool_schemas(&self) -> Vec<LlmToolSchema> {
         let tool_infos = self.registry.list_tools();
         tracing::debug!(tool_count = tool_infos.len(), "Converting tool schemas");
@@ -150,7 +149,7 @@ impl Orchestrator {
     }
 
     /// Execute multiple tool calls.
-    #[instrument(skip(self, tool_calls))]
+    #[tracing::instrument(skip(self, tool_calls))]
     async fn execute_tools(&self, tool_calls: &[LlmToolCall]) -> McpClientResult<Vec<ToolResult>> {
         let mut results = Vec::new();
 
@@ -187,7 +186,7 @@ impl Orchestrator {
 }
 
 /// Convert pmcp Content to JSON for LLM consumption.
-#[instrument(skip(content))]
+#[tracing::instrument(skip(content))]
 fn content_to_json(content: &[Content]) -> McpClientResult<Value> {
     let mut items = Vec::new();
 

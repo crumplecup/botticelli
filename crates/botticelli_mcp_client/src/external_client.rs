@@ -15,7 +15,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
-use tracing::instrument;
 use typed_builder::TypedBuilder;
 
 /// Custom transport for external child process communication.
@@ -121,7 +120,7 @@ pub struct ExternalMcpClient {
 
 impl ExternalMcpClient {
     /// Connect to an external MCP server by spawning the process.
-    #[instrument(skip(config), fields(server_name = %config.name))]
+    #[tracing::instrument(skip(config), fields(server_name = %config.name))]
     pub async fn connect(config: ExternalServerConfig) -> McpClientResult<Self> {
         tracing::info!(
             "Spawning external MCP server: {} (command: {} {:?})",
@@ -214,6 +213,17 @@ impl ExternalMcpClient {
         })
     }
 
+    /// Connect to an external MCP server with custom retry configuration.
+    #[tracing::instrument(skip(config, retry_config), fields(server_name = %config.name))]
+    pub async fn connect_with_retry(
+        config: ExternalServerConfig,
+        retry_config: RetryConfig,
+    ) -> McpClientResult<Self> {
+        let mut client = Self::connect(config).await?;
+        client.retry_config = retry_config;
+        Ok(client)
+    }
+
     /// Get server name.
     pub fn name(&self) -> &str {
         &self.name
@@ -237,7 +247,7 @@ impl ExternalMcpClient {
     }
 
     /// Call a tool on the external server with retry logic.
-    #[instrument(skip(self, arguments), fields(server = %self.name, tool = %tool_name))]
+    #[tracing::instrument(skip(self, arguments), fields(server = %self.name, tool = %tool_name))]
     pub async fn call_tool(&mut self, tool_name: &str, arguments: Value) -> McpClientResult<Value> {
         // Verify tool exists and is allowed
         if !self.has_tool(tool_name) {

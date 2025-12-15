@@ -7,7 +7,6 @@ use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, Input, Message as CoreMessage, Output, Role, StopReason};
 use botticelli_interface::BotticelliDriver;
 use std::sync::Arc;
-use tracing::instrument;
 
 /// Bridges the `LlmAdapter` trait to any `BotticelliDriver` implementation.
 ///
@@ -26,7 +25,7 @@ impl DriverAdapter {
 
 #[async_trait]
 impl LlmAdapter for DriverAdapter {
-    #[instrument(skip(self, messages, tools, _config))]
+    #[tracing::instrument(skip(self, messages, tools, _config))]
     async fn generate(
         &self,
         messages: Vec<Message>,

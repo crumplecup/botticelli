@@ -3,7 +3,6 @@ use prometheus::{
     register_histogram_vec_with_registry,
 };
 use std::sync::Arc;
-use tracing::instrument;
 
 use crate::McpClientResult;
 
@@ -28,7 +27,7 @@ pub struct McpClientMetrics {
 
 impl McpClientMetrics {
     /// Creates new MCP client metrics registered with the given registry.
-    #[instrument(skip(registry))]
+    #[tracing::instrument(skip(registry))]
     pub fn new(registry: &Registry) -> McpClientResult<Self> {
         let tool_calls = register_counter_vec_with_registry!(
             "mcp_client_tool_calls_total",
@@ -75,7 +74,7 @@ impl McpClientMetrics {
     }
 
     /// Records a tool call.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn record_tool_call(&self, tool_name: &str, success: bool) {
         let status = if success { "success" } else { "failure" };
         self.tool_calls
@@ -84,7 +83,7 @@ impl McpClientMetrics {
     }
 
     /// Records tool execution duration.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn record_tool_duration(&self, tool_name: &str, duration_secs: f64) {
         self.tool_duration
             .with_label_values(&[tool_name])
@@ -92,7 +91,7 @@ impl McpClientMetrics {
     }
 
     /// Records tokens used in a conversation turn.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn record_tokens(&self, input_tokens: u64, output_tokens: u64) {
         self.tokens_per_turn
             .with_label_values(&["input"])
@@ -103,7 +102,7 @@ impl McpClientMetrics {
     }
 
     /// Records workflow cost.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn record_workflow_cost(&self, model: &str, cost_usd: f64) {
         self.workflow_cost
             .with_label_values(&[model])
@@ -111,7 +110,7 @@ impl McpClientMetrics {
     }
 
     /// Records agent iterations.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn record_agent_iterations(&self, iterations: usize, status: &str) {
         self.agent_iterations
             .with_label_values(&[status])

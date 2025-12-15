@@ -21,13 +21,14 @@
 //!
 //! # Controls
 //!
-//! - Type in the input box and press Enter to send messages
-//! - The LLM can use narrative tools (create, validate, list, load narratives)
-//! - Press Ctrl+C or 'q' to quit
+//! - **Tab**: Switch between views (Chat → Narratives → Editor → Settings)
+//! - **Chat Mode**: Type and press Enter to send messages
+//! - **Narrative Browser**: ↑↓ to navigate, Enter to select
+//! - **Ctrl+C** or **Ctrl+Q**: Quit
 //!
 
 use botticelli_models::AnthropicClient;
-use botticelli_tui::Tui;
+use botticelli_tui::TuiApp;
 use std::sync::Arc;
 
 #[tokio::main]
@@ -62,11 +63,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create Anthropic driver
     let driver = Arc::new(AnthropicClient::new(api_key, "claude-3-5-sonnet-20241022"));
 
-    // Create TUI with MCP integration
-    let mut tui = Tui::with_mcp(driver)?;
-
-    // Run TUI
-    tui.run().await?;
+    // Create and run TUI application
+    let mut app = TuiApp::new(driver)?;
+    app.run().await?;
 
     Ok(())
 }

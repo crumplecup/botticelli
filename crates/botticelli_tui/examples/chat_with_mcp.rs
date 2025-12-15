@@ -41,7 +41,7 @@
 //!
 
 use botticelli_models::AnthropicClient;
-use botticelli_tui::Tui;
+use botticelli_tui::TuiApp;
 use std::sync::Arc;
 use tracing::error;
 
@@ -64,11 +64,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create Anthropic driver
     let driver = Arc::new(AnthropicClient::new(api_key, "claude-3-5-sonnet-20241022"));
 
-    // Create TUI with MCP integration
-    let mut tui = Tui::with_mcp(driver)?;
+    // Create and run TUI application
+    let mut app = TuiApp::new(driver)?;
 
-    // Run TUI
-    if let Err(e) = tui.run().await {
+    if let Err(e) = app.run().await {
         error!("TUI error: {}", e);
         return Err(e.into());
     }

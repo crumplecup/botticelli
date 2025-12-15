@@ -4,7 +4,6 @@ use pmcp::{Content, ToolInfo};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::instrument;
 
 /// Handler for executing tool calls
 #[async_trait]
@@ -33,7 +32,7 @@ impl std::fmt::Debug for ToolRegistry {
 
 impl ToolRegistry {
     /// Create a new tool registry
-    #[instrument]
+    #[tracing::instrument]
     pub fn new() -> Self {
         tracing::debug!("Creating new tool registry");
         Self {
@@ -42,7 +41,7 @@ impl ToolRegistry {
     }
 
     /// Register a tool handler
-    #[instrument(skip(self, handler))]
+    #[tracing::instrument(skip(self, handler))]
     pub fn register(&mut self, name: String, handler: Arc<dyn ToolHandler>) -> McpClientResult<()> {
         tracing::debug!(tool_name = %name, "Registering tool");
 
@@ -58,7 +57,7 @@ impl ToolRegistry {
     }
 
     /// Get all registered tools
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn list_tools(&self) -> Vec<ToolInfo> {
         tracing::debug!("Listing all registered tools");
         self.handlers
@@ -68,7 +67,7 @@ impl ToolRegistry {
     }
 
     /// Execute a tool by name
-    #[instrument(skip(self, arguments))]
+    #[tracing::instrument(skip(self, arguments))]
     pub async fn execute_tool(
         &self,
         name: &str,
@@ -84,7 +83,7 @@ impl ToolRegistry {
     }
 
     /// Check if a tool is registered
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn has_tool(&self, name: &str) -> bool {
         self.handlers.contains_key(name)
     }

@@ -11,7 +11,6 @@ use botticelli_core::{Input, Message, Role};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Instant;
-use tracing::instrument;
 use typed_builder::TypedBuilder;
 
 /// Unified MCP client that orchestrates internal and external tool execution.
@@ -92,7 +91,7 @@ pub struct ToolCallRecord {
 
 impl UnifiedMcpClient {
     /// Connects to an external MCP server and adds it to available clients.
-    #[instrument(skip(self, config), fields(server = %config.name))]
+    #[tracing::instrument(skip(self, config), fields(server = %config.name))]
     pub async fn connect_external_server(
         &mut self,
         config: ExternalServerConfig,
@@ -100,7 +99,7 @@ impl UnifiedMcpClient {
         let server_name = config.name.clone();
         tracing::info!("Connecting to external server: {}", server_name);
 
-        let client = ExternalMcpClient::connect(config).await?;
+        let client = ExternalMcpClient::connect_with_retry(config, self.retry_config.clone()).await?;
         self.external_clients.insert(server_name.clone(), client);
 
         tracing::info!("External server {} connected successfully", server_name);
@@ -108,7 +107,7 @@ impl UnifiedMcpClient {
     }
 
     /// Get all available tool definitions from internal registry and external servers.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn list_all_tools(&self) -> Vec<ToolDefinition> {
         let mut tools = Vec::new();
 
@@ -138,7 +137,7 @@ impl UnifiedMcpClient {
     /// Execute a tool call by routing to internal registry or external server.
     ///
     /// This method includes metrics tracking and approval checks.
-    #[instrument(skip(self, arguments), fields(tool_name))]
+    #[tracing::instrument(skip(self, arguments), fields(tool_name))]
     pub async fn execute_tool(
         &mut self,
         tool_name: &str,
@@ -235,7 +234,7 @@ impl UnifiedMcpClient {
     /// 2. Checks for tool calls in response
     /// 3. Executes tools and feeds results back
     /// 4. Repeats until completion or max iterations
-    #[instrument(skip(self, backend, messages))]
+    #[tracing::instrument(skip(self, backend, messages))]
     pub async fn execute<B>(
         &mut self,
         backend: &B,
@@ -305,7 +304,7 @@ impl UnifiedMcpClient {
     /// Executes an agentic loop with detailed tracking of tool calls.
     ///
     /// This variant returns full execution details including all tool calls made.
-    #[instrument(skip(self, backend, messages))]
+    #[tracing::instrument(skip(self, backend, messages))]
     pub async fn execute_with_tracking<B>(
         &mut self,
         backend: &B,
@@ -408,7 +407,7 @@ impl UnifiedMcpClient {
     }
 
     /// Executes multiple tool calls.
-    #[instrument(skip(self, tool_calls))]
+    #[tracing::instrument(skip(self, tool_calls))]
     async fn execute_tools(&mut self, tool_calls: Vec<ToolCall>) -> McpClientResult<Vec<String>> {
         let mut results = Vec::new();
 
@@ -470,7 +469,7 @@ pub struct ToolCall {
 ///
 /// This parses structured output from the LLM that indicates tool usage.
 /// Currently supports Anthropic's tool use format.
-#[instrument(skip(response))]
+#[tracing::instrument(skip(response))]
 pub fn extract_tool_calls(response: &str) -> Option<Vec<ToolCall>> {
     // Try to parse as JSON first (structured output)
     if let Ok(json) = serde_json::from_str::<Value>(response) {

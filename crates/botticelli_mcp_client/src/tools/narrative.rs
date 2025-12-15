@@ -7,7 +7,6 @@ use async_trait::async_trait;
 use botticelli_narrative::Narrative;
 use pmcp::{Content, ToolInfo};
 use serde_json::{Value, json};
-use tracing::instrument;
 
 /// Tool for creating narratives from TOML content.
 ///
@@ -37,7 +36,7 @@ impl ToolHandler for CreateNarrativeTool {
         )
     }
 
-    #[instrument(skip(self, args), fields(tool = "create_narrative"))]
+    #[tracing::instrument(skip(self, args), fields(tool = "create_narrative"))]
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
         tracing::debug!("Creating narrative from TOML");
 
@@ -120,7 +119,7 @@ impl ToolHandler for ListNarrativesTool {
         )
     }
 
-    #[instrument(skip(self, args), fields(tool = "list_narratives", dir = %self.narratives_dir))]
+    #[tracing::instrument(skip(self, args), fields(tool = "list_narratives", dir = %self.narratives_dir))]
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
         tracing::debug!("Listing narratives");
 
@@ -205,7 +204,7 @@ impl ToolHandler for LoadNarrativeTool {
         )
     }
 
-    #[instrument(skip(self, args), fields(tool = "load_narrative"))]
+    #[tracing::instrument(skip(self, args), fields(tool = "load_narrative"))]
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
         tracing::debug!("Loading narrative from file");
 
@@ -282,7 +281,7 @@ impl ToolHandler for ValidateNarrativeTool {
         )
     }
 
-    #[instrument(skip(self, args), fields(tool = "validate_narrative"))]
+    #[tracing::instrument(skip(self, args), fields(tool = "validate_narrative"))]
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
         tracing::debug!("Validating narrative");
 

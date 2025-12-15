@@ -31,6 +31,7 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
+mod app;
 mod commands;
 mod elicitation;
 mod elicitation_dialog;
@@ -40,6 +41,7 @@ mod state;
 mod tui;
 mod view;
 
+pub use app::TuiApp;
 pub use commands::Command;
 pub use elicitation_dialog::TuiElicitationDialog;
 pub use error::{TuiError, TuiErrorKind, TuiResult};
