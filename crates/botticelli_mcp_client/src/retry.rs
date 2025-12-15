@@ -133,7 +133,73 @@ impl CircuitBreaker {
     }
 }
 
+/// Helper for managing retry state and backoff calculation.
+pub struct RetryState {
+    config: RetryConfig,
+    attempt: usize,
+    backoff: Duration,
+}
+
+impl RetryState {
+    /// Creates a new retry state from configuration.
+    pub fn new(config: RetryConfig) -> Self {
+        let backoff = config.initial_backoff;
+        Self {
+            config,
+            attempt: 0,
+            backoff,
+        }
+    }
+
+    /// Records a retry attempt and sleeps for backoff duration.
+    /// Returns None if max attempts reached, Some(attempt_number) otherwise.
+    pub async fn retry(&mut self) -> Option<usize> {
+        self.attempt += 1;
+
+        if self.attempt > self.config.max_attempts {
+            return None;
+        }
+
+        if self.attempt > 1 {
+            tracing::debug!(
+                backoff_ms = self.backoff.as_millis(),
+                "Retrying after failure"
+            );
+            sleep(self.backoff).await;
+
+            // Exponential backoff with cap
+            self.backoff = std::cmp::min(
+                Duration::from_secs_f64(
+                    self.backoff.as_secs_f64() * self.config.backoff_multiplier,
+                ),
+                self.config.max_backoff,
+            );
+        }
+
+        Some(self.attempt)
+    }
+}
+
 /// Retries an operation with exponential backoff.
+///
+/// This is a convenience function for simple retry scenarios where the operation
+/// can be wrapped in a closure. For more control (e.g., when working with &mut self),
+/// use `RetryState` directly.
+///
+/// # Example
+///
+/// ```no_run
+/// use botticelli_mcp_client::retry::{retry_with_backoff, RetryConfig};
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let config = RetryConfig::default();
+/// let result = retry_with_backoff(&config, || async {
+///     // Your operation here
+///     Ok(42)
+/// }).await?;
+/// # Ok(())
+/// # }
+/// ```
 #[tracing::instrument(skip(operation))]
 pub async fn retry_with_backoff<F, Fut, T>(
     config: &RetryConfig,
@@ -143,11 +209,15 @@ where
     F: FnMut() -> Fut,
     Fut: std::future::Future<Output = McpClientResult<T>>,
 {
-    let mut attempt = 0;
-    let mut backoff = config.initial_backoff;
+    let mut retry_state = RetryState::new(config.clone());
 
     loop {
-        attempt += 1;
+        let attempt = retry_state.retry().await.ok_or_else(|| {
+            crate::McpClientError::new(crate::McpClientErrorKind::ToolExecutionFailed(
+                "Max retry attempts exhausted".to_string(),
+            ))
+        })?;
+
         tracing::debug!(attempt, "Executing operation");
 
         match operation().await {
@@ -158,11 +228,6 @@ where
                 return Ok(result);
             }
             Err(err) => {
-                if attempt >= config.max_attempts {
-                    tracing::warn!(attempt, "All retry attempts exhausted");
-                    return Err(err);
-                }
-
                 if !err.kind.is_retryable() {
                     tracing::warn!("Error is not retryable, failing immediately");
                     return Err(err);
@@ -170,20 +235,16 @@ where
 
                 if err.kind.should_backoff() {
                     tracing::debug!(
-                        backoff_ms = backoff.as_millis(),
+                        backoff_ms = retry_state.backoff.as_millis(),
                         "Backing off due to rate limit"
                     );
-                } else {
-                    tracing::debug!(backoff_ms = backoff.as_millis(), "Retrying after failure");
                 }
 
-                sleep(backoff).await;
-
-                // Exponential backoff with cap
-                backoff = std::cmp::min(
-                    Duration::from_secs_f64(backoff.as_secs_f64() * config.backoff_multiplier),
-                    config.max_backoff,
-                );
+                // Continue to next retry attempt
+                if attempt >= retry_state.config.max_attempts {
+                    tracing::warn!(attempt, "All retry attempts exhausted");
+                    return Err(err);
+                }
             }
         }
     }

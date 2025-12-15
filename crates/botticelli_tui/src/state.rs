@@ -309,7 +309,6 @@ impl AppState {
                                     let client = mcp_client.clone();
                                     let backend = llm_backend.clone();
                                     let tx = tx.clone();
-                                    let conv_id = conv_id;
 
                                     // Spawn async task to execute
                                     tokio::spawn(async move {

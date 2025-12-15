@@ -1,3 +1,4 @@
+use crate::retry::{RetryConfig, RetryState};
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use async_trait::async_trait;
 use pmcp::{Content, ToolInfo};
@@ -20,6 +21,8 @@ pub trait ToolHandler: Send + Sync {
 pub struct ToolRegistry {
     /// Registered tool handlers
     handlers: Arc<HashMap<String, Arc<dyn ToolHandler>>>,
+    /// Retry configuration for tool execution
+    retry_config: RetryConfig,
 }
 
 impl std::fmt::Debug for ToolRegistry {
@@ -37,6 +40,17 @@ impl ToolRegistry {
         tracing::debug!("Creating new tool registry");
         Self {
             handlers: Arc::new(HashMap::new()),
+            retry_config: RetryConfig::default(),
+        }
+    }
+
+    /// Create a new tool registry with custom retry configuration
+    #[tracing::instrument(skip(retry_config))]
+    pub fn with_retry_config(retry_config: RetryConfig) -> Self {
+        tracing::debug!("Creating new tool registry with custom retry config");
+        Self {
+            handlers: Arc::new(HashMap::new()),
+            retry_config,
         }
     }
 
@@ -66,20 +80,54 @@ impl ToolRegistry {
             .collect()
     }
 
-    /// Execute a tool by name
+    /// Execute a tool by name with retry logic
     #[tracing::instrument(skip(self, arguments))]
     pub async fn execute_tool(
         &self,
         name: &str,
         arguments: Value,
     ) -> McpClientResult<Vec<Content>> {
-        tracing::debug!(tool_name = %name, "Executing tool");
+        tracing::debug!(tool_name = %name, "Executing tool with retry logic");
 
         let handler = self.handlers.get(name).ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::ToolNotFound(name.to_string()))
         })?;
 
-        handler.execute(arguments).await
+        // Clone handler Arc for use in retry loop
+        let handler = Arc::clone(handler);
+
+        // Use RetryState helper for exponential backoff
+        let mut retry_state = RetryState::new(self.retry_config.clone());
+
+        loop {
+            let Some(attempt) = retry_state.retry().await else {
+                return Err(McpClientError::new(
+                    McpClientErrorKind::ToolExecutionFailed(format!(
+                        "Max retry attempts exhausted for tool '{}'",
+                        name
+                    )),
+                ));
+            };
+
+            tracing::debug!(attempt, tool_name = %name, "Executing tool attempt");
+
+            match handler.execute(arguments.clone()).await {
+                Ok(result) => {
+                    if attempt > 1 {
+                        tracing::debug!(attempt, "Tool execution succeeded after retry");
+                    }
+                    return Ok(result);
+                }
+                Err(err) => {
+                    if !err.kind.is_retryable() {
+                        tracing::warn!("Error is not retryable, failing immediately");
+                        return Err(err);
+                    }
+
+                    // Continue to next retry (RetryState handles backoff on next iteration)
+                }
+            }
+        }
     }
 
     /// Check if a tool is registered

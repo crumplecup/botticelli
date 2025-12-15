@@ -314,6 +314,22 @@ This index tracks all planning documents in the workspace. When documents are co
     - Orchestration status indicators
   - Status: ✅ Core Complete | 🚀 Phase 8 - MCP Showcase (2-3 days estimated)
 
+- **TUI_COMPOSABLE_ARCHITECTURE_COMPLETE.md** - `current` (2025-12-15)
+  - Complete implementation of composable TUI architecture
+  - TuiApp coordinator: views, commands, events, state management
+  - View switching with Tab (Chat → Narratives → Editor → Settings)
+  - Commands dispatched through centralized handler
+  - Binary simplified to 72 lines - clean library API
+  - Status: ✅ COMPLETE - Architecture ready for extension
+
+- **TUI_JUSTFILE_RECIPE_COMPLETE.md** - `current` (2025-12-15)
+  - Enhanced justfile recipe with comprehensive feature support
+  - API key validation and narratives/ directory setup
+  - Detailed startup messages with features and controls
+  - Debug recipes: tui-debug and tui-example
+  - Integration with TuiApp composable architecture
+  - Status: ✅ COMPLETE - Ready for testing
+
 - **NARRATIVE_SAMPLING_CLEAN_ARCHITECTURE.md** - `current` (2025-12-14)
   - Clean architecture refactor for narrative sampling and LLM providers
   - Phases 1-4 complete: ConversationSession, LlmSampler trait, SamplingCoordinator, testing

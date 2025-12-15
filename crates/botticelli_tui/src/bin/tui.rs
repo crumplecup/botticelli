@@ -46,10 +46,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(key) => key,
         Err(_) => {
             eprintln!("Error: ANTHROPIC_API_KEY environment variable not set");
-            eprintln!("");
+            eprintln!();
             eprintln!("Please set your Anthropic API key:");
             eprintln!("  export ANTHROPIC_API_KEY=sk-ant-...");
-            eprintln!("");
+            eprintln!();
             std::process::exit(1);
         }
     };

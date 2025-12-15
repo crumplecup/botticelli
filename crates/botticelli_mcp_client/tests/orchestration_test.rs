@@ -100,7 +100,7 @@ impl LlmAdapter for MockLlmAdapter {
         })?;
 
         // Verify we received tool result
-        if !last_message.tool_results.is_empty() {
+        if !last_message.tool_results().is_empty() {
             Ok(GenerationResponse {
                 message: Message {
                     role: MessageRole::Assistant,

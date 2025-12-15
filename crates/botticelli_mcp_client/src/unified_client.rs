@@ -4,7 +4,7 @@ use crate::approval::ApprovalManager;
 use crate::external_client::{ExternalMcpClient, ExternalServerConfig};
 use crate::metrics::McpClientMetrics;
 use crate::retry::RetryConfig;
-use crate::tool_executor::ToolDefinition;
+use crate::tool_definition::ToolDefinition;
 use crate::tool_registry::ToolRegistry;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use botticelli_core::{Input, Message, Role};
@@ -99,7 +99,8 @@ impl UnifiedMcpClient {
         let server_name = config.name.clone();
         tracing::info!("Connecting to external server: {}", server_name);
 
-        let client = ExternalMcpClient::connect_with_retry(config, self.retry_config.clone()).await?;
+        let client =
+            ExternalMcpClient::connect_with_retry(config, self.retry_config.clone()).await?;
         self.external_clients.insert(server_name.clone(), client);
 
         tracing::info!("External server {} connected successfully", server_name);
@@ -147,14 +148,20 @@ impl UnifiedMcpClient {
         tracing::debug!("Executing tool: {}", tool_name);
 
         // Check approval first
-        if !self.approval_manager.request_approval(tool_name, &arguments)? {
+        if !self
+            .approval_manager
+            .request_approval(tool_name, &arguments)?
+        {
             tracing::warn!("Tool call denied by approval manager: {}", tool_name);
             if let Some(metrics) = &self.metrics {
                 metrics.record_tool_call(tool_name, false);
             }
-            return Err(McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
-                format!("Tool call '{}' denied by user", tool_name),
-            )));
+            return Err(McpClientError::new(
+                McpClientErrorKind::ToolExecutionFailed(format!(
+                    "Tool call '{}' denied by user",
+                    tool_name
+                )),
+            ));
         }
 
         // Execute the tool (retry logic is handled within tool execution)

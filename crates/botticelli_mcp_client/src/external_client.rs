@@ -3,8 +3,8 @@
 //! This module provides functionality to spawn and communicate with external
 //! MCP servers like filesystem, git, search, etc.
 
-use crate::retry::RetryConfig;
-use crate::tool_executor::ToolDefinition;
+use crate::retry::{RetryConfig, RetryState};
+use crate::tool_definition::ToolDefinition;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use pmcp::types::TransportMessage;
 use pmcp::{Client, ClientCapabilities, Transport};
@@ -124,7 +124,9 @@ impl ExternalMcpClient {
     pub async fn connect(config: ExternalServerConfig) -> McpClientResult<Self> {
         tracing::info!(
             "Spawning external MCP server: {} (command: {} {:?})",
-            config.name, config.command, config.args
+            config.name,
+            config.command,
+            config.args
         );
 
         // Spawn the external process
@@ -170,7 +172,8 @@ impl ExternalMcpClient {
 
         tracing::info!(
             "MCP connection established with {} (version {})",
-            server_info.server_info.name, server_info.server_info.version
+            server_info.server_info.name,
+            server_info.server_info.version
         );
 
         // Discover available tools
@@ -261,16 +264,24 @@ impl ExternalMcpClient {
 
         tracing::debug!(
             "Calling tool '{}' on server '{}' with args: {}",
-            tool_name, self.name, arguments
+            tool_name,
+            self.name,
+            arguments
         );
 
-        // Manual retry loop with exponential backoff
-        let mut attempt = 0;
-        let mut backoff = self.retry_config.initial_backoff;
-        let max_attempts = self.retry_config.max_attempts;
+        // Use RetryState helper for exponential backoff
+        let mut retry_state = RetryState::new(self.retry_config.clone());
 
         loop {
-            attempt += 1;
+            let Some(attempt) = retry_state.retry().await else {
+                return Err(McpClientError::new(
+                    McpClientErrorKind::ToolExecutionFailed(format!(
+                        "Max retry attempts exhausted for tool '{}'",
+                        tool_name
+                    )),
+                ));
+            };
+
             tracing::debug!(attempt, "Executing tool call");
 
             // Call via pmcp client
@@ -297,38 +308,18 @@ impl ExternalMcpClient {
                     });
                 }
                 Err(e) => {
-                    let err = McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
-                        format!("Tool '{}' failed on server '{}': {}", tool_name, self.name, e),
-                    ));
-
-                    if attempt >= max_attempts {
-                        tracing::warn!(attempt, "All retry attempts exhausted");
-                        return Err(err);
-                    }
+                    let err =
+                        McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!(
+                            "Tool '{}' failed on server '{}': {}",
+                            tool_name, self.name, e
+                        )));
 
                     if !err.kind.is_retryable() {
                         tracing::warn!("Error is not retryable, failing immediately");
                         return Err(err);
                     }
 
-                    if err.kind.should_backoff() {
-                        tracing::debug!(
-                            backoff_ms = backoff.as_millis(),
-                            "Backing off due to rate limit"
-                        );
-                    } else {
-                        tracing::debug!(backoff_ms = backoff.as_millis(), "Retrying after failure");
-                    }
-
-                    tokio::time::sleep(backoff).await;
-
-                    // Exponential backoff with cap
-                    backoff = std::cmp::min(
-                        std::time::Duration::from_secs_f64(
-                            backoff.as_secs_f64() * self.retry_config.backoff_multiplier,
-                        ),
-                        self.retry_config.max_backoff,
-                    );
+                    // Continue to next retry (RetryState handles backoff on next iteration)
                 }
             }
         }

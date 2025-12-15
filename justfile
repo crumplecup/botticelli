@@ -842,9 +842,88 @@ server-status:
 # TUI (Terminal User Interface)
 # ==============================
 
-# Launch chat TUI interface
+# Launch new Botticelli TUI with full MCP integration
 tui:
+    #!/usr/bin/env bash
+    set +u
+
+    # Check for API key
+    if [ -z "${ANTHROPIC_API_KEY}" ]; then
+        echo "❌ ANTHROPIC_API_KEY environment variable not set"
+        echo ""
+        echo "Please set your Anthropic API key:"
+        echo "  export ANTHROPIC_API_KEY=sk-ant-..."
+        echo ""
+        echo "Or add it to your .env file in the project root"
+        exit 1
+    fi
+
+    # Create narratives directory if it doesn't exist
+    if [ ! -d "narratives" ]; then
+        echo "📁 Creating narratives/ directory..."
+        mkdir -p narratives
+    fi
+
+    # Show startup message
+    echo "🚀 Starting Botticelli TUI..."
+    echo ""
+    echo "Features enabled:"
+    echo "  💬 Chat with Claude (MCP tool integration)"
+    echo "  📝 Narrative tools (create, validate, list, load)"
+    echo "  🔧 5 tools available (echo, create_narrative, validate_narrative, list_narratives, load_narrative)"
+    echo "  ⚡ Async tool execution with real-time UI updates"
+    echo ""
+    echo "Controls:"
+    echo "  Tab       - Switch views (Chat → Narratives → Editor → Settings)"
+    echo "  Shift+Tab - Cycle views backwards"
+    echo "  Ctrl+Q    - Quit"
+    echo "  Ctrl+C    - Quit"
+    echo ""
+    echo "Set RUST_LOG for debug output:"
+    echo "  RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug just tui"
+    echo ""
+
+    # Run with proper logging
+    RUST_LOG="${RUST_LOG:-botticelli_tui=info,botticelli_mcp_client=info}" \
+        cargo run --bin tui --features anthropic
+
+# Launch chat TUI interface (old interface - for backward compatibility)
+tui-chat:
     cargo run --bin botticelli-chat --features="cli,tui" -- --skip-health-checks
+
+# Launch TUI with debug logging enabled
+tui-debug:
+    #!/usr/bin/env bash
+    set +u
+
+    if [ -z "${ANTHROPIC_API_KEY}" ]; then
+        echo "❌ ANTHROPIC_API_KEY not set"
+        exit 1
+    fi
+
+    mkdir -p narratives
+
+    echo "🔍 Starting Botticelli TUI with debug logging..."
+    echo ""
+    RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug,botticelli_mcp=debug \
+        cargo run --bin tui --features anthropic
+
+# Run TUI example with debug logging
+tui-example:
+    #!/usr/bin/env bash
+    set +u
+
+    if [ -z "${ANTHROPIC_API_KEY}" ]; then
+        echo "❌ ANTHROPIC_API_KEY not set"
+        exit 1
+    fi
+
+    mkdir -p narratives
+
+    echo "🚀 Running TUI example..."
+    echo ""
+    RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug \
+        cargo run --example chat_with_mcp --features anthropic
 
 # Launch TUI for a specific table
 tui-table table:

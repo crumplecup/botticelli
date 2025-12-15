@@ -5,7 +5,7 @@
 use crate::{AppState, Command, Event, EventHandler, McpUpdate, TuiResult, ViewMode};
 use botticelli_interface::BotticelliDriver;
 use crossterm::event::KeyEvent;
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{io, sync::Arc};
 use tokio::sync::mpsc;
 use tracing::debug;
@@ -84,10 +84,10 @@ impl TuiApp {
             }
 
             // Handle terminal events
-            if let Some(event) = self.events.next().await? {
-                if !self.handle_event(event).await? {
-                    break;
-                }
+            if let Some(event) = self.events.next().await?
+                && !self.handle_event(event).await?
+            {
+                break;
             }
         }
 
@@ -139,7 +139,11 @@ impl TuiApp {
             Event::Quit => return Ok(false),
             Event::Key(key_event) => {
                 // First, let the current view handle the key
-                if let Some(command) = self.state.current_view().handle_input(key_event, &self.state)? {
+                if let Some(command) = self
+                    .state
+                    .current_view()
+                    .handle_input(key_event, &self.state)?
+                {
                     return self.handle_command(command).await;
                 }
 
@@ -213,10 +217,10 @@ impl TuiApp {
                 self.state.handle_key(enter_key).await?;
             }
             Command::NavigateUp => {
-                if let Some(idx) = self.state.selected_narrative() {
-                    if idx > 0 {
-                        self.state.set_selected_narrative(Some(idx - 1));
-                    }
+                if let Some(idx) = self.state.selected_narrative()
+                    && idx > 0
+                {
+                    self.state.set_selected_narrative(Some(idx - 1));
                 }
             }
             Command::NavigateDown => {

@@ -5,7 +5,6 @@ use serde_json::Value;
 use std::collections::HashSet;
 use std::io::Write;
 
-
 /// Tool approval policy.
 #[derive(Debug, Clone)]
 pub enum ApprovalPolicy {
