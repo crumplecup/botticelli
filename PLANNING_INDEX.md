@@ -330,6 +330,15 @@ This index tracks all planning documents in the workspace. When documents are co
   - Integration with TuiApp composable architecture
   - Status: ✅ COMPLETE - Ready for testing
 
+- **TUI_COMPREHENSIVE_DESIGN_STRATEGY.md** - `current` (2025-12-15)
+  - Comprehensive TUI design exposing full Botticelli feature set
+  - 7 major tabs: Chat, Orchestrator, Narratives, Tools, Database, Bots, Settings
+  - Strategic principles: Progressive disclosure, self-driving, observability first
+  - 8-week implementation plan across 7 phases
+  - Technical architecture: state management, view traits, component library
+  - Showcases: UnifiedMcpClient, 15 internal tools, 6 LLM providers, external MCP ecosystem
+  - Status: 📋 Planning Complete - Ready for Review
+
 - **NARRATIVE_SAMPLING_CLEAN_ARCHITECTURE.md** - `current` (2025-12-14)
   - Clean architecture refactor for narrative sampling and LLM providers
   - Phases 1-4 complete: ConversationSession, LlmSampler trait, SamplingCoordinator, testing

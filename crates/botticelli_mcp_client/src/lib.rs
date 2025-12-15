@@ -33,7 +33,20 @@ pub use orchestrator::{Orchestrator, tool_info_to_provider_schema, tool_info_to_
 pub use retry::{CircuitBreaker, CircuitState, RetryConfig, RetryState, retry_with_backoff};
 pub use tool_definition::ToolDefinition;
 pub use tool_registry::{ToolHandler, ToolRegistry};
-pub use tools::register_internal_tools;
+pub use tools::{
+    CreateCarouselTool, CreateElicitationSessionTool, CreateNarrativeTool, ElicitActTool,
+    ElicitMetadataTool, ElicitationRegistry, ExecuteCarouselTool, FinalizeElicitationTool,
+    GenericRegistry, GetRegistryItemTool, ListNarrativesTool, ListRegistryKeysTool,
+    LoadNarrativeTool, UpsertRegistryItemTool, ValidateNarrativeTool, register_internal_tools,
+};
+
+#[cfg(feature = "database")]
+pub use tools::{
+    CreateTableTool, InspectTableTool, QueryTableTool, TableExistsTool, register_database_tools,
+};
+
+#[cfg(feature = "discord")]
+pub use tools::{DiscordGetMessagesTool, DiscordSendMessageTool};
 pub use unified_client::{
     ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics, UnifiedMcpClient,
     extract_tool_calls,

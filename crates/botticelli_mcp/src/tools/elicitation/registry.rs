@@ -1,6 +1,6 @@
 //! Registry for managing active narrative creation sessions.
 
-use crate::{PartialNarrative, RegistryOperations};
+use crate::{RegistryOperations};
 use botticelli_error::{McpError, McpResult};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};

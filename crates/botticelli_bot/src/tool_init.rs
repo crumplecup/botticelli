@@ -6,13 +6,10 @@
 //! - Database operations
 //! - Discord interactions
 
-use botticelli_mcp_client::tool_registry::ToolRegistry;
-use botticelli_mcp_client::tools::elicitation::{
-    CreateCarouselTool, CreateElicitationSessionTool, ElicitActTool, ElicitMetadataTool,
-    ElicitationRegistry, ExecuteCarouselTool, FinalizeElicitationTool,
-};
-use botticelli_mcp_client::tools::narrative::{
-    CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool,
+use botticelli_mcp_client::{
+    CreateCarouselTool, CreateElicitationSessionTool, CreateNarrativeTool, ElicitActTool,
+    ElicitMetadataTool, ElicitationRegistry, ExecuteCarouselTool, FinalizeElicitationTool,
+    ListNarrativesTool, LoadNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
 use std::sync::Arc;
 
@@ -26,35 +23,35 @@ pub fn initialize_tools(narratives_dir: impl Into<String> + std::fmt::Debug) -> 
     let narratives_dir = narratives_dir.into();
     tracing::info!(narratives_dir = %narratives_dir, "Initializing MCP tools");
 
-    let registry = Arc::new(ToolRegistry::new());
+    let mut registry = ToolRegistry::new();
 
     // Initialize elicitation registry (shared across elicitation tools)
     let elicitation_registry = ElicitationRegistry::new();
 
     // Register narrative tools
-    register_narrative_tools(registry.clone(), &narratives_dir);
+    register_narrative_tools(&mut registry, &narratives_dir);
 
     // Register elicitation tools
-    register_elicitation_tools(registry.clone(), elicitation_registry);
+    register_elicitation_tools(&mut registry, elicitation_registry);
 
     tracing::info!(
         tool_count = registry.list_tools().len(),
         "MCP tools initialized"
     );
 
-    registry
+    Arc::new(registry)
 }
 
 /// Register all narrative-related tools.
 #[tracing::instrument(skip(registry, narratives_dir))]
-fn register_narrative_tools(registry: Arc<ToolRegistry>, narratives_dir: &str) {
+fn register_narrative_tools(registry: &mut ToolRegistry, narratives_dir: &str) {
     tracing::debug!("Registering narrative tools");
 
     // Create narrative from TOML
     registry
         .register(
             "create_narrative".to_string(),
-            Box::new(CreateNarrativeTool),
+            Arc::new(CreateNarrativeTool),
         )
         .expect("Failed to register create_narrative tool");
 
@@ -62,7 +59,7 @@ fn register_narrative_tools(registry: Arc<ToolRegistry>, narratives_dir: &str) {
     registry
         .register(
             "list_narratives".to_string(),
-            Box::new(ListNarrativesTool::new(narratives_dir)),
+            Arc::new(ListNarrativesTool::new(narratives_dir)),
         )
         .expect("Failed to register list_narratives tool");
 
@@ -70,7 +67,7 @@ fn register_narrative_tools(registry: Arc<ToolRegistry>, narratives_dir: &str) {
     registry
         .register(
             "load_narrative".to_string(),
-            Box::new(LoadNarrativeTool::new(narratives_dir)),
+            Arc::new(LoadNarrativeTool::new(narratives_dir)),
         )
         .expect("Failed to register load_narrative tool");
 
@@ -78,7 +75,7 @@ fn register_narrative_tools(registry: Arc<ToolRegistry>, narratives_dir: &str) {
     registry
         .register(
             "validate_narrative".to_string(),
-            Box::new(ValidateNarrativeTool),
+            Arc::new(ValidateNarrativeTool),
         )
         .expect("Failed to register validate_narrative tool");
 
@@ -88,7 +85,7 @@ fn register_narrative_tools(registry: Arc<ToolRegistry>, narratives_dir: &str) {
 /// Register all elicitation-related tools.
 #[tracing::instrument(skip(registry, elicitation_registry))]
 fn register_elicitation_tools(
-    registry: Arc<ToolRegistry>,
+    registry: &mut ToolRegistry,
     elicitation_registry: ElicitationRegistry,
 ) {
     tracing::debug!("Registering elicitation tools");
@@ -97,7 +94,7 @@ fn register_elicitation_tools(
     registry
         .register(
             "create_elicitation_session".to_string(),
-            Box::new(CreateElicitationSessionTool::new(
+            Arc::new(CreateElicitationSessionTool::new(
                 elicitation_registry.clone(),
             )),
         )
@@ -107,7 +104,7 @@ fn register_elicitation_tools(
     registry
         .register(
             "elicit_metadata".to_string(),
-            Box::new(ElicitMetadataTool::new(elicitation_registry.clone())),
+            Arc::new(ElicitMetadataTool::new(elicitation_registry.clone())),
         )
         .expect("Failed to register elicit_metadata tool");
 
@@ -115,7 +112,7 @@ fn register_elicitation_tools(
     registry
         .register(
             "elicit_act".to_string(),
-            Box::new(ElicitActTool::new(elicitation_registry.clone())),
+            Arc::new(ElicitActTool::new(elicitation_registry.clone())),
         )
         .expect("Failed to register elicit_act tool");
 
@@ -123,7 +120,7 @@ fn register_elicitation_tools(
     registry
         .register(
             "create_carousel".to_string(),
-            Box::new(CreateCarouselTool::new(elicitation_registry.clone())),
+            Arc::new(CreateCarouselTool::new(elicitation_registry.clone())),
         )
         .expect("Failed to register create_carousel tool");
 
@@ -131,7 +128,7 @@ fn register_elicitation_tools(
     registry
         .register(
             "execute_carousel".to_string(),
-            Box::new(ExecuteCarouselTool::new(elicitation_registry.clone())),
+            Arc::new(ExecuteCarouselTool::new(elicitation_registry.clone())),
         )
         .expect("Failed to register execute_carousel tool");
 
@@ -139,7 +136,7 @@ fn register_elicitation_tools(
     registry
         .register(
             "finalize_elicitation".to_string(),
-            Box::new(FinalizeElicitationTool::new(elicitation_registry)),
+            Arc::new(FinalizeElicitationTool::new(elicitation_registry)),
         )
         .expect("Failed to register finalize_elicitation tool");
 

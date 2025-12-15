@@ -15,10 +15,12 @@ botticelli_error.workspace = true
 botticelli_interface.workspace = true
 botticelli_mcp = { path = "../botticelli_mcp", version = "0.2.0" }
 botticelli_narrative = { path = "../botticelli_narrative", version = "0.2.0" }
+botticelli_social = { path = "../botticelli_social", version = "0.2.0", optional = true }
 
 async-trait.workspace = true
 chrono.workspace = true
 derive-getters.workspace = true
+derive-new.workspace = true
 derive_more.workspace = true
 glob = "0.3"
 pmcp = { version = "1.8", features = ["validation"] }
@@ -34,3 +36,4 @@ uuid = { version = "1.11", features = ["v4", "serde"] }
 [features]
 default = []
 database = ["botticelli_database"]
+discord = ["botticelli_social"]

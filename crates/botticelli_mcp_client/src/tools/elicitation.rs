@@ -3,15 +3,14 @@
 use crate::tools::registry_ops::GenericRegistry;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult, ToolHandler};
 use async_trait::async_trait;
-use botticelli_error::{McpError, McpResult};
+use botticelli_error::{McpError, McpErrorKind, McpResult};
 use botticelli_mcp::RegistryOperations;
 use pmcp::{Content, ToolInfo};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use uuid::Uuid;
 
 /// Elicitation session state wrapper implementing RegistryOperations.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, derive_getters::Getters, derive_setters::Setters)]
-#[setters(prefix = "with_")]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, derive_getters::Getters)]
 pub struct ElicitationSession {
     id: Uuid,
     state: Value,
@@ -47,7 +46,7 @@ impl RegistryOperations for ElicitationSession {
     }
 
     fn to_json(&self) -> McpResult<Value> {
-        serde_json::to_value(self).map_err(|e| McpError::serialization_error(e.to_string()))
+        serde_json::to_value(self).map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())))
     }
 
     fn update_from_json(&mut self, args: Value) -> McpResult<()> {
@@ -200,14 +199,15 @@ impl ToolHandler for ElicitMetadataTool {
                 ))
             })?;
 
-        let mut state = self.registry.get(&session_id).ok_or_else(|| {
+        let session = self.registry.get(&session_id).ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::InvalidToolCall(
                 "Session not found".to_string(),
             ))
         })?;
 
         // Update metadata fields if provided
-        let mut metadata = state["metadata"].as_object().cloned().unwrap_or_default();
+        let mut state_value = session.state().clone();
+        let mut metadata = state_value["metadata"].as_object().cloned().unwrap_or_default();
 
         if let Some(name) = input.get("name").and_then(|v| v.as_str()) {
             metadata.insert("name".to_string(), json!(name));
@@ -225,8 +225,9 @@ impl ToolHandler for ElicitMetadataTool {
             metadata.insert("default_temperature".to_string(), json!(temp));
         }
 
-        state["metadata"] = json!(metadata);
-        self.registry.update(&session_id, state.clone());
+        state_value["metadata"] = json!(metadata);
+        let updated_session = ElicitationSession { id: session_id, state: state_value };
+        self.registry.update(&session_id, updated_session);
 
         let result = json!({
             "session_id": session_id.to_string(),
@@ -311,14 +312,15 @@ impl ToolHandler for ElicitActTool {
                 ))
             })?;
 
-        let mut state = self.registry.get(&session_id).ok_or_else(|| {
+        let session = self.registry.get(&session_id).ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::InvalidToolCall(
                 "Session not found".to_string(),
             ))
         })?;
 
         // Update or add act
-        let mut acts = state["acts"].as_array().cloned().unwrap_or_default();
+        let mut state_value = session.state().clone();
+        let mut acts = state_value["acts"].as_array().cloned().unwrap_or_default();
 
         let mut act = json!({
             "name": act_name,
@@ -340,8 +342,9 @@ impl ToolHandler for ElicitActTool {
             acts.push(act);
         }
 
-        state["acts"] = json!(acts);
-        self.registry.update(&session_id, state.clone());
+        state_value["acts"] = json!(acts);
+        let updated_session = ElicitationSession { id: session_id, state: state_value };
+        self.registry.update(&session_id, updated_session);
 
         let result = json!({
             "session_id": session_id.to_string(),
@@ -444,14 +447,14 @@ impl ToolHandler for FinalizeElicitationTool {
                 ))
             })?;
 
-        let state = self.registry.remove(&session_id).ok_or_else(|| {
+        let session = self.registry.remove(&session_id).ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::InvalidToolCall(
                 "Session not found".to_string(),
             ))
         })?;
 
         // Generate TOML from state
-        let toml = generate_toml_from_state(&state)?;
+        let toml = generate_toml_from_state(session.state())?;
 
         let result = json!({
             "session_id": session_id.to_string(),
@@ -642,7 +645,8 @@ impl ToolHandler for CreateCarouselTool {
             "created_at": chrono::Utc::now().to_rfc3339(),
         });
 
-        let session_id = self.registry.create_session(carousel_config.clone());
+        let session = ElicitationSession::new(carousel_config);
+        let session_id = self.registry.upsert(session);
 
         tracing::info!(
             session_id = %session_id,

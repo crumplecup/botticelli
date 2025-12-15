@@ -278,14 +278,14 @@ impl BotticelliRouterBuilder {
                 if let Ok(tool) = crate::tools::DiscordGetChannelsTool::new() {
                     registry.register(Arc::new(tool));
                 }
-                if let Ok(tool) = crate::tools::DiscordBotCommandTool::new() {
-                    registry.register(Arc::new(tool));
-                }
-                if let Ok(tool) = crate::tools::DiscordPostTool::new() {
-                    registry.register(Arc::new(tool));
-                }
-                if let Ok(tool) = crate::tools::DiscordContentWorkflowTool::new() {
-                    registry.register(Arc::new(tool));
+                // Discord tools that require bot token
+                if let Ok(token) = std::env::var("DISCORD_BOT_TOKEN") {
+                    if let Ok(tool) = crate::tools::DiscordBotCommandTool::new(token.clone()) {
+                        registry.register(Arc::new(tool));
+                    }
+                    if let Ok(tool) = crate::tools::DiscordPostTool::new(token) {
+                        registry.register(Arc::new(tool));
+                    }
                 }
             }
             

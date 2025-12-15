@@ -5,8 +5,8 @@
 
 use crate::pmcp_adapters::McpToolAdapter;
 use crate::tools::{
-    CreateNarrativeTool, EchoTool, ModifyNarrativeTool, SaveNarrativeTool, ServerInfoTool,
-    ValidateNarrativeTool,
+    CreateNarrativeTool, EchoTool, GenerateTool, ModifyNarrativeTool, SaveNarrativeTool,
+    ServerInfoTool, ValidateNarrativeTool,
 };
 use anyhow::Result;
 use pmcp::Server;
@@ -26,7 +26,10 @@ pub async fn run_pmcp_server() -> Result<()> {
     // Register core tools
     builder = builder
         .tool("echo", McpToolAdapter::new(EchoTool))
-        .tool("server_info", McpToolAdapter::new(ServerInfoTool));
+        .tool("server_info", McpToolAdapter::new(ServerInfoTool))
+        .tool("generate", McpToolAdapter::new(GenerateTool));
+
+    // TODO: Register ExportMetricsTool when metrics infrastructure is available
 
     // Register database tools (if feature enabled)
     #[cfg(feature = "database")]
@@ -38,6 +41,7 @@ pub async fn run_pmcp_server() -> Result<()> {
     // Register narrative tools
     builder = builder
         .tool("create_narrative", McpToolAdapter::new(CreateNarrativeTool))
+        // StartNarrativeTool needs McpTool trait implementation - TODO
         .tool(
             "validate_narrative",
             McpToolAdapter::new(ValidateNarrativeTool),
@@ -235,9 +239,11 @@ pub async fn run_pmcp_server() -> Result<()> {
             tracing::info!("DISCORD_BOT_TOKEN not set, skipping discord_post and discord_bot_command tools");
         }
 
-        // DiscordContentWorkflowTool needs a ToolRegistry - skip for now as it needs complex setup
-        // TODO: Implement proper tool registry initialization
-        tracing::info!("Skipping discord_content_workflow tool (requires ToolRegistry)");
+        // DiscordContentWorkflowTool requires ToolRegistry for orchestration
+        // This creates a circular dependency - the workflow tool needs access to other tools
+        // but we're still building the registry. This should be refactored to use
+        // dependency injection or a two-phase initialization.
+        tracing::info!("Skipping discord_content_workflow tool (requires refactoring for tool dependencies)");
     }
 
     // Build the server

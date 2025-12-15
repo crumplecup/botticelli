@@ -257,7 +257,7 @@ impl McpTool for ElicitActTool {
             .and_then(|v| v.as_str())
             .ok_or_else(|| McpError::invalid_input("Missing 'prompt'".to_string()))?;
 
-        let mut state = self.registry.get_narrative(narrative_id)?;
+        let _state = self.registry.get_narrative(narrative_id)?;
 
         // Update or add act
         let model = input

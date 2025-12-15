@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 #[cfg(feature = "database")]
 use botticelli_database::{
-    DbPool, create_content_table, list_content, reflect_table_schema, table_exists,
+    create_content_table, list_content, reflect_table_schema, table_exists, DbPool,
 };
 use botticelli_error::DatabaseError;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 
-use crate::NarrativeTool;
+use crate::ToolHandler;
 
 /// Tool for creating database tables.
 ///
@@ -140,7 +140,7 @@ pub struct InspectTableTool {
 }
 
 #[async_trait]
-impl NarrativeTool for InspectTableTool {
+impl ToolHandler for InspectTableTool {
     fn name(&self) -> &str {
         "inspect_table"
     }
@@ -201,7 +201,7 @@ pub struct TableExistsTool {
 }
 
 #[async_trait]
-impl NarrativeTool for TableExistsTool {
+impl ToolHandler for TableExistsTool {
     fn name(&self) -> &str {
         "table_exists"
     }
