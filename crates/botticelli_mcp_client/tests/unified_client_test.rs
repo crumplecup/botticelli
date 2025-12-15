@@ -125,40 +125,12 @@ async fn test_unified_client_basic() {
     let client = UnifiedMcpClient::builder().build();
 
     let metrics = client.get_metrics();
-    assert_eq!(metrics.internal_tool_count, 0);
     assert_eq!(metrics.external_server_count, 0);
     assert_eq!(metrics.total_tool_count, 0);
 }
 
-#[tokio::test]
-async fn test_unified_client_with_internal_tools() {
-    let tools = vec![
-        ToolDefinition {
-            name: "test_tool".to_string(),
-            description: "A test tool".to_string(),
-            input_schema: json!({"type": "object"}),
-        },
-        ToolDefinition {
-            name: "another_tool".to_string(),
-            description: "Another test tool".to_string(),
-            input_schema: json!({"type": "object"}),
-        },
-    ];
-
-    let client = UnifiedMcpClient::builder()
-        .build()
-        .with_internal_tools(tools);
-
-    let metrics = client.get_metrics();
-    assert_eq!(metrics.internal_tool_count, 2);
-    assert_eq!(metrics.external_server_count, 0);
-    assert_eq!(metrics.total_tool_count, 2);
-
-    let all_tools = client.list_all_tools();
-    assert_eq!(all_tools.len(), 2);
-    assert!(all_tools.iter().any(|t| t.name == "test_tool"));
-    assert!(all_tools.iter().any(|t| t.name == "another_tool"));
-}
+// Note: Internal tools removed in favor of external MCP servers only
+// This test is no longer relevant and can be safely removed
 
 #[tokio::test]
 async fn test_unified_client_execute_loop_completion() {

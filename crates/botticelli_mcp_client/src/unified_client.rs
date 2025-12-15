@@ -1,6 +1,6 @@
-//! Unified MCP client that combines internal and external tool execution.
+//! Unified MCP client for external tool execution via MCP servers.
 
-use crate::tool_executor::{ToolDefinition, ToolExecutor};
+use crate::tool_executor::ToolDefinition;
 use crate::external_client::{ExternalMcpClient, ExternalServerConfig};
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use botticelli_core::{Input, Message, Role};
@@ -9,13 +9,12 @@ use std::collections::HashMap;
 use tracing::{debug, info, instrument, warn};
 use typed_builder::TypedBuilder;
 
-/// Unified MCP client that orchestrates internal and external tool execution.
+/// Unified MCP client that orchestrates external tool execution.
+///
+/// This client connects to external MCP servers (filesystem, git, search, etc.)
+/// and routes tool calls to the appropriate server.
 #[derive(Debug, TypedBuilder)]
 pub struct UnifiedMcpClient {
-    /// Internal tool executor for botticelli-native tools
-    #[builder(default)]
-    internal_executor: Option<ToolExecutor>,
-
     /// External MCP server clients (by name)
     #[builder(default)]
     external_clients: HashMap<String, ExternalMcpClient>,
@@ -23,21 +22,9 @@ pub struct UnifiedMcpClient {
     /// Maximum iterations before stopping
     #[builder(default = 10)]
     max_iterations: usize,
-
-    /// Whether to automatically route tool calls to appropriate executor
-    #[builder(default = true)]
-    auto_routing: bool,
 }
 
 impl UnifiedMcpClient {
-    /// Sets internal tools for this client.
-    #[instrument(skip(self, tools))]
-    pub fn with_internal_tools(mut self, tools: Vec<ToolDefinition>) -> Self {
-        info!(tool_count = tools.len(), "Configuring internal tools");
-        self.internal_executor = Some(ToolExecutor::new(tools));
-        self
-    }
-
     /// Connects to an external MCP server and adds it to available clients.
     #[instrument(skip(self, config), fields(server = %config.name))]
     pub async fn connect_external_server(
@@ -54,15 +41,10 @@ impl UnifiedMcpClient {
         Ok(())
     }
 
-    /// Get all available tool definitions (internal + external).
+    /// Get all available tool definitions from external servers.
     #[instrument(skip(self))]
     pub fn list_all_tools(&self) -> Vec<ToolDefinition> {
         let mut tools = Vec::new();
-
-        // Add internal tools
-        if let Some(executor) = &self.internal_executor {
-            tools.extend(executor.available_tools().iter().map(|t| (*t).clone()));
-        }
 
         // Add external tools
         for client in self.external_clients.values() {
@@ -73,7 +55,7 @@ impl UnifiedMcpClient {
         tools
     }
 
-    /// Execute a tool call by routing to appropriate executor.
+    /// Execute a tool call by routing to appropriate server.
     #[instrument(skip(self, arguments), fields(tool_name))]
     pub async fn execute_tool(
         &mut self,
@@ -81,18 +63,6 @@ impl UnifiedMcpClient {
         arguments: Value,
     ) -> McpClientResult<Value> {
         debug!("Executing tool: {}", tool_name);
-
-        // Try internal tools first
-        if let Some(executor) = &self.internal_executor {
-            if executor
-                .available_tools()
-                .iter()
-                .any(|t| t.name == tool_name)
-            {
-                debug!("Routing to internal executor");
-                return executor.execute(tool_name, arguments).await;
-            }
-        }
 
         // Try external servers
         for (server_name, client) in &mut self.external_clients {
@@ -105,7 +75,7 @@ impl UnifiedMcpClient {
         // Tool not found anywhere
         Err(McpClientError::new(McpClientErrorKind::ToolNotFound(
             format!(
-                "Tool '{}' not found in internal executor or any external server",
+                "Tool '{}' not found in any connected external server",
                 tool_name
             ),
         )))
@@ -204,11 +174,6 @@ impl UnifiedMcpClient {
     /// Get metrics about connected servers and tool usage.
     pub fn get_metrics(&self) -> UnifiedClientMetrics {
         UnifiedClientMetrics {
-            internal_tool_count: self
-                .internal_executor
-                .as_ref()
-                .map(|e| e.available_tools().len())
-                .unwrap_or(0),
             external_server_count: self.external_clients.len(),
             total_tool_count: self.list_all_tools().len(),
         }
@@ -275,10 +240,8 @@ pub trait LlmBackend: Send + Sync {
 /// Metrics about the unified client state.
 #[derive(Debug, Clone)]
 pub struct UnifiedClientMetrics {
-    /// Number of internal tools
-    pub internal_tool_count: usize,
     /// Number of external servers connected
     pub external_server_count: usize,
-    /// Total tools available (internal + external)
+    /// Total tools available from external servers
     pub total_tool_count: usize,
 }
