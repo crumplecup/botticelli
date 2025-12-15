@@ -5,8 +5,8 @@
 
 use crate::pmcp_adapters::McpToolAdapter;
 use crate::tools::{
-    CreateNarrativeTool, EchoTool, ModifyNarrativeTool, QueryContentTool, SaveNarrativeTool,
-    ServerInfoTool, ValidateNarrativeTool,
+    CreateNarrativeTool, EchoTool, ModifyNarrativeTool, SaveNarrativeTool, ServerInfoTool,
+    ValidateNarrativeTool,
 };
 use anyhow::Result;
 use pmcp::Server;

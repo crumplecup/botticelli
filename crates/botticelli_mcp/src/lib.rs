@@ -40,6 +40,7 @@ pub mod tools;
 
 // PMCP migration - new implementation
 mod pmcp_adapters;
+mod pmcp_middleware;
 mod pmcp_server;
 
 #[cfg(feature = "http")]
