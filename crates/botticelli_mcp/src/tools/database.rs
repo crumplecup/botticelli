@@ -3,14 +3,21 @@
 use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
+use botticelli_interface::DatabaseRegistryOperations;
 use serde_json::{json, Value};
-use tracing::{debug, instrument};
-
-#[cfg(feature = "database")]
-use botticelli_database::{establish_connection, list_content};
+use std::sync::Arc;
 
 /// Tool for querying content from database tables.
-pub struct QueryContentTool;
+pub struct QueryContentTool {
+    db_ops: Arc<dyn DatabaseRegistryOperations>,
+}
+
+impl QueryContentTool {
+    /// Create a new query content tool with database operations.
+    pub fn new(db_ops: Arc<dyn DatabaseRegistryOperations>) -> Self {
+        Self { db_ops }
+    }
+}
 
 #[async_trait]
 impl McpTool for QueryContentTool {
@@ -42,7 +49,7 @@ impl McpTool for QueryContentTool {
         })
     }
 
-    #[instrument(skip(self, input), fields(table, limit))]
+    #[tracing::instrument(skip(self, input), fields(table, limit))]
     async fn execute(&self, input: Value) -> McpResult<Value> {
         let table = input
             .get("table")
@@ -55,39 +62,24 @@ impl McpTool for QueryContentTool {
             .unwrap_or(10)
             .clamp(1, 100);
 
-        debug!(table = %table, limit, "Querying content");
+        tracing::debug!(table = %table, limit, "Querying content");
 
-        #[cfg(feature = "database")]
-        {
-            // Query the database
-            let mut conn = establish_connection().map_err(|e| {
-                McpError::execution_failed(format!("Database connection failed: {}", e))
-            })?;
+        // Execute raw query using trait
+        let query = format!("SELECT * FROM {} LIMIT {}", table, limit);
+        let rows = self
+            .db_ops
+            .execute_query(&query)
+            .await
+            .map_err(|e| McpError::execution_failed(format!("Query failed: {}", e)))?;
 
-            let rows = list_content(&mut conn, table, None, limit as usize)
-                .map_err(|e| McpError::execution_failed(format!("Query failed: {}", e)))?;
+        tracing::debug!(count = rows.len(), "Retrieved rows from database");
 
-            debug!(count = rows.len(), "Retrieved rows from database");
-
-            Ok(json!({
-                "status": "success",
-                "table": table,
-                "count": rows.len(),
-                "limit": limit,
-                "rows": rows
-            }))
-        }
-
-        #[cfg(not(feature = "database"))]
-        {
-            Ok(json!({
-                "status": "not_available",
-                "message": "Database feature not enabled. Build with --features database",
-                "requested": {
-                    "table": table,
-                    "limit": limit
-                }
-            }))
-        }
+        Ok(json!({
+            "status": "success",
+            "table": table,
+            "count": rows.len(),
+            "limit": limit,
+            "rows": rows
+        }))
     }
 }

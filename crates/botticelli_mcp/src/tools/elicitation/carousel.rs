@@ -1,5 +1,6 @@
 use crate::tools::elicitation::PartialNarrativeRegistry;
 use botticelli_error::{McpError, McpResult};
+use botticelli_interface::NarrativeRegistryOperations;
 use botticelli_narrative::CarouselConfig;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument};

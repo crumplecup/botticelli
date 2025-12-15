@@ -4,7 +4,7 @@ use crate::tools::registry_ops::GenericRegistry;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult, ToolHandler};
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpErrorKind, McpResult};
-use botticelli_mcp::RegistryOperations;
+use botticelli_interface::RegistryOperations;
 use pmcp::{Content, ToolInfo};
 use serde_json::{json, Value};
 use uuid::Uuid;

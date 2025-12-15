@@ -54,7 +54,7 @@ tower-http = { version = "0.5", features = ["cors", "trace"], optional = true }
 # Internal dependencies
 botticelli_core = { path = "../botticelli_core", version = "0.2.0" }
 botticelli_error = { path = "../botticelli_error", version = "0.2.0" }
-botticelli_interface = { path = "../botticelli_interface", version = "0.2.0", optional = true }
+botticelli_interface = { path = "../botticelli_interface", version = "0.2.0" }
 botticelli_narrative = { path = "../botticelli_narrative", version = "0.2.0" }
 botticelli_database = { path = "../botticelli_database", version = "0.2.0", optional = true }
 botticelli_models = { path = "../botticelli_models", version = "0.2.0", optional = true }
@@ -85,11 +85,11 @@ discord = ["dep:reqwest", "dep:botticelli_social"]
 http = ["dep:axum", "dep:tower", "dep:tower-http"]
 
 # LLM backend features
-gemini = ["dep:botticelli_interface", "dep:botticelli_models", "botticelli_models/gemini"]
-anthropic = ["dep:botticelli_interface", "dep:botticelli_models", "botticelli_models/anthropic"]
-ollama = ["dep:botticelli_interface", "dep:botticelli_models", "botticelli_models/ollama"]
-huggingface = ["dep:botticelli_interface", "dep:botticelli_models", "botticelli_models/huggingface"]
-groq = ["dep:botticelli_interface", "dep:botticelli_models", "botticelli_models/groq"]
+gemini = ["dep:botticelli_models", "botticelli_models/gemini"]
+anthropic = ["dep:botticelli_models", "botticelli_models/anthropic"]
+ollama = ["dep:botticelli_models", "botticelli_models/ollama"]
+huggingface = ["dep:botticelli_models", "botticelli_models/huggingface"]
+groq = ["dep:botticelli_models", "botticelli_models/groq"]
 
 # Combined LLM features
 llm = ["gemini", "anthropic", "ollama", "huggingface", "groq"]

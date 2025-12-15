@@ -1,21 +1,19 @@
 //! Registry for managing active narrative creation sessions.
 
-use crate::{RegistryOperations};
+use botticelli_interface::{RegistryOperations, NarrativeRegistryOperations};
 use botticelli_error::{McpError, McpResult};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use tracing::{debug, info, instrument, warn};
-use uuid::Uuid;
 
 /// Registry managing active narrative creation sessions.
 ///
 /// Generic over types implementing `RegistryOperations`.
 #[derive(Debug, Clone)]
-pub struct NarrativeRegistry<T: RegistryOperations> {
-    narratives: Arc<RwLock<HashMap<Uuid, T>>>,
+pub struct NarrativeRegistry<T: RegistryOperations<Key = String>> {
+    narratives: Arc<RwLock<HashMap<String, T>>>,
 }
 
-impl<T: RegistryOperations> NarrativeRegistry<T> {
+impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
     /// Create a new empty registry.
     pub fn new() -> Self {
         Self {
@@ -23,102 +21,144 @@ impl<T: RegistryOperations> NarrativeRegistry<T> {
         }
     }
 
-    /// Create a new narrative session with a generated UUID.
+    /// Add a narrative to the registry using its registry key.
     ///
-    /// Returns the UUID for tracking this narrative.
-    #[instrument(skip(self, item))]
-    pub fn create_session(&self, item: T) -> Uuid {
-        let id = Uuid::new_v4();
-        debug!(narrative_id = %id, "Creating narrative session");
+    /// Returns the key for tracking this narrative.
+    #[tracing::instrument(skip(self, item))]
+    pub fn add(&self, item: T) -> String
+    where
+        T: Clone,
+    {
+        let key = item.registry_key();
+        tracing::debug!(narrative_key = %key, "Adding narrative to registry");
 
         let mut narratives = self.narratives.write().expect("Registry lock poisoned");
-        narratives.insert(id, item);
+        narratives.insert(key.clone(), item);
 
-        info!(narrative_id = %id, "Created narrative session");
-        id
+        tracing::info!(narrative_key = %key, "Added narrative to registry");
+        key
     }
 
-    /// Get narrative by UUID.
+    /// Get narrative by key.
     ///
     /// # Errors
     ///
     /// Returns error if narrative doesn't exist.
-    #[instrument(skip(self), fields(narrative_id = %id))]
-    pub fn get_narrative(&self, id: Uuid) -> McpResult<T>
+    #[tracing::instrument(skip(self))]
+    pub fn get(&self, key: &str) -> McpResult<T>
     where
         T: Clone,
     {
         let narratives = self.narratives.read().expect("Registry lock poisoned");
         narratives
-            .get(&id)
+            .get(key)
             .cloned()
-            .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", id)))
+            .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", key)))
     }
 
-    /// Update narrative using a closure.
+    /// Update narrative using `update_from_json`.
     ///
     /// # Errors
     ///
     /// Returns error if narrative doesn't exist or update fails.
-    #[instrument(skip(self, update_fn), fields(narrative_id = %id))]
-    pub async fn update_narrative<F>(&self, id: Uuid, update_fn: F) -> McpResult<()>
-    where
-        F: FnOnce(&mut T) -> McpResult<()>,
-        T: Clone,
+    #[tracing::instrument(skip(self, args))]
+    pub fn update(&self, key: &str, args: serde_json::Value) -> McpResult<()>
     {
         let mut narratives = self.narratives.write().expect("Registry lock poisoned");
 
         let narrative = narratives
-            .get_mut(&id)
-            .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", id)))?;
+            .get_mut(key)
+            .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", key)))?;
 
-        update_fn(narrative)?;
-        debug!("Updated narrative");
+        narrative.update_from_json(args)?;
+        tracing::debug!("Updated narrative");
         Ok(())
     }
 
     /// Remove a narrative from the registry.
     ///
     /// Called after finalization. Returns the item if it existed.
-    #[instrument(skip(self), fields(narrative_id = %id))]
-    pub fn remove(&self, id: &Uuid) -> Option<T> {
+    #[tracing::instrument(skip(self))]
+    pub fn remove(&self, key: &str) -> Option<T> {
         let mut narratives = self.narratives.write().expect("Registry lock poisoned");
-        let result = narratives.remove(id);
+        let result = narratives.remove(key);
 
         if result.is_some() {
-            info!("Removed narrative session");
+            tracing::info!("Removed narrative from registry");
         } else {
-            warn!("Narrative not found for removal");
+            tracing::warn!("Narrative not found for removal");
         }
 
         result
     }
 
-    /// Get all active narrative IDs.
+    /// Get all active narrative keys.
     ///
     /// Useful for debugging and monitoring.
-    #[instrument(skip(self))]
-    pub fn active_sessions(&self) -> Vec<Uuid> {
+    #[tracing::instrument(skip(self))]
+    pub fn list_keys(&self) -> Vec<String> {
         let narratives = self.narratives.read().expect("Registry lock poisoned");
-        let sessions: Vec<Uuid> = narratives.keys().copied().collect();
-        debug!(count = sessions.len(), "Retrieved active sessions");
-        sessions
+        let keys: Vec<String> = narratives.keys().cloned().collect();
+        tracing::debug!(count = keys.len(), "Retrieved active narrative keys");
+        keys
     }
 
-    /// Clear all sessions.
+    /// Get all narratives.
+    #[tracing::instrument(skip(self))]
+    pub fn list_all(&self) -> Vec<T>
+    where
+        T: Clone,
+    {
+        let narratives = self.narratives.read().expect("Registry lock poisoned");
+        narratives.values().cloned().collect()
+    }
+
+    /// Clear all narratives.
     ///
     /// Used for testing or cleanup.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn clear(&self) {
         let mut narratives = self.narratives.write().expect("Registry lock poisoned");
         let count = narratives.len();
         narratives.clear();
-        info!(count, "Cleared all narrative sessions");
+        tracing::info!(count, "Cleared all narratives from registry");
     }
 }
 
-impl<T: RegistryOperations> Default for NarrativeRegistry<T> {
+impl<T: RegistryOperations<Key = String>> Default for NarrativeRegistry<T> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<T> NarrativeRegistryOperations for NarrativeRegistry<T>
+where
+    T: RegistryOperations<Key = String> + Clone,
+{
+    type Narrative = T;
+
+    fn get_narrative(&self, id: &str) -> McpResult<Self::Narrative> {
+        self.get(id)
+    }
+
+    fn update_narrative<F>(&self, id: &str, update_fn: F) -> McpResult<()>
+    where
+        F: FnOnce(&mut Self::Narrative) -> McpResult<()>,
+    {
+        let mut narratives = self.narratives.write().expect("Registry lock poisoned");
+        let narrative = narratives
+            .get_mut(id)
+            .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", id)))?;
+        
+        update_fn(narrative)
+    }
+
+    fn create_session(&mut self, narrative: Self::Narrative) -> String {
+        self.add(narrative)
+    }
+
+    fn finalize_narrative(&self, id: &str) -> McpResult<Self::Narrative> {
+        self.remove(id)
+            .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", id)))
     }
 }

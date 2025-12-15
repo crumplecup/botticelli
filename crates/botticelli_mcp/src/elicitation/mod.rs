@@ -8,4 +8,4 @@ mod registry;
 pub use dialog::ElicitationDialog;
 pub use elicitor::NarrativeElicitor;
 pub use partial::{PartialAct, PartialNarrative, PartialNarrativeBuilder};
-pub use registry::RegistryOperations;
+pub use registry::RegistryStorage;

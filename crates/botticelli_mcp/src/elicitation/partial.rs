@@ -2,14 +2,13 @@
 
 use botticelli_core::Input;
 use botticelli_narrative::CarouselConfig;
+use botticelli_interface::RegistryOperations;
 use derive_builder::Builder;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use tracing::instrument;
 
-use crate::elicitation::registry::RegistryOperations;
 use crate::tools::NarrativeHelper;
 use botticelli_error::{McpError, McpResult};
 
@@ -74,7 +73,7 @@ impl PartialNarrative {
     /// Check if minimum required fields are present.
     ///
     /// Minimum: name, description, at least one act.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn has_minimum_required(&self) -> bool {
         self.name.is_some() && self.description.is_some() && !self.acts.is_empty()
     }
@@ -82,7 +81,7 @@ impl PartialNarrative {
     /// Validate the partial narrative.
     ///
     /// Converts to TOML and validates using existing validator.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn validate(&self) -> McpResult<botticelli_narrative::validator::ValidationResult> {
         let toml = self.to_toml()?;
         Ok(botticelli_narrative::validator::validate_narrative_toml(
@@ -95,7 +94,7 @@ impl PartialNarrative {
     /// # Errors
     ///
     /// Returns error if required fields are missing.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn to_toml(&self) -> McpResult<String> {
         let name = self
             .name
@@ -162,7 +161,7 @@ impl PartialNarrative {
     /// # Errors
     ///
     /// Returns error if validation fails.
-    #[instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     pub fn try_into_narrative(&self) -> McpResult<botticelli_narrative::Narrative> {
         let toml = self.to_toml()?;
         let validation = self.validate()?;

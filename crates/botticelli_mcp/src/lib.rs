@@ -54,7 +54,6 @@ pub use conversation::{
 };
 pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
-    RegistryOperations,
 };
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
