@@ -13,8 +13,10 @@ use pmcp::Server;
 use tracing::{info, instrument};
 
 /// Runs the PMCP-based MCP server.
-#[instrument]
-pub async fn run_pmcp_server() -> Result<()> {
+#[instrument(skip(db_ops))]
+pub async fn run_pmcp_server(
+    #[cfg(feature = "database")] db_ops: Option<std::sync::Arc<dyn botticelli_interface::DatabaseRegistryOperations>>,
+) -> Result<()> {
     info!("Starting PMCP-based MCP server");
 
     // Build server with all tools wrapped in adapters
@@ -35,7 +37,9 @@ pub async fn run_pmcp_server() -> Result<()> {
     #[cfg(feature = "database")]
     {
         use crate::tools::QueryContentTool;
-        builder = builder.tool("query_content", McpToolAdapter::new(QueryContentTool));
+        if let Some(ops) = db_ops {
+            builder = builder.tool("query_content", McpToolAdapter::new(QueryContentTool::new(ops)));
+        }
     }
 
     // Register narrative tools

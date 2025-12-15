@@ -252,8 +252,8 @@ impl Default for ToolRegistry {
         }
 
         // Database tool (feature-gated)
-        #[cfg(feature = "database")]
-        registry.register(Arc::new(QueryContentTool));
+        // NOTE: Database tools require explicit configuration via builder
+        // They are not registered in Default implementation
 
         // Discord tools (feature-gated)
         #[cfg(feature = "discord")]

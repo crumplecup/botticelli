@@ -21,7 +21,10 @@ async fn main() -> Result<()> {
     tracing::info!("Starting Botticelli MCP server (PMCP implementation)");
 
     // Run the pmcp server
-    run_pmcp_server().await?;
+    run_pmcp_server(
+        #[cfg(feature = "database")]
+        None,  // TODO: Load database configuration
+    ).await?;
 
     Ok(())
 }

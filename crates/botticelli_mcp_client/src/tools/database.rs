@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use botticelli_database::{
     create_content_table, list_content, reflect_table_schema, table_exists, DbPool,
 };
+use botticelli_interface::DatabaseRegistryOperations;
 use pmcp::{Content, ToolInfo};
 use serde_json::{json, Value};
 
@@ -80,13 +81,21 @@ impl ToolHandler for CreateTableTool {
 ///
 /// Available with the `database` feature.
 #[cfg(feature = "database")]
-#[derive(Debug, Clone, derive_new::new)]
-pub struct QueryTableTool {
-    pool: DbPool,
+#[derive(Debug, Clone)]
+pub struct QueryTableTool<D: DatabaseRegistryOperations> {
+    db_ops: D,
 }
 
+#[cfg(feature = "database")]
+impl<D: DatabaseRegistryOperations> QueryTableTool<D> {
+    pub fn new(db_ops: D) -> Self {
+        Self { db_ops }
+    }
+}
+
+#[cfg(feature = "database")]
 #[async_trait]
-impl ToolHandler for QueryTableTool {
+impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for QueryTableTool<D> {
     fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "query_table",
@@ -113,13 +122,11 @@ impl ToolHandler for QueryTableTool {
         let table_name = input["table_name"]
             .as_str()
             .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
-        let limit = input["limit"].as_i64().unwrap_or(100) as usize;
+        let limit = input["limit"].as_i64().unwrap_or(100);
         let status_filter = input["status_filter"].as_str();
 
-        let mut conn = self.pool.get()
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(format!("Connection error: {}", e))))?;
-
-        let rows = list_content(&mut conn, table_name, status_filter, limit)
+        let rows = self.db_ops.query_content(table_name, status_filter, limit)
+            .await
             .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Query error: {}", e))))?;
 
         let result = json!({

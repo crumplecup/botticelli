@@ -33,7 +33,12 @@ async fn main() -> Result<()> {
             .unwrap_or(8080);
 
         tracing::info!("Starting Botticelli MCP HTTP server (PMCP implementation)");
-        run_pmcp_http_server(&host, port).await?;
+        run_pmcp_http_server(
+            &host,
+            port,
+            #[cfg(feature = "database")]
+            None,  // TODO: Load database configuration
+        ).await?;
     }
 
     #[cfg(not(feature = "streamable-http"))]
@@ -41,7 +46,10 @@ async fn main() -> Result<()> {
         tracing::warn!("HTTP transport not enabled - streamable-http feature missing");
         tracing::info!("Falling back to stdio transport");
         tracing::info!("To enable HTTP: cargo build --features streamable-http");
-        run_pmcp_server().await?;
+        run_pmcp_server(
+            #[cfg(feature = "database")]
+            None,  // TODO: Load database configuration
+        ).await?;
     }
 
     Ok(())

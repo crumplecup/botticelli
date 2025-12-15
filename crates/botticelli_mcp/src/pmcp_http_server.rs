@@ -21,8 +21,10 @@ use tracing::{info, instrument, warn};
 /// Builds the MCP server with all tools.
 ///
 /// This is the same server logic as stdio, but prepared for HTTP transport.
-#[instrument]
-fn build_server() -> Result<Server> {
+#[instrument(skip(db_ops))]
+fn build_server(
+    #[cfg(feature = "database")] db_ops: Option<Arc<dyn botticelli_interface::DatabaseRegistryOperations>>,
+) -> Result<Server> {
     info!("Building MCP server for HTTP transport");
 
     let mut builder = Server::builder()
@@ -39,7 +41,9 @@ fn build_server() -> Result<Server> {
     #[cfg(feature = "database")]
     {
         use crate::tools::QueryContentTool;
-        builder = builder.tool("query_content", McpToolAdapter::new(QueryContentTool));
+        if let Some(ops) = db_ops {
+            builder = builder.tool("query_content", McpToolAdapter::new(QueryContentTool::new(ops)));
+        }
     }
 
     // Register narrative tools
@@ -183,12 +187,19 @@ fn build_server() -> Result<Server> {
 }
 
 /// Runs the HTTP MCP server.
-#[instrument]
-pub async fn run_pmcp_http_server(host: &str, port: u16) -> Result<()> {
+#[instrument(skip(db_ops))]
+pub async fn run_pmcp_http_server(
+    host: &str,
+    port: u16,
+    #[cfg(feature = "database")] db_ops: Option<Arc<dyn botticelli_interface::DatabaseRegistryOperations>>,
+) -> Result<()> {
     info!("Starting PMCP HTTP server on {}:{}", host, port);
 
     // Build the server
-    let server = build_server()?;
+    let server = build_server(
+        #[cfg(feature = "database")]
+        db_ops,
+    )?;
     info!("Server built successfully with all tools");
 
     // Wrap in Arc<Mutex<>> for HTTP server

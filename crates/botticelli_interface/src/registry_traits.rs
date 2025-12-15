@@ -42,4 +42,12 @@ pub trait DatabaseRegistryOperations: Send + Sync {
 
     /// Get table schema.
     async fn get_schema(&self, table: &str) -> BotticelliResult<Value>;
+
+    /// Query content from a table.
+    async fn query_content(
+        &self,
+        table_name: &str,
+        status_filter: Option<&str>,
+        limit: i64,
+    ) -> BotticelliResult<Vec<Value>>;
 }

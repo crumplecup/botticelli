@@ -30,6 +30,7 @@ mod content_generation_models;
 mod content_generation_repository;
 mod content_management;
 mod content_repository;
+mod db_operations;
 mod models;
 mod narrative_conversions;
 mod narrative_models;
@@ -52,6 +53,7 @@ pub use actor_server_models::{
 
 // Re-export connection utilities
 pub use connection::{DbPool, create_pool, create_pool_from_url, establish_connection};
+pub use db_operations::DbOperationsImpl;
 
 // Re-export content management functions
 pub use content_management::{

@@ -167,6 +167,8 @@ pub struct BotticelliRouterBuilder {
     tools: Option<ToolRegistry>,
     resources: Option<ResourceRegistry>,
     metrics: Option<Arc<PrometheusMetrics>>,
+    #[cfg(feature = "database")]
+    db_ops: Option<Arc<dyn botticelli_interface::DatabaseRegistryOperations>>,
 }
 
 impl BotticelliRouterBuilder {
@@ -197,6 +199,16 @@ impl BotticelliRouterBuilder {
     /// Sets the metrics collector.
     pub fn metrics(mut self, metrics: Arc<PrometheusMetrics>) -> Self {
         self.metrics = Some(metrics);
+        self
+    }
+
+    /// Sets database operations implementation.
+    #[cfg(feature = "database")]
+    pub fn database_operations(
+        mut self,
+        db_ops: Arc<dyn botticelli_interface::DatabaseRegistryOperations>,
+    ) -> Self {
+        self.db_ops = Some(db_ops);
         self
     }
 
@@ -261,7 +273,9 @@ impl BotticelliRouterBuilder {
             
             // Database tools
             #[cfg(feature = "database")]
-            registry.register(Arc::new(crate::tools::QueryContentTool));
+            if let Some(db_ops) = self.db_ops {
+                registry.register(Arc::new(crate::tools::QueryContentTool::new(db_ops)));
+            }
             
             // Discord tools
             #[cfg(feature = "discord")]

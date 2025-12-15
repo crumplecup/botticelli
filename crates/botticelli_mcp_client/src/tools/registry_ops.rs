@@ -2,7 +2,7 @@
 
 use crate::{McpClientError, McpClientErrorKind, McpClientResult, ToolHandler};
 use async_trait::async_trait;
-use botticelli_mcp::RegistryOperations;
+use botticelli_interface::RegistryOperations;
 use pmcp::{Content, ToolInfo};
 use serde_json::{Value, json};
 use std::collections::HashMap;
