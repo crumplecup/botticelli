@@ -1,6 +1,56 @@
-# Planning Document Archive Session
-**Date:** 2025-12-01
-**Task:** Review and archive outdated planning documents
+# Planning Document Tracker
+
+## Current Active Projects
+
+### MCP Client Integration (December 15, 2024)
+**Status:** ✅ Phase B Complete - Ready for merge to dev
+
+**Branch:** `feature/mcp-client-integration`
+
+**What Was Completed:**
+- ✅ Phase B.1: External server foundation (process spawning, config, errors)
+- ✅ Phase B.2: Full MCP protocol implementation (Custom Transport, initialize, tools)
+- ✅ Phase B.3: Comprehensive testing (unit + integration with real servers)
+- ✅ Phase B.4: Complete documentation and usage guides
+
+**Commits:**
+1. `55a5407` - Audit existing MCP client and create revised strategy
+2. `b14ccf7` - Phase B.1 foundation (process spawning, config)
+3. `ec38ea2` - Phase B.2 MCP protocol (Custom Transport, full protocol)
+4. `b246965` - Comprehensive tests (unit + integration)
+5. `3950ecb` - Complete documentation summary
+
+**Files Changed:**
+- `+500` lines new code
+- `crates/botticelli_mcp_client/src/external_client.rs` (NEW - 333 lines)
+- `crates/botticelli_mcp_client/tests/external_client_test.rs` (NEW)
+- `MCP_CLIENT_REVISED_STRATEGY.md` (NEW)
+- `MCP_CLIENT_PHASE_B_COMPLETE.md` (NEW)
+
+**Key Achievement:**
+- Custom `ChildProcessTransport` implementing pmcp::Transport
+- Full JSON-RPC 2.0 over stdin/stdout
+- Can now connect to any external MCP server in ecosystem
+- Filesystem, git, search, cloud, dev tools all accessible
+
+**Strategic Value:**
+Botticelli is now unique with all four:
+- ✅ MCP Server (26 custom tools)
+- ✅ MCP Client (ecosystem access) ← NEW!
+- ✅ Narrative Orchestrator
+- ✅ Multi-Model (5 LLM backends)
+
+**Next Steps:**
+1. Merge PR to dev: https://github.com/crumplecup/botticelli/pull/new/feature/mcp-client-integration
+2. Phase C: Narrative integration (external_servers TOML config)
+3. Example narratives with ecosystem servers
+
+**Lesson Learned:**
+"Alarmingly naive" correction → proper audit → better architecture
+- ❌ Wrong: Create new crate without auditing
+- ✅ Right: Audit → Understand → Plan → Integrate
+
+---
 
 ## Progress Tracker
 

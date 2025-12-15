@@ -1,6 +1,6 @@
 //! Context management for MCP client conversations.
 
-use crate::{McpClientResult, Message, MessageRole};
+use crate::{llm_adapter::{Message, MessageRole}, McpClientResult};
 use std::collections::VecDeque;
 
 /// Maximum conversation history to maintain.

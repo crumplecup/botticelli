@@ -48,6 +48,14 @@ pub enum McpClientErrorKind {
     /// Metrics registration error.
     #[display("Metrics error: {}", _0)]
     MetricsError(String),
+
+    /// External server connection failed.
+    #[display("External server connection failed: {}", _0)]
+    ExternalServerConnectionFailed(String),
+
+    /// External server discovery failed.
+    #[display("External server tool discovery failed: {}", _0)]
+    ExternalServerDiscoveryFailed(String),
 }
 
 /// MCP client error with location tracking.
@@ -89,7 +97,10 @@ impl McpClientErrorKind {
     pub fn is_retryable(&self) -> bool {
         matches!(
             self,
-            Self::ConnectionError(_) | Self::Timeout(_) | Self::ToolExecutionFailed(_)
+            Self::ConnectionError(_)
+                | Self::Timeout(_)
+                | Self::ToolExecutionFailed(_)
+                | Self::ExternalServerConnectionFailed(_)
         )
     }
 

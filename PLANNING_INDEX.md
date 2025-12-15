@@ -341,3 +341,28 @@ This index tracks all planning documents in the workspace. When documents are co
   - Enables Botticelli as complete platform: MCP server + client + orchestrator
   - 10-day timeline with minimal risk
   - Status: 📋 Planning document - ready for implementation
+
+- **MCP_CLIENT_REVISED_STRATEGY.md** - `current` (2025-12-15)
+  - Revised strategy after auditing existing botticelli_mcp_client crate
+  - Phase A: Self-driving (existing) - tools for LLM self-discovery
+  - Phase B: External servers - connect to ecosystem MCP servers ✅ COMPLETE
+  - Phase C: Narrative integration - TOML config for external servers
+  - Proper architecture understanding and integration approach
+  - Status: ✅ Phase B complete, Phase C ready
+
+- **MCP_CLIENT_PHASE_B_COMPLETE.md** - `current` (2025-12-15)
+  - Complete implementation summary for Phase B (External Server Integration)
+  - Custom ChildProcessTransport implementing pmcp::Transport
+  - Full MCP protocol: initialize, tools/list, tools/call
+  - Integration tests with real external servers
+  - Ecosystem access: filesystem, git, search, cloud, dev tools
+  - Strategic positioning: MCP server + client + orchestrator + multi-model
+  - Status: ✅ COMPLETE - Ready for merge to dev
+
+- **MCP_CLIENT_UNIFIED_ARCHITECTURE_PLAN.md** - `current` (2025-12-15)
+  - Unified type system strategy: eliminate duplication with pmcp types
+  - Phase 1: Type unification (ToolDefinition → pmcp::Tool, Value → Content)
+  - Phase 2: Complete TODO implementations (tool execution, orchestration)
+  - Phase 3: Integration testing (real MCP servers end-to-end)
+  - Careful, methodical approach with deprecation path
+  - Status: 📋 Phase 1.1 complete (audit) - Ready for 1.2 (implementation)
