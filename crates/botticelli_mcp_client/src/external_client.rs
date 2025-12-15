@@ -94,6 +94,7 @@ pub struct ExternalServerConfig {
 }
 
 /// Client for connecting to external MCP servers (filesystem, git, search, etc.)
+#[derive(Debug)]
 pub struct ExternalMcpClient {
     /// Server identifier
     name: String,
@@ -312,64 +313,29 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_spawn_echo_process() {
-        // Test that we can spawn a simple process
+    async fn test_spawn_invalid_server() {
+        // Test that we get proper error when spawning non-MCP process
         let config = ExternalServerConfig::builder()
-            .name("echo".to_string())
+            .name("not-mcp".to_string())
             .command("echo".to_string())
             .args(vec!["test".to_string()])
             .build();
 
-        // This will spawn but won't be a valid MCP server
-        // Just tests process spawning works
         let result = ExternalMcpClient::connect(config).await;
         
-        // Should successfully spawn even though it's not an MCP server
-        assert!(result.is_ok(), "Should spawn process: {:?}", result.err());
+        // Should fail because echo is not an MCP server
+        assert!(result.is_err(), "Should fail with non-MCP process");
+        
+        let err = result.unwrap_err();
+        assert!(
+            format!("{}", err).contains("initialize") ||
+            format!("{}", err).contains("Protocol") ||
+            format!("{}", err).contains("parse"),
+            "Error should indicate protocol/initialization failure: {}",
+            err
+        );
     }
 }
 
 
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_external_server_config_builder() {
-        let config = ExternalServerConfig::builder()
-            .name("filesystem".to_string())
-            .command("npx".to_string())
-            .args(vec![
-                "-y".to_string(),
-                "@modelcontextprotocol/server-filesystem".to_string(),
-                "/tmp".to_string(),
-            ])
-            .allowed_tools(Some(vec!["read_file".to_string()]))
-            .timeout_seconds(Some(30))
-            .build();
-
-        assert_eq!(config.name, "filesystem");
-        assert_eq!(config.command, "npx");
-        assert_eq!(config.args.len(), 3);
-        assert!(config.allowed_tools.is_some());
-        assert_eq!(config.timeout_seconds, Some(30));
-    }
-
-    #[tokio::test]
-    async fn test_spawn_echo_process() {
-        // Test that we can spawn a simple process
-        let config = ExternalServerConfig::builder()
-            .name("echo".to_string())
-            .command("echo".to_string())
-            .args(vec!["test".to_string()])
-            .build();
-
-        // This will spawn but won't be a valid MCP server
-        // Just tests process spawning works
-        let result = ExternalMcpClient::connect(config).await;
-        
-        // Should successfully spawn even though it's not an MCP server
-        assert!(result.is_ok(), "Should spawn process: {:?}", result.err());
-    }
-}
