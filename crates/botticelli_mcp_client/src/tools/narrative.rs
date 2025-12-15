@@ -6,7 +6,7 @@ use crate::{McpClientError, McpClientErrorKind, McpClientResult, ToolHandler};
 use async_trait::async_trait;
 use botticelli_narrative::Narrative;
 use pmcp::{Content, ToolInfo};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::{debug, error, instrument};
 
 /// Tool for creating narratives from TOML content.
@@ -78,10 +78,9 @@ impl ToolHandler for CreateNarrativeTool {
             }
             Err(e) => {
                 error!(error = ?e, "Failed to parse narrative");
-                Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(format!(
-                    "Parse error: {}",
-                    e
-                ))))
+                Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                    format!("Parse error: {}", e),
+                )))
             }
         }
     }
@@ -132,10 +131,9 @@ impl ToolHandler for ListNarrativesTool {
 
         let path = std::path::Path::new(&self.narratives_dir);
         if !path.exists() {
-            return Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(format!(
-                "Narratives directory not found: {}",
-                self.narratives_dir
-            ))));
+            return Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                format!("Narratives directory not found: {}", self.narratives_dir),
+            )));
         }
 
         let glob_pattern = format!("{}/{}", self.narratives_dir, pattern);
@@ -162,10 +160,9 @@ impl ToolHandler for ListNarrativesTool {
             }
             Err(e) => {
                 error!(error = ?e, "Failed to list narratives");
-                Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(format!(
-                    "Glob error: {}",
-                    e
-                ))))
+                Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                    format!("Glob error: {}", e),
+                )))
             }
         }
     }
@@ -192,7 +189,9 @@ impl ToolHandler for LoadNarrativeTool {
     fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "load_narrative",
-            Some("Load a narrative from file. Returns narrative metadata and structure.".to_string()),
+            Some(
+                "Load a narrative from file. Returns narrative metadata and structure.".to_string(),
+            ),
             json!({
                 "type": "object",
                 "properties": {
@@ -220,7 +219,7 @@ impl ToolHandler for LoadNarrativeTool {
             })?;
 
         let path = std::path::Path::new(&self.narratives_dir).join(filename);
-        
+
         match Narrative::from_file(&path) {
             Ok(narrative) => {
                 let metadata = narrative.metadata();
@@ -248,10 +247,9 @@ impl ToolHandler for LoadNarrativeTool {
             }
             Err(e) => {
                 error!(error = ?e, file = %filename, "Failed to load narrative");
-                Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(format!(
-                    "Load error: {}",
-                    e
-                ))))
+                Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                    format!("Load error: {}", e),
+                )))
             }
         }
     }
@@ -267,7 +265,10 @@ impl ToolHandler for ValidateNarrativeTool {
     fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "validate_narrative",
-            Some("Validate narrative TOML structure and references. Returns validation results.".to_string()),
+            Some(
+                "Validate narrative TOML structure and references. Returns validation results."
+                    .to_string(),
+            ),
             json!({
                 "type": "object",
                 "properties": {
@@ -298,7 +299,7 @@ impl ToolHandler for ValidateNarrativeTool {
             Ok(narrative) => {
                 let metadata = narrative.metadata();
                 let toc = narrative.toc();
-                
+
                 // Validate all acts exist
                 let mut missing_acts = Vec::new();
                 for act_name in toc.order() {
@@ -352,7 +353,7 @@ mod tests {
     async fn test_create_narrative_tool() {
         let tool = CreateNarrativeTool;
         let info = tool.tool_info();
-        
+
         assert_eq!(info.name, "create_narrative");
         assert!(info.description.is_some());
     }
@@ -361,7 +362,7 @@ mod tests {
     async fn test_validate_narrative_tool() {
         let tool = ValidateNarrativeTool;
         let info = tool.tool_info();
-        
+
         assert_eq!(info.name, "validate_narrative");
         assert!(info.description.is_some());
     }
@@ -370,7 +371,7 @@ mod tests {
     async fn test_list_narratives_tool() {
         let tool = ListNarrativesTool::new("/tmp");
         let info = tool.tool_info();
-        
+
         assert_eq!(info.name, "list_narratives");
         assert!(info.description.is_some());
     }
@@ -379,7 +380,7 @@ mod tests {
     async fn test_load_narrative_tool() {
         let tool = LoadNarrativeTool::new("/tmp");
         let info = tool.tool_info();
-        
+
         assert_eq!(info.name, "load_narrative");
         assert!(info.description.is_some());
     }

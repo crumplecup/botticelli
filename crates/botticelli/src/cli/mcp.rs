@@ -23,7 +23,9 @@ pub async fn handle_mcp_command(args: McpCommandArgs) -> anyhow::Result<()> {
     );
 
     // Create unified MCP client
-    let _client = UnifiedMcpClient::builder().max_iterations(args.max_turns).build();
+    let _client = UnifiedMcpClient::builder()
+        .max_iterations(args.max_turns)
+        .build();
 
     info!("MCP client created");
     println!("MCP client command not yet fully implemented");

@@ -51,7 +51,7 @@ impl Default for MetricsMiddleware {
 impl Middleware for MetricsMiddleware {
     async fn on_request(&self, request: &mut JSONRPCRequest) -> Result<()> {
         let count = self.request_count.fetch_add(1, Ordering::SeqCst) + 1;
-        
+
         debug!(
             request_id = %request.id,
             method = %request.method,
@@ -70,7 +70,7 @@ impl Middleware for MetricsMiddleware {
         // Calculate request latency
         if let Some((_, start)) = self.start_times.remove(&response.id.to_string()) {
             let elapsed = start.elapsed();
-            
+
             if elapsed.as_secs() > 1 {
                 warn!(
                     response_id = %response.id,

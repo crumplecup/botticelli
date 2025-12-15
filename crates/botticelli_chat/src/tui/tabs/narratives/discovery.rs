@@ -51,14 +51,10 @@ pub async fn discover_narratives<P: AsRef<Path>>(
 }
 
 /// Loads a single narrative entry
-async fn load_narrative_entry(
-    path: &Path,
-    root: &Path,
-) -> Result<NarrativeEntry, DiscoveryError> {
+async fn load_narrative_entry(path: &Path, root: &Path) -> Result<NarrativeEntry, DiscoveryError> {
     // Load the narrative to extract metadata
-    let narrative = Narrative::from_file(path).map_err(|e| {
-        DiscoveryError::LoadFailed(path.to_path_buf(), e.to_string())
-    })?;
+    let narrative = Narrative::from_file(path)
+        .map_err(|e| DiscoveryError::LoadFailed(path.to_path_buf(), e.to_string()))?;
 
     // Extract metadata
     let metadata = extract_metadata(narrative.metadata());

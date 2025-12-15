@@ -20,11 +20,7 @@ pub fn build_tree_items(narratives: &[NarrativeEntry]) -> Vec<TreeItem<'static, 
         .sorted_by_key(|n| std::cmp::Reverse(n.last_modified))
         .take(10)
         .map(|n| {
-            let model_display = n
-                .metadata
-                .model
-                .as_deref()
-                .unwrap_or("default");
+            let model_display = n.metadata.model.as_deref().unwrap_or("default");
             let label = format!("{} ({})", n.name, model_display);
             TreeItem::new_leaf(n.path.to_string_lossy().to_string(), label)
         })
@@ -33,8 +29,14 @@ pub fn build_tree_items(narratives: &[NarrativeEntry]) -> Vec<TreeItem<'static, 
     if !recent.is_empty() {
         // Unwrap is safe because identifier and text are valid strings
         items.push(
-            TreeItem::new("recent".to_string(), "📌 Recent".to_string(), recent)
-                .unwrap_or_else(|_| TreeItem::new_leaf("error".to_string(), "Error creating Recent section".to_string()))
+            TreeItem::new("recent".to_string(), "📌 Recent".to_string(), recent).unwrap_or_else(
+                |_| {
+                    TreeItem::new_leaf(
+                        "error".to_string(),
+                        "Error creating Recent section".to_string(),
+                    )
+                },
+            ),
         );
     }
 
@@ -48,15 +50,15 @@ pub fn build_tree_items(narratives: &[NarrativeEntry]) -> Vec<TreeItem<'static, 
     }
 
     // Build category sections (sorted by name)
-    for (category, mut cat_narratives) in categories.into_iter().sorted_by_key(|(cat, _)| cat.clone()) {
+    for (category, mut cat_narratives) in
+        categories.into_iter().sorted_by_key(|(cat, _)| cat.clone())
+    {
         // Sort narratives within category by name
         cat_narratives.sort_by(|a, b| a.name.cmp(&b.name));
 
         let children: Vec<_> = cat_narratives
             .into_iter()
-            .map(|n| {
-                TreeItem::new_leaf(n.path.to_string_lossy().to_string(), n.name.clone())
-            })
+            .map(|n| TreeItem::new_leaf(n.path.to_string_lossy().to_string(), n.name.clone()))
             .collect();
 
         let count = children.len();
@@ -64,8 +66,12 @@ pub fn build_tree_items(narratives: &[NarrativeEntry]) -> Vec<TreeItem<'static, 
 
         // Unwrap is safe because identifier and text are valid strings
         items.push(
-            TreeItem::new(category.clone(), label, children)
-                .unwrap_or_else(|_| TreeItem::new_leaf("error".to_string(), format!("Error creating {} section", category)))
+            TreeItem::new(category.clone(), label, children).unwrap_or_else(|_| {
+                TreeItem::new_leaf(
+                    "error".to_string(),
+                    format!("Error creating {} section", category),
+                )
+            }),
         );
     }
 
@@ -88,7 +94,9 @@ pub fn find_narrative_by_path<'a>(
     // If in "recent" section, the second component is the full path
     if path_components[0] == "recent" && path_components.len() > 1 {
         let path_str = &path_components[1];
-        return narratives.iter().find(|n| n.path.to_string_lossy() == path_str.as_str());
+        return narratives
+            .iter()
+            .find(|n| n.path.to_string_lossy() == path_str.as_str());
     }
 
     // Otherwise, match by category and name
@@ -132,15 +140,22 @@ mod tests {
             create_test_entry("welcome", "discord"),
         ];
 
-        let found = find_narrative_by_path(&narratives, &["examples".to_string(), "showcase".to_string()]);
+        let found = find_narrative_by_path(
+            &narratives,
+            &["examples".to_string(), "showcase".to_string()],
+        );
         assert!(found.is_some());
         assert_eq!(found.unwrap().name, "showcase");
 
-        let found = find_narrative_by_path(&narratives, &["discord".to_string(), "welcome".to_string()]);
+        let found =
+            find_narrative_by_path(&narratives, &["discord".to_string(), "welcome".to_string()]);
         assert!(found.is_some());
         assert_eq!(found.unwrap().name, "welcome");
 
-        let not_found = find_narrative_by_path(&narratives, &["examples".to_string(), "nonexistent".to_string()]);
+        let not_found = find_narrative_by_path(
+            &narratives,
+            &["examples".to_string(), "nonexistent".to_string()],
+        );
         assert!(not_found.is_none());
     }
 }

@@ -7,15 +7,12 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 #[cfg(feature = "tui")]
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui::{buffer::Buffer, layout::Rect};
 
 #[cfg(feature = "tui")]
 use tui_tree_widget::{TreeItem, TreeState};
 
-pub use discovery::{DiscoveryError, discover_narratives};
+pub use discovery::{discover_narratives, DiscoveryError};
 pub use tree_builder::{build_tree_items, find_narrative_by_path};
 
 /// Actions that can be performed on narratives
@@ -107,7 +104,10 @@ impl NarrativesTab {
     }
 
     /// Refreshes narratives from the filesystem
-    pub async fn refresh_narratives<P: AsRef<Path>>(&mut self, path: P) -> Result<(), DiscoveryError> {
+    pub async fn refresh_narratives<P: AsRef<Path>>(
+        &mut self,
+        path: P,
+    ) -> Result<(), DiscoveryError> {
         self.narratives = discover_narratives(path).await?;
 
         #[cfg(feature = "tui")]
@@ -173,20 +173,20 @@ impl NarrativesTab {
     #[cfg(feature = "tui")]
     /// Renders the narratives tab
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        use crate::tui::widgets::NavigationPanel;
         use ratatui::{
             layout::{Constraint, Direction, Layout},
             style::{Color, Modifier, Style},
             text::{Line, Span},
             widgets::{Block, Borders, Paragraph, Wrap},
         };
-        use crate::tui::widgets::NavigationPanel;
 
         // Create layout: navigation panel on left, content on right
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(30),  // Navigation panel
-                Constraint::Percentage(70),  // Content area
+                Constraint::Percentage(30), // Navigation panel
+                Constraint::Percentage(70), // Content area
             ])
             .split(area);
 
@@ -229,9 +229,10 @@ impl NarrativesTab {
                 Span::raw(narrative.path.to_string_lossy()),
             ]),
             Line::from(""),
-            Line::from(vec![
-                Span::styled("Description: ", Style::default().add_modifier(Modifier::BOLD)),
-            ]),
+            Line::from(vec![Span::styled(
+                "Description: ",
+                Style::default().add_modifier(Modifier::BOLD),
+            )]),
             Line::from(
                 narrative
                     .metadata
@@ -240,9 +241,10 @@ impl NarrativesTab {
                     .unwrap_or("No description available"),
             ),
             Line::from(""),
-            Line::from(vec![
-                Span::styled("Actions: ", Style::default().add_modifier(Modifier::BOLD)),
-            ]),
+            Line::from(vec![Span::styled(
+                "Actions: ",
+                Style::default().add_modifier(Modifier::BOLD),
+            )]),
             Line::from("[E] Edit  [X] Execute  [V] Validate  [D] Delete"),
         ];
 

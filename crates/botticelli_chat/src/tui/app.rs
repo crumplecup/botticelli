@@ -61,15 +61,22 @@ impl TuiApp {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(3),  // Tab bar
-                Constraint::Min(0),     // Main content
-                Constraint::Length(3),  // Status bar
-                Constraint::Length(1),  // Shortcut bar
+                Constraint::Length(3), // Tab bar
+                Constraint::Min(0),    // Main content
+                Constraint::Length(3), // Status bar
+                Constraint::Length(1), // Shortcut bar
             ])
             .split(frame.area());
 
         // Render tab bar
-        let tab_titles = vec!["Narratives", "Bots", "Database", "Chat", "Schedule", "Settings"];
+        let tab_titles = vec![
+            "Narratives",
+            "Bots",
+            "Database",
+            "Chat",
+            "Schedule",
+            "Settings",
+        ];
         let tabs = Tabs::new(tab_titles)
             .block(Block::default().borders(Borders::ALL).title("Botticelli"))
             .select(self.state.active_tab as usize)

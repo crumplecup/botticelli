@@ -1,10 +1,7 @@
 // Tab bar widget
 
 #[cfg(feature = "tui")]
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui::{buffer::Buffer, layout::Rect};
 
 /// Tab bar widget for tab navigation
 #[derive(Debug, Clone, Default)]

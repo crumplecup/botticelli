@@ -293,8 +293,8 @@ impl ScheduleTab {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(45),  // Task list
-                Constraint::Percentage(55),  // Task details
+                Constraint::Percentage(45), // Task list
+                Constraint::Percentage(55), // Task details
             ])
             .split(area);
 
@@ -332,8 +332,8 @@ impl ScheduleTab {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Min(5),      // List
-                Constraint::Length(3),   // Help
+                Constraint::Min(5),    // List
+                Constraint::Length(3), // Help
             ])
             .split(area);
 
@@ -371,17 +371,11 @@ impl ScheduleTab {
                             format!("{} ", status_symbol),
                             Style::default().fg(status_color),
                         ),
-                        Span::styled(
-                            &task.name,
-                            Style::default().add_modifier(Modifier::BOLD),
-                        ),
+                        Span::styled(&task.name, Style::default().add_modifier(Modifier::BOLD)),
                     ]),
                     Line::from(vec![
                         Span::raw("  "),
-                        Span::styled(
-                            task.schedule.display(),
-                            Style::default().fg(Color::Cyan),
-                        ),
+                        Span::styled(task.schedule.display(), Style::default().fg(Color::Cyan)),
                         Span::styled(
                             format!(" • next: {}", next_run_str),
                             Style::default().fg(Color::DarkGray),
@@ -397,7 +391,7 @@ impl ScheduleTab {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(format!("Scheduled Tasks ({} total)", self.tasks.len()))
+                    .title(format!("Scheduled Tasks ({} total)", self.tasks.len())),
             )
             .highlight_style(
                 Style::default()
@@ -477,7 +471,11 @@ impl ScheduleTab {
 
             lines.push(Line::from(vec![
                 Span::styled("Last run: ", Style::default().add_modifier(Modifier::BOLD)),
-                Span::raw(format!("{} ({})", last.format("%Y-%m-%d %H:%M:%S"), ago_str)),
+                Span::raw(format!(
+                    "{} ({})",
+                    last.format("%Y-%m-%d %H:%M:%S"),
+                    ago_str
+                )),
             ]));
         } else {
             lines.push(Line::from(vec![
@@ -518,18 +516,16 @@ impl ScheduleTab {
         if task.failures > 0 {
             lines.push(Line::from(vec![
                 Span::styled("Failures: ", Style::default().add_modifier(Modifier::BOLD)),
-                Span::styled(
-                    task.failures.to_string(),
-                    Style::default().fg(Color::Red),
-                ),
+                Span::styled(task.failures.to_string(), Style::default().fg(Color::Red)),
             ]));
         }
 
         if let Some(error) = &task.last_error {
             lines.push(Line::from(""));
-            lines.push(Line::from(vec![
-                Span::styled("Last Error: ", Style::default().add_modifier(Modifier::BOLD).fg(Color::Red)),
-            ]));
+            lines.push(Line::from(vec![Span::styled(
+                "Last Error: ",
+                Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
+            )]));
 
             // Wrap error message
             for line in error.lines().skip(self.detail_scroll) {

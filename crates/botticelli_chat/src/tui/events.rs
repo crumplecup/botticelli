@@ -207,9 +207,8 @@ impl EventHandler {
     fn key_to_command(&self, key: KeyEvent, _state: &AppState) -> Option<TuiCommand> {
         match (key.code, key.modifiers) {
             // Quit
-            (KeyCode::Char('c'), KeyModifiers::CONTROL) | (KeyCode::Char('q'), KeyModifiers::NONE) => {
-                Some(TuiCommand::Quit)
-            }
+            (KeyCode::Char('c'), KeyModifiers::CONTROL)
+            | (KeyCode::Char('q'), KeyModifiers::NONE) => Some(TuiCommand::Quit),
 
             // Tab navigation
             (KeyCode::Tab, KeyModifiers::NONE) => Some(TuiCommand::NextTab),

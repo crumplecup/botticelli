@@ -4,9 +4,9 @@
 // The old implementation is in legacy.rs for backwards compatibility.
 
 mod app;
-mod state;
-mod events;
 mod commands;
+mod events;
+mod state;
 
 pub mod tabs;
 pub mod widgets;
@@ -16,9 +16,9 @@ mod legacy;
 
 // New modular API
 pub use app::TuiApp;
-pub use state::{AppState, Tab, StatusInfo, Modal};
-pub use commands::{TuiCommand, Action};
+pub use commands::{Action, TuiCommand};
 pub use events::{EventHandler, EventResult};
+pub use state::{AppState, Modal, StatusInfo, Tab};
 
 // Re-export legacy API for backwards compatibility
 pub use legacy::TuiInterface;

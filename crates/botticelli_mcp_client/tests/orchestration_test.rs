@@ -2,14 +2,14 @@
 //!
 //! Tests the complete flow: ToolRegistry → Orchestrator → LLM Adapter → Tool Execution
 
+use async_trait::async_trait;
 use botticelli_mcp_client::{
-    GenerationConfig, GenerationResponse, LlmAdapter, Message, MessageRole,
-    Orchestrator, ToolHandler, ToolRegistry, LlmToolSchema,
+    GenerationConfig, GenerationResponse, LlmAdapter, LlmToolSchema, Message, MessageRole,
+    Orchestrator, ToolHandler, ToolRegistry,
 };
 use botticelli_mcp_client::{McpClientError, McpClientErrorKind, McpClientResult};
-use async_trait::async_trait;
 use pmcp::{Content, ToolInfo};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 
 /// Mock tool that echoes input

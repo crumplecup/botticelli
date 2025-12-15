@@ -5,12 +5,12 @@
 
 use crate::tool_executor::ToolDefinition;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
-use pmcp::{Client, ClientCapabilities, Transport};
 use pmcp::types::TransportMessage;
+use pmcp::{Client, ClientCapabilities, Transport};
 use serde_json::Value;
 use std::process::Stdio;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tokio::sync::Mutex;
@@ -39,7 +39,7 @@ impl Transport for ChildProcessTransport {
         let mut stdin = self.stdin.lock().await;
         let json = serde_json::to_string(&message)
             .map_err(|e| pmcp::Error::internal(format!("Failed to serialize message: {}", e)))?;
-        
+
         stdin
             .write_all(json.as_bytes())
             .await
@@ -62,7 +62,7 @@ impl Transport for ChildProcessTransport {
             .read_line(&mut line)
             .await
             .map_err(|e| pmcp::Error::internal(format!("Failed to read from stdout: {}", e)))?;
-        
+
         serde_json::from_str(&line)
             .map_err(|e| pmcp::Error::parse(format!("Failed to parse message: {}", e)))
     }
@@ -158,15 +158,12 @@ impl ExternalMcpClient {
 
         // Initialize MCP connection
         let capabilities = ClientCapabilities::minimal();
-        let server_info = client
-            .initialize(capabilities)
-            .await
-            .map_err(|e| {
-                McpClientError::new(McpClientErrorKind::ExternalServerConnectionFailed(format!(
-                    "Failed to initialize MCP connection with {}: {}",
-                    config.name, e
-                )))
-            })?;
+        let server_info = client.initialize(capabilities).await.map_err(|e| {
+            McpClientError::new(McpClientErrorKind::ExternalServerConnectionFailed(format!(
+                "Failed to initialize MCP connection with {}: {}",
+                config.name, e
+            )))
+        })?;
 
         info!(
             "MCP connection established with {} (version {})",
@@ -226,20 +223,17 @@ impl ExternalMcpClient {
     pub fn has_tool(&self, tool_name: &str) -> bool {
         // Check allowed list first
         if let Some(allowed) = &self.allowed_tools
-            && !allowed.contains(&tool_name.to_string()) {
-                return false;
-            }
+            && !allowed.contains(&tool_name.to_string())
+        {
+            return false;
+        }
 
         self.tools.iter().any(|t| t.name == tool_name)
     }
 
     /// Call a tool on the external server.
     #[instrument(skip(self, arguments), fields(server = %self.name, tool = %tool_name))]
-    pub async fn call_tool(
-        &mut self,
-        tool_name: &str,
-        arguments: Value,
-    ) -> McpClientResult<Value> {
+    pub async fn call_tool(&mut self, tool_name: &str, arguments: Value) -> McpClientResult<Value> {
         // Verify tool exists and is allowed
         if !self.has_tool(tool_name) {
             return Err(McpClientError::new(McpClientErrorKind::ToolNotFound(
@@ -321,20 +315,17 @@ mod tests {
             .build();
 
         let result = ExternalMcpClient::connect(config).await;
-        
+
         // Should fail because echo is not an MCP server
         assert!(result.is_err(), "Should fail with non-MCP process");
-        
+
         let err = result.unwrap_err();
         assert!(
-            format!("{}", err).contains("initialize") ||
-            format!("{}", err).contains("Protocol") ||
-            format!("{}", err).contains("parse"),
+            format!("{}", err).contains("initialize")
+                || format!("{}", err).contains("Protocol")
+                || format!("{}", err).contains("parse"),
             "Error should indicate protocol/initialization failure: {}",
             err
         );
     }
 }
-
-
-

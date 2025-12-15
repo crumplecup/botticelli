@@ -8,7 +8,10 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap},
+    widgets::{
+        Block, Borders, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, Wrap,
+    },
 };
 
 /// Database view mode
@@ -36,11 +39,18 @@ pub struct TableInfo {
 impl TableInfo {
     /// Creates a new table info
     pub fn new(name: String) -> Self {
-        let is_content_table = name.starts_with("content_") ||
-                              name.starts_with("generated_") ||
-                              !["narratives", "narrative_executions", "act_executions",
-                                "act_inputs", "model_responses", "actor_server_state",
-                                "actor_server_executions"].contains(&name.as_str());
+        let is_content_table = name.starts_with("content_")
+            || name.starts_with("generated_")
+            || ![
+                "narratives",
+                "narrative_executions",
+                "act_executions",
+                "act_inputs",
+                "model_responses",
+                "actor_server_state",
+                "actor_server_executions",
+            ]
+            .contains(&name.as_str());
 
         Self {
             name,
@@ -268,7 +278,8 @@ impl DatabaseTab {
 
         #[cfg(feature = "tui")]
         {
-            self.table_list_state.select(Some(self.selected_table_index));
+            self.table_list_state
+                .select(Some(self.selected_table_index));
         }
     }
 
@@ -286,7 +297,8 @@ impl DatabaseTab {
 
         #[cfg(feature = "tui")]
         {
-            self.table_list_state.select(Some(self.selected_table_index));
+            self.table_list_state
+                .select(Some(self.selected_table_index));
         }
     }
 
@@ -386,13 +398,11 @@ impl DatabaseTab {
             }
 
             // Mode-specific navigation
-            _ => {
-                match self.view_mode {
-                    ViewMode::Tables => self.handle_table_nav(key),
-                    ViewMode::Schema => self.handle_schema_nav(key),
-                    ViewMode::Content => self.handle_content_nav(key),
-                }
-            }
+            _ => match self.view_mode {
+                ViewMode::Tables => self.handle_table_nav(key),
+                ViewMode::Schema => self.handle_schema_nav(key),
+                ViewMode::Content => self.handle_content_nav(key),
+            },
         }
     }
 
@@ -501,7 +511,11 @@ impl DatabaseTab {
                 Line::from("Error:"),
                 Line::from(error.as_str()),
             ])
-            .block(Block::default().borders(Borders::ALL).title("Database Error"))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Database Error"),
+            )
             .style(Style::default().fg(Color::Red))
             .wrap(Wrap { trim: false });
 
@@ -527,8 +541,8 @@ impl DatabaseTab {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Min(5),      // Table list
-                Constraint::Length(3),   // Help
+                Constraint::Min(5),    // Table list
+                Constraint::Length(3), // Help
             ])
             .split(area);
 
@@ -537,7 +551,11 @@ impl DatabaseTab {
             .tables
             .iter()
             .map(|table| {
-                let icon = if table.is_content_table { "📄" } else { "📊" };
+                let icon = if table.is_content_table {
+                    "📄"
+                } else {
+                    "📊"
+                };
                 let count_str = table
                     .row_count
                     .map(|c| format!(" ({} rows)", c))
@@ -546,10 +564,7 @@ impl DatabaseTab {
                 let line = Line::from(vec![
                     Span::raw(format!("{} ", icon)),
                     Span::raw(&table.name),
-                    Span::styled(
-                        count_str,
-                        Style::default().fg(Color::DarkGray),
-                    ),
+                    Span::styled(count_str, Style::default().fg(Color::DarkGray)),
                 ]);
 
                 ListItem::new(line)
@@ -560,7 +575,7 @@ impl DatabaseTab {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(format!("Tables ({} total)", self.tables.len()))
+                    .title(format!("Tables ({} total)", self.tables.len())),
             )
             .highlight_style(
                 Style::default()
@@ -572,7 +587,9 @@ impl DatabaseTab {
         StatefulWidget::render(list, chunks[0], buf, &mut self.table_list_state);
 
         // Render help
-        let help = Paragraph::new("↑↓/jk: Navigate | Enter/l: View Content | s: Schema | c: Content | t: Tables");
+        let help = Paragraph::new(
+            "↑↓/jk: Navigate | Enter/l: View Content | s: Schema | c: Content | t: Tables",
+        );
         Widget::render(help, chunks[1], buf);
     }
 
@@ -596,7 +613,7 @@ impl DatabaseTab {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(format!("Schema: {}", table_name))
+                    .title(format!("Schema: {}", table_name)),
             )
             .style(Style::default().fg(Color::DarkGray));
 
@@ -611,9 +628,10 @@ impl DatabaseTab {
                 Span::raw(table_name),
             ]),
             Line::from(""),
-            Line::from(vec![
-                Span::styled("Columns:", Style::default().add_modifier(Modifier::BOLD)),
-            ]),
+            Line::from(vec![Span::styled(
+                "Columns:",
+                Style::default().add_modifier(Modifier::BOLD),
+            )]),
             Line::from(""),
         ];
 
@@ -635,10 +653,7 @@ impl DatabaseTab {
                     format!("  {} ", i + 1),
                     Style::default().fg(Color::DarkGray),
                 ),
-                Span::styled(
-                    &col.name,
-                    Style::default().add_modifier(Modifier::BOLD),
-                ),
+                Span::styled(&col.name, Style::default().add_modifier(Modifier::BOLD)),
             ]));
 
             lines.push(Line::from(vec![
@@ -651,11 +666,11 @@ impl DatabaseTab {
         }
 
         let schema_widget = Paragraph::new(lines)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(format!("Schema: {} ({} columns)", table_name, self.schema.len()))
-            )
+            .block(Block::default().borders(Borders::ALL).title(format!(
+                "Schema: {} ({} columns)",
+                table_name,
+                self.schema.len()
+            )))
             .wrap(Wrap { trim: false });
 
         Widget::render(schema_widget, area, buf);
@@ -675,9 +690,9 @@ impl DatabaseTab {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Percentage(40),  // Content list
-                Constraint::Percentage(55),  // Detail view
-                Constraint::Length(3),       // Help
+                Constraint::Percentage(40), // Content list
+                Constraint::Percentage(55), // Detail view
+                Constraint::Length(3),      // Help
             ])
             .split(area);
 
@@ -692,7 +707,7 @@ impl DatabaseTab {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(format!("Content: {}", table_name))
+                    .title(format!("Content: {}", table_name)),
             )
             .style(Style::default().fg(Color::DarkGray));
 
@@ -723,11 +738,12 @@ impl DatabaseTab {
             };
 
             let list = List::new(items)
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .title(format!("Content: {}{} - {} rows", table_name, filter_str, self.content.len()))
-                )
+                .block(Block::default().borders(Borders::ALL).title(format!(
+                    "Content: {}{} - {} rows",
+                    table_name,
+                    filter_str,
+                    self.content.len()
+                )))
                 .highlight_style(
                     Style::default()
                         .bg(Color::DarkGray)
@@ -755,7 +771,9 @@ impl DatabaseTab {
         }
 
         // Render help
-        let help = Paragraph::new("↑↓/jk: Navigate | f: Filter | PgUp/PgDn: Scroll Detail | s: Schema | t: Tables");
+        let help = Paragraph::new(
+            "↑↓/jk: Navigate | f: Filter | PgUp/PgDn: Scroll Detail | s: Schema | t: Tables",
+        );
         Widget::render(help, chunks[2], buf);
     }
 
@@ -814,14 +832,12 @@ impl DatabaseTab {
                 }
 
                 if let Some(value) = obj.get(*key) {
-                    lines.push(Line::from(vec![
-                        Span::styled(
-                            format!("{}: ", key),
-                            Style::default()
-                                .fg(Color::Cyan)
-                                .add_modifier(Modifier::BOLD),
-                        ),
-                    ]));
+                    lines.push(Line::from(vec![Span::styled(
+                        format!("{}: ", key),
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
+                    )]));
 
                     let value_str = match value {
                         JsonValue::String(s) => s.clone(),

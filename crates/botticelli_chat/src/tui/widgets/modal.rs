@@ -1,10 +1,7 @@
 // Modal dialog widget
 
 #[cfg(feature = "tui")]
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui::{buffer::Buffer, layout::Rect};
 
 /// Modal dialog widget
 #[derive(Debug, Clone, Default)]

@@ -132,39 +132,30 @@ impl SettingsTab {
                 .with_description("Minimum required Rust version"),
             SettingItem::new("Build Profile", "Debug")
                 .with_description("Current build configuration"),
-            SettingItem::new("Features", "tui, cli")
-                .with_description("Enabled cargo features"),
+            SettingItem::new("Features", "tui, cli").with_description("Enabled cargo features"),
         ];
 
         let database_settings = vec![
-            SettingItem::new("Host", "localhost")
-                .with_description("PostgreSQL server host"),
-            SettingItem::new("Port", "5432")
-                .with_description("PostgreSQL server port"),
-            SettingItem::new("Database", "botticelli")
-                .with_description("Database name"),
+            SettingItem::new("Host", "localhost").with_description("PostgreSQL server host"),
+            SettingItem::new("Port", "5432").with_description("PostgreSQL server port"),
+            SettingItem::new("Database", "botticelli").with_description("Database name"),
             SettingItem::new("Status", "Not Connected")
                 .with_description("Current connection status"),
-            SettingItem::new("Pool Size", "10")
-                .with_description("Connection pool size"),
+            SettingItem::new("Pool Size", "10").with_description("Connection pool size"),
         ];
 
         let mcp_settings = vec![
             SettingItem::new("Server URL", "Not configured")
                 .with_description("MCP server endpoint"),
-            SettingItem::new("Status", "Disconnected")
-                .with_description("MCP connection status"),
+            SettingItem::new("Status", "Disconnected").with_description("MCP connection status"),
             SettingItem::new("Tools Registered", "0")
                 .with_description("Number of registered MCP tools"),
         ];
 
         let observability_settings = vec![
-            SettingItem::new("Tracing Level", "INFO")
-                .with_description("Logging verbosity level"),
-            SettingItem::new("Exporter", "stdout")
-                .with_description("Trace export backend"),
-            SettingItem::new("Sampling Rate", "1.0")
-                .with_description("Trace sampling ratio"),
+            SettingItem::new("Tracing Level", "INFO").with_description("Logging verbosity level"),
+            SettingItem::new("Exporter", "stdout").with_description("Trace export backend"),
+            SettingItem::new("Sampling Rate", "1.0").with_description("Trace sampling ratio"),
         ];
 
         let narratives_settings = vec![
@@ -177,12 +168,9 @@ impl SettingsTab {
         ];
 
         let interface_settings = vec![
-            SettingItem::new("Theme", "Default")
-                .with_description("Color theme"),
-            SettingItem::new("Refresh Rate", "60 FPS")
-                .with_description("Terminal refresh rate"),
-            SettingItem::new("Show Help", "true")
-                .with_description("Show help text in tabs"),
+            SettingItem::new("Theme", "Default").with_description("Color theme"),
+            SettingItem::new("Refresh Rate", "60 FPS").with_description("Terminal refresh rate"),
+            SettingItem::new("Show Help", "true").with_description("Show help text in tabs"),
         ];
 
         Self {
@@ -226,7 +214,8 @@ impl SettingsTab {
         #[cfg(feature = "tui")]
         {
             let settings = self.current_settings();
-            self.setting_list_state.selected()
+            self.setting_list_state
+                .selected()
                 .and_then(|i| settings.get(i))
         }
 
@@ -239,7 +228,10 @@ impl SettingsTab {
     /// Moves category selection up
     pub fn select_previous_category(&mut self) {
         let categories = SettingsCategory::all();
-        let current_idx = categories.iter().position(|c| *c == self.selected_category).unwrap_or(0);
+        let current_idx = categories
+            .iter()
+            .position(|c| *c == self.selected_category)
+            .unwrap_or(0);
 
         let new_idx = if current_idx == 0 {
             categories.len() - 1
@@ -260,7 +252,10 @@ impl SettingsTab {
     /// Moves category selection down
     pub fn select_next_category(&mut self) {
         let categories = SettingsCategory::all();
-        let current_idx = categories.iter().position(|c| *c == self.selected_category).unwrap_or(0);
+        let current_idx = categories
+            .iter()
+            .position(|c| *c == self.selected_category)
+            .unwrap_or(0);
 
         let new_idx = if current_idx >= categories.len() - 1 {
             0
@@ -369,7 +364,7 @@ impl SettingsTab {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Length(25),    // Categories
+                Constraint::Length(25),     // Categories
                 Constraint::Percentage(75), // Settings & details
             ])
             .split(area);
@@ -381,9 +376,9 @@ impl SettingsTab {
         let right_chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Percentage(45),  // Settings list
-                Constraint::Percentage(50),  // Setting details
-                Constraint::Length(3),       // Help
+                Constraint::Percentage(45), // Settings list
+                Constraint::Percentage(50), // Setting details
+                Constraint::Length(3),      // Help
             ])
             .split(chunks[1]);
 
@@ -445,7 +440,7 @@ impl SettingsTab {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(format!("{} Settings", category_name))
+                    .title(format!("{} Settings", category_name)),
             )
             .style(Style::default().fg(Color::DarkGray));
 
@@ -463,18 +458,14 @@ impl SettingsTab {
             .iter()
             .map(|(key, value)| {
                 let lines = vec![
-                    Line::from(vec![
-                        Span::styled(
-                            key,
-                            Style::default().add_modifier(Modifier::BOLD),
-                        ),
-                    ]),
-                    Line::from(vec![
-                        Span::styled(
-                            format!("  {}", value),
-                            Style::default().fg(Color::Cyan),
-                        ),
-                    ]),
+                    Line::from(vec![Span::styled(
+                        key,
+                        Style::default().add_modifier(Modifier::BOLD),
+                    )]),
+                    Line::from(vec![Span::styled(
+                        format!("  {}", value),
+                        Style::default().fg(Color::Cyan),
+                    )]),
                 ];
                 ListItem::new(lines)
             })
@@ -484,7 +475,7 @@ impl SettingsTab {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(format!("{} Settings", category_name))
+                    .title(format!("{} Settings", category_name)),
             )
             .highlight_style(
                 Style::default()
@@ -516,9 +507,10 @@ impl SettingsTab {
 
         if let Some(desc) = &setting.description {
             lines.push(Line::from(""));
-            lines.push(Line::from(vec![
-                Span::styled("Description: ", Style::default().add_modifier(Modifier::BOLD)),
-            ]));
+            lines.push(Line::from(vec![Span::styled(
+                "Description: ",
+                Style::default().add_modifier(Modifier::BOLD),
+            )]));
 
             // Wrap description
             for (i, line) in desc.lines().enumerate().skip(self.detail_scroll) {
@@ -538,12 +530,20 @@ impl SettingsTab {
             Span::styled("Editable: ", Style::default().add_modifier(Modifier::BOLD)),
             Span::styled(
                 if setting.read_only { "No" } else { "Yes" },
-                Style::default().fg(if setting.read_only { Color::Red } else { Color::Green }),
+                Style::default().fg(if setting.read_only {
+                    Color::Red
+                } else {
+                    Color::Green
+                }),
             ),
         ]));
 
         let details = Paragraph::new(lines)
-            .block(Block::default().borders(Borders::ALL).title("Setting Details"))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Setting Details"),
+            )
             .wrap(Wrap { trim: false });
 
         Widget::render(details, area, buf);
@@ -554,12 +554,13 @@ impl SettingsTab {
     fn render_empty_details(&self, area: Rect, buf: &mut Buffer) {
         use ratatui::widgets::Widget;
 
-        let empty = Paragraph::new(vec![
-            Line::from(""),
-            Line::from("No setting selected"),
-        ])
-        .block(Block::default().borders(Borders::ALL).title("Setting Details"))
-        .style(Style::default().fg(Color::DarkGray));
+        let empty = Paragraph::new(vec![Line::from(""), Line::from("No setting selected")])
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Setting Details"),
+            )
+            .style(Style::default().fg(Color::DarkGray));
 
         Widget::render(empty, area, buf);
     }
@@ -569,7 +570,9 @@ impl SettingsTab {
     fn render_help(&self, area: Rect, buf: &mut Buffer) {
         use ratatui::widgets::Widget;
 
-        let help = Paragraph::new("←→/hl: Switch Category | ↑↓/jk: Navigate Settings | PgUp/PgDn: Scroll Details");
+        let help = Paragraph::new(
+            "←→/hl: Switch Category | ↑↓/jk: Navigate Settings | PgUp/PgDn: Scroll Details",
+        );
         Widget::render(help, area, buf);
     }
 }

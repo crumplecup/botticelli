@@ -1,6 +1,9 @@
 //! Context management for MCP client conversations.
 
-use crate::{llm_adapter::{Message, MessageRole}, McpClientResult};
+use crate::{
+    McpClientResult,
+    llm_adapter::{Message, MessageRole},
+};
 use std::collections::VecDeque;
 
 /// Maximum conversation history to maintain.
@@ -46,12 +49,7 @@ impl ContextManager {
 
     /// Adds a user message to history.
     pub fn add_user_message(&mut self, content: String) -> McpClientResult<()> {
-        let message = Message::new(
-            MessageRole::User,
-            content,
-            Vec::new(),
-            Vec::new(),
-        );
+        let message = Message::new(MessageRole::User, content, Vec::new(), Vec::new());
 
         self.history.push_back(message);
         self.truncate_history();
@@ -60,12 +58,7 @@ impl ContextManager {
 
     /// Adds an assistant message to history.
     pub fn add_assistant_message(&mut self, content: String) -> McpClientResult<()> {
-        let message = Message::new(
-            MessageRole::Assistant,
-            content,
-            Vec::new(),
-            Vec::new(),
-        );
+        let message = Message::new(MessageRole::Assistant, content, Vec::new(), Vec::new());
 
         self.history.push_back(message);
         self.truncate_history();

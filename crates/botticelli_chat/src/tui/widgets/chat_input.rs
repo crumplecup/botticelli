@@ -1,10 +1,7 @@
 // Chat input widget using tui-textarea
 
 #[cfg(feature = "tui")]
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui::{buffer::Buffer, layout::Rect};
 
 #[cfg(feature = "tui")]
 use tui_textarea::TextArea;

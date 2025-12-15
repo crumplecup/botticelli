@@ -43,10 +43,7 @@ pub async fn run_pmcp_server() -> Result<()> {
             McpToolAdapter::new(ValidateNarrativeTool),
         )
         .tool("save_narrative", McpToolAdapter::new(SaveNarrativeTool))
-        .tool(
-            "modify_narrative",
-            McpToolAdapter::new(ModifyNarrativeTool),
-        );
+        .tool("modify_narrative", McpToolAdapter::new(ModifyNarrativeTool));
 
     // Register ExecuteNarrativeTool (only when LLM features are enabled)
     #[cfg(any(

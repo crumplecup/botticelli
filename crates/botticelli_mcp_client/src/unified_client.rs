@@ -1,8 +1,8 @@
 //! Unified MCP client for external tool execution via MCP servers.
 
+use crate::external_client::{ExternalMcpClient, ExternalServerConfig};
 use crate::tool_executor::ToolDefinition;
 use crate::tool_registry::ToolRegistry;
-use crate::external_client::{ExternalMcpClient, ExternalServerConfig};
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use botticelli_core::{Input, Message, Role};
 use serde_json::Value;
@@ -129,8 +129,11 @@ impl UnifiedMcpClient {
         // Try internal registry first
         if self.internal_registry.has_tool(tool_name) {
             debug!("Routing to internal tool registry");
-            let content = self.internal_registry.execute_tool(tool_name, arguments).await?;
-            
+            let content = self
+                .internal_registry
+                .execute_tool(tool_name, arguments)
+                .await?;
+
             // Convert pmcp::Content to JSON Value
             let result = content
                 .iter()
@@ -141,7 +144,11 @@ impl UnifiedMcpClient {
                         "data": data,
                         "mime_type": mime_type
                     }),
-                    pmcp::Content::Resource { uri, text, mime_type } => serde_json::json!({
+                    pmcp::Content::Resource {
+                        uri,
+                        text,
+                        mime_type,
+                    } => serde_json::json!({
                         "type": "resource",
                         "uri": uri,
                         "text": text,
@@ -149,7 +156,7 @@ impl UnifiedMcpClient {
                     }),
                 })
                 .collect::<Vec<_>>();
-            
+
             return Ok(serde_json::json!(result));
         }
 
@@ -178,7 +185,11 @@ impl UnifiedMcpClient {
     /// 3. Executes tools and feeds results back
     /// 4. Repeats until completion or max iterations
     #[instrument(skip(self, backend, messages))]
-    pub async fn execute<B>(&mut self, backend: &B, messages: Vec<Message>) -> McpClientResult<String>
+    pub async fn execute<B>(
+        &mut self,
+        backend: &B,
+        messages: Vec<Message>,
+    ) -> McpClientResult<String>
     where
         B: LlmBackend + std::fmt::Debug,
     {
@@ -290,8 +301,8 @@ impl UnifiedMcpClient {
 
                     let (result_str, success) = match result {
                         Ok(value) => {
-                            let str_value = serde_json::to_string(&value)
-                                .unwrap_or_else(|_| value.to_string());
+                            let str_value =
+                                serde_json::to_string(&value).unwrap_or_else(|_| value.to_string());
                             (str_value, true)
                         }
                         Err(e) => (format!("Error: {}", e), false),
@@ -325,7 +336,11 @@ impl UnifiedMcpClient {
                 );
             } else {
                 // No tool calls - we're done
-                info!(iterations, tool_calls = tool_call_records.len(), "Execution complete");
+                info!(
+                    iterations,
+                    tool_calls = tool_call_records.len(),
+                    "Execution complete"
+                );
                 return Ok(ExecutionResult {
                     final_response: response,
                     iterations,
@@ -398,15 +413,14 @@ pub fn extract_tool_calls(response: &str) -> Option<Vec<ToolCall>> {
 
             for item in content {
                 if item.get("type").and_then(|t| t.as_str()) == Some("tool_use")
-                    && let (Some(name), Some(input)) = (
-                        item.get("name").and_then(|n| n.as_str()),
-                        item.get("input"),
-                    ) {
-                        calls.push(ToolCall {
-                            name: name.to_string(),
-                            arguments: input.clone(),
-                        });
-                    }
+                    && let (Some(name), Some(input)) =
+                        (item.get("name").and_then(|n| n.as_str()), item.get("input"))
+                {
+                    calls.push(ToolCall {
+                        name: name.to_string(),
+                        arguments: input.clone(),
+                    });
+                }
             }
 
             if !calls.is_empty() {

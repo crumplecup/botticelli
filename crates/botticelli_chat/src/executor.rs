@@ -685,7 +685,6 @@ Other:
             "Save narrative (requires cli feature)".to_string(),
         )))
     }
-
 }
 
 impl Default for CommandExecutor {

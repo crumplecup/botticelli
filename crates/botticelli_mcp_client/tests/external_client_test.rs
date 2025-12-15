@@ -18,7 +18,7 @@ async fn test_connect_to_filesystem_server() {
         .build();
 
     let result = ExternalMcpClient::connect(config).await;
-    
+
     assert!(
         result.is_ok(),
         "Should successfully connect to filesystem server: {:?}",
@@ -26,11 +26,14 @@ async fn test_connect_to_filesystem_server() {
     );
 
     let client = result.unwrap();
-    
+
     // Verify we got some tools
     let tools = client.tools();
-    assert!(!tools.is_empty(), "Should discover tools from filesystem server");
-    
+    assert!(
+        !tools.is_empty(),
+        "Should discover tools from filesystem server"
+    );
+
     // Check for expected filesystem tools
     let tool_names: Vec<_> = tools.iter().map(|t| t.name.as_str()).collect();
     assert!(

@@ -46,7 +46,7 @@ pub use elicitation::{
 
 // TUI module re-exports
 #[cfg(feature = "tui")]
-pub use tui::{TuiApp, AppState, TuiInterface};
+pub use tui::{AppState, TuiApp, TuiInterface};
 
 pub use executor::{CommandExecutor, NarrativeState};
 pub use input::UserInput;

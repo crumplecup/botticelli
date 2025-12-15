@@ -1,15 +1,15 @@
 // Tab implementations
 
-pub mod narratives;
 pub mod bots;
-pub mod database;
 pub mod chat;
+pub mod database;
+pub mod narratives;
 pub mod schedule;
 pub mod settings;
 
-pub use narratives::NarrativesTab;
-pub use bots::{BotsTab, BotInfo, BotStatus};
-pub use database::{DatabaseTab, TableInfo, ColumnDisplay, ViewMode, ContentFilter};
+pub use bots::{BotInfo, BotStatus, BotsTab};
 pub use chat::{ChatTab, DisplayMessage};
+pub use database::{ColumnDisplay, ContentFilter, DatabaseTab, TableInfo, ViewMode};
+pub use narratives::NarrativesTab;
 pub use schedule::{ScheduleTab, ScheduledTask, TaskSchedule, TaskStatus};
-pub use settings::{SettingsTab, SettingsCategory, SettingItem};
+pub use settings::{SettingItem, SettingsCategory, SettingsTab};

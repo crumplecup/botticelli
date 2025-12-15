@@ -1,6 +1,6 @@
 use crate::llm_adapter::{
-    FinishReason, GenerationConfig, LlmAdapter, Message, MessageRole,
-    ToolCall as LlmToolCall, ToolResult, ToolSchema as LlmToolSchema,
+    FinishReason, GenerationConfig, LlmAdapter, Message, MessageRole, ToolCall as LlmToolCall,
+    ToolResult, ToolSchema as LlmToolSchema,
 };
 use crate::schema::{ToolSchema, ToolSchemaConverter};
 use crate::tool_registry::ToolRegistry;
@@ -100,19 +100,13 @@ impl Orchestrator {
                         "Processing tool calls"
                     );
 
-                    let tool_results = self
-                        .execute_tools(response.message().tool_calls())
-                        .await?;
+                    let tool_results = self.execute_tools(response.message().tool_calls()).await?;
 
                     // Add assistant message and tool results to conversation
                     conversation.push(response.message().clone());
 
-                    let tool_message = Message::new(
-                        MessageRole::Tool,
-                        String::new(),
-                        Vec::new(),
-                        tool_results,
-                    );
+                    let tool_message =
+                        Message::new(MessageRole::Tool, String::new(), Vec::new(), tool_results);
                     conversation.push(tool_message);
                 }
                 FinishReason::MaxTokens => {
@@ -145,11 +139,13 @@ impl Orchestrator {
 
         tool_infos
             .into_iter()
-            .map(|info| LlmToolSchema::new(
-                info.name.clone(),
-                info.description.clone().unwrap_or_default(),
-                info.input_schema.clone(),
-            ))
+            .map(|info| {
+                LlmToolSchema::new(
+                    info.name.clone(),
+                    info.description.clone().unwrap_or_default(),
+                    info.input_schema.clone(),
+                )
+            })
             .collect()
     }
 
@@ -169,11 +165,7 @@ impl Orchestrator {
             let tool_result = match result {
                 Ok(content) => {
                     let content_json = content_to_json(&content)?;
-                    ToolResult::new(
-                        call.id().clone(),
-                        content_json,
-                        false,
-                    )
+                    ToolResult::new(call.id().clone(), content_json, false)
                 }
                 Err(e) => {
                     warn!(tool = %call.name(), error = ?e, "Tool execution failed");
@@ -232,9 +224,7 @@ pub fn tool_info_to_schema(info: &ToolInfo) -> ToolSchema {
 }
 
 /// Convert ToolInfo to provider-specific schema.
-pub fn tool_info_to_provider_schema<T: ToolSchemaConverter>(
-    info: &ToolInfo,
-) -> T::Output {
+pub fn tool_info_to_provider_schema<T: ToolSchemaConverter>(info: &ToolInfo) -> T::Output {
     let schema = tool_info_to_schema(info);
     T::convert(&schema)
 }

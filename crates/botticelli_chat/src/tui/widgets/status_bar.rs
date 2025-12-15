@@ -1,10 +1,7 @@
 // Status bar widget
 
 #[cfg(feature = "tui")]
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-};
+use ratatui::{buffer::Buffer, layout::Rect};
 
 /// Status bar widget for displaying application status
 #[derive(Debug, Clone, Default)]

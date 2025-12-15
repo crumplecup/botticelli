@@ -63,15 +63,13 @@ impl BotsTab {
     /// Creates a new bots tab
     pub fn new() -> Self {
         // For now, create some placeholder bots
-        let bots = vec![
-            BotInfo {
-                name: "demo-bot".to_string(),
-                description: Some("Demo bot for testing".to_string()),
-                platform: "Discord".to_string(),
-                status: BotStatus::Configured,
-                config_path: Some("config/demo_bot.toml".to_string()),
-            },
-        ];
+        let bots = vec![BotInfo {
+            name: "demo-bot".to_string(),
+            description: Some("Demo bot for testing".to_string()),
+            platform: "Discord".to_string(),
+            status: BotStatus::Configured,
+            config_path: Some("config/demo_bot.toml".to_string()),
+        }];
 
         Self {
             bots,
@@ -175,8 +173,8 @@ impl BotsTab {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(40),  // Bot list
-                Constraint::Percentage(60),  // Bot details
+                Constraint::Percentage(40), // Bot list
+                Constraint::Percentage(60), // Bot details
             ])
             .split(area);
 
@@ -246,7 +244,7 @@ impl BotsTab {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(format!("Bots ({} configured)", self.bots.len()))
+                    .title(format!("Bots ({} configured)", self.bots.len())),
             )
             .highlight_style(
                 Style::default()
@@ -293,9 +291,10 @@ impl BotsTab {
 
         if let Some(desc) = &bot.description {
             lines.push(Line::from(""));
-            lines.push(Line::from(vec![
-                Span::styled("Description: ", Style::default().add_modifier(Modifier::BOLD)),
-            ]));
+            lines.push(Line::from(vec![Span::styled(
+                "Description: ",
+                Style::default().add_modifier(Modifier::BOLD),
+            )]));
             lines.push(Line::from(desc.as_str()));
         }
 
@@ -309,9 +308,10 @@ impl BotsTab {
 
         lines.push(Line::from(""));
         lines.push(Line::from(""));
-        lines.push(Line::from(vec![
-            Span::styled("Actions: ", Style::default().add_modifier(Modifier::BOLD)),
-        ]));
+        lines.push(Line::from(vec![Span::styled(
+            "Actions: ",
+            Style::default().add_modifier(Modifier::BOLD),
+        )]));
         lines.push(Line::from("  s - Start bot"));
         lines.push(Line::from("  x - Stop bot"));
         lines.push(Line::from("  r - Restart bot"));

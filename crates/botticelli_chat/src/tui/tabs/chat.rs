@@ -1,6 +1,6 @@
 // Chat tab implementation
 
-use botticelli_core::{Message, Role, Input};
+use botticelli_core::{Input, Message, Role};
 use chrono::{DateTime, Utc};
 
 #[cfg(feature = "tui")]
@@ -138,7 +138,10 @@ impl ChatTab {
             return;
         }
 
-        let selected = self.list_state.selected().unwrap_or(self.messages.len() - 1);
+        let selected = self
+            .list_state
+            .selected()
+            .unwrap_or(self.messages.len() - 1);
         if selected > 0 {
             self.list_state.select(Some(selected - 1));
         }
@@ -200,8 +203,8 @@ impl ChatTab {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Min(5),      // Message history
-                Constraint::Length(5),   // Input area
+                Constraint::Min(5),    // Message history
+                Constraint::Length(5), // Input area
             ])
             .split(area);
 
@@ -274,7 +277,7 @@ impl ChatTab {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title(format!("Chat ({} messages)", self.messages.len()))
+                    .title(format!("Chat ({} messages)", self.messages.len())),
             )
             .highlight_style(
                 Style::default()

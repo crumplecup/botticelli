@@ -1,9 +1,7 @@
 //! Tests for unified MCP client functionality.
 
 use botticelli_core::{Input, Message, Role};
-use botticelli_mcp_client::{
-    LlmBackend, ToolDefinition, UnifiedMcpClient, extract_tool_calls,
-};
+use botticelli_mcp_client::{LlmBackend, ToolDefinition, UnifiedMcpClient, extract_tool_calls};
 use serde_json::json;
 
 /// Mock LLM backend for testing.
@@ -139,11 +137,13 @@ async fn test_unified_client_execute_loop_completion() {
 
     let mut client = UnifiedMcpClient::builder().build();
 
-    let messages = vec![Message::builder()
-        .role(Role::User)
-        .content(vec![Input::Text("What is the answer?".to_string())])
-        .build()
-        .expect("Valid message")];
+    let messages = vec![
+        Message::builder()
+            .role(Role::User)
+            .content(vec![Input::Text("What is the answer?".to_string())])
+            .build()
+            .expect("Valid message"),
+    ];
 
     let result = client.execute(&backend, messages).await;
     assert!(result.is_ok());
@@ -168,21 +168,23 @@ async fn test_unified_client_max_iterations() {
 
     let mut client = UnifiedMcpClient::builder().max_iterations(5).build();
 
-    let messages = vec![Message::builder()
-        .role(Role::User)
-        .content(vec![Input::Text("Start loop".to_string())])
-        .build()
-        .expect("Valid message")];
+    let messages = vec![
+        Message::builder()
+            .role(Role::User)
+            .content(vec![Input::Text("Start loop".to_string())])
+            .build()
+            .expect("Valid message"),
+    ];
 
     let result = client.execute(&backend, messages).await;
     assert!(result.is_err());
 
     let err = result.unwrap_err();
     let err_msg = err.to_string();
-    
+
     // Debug: print the actual error
     eprintln!("Actual error: {}", err_msg);
-    
+
     // Tool execution will fail before reaching max iterations since tool doesn't exist
     assert!(err_msg.contains("not found") || err_msg.contains("Maximum iterations"));
 }
@@ -191,9 +193,7 @@ async fn test_unified_client_max_iterations() {
 async fn test_unified_client_tool_not_found() {
     let mut client = UnifiedMcpClient::builder().build();
 
-    let result = client
-        .execute_tool("nonexistent_tool", json!({}))
-        .await;
+    let result = client.execute_tool("nonexistent_tool", json!({})).await;
 
     assert!(result.is_err());
     let err_msg = result.unwrap_err().to_string();

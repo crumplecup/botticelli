@@ -45,14 +45,14 @@ impl ToolRegistry {
     #[instrument(skip(self, handler))]
     pub fn register(&mut self, name: String, handler: Arc<dyn ToolHandler>) -> McpClientResult<()> {
         debug!(tool_name = %name, "Registering tool");
-        
+
         let handlers = Arc::make_mut(&mut self.handlers);
         if handlers.contains_key(&name) {
-            return Err(McpClientError::new(
-                McpClientErrorKind::InvalidToolCall(format!("Tool already registered: {}", name))
-            ));
+            return Err(McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                format!("Tool already registered: {}", name),
+            )));
         }
-        
+
         handlers.insert(name, handler);
         Ok(())
     }
@@ -75,13 +75,10 @@ impl ToolRegistry {
         arguments: Value,
     ) -> McpClientResult<Vec<Content>> {
         debug!(tool_name = %name, "Executing tool");
-        
-        let handler = self
-            .handlers
-            .get(name)
-            .ok_or_else(|| {
-                McpClientError::new(McpClientErrorKind::ToolNotFound(name.to_string()))
-            })?;
+
+        let handler = self.handlers.get(name).ok_or_else(|| {
+            McpClientError::new(McpClientErrorKind::ToolNotFound(name.to_string()))
+        })?;
 
         handler.execute(arguments).await
     }

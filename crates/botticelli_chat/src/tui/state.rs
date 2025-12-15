@@ -1,8 +1,6 @@
 // Application state management
 
-use crate::tui::tabs::{
-    BotsTab, ChatTab, DatabaseTab, NarrativesTab, ScheduleTab, SettingsTab,
-};
+use crate::tui::tabs::{BotsTab, ChatTab, DatabaseTab, NarrativesTab, ScheduleTab, SettingsTab};
 
 /// Main application state
 #[derive(Debug)]

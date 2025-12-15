@@ -25,16 +25,16 @@ pub use error::{McpClientError, McpClientErrorKind, McpClientResult};
 pub use external_client::{ExternalMcpClient, ExternalServerConfig};
 pub use llm_adapter::{
     AnthropicAdapter, FinishReason, GeminiAdapter, GenerationConfig, GenerationResponse,
-    GroqAdapter, LlmAdapter, Message, MessageRole, OllamaAdapter, TokenUsage, ToolCall as LlmToolCall,
-    ToolResult, ToolSchema as LlmToolSchema,
+    GroqAdapter, LlmAdapter, Message, MessageRole, OllamaAdapter, TokenUsage,
+    ToolCall as LlmToolCall, ToolResult, ToolSchema as LlmToolSchema,
 };
 pub use metrics::McpClientMetrics;
-pub use orchestrator::{tool_info_to_provider_schema, tool_info_to_schema, Orchestrator};
+pub use orchestrator::{Orchestrator, tool_info_to_provider_schema, tool_info_to_schema};
 pub use retry::{CircuitBreaker, CircuitState, RetryConfig};
 pub use tool_executor::ToolDefinition;
 pub use tool_registry::{ToolHandler, ToolRegistry};
 pub use tools::register_internal_tools;
 pub use unified_client::{
-    ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics,
-    UnifiedMcpClient, extract_tool_calls,
+    ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics, UnifiedMcpClient,
+    extract_tool_calls,
 };

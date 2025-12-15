@@ -1,6 +1,6 @@
 use crate::llm_adapter::{
     FinishReason, GenerationConfig, GenerationResponse, LlmAdapter, Message, MessageRole,
-    ToolSchema, TokenUsage,
+    TokenUsage, ToolSchema,
 };
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use async_trait::async_trait;
@@ -128,21 +128,29 @@ fn convert_response_from_core(
 
     // Extract content and tool calls
     let (content, tool_calls, finish_reason) = match first_output {
-        Output::Text(text) => (text.clone(), Vec::new(), convert_stop_reason(response.stop_reason())),
+        Output::Text(text) => (
+            text.clone(),
+            Vec::new(),
+            convert_stop_reason(response.stop_reason()),
+        ),
         Output::ToolCalls(calls) => {
             let llm_calls = calls
                 .iter()
-                .map(|call| crate::llm_adapter::ToolCall::new(
-                    call.id().clone(),
-                    call.name().clone(),
-                    call.arguments().clone(),
-                ))
+                .map(|call| {
+                    crate::llm_adapter::ToolCall::new(
+                        call.id().clone(),
+                        call.name().clone(),
+                        call.arguments().clone(),
+                    )
+                })
                 .collect();
             (String::new(), llm_calls, FinishReason::ToolCalls)
         }
-        Output::Json(val) => {
-            (serde_json::to_string(val).unwrap_or_default(), Vec::new(), convert_stop_reason(response.stop_reason()))
-        }
+        Output::Json(val) => (
+            serde_json::to_string(val).unwrap_or_default(),
+            Vec::new(),
+            convert_stop_reason(response.stop_reason()),
+        ),
         _ => {
             return Err(McpClientError::new(McpClientErrorKind::LlmError(
                 "Unsupported output type in adapter".to_string(),
@@ -150,12 +158,7 @@ fn convert_response_from_core(
         }
     };
 
-    let message = Message::new(
-        MessageRole::Assistant,
-        content,
-        tool_calls,
-        Vec::new(),
-    );
+    let message = Message::new(MessageRole::Assistant, content, tool_calls, Vec::new());
 
     // Extract usage if available
     let usage = if let Some(usage_data) = response.usage() {
@@ -168,11 +171,7 @@ fn convert_response_from_core(
         TokenUsage::default()
     };
 
-    Ok(GenerationResponse::new(
-        message,
-        usage,
-        finish_reason,
-    ))
+    Ok(GenerationResponse::new(message, usage, finish_reason))
 }
 
 /// Convert core StopReason to LlmAdapter FinishReason.
