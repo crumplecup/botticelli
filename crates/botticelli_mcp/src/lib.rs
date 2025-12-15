@@ -38,6 +38,14 @@ mod resources;
 mod server;
 pub mod tools;
 
+// PMCP migration - new implementation
+mod pmcp_adapters;
+mod pmcp_middleware;
+mod pmcp_server;
+
+#[cfg(feature = "streamable-http")]
+mod pmcp_http_server;
+
 #[cfg(feature = "http")]
 pub mod http;
 
@@ -78,6 +86,12 @@ pub use tools::GenerateOllamaTool;
 
 #[cfg(feature = "database")]
 pub use resources::ContentResource;
+
+// PMCP migration exports
+pub use pmcp_server::run_pmcp_server;
+
+#[cfg(feature = "streamable-http")]
+pub use pmcp_http_server::run_pmcp_http_server;
 
 // Re-export key mcp-server types for convenience
 pub use mcp_server::router::RouterService;

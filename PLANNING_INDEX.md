@@ -325,3 +325,11 @@ This index tracks all planning documents in the workspace. When documents are co
   - Compile-time verification of protocol compliance
   - Phased approach: core types, validation, integration
   - Status: 📋 Planning document for future implementation
+
+- **PMCP_MIGRATION_STRATEGY.md** - `current` (2025-12-15)
+  - Comprehensive migration strategy from mcp-server/mcp-spec to pmcp SDK
+  - 4 phases: Server Foundation, Client Migration, Enhanced Features, Testing & Documentation
+  - 16x performance improvement, 50x memory reduction targets
+  - Battle-tested SDK with OAuth, batching, middleware, WebSocket support
+  - 13-day timeline with measurable success criteria
+  - Status: 📋 Planning document - ready for implementation

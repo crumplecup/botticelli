@@ -7,12 +7,16 @@ license = "MIT OR Apache-2.0"
 description = "Model Context Protocol (MCP) server for Botticelli"
 
 [dependencies]
-# MCP SDK - official from Anthropic
-mcp-server = "0.1.0"
+# MCP SDK - migrating to pmcp (battle-tested SDK)
+pmcp = { version = "1.8", features = ["streamable-http"] }
+mcp-server = "0.1.0"  # Keep during migration
 
 # Async runtime
 tokio = { workspace = true, features = ["full"] }
 async-trait = { workspace = true }
+
+# Concurrent data structures
+dashmap = "6.1"
 
 # Serialization
 serde = { workspace = true }
@@ -62,11 +66,22 @@ diesel = { workspace = true, features = ["postgres"], optional = true }
 
 [dev-dependencies]
 tokio-test = "0.4"
+reqwest = { version = "0.12", features = ["json"] }
+futures = "0.3"
 
 [features]
 default = []
+
+# HTTP transport using pmcp
+streamable-http = ["pmcp/streamable-http"]
+
+# Database integration
 database = ["dep:botticelli_database", "dep:diesel"]
+
+# Discord integration (includes database)
 discord = ["dep:reqwest", "dep:botticelli_social"]
+
+# HTTP server (old axum-based implementation)
 http = ["dep:axum", "dep:tower", "dep:tower-http"]
 
 # LLM backend features
@@ -89,6 +104,16 @@ required-features = ["http", "database", "llm"]
 name = "botticelli-mcp"
 path = "src/bin/botticelli-mcp.rs"
 required-features = ["database", "llm"]
+
+[[bin]]
+name = "botticelli-mcp-pmcp"
+path = "src/bin/botticelli-mcp-pmcp.rs"
+# No required features - works with any feature set
+
+[[bin]]
+name = "botticelli-mcp-pmcp-http"
+path = "src/bin/botticelli-mcp-pmcp-http.rs"
+# Placeholder for future HTTP support
 
 [package.metadata.docs.rs]
 all-features = true
