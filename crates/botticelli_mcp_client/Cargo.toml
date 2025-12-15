@@ -27,3 +27,4 @@ serde_json.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 typed-builder = "0.20"
+uuid = { version = "1.11", features = ["v4", "serde"] }

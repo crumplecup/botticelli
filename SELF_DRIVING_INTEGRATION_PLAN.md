@@ -184,6 +184,39 @@ async fn test_multi_step_workflow() {
 
 ---
 
+## Phase 2.5: Elicitation Tool Integration ✅ COMPLETE
+
+**Goal**: Expose conversational narrative elicitation as MCP tools for LLM orchestration.
+
+### Step 2.5.1: Elicitation Tool Implementation ✅
+
+**Completed**:
+- ✅ `ElicitationRegistry` for managing active sessions
+- ✅ `CreateElicitationSessionTool` - Initialize new elicitation session  
+- ✅ `ElicitMetadataTool` - Set/update narrative metadata
+- ✅ `ElicitActTool` - Add/update acts during elicitation
+- ✅ `FinalizeElicitationTool` - Generate TOML from session
+
+**Files Modified**:
+- `crates/botticelli_mcp_client/src/tools/elicitation.rs` (new)
+- `crates/botticelli_mcp_client/src/tools/mod.rs` (updated)
+- `crates/botticelli_mcp_client/Cargo.toml` (added uuid dependency)
+
+**Success Criteria**:
+- ✅ All elicitation tools registered in `register_internal_tools()`
+- ✅ Tools use proper `ToolHandler` trait with `tool_info()` method
+- ✅ Returns `Vec<Content>` for MCP compatibility
+- ✅ Session state management with UUID tracking
+- ✅ TOML generation from elicitation state
+
+**Integration Points**:
+- LLMs can now orchestrate full narrative creation conversations
+- Session-based tracking allows multi-turn elicitation
+- Direct integration with existing narrative generation tools
+- Elicitation tools available alongside narrative CRUD tools
+
+---
+
 ## Phase 3: Elicitation → Narrative Pipeline (Priority: HIGH)
 
 **Goal**: Automated handoff from elicitation to narrative generation

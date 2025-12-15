@@ -3,11 +3,16 @@
 //! This module provides concrete MCP tools that expose Botticelli's
 //! internal capabilities for LLM orchestration.
 
+mod elicitation;
 mod narrative;
 
 use crate::{McpClientResult, ToolRegistry};
 use std::sync::Arc;
 
+pub use elicitation::{
+    CreateElicitationSessionTool, ElicitActTool, ElicitMetadataTool, ElicitationRegistry,
+    FinalizeElicitationTool,
+};
 pub use narrative::{
     CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool,
 };
@@ -16,6 +21,7 @@ pub use narrative::{
 ///
 /// This function registers:
 /// - Narrative tools (create, list, load, validate)
+/// - Elicitation tools (create session, elicit metadata/acts, finalize)
 ///
 /// # Arguments
 /// * `registry` - The tool registry to populate
@@ -45,6 +51,31 @@ pub fn register_internal_tools(
     registry.register(
         "validate_narrative".to_string(),
         Arc::new(ValidateNarrativeTool),
+    )?;
+
+    // Register elicitation tools
+    let elicitation_registry = ElicitationRegistry::new();
+
+    registry.register(
+        "create_elicitation_session".to_string(),
+        Arc::new(CreateElicitationSessionTool::new(
+            elicitation_registry.clone(),
+        )),
+    )?;
+
+    registry.register(
+        "elicit_metadata".to_string(),
+        Arc::new(ElicitMetadataTool::new(elicitation_registry.clone())),
+    )?;
+
+    registry.register(
+        "elicit_act".to_string(),
+        Arc::new(ElicitActTool::new(elicitation_registry.clone())),
+    )?;
+
+    registry.register(
+        "finalize_elicitation".to_string(),
+        Arc::new(FinalizeElicitationTool::new(elicitation_registry)),
     )?;
 
     Ok(())
