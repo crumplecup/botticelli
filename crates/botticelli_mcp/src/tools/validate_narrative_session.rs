@@ -1,6 +1,6 @@
 use crate::tools::{
-    ApplyValidationFixesInput, ApplyValidationFixesOutput, McpTool, PartialNarrativeRegistry,
-    ValidateNarrativeInput, ValidateNarrativeOutput,
+    ApplyValidationFixesInput, McpTool, PartialNarrativeRegistry,
+    ValidateNarrativeInput,
 };
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};

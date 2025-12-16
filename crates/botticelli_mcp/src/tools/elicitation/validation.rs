@@ -189,7 +189,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations>(
     })
 }
 
-#[instrument(skip(registry), fields(narrative_id))]
+#[tracing::instrument(skip(registry), fields(narrative_id))]
 #[tracing::instrument(skip(registry), fields(narrative_id))]
 pub async fn apply_validation_fixes<R: ElicitationRegistryOperations>(
     registry: &R,

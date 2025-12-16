@@ -1,4 +1,4 @@
-use botticelli_error::McpResult;
+use botticelli_error::{McpError, McpResult};
 use crate::tools::elicitation::PartialNarrativeRegistry;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

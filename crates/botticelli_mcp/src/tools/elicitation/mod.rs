@@ -14,9 +14,9 @@ pub use registry::NarrativeRegistry;
 pub use session_tools::{
     CreateNarrativeSessionTool, ElicitActTool, ElicitMetadataTool, FinalizeNarrativeTool,
 };
-pub use state::{get_narrative_state, GetNarrativeStateInput, GetNarrativeStateOutput};
+pub use state::{GetNarrativeStateInput, GetNarrativeStateOutput};
 pub use validation::{
-    apply_validation_fixes, validate_narrative, ApplyValidationFixesInput,
+    ApplyValidationFixesInput,
     ApplyValidationFixesOutput, ValidateNarrativeInput, ValidateNarrativeOutput,
 };
 

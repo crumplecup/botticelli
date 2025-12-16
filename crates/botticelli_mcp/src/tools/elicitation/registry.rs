@@ -169,33 +169,49 @@ impl<T: RegistryOperations<Key = String>> Default for NarrativeRegistry<T> {
 }
 
 // Implement ElicitationRegistryOperations for the registry
-impl<T> botticelli_interface::ElicitationRegistryOperations for NarrativeRegistry<T>
+impl<T> botticelli_interface::ElicitationRegistryOperations<T> for NarrativeRegistry<T>
 where
-    T: RegistryOperations<Key = String> + Clone,
+    T: RegistryOperations<Key = String> + Clone + Send + Sync + serde::Serialize,
 {
-    type Narrative = T;
-
-    fn get_narrative(&self, id: &str) -> botticelli_error::BotticelliResult<Self::Narrative> {
+    fn get_narrative(&self, id: &str) -> botticelli_error::BotticelliResult<T> {
         self.get(id).map_err(Into::into)
     }
 
     fn update_narrative<F>(&self, id: &str, updater: F) -> botticelli_error::BotticelliResult<()>
     where
-        F: FnOnce(&mut Self::Narrative) -> botticelli_error::BotticelliResult<()>,
+        F: FnOnce(&mut T) -> botticelli_error::BotticelliResult<()>,
     {
         let mut narratives = self.narratives.write().expect("Registry lock poisoned");
         let narrative = narratives
             .get_mut(id)
-            .ok_or_else(|| botticelli_error::BotticelliError::invalid_input(format!("Narrative {} not found", id)))?;
+            .ok_or_else(|| botticelli_error::BotticelliError::from(McpError::invalid_input(format!("Narrative {} not found", id))))?;
         
         updater(narrative)
     }
 
-    fn remove_narrative(&self, id: &str) -> botticelli_error::BotticelliResult<Option<Self::Narrative>> {
+    fn remove_narrative(&self, id: &str) -> botticelli_error::BotticelliResult<Option<T>> {
         Ok(self.remove(id))
     }
 
-    fn add_narrative(&self, narrative: Self::Narrative) -> String {
+    fn add_narrative(&self, narrative: T) -> String {
         self.add(narrative)
+    }
+
+    fn get_narrative_state(&self, id: &str) -> botticelli_error::BotticelliResult<serde_json::Value> {
+        let narrative = self.get(id).map_err(Into::into)?;
+        // Convert narrative to JSON for state representation
+        serde_json::to_value(&narrative)
+            .map_err(|e| botticelli_error::BotticelliError::from(McpError::execution_failed(e.to_string())))
+    }
+
+    fn validate_narrative(&self, _id: &str) -> botticelli_error::BotticelliResult<serde_json::Value> {
+        // TODO: Implement proper validation
+        Ok(serde_json::json!({
+            "valid": true
+        }))
+    }
+
+    fn list_narrative_ids(&self) -> Vec<String> {
+        self.list_keys()
     }
 }

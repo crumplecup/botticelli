@@ -1,5 +1,5 @@
 use crate::tools::{
-    GetNarrativeStateInput, GetNarrativeStateOutput, McpTool, PartialNarrativeRegistry,
+    GetNarrativeStateInput, McpTool, PartialNarrativeRegistry,
 };
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};

@@ -95,4 +95,13 @@ pub trait ElicitationRegistryOperations<T>: Send + Sync {
 
     /// Add a narrative to the registry.
     fn add_narrative(&self, narrative: T) -> String;
+
+    /// Get current state/status of a narrative.
+    fn get_narrative_state(&self, id: &str) -> BotticelliResult<Value>;
+
+    /// Validate a narrative structure.
+    fn validate_narrative(&self, id: &str) -> BotticelliResult<Value>;
+    
+    /// List all narrative IDs in the registry.
+    fn list_narrative_ids(&self) -> Vec<String>;
 }
