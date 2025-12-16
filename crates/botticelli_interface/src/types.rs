@@ -61,59 +61,61 @@ pub enum FinishReason {
 }
 
 /// Definition of a tool/function that the model can call.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters)]
+#[setters(prefix = "with_")]
 pub struct ToolDefinition {
     /// Name of the tool/function
-    pub name: String,
+    name: String,
     /// Human-readable description of what the tool does
-    pub description: String,
+    description: String,
     /// JSON Schema defining the parameters this tool accepts
-    pub parameters: serde_json::Value,
+    parameters: serde_json::Value,
 }
 
 /// Result of a tool execution to send back to the model.
 ///
 /// After the model requests a tool call, your application executes it
 /// and sends the result back using this structure.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters)]
+#[setters(prefix = "with_")]
 pub struct ToolResult {
     /// ID matching the tool call this is responding to
-    pub id: String,
+    id: String,
     /// The output from executing the tool (as JSON)
-    pub output: serde_json::Value,
+    output: serde_json::Value,
     /// Whether the tool execution resulted in an error
-    pub is_error: bool,
+    is_error: bool,
 }
 
 /// Information about model capabilities and limits.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, derive_getters::Getters, derive_builder::Builder)]
 pub struct ModelMetadata {
     /// Provider name (e.g., "anthropic", "openai")
-    pub provider: &'static str,
+    provider: &'static str,
     /// Model identifier (e.g., "claude-3-5-sonnet-20241022")
-    pub model: String,
+    model: String,
     /// Maximum input context tokens
-    pub max_input_tokens: usize,
+    max_input_tokens: usize,
     /// Maximum output tokens per request
-    pub max_output_tokens: usize,
+    max_output_tokens: usize,
     /// Supports streaming responses
-    pub supports_streaming: bool,
+    supports_streaming: bool,
     /// Supports image inputs (vision)
-    pub supports_vision: bool,
+    supports_vision: bool,
     /// Supports audio inputs/outputs
-    pub supports_audio: bool,
+    supports_audio: bool,
     /// Supports video inputs/outputs
-    pub supports_video: bool,
+    supports_video: bool,
     /// Supports document processing (PDF, etc.)
-    pub supports_documents: bool,
+    supports_documents: bool,
     /// Supports function/tool calling
-    pub supports_tool_use: bool,
+    supports_tool_use: bool,
     /// Supports structured JSON output mode
-    pub supports_json_mode: bool,
+    supports_json_mode: bool,
     /// Supports vector embeddings
-    pub supports_embeddings: bool,
+    supports_embeddings: bool,
     /// Supports batch processing
-    pub supports_batch: bool,
+    supports_batch: bool,
 }
 
 /// Health status of the backend.

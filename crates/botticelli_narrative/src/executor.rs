@@ -427,32 +427,32 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
 
                     // Collect all responses from the nested execution
                     let nested_responses: Vec<String> = nested_execution
-                        .act_executions
+                        .act_executions()
                         .iter()
-                        .map(|e| e.response.clone())
+                        .map(|e| e.response().clone())
                         .collect();
 
                     let combined_response = nested_responses.join("\n\n");
 
                     tracing::info!(
-                        act_count = nested_execution.act_executions.len(),
+                        act_count = nested_execution.act_executions().len(),
                         response_len = combined_response.len(),
                         "Completed nested narrative execution"
                     );
 
                     // Record the composition as a single act
-                    act_executions.push(ActExecution {
-                        act_name: act_name.clone(),
-                        inputs: Vec::new(),
-                        model: config.model().clone(),
-                        temperature: *config.temperature(),
-                        max_tokens: *config.max_tokens(),
-                        response: combined_response.clone(),
+                    act_executions.push(ActExecution::new(
+                        act_name.clone(),
+                        Vec::new(),
+                        config.model().clone(),
+                        *config.temperature(),
+                        *config.max_tokens(),
+                        combined_response.clone(),
                         sequence_number,
-                        token_usage: None, // TODO: Aggregate from nested executions
-                        estimated_cost_usd: None,
-                        duration_ms: None,
-                    });
+                        None, // TODO: Aggregate from nested executions
+                        None,
+                        None,
+                    ));
 
                     // Add the combined response to conversation history
                     conversation_history.push(
@@ -645,22 +645,22 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 };
 
             // Create the act execution (store processed inputs)
-            let act_execution = ActExecution {
-                act_name: act_name.clone(),
-                inputs: processed_inputs.clone(),
+            let act_execution = ActExecution::new(
+                act_name.clone(),
+                processed_inputs.clone(),
                 model,
                 temperature,
                 max_tokens,
-                response: response_text.clone(),
+                response_text.clone(),
                 sequence_number,
                 token_usage,
-                estimated_cost_usd: None, // TODO: Calculate from token_usage + model pricing
-                duration_ms: duration.map(|d| d.as_millis() as u64),
-            };
+                None, // TODO: Calculate from token_usage + model pricing
+                duration.map(|d| d.as_millis() as u64),
+            );
 
             tracing::debug!(
                 act = %act_name,
-                act_execution_response_length = act_execution.response.len(),
+                act_execution_response_length = act_execution.response().len(),
                 "ActExecution created with response"
             );
 
@@ -790,7 +790,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
         // Calculate totals
         let total_token_usage = act_executions
             .iter()
-            .filter_map(|act| act.token_usage.as_ref())
+            .filter_map(|act| act.token_usage().as_ref())
             .fold(
                 None,
                 |acc: Option<botticelli_core::TokenUsageData>, usage| {
@@ -808,7 +808,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
 
         let total_duration_ms = act_executions
             .iter()
-            .filter_map(|act| act.duration_ms)
+            .filter_map(|act| *act.duration_ms())
             .sum::<u64>();
 
         let total_duration_ms = if total_duration_ms > 0 {
@@ -817,13 +817,13 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
             None
         };
 
-        Ok(NarrativeExecution {
-            narrative_name: narrative.name().to_string(),
+        Ok(NarrativeExecution::new(
+            narrative.name().to_string(),
             act_executions,
             total_token_usage,
-            total_cost_usd: None, // TODO: Calculate from total_token_usage + model pricing
+            None, // TODO: Calculate from total_token_usage + model pricing
             total_duration_ms,
-        })
+        ))
     }
 
     /// Execute a narrative in a carousel loop with budget management.
@@ -873,7 +873,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 Ok(execution) => {
                     tracing::debug!(
                         iteration = state.current_iteration(),
-                        acts = execution.act_executions.len(),
+                        acts = execution.act_executions().len(),
                         "Iteration completed successfully"
                     );
 
@@ -1252,7 +1252,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
 
                     tracing::info!(
                         name = %name,
-                        acts_executed = nested_execution.act_executions.len(),
+                        acts_executed = nested_execution.act_executions().len(),
                         "Nested narrative execution completed"
                     );
 
@@ -1408,7 +1408,7 @@ fn resolve_template(
                 )
                 .into());
             }
-            act_executions[current_index - 1].response.clone()
+            act_executions[current_index - 1].response().clone()
         } else if reference.contains('.') {
             // JSON path reference like "act_name.field" or "act_name.field.subfield"
             let parts: Vec<&str> = reference.splitn(2, '.').collect();
@@ -1418,7 +1418,7 @@ fn resolve_template(
             // Find the act
             let act_exec = act_executions
                 .iter()
-                .find(|exec| exec.act_name == act_name)
+                .find(|exec| exec.act_name() == act_name)
                 .ok_or_else(|| {
                     botticelli_error::NarrativeError::new(
                         botticelli_error::NarrativeErrorKind::TemplateError(format!(
@@ -1429,7 +1429,7 @@ fn resolve_template(
                 })?;
 
             // Try to parse response as JSON and navigate path
-            let json_value: JsonValue = serde_json::from_str(&act_exec.response).map_err(|e| {
+            let json_value: JsonValue = serde_json::from_str(&act_exec.response()).map_err(|e| {
                 botticelli_error::NarrativeError::new(
                     botticelli_error::NarrativeErrorKind::TemplateError(format!(
                         "Act '{}' response is not valid JSON: {}",
@@ -1470,8 +1470,8 @@ fn resolve_template(
             // Get named act
             act_executions
                 .iter()
-                .find(|exec| exec.act_name == reference)
-                .map(|exec| exec.response.clone())
+                .find(|exec| exec.act_name() == reference)
+                .map(|exec| exec.response().clone())
                 .ok_or_else(|| {
                     botticelli_error::NarrativeError::new(
                         botticelli_error::NarrativeErrorKind::TemplateError(format!(

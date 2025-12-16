@@ -37,12 +37,13 @@ pub trait TableView: Send + Sync {
 }
 
 /// Reference to a table query in a narrative.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters)]
+#[setters(prefix = "with_")]
 pub struct TableReference {
     /// Unique identifier for this table reference.
-    pub id: String,
+    id: String,
     /// The table view specification.
-    pub view: String,
+    view: String,
 }
 
 impl TableReference {

@@ -52,20 +52,26 @@ pub struct CompletenessReport {
     pub overall: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
 /// Input for applying automatic validation fixes
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApplyValidationFixesInput {
     /// Narrative ID to fix
     pub narrative_id: String,
+    /// Types of fixes to apply
     pub fix_types: Vec<String>,
+    /// Confirm before applying fixes
     #[serde(default)]
     pub confirm: bool,
 }
 
+/// Output from applying validation fixes
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApplyValidationFixesOutput {
+    /// Whether fixes were successfully applied
     pub success: bool,
+    /// List of fixes that were applied
     pub fixes_applied: Vec<String>,
+    /// Number of errors remaining after fixes
     pub remaining_errors: usize,
 }
 

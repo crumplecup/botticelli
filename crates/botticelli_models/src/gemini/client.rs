@@ -53,7 +53,8 @@ use gemini_rust::{Gemini, client::Model};
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind};
 use botticelli_interface::{
-    BotticelliDriver, FinishReason, Metadata, ModelMetadata, StreamChunk, Streaming, Vision,
+    BotticelliDriver, FinishReason, Metadata, ModelMetadata, ModelMetadataBuilder, StreamChunk,
+    Streaming, Vision,
 };
 use botticelli_rate_limit::{BotticelliConfig, RateLimiter, Tier, TierConfig};
 
@@ -1117,21 +1118,22 @@ impl Metadata for GeminiClient {
     ///
     /// Current metadata reflects Gemini 2.5 Flash capabilities.
     fn metadata(&self) -> ModelMetadata {
-        ModelMetadata {
-            provider: "gemini",
-            model: self.model_name.clone(),
-            max_input_tokens: 1_048_576, // Gemini 2.5 Flash supports up to 1M tokens
-            max_output_tokens: 8192,
-            supports_streaming: true,
-            supports_vision: true,
-            supports_audio: true,
-            supports_video: true,
-            supports_documents: true,
-            supports_tool_use: true,
-            supports_json_mode: true,
-            supports_embeddings: true,
-            supports_batch: false,
-        }
+        ModelMetadataBuilder::default()
+            .provider("gemini")
+            .model(self.model_name.clone())
+            .max_input_tokens(1_048_576) // Gemini 2.5 Flash supports up to 1M tokens
+            .max_output_tokens(8192)
+            .supports_streaming(true)
+            .supports_vision(true)
+            .supports_audio(true)
+            .supports_video(true)
+            .supports_documents(true)
+            .supports_tool_use(true)
+            .supports_json_mode(true)
+            .supports_embeddings(true)
+            .supports_batch(false)
+            .build()
+            .expect("Valid ModelMetadata")
     }
 }
 

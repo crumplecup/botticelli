@@ -60,6 +60,10 @@ pub enum McpClientErrorKind {
     /// External server discovery failed.
     #[display("External server tool discovery failed: {}", _0)]
     ExternalServerDiscoveryFailed(String),
+
+    /// Registry lock poisoned.
+    #[display("Registry lock poisoned")]
+    RegistryLockPoisoned,
 }
 
 /// MCP client error with location tracking.

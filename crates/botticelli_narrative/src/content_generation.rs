@@ -72,7 +72,7 @@ impl ActProcessor for ContentGenerationProcessor {
         // Check if we should extract output for this act
         if !context.should_extract_output {
             tracing::debug!(
-                act = %context.execution.act_name,
+                act = %context.execution.act_name(),
                 "Skipping output extraction (extract_output=false or not last act)"
             );
             return Ok(());
@@ -96,7 +96,7 @@ impl ActProcessor for ContentGenerationProcessor {
         };
 
         tracing::info!(
-            act = %context.execution.act_name,
+            act = %context.execution.act_name(),
             table = %table_name,
             mode = ?processing_mode,
             "Processing content generation"
@@ -121,7 +121,7 @@ impl ActProcessor for ContentGenerationProcessor {
         // Execute content generation
         let generation_result: Result<usize, botticelli_error::BotticelliError> = async {
             // Extract JSON from response first (needed for both modes)
-            let json_str = extract_json(&context.execution.response)?;
+            let json_str = extract_json(&context.execution.response())?;
 
             tracing::debug!(json_length = json_str.len(), "Extracted JSON from response");
 
@@ -180,7 +180,7 @@ impl ActProcessor for ContentGenerationProcessor {
             for (idx, item) in items.iter().enumerate() {
                 tracing::debug!(
                     index = idx,
-                    act = %context.execution.act_name,
+                    act = %context.execution.act_name(),
                     "Inserting content item"
                 );
 
@@ -191,8 +191,8 @@ impl ActProcessor for ContentGenerationProcessor {
                                 table_name: table_name.clone(),
                                 json_data: item.clone(),
                                 narrative_name: context.narrative_name.to_string(),
-                                act_name: context.execution.act_name.clone(),
-                                model: context.execution.model.clone(),
+                                act_name: context.execution.act_name().clone(),
+                                model: context.execution.model().clone(),
                                 reply,
                             },
                             None,
@@ -232,7 +232,7 @@ impl ActProcessor for ContentGenerationProcessor {
         // Return the original result
         generation_result.map(|row_count| {
             tracing::info!(
-                act = %context.execution.act_name,
+                act = %context.execution.act_name(),
                 table = %table_name,
                 count = row_count,
                 "Content generation completed successfully"
@@ -244,7 +244,7 @@ impl ActProcessor for ContentGenerationProcessor {
         // Don't process if user explicitly opted out
         if *context.narrative_metadata.skip_content_generation() {
             tracing::debug!(
-                act = %context.execution.act_name,
+                act = %context.execution.act_name(),
                 "Skipping content generation (skip_content_generation = true)"
             );
             return false;
@@ -253,14 +253,14 @@ impl ActProcessor for ContentGenerationProcessor {
         // Only process the last act by default (Phase 1 of JSON extraction strategy)
         if !context.is_last_act {
             tracing::debug!(
-                act = %context.execution.act_name,
+                act = %context.execution.act_name(),
                 "Skipping content generation (not the last act)"
             );
             return false;
         }
 
         tracing::debug!(
-            act = %context.execution.act_name,
+            act = %context.execution.act_name(),
             template = ?context.narrative_metadata.template(),
             target = ?context.narrative_metadata.target(),
             "Content generation processor will process this act (last act)"

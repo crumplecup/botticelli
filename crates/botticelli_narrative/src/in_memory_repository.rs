@@ -81,7 +81,7 @@ impl Default for InMemoryNarrativeRepository {
 
 #[async_trait]
 impl NarrativeRepository for InMemoryNarrativeRepository {
-    #[tracing::instrument(skip(self, execution), fields(narrative = %execution.narrative_name))]
+    #[tracing::instrument(skip(self, execution), fields(narrative = %execution.narrative_name()))]
     async fn save_execution(&self, execution: &NarrativeExecution) -> BotticelliResult<i32> {
         let mut next_id_guard = self.next_id.write().await;
         let id = *next_id_guard;
@@ -90,7 +90,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
 
         let stored = StoredExecution {
             id,
-            narrative_name: execution.narrative_name.clone(),
+            narrative_name: execution.narrative_name().clone(),
             narrative_description: None, // Not available in current NarrativeExecution
             status: ExecutionStatus::Completed,
             execution: execution.clone(),
@@ -112,7 +112,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
             })
     }
 
-    #[tracing::instrument(skip(self, filter), fields(narrative = ?filter.narrative_name, status = ?filter.status))]
+    #[tracing::instrument(skip(self, filter), fields(narrative = ?filter.narrative_name(), status = ?filter.status()))]
     async fn list_executions(
         &self,
         filter: &ExecutionFilter,
@@ -122,14 +122,14 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
             .values()
             .filter(|stored| {
                 // Apply narrative_name filter
-                if let Some(ref name) = filter.narrative_name
+                if let Some(name) = filter.narrative_name()
                     && &stored.narrative_name != name
                 {
                     return false;
                 }
 
                 // Apply status filter
-                if let Some(ref status) = filter.status
+                if let Some(status) = filter.status()
                     && &stored.status != status
                 {
                     return false;
@@ -142,17 +142,17 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
                 narrative_name: stored.narrative_name.clone(),
                 narrative_description: stored.narrative_description.clone(),
                 status: stored.status,
-                act_count: stored.execution.act_executions.len(),
+                act_count: stored.execution.act_executions().len(),
                 error_message: stored.error_message.clone(),
             })
             .collect();
 
         // Sort by ID for consistent ordering
-        results.sort_by_key(|s| s.id);
+        results.sort_by_key(|s| *s.id());
 
         // Apply pagination
-        let offset = filter.offset.unwrap_or(0);
-        let limit = filter.limit.unwrap_or(usize::MAX);
+        let offset = filter.offset().unwrap_or(0);
+        let limit = filter.limit().unwrap_or(usize::MAX);
 
         Ok(results.into_iter().skip(offset).take(limit).collect())
     }

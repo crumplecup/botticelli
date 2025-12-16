@@ -75,16 +75,16 @@ pub trait NarrativeRepository: Send + Sync {
 ///
 /// All fields are optional to allow flexible queries. Combining multiple
 /// criteria creates an AND condition.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters)]
 pub struct ExecutionFilter {
     /// Filter by narrative name (exact match)
-    pub narrative_name: Option<String>,
+    narrative_name: Option<String>,
     /// Filter by execution status
-    pub status: Option<ExecutionStatus>,
+    status: Option<ExecutionStatus>,
     /// Maximum number of results to return
-    pub limit: Option<usize>,
+    limit: Option<usize>,
     /// Number of results to skip (for pagination)
-    pub offset: Option<usize>,
+    offset: Option<usize>,
 }
 
 impl ExecutionFilter {
@@ -122,7 +122,7 @@ impl ExecutionFilter {
 ///
 /// Used by `list_executions` to return metadata about executions without
 /// loading all the act data.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters, derive_new::new)]
 pub struct ExecutionSummary {
     /// Unique execution ID
     pub id: i32,

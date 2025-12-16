@@ -32,5 +32,6 @@ pub use traits::{
     Vision,
 };
 pub use types::{
-    FinishReason, HealthStatus, ModelMetadata, StreamChunk, ToolDefinition, ToolResult,
+    FinishReason, HealthStatus, ModelMetadata, ModelMetadataBuilder, StreamChunk, ToolDefinition,
+    ToolResult,
 };

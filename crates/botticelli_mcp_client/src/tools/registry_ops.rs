@@ -30,47 +30,57 @@ where
     }
 
     /// Add or update an item in the registry.
-    pub fn upsert(&self, item: T) -> T::Key {
+    pub fn upsert(&self, item: T) -> McpClientResult<T::Key> {
         let key = item.registry_key();
-        let mut items = self.items.write().expect("Registry lock poisoned");
+        let mut items = self.items.write().map_err(|_| {
+            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
+        })?;
         items.insert(key.clone(), item);
         tracing::info!("Upserted item in registry");
-        key
+        Ok(key)
     }
 
     /// Get an item by key.
-    pub fn get(&self, key: &T::Key) -> Option<T>
+    pub fn get(&self, key: &T::Key) -> McpClientResult<Option<T>>
     where
         T: Clone,
     {
-        let items = self.items.read().expect("Registry lock poisoned");
-        items.get(key).cloned()
+        let items = self.items.read().map_err(|_| {
+            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
+        })?;
+        Ok(items.get(key).cloned())
     }
 
     /// Update an existing item.
-    pub fn update(&self, key: &T::Key, item: T) -> bool {
-        let mut items = self.items.write().expect("Registry lock poisoned");
+    pub fn update(&self, key: &T::Key, item: T) -> McpClientResult<bool> {
+        let mut items = self.items.write().map_err(|_| {
+            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
+        })?;
         if items.contains_key(key) {
             items.insert(key.clone(), item);
-            true
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
 
     /// Remove an item by key.
-    pub fn remove(&self, key: &T::Key) -> Option<T> {
-        let mut items = self.items.write().expect("Registry lock poisoned");
-        items.remove(key)
+    pub fn remove(&self, key: &T::Key) -> McpClientResult<Option<T>> {
+        let mut items = self.items.write().map_err(|_| {
+            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
+        })?;
+        Ok(items.remove(key))
     }
 
     /// List all keys in the registry.
-    pub fn list_keys(&self) -> Vec<T::Key>
+    pub fn list_keys(&self) -> McpClientResult<Vec<T::Key>>
     where
         T::Key: Clone,
     {
-        let items = self.items.read().expect("Registry lock poisoned");
-        items.keys().cloned().collect()
+        let items = self.items.read().map_err(|_| {
+            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
+        })?;
+        Ok(items.keys().cloned().collect())
     }
 }
 
@@ -149,7 +159,7 @@ where
             )))
         })?;
 
-        let key = self.registry.upsert(item);
+        let key = self.registry.upsert(item)?;
 
         Ok(vec![Content::Text {
             text: format!("Item stored with key: {}", key),
@@ -222,7 +232,7 @@ where
             )))
         })?;
 
-        let item = self.registry.get(&key).ok_or_else(|| {
+        let item = self.registry.get(&key)?.ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::ToolNotFound(
                 "Item not found".to_string(),
             ))
@@ -284,7 +294,7 @@ where
 
     #[tracing::instrument(skip(self))]
     async fn execute(&self, _arguments: Value) -> McpClientResult<Vec<Content>> {
-        let keys = self.registry.list_keys();
+        let keys = self.registry.list_keys()?;
         let key_strings: Vec<String> = keys.iter().map(|k| k.to_string()).collect();
 
         Ok(vec![Content::Text {

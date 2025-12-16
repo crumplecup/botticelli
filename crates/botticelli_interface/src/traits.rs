@@ -245,12 +245,12 @@ pub trait Metadata: BotticelliDriver {
 
     /// Maximum tokens in input context.
     fn max_input_tokens(&self) -> usize {
-        self.metadata().max_input_tokens
+        *self.metadata().max_input_tokens()
     }
 
     /// Maximum tokens in output.
     fn max_output_tokens(&self) -> usize {
-        self.metadata().max_output_tokens
+        *self.metadata().max_output_tokens()
     }
 }
 

@@ -40,6 +40,7 @@ use tokio::sync::Mutex;
 ///     Ok(())
 /// }
 /// ```
+#[derive(Clone)]
 pub struct PostgresNarrativeRepository {
     /// Database connection wrapped in Arc<Mutex> for async safety.
     ///
@@ -93,14 +94,14 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             let execution_id = execution_row.id;
 
             // Insert all acts
-            for act in &execution.act_executions {
+            for act in execution.act_executions() {
                 let new_act = act_execution_to_new_row(act, execution_id);
                 let act_row: ActExecutionRow = diesel::insert_into(act_executions::table)
                     .values(&new_act)
                     .get_result(conn)?;
 
                 // Insert all inputs for this act
-                for (order, input) in act.inputs.iter().enumerate() {
+                for (order, input) in act.inputs().iter().enumerate() {
                     let new_input = match input_to_new_row(input, act_row.id, order) {
                         Ok(row) => row,
                         Err(_) => return Err(diesel::result::Error::RollbackTransaction),
@@ -189,11 +190,11 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         let mut query = narrative_executions::table.into_boxed();
 
         // Apply filters
-        if let Some(ref name) = filter.narrative_name {
+        if let Some(name) = filter.narrative_name() {
             query = query.filter(narrative_executions::narrative_name.eq(name));
         }
 
-        if let Some(ref status) = filter.status {
+        if let Some(status) = filter.status() {
             query = query.filter(narrative_executions::status.eq(status_to_string(*status)));
         }
 
@@ -204,12 +205,12 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         query = query.order(narrative_executions::started_at.desc());
 
         // Apply offset and limit
-        if let Some(offset) = filter.offset {
-            query = query.offset(offset as i64);
+        if let Some(offset) = filter.offset() {
+            query = query.offset(*offset as i64);
         }
 
-        if let Some(limit) = filter.limit {
-            query = query.limit(limit as i64);
+        if let Some(limit) = filter.limit() {
+            query = query.limit(*limit as i64);
         }
 
         let execution_rows: Vec<NarrativeExecutionRow> = query.load(&mut *conn).map_err(|e| {
@@ -230,15 +231,14 @@ impl NarrativeRepository for PostgresNarrativeRepository {
                     BotticelliError::from(BackendError::new(format!("Failed to count acts: {}", e)))
                 })?;
 
-            summaries.push(ExecutionSummary {
-                id: row.id,
-                narrative_name: row.narrative_name,
-                narrative_description: row.narrative_description,
-                status: string_to_status(&row.status)?,
-                // Note: started_at and completed_at removed from ExecutionSummary in interface
-                act_count: act_count as usize,
-                error_message: row.error_message,
-            });
+            summaries.push(ExecutionSummary::new(
+                row.id,
+                row.narrative_name,
+                row.narrative_description,
+                string_to_status(&row.status)?,
+                act_count as usize,
+                row.error_message,
+            ));
         }
 
         Ok(summaries)

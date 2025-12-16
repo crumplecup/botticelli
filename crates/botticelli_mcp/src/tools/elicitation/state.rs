@@ -3,9 +3,12 @@ use botticelli_interface::ElicitationRegistryOperations;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Input for getting narrative state
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GetNarrativeStateInput {
+    /// Narrative UUID
     pub narrative_id: String,
+    /// Output format (summary, full, or toml)
     #[serde(default = "default_format")]
     pub format: StateFormat,
 }

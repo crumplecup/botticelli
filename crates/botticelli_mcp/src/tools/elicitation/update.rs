@@ -3,28 +3,41 @@ use crate::tools::elicitation::PartialNarrativeRegistry;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Input for updating narrative fields
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateNarrativeFieldInput {
+    /// Narrative UUID
     pub narrative_id: String,
+    /// List of field updates to apply
     pub updates: Vec<FieldUpdate>,
 }
 
+/// A single field update operation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FieldUpdate {
+    /// Dotted path to the field (e.g., "name", "acts.act1.prompt")
     pub path: String,
+    /// New value for the field
     pub value: serde_json::Value,
 }
 
+/// Output from updating narrative fields
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateNarrativeFieldOutput {
+    /// Whether all updates succeeded
     pub success: bool,
+    /// List of fields that were successfully updated
     pub updated_fields: Vec<String>,
+    /// Validation results after updates
     pub validation: ValidationSummary,
 }
 
+/// Summary of validation results
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ValidationSummary {
+    /// Validation errors found
     pub errors: Vec<String>,
+    /// Validation warnings found
     pub warnings: Vec<String>,
 }
 

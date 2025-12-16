@@ -24,16 +24,16 @@ pub enum BotState {
 }
 
 /// Statistics for bot execution.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_getters::Getters)]
 pub struct BotStats {
     /// Number of tasks processed successfully.
-    pub tasks_completed: u64,
+    tasks_completed: u64,
     /// Number of tasks that failed.
-    pub tasks_failed: u64,
+    tasks_failed: u64,
     /// Total time spent processing tasks.
-    pub total_processing_time: Duration,
+    total_processing_time: Duration,
     /// Timestamp of last task completion.
-    pub last_task_at: Option<chrono::DateTime<chrono::Utc>>,
+    last_task_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 /// Trait for bot actors that run scheduled tasks.
@@ -67,14 +67,15 @@ where
 }
 
 /// Configuration for the bot server.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_setters::Setters)]
+#[setters(prefix = "with_")]
 pub struct BotServerConfig {
     /// Path to the configuration file.
-    pub config_path: String,
+    config_path: String,
     /// Enable graceful shutdown on signals.
-    pub graceful_shutdown: bool,
+    graceful_shutdown: bool,
     /// Shutdown timeout duration.
-    pub shutdown_timeout: Duration,
+    shutdown_timeout: Duration,
 }
 
 /// Trait for bot server management.

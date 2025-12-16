@@ -39,7 +39,7 @@ pub fn execution_to_new_row(
     let completed = matches!(status, ExecutionStatus::Completed | ExecutionStatus::Failed);
 
     NewNarrativeExecutionRow {
-        narrative_name: execution.narrative_name.clone(),
+        narrative_name: execution.narrative_name().clone(),
         narrative_description: None, // Not available in current NarrativeExecution
         started_at: now,
         completed_at: if completed { Some(now) } else { None },
@@ -52,12 +52,12 @@ pub fn execution_to_new_row(
 pub fn act_execution_to_new_row(act: &ActExecution, execution_id: i32) -> NewActExecutionRow {
     NewActExecutionRow {
         execution_id,
-        act_name: act.act_name.clone(),
-        sequence_number: act.sequence_number as i32,
-        model: act.model.clone(),
-        temperature: act.temperature,
-        max_tokens: act.max_tokens.map(|t| t as i32),
-        response: act.response.clone(),
+        act_name: act.act_name().clone(),
+        sequence_number: *act.sequence_number() as i32,
+        model: act.model().clone(),
+        temperature: *act.temperature(),
+        max_tokens: act.max_tokens().map(|t| t as i32),
+        response: act.response().clone(),
     }
 }
 
@@ -204,18 +204,18 @@ pub fn rows_to_act_execution(
         inputs.push(row_to_input(input_row)?);
     }
 
-    Ok(ActExecution {
-        act_name: act_row.act_name,
+    Ok(ActExecution::new(
+        act_row.act_name,
         inputs,
-        model: act_row.model,
-        temperature: act_row.temperature,
-        max_tokens: act_row.max_tokens.map(|t| t as u32),
-        response: act_row.response,
-        sequence_number: act_row.sequence_number as usize,
-        token_usage: None, // TODO: Load from database once schema is updated
-        estimated_cost_usd: None,
-        duration_ms: None,
-    })
+        act_row.model,
+        act_row.temperature,
+        act_row.max_tokens.map(|t| t as u32),
+        act_row.response,
+        act_row.sequence_number as usize,
+        None, // token_usage - TODO: Load from database once schema is updated
+        None, // estimated_cost_usd
+        None, // duration_ms
+    ))
 }
 
 /// Convert ActInputRow to Input.
@@ -250,11 +250,11 @@ pub fn rows_to_narrative_execution(
     narrative_name: String,
     act_executions: Vec<ActExecution>,
 ) -> NarrativeExecution {
-    NarrativeExecution {
+    NarrativeExecution::new(
         narrative_name,
         act_executions,
-        total_token_usage: None, // TODO: Load from database once schema is updated
-        total_cost_usd: None,
-        total_duration_ms: None,
-    }
+        None, // total_token_usage - TODO: Load from database once schema is updated
+        None, // total_cost_usd
+        None, // total_duration_ms
+    )
 }
