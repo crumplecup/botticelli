@@ -51,25 +51,21 @@ pub struct CarouselSummary {
 }
 
 /// MCP tool for creating carousel configurations during narrative elicitation.
-pub struct ElicitCarouselTool<R, T>
+pub struct ElicitCarouselTool<R>
 where
-    R: ElicitationRegistryOperations<T>,
-    T: Send + Sync,
+    R: ElicitationRegistryOperations<crate::PartialNarrative>,
 {
     registry: Arc<R>,
-    _phantom: std::marker::PhantomData<T>,
 }
 
-impl<R, T> ElicitCarouselTool<R, T>
+impl<R> ElicitCarouselTool<R>
 where
-    R: ElicitationRegistryOperations<T>,
-    T: Send + Sync,
+    R: ElicitationRegistryOperations<crate::PartialNarrative>,
 {
     /// Creates a new carousel elicitation tool.
     pub fn new(registry: Arc<R>) -> Self {
         Self {
             registry,
-            _phantom: std::marker::PhantomData,
         }
     }
 
@@ -78,7 +74,7 @@ where
         tracing::debug!("Creating carousel configuration");
 
         // Verify narrative exists
-        let _ = self.registry.get_narrative(&input.narrative_id)?;
+        let _ = self.registry.get_narrative(&input.narrative_id).map_err(|e| McpError::execution_failed(e.to_string()))?;
 
         // Create carousel config
         let carousel_config = CarouselConfig::new(
@@ -115,18 +111,18 @@ where
                 }
                 CarouselLevel::Act => {
                     let act_name = input.act_name.as_ref().ok_or_else(|| {
-                        McpError::invalid_input("act_name required for Act level carousel")
+                        botticelli_error::BotticelliError::from(McpError::invalid_input("act_name required for Act level carousel"))
                     })?;
                     
                     if let Some(act) = partial.acts.get_mut(act_name) {
                         act.carousel = Some(carousel_config.clone());
                     } else {
-                        return Err(McpError::invalid_input(format!("Act '{}' not found", act_name)));
+                        return Err(botticelli_error::BotticelliError::from(McpError::invalid_input(format!("Act '{}' not found", act_name))));
                     }
                 }
             }
             Ok(())
-        })?;
+        }).map_err(|e| McpError::execution_failed(e.to_string()))?;
 
         tracing::debug!(
             narrative_id = %input.narrative_id,
@@ -154,7 +150,7 @@ where
 }
 
 #[async_trait]
-impl<R: ElicitationRegistryOperations + Send + Sync> McpTool for ElicitCarouselTool<R> {
+impl<R: ElicitationRegistryOperations<crate::PartialNarrative> + Send + Sync> McpTool for ElicitCarouselTool<R> {
     fn name(&self) -> &str {
         "elicit_carousel"
     }

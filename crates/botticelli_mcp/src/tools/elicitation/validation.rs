@@ -60,7 +60,7 @@ pub struct ApplyValidationFixesOutput {
 }
 
 #[tracing::instrument(skip(registry), fields(narrative_id, strict))]
-pub async fn validate_narrative<R: ElicitationRegistryOperations>(
+pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialNarrative>>(
     registry: &R,
     input: ValidateNarrativeInput,
 ) -> McpResult<ValidateNarrativeOutput> {
@@ -69,7 +69,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations>(
     let narrative_id = Uuid::parse_str(&input.narrative_id)
         .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
-    let partial = registry.get_narrative(&narrative_id.to_string())?;
+    let partial = registry.get_narrative(&narrative_id.to_string()).map_err(|e| McpError::execution_failed(e.to_string()))?;
 
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
@@ -191,7 +191,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations>(
 
 #[tracing::instrument(skip(registry), fields(narrative_id))]
 #[tracing::instrument(skip(registry), fields(narrative_id))]
-pub async fn apply_validation_fixes<R: ElicitationRegistryOperations>(
+pub async fn apply_validation_fixes<R: ElicitationRegistryOperations<crate::PartialNarrative>>(
     registry: &R,
     input: ApplyValidationFixesInput,
 ) -> McpResult<ApplyValidationFixesOutput> {
@@ -225,7 +225,7 @@ pub async fn apply_validation_fixes<R: ElicitationRegistryOperations>(
             }
 
             Ok(())
-        })?;
+        }).map_err(|e| McpError::execution_failed(e.to_string()))?;
 
     let validation = validate_narrative(
         registry,

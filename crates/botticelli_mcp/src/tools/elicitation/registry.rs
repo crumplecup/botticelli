@@ -198,7 +198,7 @@ where
     }
 
     fn get_narrative_state(&self, id: &str) -> botticelli_error::BotticelliResult<serde_json::Value> {
-        let narrative = self.get(id).map_err(Into::into)?;
+        let narrative: T = self.get(id).map_err(|e: McpError| botticelli_error::BotticelliError::from(e))?;
         // Convert narrative to JSON for state representation
         serde_json::to_value(&narrative)
             .map_err(|e| botticelli_error::BotticelliError::from(McpError::execution_failed(e.to_string())))

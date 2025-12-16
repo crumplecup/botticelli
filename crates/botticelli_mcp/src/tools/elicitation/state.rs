@@ -41,7 +41,7 @@ pub struct NarrativeStateSummary {
 }
 
 #[tracing::instrument(skip(registry), fields(narrative_id, format))]
-pub async fn get_narrative_state<R: ElicitationRegistryOperations>(
+pub async fn get_narrative_state<R: ElicitationRegistryOperations<crate::PartialNarrative>>(
     registry: &R,
     input: GetNarrativeStateInput,
 ) -> McpResult<GetNarrativeStateOutput> {
@@ -50,7 +50,7 @@ pub async fn get_narrative_state<R: ElicitationRegistryOperations>(
     let narrative_id = Uuid::parse_str(&input.narrative_id)
         .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
-    let partial = registry.get_narrative(&narrative_id.to_string())?;
+    let partial = registry.get_narrative(&narrative_id.to_string()).map_err(|e| McpError::execution_failed(e.to_string()))?;
 
     let acts_count = partial.acts.len();
     let acts: Vec<String> = partial.act_order.clone();

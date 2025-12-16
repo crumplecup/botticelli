@@ -199,11 +199,11 @@ impl Default for ToolRegistry {
             narrative_registry.clone(),
         )));
         registry.register(Arc::new(ElicitActTool::new(narrative_registry.clone())));
-        registry.register(Arc::new(ElicitCarouselTool::new(narrative_registry.clone())));
         registry.register(Arc::new(FinalizeNarrativeTool::new(narrative_registry.clone())));
         
-        // Wrap for the new tools that expect Arc
+        // Tools that need Arc-wrapped registry
         let narrative_registry_arc = Arc::new(narrative_registry);
+        registry.register(Arc::new(ElicitCarouselTool::new(narrative_registry_arc.clone())));
         registry.register(Arc::new(GetNarrativeStateTool::new(narrative_registry_arc.clone())));
         registry.register(Arc::new(ValidateNarrativeSessionTool::new(
             narrative_registry_arc.clone(),
