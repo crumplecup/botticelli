@@ -45,6 +45,10 @@ pub enum McpClientErrorKind {
     #[display("Circuit breaker open for: {}", _0)]
     CircuitBreakerOpen(String),
 
+    /// Configuration error.
+    #[display("Configuration error: {}", _0)]
+    Configuration(String),
+
     /// Metrics registration error.
     #[display("Metrics error: {}", _0)]
     MetricsError(String),

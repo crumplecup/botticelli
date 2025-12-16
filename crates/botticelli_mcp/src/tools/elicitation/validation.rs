@@ -4,17 +4,25 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Input for validating a narrative
 pub struct ValidateNarrativeInput {
+    /// Narrative ID to validate
     pub narrative_id: String,
+    /// Enable strict validation mode
     #[serde(default)]
     pub strict: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Output from narrative validation
 pub struct ValidateNarrativeOutput {
+    /// Whether the narrative is valid
     pub valid: bool,
+    /// Validation errors found
     pub errors: Vec<ValidationIssue>,
+    /// Validation warnings
     pub warnings: Vec<ValidationIssue>,
+    /// Completeness analysis
     pub completeness: CompletenessReport,
 }
 
@@ -45,7 +53,9 @@ pub struct CompletenessReport {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Input for applying automatic validation fixes
 pub struct ApplyValidationFixesInput {
+    /// Narrative ID to fix
     pub narrative_id: String,
     pub fix_types: Vec<String>,
     #[serde(default)]

@@ -2,53 +2,65 @@
 
 use crate::{McpClientResult, ToolRegistry};
 use super::{
-    CreateCarouselTool, CreateElicitationSessionTool, CreateNarrativeTool, ElicitActTool,
+    CreateCarouselTool, CreateElicitationSessionTool, ElicitActTool,
     ElicitMetadataTool, ElicitationRegistry, ExecuteCarouselTool, FinalizeElicitationTool,
-    ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool,
 };
 #[cfg(feature = "database")]
 use super::{CreateTableTool, InspectTableTool, QueryTableTool, TableExistsTool};
 #[cfg(feature = "database")]
-use botticelli_database::DbPool;
+use botticelli_database::{DbPool, DbOperationsImpl, PostgresNarrativeRepository};
 use std::sync::Arc;
 
 /// Register all available internal tools into the registry.
 ///
 /// This function registers:
-/// - Narrative tools (create, list, load, validate)
+/// - Narrative tools (create, list, load, validate) - requires `database` feature
 /// - Elicitation tools (create session, elicit metadata/acts, finalize)
-/// - Database tools (create table, query, inspect, exists check - requires `database` feature)
 ///
 /// # Arguments
 /// * `registry` - The tool registry to populate
-/// * `narratives_dir` - Directory containing narrative TOML files
+/// * `narratives_dir` - Directory containing narrative TOML files (unused but kept for API compatibility)
+/// * `db_pool` - Optional database pool for narrative tools (required when `database` feature enabled)
 #[tracing::instrument(skip(registry, narratives_dir))]
 pub fn register_internal_tools(
     registry: &mut ToolRegistry,
     narratives_dir: impl Into<String>,
+    #[cfg(feature = "database")] db_pool: Option<DbPool>,
 ) -> McpClientResult<()> {
-    let narratives_dir = narratives_dir.into();
+    let _narratives_dir = narratives_dir.into();
 
-    // Register narrative tools
-    registry.register(
-        "create_narrative".to_string(),
-        Arc::new(CreateNarrativeTool),
-    )?;
+    // Register narrative tools (requires database)
+    #[cfg(feature = "database")]
+    {
+        use crate::McpClientErrorKind;
+        use super::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool};
+        
+        let db_pool = db_pool.ok_or_else(|| {
+            McpClientErrorKind::Configuration("Database pool required for narrative tools".to_string())
+        })?;
+        
+        let narrative_repo = PostgresNarrativeRepository::new();
+        
+        registry.register(
+            "create_narrative".to_string(),
+            Arc::new(CreateNarrativeTool::new(narrative_repo.clone())),
+        )?;
 
-    registry.register(
-        "list_narratives".to_string(),
-        Arc::new(ListNarrativesTool::new(&narratives_dir)),
-    )?;
+        registry.register(
+            "list_narratives".to_string(),
+            Arc::new(ListNarrativesTool::new(narrative_repo.clone())),
+        )?;
 
-    registry.register(
-        "load_narrative".to_string(),
-        Arc::new(LoadNarrativeTool::new(&narratives_dir)),
-    )?;
+        registry.register(
+            "load_narrative".to_string(),
+            Arc::new(LoadNarrativeTool::new(narrative_repo.clone())),
+        )?;
 
-    registry.register(
-        "validate_narrative".to_string(),
-        Arc::new(ValidateNarrativeTool),
-    )?;
+        registry.register(
+            "validate_narrative".to_string(),
+            Arc::new(ValidateNarrativeTool::new(narrative_repo.clone())),
+        )?;
+    }
 
     // Register elicitation tools
     let elicitation_registry = ElicitationRegistry::new();

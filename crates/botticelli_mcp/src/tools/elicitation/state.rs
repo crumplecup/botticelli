@@ -23,9 +23,13 @@ pub enum StateFormat {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Output containing narrative state
 pub struct GetNarrativeStateOutput {
+    /// Narrative ID
     pub narrative_id: String,
+    /// State summary
     pub state: NarrativeStateSummary,
+    /// Optional TOML representation
     #[serde(skip_serializing_if = "Option::is_none")]
     pub toml: Option<String>,
 }

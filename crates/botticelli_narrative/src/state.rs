@@ -28,7 +28,7 @@ pub enum StateScope {
 }
 
 /// A key-value store for narrative state.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters)]
 pub struct NarrativeState {
     /// The state data
     data: HashMap<String, String>,

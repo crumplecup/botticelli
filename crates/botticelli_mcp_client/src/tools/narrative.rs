@@ -4,7 +4,6 @@
 
 use crate::{McpClientError, McpClientErrorKind, McpClientResult, ToolHandler};
 use async_trait::async_trait;
-use botticelli_narrative::Narrative;
 use pmcp::{Content, ToolInfo};
 use serde_json::{Value, json};
 
@@ -24,7 +23,7 @@ impl<S: botticelli_interface::NarrativeStorageOperations> CreateNarrativeTool<S>
 
 #[async_trait]
 impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for CreateNarrativeTool<S> {
-    fn tool_info() -> ToolInfo {
+    fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "create_narrative",
             Some("Create a narrative from TOML content. Returns narrative metadata.".to_string()),
