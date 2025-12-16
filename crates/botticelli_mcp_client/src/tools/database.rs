@@ -202,13 +202,20 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for InspectTableTo
 ///
 /// Available with the `database` feature.
 #[cfg(feature = "database")]
-#[derive(Debug, Clone, derive_new::new)]
-pub struct TableExistsTool {
-    pool: DbPool,
+#[derive(Debug, Clone)]
+pub struct TableExistsTool<D: DatabaseRegistryOperations> {
+    db_ops: D,
+}
+
+#[cfg(feature = "database")]
+impl<D: DatabaseRegistryOperations> TableExistsTool<D> {
+    pub fn new(db_ops: D) -> Self {
+        Self { db_ops }
+    }
 }
 
 #[async_trait]
-impl ToolHandler for TableExistsTool {
+impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for TableExistsTool<D> {
     fn tool_info(&self) -> ToolInfo {
         ToolInfo::new(
             "table_exists",

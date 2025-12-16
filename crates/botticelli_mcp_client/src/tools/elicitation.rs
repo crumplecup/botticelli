@@ -199,7 +199,7 @@ impl ToolHandler for ElicitMetadataTool {
                 ))
             })?;
 
-        let session = self.registry.get(&session_id).ok_or_else(|| {
+        let session = self.registry.get(&session_id)?.ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::InvalidToolCall(
                 "Session not found".to_string(),
             ))
@@ -227,7 +227,7 @@ impl ToolHandler for ElicitMetadataTool {
 
         state_value["metadata"] = json!(metadata);
         let updated_session = ElicitationSession { id: session_id, state: state_value };
-        self.registry.update(&session_id, updated_session);
+        self.registry.update(&session_id, updated_session)?;
 
         let result = json!({
             "session_id": session_id.to_string(),
@@ -312,7 +312,7 @@ impl ToolHandler for ElicitActTool {
                 ))
             })?;
 
-        let session = self.registry.get(&session_id).ok_or_else(|| {
+        let session = self.registry.get(&session_id)?.ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::InvalidToolCall(
                 "Session not found".to_string(),
             ))
@@ -344,7 +344,7 @@ impl ToolHandler for ElicitActTool {
 
         state_value["acts"] = json!(acts);
         let updated_session = ElicitationSession { id: session_id, state: state_value };
-        self.registry.update(&session_id, updated_session);
+        self.registry.update(&session_id, updated_session)?;
 
         let result = json!({
             "session_id": session_id.to_string(),
