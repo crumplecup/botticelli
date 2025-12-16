@@ -128,7 +128,7 @@ impl ToolHandler for CreateElicitationSessionTool {
             state,
         };
 
-        let session_id = self.registry.upsert(session);
+        let session_id = self.registry.upsert(session)?;
 
         let result = json!({
             "session_id": session_id.to_string(),
@@ -447,7 +447,7 @@ impl ToolHandler for FinalizeElicitationTool {
                 ))
             })?;
 
-        let session = self.registry.remove(&session_id).ok_or_else(|| {
+        let session = self.registry.remove(&session_id)?.ok_or_else(|| {
             McpClientError::new(McpClientErrorKind::InvalidToolCall(
                 "Session not found".to_string(),
             ))
@@ -646,7 +646,7 @@ impl ToolHandler for CreateCarouselTool {
         });
 
         let session = ElicitationSession::new(carousel_config);
-        let session_id = self.registry.upsert(session);
+        let session_id = self.registry.upsert(session)?;
 
         tracing::info!(
             session_id = %session_id,

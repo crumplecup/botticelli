@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use botticelli_database::{table_exists, DbPool};
 use botticelli_interface::DatabaseRegistryOperations;
 use pmcp::{Content, ToolInfo};
 use serde_json::{json, Value};

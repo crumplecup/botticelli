@@ -21,7 +21,7 @@ use std::sync::Arc;
 /// * `registry` - The tool registry to populate
 /// * `narratives_dir` - Directory containing narrative TOML files (unused but kept for API compatibility)
 /// * `db_pool` - Optional database pool for narrative tools (required when `database` feature enabled)
-#[tracing::instrument(skip(registry, narratives_dir))]
+#[tracing::instrument(skip(registry, narratives_dir, db_pool))]
 pub fn register_internal_tools(
     registry: &mut ToolRegistry,
     narratives_dir: impl Into<String>,
