@@ -94,6 +94,13 @@ impl McpClientError {
 /// Result type for MCP client operations.
 pub type McpClientResult<T> = Result<T, McpClientError>;
 
+impl From<McpClientErrorKind> for McpClientError {
+    #[track_caller]
+    fn from(kind: McpClientErrorKind) -> Self {
+        McpClientError::new(kind)
+    }
+}
+
 impl From<prometheus::Error> for McpClientError {
     fn from(err: prometheus::Error) -> Self {
         McpClientError::new(McpClientErrorKind::MetricsError(err.to_string()))

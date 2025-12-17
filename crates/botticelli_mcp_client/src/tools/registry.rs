@@ -30,35 +30,36 @@ pub fn register_internal_tools(
     let _narratives_dir = narratives_dir.into();
 
     // Register narrative tools (requires database)
+    // TODO: Narrative tools need refactoring to work with database backend properly
+    // Currently commented out due to architectural mismatch between file-based trait
+    // and database implementation
     #[cfg(feature = "database")]
     {
-        use crate::McpClientErrorKind;
-        use super::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool};
-        
-        let db_pool = db_pool.ok_or_else(|| {
-            McpClientErrorKind::Configuration("Database pool required for narrative tools".to_string())
+        let _db_pool = db_pool.ok_or_else(|| {
+            crate::McpClientErrorKind::Configuration("Database pool required for narrative tools".to_string())
         })?;
         
-        let narrative_repo = PostgresNarrativeRepository::new();
+        // Database operations for database tools
+        let db_ops = DbOperationsImpl::new(_db_pool.clone());
         
         registry.register(
-            "create_narrative".to_string(),
-            Arc::new(CreateNarrativeTool::new(narrative_repo.clone())),
+            "create_table".to_string(),
+            Arc::new(CreateTableTool::new(db_ops.clone())),
         )?;
-
+        
         registry.register(
-            "list_narratives".to_string(),
-            Arc::new(ListNarrativesTool::new(narrative_repo.clone())),
+            "query_table".to_string(),
+            Arc::new(QueryTableTool::new(db_ops.clone())),
         )?;
-
+        
         registry.register(
-            "load_narrative".to_string(),
-            Arc::new(LoadNarrativeTool::new(narrative_repo.clone())),
+            "inspect_table".to_string(),
+            Arc::new(InspectTableTool::new(db_ops.clone())),
         )?;
-
+        
         registry.register(
-            "validate_narrative".to_string(),
-            Arc::new(ValidateNarrativeTool::new(narrative_repo.clone())),
+            "table_exists".to_string(),
+            Arc::new(TableExistsTool::new(db_ops)),
         )?;
     }
 

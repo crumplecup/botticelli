@@ -10,9 +10,11 @@ use crate::{ActExecutionRow, ActInputRow, NarrativeExecutionRow};
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
 use botticelli_interface::{
     ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution, NarrativeRepository,
+    NarrativeStorageOperations,
 };
 
 use async_trait::async_trait;
+use serde_json::Value;
 use chrono::Utc;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -443,5 +445,46 @@ impl botticelli_interface::NarrativeRegistryOperations for PostgresNarrativeRepo
 
     async fn delete_execution(&self, id: i32) -> BotticelliResult<()> {
         NarrativeRepository::delete_execution(self, id).await
+    }
+}
+
+#[async_trait]
+impl NarrativeStorageOperations for PostgresNarrativeRepository {
+    async fn list_narratives(&self, _pattern: Option<&str>) -> BotticelliResult<Vec<String>> {
+        // For database implementation, we list narrative IDs from the database
+        let mut conn = self.conn.lock().await;
+        let results: Vec<i32> = narrative_executions::table
+            .select(narrative_executions::id)
+            .load(&mut *conn as &mut PgConnection)
+            .map_err(|e| {
+                BotticelliError::from(BackendError::new(format!("Failed to list narrative IDs: {}", e)))
+            })?;
+        
+        Ok(results.iter().map(|id| id.to_string()).collect())
+    }
+
+    async fn load_narrative(&self, filename: &str) -> BotticelliResult<Value> {
+        // Parse filename as narrative ID
+        let id: i32 = filename.parse().map_err(|e| {
+            BotticelliError::from(BackendError::new(format!("Invalid narrative ID '{}': {}", filename, e)))
+        })?;
+        
+        let execution = self.load_execution(id).await?;
+        serde_json::to_value(&execution)
+            .map_err(|e| BotticelliError::from(BackendError::new(format!("Failed to serialize narrative: {}", e))))
+    }
+
+    async fn validate_narrative(&self, toml_content: &str) -> BotticelliResult<Value> {
+        // For database implementation, validate TOML can be parsed
+        toml::from_str::<Value>(toml_content)
+            .map_err(|e| BotticelliError::from(BackendError::new(format!("Invalid TOML: {}", e))))
+    }
+
+    async fn parse_narrative(&self, toml_content: &str, _name_override: Option<&str>) -> BotticelliResult<Value> {
+        // Parse TOML content
+        let parsed: Value = toml::from_str(toml_content)
+            .map_err(|e| BotticelliError::from(BackendError::new(format!("Failed to parse TOML: {}", e))))?;
+        
+        Ok(parsed)
     }
 }

@@ -8,6 +8,7 @@ use botticelli_mcp_client::{
     LlmBackend, ToolDefinition, ToolHandler, ToolRegistry, UnifiedMcpClient,
     tools::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool},
 };
+use botticelli_narrative::FilesystemNarrativeStorage;
 use pmcp::{Content, ToolInfo};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -497,33 +498,34 @@ impl AppState {
             .expect("Failed to register echo tool");
 
         // Register narrative tools
-        let narratives_dir = "narratives".to_string();
+        let narratives_dir = "narratives";
+        let storage = FilesystemNarrativeStorage::new(narratives_dir.into());
 
         registry
             .register(
                 "create_narrative".to_string(),
-                Arc::new(CreateNarrativeTool),
+                Arc::new(CreateNarrativeTool::new(storage.clone())),
             )
             .expect("Failed to register create_narrative tool");
 
         registry
             .register(
                 "validate_narrative".to_string(),
-                Arc::new(ValidateNarrativeTool),
+                Arc::new(ValidateNarrativeTool::new(storage.clone())),
             )
             .expect("Failed to register validate_narrative tool");
 
         registry
             .register(
                 "list_narratives".to_string(),
-                Arc::new(ListNarrativesTool::new(&narratives_dir)),
+                Arc::new(ListNarrativesTool::new(storage.clone())),
             )
             .expect("Failed to register list_narratives tool");
 
         registry
             .register(
                 "load_narrative".to_string(),
-                Arc::new(LoadNarrativeTool::new(&narratives_dir)),
+                Arc::new(LoadNarrativeTool::new(storage)),
             )
             .expect("Failed to register load_narrative tool");
 

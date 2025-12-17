@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use botticelli_database::{table_exists, DbPool};
+use botticelli_database::table_exists;
 use botticelli_interface::DatabaseRegistryOperations;
 use pmcp::{Content, ToolInfo};
 use serde_json::{json, Value};
@@ -238,10 +238,7 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for TableExistsToo
             .as_str()
             .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
 
-        let mut conn = self.pool.get()
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(format!("Connection error: {}", e))))?;
-
-        let exists = table_exists(&mut conn, table_name)
+        let exists = self.db_ops.table_exists(table_name).await
             .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Table check error: {}", e))))?;
 
         let result = json!({

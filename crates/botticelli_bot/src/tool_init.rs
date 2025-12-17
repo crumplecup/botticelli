@@ -8,9 +8,11 @@
 
 use botticelli_mcp_client::{
     CreateCarouselTool, CreateElicitationSessionTool, CreateNarrativeTool, ElicitActTool,
-    ElicitMetadataTool, ElicitationRegistry, ExecuteCarouselTool, FinalizeElicitationTool,
-    ListNarrativesTool, LoadNarrativeTool, ToolRegistry, ValidateNarrativeTool,
+    ElicitMetadataTool, ElicitationRegistry, ExecuteCarouselTool,
+    FinalizeElicitationTool, ListNarrativesTool, LoadNarrativeTool, ToolRegistry,
+    ValidateNarrativeTool,
 };
+use botticelli_narrative::FilesystemNarrativeStorage;
 use std::sync::Arc;
 
 /// Initialize and register all Botticelli tools with the MCP registry.
@@ -47,11 +49,14 @@ pub fn initialize_tools(narratives_dir: impl Into<String> + std::fmt::Debug) -> 
 fn register_narrative_tools(registry: &mut ToolRegistry, narratives_dir: &str) {
     tracing::debug!("Registering narrative tools");
 
+    // Create shared storage instance
+    let storage = FilesystemNarrativeStorage::new(narratives_dir.into());
+
     // Create narrative from TOML
     registry
         .register(
             "create_narrative".to_string(),
-            Arc::new(CreateNarrativeTool),
+            Arc::new(CreateNarrativeTool::new(storage.clone())),
         )
         .expect("Failed to register create_narrative tool");
 
@@ -59,7 +64,7 @@ fn register_narrative_tools(registry: &mut ToolRegistry, narratives_dir: &str) {
     registry
         .register(
             "list_narratives".to_string(),
-            Arc::new(ListNarrativesTool::new(narratives_dir)),
+            Arc::new(ListNarrativesTool::new(storage.clone())),
         )
         .expect("Failed to register list_narratives tool");
 
@@ -67,7 +72,7 @@ fn register_narrative_tools(registry: &mut ToolRegistry, narratives_dir: &str) {
     registry
         .register(
             "load_narrative".to_string(),
-            Arc::new(LoadNarrativeTool::new(narratives_dir)),
+            Arc::new(LoadNarrativeTool::new(storage.clone())),
         )
         .expect("Failed to register load_narrative tool");
 
@@ -75,7 +80,7 @@ fn register_narrative_tools(registry: &mut ToolRegistry, narratives_dir: &str) {
     registry
         .register(
             "validate_narrative".to_string(),
-            Arc::new(ValidateNarrativeTool),
+            Arc::new(ValidateNarrativeTool::new(storage)),
         )
         .expect("Failed to register validate_narrative tool");
 
