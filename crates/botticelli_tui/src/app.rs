@@ -2,7 +2,7 @@
 //!
 //! Wires together views, commands, state, and provides clean library entry points.
 
-use crate::{AppState, Command, Event, EventHandler, McpUpdate, TuiResult, ViewMode};
+use crate::{AppState, Command, Event, EventHandler, McpMessage, TuiResult, ViewMode};
 use botticelli_interface::BotticelliDriver;
 use crossterm::event::KeyEvent;
 use ratatui::{Terminal, backend::CrosstermBackend};
@@ -22,7 +22,7 @@ pub struct TuiApp {
     /// Application state.
     state: AppState,
     /// MCP update channel receiver.
-    mcp_rx: mpsc::UnboundedReceiver<McpUpdate>,
+    mcp_rx: mpsc::UnboundedReceiver<McpMessage>,
 }
 
 impl TuiApp {
@@ -79,8 +79,12 @@ impl TuiApp {
             self.render()?;
 
             // Check for MCP updates (non-blocking)
-            while let Ok(update) = self.mcp_rx.try_recv() {
-                self.handle_event(Event::McpUpdate(update)).await?;
+            while let Ok(msg) = self.mcp_rx.try_recv() {
+                let event = match msg {
+                    McpMessage::Update(update) => Event::McpUpdate(update),
+                    McpMessage::Error(error) => Event::McpError(error),
+                };
+                self.handle_event(event).await?;
             }
 
             // Handle terminal events
@@ -163,6 +167,9 @@ impl TuiApp {
             }
             Event::McpUpdate(update) => {
                 self.state.handle_mcp_update(update)?;
+            }
+            Event::McpError(error) => {
+                self.state.handle_mcp_error(error)?;
             }
         }
         Ok(true)

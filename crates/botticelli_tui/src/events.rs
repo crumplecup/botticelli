@@ -15,6 +15,26 @@ pub struct McpUpdate {
     pub result: botticelli_mcp_client::ExecutionResult,
 }
 
+/// Error from MCP execution.
+#[derive(Debug, Clone)]
+pub struct McpError {
+    /// Conversation ID this error belongs to
+    pub conversation_id: uuid::Uuid,
+    /// Original user message that triggered this execution
+    pub user_message: String,
+    /// Error message
+    pub error: String,
+}
+
+/// Message from MCP execution (success or error).
+#[derive(Debug, Clone)]
+pub enum McpMessage {
+    /// Execution completed successfully.
+    Update(McpUpdate),
+    /// Execution failed with error.
+    Error(McpError),
+}
+
 /// TUI events.
 #[derive(Debug, Clone)]
 pub enum Event {
@@ -28,8 +48,10 @@ pub enum Event {
     Tick,
     /// Quit signal.
     Quit,
-    /// MCP execution completed.
+    /// MCP execution completed successfully.
     McpUpdate(McpUpdate),
+    /// MCP execution failed.
+    McpError(McpError),
 }
 
 /// Event handler for the TUI.

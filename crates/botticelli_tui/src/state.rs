@@ -133,7 +133,7 @@ pub struct AppState {
     /// LLM backend for generation (optional).
     llm_backend: Option<Arc<TuiLlmBackend>>,
     /// Channel to send MCP updates to UI thread.
-    mcp_channel: Option<tokio::sync::mpsc::UnboundedSender<crate::McpUpdate>>,
+    mcp_channel: Option<tokio::sync::mpsc::UnboundedSender<crate::McpMessage>>,
 }
 
 impl std::fmt::Debug for AppState {
@@ -511,7 +511,7 @@ impl AppState {
     }
 
     /// Set the channel for sending MCP updates.
-    pub fn set_mcp_channel(&mut self, tx: tokio::sync::mpsc::UnboundedSender<crate::McpUpdate>) {
+    pub fn set_mcp_channel(&mut self, tx: tokio::sync::mpsc::UnboundedSender<crate::McpMessage>) {
         self.mcp_channel = Some(tx);
     }
 
@@ -537,8 +537,19 @@ impl AppState {
             .cloned()
             .unwrap_or_default();
 
-        // Add user message first
-        messages.push(ChatMessage::user(update.user_message));
+        // Remove thinking indicator (last message should be "Thinking...")
+        if matches!(messages.last(), Some(ChatMessage::Thinking { .. })) {
+            messages.pop();
+            info!("Removed thinking indicator");
+        }
+
+        // User message should already be there (added by send_message_with_orchestration)
+        // If not (e.g., for error recovery), add it
+        if !messages.iter().any(|msg| {
+            matches!(msg, ChatMessage::User { content } if content == &update.user_message)
+        }) {
+            messages.push(ChatMessage::user(update.user_message));
+        }
 
         // Add tool calls and results
         for tool_call in &update.result.tool_calls {
@@ -558,6 +569,50 @@ impl AppState {
 
         // Update conversation
         self.update_conversation(update.conversation_id, messages);
+
+        Ok(())
+    }
+
+    /// Handle MCP execution error.
+    ///
+    /// Replaces thinking indicator with error message.
+    pub fn handle_mcp_error(&mut self, error: crate::McpError) -> crate::TuiResult<()> {
+        use crate::ChatMessage;
+
+        error!(
+            conversation_id = %error.conversation_id,
+            error = %error.error,
+            "Received MCP error"
+        );
+
+        // Get or create conversation
+        let mut messages = self
+            .conversation_messages(&error.conversation_id)
+            .cloned()
+            .unwrap_or_default();
+
+        // Remove thinking indicator (last message should be "Thinking...")
+        if matches!(messages.last(), Some(ChatMessage::Thinking { .. })) {
+            messages.pop();
+            info!("Removed thinking indicator");
+        }
+
+        // User message should already be there (added by send_message_with_orchestration)
+        // If not (e.g., for error recovery), add it
+        if !messages.iter().any(|msg| {
+            matches!(msg, ChatMessage::User { content } if content == &error.user_message)
+        }) {
+            messages.push(ChatMessage::user(error.user_message));
+        }
+
+        // Add error message as assistant response
+        messages.push(ChatMessage::assistant(format!(
+            "Error during execution: {}",
+            error.error
+        )));
+
+        // Update conversation
+        self.update_conversation(error.conversation_id, messages);
 
         Ok(())
     }
@@ -625,6 +680,12 @@ impl AppState {
                     .expect("Valid user message"),
             );
 
+            // Show user message + thinking indicator immediately for UI feedback
+            let mut updated_messages = messages.clone();
+            updated_messages.push(ChatMessage::user(user_message.clone()));
+            updated_messages.push(ChatMessage::thinking("Thinking...".to_string()));
+            self.update_conversation(conv_id, updated_messages);
+
             // Execute with MCP client
             if let (Some(mcp_client), Some(llm_backend), Some(tx)) =
                 (&self.mcp_client, &self.llm_backend, &self.mcp_channel)
@@ -649,16 +710,25 @@ impl AppState {
                             );
 
                             // Send result to UI thread (including user message)
-                            if let Err(e) = tx.send(crate::McpUpdate {
+                            if let Err(e) = tx.send(crate::McpMessage::Update(crate::McpUpdate {
                                 conversation_id: conv_id,
                                 user_message: user_msg,
                                 result,
-                            }) {
+                            })) {
                                 error!(error = %e, "Failed to send MCP update to UI");
                             }
                         }
                         Err(e) => {
                             error!(error = %e, "MCP execution failed");
+
+                            // Send error to UI thread
+                            if let Err(send_err) = tx.send(crate::McpMessage::Error(crate::McpError {
+                                conversation_id: conv_id,
+                                user_message: user_msg,
+                                error: format!("{}", e),
+                            })) {
+                                error!(error = %send_err, "Failed to send MCP error to UI");
+                            }
                         }
                     }
                 });

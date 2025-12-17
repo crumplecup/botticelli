@@ -379,6 +379,14 @@ This index tracks all planning documents in the workspace. When documents are co
   - Tool calls now render correctly with proper ordering
   - Status: ✅ Task 2 Complete - Tool visualization fixed
 
+- **TUI_PHASE_1_TASK_3_COMPLETE.md** - `current` (2025-12-16)
+  - Added loading indicator during orchestration for immediate user feedback
+  - Shows "Thinking..." indicator while waiting for tool execution and LLM response
+  - Thinking indicator automatically replaced by tool calls + response when complete
+  - Eliminates "is it working?" confusion during multi-second orchestration
+  - Leveraged existing ChatMessage::Thinking variant and rendering code
+  - Status: ✅ Task 3 Complete - Loading indicator working
+
 - **NARRATIVE_SAMPLING_CLEAN_ARCHITECTURE.md** - `current` (2025-12-14)
   - Clean architecture refactor for narrative sampling and LLM providers
   - Phases 1-4 complete: ConversationSession, LlmSampler trait, SamplingCoordinator, testing
