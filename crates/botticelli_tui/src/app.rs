@@ -209,12 +209,9 @@ impl TuiApp {
                 debug!(?mode, "Switching to view mode");
                 self.state.set_mode(mode);
             }
-            Command::SendMessage(_message) => {
-                // For now, delegate to AppState's handle_key for Enter
-                // TODO: Refactor AppState to expose send_message() method
-                use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-                let enter_key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-                self.state.handle_key(enter_key).await?;
+            Command::SendMessage(message) => {
+                // Send message with orchestration (tool calling support)
+                self.state.send_message_with_orchestration(message)?;
             }
             Command::NavigateUp => {
                 if let Some(idx) = self.state.selected_narrative()

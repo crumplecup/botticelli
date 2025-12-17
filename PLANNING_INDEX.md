@@ -337,7 +337,47 @@ This index tracks all planning documents in the workspace. When documents are co
   - 8-week implementation plan across 7 phases
   - Technical architecture: state management, view traits, component library
   - Showcases: UnifiedMcpClient, 15 internal tools, 6 LLM providers, external MCP ecosystem
-  - Status: 📋 Planning Complete - Ready for Review
+  - Status: 📋 Planning Complete - Deferred pending Phase 0
+
+- **TUI_ARCHITECTURE_ANALYSIS.md** - `current` (2025-12-15)
+  - Critical gap analysis of current TUI implementation
+  - Finding: Internal tools registered but NOT connected to orchestration engine
+  - LLmBackend doesn't actually call tools (stubbed out)
+  - Recommendation: Complete Phase 0 (Core Orchestration) before GUI development
+  - Task breakdown: Connect tools, implement tool calling, wire orchestration, verify end-to-end
+  - Status: ✅ Analysis Complete - Led to Phase 0 implementation
+
+- **TUI_PHASE_0_TASK_1_COMPLETE.md** - `current` (2025-12-15)
+  - Fixed critical bug: Tools registered but never connected to UnifiedMcpClient
+  - Changed from local ToolRegistry to UnifiedMcpClient.internal_registry_mut()
+  - 5 internal tools now accessible: echo, create/validate/list/load narrative
+  - Verified compilation success with zero TUI warnings
+  - Status: ✅ Task 1 Complete - Tools connected
+
+- **TUI_PHASE_0_TASKS_2_3_COMPLETE.md** - `current` (2025-12-16)
+  - Implemented tool calling in TuiLlmBackend::generate_with_tools
+  - Converts Output::ToolCalls to JSON format expected by extract_tool_calls
+  - Enables full orchestration via UnifiedMcpClient::execute_with_tracking
+  - Architectural limitation noted: BotticelliDriver doesn't expose tool schemas
+  - Orchestration pipeline complete: register → detect → convert → execute
+  - Status: ✅ Phase 0 Complete - Ready for Phase 1 UI integration
+
+- **TUI_PHASE_1_TASK_1_COMPLETE.md** - `current` (2025-12-16)
+  - Refactored orchestration triggering to use composable architecture
+  - Extracted send_message_with_orchestration method from handle_key
+  - Removed hacky KeyEvent simulation in Command::SendMessage handler
+  - Clean separation: orchestration accessible from keyboard and commands
+  - Reduced handle_key Enter case from 90 lines to 3 lines
+  - Status: ✅ Task 1 Complete - Orchestration properly wired
+
+- **TUI_PHASE_1_TASK_2_COMPLETE.md** - `current` (2025-12-16)
+  - Fixed conversation state management for tool call visualization
+  - Changed from split updates to atomic updates in handle_mcp_update
+  - Added user_message field to McpUpdate struct
+  - All conversation updates now happen atomically (user msg + tools + response)
+  - Eliminates race conditions in multi-message scenarios
+  - Tool calls now render correctly with proper ordering
+  - Status: ✅ Task 2 Complete - Tool visualization fixed
 
 - **NARRATIVE_SAMPLING_CLEAN_ARCHITECTURE.md** - `current` (2025-12-14)
   - Clean architecture refactor for narrative sampling and LLM providers

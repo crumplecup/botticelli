@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, Input as CoreInput, Message as CoreMessage, Role};
 use botticelli_interface::BotticelliDriver;
 use botticelli_mcp_client::{
-    LlmBackend, ToolDefinition, ToolHandler, ToolRegistry, UnifiedMcpClient,
+    LlmBackend, ToolDefinition, ToolHandler, UnifiedMcpClient,
     tools::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool},
 };
 use botticelli_narrative::FilesystemNarrativeStorage;
@@ -40,28 +40,72 @@ impl LlmBackend for TuiLlmBackend {
         messages: &[botticelli_core::Message],
         _tools: &[ToolDefinition],
     ) -> Result<String, Box<dyn std::error::Error>> {
-        // Simple implementation: just generate without tool support for now
-        // TODO: Add proper tool schema conversion
+        use botticelli_core::Output;
+        use serde_json::json;
+
+        // NOTE: Current architecture limitation - BotticelliDriver trait doesn't expose tool definitions
+        // We'll need to refactor this to properly support tool calling
+        // For now, we convert the response format so execute_with_tracking can extract tool calls
+
         let request = GenerateRequest::builder()
             .messages(messages.to_vec())
             .build()?;
 
         let response = self.driver.generate(&request).await?;
 
-        // Extract text from first output
-        let text = response
-            .outputs()
-            .first()
-            .map(|output| match output {
-                botticelli_core::Output::Text(t) => t.clone(),
-                botticelli_core::Output::ToolCalls(_) => {
-                    "Tool calls not yet supported in TUI".to_string()
-                }
-                _ => "Unsupported output type in TUI".to_string(),
-            })
-            .unwrap_or_else(|| "No response from model".to_string());
+        // Convert response to format expected by extract_tool_calls
+        // The extract_tool_calls function expects JSON with "content" array containing
+        // objects with type="tool_use", name, and input fields
 
-        Ok(text)
+        let mut has_tool_calls = false;
+        let mut content_array = Vec::new();
+
+        for output in response.outputs() {
+            match output {
+                Output::Text(text) => {
+                    // Include text content
+                    content_array.push(json!({
+                        "type": "text",
+                        "text": text
+                    }));
+                }
+                Output::ToolCalls(calls) => {
+                    // Convert to Anthropic tool_use format
+                    has_tool_calls = true;
+                    for call in calls {
+                        content_array.push(json!({
+                            "type": "tool_use",
+                            "id": call.id(),
+                            "name": call.name(),
+                            "input": call.arguments()
+                        }));
+                    }
+                }
+                _ => {
+                    // Other output types not relevant for tool calling
+                    tracing::debug!("Skipping non-text/non-tool output");
+                }
+            }
+        }
+
+        if has_tool_calls {
+            // Return structured JSON for tool calls
+            let result = json!({
+                "content": content_array
+            });
+            Ok(serde_json::to_string(&result)?)
+        } else {
+            // No tool calls - return text only
+            let text = response
+                .outputs()
+                .iter()
+                .find_map(|output| match output {
+                    Output::Text(t) => Some(t.clone()),
+                    _ => None,
+                })
+                .unwrap_or_else(|| "No response from model".to_string());
+            Ok(text)
+        }
     }
 }
 
@@ -262,97 +306,9 @@ impl AppState {
                 // Submit input based on current mode
                 match self.mode {
                     ViewMode::Chat => {
-                        if !self.input_buffer.is_empty() {
-                            let user_message = self.input_buffer.clone();
-                            self.clear_input();
-
-                            // Add user message to conversation
-                            let conv_id = self.current_conversation.unwrap_or_else(|| {
-                                let id = Uuid::new_v4();
-                                self.current_conversation = Some(id);
-                                id
-                            });
-
-                            let mut messages = self
-                                .conversation_messages(&conv_id)
-                                .cloned()
-                                .unwrap_or_default();
-                            messages.push(ChatMessage::user(user_message.clone()));
-
-                            // Execute with MCP if available
-                            if self.has_mcp_integration() {
-                                // Convert ChatMessages to core Messages for LLM
-                                let core_messages: Vec<CoreMessage> = messages
-                                    .iter()
-                                    .filter_map(|msg| match msg {
-                                        ChatMessage::User { content } => Some(
-                                            CoreMessage::builder()
-                                                .role(Role::User)
-                                                .content(vec![CoreInput::Text(content.clone())])
-                                                .build()
-                                                .ok()?,
-                                        ),
-                                        ChatMessage::Assistant { content } => Some(
-                                            CoreMessage::builder()
-                                                .role(Role::Assistant)
-                                                .content(vec![CoreInput::Text(content.clone())])
-                                                .build()
-                                                .ok()?,
-                                        ),
-                                        _ => None, // Skip tool calls/results/thinking for now
-                                    })
-                                    .collect();
-
-                                // Execute with MCP client
-                                if let (Some(mcp_client), Some(llm_backend), Some(tx)) =
-                                    (&self.mcp_client, &self.llm_backend, &self.mcp_channel)
-                                {
-                                    let client = mcp_client.clone();
-                                    let backend = llm_backend.clone();
-                                    let tx = tx.clone();
-
-                                    // Spawn async task to execute
-                                    tokio::spawn(async move {
-                                        let mut client_guard = client.lock().await;
-                                        match client_guard
-                                            .execute_with_tracking(backend.as_ref(), core_messages)
-                                            .await
-                                        {
-                                            Ok(result) => {
-                                                info!(
-                                                    iterations = result.iterations,
-                                                    tool_calls = result.tool_calls.len(),
-                                                    "MCP execution complete - sending to UI"
-                                                );
-
-                                                // Send result to UI thread
-                                                if let Err(e) = tx.send(crate::McpUpdate {
-                                                    conversation_id: conv_id,
-                                                    result,
-                                                }) {
-                                                    error!(error = %e, "Failed to send MCP update to UI");
-                                                }
-                                            }
-                                            Err(e) => {
-                                                error!(error = %e, "MCP execution failed");
-                                            }
-                                        }
-                                    });
-                                } else {
-                                    // Fallback: Simple LLM generation without MCP
-                                    messages.push(ChatMessage::assistant(
-                                        "MCP integration not fully initialized".to_string(),
-                                    ));
-                                }
-                            } else {
-                                // No MCP - add placeholder response
-                                messages.push(ChatMessage::assistant(
-                                    "LLM integration not enabled. Set up Anthropic API key to use chat.".to_string()
-                                ));
-                            }
-
-                            self.update_conversation(conv_id, messages);
-                        }
+                        // Use the dedicated orchestration method
+                        let user_message = self.input_buffer.clone();
+                        self.send_message_with_orchestration(user_message)?;
                     }
                     ViewMode::NarrativeEditor => {
                         // In editor, Enter adds newline
@@ -489,8 +445,11 @@ impl AppState {
         // Create LLM backend
         let llm_backend = TuiLlmBackend::new(driver);
 
-        // Create tool registry and register tools
-        let mut registry = ToolRegistry::new();
+        // Create MCP client first (so we can populate its internal registry)
+        let mut mcp_client = UnifiedMcpClient::builder().max_iterations(10).build();
+
+        // Get mutable reference to internal tool registry
+        let registry = mcp_client.internal_registry_mut();
 
         // Register echo tool for testing
         registry
@@ -529,13 +488,10 @@ impl AppState {
             )
             .expect("Failed to register load_narrative tool");
 
-        info!(tool_count = registry.tool_count(), "Tools registered");
-
-        // Create MCP client with registry
-        let mcp_client = UnifiedMcpClient::builder().max_iterations(10).build();
-
-        // Note: We can't add the registry to UnifiedMcpClient yet because it only
-        // supports external servers. For now, external tools only.
+        info!(
+            tool_count = mcp_client.internal_registry().tool_count(),
+            "Internal tools registered in UnifiedMcpClient"
+        );
 
         let mut state = Self::default();
         state.set_llm_backend(llm_backend);
@@ -581,6 +537,9 @@ impl AppState {
             .cloned()
             .unwrap_or_default();
 
+        // Add user message first
+        messages.push(ChatMessage::user(update.user_message));
+
         // Add tool calls and results
         for tool_call in &update.result.tool_calls {
             messages.push(ChatMessage::tool_call(
@@ -599,6 +558,129 @@ impl AppState {
 
         // Update conversation
         self.update_conversation(update.conversation_id, messages);
+
+        Ok(())
+    }
+
+    /// Send a message with orchestration (tool calling support).
+    ///
+    /// This method:
+    /// 1. Converts conversation history to core Messages
+    /// 2. Adds new user message to core Messages
+    /// 3. Executes with MCP orchestration (tool calling) in async task
+    /// 4. Sends result + user message to UI via mcp_channel
+    /// 5. handle_mcp_update adds all messages to conversation atomically
+    #[tracing::instrument(skip(self), fields(message_len = user_message.len()))]
+    pub fn send_message_with_orchestration(&mut self, user_message: String) -> crate::TuiResult<()> {
+        if user_message.is_empty() {
+            return Ok(());
+        }
+
+        // Clear input buffer
+        self.clear_input();
+
+        // Get or create conversation
+        let conv_id = self.current_conversation.unwrap_or_else(|| {
+            let id = Uuid::new_v4();
+            self.current_conversation = Some(id);
+            id
+        });
+
+        // Get existing conversation history
+        let messages = self
+            .conversation_messages(&conv_id)
+            .cloned()
+            .unwrap_or_default();
+
+        // Execute with MCP if available
+        if self.has_mcp_integration() {
+            // Convert existing ChatMessages to core Messages, then add new user message
+            let mut core_messages: Vec<CoreMessage> = messages
+                .iter()
+                .filter_map(|msg| match msg {
+                    ChatMessage::User { content } => Some(
+                        CoreMessage::builder()
+                            .role(Role::User)
+                            .content(vec![CoreInput::Text(content.clone())])
+                            .build()
+                            .ok()?,
+                    ),
+                    ChatMessage::Assistant { content} => Some(
+                        CoreMessage::builder()
+                            .role(Role::Assistant)
+                            .content(vec![CoreInput::Text(content.clone())])
+                            .build()
+                            .ok()?,
+                    ),
+                    _ => None, // Skip tool calls/results/thinking for now
+                })
+                .collect();
+
+            // Add the new user message to core_messages
+            core_messages.push(
+                CoreMessage::builder()
+                    .role(Role::User)
+                    .content(vec![CoreInput::Text(user_message.clone())])
+                    .build()
+                    .expect("Valid user message"),
+            );
+
+            // Execute with MCP client
+            if let (Some(mcp_client), Some(llm_backend), Some(tx)) =
+                (&self.mcp_client, &self.llm_backend, &self.mcp_channel)
+            {
+                let client = mcp_client.clone();
+                let backend = llm_backend.clone();
+                let tx = tx.clone();
+                let user_msg = user_message.clone();
+
+                // Spawn async task to execute
+                tokio::spawn(async move {
+                    let mut client_guard = client.lock().await;
+                    match client_guard
+                        .execute_with_tracking(backend.as_ref(), core_messages)
+                        .await
+                    {
+                        Ok(result) => {
+                            info!(
+                                iterations = result.iterations,
+                                tool_calls = result.tool_calls.len(),
+                                "MCP execution complete - sending to UI"
+                            );
+
+                            // Send result to UI thread (including user message)
+                            if let Err(e) = tx.send(crate::McpUpdate {
+                                conversation_id: conv_id,
+                                user_message: user_msg,
+                                result,
+                            }) {
+                                error!(error = %e, "Failed to send MCP update to UI");
+                            }
+                        }
+                        Err(e) => {
+                            error!(error = %e, "MCP execution failed");
+                        }
+                    }
+                });
+            } else {
+                // Fallback: MCP not fully initialized
+                // In this case, we need to update conversation immediately
+                let mut updated_messages = messages;
+                updated_messages.push(ChatMessage::user(user_message));
+                updated_messages.push(ChatMessage::assistant(
+                    "MCP integration not fully initialized".to_string(),
+                ));
+                self.update_conversation(conv_id, updated_messages);
+            }
+        } else {
+            // No MCP - add placeholder response immediately
+            let mut updated_messages = messages;
+            updated_messages.push(ChatMessage::user(user_message));
+            updated_messages.push(ChatMessage::assistant(
+                "LLM integration not enabled. Set up Anthropic API key to use chat.".to_string(),
+            ));
+            self.update_conversation(conv_id, updated_messages);
+        }
 
         Ok(())
     }

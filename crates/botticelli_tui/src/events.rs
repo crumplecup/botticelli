@@ -9,6 +9,8 @@ use crate::{TuiError, TuiErrorKind, TuiResult};
 pub struct McpUpdate {
     /// Conversation ID this update belongs to
     pub conversation_id: uuid::Uuid,
+    /// Original user message that triggered this execution
+    pub user_message: String,
     /// Execution result with tool calls
     pub result: botticelli_mcp_client::ExecutionResult,
 }
