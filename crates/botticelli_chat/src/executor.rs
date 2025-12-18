@@ -382,12 +382,7 @@ Other:
         let repo = self.services.narrative_repository().await?;
 
         // Query recent narratives (limit 10)
-        let filter = ExecutionFilter {
-            narrative_name: None,
-            status: None,
-            offset: None,
-            limit: Some(10),
-        };
+        let filter = ExecutionFilter::new().with_limit(10);
 
         let summaries = repo.list_executions(&filter).await.map_err(|e| {
             ChatError::new(ChatErrorKind::IoError(format!(
@@ -559,14 +554,14 @@ Other:
 
             // Update narrative state with loaded data
             let mut state = self.narrative_state.write().await;
-            state.prompt = Some(execution.narrative_name.clone());
+            state.prompt = Some(execution.narrative_name().to_string());
             state.path = Some(format!("db:{}", id));
 
             // Extract model/params from first act if available
-            if let Some(first_act) = execution.act_executions.first() {
-                state.model = first_act.model.clone();
-                state.temperature = first_act.temperature;
-                state.max_tokens = first_act.max_tokens;
+            if let Some(first_act) = execution.act_executions().first() {
+                state.model = first_act.model().clone();
+                state.temperature = *first_act.temperature();
+                state.max_tokens = *first_act.max_tokens();
             }
             drop(state);
 
@@ -575,17 +570,17 @@ Other:
                  Name: {}\n\
                  Acts: {}",
                 id,
-                execution.narrative_name,
-                execution.act_executions.len()
+                execution.narrative_name(),
+                execution.act_executions().len()
             );
 
-            if let Some(ref tokens) = execution.total_token_usage {
-                output.push_str(&format!("\nTotal tokens: {}", *tokens.total_tokens()));
+            if let Some(tokens) = execution.total_token_usage() {
+                output.push_str(&format!("\nTotal tokens: {}", tokens.total_tokens()));
             }
-            if let Some(cost) = execution.total_cost_usd {
+            if let Some(cost) = execution.total_cost_usd() {
                 output.push_str(&format!("\nTotal cost: ${:.4}", cost));
             }
-            if let Some(duration) = execution.total_duration_ms {
+            if let Some(duration) = execution.total_duration_ms() {
                 output.push_str(&format!("\nDuration: {} ms", duration));
             }
 
@@ -632,26 +627,26 @@ Other:
 
         // Create a placeholder act execution
         // TODO: This should be replaced with actual generated content from MCP
-        let act = ActExecution {
-            act_name: "manual_entry".to_string(),
-            sequence_number: 0,
+        let act = ActExecution::new(
+            "manual_entry".to_string(),
+            vec![],
             model,
             temperature,
             max_tokens,
-            inputs: vec![],
-            response: "This is a placeholder. Generate actual content via MCP.".to_string(),
-            token_usage: None,
-            estimated_cost_usd: None,
-            duration_ms: None,
-        };
+            "This is a placeholder. Generate actual content via MCP.".to_string(),
+            0,
+            None,
+            None,
+            None,
+        );
 
-        let execution = NarrativeExecution {
-            narrative_name: prompt.clone(),
-            act_executions: vec![act],
-            total_token_usage: None,
-            total_cost_usd: None,
-            total_duration_ms: None,
-        };
+        let execution = NarrativeExecution::new(
+            prompt.clone(),
+            vec![act],
+            None,
+            None,
+            None,
+        );
 
         // Save to database
         let repo = self.services.narrative_repository().await?;

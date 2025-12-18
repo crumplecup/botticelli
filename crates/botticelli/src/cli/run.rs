@@ -471,7 +471,7 @@ pub async fn run_narrative(
     let execution = executor.execute(narrative.as_ref()).await?;
 
     tracing::info!(
-        acts_completed = execution.act_executions.len(),
+        acts_completed = execution.act_executions().len(),
         "Narrative execution completed"
     );
 
@@ -506,14 +506,14 @@ pub async fn run_narrative(
     // Print execution summary
     println!("\nNarrative Execution Summary:");
     println!("============================");
-    println!("Narrative: {}", execution.narrative_name);
-    println!("Acts completed: {}", execution.act_executions.len());
+    println!("Narrative: {}", execution.narrative_name());
+    println!("Acts completed: {}", execution.act_executions().len());
     println!();
 
-    for act in &execution.act_executions {
-        println!("Act {}: {}", act.sequence_number + 1, act.act_name);
-        println!("  Response length: {} characters", act.response.len());
-        if let Some(model) = &act.model {
+    for act in execution.act_executions() {
+        println!("Act {}: {}", act.sequence_number() + 1, act.act_name());
+        println!("  Response length: {} characters", act.response().len());
+        if let Some(model) = act.model() {
             println!("  Model: {}", model);
         }
         println!();
