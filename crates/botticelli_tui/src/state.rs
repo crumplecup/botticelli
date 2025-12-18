@@ -668,7 +668,7 @@ impl AppState {
     /// Handle MCP execution error.
     ///
     /// Replaces thinking indicator with error message.
-    pub fn handle_mcp_error(&mut self, error: crate::McpError) -> crate::TuiResult<()> {
+    pub fn handle_mcp_error(&mut self, error: crate::McpConversationError) -> crate::TuiResult<()> {
         use crate::ChatMessage;
 
         error!(
@@ -818,7 +818,7 @@ impl AppState {
 
                             // Send error to UI thread
                             if let Err(send_err) =
-                                tx.send(crate::McpMessage::Error(crate::McpError {
+                                tx.send(crate::McpMessage::Error(crate::McpConversationError {
                                     conversation_id: conv_id,
                                     user_message: user_msg,
                                     error: format!("{}", e),

@@ -17,6 +17,7 @@ pub struct CreateTableTool<D: DatabaseRegistryOperations> {
 
 #[cfg(feature = "database")]
 impl<D: DatabaseRegistryOperations> CreateTableTool<D> {
+    /// Create a new CreateTableTool with the given database operations.
     pub fn new(db_ops: D) -> Self {
         Self { db_ops }
     }
@@ -103,6 +104,7 @@ pub struct QueryTableTool<D: DatabaseRegistryOperations> {
 
 #[cfg(feature = "database")]
 impl<D: DatabaseRegistryOperations> QueryTableTool<D> {
+    /// Create a new QueryTableTool with the given database operations.
     pub fn new(db_ops: D) -> Self {
         Self { db_ops }
     }
@@ -177,6 +179,7 @@ pub struct InspectTableTool<D: DatabaseRegistryOperations> {
 
 #[cfg(feature = "database")]
 impl<D: DatabaseRegistryOperations> InspectTableTool<D> {
+    /// Create a new InspectTableTool with the given database operations.
     pub fn new(db_ops: D) -> Self {
         Self { db_ops }
     }
@@ -239,6 +242,7 @@ pub struct TableExistsTool<D: DatabaseRegistryOperations> {
 
 #[cfg(feature = "database")]
 impl<D: DatabaseRegistryOperations> TableExistsTool<D> {
+    /// Create a new TableExistsTool with the given database operations.
     pub fn new(db_ops: D) -> Self {
         Self { db_ops }
     }

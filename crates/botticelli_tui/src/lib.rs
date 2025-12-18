@@ -46,7 +46,7 @@ pub use app::TuiApp;
 pub use commands::Command;
 pub use elicitation_dialog::TuiElicitationDialog;
 pub use error::{TuiError, TuiErrorKind, TuiResult};
-pub use events::{Event, EventHandler, McpError, McpMessage, McpUpdate};
+pub use events::{Event, EventHandler, McpConversationError, McpMessage, McpUpdate};
 pub use state::{AppState, ChatMessage, ConversationId, NarrativeId, TuiLlmBackend, ViewMode};
 pub use tui::Tui;
 pub use view::{
