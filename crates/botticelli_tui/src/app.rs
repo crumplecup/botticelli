@@ -183,7 +183,8 @@ impl TuiApp {
             // Tab cycles through views
             (KeyCode::Tab, KeyModifiers::NONE) => {
                 let next_mode = match self.state.mode() {
-                    ViewMode::Chat => ViewMode::NarrativeBrowser,
+                    ViewMode::Chat => ViewMode::ConversationHistory,
+                    ViewMode::ConversationHistory => ViewMode::NarrativeBrowser,
                     ViewMode::NarrativeBrowser => ViewMode::NarrativeEditor,
                     ViewMode::NarrativeEditor => ViewMode::Settings,
                     ViewMode::Settings => ViewMode::Chat,
@@ -196,7 +197,8 @@ impl TuiApp {
                     ViewMode::Chat => ViewMode::Settings,
                     ViewMode::Settings => ViewMode::NarrativeEditor,
                     ViewMode::NarrativeEditor => ViewMode::NarrativeBrowser,
-                    ViewMode::NarrativeBrowser => ViewMode::Chat,
+                    ViewMode::NarrativeBrowser => ViewMode::ConversationHistory,
+                    ViewMode::ConversationHistory => ViewMode::Chat,
                 };
                 Some(Command::SwitchMode(prev_mode))
             }
@@ -220,28 +222,70 @@ impl TuiApp {
                 // Send message with orchestration (tool calling support)
                 self.state.send_message_with_orchestration(message)?;
             }
-            Command::NavigateUp => {
-                if let Some(idx) = self.state.selected_narrative()
-                    && idx > 0
-                {
-                    self.state.set_selected_narrative(Some(idx - 1));
-                }
+            Command::ClearConversation => {
+                debug!("Clearing conversation");
+                self.state.clear_conversation();
             }
-            Command::NavigateDown => {
-                if let Some(idx) = self.state.selected_narrative() {
-                    let max = self.state.narrative_list().len().saturating_sub(1);
-                    if idx < max {
-                        self.state.set_selected_narrative(Some(idx + 1));
+            Command::NavigateUp => match self.state.mode() {
+                ViewMode::ConversationHistory => {
+                    self.state.select_previous_conversation_history();
+                }
+                ViewMode::NarrativeBrowser => {
+                    if let Some(idx) = self.state.selected_narrative()
+                        && idx > 0
+                    {
+                        self.state.set_selected_narrative(Some(idx - 1));
                     }
-                } else if !self.state.narrative_list().is_empty() {
-                    self.state.set_selected_narrative(Some(0));
                 }
-            }
+                _ => {}
+            },
+            Command::NavigateDown => match self.state.mode() {
+                ViewMode::ConversationHistory => {
+                    self.state.select_next_conversation_history();
+                }
+                ViewMode::NarrativeBrowser => {
+                    if let Some(idx) = self.state.selected_narrative() {
+                        let max = self.state.narrative_list().len().saturating_sub(1);
+                        if idx < max {
+                            self.state.set_selected_narrative(Some(idx + 1));
+                        }
+                    } else if !self.state.narrative_list().is_empty() {
+                        self.state.set_selected_narrative(Some(0));
+                    }
+                }
+                _ => {}
+            },
             Command::AppendChar(c) => {
                 self.state.append_input(&c.to_string());
             }
             Command::DeleteChar => {
                 self.state.delete_char();
+            }
+            Command::SelectNarrative => {
+                // Handle differently based on current view mode
+                match self.state.mode() {
+                    ViewMode::ConversationHistory => {
+                        // Load selected conversation
+                        if let Some(idx) = self.state.selected_conversation_history() {
+                            let conversation_ids = self.state.conversation_ids();
+                            if let Some(conversation_id) = conversation_ids.get(idx) {
+                                debug!(conversation_id = %conversation_id, "Loading conversation");
+                                self.state.set_current_conversation(Some(*conversation_id));
+                                self.state.set_mode(ViewMode::Chat);
+                            }
+                        }
+                    }
+                    ViewMode::NarrativeBrowser => {
+                        // Load selected narrative (not yet implemented)
+                        debug!("Load narrative not yet implemented");
+                    }
+                    _ => {}
+                }
+            }
+            Command::LoadConversation(conversation_id) => {
+                debug!(conversation_id = %conversation_id, "Loading conversation");
+                self.state.set_current_conversation(Some(conversation_id));
+                self.state.set_mode(ViewMode::Chat);
             }
             _ => {
                 // Other commands not yet implemented

@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use botticelli_error::{McpError, McpErrorKind, McpResult};
 use botticelli_interface::RegistryOperations;
 use pmcp::{Content, ToolInfo};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use uuid::Uuid;
 
 /// Elicitation session state wrapper implementing RegistryOperations.
@@ -39,14 +39,15 @@ impl RegistryOperations for ElicitationSession {
             .and_then(|v| v.as_str())
             .and_then(|s| Uuid::parse_str(s).ok())
             .unwrap_or_else(Uuid::new_v4);
-        
+
         let state = args.get("state").cloned().unwrap_or(json!({}));
-        
+
         Ok(Self { id, state })
     }
 
     fn to_json(&self) -> McpResult<Value> {
-        serde_json::to_value(self).map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())))
+        serde_json::to_value(self)
+            .map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())))
     }
 
     fn update_from_json(&mut self, args: Value) -> McpResult<()> {
@@ -59,7 +60,6 @@ impl RegistryOperations for ElicitationSession {
 
 /// Registry for managing active narrative elicitation sessions.
 pub type ElicitationRegistry = GenericRegistry<ElicitationSession>;
-
 
 /// Tool for creating a new narrative elicitation session.
 #[derive(Debug, Clone, derive_new::new)]
@@ -207,7 +207,10 @@ impl ToolHandler for ElicitMetadataTool {
 
         // Update metadata fields if provided
         let mut state_value = session.state().clone();
-        let mut metadata = state_value["metadata"].as_object().cloned().unwrap_or_default();
+        let mut metadata = state_value["metadata"]
+            .as_object()
+            .cloned()
+            .unwrap_or_default();
 
         if let Some(name) = input.get("name").and_then(|v| v.as_str()) {
             metadata.insert("name".to_string(), json!(name));
@@ -226,7 +229,10 @@ impl ToolHandler for ElicitMetadataTool {
         }
 
         state_value["metadata"] = json!(metadata);
-        let updated_session = ElicitationSession { id: session_id, state: state_value };
+        let updated_session = ElicitationSession {
+            id: session_id,
+            state: state_value,
+        };
         self.registry.update(&session_id, updated_session)?;
 
         let result = json!({
@@ -343,7 +349,10 @@ impl ToolHandler for ElicitActTool {
         }
 
         state_value["acts"] = json!(acts);
-        let updated_session = ElicitationSession { id: session_id, state: state_value };
+        let updated_session = ElicitationSession {
+            id: session_id,
+            state: state_value,
+        };
         self.registry.update(&session_id, updated_session)?;
 
         let result = json!({

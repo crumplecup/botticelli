@@ -16,8 +16,8 @@ pub use session_tools::{
 };
 pub use state::{GetNarrativeStateInput, GetNarrativeStateOutput};
 pub use validation::{
-    ApplyValidationFixesInput,
-    ApplyValidationFixesOutput, ValidateNarrativeInput, ValidateNarrativeOutput,
+    ApplyValidationFixesInput, ApplyValidationFixesOutput, ValidateNarrativeInput,
+    ValidateNarrativeOutput,
 };
 
 use crate::PartialNarrative;

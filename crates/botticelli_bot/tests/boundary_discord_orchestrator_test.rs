@@ -56,7 +56,7 @@ impl LlmAdapter for MockLlmAdapter {
 async fn test_discord_message_to_orchestrator_boundary() {
     // Setup: Create orchestrator with mock LLM
     let registry = Arc::new(ToolRegistry::new());
-    
+
     let mock_response = GenerationResponse::new(
         Message::new(
             MessageRole::Assistant,
@@ -67,10 +67,10 @@ async fn test_discord_message_to_orchestrator_boundary() {
         TokenUsage::new(10, 20, 30),
         FinishReason::Stop,
     );
-    
+
     let adapter = Arc::new(MockLlmAdapter::new(vec![mock_response]));
     let orchestrator = Arc::new(Orchestrator::new(registry, adapter, 5));
-    
+
     // Create bridge
     let bridge = DiscordMcpBridge::new(orchestrator);
 
@@ -98,7 +98,7 @@ async fn test_discord_context_propagation_boundary() {
         TokenUsage::new(10, 20, 30),
         FinishReason::Stop,
     );
-    
+
     let adapter = Arc::new(MockLlmAdapter::new(vec![mock_response]));
     let orchestrator = Arc::new(Orchestrator::new(registry, adapter, 5));
     let bridge = DiscordMcpBridge::new(orchestrator);
@@ -116,7 +116,7 @@ async fn test_discord_context_propagation_boundary() {
 async fn test_discord_error_handling_boundary() {
     // Setup with orchestrator that will hit max iterations
     let registry = Arc::new(ToolRegistry::new());
-    
+
     // Return tool calls forever (will hit max iterations)
     let mock_responses = vec![
         GenerationResponse::new(
@@ -135,7 +135,7 @@ async fn test_discord_error_handling_boundary() {
         );
         10
     ];
-    
+
     let adapter = Arc::new(MockLlmAdapter::new(mock_responses));
     let orchestrator = Arc::new(Orchestrator::new(registry, adapter, 2)); // Low max iterations
     let bridge = DiscordMcpBridge::new(orchestrator);
@@ -148,5 +148,8 @@ async fn test_discord_error_handling_boundary() {
     // Verify: Error is translated to Discord-friendly format
     // Note: Current implementation returns placeholder, will need updating
     // when full orchestration is implemented
-    assert!(result.is_ok() || result.is_err(), "Should handle gracefully");
+    assert!(
+        result.is_ok() || result.is_err(),
+        "Should handle gracefully"
+    );
 }

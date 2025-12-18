@@ -32,9 +32,10 @@ where
     /// Add or update an item in the registry.
     pub fn upsert(&self, item: T) -> McpClientResult<T::Key> {
         let key = item.registry_key();
-        let mut items = self.items.write().map_err(|_| {
-            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
-        })?;
+        let mut items = self
+            .items
+            .write()
+            .map_err(|_| McpClientError::new(McpClientErrorKind::RegistryLockPoisoned))?;
         items.insert(key.clone(), item);
         tracing::info!("Upserted item in registry");
         Ok(key)
@@ -45,17 +46,19 @@ where
     where
         T: Clone,
     {
-        let items = self.items.read().map_err(|_| {
-            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
-        })?;
+        let items = self
+            .items
+            .read()
+            .map_err(|_| McpClientError::new(McpClientErrorKind::RegistryLockPoisoned))?;
         Ok(items.get(key).cloned())
     }
 
     /// Update an existing item.
     pub fn update(&self, key: &T::Key, item: T) -> McpClientResult<bool> {
-        let mut items = self.items.write().map_err(|_| {
-            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
-        })?;
+        let mut items = self
+            .items
+            .write()
+            .map_err(|_| McpClientError::new(McpClientErrorKind::RegistryLockPoisoned))?;
         if items.contains_key(key) {
             items.insert(key.clone(), item);
             Ok(true)
@@ -66,9 +69,10 @@ where
 
     /// Remove an item by key.
     pub fn remove(&self, key: &T::Key) -> McpClientResult<Option<T>> {
-        let mut items = self.items.write().map_err(|_| {
-            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
-        })?;
+        let mut items = self
+            .items
+            .write()
+            .map_err(|_| McpClientError::new(McpClientErrorKind::RegistryLockPoisoned))?;
         Ok(items.remove(key))
     }
 
@@ -77,9 +81,10 @@ where
     where
         T::Key: Clone,
     {
-        let items = self.items.read().map_err(|_| {
-            McpClientError::new(McpClientErrorKind::RegistryLockPoisoned)
-        })?;
+        let items = self
+            .items
+            .read()
+            .map_err(|_| McpClientError::new(McpClientErrorKind::RegistryLockPoisoned))?;
         Ok(items.keys().cloned().collect())
     }
 }

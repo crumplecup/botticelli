@@ -8,7 +8,16 @@ use botticelli_core::{Input, TokenUsageData};
 use serde::{Deserialize, Serialize};
 
 /// Execution result for a single act in a narrative.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters, derive_new::new)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    derive_getters::Getters,
+    derive_setters::Setters,
+    derive_new::new,
+)]
 #[setters(prefix = "with_")]
 pub struct ActExecution {
     /// Name of the act (from the narrative).
@@ -46,7 +55,16 @@ pub struct ActExecution {
 }
 
 /// Complete execution result for a narrative.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters, derive_new::new)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    derive_getters::Getters,
+    derive_setters::Setters,
+    derive_new::new,
+)]
 #[setters(prefix = "with_")]
 pub struct NarrativeExecution {
     /// Name of the narrative that was executed.

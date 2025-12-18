@@ -61,7 +61,16 @@ pub enum FinishReason {
 }
 
 /// Definition of a tool/function that the model can call.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    derive_getters::Getters,
+    derive_setters::Setters,
+)]
 #[setters(prefix = "with_")]
 pub struct ToolDefinition {
     /// Name of the tool/function
@@ -76,7 +85,16 @@ pub struct ToolDefinition {
 ///
 /// After the model requests a tool call, your application executes it
 /// and sends the result back using this structure.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    derive_getters::Getters,
+    derive_setters::Setters,
+)]
 #[setters(prefix = "with_")]
 pub struct ToolResult {
     /// ID matching the tool call this is responding to

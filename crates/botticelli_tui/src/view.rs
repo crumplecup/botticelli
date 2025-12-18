@@ -159,6 +159,7 @@ impl View for ChatView {
             (KeyCode::Char(c), KeyModifiers::NONE | KeyModifiers::SHIFT) => {
                 Ok(Some(Command::AppendChar(c)))
             }
+            (KeyCode::Char('l'), KeyModifiers::CONTROL) => Ok(Some(Command::ClearConversation)),
             (KeyCode::Char('c'), KeyModifiers::CONTROL) => Ok(Some(Command::Quit)),
             _ => Ok(None),
         }
@@ -298,6 +299,178 @@ impl View for NarrativeEditorView {
             (KeyCode::Char('s'), KeyModifiers::CONTROL) => Ok(Some(Command::SaveNarrative)),
             (KeyCode::Esc, KeyModifiers::NONE) => {
                 Ok(Some(Command::SwitchMode(crate::ViewMode::NarrativeBrowser)))
+            }
+            _ => Ok(None),
+        }
+    }
+}
+
+/// Conversation history browser view implementation.
+#[derive(Debug, Default)]
+pub struct ConversationHistoryView;
+
+impl View for ConversationHistoryView {
+    fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
+        use ratatui::layout::{Constraint, Direction, Layout};
+        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
+
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
+            .split(frame.area());
+
+        // Left panel: Conversation list
+        let conversation_ids = state.conversation_ids();
+        let items: Vec<ListItem> = conversation_ids
+            .iter()
+            .enumerate()
+            .map(|(idx, id)| {
+                let message_count = state
+                    .conversation_messages(id)
+                    .map(|msgs| msgs.len())
+                    .unwrap_or(0);
+
+                let content = format!("{} ({} messages)", id, message_count);
+
+                let style = if Some(idx) == state.selected_conversation_history() {
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default()
+                };
+
+                ListItem::new(content).style(style)
+            })
+            .collect();
+
+        let list = List::new(items)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Conversation History"),
+            )
+            .highlight_style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            );
+
+        frame.render_widget(list, chunks[0]);
+
+        // Right panel: Preview of selected conversation
+        let preview_text = if let Some(idx) = state.selected_conversation_history() {
+            if let Some(id) = conversation_ids.get(idx) {
+                if let Some(messages) = state.conversation_messages(id) {
+                    let mut lines = Vec::new();
+                    for msg in messages.iter().take(10) {
+                        match msg {
+                            crate::ChatMessage::User { content } => {
+                                lines.push(Line::from(vec![
+                                    Span::styled(
+                                        "You: ",
+                                        Style::default()
+                                            .fg(Color::Green)
+                                            .add_modifier(Modifier::BOLD),
+                                    ),
+                                    Span::raw(content),
+                                ]));
+                            }
+                            crate::ChatMessage::Assistant { content } => {
+                                lines.push(Line::from(vec![
+                                    Span::styled(
+                                        "Bot: ",
+                                        Style::default()
+                                            .fg(Color::Blue)
+                                            .add_modifier(Modifier::BOLD),
+                                    ),
+                                    Span::raw(content),
+                                ]));
+                            }
+                            crate::ChatMessage::ToolCall { tool_name, .. } => {
+                                lines.push(Line::from(vec![Span::styled(
+                                    format!("🔧 {}", tool_name),
+                                    Style::default().fg(Color::Cyan),
+                                )]));
+                            }
+                            crate::ChatMessage::ToolResult {
+                                tool_name, success, ..
+                            } => {
+                                let icon = if *success { "✅" } else { "❌" };
+                                lines.push(Line::from(vec![Span::styled(
+                                    format!("{} {}", icon, tool_name),
+                                    Style::default().fg(if *success {
+                                        Color::Green
+                                    } else {
+                                        Color::Red
+                                    }),
+                                )]));
+                            }
+                            crate::ChatMessage::Thinking { content } => {
+                                lines.push(Line::from(vec![Span::styled(
+                                    format!("💭 {}", content),
+                                    Style::default().fg(Color::Gray),
+                                )]));
+                            }
+                        }
+                    }
+
+                    if messages.len() > 10 {
+                        lines.push(Line::from(vec![Span::styled(
+                            format!("... ({} more messages)", messages.len() - 10),
+                            Style::default().fg(Color::Gray),
+                        )]));
+                    }
+
+                    lines
+                } else {
+                    vec![Line::from("No messages")]
+                }
+            } else {
+                vec![Line::from("No conversation selected")]
+            }
+        } else {
+            vec![Line::from("Select a conversation to preview")]
+        };
+
+        let preview = Paragraph::new(preview_text)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Preview (first 10 messages)"),
+            )
+            .wrap(Wrap { trim: true });
+
+        frame.render_widget(preview, chunks[1]);
+
+        Ok(())
+    }
+
+    fn handle_input(
+        &self,
+        key: crossterm::event::KeyEvent,
+        _state: &AppState,
+    ) -> TuiResult<Option<Command>> {
+        use crossterm::event::{KeyCode, KeyModifiers};
+
+        match (key.code, key.modifiers) {
+            (KeyCode::Char('c'), KeyModifiers::CONTROL) => Ok(Some(Command::Quit)),
+            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => Ok(Some(Command::NavigateUp)),
+            (KeyCode::Down | KeyCode::Char('j'), KeyModifiers::NONE) => {
+                Ok(Some(Command::NavigateDown))
+            }
+            (KeyCode::Enter, KeyModifiers::NONE) => {
+                // Load the selected conversation
+                Ok(Some(Command::SelectNarrative)) // We'll reuse this command
+            }
+            (KeyCode::Char('d'), KeyModifiers::NONE) => {
+                // Delete the selected conversation
+                Ok(Some(Command::ClearConversation)) // We'll handle this differently in the handler
+            }
+            (KeyCode::Esc, KeyModifiers::NONE) => {
+                Ok(Some(Command::SwitchMode(crate::ViewMode::Chat)))
             }
             _ => Ok(None),
         }

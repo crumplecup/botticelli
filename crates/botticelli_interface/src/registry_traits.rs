@@ -77,7 +77,11 @@ pub trait NarrativeStorageOperations: Send + Sync {
     async fn validate_narrative(&self, toml_content: &str) -> BotticelliResult<Value>;
 
     /// Parse narrative from TOML content.
-    async fn parse_narrative(&self, toml_content: &str, name_override: Option<&str>) -> BotticelliResult<Value>;
+    async fn parse_narrative(
+        &self,
+        toml_content: &str,
+        name_override: Option<&str>,
+    ) -> BotticelliResult<Value>;
 }
 
 /// Trait for elicitation (partial narrative) registry operations.
@@ -101,7 +105,7 @@ pub trait ElicitationRegistryOperations<T>: Send + Sync {
 
     /// Validate a narrative structure.
     fn validate_narrative(&self, id: &str) -> BotticelliResult<Value>;
-    
+
     /// List all narrative IDs in the registry.
     fn list_narrative_ids(&self) -> Vec<String>;
 }

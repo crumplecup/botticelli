@@ -23,8 +23,9 @@ async fn main() -> Result<()> {
     // Run the pmcp server
     run_pmcp_server(
         #[cfg(feature = "database")]
-        None,  // TODO: Load database configuration
-    ).await?;
+        None, // TODO: Load database configuration
+    )
+    .await?;
 
     Ok(())
 }

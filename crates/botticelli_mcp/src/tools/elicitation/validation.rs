@@ -85,7 +85,9 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialN
     let narrative_id = Uuid::parse_str(&input.narrative_id)
         .map_err(|e| McpError::invalid_input(format!("Invalid narrative_id: {}", e)))?;
 
-    let partial = registry.get_narrative(&narrative_id.to_string()).map_err(|e| McpError::execution_failed(e.to_string()))?;
+    let partial = registry
+        .get_narrative(&narrative_id.to_string())
+        .map_err(|e| McpError::execution_failed(e.to_string()))?;
 
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
@@ -241,7 +243,8 @@ pub async fn apply_validation_fixes<R: ElicitationRegistryOperations<crate::Part
             }
 
             Ok(())
-        }).map_err(|e| McpError::execution_failed(e.to_string()))?;
+        })
+        .map_err(|e| McpError::execution_failed(e.to_string()))?;
 
     let validation = validate_narrative(
         registry,

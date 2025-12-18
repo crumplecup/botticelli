@@ -223,12 +223,14 @@ impl BotticelliRouterBuilder {
         } else {
             // Create default registry with metrics
             let mut registry = ToolRegistry::with_metrics(Arc::clone(&metrics));
-            
+
             // Core utility tools
             registry.register(Arc::new(crate::tools::EchoTool));
             registry.register(Arc::new(crate::tools::ServerInfoTool));
-            registry.register(Arc::new(crate::tools::ExportMetricsTool::new(Arc::clone(&metrics))));
-            
+            registry.register(Arc::new(crate::tools::ExportMetricsTool::new(Arc::clone(
+                &metrics,
+            ))));
+
             // Narrative lifecycle tools
             registry.register(Arc::new(crate::tools::CreateNarrativeTool));
             registry.register(Arc::new(crate::tools::ModifyNarrativeTool));
@@ -237,46 +239,54 @@ impl BotticelliRouterBuilder {
             registry.register(Arc::new(crate::tools::GenerateTool));
             registry.register(Arc::new(crate::tools::ExecuteActTool::new()));
             registry.register(Arc::new(crate::tools::ExecuteNarrativeTool::new()));
-            
+
             // Elicitation tools
             let elicitation_registry = crate::tools::NarrativeRegistry::new();
-            registry.register(Arc::new(crate::tools::CreateNarrativeSessionTool::new(elicitation_registry.clone())));
-            registry.register(Arc::new(crate::tools::ElicitMetadataTool::new(elicitation_registry.clone())));
-            registry.register(Arc::new(crate::tools::ElicitActTool::new(elicitation_registry.clone())));
-            registry.register(Arc::new(crate::tools::FinalizeNarrativeTool::new(elicitation_registry)));
-            
+            registry.register(Arc::new(crate::tools::CreateNarrativeSessionTool::new(
+                elicitation_registry.clone(),
+            )));
+            registry.register(Arc::new(crate::tools::ElicitMetadataTool::new(
+                elicitation_registry.clone(),
+            )));
+            registry.register(Arc::new(crate::tools::ElicitActTool::new(
+                elicitation_registry.clone(),
+            )));
+            registry.register(Arc::new(crate::tools::FinalizeNarrativeTool::new(
+                elicitation_registry,
+            )));
+
             // LLM generation tools
             #[cfg(feature = "gemini")]
             if let Ok(tool) = crate::tools::GenerateGeminiTool::new() {
                 registry.register(Arc::new(tool));
             }
-            
+
             #[cfg(feature = "anthropic")]
             if let Ok(tool) = crate::tools::GenerateAnthropicTool::new() {
                 registry.register(Arc::new(tool));
             }
-            
+
             #[cfg(feature = "ollama")]
             if let Ok(tool) = crate::tools::GenerateOllamaTool::new() {
                 registry.register(Arc::new(tool));
             }
-            
+
             #[cfg(feature = "huggingface")]
             if let Ok(tool) = crate::tools::GenerateHuggingFaceTool::new() {
                 registry.register(Arc::new(tool));
             }
-            
+
             #[cfg(feature = "groq")]
             if let Ok(tool) = crate::tools::GenerateGroqTool::new() {
                 registry.register(Arc::new(tool));
             }
-            
+
             // Database tools
             #[cfg(feature = "database")]
             if let Some(db_ops) = self.db_ops {
                 registry.register(Arc::new(crate::tools::QueryContentTool::new(db_ops)));
             }
-            
+
             // Discord tools
             #[cfg(feature = "discord")]
             {
@@ -302,7 +312,7 @@ impl BotticelliRouterBuilder {
                     }
                 }
             }
-            
+
             registry
         };
 

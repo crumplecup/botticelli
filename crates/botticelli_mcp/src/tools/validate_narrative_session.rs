@@ -1,6 +1,5 @@
 use crate::tools::{
-    ApplyValidationFixesInput, McpTool, PartialNarrativeRegistry,
-    ValidateNarrativeInput,
+    ApplyValidationFixesInput, McpTool, PartialNarrativeRegistry, ValidateNarrativeInput,
 };
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
@@ -51,9 +50,11 @@ impl McpTool for ValidateNarrativeSessionTool {
     async fn execute(&self, input: Value) -> McpResult<Value> {
         let input: ValidateNarrativeInput =
             serde_json::from_value(input).map_err(|e| McpError::invalid_input(e.to_string()))?;
-        let output =
-            crate::tools::elicitation::validation::validate_narrative(self.registry.as_ref(), input)
-                .await?;
+        let output = crate::tools::elicitation::validation::validate_narrative(
+            self.registry.as_ref(),
+            input,
+        )
+        .await?;
         serde_json::to_value(output).map_err(|e| McpError::execution_failed(e.to_string()))
     }
 }

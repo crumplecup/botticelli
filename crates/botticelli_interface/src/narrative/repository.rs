@@ -122,7 +122,9 @@ impl ExecutionFilter {
 ///
 /// Used by `list_executions` to return metadata about executions without
 /// loading all the act data.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters, derive_new::new)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters, derive_new::new,
+)]
 pub struct ExecutionSummary {
     /// Unique execution ID
     pub id: i32,

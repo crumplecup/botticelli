@@ -3,7 +3,7 @@
 //! Tests the handoff between orchestrator and elicitation tools.
 //! Verifies partial narrative workflows and carousel generation.
 
-use botticelli_mcp_client::{register_internal_tools, UnifiedMcpClient};
+use botticelli_mcp_client::{UnifiedMcpClient, register_internal_tools};
 use serde_json::json;
 
 #[tokio::test]
@@ -28,8 +28,7 @@ async fn test_orchestrator_to_elicitation_boundary() {
     let text = result[0]["text"]
         .as_str()
         .expect("Should have text content");
-    let response: serde_json::Value =
-        serde_json::from_str(text).expect("Should be valid JSON");
+    let response: serde_json::Value = serde_json::from_str(text).expect("Should be valid JSON");
     assert!(
         response["session_id"].is_string(),
         "Should return session ID"
@@ -56,8 +55,7 @@ async fn test_carousel_generation_boundary() {
     let text = session_result[0]["text"]
         .as_str()
         .expect("Should have text content");
-    let response: serde_json::Value =
-        serde_json::from_str(text).expect("Should be valid JSON");
+    let response: serde_json::Value = serde_json::from_str(text).expect("Should be valid JSON");
     let session_id = response["session_id"]
         .as_str()
         .expect("Should have session_id")
@@ -78,7 +76,10 @@ async fn test_carousel_generation_boundary() {
 
     // Verify: Carousel ID is returned in text
     let text = result[0]["text"].as_str().expect("Should have text");
-    assert!(text.contains("Created carousel with ID"), "Should return carousel info");
+    assert!(
+        text.contains("Created carousel with ID"),
+        "Should return carousel info"
+    );
 }
 
 #[tokio::test]
@@ -100,8 +101,7 @@ async fn test_elicitation_state_transition_boundary() {
     let text = session_result[0]["text"]
         .as_str()
         .expect("Should have text content");
-    let response: serde_json::Value =
-        serde_json::from_str(text).expect("Should be valid JSON");
+    let response: serde_json::Value = serde_json::from_str(text).expect("Should be valid JSON");
     let session_id = response["session_id"]
         .as_str()
         .expect("Should have session_id")

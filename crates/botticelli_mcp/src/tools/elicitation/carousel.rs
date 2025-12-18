@@ -64,9 +64,7 @@ where
 {
     /// Creates a new carousel elicitation tool.
     pub fn new(registry: Arc<R>) -> Self {
-        Self {
-            registry,
-        }
+        Self { registry }
     }
 
     #[tracing::instrument(skip(self))]
@@ -74,27 +72,31 @@ where
         tracing::debug!("Creating carousel configuration");
 
         // Verify narrative exists
-        let _ = self.registry.get_narrative(&input.narrative_id).map_err(|e| McpError::execution_failed(e.to_string()))?;
+        let _ = self
+            .registry
+            .get_narrative(&input.narrative_id)
+            .map_err(|e| McpError::execution_failed(e.to_string()))?;
 
         // Create carousel config
         let carousel_config = CarouselConfig::new(
             input.iterations,
-            input.estimated_tokens_per_iteration.unwrap_or(1000) as u64
-        ).with_continue_on_error(input.continue_on_error);
+            input.estimated_tokens_per_iteration.unwrap_or(1000) as u64,
+        )
+        .with_continue_on_error(input.continue_on_error);
 
         // Calculate budget warnings if estimate provided
         let mut budget_warnings = Vec::new();
         if let Some(tokens_per_iter) = input.estimated_tokens_per_iteration {
             let total_estimated = tokens_per_iter * input.iterations;
             let budget_threshold = (total_estimated as f64 * input.budget_multiplier) as u32;
-            
+
             if total_estimated > 10_000 {
                 budget_warnings.push(format!(
                     "High token estimate: {} tokens across {} iterations",
                     total_estimated, input.iterations
                 ));
             }
-            
+
             if budget_threshold > 50_000 {
                 budget_warnings.push(format!(
                     "Budget threshold very high: {} tokens ({}x multiplier)",
@@ -104,25 +106,31 @@ where
         }
 
         // Update narrative with carousel config
-        self.registry.update_narrative(&input.narrative_id, |partial| {
-            match input.level {
-                CarouselLevel::Narrative => {
-                    partial.carousel = Some(carousel_config.clone());
-                }
-                CarouselLevel::Act => {
-                    let act_name = input.act_name.as_ref().ok_or_else(|| {
-                        botticelli_error::BotticelliError::from(McpError::invalid_input("act_name required for Act level carousel"))
-                    })?;
-                    
-                    if let Some(act) = partial.acts.get_mut(act_name) {
-                        act.carousel = Some(carousel_config.clone());
-                    } else {
-                        return Err(botticelli_error::BotticelliError::from(McpError::invalid_input(format!("Act '{}' not found", act_name))));
+        self.registry
+            .update_narrative(&input.narrative_id, |partial| {
+                match input.level {
+                    CarouselLevel::Narrative => {
+                        partial.carousel = Some(carousel_config.clone());
+                    }
+                    CarouselLevel::Act => {
+                        let act_name = input.act_name.as_ref().ok_or_else(|| {
+                            botticelli_error::BotticelliError::from(McpError::invalid_input(
+                                "act_name required for Act level carousel",
+                            ))
+                        })?;
+
+                        if let Some(act) = partial.acts.get_mut(act_name) {
+                            act.carousel = Some(carousel_config.clone());
+                        } else {
+                            return Err(botticelli_error::BotticelliError::from(
+                                McpError::invalid_input(format!("Act '{}' not found", act_name)),
+                            ));
+                        }
                     }
                 }
-            }
-            Ok(())
-        }).map_err(|e| McpError::execution_failed(e.to_string()))?;
+                Ok(())
+            })
+            .map_err(|e| McpError::execution_failed(e.to_string()))?;
 
         tracing::debug!(
             narrative_id = %input.narrative_id,
@@ -150,7 +158,9 @@ where
 }
 
 #[async_trait]
-impl<R: ElicitationRegistryOperations<crate::PartialNarrative> + Send + Sync> McpTool for ElicitCarouselTool<R> {
+impl<R: ElicitationRegistryOperations<crate::PartialNarrative> + Send + Sync> McpTool
+    for ElicitCarouselTool<R>
+{
     fn name(&self) -> &str {
         "elicit_carousel"
     }

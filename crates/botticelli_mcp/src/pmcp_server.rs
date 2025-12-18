@@ -15,7 +15,9 @@ use tracing::{info, instrument};
 /// Runs the PMCP-based MCP server.
 #[instrument(skip(db_ops))]
 pub async fn run_pmcp_server(
-    #[cfg(feature = "database")] db_ops: Option<std::sync::Arc<dyn botticelli_interface::DatabaseRegistryOperations>>,
+    #[cfg(feature = "database")] db_ops: Option<
+        std::sync::Arc<dyn botticelli_interface::DatabaseRegistryOperations>,
+    >,
 ) -> Result<()> {
     info!("Starting PMCP-based MCP server");
 
@@ -38,7 +40,10 @@ pub async fn run_pmcp_server(
     {
         use crate::tools::QueryContentTool;
         if let Some(ops) = db_ops {
-            builder = builder.tool("query_content", McpToolAdapter::new(QueryContentTool::new(ops)));
+            builder = builder.tool(
+                "query_content",
+                McpToolAdapter::new(QueryContentTool::new(ops)),
+            );
         }
     }
 
@@ -240,14 +245,18 @@ pub async fn run_pmcp_server(
                 }
             }
         } else {
-            tracing::info!("DISCORD_BOT_TOKEN not set, skipping discord_post and discord_bot_command tools");
+            tracing::info!(
+                "DISCORD_BOT_TOKEN not set, skipping discord_post and discord_bot_command tools"
+            );
         }
 
         // DiscordContentWorkflowTool requires ToolRegistry for orchestration
         // This creates a circular dependency - the workflow tool needs access to other tools
         // but we're still building the registry. This should be refactored to use
         // dependency injection or a two-phase initialization.
-        tracing::info!("Skipping discord_content_workflow tool (requires refactoring for tool dependencies)");
+        tracing::info!(
+            "Skipping discord_content_workflow tool (requires refactoring for tool dependencies)"
+        );
     }
 
     // Build the server

@@ -57,11 +57,13 @@ impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for Create
                 ))
             })?;
 
-        let name_override = args
-            .get("name")
-            .and_then(|v| v.as_str());
+        let name_override = args.get("name").and_then(|v| v.as_str());
 
-        match self.storage.parse_narrative(toml_content, name_override).await {
+        match self
+            .storage
+            .parse_narrative(toml_content, name_override)
+            .await
+        {
             Ok(narrative_data) => {
                 let result = json!({
                     "success": true,
@@ -76,9 +78,9 @@ impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for Create
             }
             Err(e) => {
                 tracing::error!(error = ?e, "Failed to parse narrative");
-                Err(McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
-                    format!("Parse error: {}", e),
-                )))
+                Err(McpClientError::new(
+                    McpClientErrorKind::ToolExecutionFailed(format!("Parse error: {}", e)),
+                ))
             }
         }
     }
@@ -120,9 +122,7 @@ impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for ListNa
     async fn execute(&self, args: Value) -> McpClientResult<Vec<Content>> {
         tracing::debug!("Listing narratives");
 
-        let pattern = args
-            .get("pattern")
-            .and_then(|v| v.as_str());
+        let pattern = args.get("pattern").and_then(|v| v.as_str());
 
         match self.storage.list_narratives(pattern).await {
             Ok(narratives) => {
@@ -141,9 +141,9 @@ impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for ListNa
             }
             Err(e) => {
                 tracing::error!(error = ?e, "Failed to list narratives");
-                Err(McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
-                    format!("List error: {}", e),
-                )))
+                Err(McpClientError::new(
+                    McpClientErrorKind::ToolExecutionFailed(format!("List error: {}", e)),
+                ))
             }
         }
     }
@@ -213,9 +213,9 @@ impl<S: botticelli_interface::NarrativeStorageOperations> ToolHandler for LoadNa
             }
             Err(e) => {
                 tracing::error!(error = ?e, file = %filename, "Failed to load narrative");
-                Err(McpClientError::new(McpClientErrorKind::ToolExecutionFailed(
-                    format!("Load error: {}", e),
-                )))
+                Err(McpClientError::new(
+                    McpClientErrorKind::ToolExecutionFailed(format!("Load error: {}", e)),
+                ))
             }
         }
     }

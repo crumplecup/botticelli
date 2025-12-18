@@ -38,6 +38,7 @@ mod elicitation_dialog;
 mod error;
 mod events;
 mod state;
+mod storage;
 mod tui;
 mod view;
 
@@ -48,4 +49,6 @@ pub use error::{TuiError, TuiErrorKind, TuiResult};
 pub use events::{Event, EventHandler, McpError, McpMessage, McpUpdate};
 pub use state::{AppState, ChatMessage, ConversationId, NarrativeId, TuiLlmBackend, ViewMode};
 pub use tui::Tui;
-pub use view::{ChatView, NarrativeBrowserView, NarrativeEditorView, View};
+pub use view::{
+    ChatView, ConversationHistoryView, NarrativeBrowserView, NarrativeEditorView, View,
+};

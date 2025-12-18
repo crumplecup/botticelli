@@ -26,11 +26,12 @@ impl FilesystemNarrativeStorage {
 impl NarrativeStorageOperations for FilesystemNarrativeStorage {
     #[tracing::instrument(skip(self), fields(pattern))]
     async fn list_narratives(&self, pattern: Option<&str>) -> BotticelliResult<Vec<String>> {
-        let mut entries = fs::read_dir(&self.narrative_dir)
-            .await
-            .map_err(|e| BotticelliError::from(botticelli_error::BackendError::new(
-                format!("Failed to read narrative directory: {}", e)
-            )))?;
+        let mut entries = fs::read_dir(&self.narrative_dir).await.map_err(|e| {
+            BotticelliError::from(botticelli_error::BackendError::new(format!(
+                "Failed to read narrative directory: {}",
+                e
+            )))
+        })?;
 
         let mut narratives = Vec::new();
 
@@ -57,12 +58,13 @@ impl NarrativeStorageOperations for FilesystemNarrativeStorage {
     #[tracing::instrument(skip(self), fields(filename))]
     async fn load_narrative(&self, filename: &str) -> BotticelliResult<Value> {
         let path = self.narrative_dir.join(filename);
-        
-        let toml_content = fs::read_to_string(&path)
-            .await
-            .map_err(|e| BotticelliError::from(botticelli_error::BackendError::new(
-                format!("Failed to read narrative file: {}", e)
-            )))?;
+
+        let toml_content = fs::read_to_string(&path).await.map_err(|e| {
+            BotticelliError::from(botticelli_error::BackendError::new(format!(
+                "Failed to read narrative file: {}",
+                e
+            )))
+        })?;
 
         self.parse_narrative(&toml_content, None).await
     }
@@ -70,10 +72,12 @@ impl NarrativeStorageOperations for FilesystemNarrativeStorage {
     #[tracing::instrument(skip(self, toml_content))]
     async fn validate_narrative(&self, toml_content: &str) -> BotticelliResult<Value> {
         // Parse as Narrative to validate structure
-        let narrative: crate::Narrative = toml_content.parse()
-            .map_err(|e: NarrativeError| BotticelliError::from(botticelli_error::BackendError::new(
-                format!("Invalid narrative TOML: {}", e)
-            )))?;
+        let narrative: crate::Narrative = toml_content.parse().map_err(|e: NarrativeError| {
+            BotticelliError::from(botticelli_error::BackendError::new(format!(
+                "Invalid narrative TOML: {}",
+                e
+            )))
+        })?;
 
         // Return validation result
         Ok(serde_json::json!({
@@ -92,21 +96,27 @@ impl NarrativeStorageOperations for FilesystemNarrativeStorage {
     ) -> BotticelliResult<Value> {
         // Parse using FromStr implementation
         let narrative: crate::Narrative = if let Some(name) = name_override {
-            crate::Narrative::from_toml_str(toml_content, Some(name))
-                .map_err(|e| BotticelliError::from(botticelli_error::BackendError::new(
-                    format!("Failed to parse narrative TOML: {}", e)
-                )))?
+            crate::Narrative::from_toml_str(toml_content, Some(name)).map_err(|e| {
+                BotticelliError::from(botticelli_error::BackendError::new(format!(
+                    "Failed to parse narrative TOML: {}",
+                    e
+                )))
+            })?
         } else {
-            toml_content.parse()
-                .map_err(|e: NarrativeError| BotticelliError::from(botticelli_error::BackendError::new(
-                    format!("Failed to parse narrative TOML: {}", e)
-                )))?
+            toml_content.parse().map_err(|e: NarrativeError| {
+                BotticelliError::from(botticelli_error::BackendError::new(format!(
+                    "Failed to parse narrative TOML: {}",
+                    e
+                )))
+            })?
         };
 
         // Convert to JSON for MCP response
-        serde_json::to_value(&narrative)
-            .map_err(|e| BotticelliError::from(botticelli_error::BackendError::new(
-                format!("Failed to serialize narrative: {}", e)
+        serde_json::to_value(&narrative).map_err(|e| {
+            BotticelliError::from(botticelli_error::BackendError::new(format!(
+                "Failed to serialize narrative: {}",
+                e
             )))
+        })
     }
 }

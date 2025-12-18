@@ -23,7 +23,9 @@ use tracing::{info, instrument, warn};
 /// This is the same server logic as stdio, but prepared for HTTP transport.
 #[instrument(skip(db_ops))]
 fn build_server(
-    #[cfg(feature = "database")] db_ops: Option<Arc<dyn botticelli_interface::DatabaseRegistryOperations>>,
+    #[cfg(feature = "database")] db_ops: Option<
+        Arc<dyn botticelli_interface::DatabaseRegistryOperations>,
+    >,
 ) -> Result<Server> {
     info!("Building MCP server for HTTP transport");
 
@@ -42,7 +44,10 @@ fn build_server(
     {
         use crate::tools::QueryContentTool;
         if let Some(ops) = db_ops {
-            builder = builder.tool("query_content", McpToolAdapter::new(QueryContentTool::new(ops)));
+            builder = builder.tool(
+                "query_content",
+                McpToolAdapter::new(QueryContentTool::new(ops)),
+            );
         }
     }
 
@@ -191,7 +196,9 @@ fn build_server(
 pub async fn run_pmcp_http_server(
     host: &str,
     port: u16,
-    #[cfg(feature = "database")] db_ops: Option<Arc<dyn botticelli_interface::DatabaseRegistryOperations>>,
+    #[cfg(feature = "database")] db_ops: Option<
+        Arc<dyn botticelli_interface::DatabaseRegistryOperations>,
+    >,
 ) -> Result<()> {
     info!("Starting PMCP HTTP server on {}:{}", host, port);
 

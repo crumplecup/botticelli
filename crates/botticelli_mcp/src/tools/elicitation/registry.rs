@@ -1,7 +1,7 @@
 //! Registry for managing active narrative creation sessions.
 
-use botticelli_interface::RegistryOperations;
 use botticelli_error::{McpError, McpResult};
+use botticelli_interface::RegistryOperations;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
@@ -62,8 +62,7 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
     ///
     /// Returns error if narrative doesn't exist or update fails.
     #[tracing::instrument(skip(self, args))]
-    pub fn update(&self, key: &str, args: serde_json::Value) -> McpResult<()>
-    {
+    pub fn update(&self, key: &str, args: serde_json::Value) -> McpResult<()> {
         let mut narratives = self.narratives.write().expect("Registry lock poisoned");
 
         let narrative = narratives
@@ -117,7 +116,7 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
         let narrative = narratives
             .get_mut(key)
             .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", key)))?;
-        
+
         update_fn(narrative)
     }
 
@@ -182,10 +181,13 @@ where
         F: FnOnce(&mut T) -> botticelli_error::BotticelliResult<()>,
     {
         let mut narratives = self.narratives.write().expect("Registry lock poisoned");
-        let narrative = narratives
-            .get_mut(id)
-            .ok_or_else(|| botticelli_error::BotticelliError::from(McpError::invalid_input(format!("Narrative {} not found", id))))?;
-        
+        let narrative = narratives.get_mut(id).ok_or_else(|| {
+            botticelli_error::BotticelliError::from(McpError::invalid_input(format!(
+                "Narrative {} not found",
+                id
+            )))
+        })?;
+
         updater(narrative)
     }
 
@@ -197,14 +199,23 @@ where
         self.add(narrative)
     }
 
-    fn get_narrative_state(&self, id: &str) -> botticelli_error::BotticelliResult<serde_json::Value> {
-        let narrative: T = self.get(id).map_err(|e: McpError| botticelli_error::BotticelliError::from(e))?;
+    fn get_narrative_state(
+        &self,
+        id: &str,
+    ) -> botticelli_error::BotticelliResult<serde_json::Value> {
+        let narrative: T = self
+            .get(id)
+            .map_err(|e: McpError| botticelli_error::BotticelliError::from(e))?;
         // Convert narrative to JSON for state representation
-        serde_json::to_value(&narrative)
-            .map_err(|e| botticelli_error::BotticelliError::from(McpError::execution_failed(e.to_string())))
+        serde_json::to_value(&narrative).map_err(|e| {
+            botticelli_error::BotticelliError::from(McpError::execution_failed(e.to_string()))
+        })
     }
 
-    fn validate_narrative(&self, _id: &str) -> botticelli_error::BotticelliResult<serde_json::Value> {
+    fn validate_narrative(
+        &self,
+        _id: &str,
+    ) -> botticelli_error::BotticelliResult<serde_json::Value> {
         // TODO: Implement proper validation
         Ok(serde_json::json!({
             "valid": true

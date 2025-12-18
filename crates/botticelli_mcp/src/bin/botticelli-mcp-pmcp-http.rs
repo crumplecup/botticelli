@@ -37,8 +37,9 @@ async fn main() -> Result<()> {
             &host,
             port,
             #[cfg(feature = "database")]
-            None,  // TODO: Load database configuration
-        ).await?;
+            None, // TODO: Load database configuration
+        )
+        .await?;
     }
 
     #[cfg(not(feature = "streamable-http"))]
@@ -48,8 +49,9 @@ async fn main() -> Result<()> {
         tracing::info!("To enable HTTP: cargo build --features streamable-http");
         run_pmcp_server(
             #[cfg(feature = "database")]
-            None,  // TODO: Load database configuration
-        ).await?;
+            None, // TODO: Load database configuration
+        )
+        .await?;
     }
 
     Ok(())

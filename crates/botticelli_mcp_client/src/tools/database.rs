@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use botticelli_database::table_exists;
 use botticelli_interface::DatabaseRegistryOperations;
 use pmcp::{Content, ToolInfo};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use crate::{McpClientError, McpClientErrorKind, ToolHandler};
 
@@ -55,20 +55,30 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for CreateTableToo
     }
 
     async fn execute(&self, input: Value) -> Result<Vec<Content>, McpClientError> {
-        let table_name = input["table_name"]
-            .as_str()
-            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
-        
-        let template_source = input["template_source"]
-            .as_str()
-            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing template_source".to_string())))?;
-        
+        let table_name = input["table_name"].as_str().ok_or_else(|| {
+            McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                "Missing table_name".to_string(),
+            ))
+        })?;
+
+        let template_source = input["template_source"].as_str().ok_or_else(|| {
+            McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                "Missing template_source".to_string(),
+            ))
+        })?;
+
         let narrative_file = input["narrative_file"].as_str();
         let description = input["description"].as_str();
 
-        self.db_ops.create_table(table_name, template_source, narrative_file, description)
+        self.db_ops
+            .create_table(table_name, template_source, narrative_file, description)
             .await
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Table creation error: {}", e))))?;
+            .map_err(|e| {
+                McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!(
+                    "Table creation error: {}",
+                    e
+                )))
+            })?;
 
         let result = json!({
             "success": true,
@@ -76,7 +86,9 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for CreateTableToo
             "message": format!("Table '{}' created successfully", table_name)
         });
 
-        Ok(vec![Content::Text { text: result.to_string() }])
+        Ok(vec![Content::Text {
+            text: result.to_string(),
+        }])
     }
 }
 
@@ -122,15 +134,24 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for QueryTableTool
     }
 
     async fn execute(&self, input: Value) -> Result<Vec<Content>, McpClientError> {
-        let table_name = input["table_name"]
-            .as_str()
-            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
+        let table_name = input["table_name"].as_str().ok_or_else(|| {
+            McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                "Missing table_name".to_string(),
+            ))
+        })?;
         let limit = input["limit"].as_i64().unwrap_or(100);
         let status_filter = input["status_filter"].as_str();
 
-        let rows = self.db_ops.query_content(table_name, status_filter, limit)
+        let rows = self
+            .db_ops
+            .query_content(table_name, status_filter, limit)
             .await
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Query error: {}", e))))?;
+            .map_err(|e| {
+                McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!(
+                    "Query error: {}",
+                    e
+                )))
+            })?;
 
         let result = json!({
             "success": true,
@@ -139,7 +160,9 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for QueryTableTool
             "rows": rows
         });
 
-        Ok(vec![Content::Text { text: result.to_string() }])
+        Ok(vec![Content::Text {
+            text: result.to_string(),
+        }])
     }
 }
 
@@ -180,13 +203,18 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for InspectTableTo
     }
 
     async fn execute(&self, input: Value) -> Result<Vec<Content>, McpClientError> {
-        let table_name = input["table_name"]
-            .as_str()
-            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
+        let table_name = input["table_name"].as_str().ok_or_else(|| {
+            McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                "Missing table_name".to_string(),
+            ))
+        })?;
 
-        let schema = self.db_ops.get_schema(table_name)
-            .await
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Schema reflection error: {}", e))))?;
+        let schema = self.db_ops.get_schema(table_name).await.map_err(|e| {
+            McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!(
+                "Schema reflection error: {}",
+                e
+            )))
+        })?;
 
         let result = json!({
             "success": true,
@@ -194,7 +222,9 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for InspectTableTo
             "schema": schema
         });
 
-        Ok(vec![Content::Text { text: result.to_string() }])
+        Ok(vec![Content::Text {
+            text: result.to_string(),
+        }])
     }
 }
 
@@ -234,18 +264,26 @@ impl<D: DatabaseRegistryOperations + Send + Sync> ToolHandler for TableExistsToo
     }
 
     async fn execute(&self, input: Value) -> Result<Vec<Content>, McpClientError> {
-        let table_name = input["table_name"]
-            .as_str()
-            .ok_or_else(|| McpClientError::new(McpClientErrorKind::InvalidToolCall("Missing table_name".to_string())))?;
+        let table_name = input["table_name"].as_str().ok_or_else(|| {
+            McpClientError::new(McpClientErrorKind::InvalidToolCall(
+                "Missing table_name".to_string(),
+            ))
+        })?;
 
-        let exists = self.db_ops.table_exists(table_name).await
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!("Table check error: {}", e))))?;
+        let exists = self.db_ops.table_exists(table_name).await.map_err(|e| {
+            McpClientError::new(McpClientErrorKind::ToolExecutionFailed(format!(
+                "Table check error: {}",
+                e
+            )))
+        })?;
 
         let result = json!({
             "exists": exists,
             "table_name": table_name
         });
 
-        Ok(vec![Content::Text { text: result.to_string() }])
+        Ok(vec![Content::Text {
+            text: result.to_string(),
+        }])
     }
 }

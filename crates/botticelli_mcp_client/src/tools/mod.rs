@@ -24,9 +24,9 @@ pub use elicitation::{
 pub use narrative::{
     CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool,
 };
-pub use registry::register_internal_tools;
 #[cfg(feature = "database")]
 pub use registry::register_database_tools;
+pub use registry::register_internal_tools;
 pub use registry_ops::{
     GenericRegistry, GetRegistryItemTool, ListRegistryKeysTool, UpsertRegistryItemTool,
 };

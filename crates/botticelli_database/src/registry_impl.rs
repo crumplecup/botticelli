@@ -41,10 +41,12 @@ impl RegistryOperations for ActorRow {
         let name = args
             .get("name")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::new(McpErrorKind::InvalidArguments {
-                tool: "ActorRow".to_string(),
-                reason: "Missing 'name'".to_string(),
-            }))?
+            .ok_or_else(|| {
+                McpError::new(McpErrorKind::InvalidArguments {
+                    tool: "ActorRow".to_string(),
+                    reason: "Missing 'name'".to_string(),
+                })
+            })?
             .to_string();
 
         let description = args
@@ -60,7 +62,8 @@ impl RegistryOperations for ActorRow {
     }
 
     fn to_json(&self) -> McpResult<Value> {
-        serde_json::to_value(self).map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())))
+        serde_json::to_value(self)
+            .map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())))
     }
 
     fn update_from_json(&mut self, args: Value) -> McpResult<()> {
@@ -112,19 +115,23 @@ impl RegistryOperations for ContentEntry {
         let title = args
             .get("title")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::new(McpErrorKind::InvalidArguments {
-                tool: "ContentEntry".to_string(),
-                reason: "Missing 'title'".to_string(),
-            }))?
+            .ok_or_else(|| {
+                McpError::new(McpErrorKind::InvalidArguments {
+                    tool: "ContentEntry".to_string(),
+                    reason: "Missing 'title'".to_string(),
+                })
+            })?
             .to_string();
 
         let content_type = args
             .get("content_type")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::new(McpErrorKind::InvalidArguments {
-                tool: "ContentEntry".to_string(),
-                reason: "Missing 'content_type'".to_string(),
-            }))?
+            .ok_or_else(|| {
+                McpError::new(McpErrorKind::InvalidArguments {
+                    tool: "ContentEntry".to_string(),
+                    reason: "Missing 'content_type'".to_string(),
+                })
+            })?
             .to_string();
 
         let data = args
@@ -141,7 +148,8 @@ impl RegistryOperations for ContentEntry {
     }
 
     fn to_json(&self) -> McpResult<Value> {
-        serde_json::to_value(self).map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())))
+        serde_json::to_value(self)
+            .map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())))
     }
 
     fn update_from_json(&mut self, args: Value) -> McpResult<()> {

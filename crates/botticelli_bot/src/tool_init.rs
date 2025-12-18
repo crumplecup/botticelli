@@ -8,9 +8,8 @@
 
 use botticelli_mcp_client::{
     CreateCarouselTool, CreateElicitationSessionTool, CreateNarrativeTool, ElicitActTool,
-    ElicitMetadataTool, ElicitationRegistry, ExecuteCarouselTool,
-    FinalizeElicitationTool, ListNarrativesTool, LoadNarrativeTool, ToolRegistry,
-    ValidateNarrativeTool,
+    ElicitMetadataTool, ElicitationRegistry, ExecuteCarouselTool, FinalizeElicitationTool,
+    ListNarrativesTool, LoadNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
 use botticelli_narrative::FilesystemNarrativeStorage;
 use std::sync::Arc;
@@ -167,9 +166,7 @@ mod tests {
         assert!(tools.iter().any(|t| t.name == "validate_narrative"));
 
         // Check elicitation tools present
-        assert!(tools
-            .iter()
-            .any(|t| t.name == "create_elicitation_session"));
+        assert!(tools.iter().any(|t| t.name == "create_elicitation_session"));
         assert!(tools.iter().any(|t| t.name == "elicit_metadata"));
         assert!(tools.iter().any(|t| t.name == "elicit_act"));
         assert!(tools.iter().any(|t| t.name == "create_carousel"));

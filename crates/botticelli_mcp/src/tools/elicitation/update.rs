@@ -1,5 +1,5 @@
-use botticelli_error::{McpError, McpResult};
 use crate::tools::elicitation::PartialNarrativeRegistry;
+use botticelli_error::{McpError, McpResult};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -55,21 +55,20 @@ pub async fn update_narrative_field(
     let mut updated_fields = Vec::new();
     let mut errors = Vec::new();
 
-    registry
-        .update_narrative(&narrative_id.to_string(), |partial| {
-            for update in &updates {
-                match apply_field_update(partial, &update.path, &update.value) {
-                    Ok(()) => {
-                        updated_fields.push(update.path.clone());
-                        tracing::debug!(field = %update.path, "Updated field");
-                    }
-                    Err(e) => {
-                        errors.push(format!("Failed to update '{}': {}", update.path, e));
-                    }
+    registry.update_narrative(&narrative_id.to_string(), |partial| {
+        for update in &updates {
+            match apply_field_update(partial, &update.path, &update.value) {
+                Ok(()) => {
+                    updated_fields.push(update.path.clone());
+                    tracing::debug!(field = %update.path, "Updated field");
+                }
+                Err(e) => {
+                    errors.push(format!("Failed to update '{}': {}", update.path, e));
                 }
             }
-            Ok(())
-        })?;
+        }
+        Ok(())
+    })?;
 
     Ok(UpdateNarrativeFieldOutput {
         success: errors.is_empty(),

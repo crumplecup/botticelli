@@ -1,8 +1,8 @@
 //! Partial narrative state during elicitation.
 
 use botticelli_core::Input;
-use botticelli_narrative::CarouselConfig;
 use botticelli_interface::RegistryOperations;
+use botticelli_narrative::CarouselConfig;
 use derive_builder::Builder;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};

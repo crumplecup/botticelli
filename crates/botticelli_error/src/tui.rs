@@ -21,6 +21,9 @@ pub enum TuiErrorKind {
     /// Database operation failed
     #[display("Database error: {}", _0)]
     Database(String),
+    /// Conversation storage operation failed
+    #[display("Storage error: {}", _0)]
+    Storage(String),
 }
 
 /// TUI error with source location tracking.

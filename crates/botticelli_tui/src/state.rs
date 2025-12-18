@@ -10,7 +10,7 @@ use botticelli_mcp_client::{
 };
 use botticelli_narrative::FilesystemNarrativeStorage;
 use pmcp::{Content, ToolInfo};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 /// Simple LlmBackend adapter for BotticelliDriver.
@@ -126,6 +126,8 @@ pub struct AppState {
     narrative_list: Vec<String>,
     /// Selected narrative index in browser.
     selected_narrative: Option<usize>,
+    /// Selected conversation index in history browser.
+    selected_conversation_history: Option<usize>,
     /// Editor content buffer.
     editor_content: String,
     /// MCP client for tool execution (optional).
@@ -134,6 +136,8 @@ pub struct AppState {
     llm_backend: Option<Arc<TuiLlmBackend>>,
     /// Channel to send MCP updates to UI thread.
     mcp_channel: Option<tokio::sync::mpsc::UnboundedSender<crate::McpMessage>>,
+    /// Conversation storage for persistence.
+    storage: crate::storage::ConversationStorage,
 }
 
 impl std::fmt::Debug for AppState {
@@ -185,8 +189,35 @@ impl AppState {
     }
 
     /// Updates messages for a conversation.
+    ///
+    /// Automatically saves the conversation to disk.
     pub fn update_conversation(&mut self, id: ConversationId, messages: Vec<ChatMessage>) {
-        self.conversations.insert(id, messages);
+        self.conversations.insert(id, messages.clone());
+
+        // Auto-save to disk
+        if let Err(e) = self.storage.save(&id, &messages) {
+            error!(conversation_id = %id, error = %e, "Failed to save conversation");
+        }
+    }
+
+    /// Clears the current conversation.
+    ///
+    /// This removes the conversation from the conversations map and resets the current
+    /// conversation ID to None. The input buffer is also cleared. The conversation is also
+    /// deleted from disk.
+    pub fn clear_conversation(&mut self) {
+        if let Some(conv_id) = self.current_conversation {
+            self.conversations.remove(&conv_id);
+
+            // Delete from disk
+            if let Err(e) = self.storage.delete(&conv_id) {
+                error!(conversation_id = %conv_id, error = %e, "Failed to delete conversation from disk");
+            }
+
+            info!(conversation_id = %conv_id, "Cleared conversation");
+        }
+        self.current_conversation = None;
+        self.clear_input();
     }
 
     /// Gets the input buffer.
@@ -256,6 +287,49 @@ impl AppState {
         }
     }
 
+    /// Gets a sorted list of conversation IDs.
+    pub fn conversation_ids(&self) -> Vec<ConversationId> {
+        let mut ids: Vec<_> = self.conversations.keys().copied().collect();
+        ids.sort();
+        ids
+    }
+
+    /// Gets the selected conversation index in history browser.
+    pub fn selected_conversation_history(&self) -> Option<usize> {
+        self.selected_conversation_history
+    }
+
+    /// Sets the selected conversation index in history browser.
+    pub fn set_selected_conversation_history(&mut self, idx: Option<usize>) {
+        self.selected_conversation_history = idx;
+    }
+
+    /// Moves selection up in conversation history browser.
+    pub fn select_previous_conversation_history(&mut self) {
+        if let Some(idx) = self.selected_conversation_history {
+            if idx > 0 {
+                self.selected_conversation_history = Some(idx - 1);
+            }
+        } else {
+            let count = self.conversations.len();
+            if count > 0 {
+                self.selected_conversation_history = Some(0);
+            }
+        }
+    }
+
+    /// Moves selection down in conversation history browser.
+    pub fn select_next_conversation_history(&mut self) {
+        let count = self.conversations.len();
+        if let Some(idx) = self.selected_conversation_history {
+            if idx < count.saturating_sub(1) {
+                self.selected_conversation_history = Some(idx + 1);
+            }
+        } else if count > 0 {
+            self.selected_conversation_history = Some(0);
+        }
+    }
+
     /// Gets the editor content.
     pub fn editor_content(&self) -> &str {
         &self.editor_content
@@ -275,6 +349,7 @@ impl AppState {
     pub fn current_view(&self) -> &dyn crate::View {
         match self.mode {
             ViewMode::Chat => &crate::ChatView,
+            ViewMode::ConversationHistory => &crate::ConversationHistoryView,
             ViewMode::NarrativeBrowser => &crate::NarrativeBrowserView,
             ViewMode::NarrativeEditor => &crate::NarrativeEditorView,
             ViewMode::Settings => &crate::ChatView, // Placeholder
@@ -309,6 +384,10 @@ impl AppState {
                         // Use the dedicated orchestration method
                         let user_message = self.input_buffer.clone();
                         self.send_message_with_orchestration(user_message)?;
+                    }
+                    ViewMode::ConversationHistory => {
+                        // In conversation history, Enter loads conversation
+                        // This is handled by SelectNarrative command
                     }
                     ViewMode::NarrativeEditor => {
                         // In editor, Enter adds newline
@@ -369,6 +448,8 @@ impl AppState {
 pub enum ViewMode {
     /// Chat interface.
     Chat,
+    /// Conversation history browser.
+    ConversationHistory,
     /// Narrative browser.
     NarrativeBrowser,
     /// Narrative editor.
@@ -379,18 +460,29 @@ pub enum ViewMode {
 
 impl Default for AppState {
     fn default() -> Self {
+        // Initialize storage and load conversations
+        let storage = crate::storage::ConversationStorage::new()
+            .expect("Failed to initialize conversation storage");
+
+        let conversations = storage.load_all().unwrap_or_else(|e| {
+            warn!(error = %e, "Failed to load conversations, starting fresh");
+            HashMap::new()
+        });
+
         Self {
             mode: ViewMode::Chat,
             current_conversation: None,
             current_narrative: None,
-            conversations: HashMap::new(),
+            conversations,
             input_buffer: String::new(),
             narrative_list: Vec::new(),
             selected_narrative: None,
+            selected_conversation_history: None,
             editor_content: String::new(),
             mcp_client: None,
             llm_backend: None,
             mcp_channel: None,
+            storage,
         }
     }
 }
@@ -545,9 +637,9 @@ impl AppState {
 
         // User message should already be there (added by send_message_with_orchestration)
         // If not (e.g., for error recovery), add it
-        if !messages.iter().any(|msg| {
-            matches!(msg, ChatMessage::User { content } if content == &update.user_message)
-        }) {
+        if !messages.iter().any(
+            |msg| matches!(msg, ChatMessage::User { content } if content == &update.user_message),
+        ) {
             messages.push(ChatMessage::user(update.user_message));
         }
 
@@ -599,9 +691,9 @@ impl AppState {
 
         // User message should already be there (added by send_message_with_orchestration)
         // If not (e.g., for error recovery), add it
-        if !messages.iter().any(|msg| {
-            matches!(msg, ChatMessage::User { content } if content == &error.user_message)
-        }) {
+        if !messages.iter().any(
+            |msg| matches!(msg, ChatMessage::User { content } if content == &error.user_message),
+        ) {
             messages.push(ChatMessage::user(error.user_message));
         }
 
@@ -626,7 +718,10 @@ impl AppState {
     /// 4. Sends result + user message to UI via mcp_channel
     /// 5. handle_mcp_update adds all messages to conversation atomically
     #[tracing::instrument(skip(self), fields(message_len = user_message.len()))]
-    pub fn send_message_with_orchestration(&mut self, user_message: String) -> crate::TuiResult<()> {
+    pub fn send_message_with_orchestration(
+        &mut self,
+        user_message: String,
+    ) -> crate::TuiResult<()> {
         if user_message.is_empty() {
             return Ok(());
         }
@@ -660,7 +755,7 @@ impl AppState {
                             .build()
                             .ok()?,
                     ),
-                    ChatMessage::Assistant { content} => Some(
+                    ChatMessage::Assistant { content } => Some(
                         CoreMessage::builder()
                             .role(Role::Assistant)
                             .content(vec![CoreInput::Text(content.clone())])
@@ -722,11 +817,13 @@ impl AppState {
                             error!(error = %e, "MCP execution failed");
 
                             // Send error to UI thread
-                            if let Err(send_err) = tx.send(crate::McpMessage::Error(crate::McpError {
-                                conversation_id: conv_id,
-                                user_message: user_msg,
-                                error: format!("{}", e),
-                            })) {
+                            if let Err(send_err) =
+                                tx.send(crate::McpMessage::Error(crate::McpError {
+                                    conversation_id: conv_id,
+                                    user_message: user_msg,
+                                    error: format!("{}", e),
+                                }))
+                            {
                                 error!(error = %send_err, "Failed to send MCP error to UI");
                             }
                         }
@@ -757,7 +854,7 @@ impl AppState {
 }
 
 /// A chat message for display.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum ChatMessage {
     /// User message.
     User {

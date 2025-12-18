@@ -1,6 +1,4 @@
-use crate::tools::{
-    GetNarrativeStateInput, McpTool, PartialNarrativeRegistry,
-};
+use crate::tools::{GetNarrativeStateInput, McpTool, PartialNarrativeRegistry};
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
 use serde_json::{json, Value};
