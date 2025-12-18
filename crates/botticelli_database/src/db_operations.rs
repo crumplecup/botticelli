@@ -75,8 +75,7 @@ impl DatabaseRegistryOperations for DbOperationsImpl {
             ))
         })?;
 
-        Self::execute_raw_query_sync(&mut conn, query).map_err(Into::into)
-    }
+        Self::execute_raw_query_sync(&mut conn, query)}
 
     async fn list_tables(&self) -> BotticelliResult<Vec<String>> {
         let mut conn = self.pool.get().map_err(|e| {
@@ -85,8 +84,7 @@ impl DatabaseRegistryOperations for DbOperationsImpl {
             ))
         })?;
 
-        Self::list_tables_sync(&mut conn).map_err(Into::into)
-    }
+        Self::list_tables_sync(&mut conn)}
 
     async fn get_schema(&self, table: &str) -> BotticelliResult<Value> {
         let mut conn = self.pool.get().map_err(|e| {

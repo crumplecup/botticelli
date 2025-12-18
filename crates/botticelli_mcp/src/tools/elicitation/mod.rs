@@ -5,7 +5,6 @@ mod helpers;
 pub mod registry;
 mod session_tools;
 pub mod state;
-mod update;
 pub mod validation;
 
 pub use carousel::ElicitCarouselTool;
