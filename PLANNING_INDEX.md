@@ -454,3 +454,27 @@ This index tracks all planning documents in the workspace. When documents are co
   - 9/9 tests passing, full documentation
   - Use cases: filesystem, git, search, mixed internal/external
   - Status: ✅ COMPLETE - Production ready, merged to dev
+
+- **ARCHITECTURAL_GAPS_RESOLUTION_PLAN_V2.md** - `current` (2025-12-18) **⚡ CRITICAL PRIORITY**
+  - Fix critical gaps preventing tool calling from working end-to-end
+  - **Strategy**: Add tools field to GenerateRequest (no separate ToolUse trait)
+  - Move ToolDefinition to botticelli_core
+  - Each driver handles tools in existing generate() method
+  - Phase 1: Core types (4 tasks) - ToolDefinition, GenerateRequest.tools field
+  - Phase 2: Anthropic implementation (5 tasks) - AnthropicTool, request/response, conversion
+  - Phase 3: TuiLlmBackend fix (1 task) - Pass tools in request
+  - Phase 4: Other providers (3 tasks) - Gemini, Ollama, docs
+  - Phase 5: Testing (2 tasks) - E2E test, manual checklist
+  - Phase 6: Cleanup (3 tasks) - Remove ToolUse trait, update docs
+  - Estimated effort: 4-6 focused sessions
+  - Status: 🔴 Active - Not Started | **BLOCKS ALL TOOL CALLING FUNCTIONALITY**
+
+- **ARCHITECTURAL_GAPS_RESOLUTION_PLAN.md** - `superseded` (2025-12-18)
+  - Original plan using separate ToolUse trait
+  - Status: ❌ SUPERSEDED by V2 - Wrong abstraction (parallel trait hierarchy)
+
+- **LLM_FALLBACK_IMPLEMENTATION_PLAN.md** - `superseded` (2025-12-18)
+  - Original plan for LLM provider fallback system
+  - Status: ❌ DEFERRED - Inaccurate file paths, assumes working tool calling
+  - Decision: Implement after ARCHITECTURAL_GAPS_RESOLUTION_PLAN.md complete
+  - Requires multi-provider architecture refactor first
