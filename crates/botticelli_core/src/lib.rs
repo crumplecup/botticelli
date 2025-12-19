@@ -14,6 +14,7 @@ mod output;
 mod provider;
 mod request;
 mod role;
+mod tool_definition;
 mod token_counting;
 mod token_usage;
 
@@ -32,5 +33,6 @@ pub use request::{
     GenerateResponseBuilderError,
 };
 pub use role::Role;
+pub use tool_definition::ToolDefinition;
 pub use token_counting::{TokenUsage, get_tokenizer};
 pub use token_usage::{TokenUsageData, TokenUsageDataBuilder};

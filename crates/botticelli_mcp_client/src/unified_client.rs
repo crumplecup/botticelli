@@ -4,10 +4,9 @@ use crate::approval::ApprovalManager;
 use crate::external_client::{ExternalMcpClient, ExternalServerConfig};
 use crate::metrics::McpClientMetrics;
 use crate::retry::RetryConfig;
-use crate::tool_definition::ToolDefinition;
 use crate::tool_registry::ToolRegistry;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
-use botticelli_core::{Input, Message, Role};
+use botticelli_core::{Input, Message, Role, ToolDefinition};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Instant;
@@ -114,11 +113,11 @@ impl UnifiedMcpClient {
 
         // Add internal tools from registry
         for tool_info in self.internal_registry.list_tools() {
-            tools.push(ToolDefinition {
-                name: tool_info.name.clone(),
-                description: tool_info.description.clone().unwrap_or_default(),
-                input_schema: tool_info.input_schema.clone(),
-            });
+            tools.push(ToolDefinition::new(
+                tool_info.name.clone(),
+                tool_info.description.clone().unwrap_or_default(),
+                tool_info.input_schema.clone(),
+            ));
         }
 
         // Add external tools

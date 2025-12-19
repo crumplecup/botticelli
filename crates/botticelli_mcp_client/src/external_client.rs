@@ -4,8 +4,8 @@
 //! MCP servers like filesystem, git, search, etc.
 
 use crate::retry::{RetryConfig, RetryState};
-use crate::tool_definition::ToolDefinition;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
+use botticelli_core::ToolDefinition;
 use pmcp::types::TransportMessage;
 use pmcp::{Client, ClientCapabilities, Transport};
 use serde_json::Value;
@@ -194,15 +194,15 @@ impl ExternalMcpClient {
         let tools: Vec<ToolDefinition> = tools_result
             .tools
             .into_iter()
-            .map(|t| ToolDefinition {
-                name: t.name,
-                description: t.description.unwrap_or_default(),
-                input_schema: t.input_schema,
-            })
+            .map(|t| ToolDefinition::new(
+                t.name,
+                t.description.unwrap_or_default(),
+                t.input_schema,
+            ))
             .collect();
 
         for tool in &tools {
-            tracing::debug!("  - {} ({})", tool.name, tool.description);
+            tracing::debug!("  - {} ({})", tool.name(), tool.description());
         }
 
         Ok(Self {
@@ -246,7 +246,7 @@ impl ExternalMcpClient {
             return false;
         }
 
-        self.tools.iter().any(|t| t.name == tool_name)
+        self.tools.iter().any(|t| t.name() == tool_name)
     }
 
     /// Call a tool on the external server with retry logic.
