@@ -3,7 +3,7 @@
 //! Interactive chat interface for directing botticelli operations.
 
 use botticelli_chat::{ChatAppConfig, EnvironmentMode};
-use botticelli_mcp_client::{ExternalServerConfig, UnifiedMcpClient, register_internal_tools};
+use botticelli_mcp_client::{UnifiedMcpClient, register_internal_tools};
 use clap::Parser;
 use std::path::PathBuf;
 use tracing::{info, warn};

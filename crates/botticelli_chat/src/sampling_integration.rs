@@ -85,6 +85,11 @@ impl SamplingIntegration {
             })
     }
 
+    /// Access to chat session for conversation tracking.
+    pub fn chat_session(&self) -> &Arc<RwLock<ChatSession>> {
+        &self.chat_session
+    }
+
     /// Start interactive narrative creation with guided elicitation.
     #[instrument(skip(self))]
     pub async fn create_interactive(&self) -> ChatResult<PartialNarrative> {

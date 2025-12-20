@@ -17,21 +17,9 @@ pub enum TuiCommand {
 
     /// Modal commands
     OpenModal(Modal),
-    CloseModal,
-
-    /// Action commands
-    ExecuteAction(Action),
-
-    /// File operations
-    OpenFile(PathBuf),
-    SaveFile {
-        path: PathBuf,
-        content: String,
-    },
 
     /// Search
     StartSearch,
-    UpdateSearch(String),
 
     /// Application control
     Quit,
@@ -73,10 +61,4 @@ pub enum Action {
     CancelSchedule(String),
 }
 
-/// Export formats for database data
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExportFormat {
-    Csv,
-    Json,
-    Sql,
-}
+

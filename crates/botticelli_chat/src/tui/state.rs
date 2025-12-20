@@ -8,12 +8,17 @@ pub struct AppState {
     /// Currently active tab
     pub active_tab: Tab,
 
-    /// Tab-specific state
+    /// Narratives tab state
     pub narratives_state: NarrativesTab,
+    /// Bots management tab state
     pub bots_state: BotsTab,
+    /// Database viewer tab state
     pub database_state: DatabaseTab,
+    /// Chat interface tab state
     pub chat_state: ChatTab,
+    /// Schedule management tab state
     pub schedule_state: ScheduleTab,
+    /// Settings tab state
     pub settings_state: SettingsTab,
 
     /// Global status

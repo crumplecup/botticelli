@@ -280,10 +280,6 @@ impl EventHandler {
                 state.modal = Some(modal);
                 EventResult::Handled
             }
-            TuiCommand::CloseModal => {
-                state.modal = None;
-                EventResult::Handled
-            }
             _ => {
                 // Other commands not yet implemented
                 EventResult::NotHandled
