@@ -21,7 +21,7 @@ impl SamplingIntegration {
 
         // Get provider from services (will be initialized on first use)
         // For now, use placeholder until first actual sampling call
-        let provider: Arc<dyn botticelli_interface::BotticelliDriver> =
+        let provider: Arc<dyn botticelli_interface::ToolCalling> =
             Arc::new(PlaceholderProvider::new(services.clone()));
 
         let sampler = Arc::new(ChatLlmSampler::new(provider, tool_registry.clone()));
@@ -179,5 +179,54 @@ impl botticelli_interface::BotticelliDriver for PlaceholderProvider {
         use botticelli_rate_limit::RateLimitConfig;
         static DEFAULT_LIMITS: std::sync::OnceLock<RateLimitConfig> = std::sync::OnceLock::new();
         DEFAULT_LIMITS.get_or_init(|| RateLimitConfig::unlimited("placeholder"))
+    }
+}
+
+#[async_trait::async_trait]
+impl botticelli_interface::ToolCalling for PlaceholderProvider {
+    async fn generate_with_tools(
+        &self,
+        request: &botticelli_core::GenerateRequest,
+        tools: &[botticelli_core::ToolDefinition],
+    ) -> botticelli_error::BotticelliResult<botticelli_core::GenerateResponse> {
+        // Lazily get the real provider and delegate
+        #[cfg(feature = "cli")]
+        {
+            use botticelli_interface::ToolCalling;
+            
+            let provider = self.services.llm_provider().await.map_err(|e| {
+                botticelli_error::BotticelliError::new(
+                    botticelli_error::BotticelliErrorKind::Backend(
+                        botticelli_error::BackendError::new(e.to_string())
+                    )
+                )
+            })?;
+
+            // The provider from services is already a GeminiClient which implements ToolCalling
+            // We need to create a new GeminiClient here since we can't downcast trait objects
+            // This is a design limitation - we should refactor to store the concrete type
+            
+            // For now, create a new client (it's cheap as it just stores config)
+            let gemini = botticelli_models::GeminiClient::new().map_err(|e| {
+                botticelli_error::BotticelliError::new(
+                    botticelli_error::BotticelliErrorKind::Backend(
+                        botticelli_error::BackendError::new(e.to_string())
+                    )
+                )
+            })?;
+            
+            gemini.generate_with_tools(request, tools).await
+        }
+
+        #[cfg(not(feature = "cli"))]
+        {
+            Err(botticelli_error::BotticelliError::new(
+                botticelli_error::BotticelliErrorKind::NotImplemented(
+                    botticelli_error::NotImplementedError::new(
+                        "LLM provider requires 'cli' feature".to_string()
+                    )
+                )
+            ))
+        }
     }
 }

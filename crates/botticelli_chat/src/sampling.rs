@@ -1,5 +1,5 @@
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, Role, ToolDefinition};
-use botticelli_interface::BotticelliDriver;
+use botticelli_interface::{BotticelliDriver, ToolCalling};
 use botticelli_mcp::{
     ConversationSession, ConversationTurn, LlmSampler, SamplingError, SamplingErrorKind,
     ToolRegistry, ToolResult,
@@ -9,8 +9,8 @@ use tracing::{debug, error, instrument};
 
 /// LLM sampler implementation for chat system.
 pub struct ChatLlmSampler {
-    /// LLM provider (Anthropic, OpenAI, etc.)
-    provider: Arc<dyn BotticelliDriver>,
+    /// LLM provider with tool calling support
+    provider: Arc<dyn ToolCalling>,
 
     /// Tool registry for execution
     tool_registry: Arc<ToolRegistry>,
@@ -18,7 +18,12 @@ pub struct ChatLlmSampler {
 
 impl ChatLlmSampler {
     /// Create new sampler with provider and tool registry.
-    pub fn new(provider: Arc<dyn BotticelliDriver>, tool_registry: Arc<ToolRegistry>) -> Self {
+    ///
+    /// # Arguments
+    ///
+    /// * `provider` - Provider that implements ToolCalling trait
+    /// * `tool_registry` - Registry of available MCP tools
+    pub fn new(provider: Arc<dyn ToolCalling>, tool_registry: Arc<ToolRegistry>) -> Self {
         Self {
             provider,
             tool_registry,
@@ -130,29 +135,37 @@ impl ChatLlmSampler {
 
 #[async_trait::async_trait]
 impl LlmSampler for ChatLlmSampler {
-    #[instrument(skip(self, session, _available_tools))]
+    #[instrument(skip(self, session, available_tools), fields(tool_count = available_tools.len()))]
     async fn generate(
         &self,
         session: &ConversationSession,
-        _available_tools: &[ToolDefinition],
+        available_tools: &[ToolDefinition],
     ) -> Result<GenerateResponse, SamplingError> {
         debug!(
             turn_count = session.turn_count(),
+            tool_count = available_tools.len(),
             "Generating next response"
         );
 
         // Build request from session
         let request = self.build_request(session)?;
 
-        // TODO: Add tools to request once GenerateRequest supports it
-        // request = request.with_tools(available_tools);
-
-        // Call provider
-        let response = self
-            .provider
-            .generate(&request)
-            .await
-            .map_err(|e| SamplingError::new(SamplingErrorKind::ProviderError(e.to_string())))?;
+        // Use ToolCalling trait to pass tools to provider
+        let response = if available_tools.is_empty() {
+            // No tools - use base BotticelliDriver method
+            debug!("No tools available, using base generate");
+            self.provider
+                .generate(&request)
+                .await
+                .map_err(|e| SamplingError::new(SamplingErrorKind::ProviderError(e.to_string())))?
+        } else {
+            // Pass tools via ToolCalling trait
+            debug!(tool_count = available_tools.len(), "Generating with tools");
+            self.provider
+                .generate_with_tools(&request, available_tools)
+                .await
+                .map_err(|e| SamplingError::new(SamplingErrorKind::ProviderError(e.to_string())))?
+        };
 
         debug!(output_count = response.outputs().len(), "Received response");
 
