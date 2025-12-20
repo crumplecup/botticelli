@@ -81,9 +81,8 @@ impl ServiceContainer {
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     fn init_db_pool(&self) -> ChatResult<Pool<ConnectionManager<PgConnection>>> {
-        // Set DATABASE_URL from config
+        // DATABASE_URL should be set via .env file
         let db_url = self.config.postgres.database_url();
-        std::env::set_var("DATABASE_URL", &db_url);
 
         debug!(url = %db_url, "Creating database connection pool");
 
@@ -158,9 +157,8 @@ impl ServiceContainer {
     async fn init_narrative_repository(&self) -> ChatResult<PostgresNarrativeRepository> {
         use diesel::prelude::*;
 
-        // Set DATABASE_URL from config
+        // DATABASE_URL should be set via .env file
         let db_url = self.config.postgres.database_url();
-        std::env::set_var("DATABASE_URL", &db_url);
 
         debug!(url = %db_url, "Creating narrative repository connection");
 

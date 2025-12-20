@@ -59,6 +59,9 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load .env file if present
+    let _ = dotenvy::dotenv();
+
     let args = Args::parse();
 
     // Initialize logging

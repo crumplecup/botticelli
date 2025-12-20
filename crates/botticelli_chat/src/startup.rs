@@ -123,8 +123,7 @@ fn ensure_database_exists(conn: &mut diesel::PgConnection, db_name: &str) -> Cha
 fn ensure_tables_exist(db_url: &str) -> ChatResult<()> {
     debug!("Checking if tables exist");
 
-    // Set DATABASE_URL for diesel
-    std::env::set_var("DATABASE_URL", db_url);
+    // DATABASE_URL should be set via .env file for diesel migrations
 
     // Try to connect to the database
     let mut conn = PgConnection::establish(db_url).map_err(|e| {
