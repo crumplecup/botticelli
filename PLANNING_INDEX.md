@@ -478,3 +478,14 @@ This index tracks all planning documents in the workspace. When documents are co
   - Status: ❌ DEFERRED - Inaccurate file paths, assumes working tool calling
   - Decision: Implement after ARCHITECTURAL_GAPS_RESOLUTION_PLAN.md complete
   - Requires multi-provider architecture refactor first
+
+- **TRAIT_INTERFACE_IMPROVEMENT_PLAN.md** - `current` (2025-12-19) **📐 STRATEGIC PLANNING**
+  - Comprehensive analysis of BotticelliDriver trait architecture
+  - Critical gap identification: tool calling, duplicate types, fake streaming
+  - 6-phase improvement plan for true provider interoperability
+  - Phase 1-2: Resolve type conflicts and align ToolUse trait (CRITICAL)
+  - Phase 3: Fix streaming implementations (Anthropic missing, Groq/HF fake)
+  - Phase 4: Capability discovery system
+  - Phase 5-6: Complete trait coverage and provider selection framework
+  - Status: 📋 Strategic plan - defines architectural vision
+  - Related: Builds on ARCHITECTURAL_GAPS_RESOLUTION_PLAN_V2.md
