@@ -3,7 +3,7 @@ use crate::{
 };
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{AnthropicErrorKind, ModelsError};
-use botticelli_interface::BotticelliDriver;
+use botticelli_interface::{BotticelliDriver, Capabilities};
 use botticelli_rate_limit::RateLimitConfig;
 use reqwest::Client;
 use tracing::{debug, error, instrument};
@@ -241,6 +241,19 @@ impl BotticelliDriver for AnthropicClient {
             tokens_per_day: 1_000_000,
         };
         &DEFAULT_RATE_LIMITS
+    }
+
+    fn capabilities(&self) -> Capabilities {
+        Capabilities {
+            streaming: true,
+            tool_calling: true,
+            vision: true,
+            audio: false,
+            video: false,
+            embeddings: false,
+            json_mode: true,
+            batch_generation: false,
+        }
     }
 
     #[instrument(skip(self, request))]

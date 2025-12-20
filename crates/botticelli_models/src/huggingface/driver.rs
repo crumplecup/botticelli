@@ -4,7 +4,7 @@ use crate::openai_compat::{OpenAICompatError, OpenAICompatibleClient};
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliResult, HuggingFaceErrorKind, ModelsError, ModelsResult};
-use botticelli_interface::{BotticelliDriver, StreamChunk, Streaming};
+use botticelli_interface::{BotticelliDriver, Capabilities, StreamChunk, Streaming};
 use botticelli_rate_limit::RateLimitConfig;
 use futures_util::stream::Stream;
 use std::pin::Pin;
@@ -94,6 +94,19 @@ impl BotticelliDriver for HuggingFaceDriver {
 
     fn rate_limits(&self) -> &RateLimitConfig {
         self.inner.rate_limits()
+    }
+
+    fn capabilities(&self) -> Capabilities {
+        Capabilities {
+            streaming: true,
+            tool_calling: true,
+            vision: false,
+            audio: false,
+            video: false,
+            embeddings: false,
+            json_mode: true,
+            batch_generation: false,
+        }
     }
 }
 

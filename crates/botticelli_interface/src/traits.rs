@@ -1,6 +1,6 @@
 //! Trait definitions for LLM backends and their capabilities.
 
-use crate::{HealthStatus, ModelMetadata, StreamChunk, ToolDefinition};
+use crate::{Capabilities, HealthStatus, ModelMetadata, StreamChunk, ToolDefinition};
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse, Input};
 use botticelli_error::BotticelliResult;
@@ -26,6 +26,40 @@ pub trait BotticelliDriver: Send + Sync {
     ///
     /// Returns the rate limit configuration for carousel budget tracking.
     fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig;
+
+    /// Query provider capabilities.
+    ///
+    /// Returns capability flags indicating which optional features
+    /// this provider supports (streaming, tools, vision, etc.).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use botticelli_interface::BotticelliDriver;
+    ///
+    /// fn check_capabilities(driver: &dyn BotticelliDriver) {
+    ///     let caps = driver.capabilities();
+    ///     if caps.tool_calling {
+    ///         println!("Provider supports tool calling");
+    ///     }
+    ///     if caps.streaming {
+    ///         println!("Provider supports streaming");
+    ///     }
+    /// }
+    /// ```
+    fn capabilities(&self) -> Capabilities {
+        // Default: no optional capabilities
+        Capabilities {
+            streaming: false,
+            tool_calling: false,
+            vision: false,
+            audio: false,
+            video: false,
+            embeddings: false,
+            json_mode: false,
+            batch_generation: false,
+        }
+    }
 }
 
 /// Trait for models that support streaming responses.

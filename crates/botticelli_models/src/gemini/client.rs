@@ -53,8 +53,8 @@ use gemini_rust::{Gemini, client::Model};
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind};
 use botticelli_interface::{
-    BotticelliDriver, FinishReason, Metadata, ModelMetadata, ModelMetadataBuilder, StreamChunk,
-    Streaming, Vision,
+    BotticelliDriver, Capabilities, FinishReason, Metadata, ModelMetadata, ModelMetadataBuilder,
+    StreamChunk, Streaming, Vision,
 };
 use botticelli_rate_limit::{BotticelliConfig, RateLimiter, Tier, TierConfig};
 
@@ -875,6 +875,19 @@ impl BotticelliDriver for GeminiClient {
         Box::leak(Box::new(botticelli_rate_limit::RateLimitConfig::from_tier(
             &self.base_tier,
         )))
+    }
+
+    fn capabilities(&self) -> Capabilities {
+        Capabilities {
+            streaming: true,
+            tool_calling: true,
+            vision: true,
+            audio: true,
+            video: true,
+            embeddings: true,
+            json_mode: true,
+            batch_generation: false,
+        }
     }
 }
 

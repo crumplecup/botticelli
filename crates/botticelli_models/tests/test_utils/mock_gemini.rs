@@ -6,7 +6,8 @@ use botticelli_error::{
     BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind, ModelsError, ModelsErrorKind,
 };
 use botticelli_interface::{
-    BotticelliDriver, FinishReason, Metadata, ModelMetadata, StreamChunk, Streaming, Vision,
+    BotticelliDriver, FinishReason, Metadata, ModelMetadata, ModelMetadataBuilder, StreamChunk,
+    Streaming, Vision,
 };
 use botticelli_rate_limit::RateLimitConfig;
 use std::sync::{Arc, Mutex};
@@ -210,21 +211,22 @@ impl BotticelliDriver for MockGeminiClient {
 
 impl Metadata for MockGeminiClient {
     fn metadata(&self) -> ModelMetadata {
-        ModelMetadata {
-            provider: "mock-gemini",
-            model: self.model_name.clone(),
-            max_input_tokens: 1_048_576,
-            max_output_tokens: 8192,
-            supports_streaming: true,
-            supports_vision: true,
-            supports_audio: true,
-            supports_video: true,
-            supports_documents: true,
-            supports_tool_use: true,
-            supports_json_mode: true,
-            supports_embeddings: false,
-            supports_batch: false,
-        }
+        ModelMetadataBuilder::default()
+            .provider("mock-gemini")
+            .model(self.model_name.clone())
+            .max_input_tokens(1_048_576)
+            .max_output_tokens(8192)
+            .supports_streaming(true)
+            .supports_vision(true)
+            .supports_audio(true)
+            .supports_video(true)
+            .supports_documents(true)
+            .supports_tool_use(true)
+            .supports_json_mode(true)
+            .supports_embeddings(false)
+            .supports_batch(false)
+            .build()
+            .expect("Valid ModelMetadata")
     }
 }
 

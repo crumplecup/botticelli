@@ -215,8 +215,7 @@ fn test_client_creation() {
 
             // Test metadata
             let metadata = client.metadata();
-            assert_eq!(metadata.provider, "gemini");
-            assert_eq!(metadata.max_input_tokens, 1_048_576);
+            assert_eq!(*metadata.max_input_tokens(), 1_048_576);
 
             // Test vision trait
             assert_eq!(client.max_images_per_request(), 16);

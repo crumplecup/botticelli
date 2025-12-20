@@ -136,6 +136,46 @@ pub struct ModelMetadata {
     supports_batch: bool,
 }
 
+/// Provider capability flags for runtime discovery.
+///
+/// Lightweight struct for querying what features a provider supports
+/// without needing full ModelMetadata.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Capabilities {
+    /// Supports streaming responses
+    pub streaming: bool,
+    /// Supports function/tool calling
+    pub tool_calling: bool,
+    /// Supports image inputs (vision)
+    pub vision: bool,
+    /// Supports audio inputs/outputs
+    pub audio: bool,
+    /// Supports video inputs/outputs
+    pub video: bool,
+    /// Supports vector embeddings
+    pub embeddings: bool,
+    /// Supports structured JSON output mode
+    pub json_mode: bool,
+    /// Supports batch processing
+    pub batch_generation: bool,
+}
+
+impl Capabilities {
+    /// Create capabilities from ModelMetadata.
+    pub fn from_metadata(metadata: &ModelMetadata) -> Self {
+        Self {
+            streaming: *metadata.supports_streaming(),
+            tool_calling: *metadata.supports_tool_use(),
+            vision: *metadata.supports_vision(),
+            audio: *metadata.supports_audio(),
+            video: *metadata.supports_video(),
+            embeddings: *metadata.supports_embeddings(),
+            json_mode: *metadata.supports_json_mode(),
+            batch_generation: *metadata.supports_batch(),
+        }
+    }
+}
+
 /// Health status of the backend.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum HealthStatus {

@@ -7,7 +7,7 @@ use super::conversion::{messages_to_prompt, response_to_output};
 use super::{OllamaError, OllamaErrorKind, OllamaResult};
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::BotticelliResult;
-use botticelli_interface::BotticelliDriver;
+use botticelli_interface::{BotticelliDriver, Capabilities};
 use tracing::{debug, info, instrument, warn};
 
 /// Ollama LLM client for local model execution.
@@ -170,6 +170,19 @@ impl BotticelliDriver for OllamaClient {
             std::sync::OnceLock::new();
         DEFAULT_CONFIG
             .get_or_init(|| botticelli_rate_limit::RateLimitConfig::unlimited("ollama-local"))
+    }
+
+    fn capabilities(&self) -> Capabilities {
+        Capabilities {
+            streaming: true,
+            tool_calling: false,
+            vision: false,
+            audio: false,
+            video: false,
+            embeddings: false,
+            json_mode: false,
+            batch_generation: false,
+        }
     }
 }
 
