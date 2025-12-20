@@ -74,9 +74,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = load_config(&args)?;
 
     info!(
-        mode = ?config.environment.mode,
-        postgres_host = %config.postgres.host,
-        mcp_host = %config.mcp_server.host,
+        mode = ?config.environment().mode(),
+        postgres_host = %config.postgres().host(),
+        mcp_host = %config.mcp_server().host(),
         "Configuration loaded"
     );
 
@@ -130,14 +130,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nBotticelli Chat Interface");
     println!("========================");
     println!("\nConfiguration loaded:");
-    println!("  Mode:       {:?}", config.environment.mode);
+    println!("  Mode:       {:?}", config.environment().mode());
     println!(
         "  Postgres:   {}:{}",
-        config.postgres.host, config.postgres.port
+        config.postgres().host(), config.postgres().port()
     );
     println!(
         "  MCP Server: {}:{}",
-        config.mcp_server.host, config.mcp_server.port
+        config.mcp_server().host(), config.mcp_server().port()
     );
     println!("\nStarting interactive chat...");
     println!("Press Ctrl+C to exit\n");
@@ -223,6 +223,15 @@ fn load_config(args: &Args) -> Result<ChatAppConfig, Box<dyn std::error::Error>>
     if let Some(port) = args.postgres_port {
         builder = builder.postgres_port(port);
     }
+    if let Some(user) = &args.postgres_user {
+        builder = builder.postgres_user(user);
+    }
+    if let Some(password) = &args.postgres_password {
+        builder = builder.postgres_password(password);
+    }
+    if let Some(database) = &args.postgres_database {
+        builder = builder.postgres_database(database);
+    }
 
     // Apply MCP overrides
     if let Some(host) = &args.mcp_host {
@@ -232,18 +241,7 @@ fn load_config(args: &Args) -> Result<ChatAppConfig, Box<dyn std::error::Error>>
         builder = builder.mcp_port(port);
     }
 
-    let mut config = builder.build()?;
-
-    // Apply additional postgres overrides not in builder
-    if let Some(user) = &args.postgres_user {
-        config.postgres.user = user.clone();
-    }
-    if let Some(password) = &args.postgres_password {
-        config.postgres.password = password.clone();
-    }
-    if let Some(database) = &args.postgres_database {
-        config.postgres.database = database.clone();
-    }
+    let config = builder.build()?;
 
     Ok(config)
 }

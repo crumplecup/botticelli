@@ -301,7 +301,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_narrative_tool() {
-        let tool = CreateNarrativeTool;
+        use botticelli_narrative::FilesystemNarrativeStorage;
+        let storage = FilesystemNarrativeStorage::new("/tmp");
+        let tool = CreateNarrativeTool::new(storage);
         let info = tool.tool_info();
 
         assert_eq!(info.name, "create_narrative");
@@ -310,7 +312,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_validate_narrative_tool() {
-        let tool = ValidateNarrativeTool;
+        use botticelli_narrative::FilesystemNarrativeStorage;
+        let storage = FilesystemNarrativeStorage::new("/tmp");
+        let tool = ValidateNarrativeTool::new(storage);
         let info = tool.tool_info();
 
         assert_eq!(info.name, "validate_narrative");
@@ -319,7 +323,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_narratives_tool() {
-        let tool = ListNarrativesTool::new("/tmp");
+        use botticelli_narrative::FilesystemNarrativeStorage;
+        let storage = FilesystemNarrativeStorage::new("/tmp");
+        let tool = ListNarrativesTool::new(storage);
         let info = tool.tool_info();
 
         assert_eq!(info.name, "list_narratives");

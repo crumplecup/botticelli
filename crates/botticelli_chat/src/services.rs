@@ -82,7 +82,7 @@ impl ServiceContainer {
     #[instrument(skip(self))]
     fn init_db_pool(&self) -> ChatResult<Pool<ConnectionManager<PgConnection>>> {
         // DATABASE_URL should be set via .env file
-        let db_url = self.config.postgres.database_url();
+        let db_url = self.config.postgres().database_url();
 
         debug!(url = %db_url, "Creating database connection pool");
 
@@ -120,7 +120,7 @@ impl ServiceContainer {
     #[instrument(skip(self))]
     fn init_mcp_client(&self) -> ChatResult<UnifiedMcpClient> {
         debug!(
-            url = %self.config.mcp_server.server_url(),
+            url = %self.config.mcp_server().server_url(),
             "Creating MCP client"
         );
 
@@ -158,7 +158,7 @@ impl ServiceContainer {
         use diesel::prelude::*;
 
         // DATABASE_URL should be set via .env file
-        let db_url = self.config.postgres.database_url();
+        let db_url = self.config.postgres().database_url();
 
         debug!(url = %db_url, "Creating narrative repository connection");
 
@@ -171,7 +171,7 @@ impl ServiceContainer {
         })?;
 
         // Create storage backend (for media)
-        let storage_path = if self.config.environment.mode == crate::EnvironmentMode::Test {
+        let storage_path = if self.config.environment().mode() == &crate::EnvironmentMode::Test {
             // Use temp directory for tests
             std::env::temp_dir().join("botticelli_test/media")
         } else {
@@ -224,14 +224,14 @@ impl ServiceContainer {
         
         // Create new client instance that we can cast to ToolCalling
         // This is necessary because we can't downcast trait objects
-        let model_id = *self.config.chat.initial_model();
+        let model_id = *self.config.chat().initial_model();
         self.create_tool_calling_client(model_id)
     }
 
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_interface::BotticelliDriver>> {
-        let initial_model = *self.config.chat.initial_model();
+        let initial_model = *self.config.chat().initial_model();
         
         debug!(model = ?initial_model, "Initializing LLM provider");
 

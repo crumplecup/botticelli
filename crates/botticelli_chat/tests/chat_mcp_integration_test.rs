@@ -1,6 +1,9 @@
-use botticelli_chat::{ChatHost, ChatSession};
-use botticelli_core::{ToolDefinition, ToolParameter};
+use botticelli_chat::ChatHost;
+use botticelli_core::ToolDefinition;
 use botticelli_mcp::{McpClient, ToolRegistry};
+use botticelli_models::{
+    GeminiModel, ModelBounds, ModelId, ModelSelector, RateLimitDetector, SelectionStrategy,
+};
 use serde_json::json;
 use std::sync::Arc;
 
@@ -8,9 +11,8 @@ use std::sync::Arc;
 /// 
 /// This test verifies:
 /// 1. MCP host initialization with tool registry
-/// 2. Chat session with fallback provider
-/// 3. Tool call detection and execution
-/// 4. Result return to LLM
+/// 2. Tool call detection and execution via ChatHost
+/// 3. Result return to LLM
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
 async fn test_chat_with_mcp_tools() {
@@ -48,19 +50,23 @@ async fn test_chat_with_mcp_tools() {
     // Create MCP client
     let mcp_client = McpClient::new(Arc::new(registry));
     
-    // Create chat host with MCP client
+    // Create model selector with Gemini+Groq fallback
+    let bounds = ModelBounds::none();
+    let strategy = SelectionStrategy::FriendlyFirst;
+    let detector = RateLimitDetector::new();
+    let selector = ModelSelector::new(bounds, strategy, detector);
+    let initial_model = ModelId::Gemini(GeminiModel::Gemini25Flash);
+    
+    // Create chat host with MCP client and model selection
     let chat_host = ChatHost::builder()
         .mcp_client(mcp_client)
+        .model_selector(selector)
+        .initial_model(initial_model)
         .build()
         .expect("Valid chat host");
     
-    // Create chat session (uses Gemini+Groq fallback from config)
-    let mut session = ChatSession::new(chat_host)
-        .await
-        .expect("Valid session");
-    
     // Send a message that should trigger tool use
-    let response = session
+    let response = chat_host
         .send("Please echo the message 'Hello from MCP!'")
         .await
         .expect("Send message");
@@ -88,17 +94,21 @@ async fn test_chat_fallback_on_failure() {
     // Create minimal setup
     let registry = ToolRegistry::new();
     let mcp_client = McpClient::new(Arc::new(registry));
+    let bounds = ModelBounds::none();
+    let strategy = SelectionStrategy::FriendlyFirst;
+    let detector = RateLimitDetector::new();
+    let selector = ModelSelector::new(bounds, strategy, detector);
+    let initial_model = ModelId::Gemini(GeminiModel::Gemini25Flash);
+    
     let chat_host = ChatHost::builder()
         .mcp_client(mcp_client)
+        .model_selector(selector)
+        .initial_model(initial_model)
         .build()
         .expect("Valid chat host");
     
-    let mut session = ChatSession::new(chat_host)
-        .await
-        .expect("Valid session");
-    
     // Send a simple message
-    let response = session
+    let response = chat_host
         .send("Say hello")
         .await
         .expect("Send message");

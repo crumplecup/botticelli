@@ -35,17 +35,17 @@ pub async fn startup_sequence(config: &ChatAppConfig) -> ChatResult<()> {
 #[instrument(skip(config))]
 async fn setup_postgres(config: &crate::ChatAppConfig) -> ChatResult<()> {
     info!(
-        host = %config.postgres.host,
-        port = config.postgres.port,
+        host = %config.postgres().host(),
+        port = config.postgres().port(),
         "Checking PostgreSQL"
     );
 
-    let db_url = config.postgres.database_url();
+    let db_url = config.postgres().database_url();
 
     // Try to connect to postgres database first (always exists)
     let postgres_url = format!(
         "postgresql://{}@{}:{}/postgres",
-        config.postgres.user, config.postgres.host, config.postgres.port
+        config.postgres().user(), config.postgres().host(), config.postgres().port()
     );
 
     debug!(url = %postgres_url, "Attempting connection to postgres database");
@@ -55,7 +55,7 @@ async fn setup_postgres(config: &crate::ChatAppConfig) -> ChatResult<()> {
             info!("PostgreSQL is accessible");
 
             // Check if our database exists
-            ensure_database_exists(&mut conn, &config.postgres.database)?;
+            ensure_database_exists(&mut conn, config.postgres().database())?;
 
             // Now connect to our database and ensure tables exist
             ensure_tables_exist(&db_url)?;
@@ -207,12 +207,12 @@ fn ensure_tables_exist(db_url: &str) -> ChatResult<()> {
 #[instrument(skip(config))]
 async fn setup_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
     info!(
-        host = %config.mcp_server.host,
-        port = config.mcp_server.port,
+        host = %config.mcp_server().host(),
+        port = config.mcp_server().port(),
         "Checking MCP server"
     );
 
-    let url = config.mcp_server.server_url();
+    let url = config.mcp_server().server_url();
 
     // Try to connect to MCP server
     debug!(url = %url, "Attempting MCP server health check");
@@ -277,7 +277,7 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
     info!("Starting MCP server in background");
 
     // Check if we're in local mode
-    let is_local = matches!(config.environment.mode, EnvironmentMode::Local);
+    let is_local = matches!(config.environment().mode(), EnvironmentMode::Local);
 
     if !is_local {
         return Err(ChatError::new(ChatErrorKind::ExecutionFailed(
@@ -328,8 +328,8 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
 
         // Use the pre-built binary
         let child = std::process::Command::new(&binary)
-            .env("MCP_HOST", &config.mcp_server.host)
-            .env("MCP_PORT", config.mcp_server.port.to_string())
+            .env("MCP_HOST", config.mcp_server().host())
+            .env("MCP_PORT", config.mcp_server().port().to_string())
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())

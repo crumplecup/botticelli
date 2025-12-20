@@ -8,31 +8,31 @@ use crate::{
 };
 
 /// Complete application configuration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
 pub struct ChatAppConfig {
     /// Environment configuration.
     #[serde(default)]
-    pub environment: EnvironmentConfig,
+    environment: EnvironmentConfig,
 
     /// PostgreSQL configuration.
     #[serde(default)]
-    pub postgres: PostgresConfig,
+    postgres: PostgresConfig,
 
     /// MCP server configuration.
     #[serde(default)]
-    pub mcp_server: McpServerConfig,
+    mcp_server: McpServerConfig,
 
     /// MCP client configuration.
     #[serde(default)]
-    pub mcp_client: McpClientConfig,
+    mcp_client: McpClientConfig,
 
     /// Chat configuration.
     #[serde(default)]
-    pub chat: ChatConfig,
+    chat: ChatConfig,
 
     /// Observability configuration.
     #[serde(default)]
-    pub observability: ObservabilityConfig,
+    observability: ObservabilityConfig,
 }
 
 impl ChatAppConfig {
@@ -158,6 +158,9 @@ pub struct ConfigBuilder {
     mode: Option<EnvironmentMode>,
     postgres_host: Option<String>,
     postgres_port: Option<u16>,
+    postgres_user: Option<String>,
+    postgres_password: Option<String>,
+    postgres_database: Option<String>,
     mcp_host: Option<String>,
     mcp_port: Option<u16>,
 }
@@ -184,6 +187,24 @@ impl ConfigBuilder {
     /// Set postgres port.
     pub fn postgres_port(mut self, port: u16) -> Self {
         self.postgres_port = Some(port);
+        self
+    }
+
+    /// Set postgres user.
+    pub fn postgres_user(mut self, user: impl Into<String>) -> Self {
+        self.postgres_user = Some(user.into());
+        self
+    }
+
+    /// Set postgres password.
+    pub fn postgres_password(mut self, password: impl Into<String>) -> Self {
+        self.postgres_password = Some(password.into());
+        self
+    }
+
+    /// Set postgres database name.
+    pub fn postgres_database(mut self, database: impl Into<String>) -> Self {
+        self.postgres_database = Some(database.into());
         self
     }
 
@@ -227,6 +248,15 @@ impl ConfigBuilder {
         }
         if let Some(port) = self.postgres_port {
             config.postgres = config.postgres.clone().with_port(port);
+        }
+        if let Some(user) = self.postgres_user {
+            config.postgres = config.postgres.clone().with_user(user);
+        }
+        if let Some(password) = self.postgres_password {
+            config.postgres = config.postgres.clone().with_password(password);
+        }
+        if let Some(database) = self.postgres_database {
+            config.postgres = config.postgres.clone().with_database(database);
         }
         if let Some(host) = self.mcp_host {
             config.mcp_server = config.mcp_server.clone().with_host(host);

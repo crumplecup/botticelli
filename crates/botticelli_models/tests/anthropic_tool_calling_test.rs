@@ -5,8 +5,8 @@
 
 #![cfg(feature = "anthropic")]
 
-use botticelli_core::{GenerateRequest, Input, Message, Role};
-use botticelli_interface::{ToolCalling, ToolDefinition};
+use botticelli_core::{GenerateRequest, Input, Message, Role, ToolDefinition};
+use botticelli_interface::ToolCalling;
 use botticelli_models::AnthropicClient;
 use serde_json::json;
 

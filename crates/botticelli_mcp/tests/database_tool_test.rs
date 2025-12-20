@@ -6,7 +6,7 @@ async fn test_query_content_tool() {
     use botticelli_mcp::{McpTool, QueryContentTool};
     use serde_json::json;
 
-    let tool = QueryContentTool;
+    let tool = QueryContentTool::default();
 
     // Test with content table
     let input = json!({
@@ -36,7 +36,7 @@ async fn test_query_content_validation() {
     use botticelli_mcp::{McpTool, QueryContentTool};
     use serde_json::json;
 
-    let tool = QueryContentTool;
+    let tool = QueryContentTool::default();
 
     // Test missing table parameter
     let input = json!({
@@ -53,7 +53,7 @@ async fn test_query_content_without_feature() {
     use botticelli_mcp::{McpTool, QueryContentTool};
     use serde_json::json;
 
-    let tool = QueryContentTool;
+    let tool = QueryContentTool::default();
 
     let input = json!({
         "table": "content",

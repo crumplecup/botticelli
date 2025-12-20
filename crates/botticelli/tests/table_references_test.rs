@@ -5,10 +5,10 @@
 
 #![cfg(feature = "database")]
 
-use botticelli::{
-    ActConfig, DatabaseTableQueryRegistry, Input, NarrativeExecutor, NarrativeMetadata,
-    NarrativeProvider, Output, TableFormat, TableQueryExecutor,
-};
+use botticelli_core::{Input, Output, TableFormat};
+use botticelli_database::{DatabaseTableQueryRegistry, TableQueryExecutor};
+use botticelli_error::BotticelliResult;
+use botticelli_narrative::{ActConfig, NarrativeExecutor, NarrativeMetadata, NarrativeProvider};
 use diesel::prelude::*;
 use std::{
     env,
@@ -23,7 +23,7 @@ struct TableReferenceNarrative {
 }
 
 impl TableReferenceNarrative {
-    fn new(table_name: &str) -> botticelli::BotticelliResult<Self> {
+    fn new(table_name: &str) -> BotticelliResult<Self> {
         // Create a simple test metadata - NarrativeMetadata is typically deserialized from TOML
         // For testing, we'll construct acts directly
         // Unwrap is acceptable here as this is test setup data that should always parse
@@ -93,7 +93,7 @@ impl NarrativeProvider for TableReferenceNarrative {
 struct MockDriver;
 
 #[async_trait::async_trait]
-impl botticelli::BotticelliDriver for MockDriver {
+impl botticelli_interface::LlmDriver for MockDriver {
     fn provider_name(&self) -> &'static str {
         "mock"
     }
@@ -102,9 +102,9 @@ impl botticelli::BotticelliDriver for MockDriver {
         "mock-model"
     }
 
-    fn rate_limits(&self) -> &botticelli::RateLimitConfig {
+    fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig {
         // For testing, use unlimited rate limits
-        use botticelli::RateLimitConfig;
+        use botticelli_rate_limit::RateLimitConfig;
         static RATE_LIMIT: std::sync::OnceLock<RateLimitConfig> = std::sync::OnceLock::new();
         RATE_LIMIT.get_or_init(|| RateLimitConfig {
             requests_per_minute: u64::MAX,
@@ -116,8 +116,8 @@ impl botticelli::BotticelliDriver for MockDriver {
 
     async fn generate(
         &self,
-        request: &botticelli::GenerateRequest,
-    ) -> botticelli::BotticelliResult<botticelli::GenerateResponse> {
+        request: &botticelli_core::GenerateRequest,
+    ) -> BotticelliResult<botticelli_core::GenerateResponse> {
         // Extract the table data from the request messages
         let mut table_content = String::new();
         for message in request.messages() {
@@ -129,7 +129,7 @@ impl botticelli::BotticelliDriver for MockDriver {
             }
         }
 
-        Ok(botticelli::GenerateResponse::builder()
+        Ok(botticelli_core::GenerateResponse::builder()
             .outputs(vec![Output::Text(format!(
                 "Received table data: {}",
                 table_content
@@ -140,8 +140,8 @@ impl botticelli::BotticelliDriver for MockDriver {
 }
 
 #[tokio::test]
-async fn test_table_reference_query() -> botticelli::BotticelliResult<()> {
-    use botticelli::{ConfigError, DatabaseError, DatabaseErrorKind};
+async fn test_table_reference_query() -> BotticelliResult<()> {
+    use botticelli_error::{ConfigError, DatabaseError, DatabaseErrorKind};
 
     dotenvy::dotenv().ok();
     let database_url = env::var("DATABASE_URL")
@@ -235,8 +235,8 @@ async fn test_table_reference_query() -> botticelli::BotticelliResult<()> {
 }
 
 #[tokio::test]
-async fn test_table_reference_with_filter() -> botticelli::BotticelliResult<()> {
-    use botticelli::{ConfigError, DatabaseError, DatabaseErrorKind};
+async fn test_table_reference_with_filter() -> BotticelliResult<()> {
+    use botticelli_error::{ConfigError, DatabaseError, DatabaseErrorKind};
 
     dotenvy::dotenv().ok();
     let database_url = env::var("DATABASE_URL")
@@ -363,8 +363,8 @@ async fn test_table_reference_with_filter() -> botticelli::BotticelliResult<()> 
 }
 
 #[tokio::test]
-async fn test_table_reference_format_csv() -> botticelli::BotticelliResult<()> {
-    use botticelli::{ConfigError, DatabaseError, DatabaseErrorKind};
+async fn test_table_reference_format_csv() -> BotticelliResult<()> {
+    use botticelli_error::{ConfigError, DatabaseError, DatabaseErrorKind};
 
     dotenvy::dotenv().ok();
     let database_url = env::var("DATABASE_URL")

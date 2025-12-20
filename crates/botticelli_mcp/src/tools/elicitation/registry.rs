@@ -159,6 +159,14 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
         narratives.clear();
         tracing::info!(count, "Cleared all narratives from registry");
     }
+
+    /// Get count of active sessions.
+    ///
+    /// Useful for monitoring and testing.
+    pub fn session_count(&self) -> usize {
+        let narratives = self.narratives.read().expect("Registry lock poisoned");
+        narratives.len()
+    }
 }
 
 impl<T: RegistryOperations<Key = String>> Default for NarrativeRegistry<T> {

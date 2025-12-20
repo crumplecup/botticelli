@@ -24,7 +24,7 @@ async fn run_demo() -> ChatResult<()> {
     let config = ChatAppConfig::load(None).map_err(|e| {
         ChatError::new(ChatErrorKind::IoError(format!("Config load failed: {}", e)))
     })?;
-    info!(mode = ?config.environment.mode, "Configuration loaded");
+    info!(mode = ?config.environment().mode(), "Configuration loaded");
 
     let _services = Arc::new(ServiceContainer::new(config));
     info!("Services initialized");

@@ -1,6 +1,5 @@
 use botticelli_chat::{ChatAppConfig, ServiceContainer};
 use botticelli_core::{MessageBuilder, Role};
-use botticelli_interface::GenerateText;
 use botticelli_models::ModelId;
 
 /// Test that LLM provider can be initialized and used.
@@ -29,7 +28,7 @@ async fn test_create_client_for_model() {
     let services = ServiceContainer::new(config);
 
     // Create Gemini client
-    let model = ModelId::Gemini(botticelli_models::GeminiModel::Flash15);
+    let model = ModelId::Gemini(botticelli_models::GeminiModel::Gemini25Flash);
     let client = services
         .create_client_for_model(model)
         .expect("Should create Gemini client");
@@ -76,7 +75,7 @@ async fn test_basic_generation() {
 
     let request = botticelli_core::GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(Some(10))
         .build();
 
     // Generate response

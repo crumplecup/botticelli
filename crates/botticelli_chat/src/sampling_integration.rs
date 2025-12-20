@@ -30,11 +30,11 @@ impl SamplingIntegration {
         let tool_registry = Arc::new(botticelli_mcp::ToolRegistry::default());
 
         // Get configuration for fallback setup
-        let initial_model = *services.config().chat.initial_model();
-        let strategy = *services.config().chat.fallback_strategy();
+        let initial_model = *services.config().chat().initial_model();
+        let strategy = *services.config().chat().fallback_strategy();
         let bounds = services
             .config()
-            .chat
+            .chat()
             .model_bounds()
             .cloned()
             .unwrap_or_else(ModelBounds::none);

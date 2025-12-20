@@ -9,10 +9,10 @@
 
 #![cfg(all(feature = "gemini", feature = "discord", feature = "database"))]
 
-use botticelli::{
-    BotCommandRegistryImpl, DatabaseTableQueryRegistry, DiscordCommandExecutor, GeminiClient,
-    Narrative, NarrativeExecutor, TableQueryExecutor, establish_connection,
-};
+use botticelli_database::{DatabaseTableQueryRegistry, TableQueryExecutor, establish_connection};
+use botticelli_gemini::GeminiClient;
+use botticelli_narrative::{Narrative, NarrativeExecutor};
+use botticelli_social::{BotCommandRegistryImpl, DiscordCommandExecutor};
 use dotenvy::dotenv;
 use std::{
     env,
