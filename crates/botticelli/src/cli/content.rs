@@ -31,8 +31,7 @@ async fn list_content(
     limit: i64,
     format: OutputFormat,
 ) -> BotticelliResult<()> {
-    use botticelli::establish_connection;
-    use botticelli::list_content as db_list_content;
+    use botticelli_database::{establish_connection, list_content as db_list_content};
 
     let mut conn = establish_connection()?;
     let content = db_list_content(&mut conn, table, status, limit as usize)?;
@@ -40,7 +39,7 @@ async fn list_content(
     match format {
         OutputFormat::Json => {
             let json = serde_json::to_string_pretty(&content)
-                .map_err(|e| botticelli::JsonError::new(e.to_string()))?;
+                .map_err(|e| botticelli_error::JsonError::new(e.to_string()))?;
             println!("{}", json);
         }
         OutputFormat::Human => {
@@ -48,7 +47,7 @@ async fn list_content(
             println!("{:-<80}", "");
             for item in &content {
                 let json = serde_json::to_string_pretty(item)
-                    .map_err(|e| botticelli::JsonError::new(e.to_string()))?;
+                    .map_err(|e| botticelli_error::JsonError::new(e.to_string()))?;
                 println!("{}", json);
                 println!("{:-<80}", "");
             }
@@ -76,13 +75,13 @@ async fn list_content(
 /// Show a specific content item.
 #[cfg(feature = "database")]
 async fn show_content(table: &str, id: i64) -> BotticelliResult<()> {
-    use botticelli::{establish_connection, get_content_by_id};
+    use botticelli_database::{establish_connection, get_content_by_id};
 
     let mut conn = establish_connection()?;
     let content = get_content_by_id(&mut conn, table, id)?;
 
     let json = serde_json::to_string_pretty(&content)
-        .map_err(|e| botticelli::JsonError::new(e.to_string()))?;
+        .map_err(|e| botticelli_error::JsonError::new(e.to_string()))?;
     println!("{}", json);
 
     Ok(())
@@ -97,7 +96,7 @@ async fn show_content(_table: &str, _id: i64) -> BotticelliResult<()> {
 /// Get the last successful generation.
 #[cfg(feature = "database")]
 async fn last_generation(format: OutputFormat) -> BotticelliResult<()> {
-    use botticelli::{
+    use botticelli_database::{
         ContentGenerationRepository, PostgresContentGenerationRepository, establish_connection,
     };
 
@@ -111,7 +110,7 @@ async fn last_generation(format: OutputFormat) -> BotticelliResult<()> {
             }
             OutputFormat::Json => {
                 let json = serde_json::to_string_pretty(&generation)
-                    .map_err(|e| botticelli::JsonError::new(e.to_string()))?;
+                    .map_err(|e| botticelli_error::JsonError::new(e.to_string()))?;
                 println!("{}", json);
             }
             OutputFormat::Human => {
@@ -145,7 +144,7 @@ async fn last_generation(_format: OutputFormat) -> BotticelliResult<()> {
 /// List all content generations.
 #[cfg(feature = "database")]
 async fn list_generations(status: Option<&str>, limit: i64) -> BotticelliResult<()> {
-    use botticelli::{
+    use botticelli_database::{
         ContentGenerationRepository, PostgresContentGenerationRepository, establish_connection,
     };
 

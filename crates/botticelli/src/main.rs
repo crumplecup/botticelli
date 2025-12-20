@@ -169,7 +169,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Graceful shutdown of observability
     #[cfg(feature = "observability")]
-    botticelli::shutdown_observability();
+    botticelli_core::shutdown_observability();
 
     Ok(())
 }

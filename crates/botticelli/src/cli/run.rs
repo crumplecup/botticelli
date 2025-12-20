@@ -155,7 +155,8 @@ pub async fn run_narrative(
     options: &ExecutionOptions,
     budget_overrides: Option<&BudgetConfig>,
 ) -> BotticelliResult<()> {
-    use botticelli::{GeminiClient, NarrativeExecutor};
+    use botticelli_models::GeminiClient;
+    use botticelli_narrative::NarrativeExecutor;
 
     #[cfg(not(feature = "database"))]
 
@@ -168,12 +169,12 @@ pub async fn run_narrative(
     // Load and parse the narrative TOML file
     // Use MultiNarrative if a name is provided (enables composition), otherwise single Narrative
     #[cfg(feature = "database")]
-    let narrative: Box<dyn botticelli::NarrativeProvider> = {
-        let mut conn = botticelli::establish_connection()?;
+    let narrative: Box<dyn botticelli_narrative::NarrativeProvider> = {
+        let mut conn = botticelli_database::establish_connection()?;
 
         if let Some(name) = source.name() {
             // Load as MultiNarrative for composition support
-            Box::new(botticelli::MultiNarrative::from_file_with_db(
+            Box::new(botticelli_narrative::MultiNarrative::from_file_with_db(
                 source.path(),
                 name,
                 &mut conn,
@@ -181,11 +182,11 @@ pub async fn run_narrative(
         } else {
             // Load as single Narrative for backwards compatibility
             let content = std::fs::read_to_string(source.path()).map_err(|e| {
-                botticelli::NarrativeError::new(botticelli::NarrativeErrorKind::FileRead(
+                botticelli_error::NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(
                     e.to_string(),
                 ))
             })?;
-            let mut narrative = botticelli::Narrative::from_toml_str(&content, None)?;
+            let mut narrative = botticelli_narrative::Narrative::from_toml_str(&content, None)?;
             narrative.set_source_path(Some(source.path().to_path_buf()));
 
             // Assemble prompts if template specified
@@ -198,18 +199,18 @@ pub async fn run_narrative(
     };
 
     #[cfg(not(feature = "database"))]
-    let narrative: Box<dyn botticelli::NarrativeProvider> = {
+    let narrative: Box<dyn botticelli_narrative::NarrativeProvider> = {
         if let Some(name) = source.name() {
             // Load as MultiNarrative for composition support
-            Box::new(botticelli::MultiNarrative::from_file(source.path(), name)?)
+            Box::new(botticelli_narrative::MultiNarrative::from_file(source.path(), name)?)
         } else {
             // Load as single Narrative for backwards compatibility
             let content = std::fs::read_to_string(source.path()).map_err(|e| {
-                botticelli::NarrativeError::new(botticelli::NarrativeErrorKind::FileRead(
+                botticelli_error::NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(
                     e.to_string(),
                 ))
             })?;
-            let mut narrative = botticelli::Narrative::from_toml_str(&content, None)?;
+            let mut narrative = botticelli_narrative::Narrative::from_toml_str(&content, None)?;
             narrative.set_source_path(Some(source.path().to_path_buf()));
             Box::new(narrative)
         }
@@ -261,7 +262,7 @@ pub async fn run_narrative(
 
         // Validate the final budget
         budget.validate().map_err(|e| {
-            botticelli::NarrativeError::new(botticelli::NarrativeErrorKind::ConfigurationError(e))
+            botticelli_error::NarrativeError::new(botticelli_error::NarrativeErrorKind::ConfigurationError(e))
         })?;
 
         // Log if throttling is active
@@ -335,7 +336,7 @@ pub async fn run_narrative(
     let executor = {
         #[cfg(feature = "database")]
         {
-            use botticelli::ProcessorRegistry;
+            use botticelli_narrative::ProcessorRegistry;
             use botticelli_database::{
                 DatabaseTableQueryRegistry, TableQueryExecutor, create_pool,
             };
@@ -343,7 +344,7 @@ pub async fn run_narrative(
             use std::sync::{Arc, Mutex};
 
             // Create database connection for table queries
-            let table_conn = botticelli::establish_connection()?;
+            let table_conn = botticelli_database::establish_connection()?;
             let table_executor = TableQueryExecutor::new(Arc::new(Mutex::new(table_conn)));
             let table_registry = DatabaseTableQueryRegistry::new(table_executor);
 
@@ -479,9 +480,8 @@ pub async fn run_narrative(
     if options.save() {
         #[cfg(feature = "database")]
         {
-            use botticelli::{
-                NarrativeRepository, PostgresNarrativeRepository, establish_connection,
-            };
+            use botticelli_database::{PostgresNarrativeRepository, establish_connection};
+            use botticelli_interface::NarrativeRepository;
             use botticelli_storage::FileSystemStorage;
             use std::sync::Arc;
 

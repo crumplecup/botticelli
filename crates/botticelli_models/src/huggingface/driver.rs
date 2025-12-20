@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliResult, HuggingFaceErrorKind, ModelsError, ModelsResult};
 use botticelli_interface::{BotticelliDriver, Capabilities};
+use botticelli_rate_limit::RateLimitConfig;
 use tracing::{debug, instrument};
 
 /// HuggingFace Inference API driver.

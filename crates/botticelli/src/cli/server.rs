@@ -28,7 +28,7 @@ pub async fn handle_server_command(
     let client = GeminiClient::new()?;
 
     // Create database connection for table queries
-    let table_conn = botticelli::establish_connection()?;
+    let table_conn = botticelli_database::establish_connection()?;
     let table_executor = TableQueryExecutor::new(Arc::new(Mutex::new(table_conn)));
     let table_registry = DatabaseTableQueryRegistry::new(table_executor);
 
