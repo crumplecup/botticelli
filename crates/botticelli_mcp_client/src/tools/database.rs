@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+#[cfg(feature = "database")]
 use botticelli_database::table_exists;
 use botticelli_interface::DatabaseRegistryOperations;
 use pmcp::{Content, ToolInfo};

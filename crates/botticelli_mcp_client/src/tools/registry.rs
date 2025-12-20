@@ -8,7 +8,7 @@ use super::{
 use super::{CreateTableTool, InspectTableTool, QueryTableTool, TableExistsTool};
 use crate::{McpClientResult, ToolRegistry};
 #[cfg(feature = "database")]
-use botticelli_database::{DbOperationsImpl, DbPool, PostgresNarrativeRepository};
+use botticelli_database::{DbOperationsImpl, DbPool};
 use std::sync::Arc;
 
 /// Register all available internal tools into the registry.
