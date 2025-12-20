@@ -3,7 +3,7 @@ use crate::{
 };
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{AnthropicErrorKind, ModelsError};
-use botticelli_interface::{BotticelliDriver, Capabilities, ToolCalling};
+use botticelli_interface::{BotticelliDriver, Capabilities, ToolCalling, Vision};
 use botticelli_rate_limit::RateLimitConfig;
 use reqwest::Client;
 use tracing::{debug, error, instrument};
@@ -377,6 +377,26 @@ impl botticelli_interface::ToolCalling for AnthropicClient {
 
     fn supports_parallel_tool_calls(&self) -> bool {
         true
+    }
+}
+
+/// Implement Vision trait - Anthropic supports image inputs
+impl botticelli_interface::Vision for AnthropicClient {
+    fn max_images_per_request(&self) -> usize {
+        20 // Anthropic supports many images per request
+    }
+
+    fn supported_image_formats(&self) -> &[&'static str] {
+        &[
+            "image/png",
+            "image/jpeg",
+            "image/webp",
+            "image/gif",
+        ]
+    }
+
+    fn max_image_size_bytes(&self) -> usize {
+        5 * 1024 * 1024 // 5MB per image
     }
 }
 
