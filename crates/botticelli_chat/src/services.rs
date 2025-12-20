@@ -217,27 +217,46 @@ impl ServiceContainer {
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_interface::BotticelliDriver>> {
+        let model_id = *self.config.chat.initial_model();
+        debug!(model = ?model_id, "Initializing LLM provider");
+        self.create_client_for_model(model_id)
+    }
+
+    /// Create a client for the specified model ID.
+    ///
+    /// This is used both for initial provider setup and for fallback scenarios.
+    /// Supports creating clients for different model families dynamically.
+    ///
+    /// # Available with the `cli` feature
+    #[cfg(feature = "cli")]
+    #[instrument(skip(self))]
+    pub fn create_client_for_model(
+        &self,
+        model_id: botticelli_models::ModelId,
+    ) -> ChatResult<Arc<dyn botticelli_interface::BotticelliDriver>> {
         use botticelli_models::{GeminiClient, ModelId};
 
-        let model_id = self.config.chat.initial_model();
+        debug!(model = ?model_id, "Creating client for model");
 
-        debug!(model = ?model_id, "Creating LLM provider");
-
-        // Create provider based on model ID
         match model_id {
             ModelId::Gemini(_model) => {
                 // GeminiClient::new() reads from GEMINI_API_KEY environment variable
-                let client = GeminiClient::new()
-                    .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(
-                        format!("Failed to create Gemini client: {}", e)
-                    )))?;
-                
-                info!("Gemini client created successfully");
+                let client = GeminiClient::new().map_err(|e| {
+                    ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                        "Failed to create Gemini client: {}",
+                        e
+                    )))
+                })?;
+
+                info!(model = ?model_id, "Gemini client created successfully");
                 Ok(Arc::new(client))
             }
-            ModelId::Groq(_) => Err(ChatError::new(ChatErrorKind::NotImplemented(
-                "Groq provider implementation pending".into(),
-            ))),
+            ModelId::Groq(_model) => {
+                // TODO: Add GroqDriver when groq feature available
+                Err(ChatError::new(ChatErrorKind::NotImplemented(
+                    "Groq provider implementation pending".into(),
+                )))
+            }
         }
     }
 }
