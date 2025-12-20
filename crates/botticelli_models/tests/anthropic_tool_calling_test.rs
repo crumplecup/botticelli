@@ -5,8 +5,8 @@
 
 #![cfg(feature = "anthropic")]
 
-use botticelli_core::{GenerateRequest, Input, Message, Role, ToolDefinition};
-use botticelli_interface::BotticelliDriver;
+use botticelli_core::{GenerateRequest, Input, Message, Role};
+use botticelli_interface::{ToolCalling, ToolDefinition};
 use botticelli_models::AnthropicClient;
 use serde_json::json;
 
@@ -20,7 +20,7 @@ async fn test_anthropic_tool_calling() {
     // Create client with latest Sonnet model
     let client = AnthropicClient::new(api_key, "claude-3-5-sonnet-20241022");
 
-    // Define a simple echo tool
+    // Define a simple echo tool (using interface ToolDefinition)
     let tool = ToolDefinition::new(
         "echo".to_string(),
         "Echoes back the input message".to_string(),
@@ -42,14 +42,12 @@ async fn test_anthropic_tool_calling() {
         vec![Input::Text("Use echo to say 'Hi'".to_string())],
     );
 
-    let mut request = GenerateRequest::new(vec![message]);
-    request = request
-        .with_tools(Some(vec![tool]))
+    let request = GenerateRequest::new(vec![message])
         .with_max_tokens(Some(100)); // Minimal tokens to conserve rate limits
 
-    // Send request
+    // Use ToolCalling trait - tools passed as explicit parameter
     let response = client
-        .generate(&request)
+        .generate_with_tools(&request, &[tool])
         .await
         .expect("API call should succeed");
 

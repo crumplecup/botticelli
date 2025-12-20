@@ -1,6 +1,6 @@
 //! Request and response types for LLM generation.
 
-use crate::{Message, Output, StopReason, ToolDefinition};
+use crate::{Message, Output, StopReason};
 use serde::{Deserialize, Serialize};
 
 /// Generic generation request (multimodal-safe).
@@ -35,9 +35,6 @@ pub struct GenerateRequest {
     temperature: Option<f32>,
     /// Model identifier to use
     model: Option<String>,
-    /// Available tools for the LLM to call
-    #[serde(skip_serializing_if = "Option::is_none")]
-    tools: Option<Vec<ToolDefinition>>,
 }
 
 impl GenerateRequest {
@@ -48,7 +45,6 @@ impl GenerateRequest {
             max_tokens: None,
             temperature: None,
             model: None,
-            tools: None,
         }
     }
 
@@ -65,7 +61,6 @@ pub struct GenerateRequestBuilder {
     max_tokens: Option<u32>,
     temperature: Option<f32>,
     model: Option<String>,
-    tools: Option<Vec<ToolDefinition>>,
 }
 
 impl GenerateRequestBuilder {
@@ -93,12 +88,6 @@ impl GenerateRequestBuilder {
         self
     }
 
-    /// Sets the available tools for the LLM to call.
-    pub fn tools(mut self, tools: Option<Vec<ToolDefinition>>) -> Self {
-        self.tools = tools;
-        self
-    }
-
     /// Builds the GenerateRequest.
     pub fn build(self) -> Result<GenerateRequest, String> {
         Ok(GenerateRequest {
@@ -106,7 +95,6 @@ impl GenerateRequestBuilder {
             max_tokens: self.max_tokens,
             temperature: self.temperature,
             model: self.model,
-            tools: self.tools,
         })
     }
 }

@@ -153,16 +153,6 @@ impl AnthropicClient {
             builder = builder.temperature(*temp);
         }
 
-        // Convert tools if present
-        if let Some(tools) = request.tools() {
-            let anthropic_tools: Vec<AnthropicTool> = tools.iter()
-                .map(AnthropicTool::from_mcp)
-                .collect();
-            let tool_count = anthropic_tools.len();
-            builder = builder.tools(Some(anthropic_tools));
-            debug!(tool_count, "Added tools to request");
-        }
-
         builder
             .build()
             .map_err(|e| ModelsError::new(AnthropicErrorKind::Builder(e.to_string()).into()))
@@ -263,26 +253,8 @@ impl BotticelliDriver for AnthropicClient {
     ) -> Result<GenerateResponse, botticelli_error::BotticelliError> {
         debug!("Generating response with Anthropic - delegating to generate_with_tools");
 
-        // Convert tools from request to interface type if present
-        let interface_tools: Vec<botticelli_interface::ToolDefinition> = request
-            .tools()
-            .as_ref()
-            .map(|tools| {
-                tools
-                    .iter()
-                    .map(|t| {
-                        botticelli_interface::ToolDefinition::new(
-                            t.name().clone(),
-                            t.description().clone(),
-                            t.input_schema().clone(),
-                        )
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-
-        // Delegate to generate_with_tools (the real implementation)
-        self.generate_with_tools(request, &interface_tools).await
+        // No tools in basic generate - delegate with empty array
+        self.generate_with_tools(request, &[]).await
     }
 }
 

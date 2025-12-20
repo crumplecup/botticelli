@@ -857,26 +857,8 @@ impl BotticelliDriver for GeminiClient {
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
         use botticelli_interface::ToolCalling;
         
-        // Convert tools from request to interface type if present
-        let interface_tools: Vec<botticelli_interface::ToolDefinition> = req
-            .tools()
-            .as_ref()
-            .map(|tools| {
-                tools
-                    .iter()
-                    .map(|t| {
-                        botticelli_interface::ToolDefinition::new(
-                            t.name().clone(),
-                            t.description().clone(),
-                            t.input_schema().clone(),
-                        )
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-
-        // Delegate to generate_with_tools (the real implementation)
-        self.generate_with_tools(req, &interface_tools).await
+        // No tools in basic generate - delegate with empty array
+        self.generate_with_tools(req, &[]).await
     }
 
     fn provider_name(&self) -> &'static str {

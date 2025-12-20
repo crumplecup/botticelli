@@ -14,23 +14,13 @@ impl LlmProvider for AnthropicClient {
     async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, ProviderError> {
         debug!("Generating response via LlmProvider trait");
 
-        let anthropic_req = self.convert_request(request).map_err(|e| {
-            error!(error = %e, "Failed to convert request");
-            ProviderError::new(
-                "anthropic",
-                ProviderErrorKind::InvalidRequest(e.to_string()),
-            )
-        })?;
-
-        let anthropic_resp = self.generate_anthropic(&anthropic_req).await.map_err(|e| {
-            error!(error = %e, "Failed to call Anthropic API");
-            ProviderError::new("anthropic", ProviderErrorKind::ApiError(e.to_string()))
-        })?;
-
-        Self::convert_response(&anthropic_resp).map_err(|e| {
-            error!(error = %e, "Failed to convert response");
-            ProviderError::new("anthropic", ProviderErrorKind::ParsingError(e.to_string()))
-        })
+        // Delegate to BotticelliDriver::generate which handles the new architecture
+        BotticelliDriver::generate(self, request)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to generate response");
+                ProviderError::new("anthropic", ProviderErrorKind::ApiError(e.to_string()))
+            })
     }
 
     fn provider_name(&self) -> &str {
