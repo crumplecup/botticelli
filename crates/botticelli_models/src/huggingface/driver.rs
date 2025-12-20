@@ -98,8 +98,8 @@ impl BotticelliDriver for HuggingFaceDriver {
 
     fn capabilities(&self) -> Capabilities {
         Capabilities {
-            streaming: true,
-            tool_calling: true,
+            streaming: false,  // HuggingFace doesn't have real streaming
+            tool_calling: false,
             vision: false,
             audio: false,
             video: false,
@@ -107,34 +107,6 @@ impl BotticelliDriver for HuggingFaceDriver {
             json_mode: true,
             batch_generation: false,
         }
-    }
-}
-
-#[async_trait]
-impl Streaming for HuggingFaceDriver {
-    #[instrument(skip(self, req), fields(provider = "huggingface", model = %self.inner.model_name()))]
-    async fn generate_stream(
-        &self,
-        req: &GenerateRequest,
-    ) -> BotticelliResult<Pin<Box<dyn Stream<Item = BotticelliResult<StreamChunk>> + Send>>> {
-        let response = self.generate(req).await?;
-
-        let chunks: Vec<BotticelliResult<StreamChunk>> = response
-            .outputs()
-            .iter()
-            .map(|output| {
-                StreamChunk::builder()
-                    .content(output.clone())
-                    .is_final(true)
-                    .build()
-                    .map_err(|e| {
-                        ModelsError::new(botticelli_error::ModelsErrorKind::Builder(e.to_string()))
-                            .into()
-                    })
-            })
-            .collect();
-
-        Ok(Box::pin(futures_util::stream::iter(chunks)))
     }
 }
 

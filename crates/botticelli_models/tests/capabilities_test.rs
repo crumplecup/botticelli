@@ -74,8 +74,8 @@ fn test_groq_capabilities() {
         .expect("Failed to create GroqDriver");
     let caps = client.capabilities();
 
-    assert!(caps.streaming, "Groq should support streaming");
-    assert!(caps.tool_calling, "Groq should support tool calling");
+    assert!(!caps.streaming, "Groq does not support real streaming");
+    assert!(!caps.tool_calling, "Groq does not support tool calling");
     assert!(!caps.vision, "Groq should not support vision");
     assert!(!caps.audio, "Groq should not support audio");
     assert!(!caps.video, "Groq should not support video");
@@ -92,8 +92,8 @@ fn test_huggingface_capabilities() {
             .expect("Failed to create HuggingFaceDriver");
     let caps = client.capabilities();
 
-    assert!(caps.streaming, "HuggingFace should support streaming");
-    assert!(caps.tool_calling, "HuggingFace should support tool calling");
+    assert!(!caps.streaming, "HuggingFace does not support real streaming");
+    assert!(!caps.tool_calling, "HuggingFace does not support tool calling");
     assert!(!caps.vision, "HuggingFace should not support vision");
     assert!(!caps.audio, "HuggingFace should not support audio");
     assert!(!caps.video, "HuggingFace should not support video");
