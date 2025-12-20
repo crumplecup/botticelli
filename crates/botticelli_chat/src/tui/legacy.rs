@@ -223,11 +223,7 @@ impl TuiInterface {
     }
 }
 
-impl Default for TuiInterface {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// Note: TuiInterface::new() is async, so we don't implement Default
 
 impl ChatInterface for TuiInterface {
     #[instrument(skip(self))]

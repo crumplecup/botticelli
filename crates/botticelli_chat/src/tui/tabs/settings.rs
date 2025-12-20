@@ -399,7 +399,7 @@ impl SettingsTab {
     #[cfg(feature = "tui")]
     /// Renders the category list
     fn render_categories(&mut self, area: Rect, buf: &mut Buffer) {
-        use ratatui::widgets::{StatefulWidget, Widget};
+        use ratatui::widgets::StatefulWidget;
 
         let items: Vec<ListItem> = SettingsCategory::all()
             .iter()

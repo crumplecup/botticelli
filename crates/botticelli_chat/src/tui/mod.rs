@@ -16,9 +16,9 @@ mod legacy;
 
 // New modular API
 pub use app::TuiApp;
-pub use commands::{Action, TuiCommand};
+pub use commands::TuiCommand;
 pub use events::{EventHandler, EventResult};
-pub use state::{AppState, Modal, StatusInfo, Tab};
+pub use state::AppState;
 
 // Re-export legacy API for backwards compatibility
 pub use legacy::TuiInterface;

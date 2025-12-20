@@ -147,7 +147,7 @@ impl ExecuteNarrativeTool {
                 });
 
                 // Add observability data if available
-                if let Some(ref usage) = act.token_usage() {
+                if let Some(usage) = act.token_usage() {
                     act_json["token_usage"] = json!({
                         "input_tokens": usage.input_tokens(),
                         "output_tokens": usage.output_tokens(),
@@ -174,7 +174,7 @@ impl ExecuteNarrativeTool {
         });
 
         // Add narrative-level observability data
-        if let Some(ref usage) = execution.total_token_usage() {
+        if let Some(usage) = execution.total_token_usage() {
             result["total_token_usage"] = json!({
                 "input_tokens": usage.input_tokens(),
                 "output_tokens": usage.output_tokens(),

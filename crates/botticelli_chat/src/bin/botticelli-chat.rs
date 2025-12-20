@@ -93,22 +93,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut mcp_client = UnifiedMcpClient::builder().build();
     
     // Register internal narrative tools
-    match register_internal_tools(mcp_client.internal_registry_mut(), "./narratives") {
+    // Database feature is in botticelli_mcp_client, always pass None for now
+    match register_internal_tools(mcp_client.internal_registry_mut(), "./narratives", None) {
         Ok(()) => info!("Internal narrative tools registered"),
         Err(e) => warn!(error = ?e, "Failed to register internal tools"),
     }
     
     // Connect to external MCP servers from configuration
+    // TODO: Parse MCP server config from TOML to get command and args
+    // For now, commenting out as we need proper config structure
+    /*
     let mcp_url = config.mcp_server.server_url();
     let external_config = ExternalServerConfig::builder()
-        .name("botticelli-mcp")
-        .url(mcp_url.clone())
+        .name("botticelli-mcp".to_string())
+        .command("node".to_string())
+        .args(vec!["path/to/server.js".to_string()])
         .build();
         
     match mcp_client.connect_external_server(external_config).await {
         Ok(()) => info!(url = %mcp_url, "Connected to external MCP server"),
         Err(e) => warn!(error = ?e, url = %mcp_url, "Failed to connect to external MCP server"),
     }
+    */
     
     // List all available tools
     let available_tools = mcp_client.list_all_tools();
