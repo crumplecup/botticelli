@@ -1,4 +1,5 @@
-use botticelli_core::{GenerateRequest, GenerateResponse, Input, LlmProvider, Message, Role};
+use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, Role};
+use botticelli_interface::BotticelliDriver;
 use botticelli_mcp::{
     ConversationSession, ConversationTurn, LlmSampler, SamplingError, SamplingErrorKind,
     ToolDefinition, ToolRegistry, ToolResult,
@@ -9,7 +10,7 @@ use tracing::{debug, error, instrument};
 /// LLM sampler implementation for chat system.
 pub struct ChatLlmSampler {
     /// LLM provider (Anthropic, OpenAI, etc.)
-    provider: Arc<dyn LlmProvider>,
+    provider: Arc<dyn BotticelliDriver>,
 
     /// Tool registry for execution
     tool_registry: Arc<ToolRegistry>,
@@ -17,7 +18,7 @@ pub struct ChatLlmSampler {
 
 impl ChatLlmSampler {
     /// Create new sampler with provider and tool registry.
-    pub fn new(provider: Arc<dyn LlmProvider>, tool_registry: Arc<ToolRegistry>) -> Self {
+    pub fn new(provider: Arc<dyn BotticelliDriver>, tool_registry: Arc<ToolRegistry>) -> Self {
         Self {
             provider,
             tool_registry,

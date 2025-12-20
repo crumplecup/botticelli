@@ -14,7 +14,7 @@ derive_more = { version = "1.0", features = ["display", "error", "from"] }
 derive-getters = "0.5"
 
 # Internal dependencies
-botticelli_models = { path = "../botticelli_models" }
+botticelli_models = { path = "../botticelli_models", features = ["gemini", "anthropic"] }
 botticelli_mcp = { path = "../botticelli_mcp" }
 botticelli_narrative = { path = "../botticelli_narrative" }
 botticelli_core = { path = "../botticelli_core" }
@@ -74,6 +74,9 @@ botticelli_storage = { path = "../botticelli_storage", optional = true }
 # Interface (for NarrativeRepository trait)
 botticelli_interface = { path = "../botticelli_interface", optional = true }
 
+# Rate limiting (for BotticelliDriver trait)
+botticelli_rate_limit = { path = "../botticelli_rate_limit", optional = true }
+
 # MCP client (optional - for binary)
 botticelli_mcp_client = { path = "../botticelli_mcp_client", optional = true }
 
@@ -102,6 +105,7 @@ cli = [
     "dep:dotenvy",
     "dep:botticelli_database",
     "dep:botticelli_interface",
+    "dep:botticelli_rate_limit",
     "dep:botticelli_storage",
     "dep:botticelli_mcp_client",
     "dep:diesel",

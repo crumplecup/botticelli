@@ -21,7 +21,7 @@ impl SamplingIntegration {
 
         // Get provider from services (will be initialized on first use)
         // For now, use placeholder until first actual sampling call
-        let provider: Arc<dyn botticelli_core::LlmProvider> =
+        let provider: Arc<dyn botticelli_interface::BotticelliDriver> =
             Arc::new(PlaceholderProvider::new(services.clone()));
 
         let sampler = Arc::new(ChatLlmSampler::new(provider, tool_registry.clone()));
@@ -119,45 +119,65 @@ impl PlaceholderProvider {
 }
 
 #[async_trait::async_trait]
-impl botticelli_core::LlmProvider for PlaceholderProvider {
+impl botticelli_interface::BotticelliDriver for PlaceholderProvider {
     async fn generate(
         &self,
-        _request: &botticelli_core::GenerateRequest,
-    ) -> Result<botticelli_core::GenerateResponse, botticelli_core::ProviderError> {
+        request: &botticelli_core::GenerateRequest,
+    ) -> botticelli_error::BotticelliResult<botticelli_core::GenerateResponse> {
         // Lazily get the real provider from services
         #[cfg(feature = "cli")]
         {
             let provider = self.services.llm_provider().await.map_err(|e| {
-                botticelli_core::ProviderError::new(
-                    "service",
-                    botticelli_core::ProviderErrorKind::ApiError(e.to_string()),
+                // Convert ChatError to BotticelliError
+                botticelli_error::BotticelliError::new(
+                    botticelli_error::BotticelliErrorKind::Backend(
+                        botticelli_error::BackendError::new(e.to_string())
+                    )
                 )
             })?;
 
             // Delegate to real provider
-            provider.generate(_request).await
+            provider.generate(request).await
         }
 
         #[cfg(not(feature = "cli"))]
         {
-            Err(botticelli_core::ProviderError::new(
-                "placeholder",
-                botticelli_core::ProviderErrorKind::ApiError(
-                    "LLM provider requires 'cli' feature".to_string(),
-                ),
+            Err(botticelli_error::BotticelliError::new(
+                botticelli_error::BotticelliErrorKind::NotImplemented(
+                    botticelli_error::NotImplementedError::new(
+                        "LLM provider requires 'cli' feature".to_string()
+                    )
+                )
             ))
         }
     }
 
-    fn provider_name(&self) -> &str {
-        "lazy-provider"
+    fn capabilities(&self) -> botticelli_interface::Capabilities {
+        // Return default capabilities - the real provider will provide actual caps
+        botticelli_interface::Capabilities {
+            streaming: false,
+            tool_calling: true,  // Assume tools supported
+            vision: false,
+            audio: false,
+            video: false,
+            embeddings: false,
+            json_mode: false,
+            batch_generation: false,
+        }
     }
 
-    fn default_model(&self) -> &str {
+    fn provider_name(&self) -> &'static str {
+        "placeholder"
+    }
+
+    fn model_name(&self) -> &str {
         "deferred"
     }
 
-    fn supports_tools(&self) -> bool {
-        true
+    fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig {
+        // Return a static default rate limit config
+        use botticelli_rate_limit::RateLimitConfig;
+        static DEFAULT_LIMITS: std::sync::OnceLock<RateLimitConfig> = std::sync::OnceLock::new();
+        DEFAULT_LIMITS.get_or_init(|| RateLimitConfig::unlimited("placeholder"))
     }
 }

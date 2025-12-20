@@ -36,7 +36,7 @@ pub struct ServiceContainer {
     narrative_repo: OnceCell<PostgresNarrativeRepository>,
 
     #[cfg(feature = "cli")]
-    llm_provider: OnceCell<Arc<dyn botticelli_core::LlmProvider>>,
+    llm_provider: OnceCell<Arc<dyn botticelli_interface::BotticelliDriver>>,
 }
 
 impl ServiceContainer {
@@ -205,7 +205,7 @@ impl ServiceContainer {
     ///
     /// The provider is created lazily on first access based on config.
     #[instrument(skip(self))]
-    pub async fn llm_provider(&self) -> ChatResult<&Arc<dyn botticelli_core::LlmProvider>> {
+    pub async fn llm_provider(&self) -> ChatResult<&Arc<dyn botticelli_interface::BotticelliDriver>> {
         self.llm_provider
             .get_or_try_init(|| async {
                 info!("Initializing LLM provider");
@@ -216,8 +216,8 @@ impl ServiceContainer {
 
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
-    fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_core::LlmProvider>> {
-        use botticelli_models::ModelId;
+    fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_interface::BotticelliDriver>> {
+        use botticelli_models::{GeminiClient, ModelId};
 
         let model_id = self.config.chat.initial_model();
 
@@ -225,11 +225,18 @@ impl ServiceContainer {
 
         // Create provider based on model ID
         match model_id {
-            ModelId::Gemini(_) => Err(ChatError::new(ChatErrorKind::ExecutionFailed(
-                "Gemini provider not yet implemented with new LlmProvider trait".into(),
-            ))),
-            ModelId::Groq(_) => Err(ChatError::new(ChatErrorKind::ExecutionFailed(
-                "Groq provider not yet implemented with new LlmProvider trait".into(),
+            ModelId::Gemini(_model) => {
+                // GeminiClient::new() reads from GEMINI_API_KEY environment variable
+                let client = GeminiClient::new()
+                    .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(
+                        format!("Failed to create Gemini client: {}", e)
+                    )))?;
+                
+                info!("Gemini client created successfully");
+                Ok(Arc::new(client))
+            }
+            ModelId::Groq(_) => Err(ChatError::new(ChatErrorKind::NotImplemented(
+                "Groq provider implementation pending".into(),
             ))),
         }
     }
