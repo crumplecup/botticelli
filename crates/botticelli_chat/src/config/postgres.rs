@@ -1,25 +1,28 @@
+use derive_getters::Getters;
+use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 use crate::EnvironmentMode;
 
 /// PostgreSQL database configuration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, Setters)]
+#[setters(prefix = "with_", strip_option)]
 pub struct PostgresConfig {
     /// Database host.
-    pub host: String,
+    host: String,
 
     /// Database port.
-    pub port: u16,
+    port: u16,
 
     /// Database user.
-    pub user: String,
+    user: String,
 
     /// Database password.
     #[serde(skip_serializing)]
-    pub password: String,
+    password: String,
 
     /// Database name.
-    pub database: String,
+    database: String,
 }
 
 impl PostgresConfig {

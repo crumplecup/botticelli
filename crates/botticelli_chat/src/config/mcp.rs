@@ -1,15 +1,18 @@
+use derive_getters::Getters;
+use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 use crate::EnvironmentMode;
 
 /// MCP server configuration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, Setters)]
+#[setters(prefix = "with_", strip_option)]
 pub struct McpServerConfig {
     /// MCP server host.
-    pub host: String,
+    host: String,
 
     /// MCP server port.
-    pub port: u16,
+    port: u16,
 }
 
 impl McpServerConfig {
@@ -34,15 +37,16 @@ impl Default for McpServerConfig {
 }
 
 /// MCP client configuration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, Setters)]
+#[setters(prefix = "with_", strip_option)]
 pub struct McpClientConfig {
     /// Request timeout in seconds.
     #[serde(default = "default_timeout")]
-    pub timeout_seconds: u64,
+    timeout_seconds: u64,
 
     /// Number of retry attempts.
     #[serde(default = "default_retries")]
-    pub retry_attempts: u32,
+    retry_attempts: u32,
 }
 
 fn default_timeout() -> u64 {

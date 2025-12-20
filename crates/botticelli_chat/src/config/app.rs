@@ -51,29 +51,32 @@ impl ChatAppConfig {
         let defaults = Self::default();
         builder = builder
             .set_default("environment.mode", "local")?
-            .set_default("postgres.host", defaults.postgres.host)?
-            .set_default("postgres.port", defaults.postgres.port as i64)?
-            .set_default("postgres.user", defaults.postgres.user)?
-            .set_default("postgres.password", defaults.postgres.password)?
-            .set_default("postgres.database", defaults.postgres.database)?
-            .set_default("mcp_server.host", defaults.mcp_server.host)?
-            .set_default("mcp_server.port", defaults.mcp_server.port as i64)?
+            .set_default("postgres.host", defaults.postgres.host().clone())?
+            .set_default("postgres.port", *defaults.postgres.port() as i64)?
+            .set_default("postgres.user", defaults.postgres.user().clone())?
+            .set_default("postgres.password", defaults.postgres.password().clone())?
+            .set_default("postgres.database", defaults.postgres.database().clone())?
+            .set_default("mcp_server.host", defaults.mcp_server.host().clone())?
+            .set_default("mcp_server.port", *defaults.mcp_server.port() as i64)?
             .set_default(
                 "mcp_client.timeout_seconds",
-                defaults.mcp_client.timeout_seconds as i64,
+                *defaults.mcp_client.timeout_seconds() as i64,
             )?
             .set_default(
                 "mcp_client.retry_attempts",
-                defaults.mcp_client.retry_attempts as i64,
+                *defaults.mcp_client.retry_attempts() as i64,
             )?
-            .set_default("observability.rust_log", defaults.observability.rust_log)?
+            .set_default(
+                "observability.rust_log",
+                defaults.observability.rust_log().clone(),
+            )?
             .set_default(
                 "observability.otel_exporter",
-                defaults.observability.otel_exporter,
+                defaults.observability.otel_exporter().clone(),
             )?
             .set_default(
                 "observability.otel_endpoint",
-                defaults.observability.otel_endpoint,
+                defaults.observability.otel_endpoint().clone(),
             )?;
 
         // Load from file if provided
@@ -104,18 +107,24 @@ impl ChatAppConfig {
         let mut app_config: ChatAppConfig = built_config.try_deserialize()?;
 
         // Apply environment-aware defaults if not explicitly set
-        let mode = app_config.environment.mode;
+        let mode = *app_config.environment.mode();
         if !postgres_host_set {
-            app_config.postgres.host = mode.postgres_host_default().to_string();
+            app_config.postgres = app_config
+                .postgres
+                .clone()
+                .with_host(mode.postgres_host_default().to_string());
         }
         if !mcp_host_set {
-            app_config.mcp_server.host = mode.mcp_server_host_default().to_string();
+            app_config.mcp_server = app_config
+                .mcp_server
+                .clone()
+                .with_host(mode.mcp_server_host_default().to_string());
         }
 
         tracing::info!(
             mode = ?mode,
-            postgres_host = %app_config.postgres.host,
-            mcp_host = %app_config.mcp_server.host,
+            postgres_host = %app_config.postgres.host(),
+            mcp_host = %app_config.mcp_server.host(),
             "Loaded configuration"
         );
 
@@ -196,28 +205,34 @@ impl ConfigBuilder {
 
         // Apply overrides
         if let Some(mode) = self.mode {
-            config.environment.mode = mode;
+            config.environment = config.environment.clone().with_mode(mode);
 
             // Update dependent defaults if not overridden
             if self.postgres_host.is_none() {
-                config.postgres.host = mode.postgres_host_default().to_string();
+                config.postgres = config
+                    .postgres
+                    .clone()
+                    .with_host(mode.postgres_host_default().to_string());
             }
             if self.mcp_host.is_none() {
-                config.mcp_server.host = mode.mcp_server_host_default().to_string();
+                config.mcp_server = config
+                    .mcp_server
+                    .clone()
+                    .with_host(mode.mcp_server_host_default().to_string());
             }
         }
 
         if let Some(host) = self.postgres_host {
-            config.postgres.host = host;
+            config.postgres = config.postgres.clone().with_host(host);
         }
         if let Some(port) = self.postgres_port {
-            config.postgres.port = port;
+            config.postgres = config.postgres.clone().with_port(port);
         }
         if let Some(host) = self.mcp_host {
-            config.mcp_server.host = host;
+            config.mcp_server = config.mcp_server.clone().with_host(host);
         }
         if let Some(port) = self.mcp_port {
-            config.mcp_server.port = port;
+            config.mcp_server = config.mcp_server.clone().with_port(port);
         }
 
         Ok(config)
