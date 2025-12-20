@@ -112,8 +112,9 @@ impl CommandExecutor {
     }
 
     /// Get reference to sampling integration.
+    /// Get sampling integration.
     #[instrument(skip(self))]
-    pub fn sampling(&self) -> &Arc<SamplingIntegration> {
+    pub fn sampling(&self) -> &SamplingIntegration {
         &self.sampling
     }
 

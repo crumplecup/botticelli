@@ -1,6 +1,6 @@
 //! Integration layer between sampling coordinator and chat commands.
 
-use crate::{ChatLlmSampler, ServiceContainer};
+use crate::ChatLlmSampler;
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use botticelli_mcp::{PartialNarrative, SamplingCoordinator};
 use std::sync::Arc;

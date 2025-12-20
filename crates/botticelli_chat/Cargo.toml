@@ -1,10 +1,9 @@
 [package]
 name = "botticelli_chat"
-version = "0.1.0"
-edition = "2021"
-rust-version = "1.80"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/yourname/botticelli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
 description = "Chat interface for user/botticelli interaction"
 
 [dependencies]
