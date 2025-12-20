@@ -1,3 +1,5 @@
+#![cfg(feature = "cli")]
+
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, Role, ToolDefinition};
 use botticelli_interface::{BotticelliDriver, ToolCalling};
 use botticelli_mcp::{

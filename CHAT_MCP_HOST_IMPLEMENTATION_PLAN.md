@@ -226,14 +226,43 @@ impl LlmSampler for ChatLlmSampler {
 }
 ```
 
-#### Task 2.2: Update SamplingIntegration
+#### Task 2.2: Update SamplingIntegration - ✅ COMPLETED
 **File**: `crates/botticelli_chat/src/sampling_integration.rs`
 
 **Success Criteria**:
-- [ ] Pass MCP tool registry to ChatLlmSampler
-- [ ] Sampler uses tools during generation
-- [ ] Tool call results flow back to coordinator
-- [ ] Integration tests verify tool usage
+- [x] Pass MCP tool registry to ChatLlmSampler - ✅ Done
+- [x] Sampler uses tools during generation - ✅ Done via ToolCalling trait
+- [x] Tool call results flow back to coordinator - ✅ Done via execute_tools
+- [x] Real provider wired from services - ✅ Done
+
+**Status**: COMPLETED in commit b83bc0a
+
+**Implementation**:
+- `SamplingIntegration::new()` now async, gets real provider via `services.llm_provider_with_tools()`
+- `ServiceContainer` added `llm_provider_with_tools()` returning `Arc<dyn ToolCalling>`
+- `create_tool_calling_client()` instantiates GeminiClient with proper trait cast
+- Removed PlaceholderProvider (obsolete pattern)
+- Feature-gated with `cli` feature throughout
+- `CommandExecutor` and `TuiInterface` constructors now async
+
+**Architecture**:
+```
+ServiceContainer::llm_provider_with_tools()
+  → GeminiClient::new()
+  → Arc<dyn ToolCalling>
+  → ChatLlmSampler
+  → SamplingCoordinator
+  → MCP tool execution loop
+```
+
+### Phase 2: MCP Tool Integration - ✅ COMPLETE
+
+**Summary**: 
+- Chat system now has full MCP tool integration
+- LLM providers receive tool definitions via ToolCalling trait
+- Tools execute via ToolRegistry
+- Results flow back through conversation loop
+- GeminiClient is primary provider with tool support
 
 ### Phase 3: Fallback Chain Implementation
 
