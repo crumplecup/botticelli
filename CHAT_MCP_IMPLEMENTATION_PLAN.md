@@ -79,69 +79,36 @@ SamplingIntegration
 - [x] dotenvy loads .env file in main()
 - [x] API keys load from environment
 
-## Phase 4: Fallback Integration 🔄 IN PROGRESS
+## Phase 4: Fallback Integration ✅
 
-### Task 4.1: Add ChatSession to SamplingIntegration
-
-**What:** Track current model state and enable fallback
+### Task 4.1: Add ChatSession to SamplingIntegration ✅
 
 **Implementation:**
-- [ ] Add `chat_session: Arc<RwLock<ChatSession>>` field to SamplingIntegration
-- [ ] Initialize ChatSession from ServiceContainer config:
+- [x] ChatSession field in SamplingIntegration (sampling_integration.rs:14)
+- [x] Initialize from ServiceContainer config (sampling_integration.rs:33-50):
   - `initial_model` from config.chat.initial_model()
   - `fallback_strategy` from config.chat.fallback_strategy()
   - `bounds` from config.chat.model_bounds()
-- [ ] Pass ChatSession to ChatLlmSampler
+- [x] Pass ChatSession to ChatLlmSampler (sampling_integration.rs:58)
 
-**Success Criteria:**
-- SamplingIntegration tracks current model via ChatSession
-- Configuration properly loaded from config
-
-### Task 4.2: Implement Retry Logic in ChatLlmSampler
-
-**What:** Wrap LLM calls with automatic fallback on rate limits
+### Task 4.2: Implement Retry Logic in ChatLlmSampler ✅
 
 **Implementation:**
-- [ ] Add `chat_session` and `services` fields to ChatLlmSampler
-- [ ] Wrap `generate()` call in retry loop:
-  ```rust
-  loop {
-      match provider.generate_with_tools(&request, tools).await {
-          Ok(response) => return Ok(response),
-          Err(e) if is_rate_limit(&e) => {
-              // Use ChatSession to select next model
-              let next_model = session.handle_rate_limit(&e.to_string())?;
-              // Create new client via ServiceContainer
-              provider = services.create_tool_calling_client(next_model)?;
-              // Retry with new provider
-          }
-          Err(e) => return Err(e),
-      }
-  }
-  ```
-- [ ] Make provider mutable: `Arc<RwLock<dyn ToolCalling>>`
-- [ ] Add max retry limit (e.g., 3 attempts)
-
-**Success Criteria:**
-- Rate limit errors trigger fallback automatically
-- Fallback follows configured strategy
-- Retries stop after max attempts
-- All transitions traced
+- [x] ChatSession and services fields in ChatLlmSampler
+- [x] Retry loop in generate() (sampling.rs:172-220):
+  - MAX_RETRIES = 3
+  - ChatSession.handle_rate_limit() on error
+  - ServiceContainer.create_tool_calling_client() for new provider
+  - RwLock provider updates on successful fallback
+  - Full tracing of all transitions
 
 ### Task 4.3: Test Fallback Flow
 
-**What:** Verify fallback works end-to-end
-
-**Implementation:**
-- [ ] Manual test: trigger rate limit, observe fallback
-- [ ] Verify model transitions in traces
-- [ ] Verify fallback respects bounds configuration
+**Manual Testing Required:**
+- [ ] Trigger rate limit, observe fallback in traces
+- [ ] Verify model transitions follow configured strategy
+- [ ] Verify bounds configuration is respected
 - [ ] Test both "loyal_first" and "friendly_first" strategies
-
-**Success Criteria:**
-- Rate limits handled gracefully
-- Correct model selected based on strategy
-- User sees informative error if all fallbacks exhausted
 
 ## Phase 5: Testing & Documentation
 
