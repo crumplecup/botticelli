@@ -35,13 +35,17 @@ MCP Tools    Gemini/Anthropic/Groq
 - `SamplingIntegration`: Bridges coordinator to chat
 - `CommandExecutor`: Handles parsed user commands
 - Configuration system: `ChatAppConfig` with all necessary settings
+- **Existing fallback architecture**: `ModelSelector` with SelectionStrategy (LoyalFirst/FriendlyFirst)
+  - Loyal: Try smaller model in same family first (Gemini 2.5 Flash → Gemini 2.5 Flash Lite)
+  - Friendly: Try equivalent model in different family (Gemini → Groq)
+  - Includes rate limit detection and automatic model selection
 
 ### ❌ Critical Gaps
-1. **LLM Provider initialization returns errors** (services.rs:228-234)
-2. **No BotticelliDriver instantiation** (should use GeminiClient, AnthropicClient)
+1. **LLM Provider initialization returns errors** (services.rs:228-234) - ✅ FIXED in Task 1.1
+2. **No BotticelliDriver instantiation** (should use GeminiClient, AnthropicClient) - ✅ FIXED in Task 1.1
 3. **MCP tools not passed to LLM** (ToolCalling trait unused)
-4. **No fallback chain** (Gemini → Anthropic → other)
-5. **PlaceholderProvider delegates to non-existent provider**
+4. **Fallback chain not wired** (need to integrate ModelSelector)
+5. **PlaceholderProvider delegates to non-existent provider** - ✅ FIXED in Task 1.1
 
 ## Implementation Phases
 
@@ -90,26 +94,56 @@ fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_interface::Botticel
 }
 ```
 
-#### Task 1.2: Add Anthropic Fallback
+#### Task 1.2: Add Support for Additional Model Families
 **File**: `crates/botticelli_chat/src/services.rs`
 
 **Success Criteria**:
-- [ ] Add Anthropic model variant to match in `init_llm_provider()`
-- [ ] Creates `AnthropicClient` when Anthropic model specified
-- [ ] Uses API key from config
-- [ ] Compiles and tests pass
+- [ ] Extract client creation into `create_client_for_model(model_id)` helper
+- [ ] Support ModelId::Gemini → GeminiClient (already done)
+- [ ] Support ModelId::Groq → GroqDriver (when available)
+- [ ] Return clear error for unsupported families
+- [ ] Helper reusable by fallback system in Phase 3
 
-#### Task 1.3: Update Type References
+**Implementation**:
+```rust
+fn create_client_for_model(&self, model_id: ModelId) -> ChatResult<Arc<dyn BotticelliDriver>> {
+    match model_id {
+        ModelId::Gemini(_model) => {
+            let client = GeminiClient::new()
+                .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(
+                    format!("Failed to create Gemini client: {}", e)
+                )))?;
+            Ok(Arc::new(client))
+        }
+        ModelId::Groq(_model) => {
+            // TODO: Add GroqDriver when available
+            Err(ChatError::new(ChatErrorKind::NotImplemented(
+                "Groq provider pending implementation".into(),
+            )))
+        }
+    }
+}
+
+// Refactor init_llm_provider to use helper:
+fn init_llm_provider(&self) -> ChatResult<Arc<dyn BotticelliDriver>> {
+    let model_id = self.config.chat.initial_model();
+    debug!(model = ?model_id, "Creating LLM provider");
+    self.create_client_for_model(model_id)
+}
+```
+
+#### Task 1.3: Update Type References - ✅ COMPLETED
 **Files**: 
-- `crates/botticelli_chat/src/services.rs`
-- `crates/botticelli_chat/src/sampling_integration.rs`
-
+- `crates/botticelli_chat/src/services.rs` - ✅ Done
+- `crates/botticelli_chat/src/sampling_integration.rs` - ✅ Done
 **Success Criteria**:
-- [ ] Change `botticelli_core::LlmProvider` to `botticelli_interface::BotticelliDriver`
-- [ ] Update PlaceholderProvider to delegate to BotticelliDriver
-- [ ] Update SamplingIntegration to accept BotticelliDriver
-- [ ] All type signatures consistent
-- [ ] Compiles without errors
+- [x] Change `botticelli_core::LlmProvider` to `botticelli_interface::BotticelliDriver` - ✅ Done
+- [x] Update PlaceholderProvider to delegate to BotticelliDriver - ✅ Done
+- [x] Update SamplingIntegration to accept BotticelliDriver - ✅ Done
+- [x] All type signatures consistent - ✅ Done
+- [x] Compiles without errors - ✅ Done
+
+**Status**: COMPLETED in commit 5001f76
 
 ### Phase 2: MCP Tool Integration
 
@@ -173,67 +207,135 @@ impl LlmSampler for ChatLlmSampler {
 
 ### Phase 3: Fallback Chain Implementation
 
-**Objective**: Implement graceful degradation across LLM providers
+**Objective**: Wire existing ModelSelector fallback architecture into chat provider initialization
 
-#### Task 3.1: Create Fallback Provider Wrapper
-**File**: `crates/botticelli_chat/src/fallback_provider.rs` (new file)
+#### Task 3.1: Integrate ModelSelector with Chat Services
+**File**: `crates/botticelli_chat/src/services.rs`
 
 **Success Criteria**:
-- [ ] Wraps multiple BotticelliDriver instances
-- [ ] Tries primary, falls back to secondary on failure
-- [ ] Logs fallback events
-- [ ] Implements BotticelliDriver trait
-- [ ] Configurable retry/timeout behavior
+- [ ] `init_llm_provider()` creates ModelSelector with chat config
+- [ ] Uses SelectionStrategy from config (LoyalFirst or FriendlyFirst)
+- [ ] ModelBounds configured from chat settings
+- [ ] RateLimitDetector integrated for tracking limits
+- [ ] Initial model from config becomes starting point
 
-**Implementation**:
+**Implementation Outline**:
 ```rust
-pub struct FallbackProvider {
-    providers: Vec<(String, Arc<dyn BotticelliDriver>)>,
-    config: FallbackConfig,
+fn init_llm_provider(&self) -> ChatResult<Arc<dyn BotticelliDriver>> {
+    use botticelli_models::{ModelSelector, ModelBounds, SelectionStrategy, RateLimitDetector};
+    
+    let model_id = self.config.chat.initial_model();
+    
+    // Create model selector with strategy from config
+    let strategy = match self.config.chat.fallback_strategy() {
+        "friendly" => SelectionStrategy::FriendlyFirst,
+        _ => SelectionStrategy::LoyalFirst,  // Default
+    };
+    
+    let bounds = ModelBounds::none();  // Or from config
+    let detector = RateLimitDetector::new();
+    let mut selector = ModelSelector::new(bounds, strategy, detector);
+    
+    // Create initial client based on model_id
+    self.create_client_for_model(model_id)
 }
 
-impl FallbackProvider {
-    pub fn new(providers: Vec<(String, Arc<dyn BotticelliDriver>)>) -> Self {
-        Self { providers, config: FallbackConfig::default() }
-    }
-}
-
-#[async_trait]
-impl BotticelliDriver for FallbackProvider {
-    async fn generate(&self, request: &GenerateRequest) 
-        -> Result<GenerateResponse, ModelsError> 
-    {
-        let mut last_error = None;
-        
-        for (name, provider) in &self.providers {
-            match provider.generate(request).await {
-                Ok(response) => {
-                    info!(provider = name, "LLM generation successful");
-                    return Ok(response);
-                }
-                Err(e) => {
-                    warn!(provider = name, error = ?e, "Provider failed, trying next");
-                    last_error = Some(e);
-                    continue;
-                }
-            }
+fn create_client_for_model(&self, model_id: ModelId) -> ChatResult<Arc<dyn BotticelliDriver>> {
+    match model_id {
+        ModelId::Gemini(_) => {
+            let client = GeminiClient::new()?;
+            Ok(Arc::new(client))
         }
-        
-        Err(last_error.unwrap_or_else(|| 
-            ModelsError::new("No providers available")
-        ))
+        ModelId::Groq(_) => {
+            // Create GroqDriver when available
+            Err(ChatError::new(ChatErrorKind::NotImplemented(...)))
+        }
     }
 }
 ```
 
-#### Task 3.2: Integrate Fallback Chain
-**File**: `crates/botticelli_chat/src/services.rs`
+**Key Points**:
+- **Loyal fallback**: Try smaller model in same family (Gemini 2.5 Flash → Gemini 2.5 Flash Lite)
+- **Friendly fallback**: Try equivalent model in different family (Gemini → Groq equivalent)
+- ModelSelector handles rate limit detection and selection automatically
+- No need for custom FallbackProvider wrapper - use existing architecture
+
+#### Task 3.2: Create Fallback-Aware Generate Method
+**File**: `crates/botticelli_chat/src/services.rs` or new `fallback.rs`
 
 **Success Criteria**:
-- [ ] `init_llm_provider()` creates FallbackProvider
-- [ ] Chain includes: Gemini (primary) → Anthropic (fallback)
-- [ ] Can add more providers via config
-- [ ] Fallback tested with intentional failures
+- [ ] Wrap BotticelliDriver with fallback retry logic
+- [ ] On rate limit error, use ModelSelector to pick next model
+- [ ] Create new client for selected model
+- [ ] Retry generation with new client
+- [ ] Log fallback transitions
+- [ ] Max retry limit (e.g., 3 attempts)
+
+**Implementation**:
+```rust
+pub struct FallbackDriver {
+    initial_model: ModelId,
+    selector: Arc<Mutex<ModelSelector>>,
+    services: Arc<ServiceContainer>,
+}
+
+impl FallbackDriver {
+    async fn generate_with_fallback(
+        &self,
+        request: &GenerateRequest,
+    ) -> BotticelliResult<GenerateResponse> {
+        let mut current_model = self.initial_model;
+        let mut attempts = 0;
+        let max_attempts = 3;
+        
+        loop {
+            // Get client for current model
+            let client = self.services.create_client_for_model(current_model).await?;
+            
+            match client.generate(request).await {
+                Ok(response) => {
+                    info!(model = ?current_model, "Generation successful");
+                    return Ok(response);
+                }
+                Err(e) => {
+                    attempts += 1;
+                    if attempts >= max_attempts {
+                        error!("Max fallback attempts reached");
+                        return Err(e);
+                    }
+                    
+                    // Check if we should fallback
+                    let mut selector = self.selector.lock().await;
+                    if let Some(next_model) = selector.select_next(current_model, &e.to_string()) {
+                        info!(from = ?current_model, to = ?next_model, "Falling back to different model");
+                        current_model = next_model;
+                        continue;
+                    } else {
+                        warn!("No fallback available for error");
+                        return Err(e);
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+#### Task 3.3: Update Chat Configuration
+**File**: `crates/botticelli_chat/src/config/app.rs`
+
+**Success Criteria**:
+- [ ] Add `fallback_strategy` field (LoyalFirst | FriendlyFirst)
+- [ ] Add `model_bounds` configuration (min/max models)
+- [ ] Add `max_fallback_attempts` field
+- [ ] Configuration documented in example files
+- [ ] Default values sensible (LoyalFirst, 3 attempts)
+
+
+- [ ] Use ModelSelector's select_next() for intelligent fallback
+- [ ] Support both loyal (same-family) and friendly (cross-family) fallback
+- [ ] Fallback tested with intentional rate limit errors
+- [ ] Configuration allows choosing strategy and bounds
 
 ### Phase 4: Configuration and API Keys
 
@@ -335,9 +437,10 @@ impl BotticelliDriver for FallbackProvider {
 ### Risk 1: API Rate Limits
 **Impact**: Tests fail, development blocked  
 **Mitigation**: 
+- **Existing ModelSelector with RateLimitDetector handles this automatically**
 - Use mock providers in tests
-- Implement rate limiting in fallback chain
 - Document API quota requirements
+- Fallback system detects rate limit errors and switches models
 
 ### Risk 2: Tool Schema Mismatch
 **Impact**: LLM can't understand/use tools  
@@ -353,11 +456,39 @@ impl BotticelliDriver for FallbackProvider {
 - Integration tests catch breaks immediately
 - Version compatibility matrix
 
+## Benefits of Existing Fallback Architecture
+
+The botticelli_models crate already provides a sophisticated fallback system:
+
+### ModelSelector Features
+- **Rate limit detection**: Automatically recognizes rate limit errors from different providers
+- **Loyal fallback**: Try smaller model in same family (cheaper, same API)
+  - Example: Gemini 2.5 Flash → Gemini 2.5 Flash Lite
+- **Friendly fallback**: Try equivalent model in different family (different API, similar capability)
+  - Example: Gemini 2.5 Flash → Groq Llama 3.3 70B
+- **Model bounds**: Prevents falling back to models that are too expensive or too cheap
+- **Configurable strategy**: Choose loyal-first or friendly-first based on use case
+
+### Why This Matters for Chat
+- **Cost optimization**: Automatically use cheapest available model
+- **Reliability**: Switch providers when one is rate-limited
+- **Performance**: Don't wait for rate limit windows - switch immediately
+- **Flexibility**: Configure behavior per deployment (dev vs prod)
+
+### Integration Strategy
+Rather than create a new FallbackProvider wrapper, we:
+1. Wire ModelSelector into ServiceContainer initialization
+2. Create `generate_with_fallback()` method that uses selector
+3. Let existing architecture handle all fallback logic
+4. Configuration controls strategy and bounds
+
+This reuses battle-tested code and maintains consistency across the project.
+
 ## Timeline Estimate
 
-- **Phase 1**: 4-6 hours (Core LLM provider)
+- **Phase 1**: 4-6 hours (Core LLM provider) - ✅ Task 1.1 Complete, 1.2-1.3 remain
 - **Phase 2**: 6-8 hours (MCP tool integration)
-- **Phase 3**: 3-4 hours (Fallback chain)
+- **Phase 3**: 3-4 hours (Fallback chain integration - **simplified by using existing ModelSelector**)
 - **Phase 4**: 2-3 hours (Configuration)
 - **Phase 5**: 4-5 hours (Testing and docs)
 
