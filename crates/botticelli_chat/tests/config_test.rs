@@ -98,16 +98,20 @@ fn test_environment_mode_serialization() {
 
 #[test]
 fn test_environment_from_env_var() {
-    env::set_var("BOTTICELLI__ENVIRONMENT__MODE", "container");
-    env::set_var("BOTTICELLI__POSTGRES__HOST", "env-postgres");
+    unsafe {
+        env::set_var("BOTTICELLI__ENVIRONMENT__MODE", "container");
+        env::set_var("BOTTICELLI__POSTGRES__HOST", "env-postgres");
+    }
 
     let config = ChatAppConfig::load(None).expect("Failed to load config");
 
     assert_eq!(config.environment.mode, EnvironmentMode::Container);
     assert_eq!(config.postgres.host, "env-postgres");
 
-    env::remove_var("BOTTICELLI__ENVIRONMENT__MODE");
-    env::remove_var("BOTTICELLI__POSTGRES__HOST");
+    unsafe {
+        env::remove_var("BOTTICELLI__ENVIRONMENT__MODE");
+        env::remove_var("BOTTICELLI__POSTGRES__HOST");
+    }
 }
 
 #[test]

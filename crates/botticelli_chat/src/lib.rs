@@ -23,7 +23,11 @@ mod state;
 
 mod config;
 mod elicitation;
+mod tool_handler;
+
+#[cfg(feature = "cli")]
 mod sampling;
+#[cfg(feature = "cli")]
 mod sampling_integration;
 
 #[cfg(feature = "tui")]
@@ -55,10 +59,15 @@ pub use message::Message;
 pub use model_selection::ChatSession;
 pub use parser::parse_intent;
 pub use response::Response;
+
+#[cfg(feature = "cli")]
 pub use sampling::ChatLlmSampler;
+#[cfg(feature = "cli")]
 pub use sampling_integration::SamplingIntegration;
+
 pub use services::ServiceContainer;
 
 #[cfg(feature = "cli")]
 pub use startup::startup_sequence;
 pub use state::ConversationState;
+pub use tool_handler::ToolCallHandler;

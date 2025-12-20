@@ -1,6 +1,10 @@
 //! Command executor that processes parsed commands.
 
-use crate::{BotCommand, Command, NarrativeCommand, Response, SamplingIntegration, SocialCommand};
+use crate::{BotCommand, Command, NarrativeCommand, Response, SocialCommand};
+
+#[cfg(feature = "cli")]
+use crate::SamplingIntegration;
+
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use botticelli_mcp::PartialNarrative;
 use std::sync::Arc;
@@ -111,8 +115,8 @@ impl CommandExecutor {
         &self.services
     }
 
-    /// Get reference to sampling integration.
     /// Get sampling integration.
+    #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     pub fn sampling(&self) -> &SamplingIntegration {
         &self.sampling
