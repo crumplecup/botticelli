@@ -29,6 +29,7 @@ toml = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+botticelli_core = { path = "../botticelli_core" }
 botticelli_database = { path = "../botticelli_database" }
 botticelli_error = { path = "../botticelli_error" }
 botticelli_interface = { path = "../botticelli_interface" }
