@@ -65,7 +65,7 @@ The chat binary is an MCP host that:
 ### Phase 2: MCP Host Integration
 **Goal:** Connect to MCP servers and enable tool calling
 
-**Status:** In Progress
+**Status:** ✅ Complete
 
 #### Task 2.1: Initialize MCP Client
 - [x] Connect to configured MCP servers from `chat.toml`
