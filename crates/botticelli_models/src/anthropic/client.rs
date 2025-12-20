@@ -3,7 +3,7 @@ use crate::{
 };
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{AnthropicErrorKind, ModelsError};
-use botticelli_interface::{BotticelliDriver, Capabilities, ToolCalling, Vision};
+use botticelli_interface::{BotticelliDriver, Capabilities, ToolCalling};
 use botticelli_rate_limit::RateLimitConfig;
 use reqwest::Client;
 use tracing::{debug, error, instrument};

@@ -4,10 +4,7 @@ use crate::openai_compat::{OpenAICompatError, OpenAICompatibleClient};
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliResult, HuggingFaceErrorKind, ModelsError, ModelsResult};
-use botticelli_interface::{BotticelliDriver, Capabilities, StreamChunk, Streaming};
-use botticelli_rate_limit::RateLimitConfig;
-use futures_util::stream::Stream;
-use std::pin::Pin;
+use botticelli_interface::{BotticelliDriver, Capabilities};
 use tracing::{debug, instrument};
 
 /// HuggingFace Inference API driver.
