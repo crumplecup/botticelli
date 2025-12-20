@@ -271,6 +271,128 @@ impl BotticelliDriver for AnthropicClient {
     }
 }
 
+/// Implement ToolCalling trait - new clean architecture
+///
+/// Tools are passed as explicit parameters, not read from request fields.
+/// This makes the capability explicit and type-safe.
+#[async_trait::async_trait]
+impl botticelli_interface::ToolCalling for AnthropicClient {
+    #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
+    async fn generate_with_tools(
+        &self,
+        request: &GenerateRequest,
+        tools: &[botticelli_interface::ToolDefinition],
+    ) -> Result<GenerateResponse, botticelli_error::BotticelliError> {
+        debug!("Generating response with tools (ToolCalling trait)");
+
+        // Convert tools to Anthropic format
+        // Note: We need to convert from botticelli_interface::ToolDefinition to botticelli_core::ToolDefinition
+        let core_tools: Vec<botticelli_core::ToolDefinition> = tools
+            .iter()
+            .map(|t| {
+                botticelli_core::ToolDefinition::new(
+                    t.name().clone(),
+                    t.description().clone(),
+                    t.parameters().clone(),
+                )
+            })
+            .collect();
+
+        let anthropic_tools: Vec<AnthropicTool> = core_tools
+            .iter()
+            .map(AnthropicTool::from_mcp)
+            .collect();
+
+        // Convert messages
+        let messages: Result<Vec<AnthropicMessage>, ModelsError> = request
+            .messages()
+            .iter()
+            .map(|msg| {
+                let content: Vec<AnthropicContentBlock> = msg
+                    .content()
+                    .iter()
+                    .filter_map(|input| match input {
+                        Input::Text(text) => {
+                            Some(AnthropicContentBlock::Text { text: text.clone() })
+                        }
+                        _ => {
+                            debug!("Skipping non-text input (not supported by Anthropic)");
+                            None
+                        }
+                    })
+                    .collect();
+
+                if content.is_empty() {
+                    return Err(ModelsError::new(
+                        AnthropicErrorKind::ConversionError(
+                            "Message must have at least one text content block".to_string(),
+                        )
+                        .into(),
+                    ));
+                }
+
+                let role = match msg.role() {
+                    Role::User => "user",
+                    Role::Assistant => "assistant",
+                    Role::System => {
+                        return Err(ModelsError::new(
+                            AnthropicErrorKind::ConversionError(
+                                "System role not supported in messages (use system parameter)"
+                                    .to_string(),
+                            )
+                            .into(),
+                        ));
+                    }
+                };
+
+                AnthropicMessage::builder()
+                    .role(role)
+                    .content(content)
+                    .build()
+                    .map_err(|e| {
+                        ModelsError::new(AnthropicErrorKind::Builder(e.to_string()).into())
+                    })
+            })
+            .collect();
+
+        let messages = messages?;
+
+        // Build Anthropic request with tools from parameter
+        let mut builder = AnthropicRequest::builder()
+            .model(&self.model)
+            .max_tokens(4096u32)
+            .messages(messages);
+
+        if let Some(temp) = request.temperature() {
+            builder = builder.temperature(*temp);
+        }
+
+        // Add tools from parameter (not from request field)
+        if !tools.is_empty() {
+            builder = builder.tools(Some(anthropic_tools));
+            debug!(tool_count = tools.len(), "Added tools from parameter");
+        }
+
+        let anthropic_request = builder
+            .build()
+            .map_err(|e| ModelsError::new(AnthropicErrorKind::Builder(e.to_string()).into()))?;
+
+        // Call API
+        let anthropic_response = self.generate_anthropic(&anthropic_request).await?;
+        let response = Self::convert_response(&anthropic_response)?;
+
+        Ok(response)
+    }
+
+    fn max_tools(&self) -> usize {
+        128
+    }
+
+    fn supports_parallel_tool_calls(&self) -> bool {
+        true
+    }
+}
+
 impl botticelli_interface::TokenCounting for AnthropicClient {
     #[instrument(skip(self, text), fields(text_len = text.len()))]
     fn count_tokens(&self, text: &str) -> Result<usize, botticelli_error::BotticelliError> {
