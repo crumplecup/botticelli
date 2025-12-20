@@ -35,22 +35,22 @@ impl std::fmt::Debug for TuiLlmBackend {
 
 #[async_trait]
 impl LlmBackend for TuiLlmBackend {
+    #[tracing::instrument(skip(self, messages, tools), fields(tool_count = tools.len()))]
     async fn generate_with_tools(
         &self,
         messages: &[botticelli_core::Message],
-        _tools: &[ToolDefinition],
+        tools: &[ToolDefinition],
     ) -> Result<String, Box<dyn std::error::Error>> {
         use botticelli_core::Output;
         use serde_json::json;
 
-        // NOTE: Current architecture limitation - BotticelliDriver trait doesn't expose tool definitions
-        // We'll need to refactor this to properly support tool calling
-        // For now, we convert the response format so execute_with_tracking can extract tool calls
-
+        // Build request with tools - driver handles conversion to provider format
         let request = GenerateRequest::builder()
             .messages(messages.to_vec())
+            .tools(Some(tools.to_vec()))
             .build()?;
 
+        tracing::debug!("Sending request with {} tools", tools.len());
         let response = self.driver.generate(&request).await?;
 
         // Convert response to format expected by extract_tool_calls
