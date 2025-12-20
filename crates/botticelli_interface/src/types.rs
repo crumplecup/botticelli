@@ -60,38 +60,6 @@ pub enum FinishReason {
     Other,
 }
 
-/// Definition of a tool/function that the model can call.
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Serialize,
-    Deserialize,
-    derive_getters::Getters,
-    derive_setters::Setters,
-)]
-#[setters(prefix = "with_")]
-pub struct ToolDefinition {
-    /// Name of the tool/function
-    name: String,
-    /// Human-readable description of what the tool does
-    description: String,
-    /// JSON Schema defining the parameters this tool accepts
-    parameters: serde_json::Value,
-}
-
-impl ToolDefinition {
-    /// Create a new tool definition.
-    pub fn new(name: String, description: String, parameters: serde_json::Value) -> Self {
-        Self {
-            name,
-            description,
-            parameters,
-        }
-    }
-}
-
 /// Result of a tool execution to send back to the model.
 ///
 /// After the model requests a tool call, your application executes it

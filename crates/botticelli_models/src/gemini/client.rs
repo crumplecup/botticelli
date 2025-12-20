@@ -901,7 +901,7 @@ impl botticelli_interface::ToolCalling for GeminiClient {
     async fn generate_with_tools(
         &self,
         request: &GenerateRequest,
-        tools: &[botticelli_interface::ToolDefinition],
+        tools: &[botticelli_core::ToolDefinition],
     ) -> BotticelliResult<GenerateResponse> {
         use gemini_rust::{FunctionDeclaration, Tool};
         use tracing::{debug, error};
@@ -940,7 +940,7 @@ impl botticelli_interface::ToolCalling for GeminiClient {
                 let decl_json = serde_json::json!({
                     "name": t.name(),
                     "description": t.description(),
-                    "parameters": t.parameters(),
+                    "parameters": t.input_schema(),
                 });
                 serde_json::from_value(decl_json)
                     .expect("Failed to create FunctionDeclaration from JSON")

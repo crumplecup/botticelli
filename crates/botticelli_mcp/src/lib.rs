@@ -64,7 +64,7 @@ pub use tools::{
     GenerateTool, LlmSampler, McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper,
     NarrativeRegistry, PrometheusMetrics, QueryContentTool, SamplingCoordinator, SamplingError,
     SamplingErrorKind, SamplingHelper, SamplingResult, SaveNarrativeTool, ServerInfoTool,
-    StartNarrativeInput, StartNarrativeTool, ToolDefinition, ToolRegistry, ValidateNarrativeTool,
+    StartNarrativeInput, StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
 
 #[cfg(feature = "discord")]

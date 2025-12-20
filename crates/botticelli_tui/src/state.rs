@@ -49,22 +49,11 @@ impl LlmBackend for TuiLlmBackend {
             .messages(messages.to_vec())
             .build()?;
 
-        // Convert MCP ToolDefinition to interface ToolDefinition
-        let interface_tools: Vec<botticelli_interface::ToolDefinition> = tools
-            .iter()
-            .map(|t| {
-                botticelli_interface::ToolDefinition::new(
-                    t.name().clone(),
-                    t.description().clone(),
-                    t.input_schema().clone(),
-                )
-            })
-            .collect();
-
+        // Tools are already botticelli_core::ToolDefinition - no conversion needed
         tracing::debug!("Sending request with {} tools via ToolCalling trait", tools.len());
         
         // Use ToolCalling trait
-        let response = self.driver.generate_with_tools(&request, &interface_tools).await?;
+        let response = self.driver.generate_with_tools(&request, tools).await?;
 
         // Convert response to format expected by extract_tool_calls
         // The extract_tool_calls function expects JSON with "content" array containing

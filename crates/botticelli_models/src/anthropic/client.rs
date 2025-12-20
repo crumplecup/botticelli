@@ -193,24 +193,12 @@ impl botticelli_interface::ToolCalling for AnthropicClient {
     async fn generate_with_tools(
         &self,
         request: &GenerateRequest,
-        tools: &[botticelli_interface::ToolDefinition],
+        tools: &[botticelli_core::ToolDefinition],
     ) -> Result<GenerateResponse, botticelli_error::BotticelliError> {
         debug!("Generating response with tools (ToolCalling trait)");
 
-        // Convert tools to Anthropic format
-        // Note: We need to convert from botticelli_interface::ToolDefinition to botticelli_core::ToolDefinition
-        let core_tools: Vec<botticelli_core::ToolDefinition> = tools
-            .iter()
-            .map(|t| {
-                botticelli_core::ToolDefinition::new(
-                    t.name().clone(),
-                    t.description().clone(),
-                    t.parameters().clone(),
-                )
-            })
-            .collect();
-
-        let anthropic_tools: Vec<AnthropicTool> = core_tools
+        // Convert tools to Anthropic format - already botticelli_core::ToolDefinition
+        let anthropic_tools: Vec<AnthropicTool> = tools
             .iter()
             .map(AnthropicTool::from_mcp)
             .collect();

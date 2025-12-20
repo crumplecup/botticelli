@@ -1,4 +1,5 @@
-use crate::{ConversationSession, ConversationTurn, LlmSampler, ToolDefinition};
+use crate::{ConversationSession, ConversationTurn, LlmSampler};
+use botticelli_core::ToolDefinition;
 use botticelli_error::{BotticelliResult, ChatError};
 use std::sync::Arc;
 use tokio::sync::RwLock;

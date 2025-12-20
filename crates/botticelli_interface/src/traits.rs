@@ -1,8 +1,8 @@
 //! Trait definitions for LLM backends and their capabilities.
 
-use crate::{Capabilities, HealthStatus, ModelMetadata, StreamChunk, ToolDefinition};
+use crate::{Capabilities, HealthStatus, ModelMetadata, StreamChunk};
 use async_trait::async_trait;
-use botticelli_core::{GenerateRequest, GenerateResponse, Input};
+use botticelli_core::{GenerateRequest, GenerateResponse, Input, ToolDefinition};
 use botticelli_error::BotticelliResult;
 use futures_util::stream::Stream;
 use std::pin::Pin;

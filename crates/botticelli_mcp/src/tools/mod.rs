@@ -78,7 +78,7 @@ pub use validate_narrative_session::{ApplyValidationFixesTool, ValidateNarrative
 pub use narrative_utils::{Act, NarrativeHelper};
 pub use sampling::{
     LlmSampler, SamplingCoordinator, SamplingError, SamplingErrorKind, SamplingHelper,
-    SamplingResult, ToolDefinition,
+    SamplingResult,
 };
 pub use sampling_session_manager::SamplingSessionManager;
 
@@ -167,14 +167,14 @@ impl ToolRegistry {
     /// Get tool definitions for LLM function calling.
     ///
     /// Converts all registered tools into the format expected by LLMs.
-    pub fn tool_definitions(&self) -> Vec<crate::ToolDefinition> {
+    pub fn tool_definitions(&self) -> Vec<botticelli_core::ToolDefinition> {
         self.tools
             .values()
-            .map(|tool| crate::ToolDefinition {
-                name: tool.name().to_string(),
-                description: tool.description().to_string(),
-                input_schema: tool.input_schema(),
-            })
+            .map(|tool| botticelli_core::ToolDefinition::new(
+                tool.name().to_string(),
+                tool.description().to_string(),
+                tool.input_schema(),
+            ))
             .collect()
     }
 }

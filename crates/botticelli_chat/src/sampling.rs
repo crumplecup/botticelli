@@ -1,8 +1,8 @@
-use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, Role};
+use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, Role, ToolDefinition};
 use botticelli_interface::BotticelliDriver;
 use botticelli_mcp::{
     ConversationSession, ConversationTurn, LlmSampler, SamplingError, SamplingErrorKind,
-    ToolDefinition, ToolRegistry, ToolResult,
+    ToolRegistry, ToolResult,
 };
 use std::sync::Arc;
 use tracing::{debug, error, instrument};

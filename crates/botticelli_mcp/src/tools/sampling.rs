@@ -1,5 +1,5 @@
 use crate::{ConversationSession, ConversationTurn, SessionState, ToolRegistry, ToolResult};
-use botticelli_core::{GenerateResponse, ToolCall};
+use botticelli_core::{GenerateResponse, ToolCall, ToolDefinition};
 use botticelli_error::BotticelliResult;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -221,19 +221,6 @@ pub enum SamplingResult {
         /// Final response from the assistant
         final_response: String,
     },
-}
-
-/// Tool definition for LLM function calling.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolDefinition {
-    /// Unique tool name
-    pub name: String,
-
-    /// Human-readable description
-    pub description: String,
-
-    /// JSON Schema for input validation
-    pub input_schema: serde_json::Value,
 }
 
 /// Errors from sampling operations.
