@@ -36,9 +36,20 @@ port = 3000
 timeout_seconds = 30
 retry_attempts = 3
 
-# [chat]
-# Chat session configuration is handled separately via ChatConfig
-# Model selection and fallback settings are not part of app config
+[chat]
+# Chat session configuration
+# Default model and fallback strategy for free-tier usage
+
+# Primary model (free tier: Gemini 2.5 Flash)
+initial_model = { Gemini = "Gemini25Flash" }
+
+# Fallback strategy: "friendly_first" tries other providers before downgrading within family
+# "loyal_first" downgrades within family before trying other providers  
+fallback_strategy = "friendly_first"
+
+# Model bounds (optional): prevent using models outside acceptable range
+# Uncomment to restrict model selection
+# model_bounds = { lower = { Gemini = "Gemini20Flash" }, upper = { Gemini = "Gemini25Pro" } }
 
 [observability]
 # Logging and tracing

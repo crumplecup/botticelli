@@ -91,6 +91,26 @@ pub enum ModelId {
     Groq(GroqModel),
 }
 
+impl std::str::FromStr for ModelId {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (family, model) = s
+            .split_once(':')
+            .ok_or_else(|| format!("Invalid model format: '{}' (expected 'family:model')", s))?;
+
+        match family {
+            "gemini" => GeminiModel::from_str(model)
+                .map(Self::Gemini)
+                .ok_or_else(|| format!("Unknown Gemini model: '{}'", model)),
+            "groq" => GroqModel::from_str(model)
+                .map(Self::Groq)
+                .ok_or_else(|| format!("Unknown Groq model: '{}'", model)),
+            _ => Err(format!("Unknown model family: '{}'", family)),
+        }
+    }
+}
+
 impl ModelId {
     /// Get the family this model belongs to.
     pub fn family(&self) -> ModelFamily {
