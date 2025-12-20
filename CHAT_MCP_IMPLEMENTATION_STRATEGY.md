@@ -122,25 +122,43 @@ The chat binary is an MCP host that:
 ### Phase 4: Testing & Polish
 **Goal:** Ensure robustness and usability
 
+**Status:** ✅ Complete
+
 #### Task 4.1: Error Handling Audit
-- [ ] Network errors handled gracefully
-- [ ] MCP server failures don't crash
-- [ ] API errors show helpful messages
-- [ ] Fallback provider errors logged
+- [x] Network errors handled gracefully
+- [x] MCP server failures don't crash
+- [x] API errors show helpful messages
+- [x] Fallback provider errors logged
 
 **Success Criteria:**
-- No panics in normal error cases
-- User gets actionable feedback
+- ✅ No panics in normal error cases
+- ✅ User gets actionable feedback
+
+**Implementation Notes:**
+- All errors properly wrapped in ChatError with context
+- MCP server connection failures logged as warnings (non-blocking)
+- Tool execution failures captured in ToolResult with is_error flag
+- Conversation loop has MAX_CONVERSATION_TURNS safety limit
+- All Result types properly propagated with map_err for context
+- Main binary uses Result<> and handles errors at top level
 
 #### Task 4.2: Add Instrumentation
-- [ ] `#[instrument]` on all public functions
-- [ ] Structured logging for debugging
-- [ ] Trace tool execution flow
-- [ ] Performance spans for LLM calls
+- [x] `#[instrument]` on all public functions
+- [x] Structured logging for debugging
+- [x] Trace tool execution flow
+- [x] Performance spans for LLM calls
 
 **Success Criteria:**
-- `RUST_LOG=debug` shows clear flow
-- Debugging is straightforward
+- ✅ `RUST_LOG=debug` shows clear flow
+- ✅ Debugging is straightforward
+
+**Implementation Notes:**
+- All core functions instrumented: ConversationLoop, ToolCallHandler, ServiceContainer
+- Tool execution fully traced with debug/info/error events
+- MCP client operations logged with context
+- Structured fields capture IDs, counts, and state
+- Sampling integration has instrumentation
+- TUI legacy mode has instrumentation for async operations
 
 ---
 
@@ -149,10 +167,12 @@ The chat binary is an MCP host that:
 **Minimum Viable:**
 - ✅ Free-tier fallback configured (Gemini → Groq)
 - ✅ Trait interface integration complete
-- [ ] Chat connects to MCP servers
-- [ ] Tools execute via MCP
-- [ ] Conversation continues with results
-- [ ] Fallback works when rate limited
+- ✅ Chat connects to MCP servers
+- ✅ Tools execute via MCP
+- ✅ Conversation continues with results
+- ✅ Fallback works when rate limited (via existing ModelSelector)
+- ✅ Error handling audit complete
+- ✅ Instrumentation audit complete
 
 **Stretch Goals:**
 - [ ] Conversation history persistence
