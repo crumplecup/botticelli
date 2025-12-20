@@ -139,12 +139,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Small delay for user to read
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
+    info!("Setting up conversation components");
+
+    // Wrap MCP client in Arc<RwLock> for shared access
+    let mcp_client = std::sync::Arc::new(tokio::sync::RwLock::new(mcp_client));
+    
+    // Create tool call handler
+    let tool_handler = botticelli_chat::ToolCallHandler::new(mcp_client.clone());
+    let tool_handler = std::sync::Arc::new(tokio::sync::RwLock::new(tool_handler));
+    
+    // Create conversation loop
+    let _conversation_loop = botticelli_chat::ConversationLoop::new(tool_handler.clone());
+
     info!("Starting TUI interface");
 
     // Create service container with configuration
     let _services = std::sync::Arc::new(botticelli_chat::ServiceContainer::new(config));
 
     // Create and run new TUI app
+    // TODO: Pass mcp_client and conversation components to TUI
     let mut tui = botticelli_tui::Tui::new()?;
 
     // Run the app

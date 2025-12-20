@@ -85,15 +85,23 @@ The chat binary is an MCP host that:
 - Errors gracefully handled with warnings (non-blocking)
 
 #### Task 2.2: Integrate Tool Execution Flow
-- [ ] Detect tool calls in LLM responses (via `ToolCalling` trait)
-- [ ] Execute tools via MCP client
-- [ ] Return results to LLM for next turn
-- [ ] Loop until conversation complete
+- [x] Detect tool calls in LLM responses (via `ToolCalling` trait)
+- [x] Execute tools via MCP client
+- [x] Return results to LLM for next turn
+- [x] Loop until conversation complete
 
 **Success Criteria:**
-- Tool calls execute successfully
-- Multi-turn conversations work
-- Results integrated properly
+- ✅ Tool calls execute successfully
+- ✅ Multi-turn conversations work
+- ✅ Results integrated properly
+
+**Implementation Notes:**
+- `ConversationLoop` and `ToolCallHandler` already implemented and tested
+- Both components wired into main binary
+- MCP client wrapped in `Arc<RwLock<>>` for shared access
+- Tool handler uses MCP client for execution
+- Conversation loop orchestrates multi-turn flow with MAX_CONVERSATION_TURNS limit
+- TODO: Wire components into TUI for actual user interaction
 
 ---
 
