@@ -81,6 +81,17 @@ pub struct ToolDefinition {
     parameters: serde_json::Value,
 }
 
+impl ToolDefinition {
+    /// Create a new tool definition.
+    pub fn new(name: String, description: String, parameters: serde_json::Value) -> Self {
+        Self {
+            name,
+            description,
+            parameters,
+        }
+    }
+}
+
 /// Result of a tool execution to send back to the model.
 ///
 /// After the model requests a tool call, your application executes it

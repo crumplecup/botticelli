@@ -3,7 +3,7 @@ use crate::{
 };
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{AnthropicErrorKind, ModelsError};
-use botticelli_interface::{BotticelliDriver, Capabilities};
+use botticelli_interface::{BotticelliDriver, Capabilities, ToolCalling};
 use botticelli_rate_limit::RateLimitConfig;
 use reqwest::Client;
 use tracing::{debug, error, instrument};
@@ -261,13 +261,28 @@ impl BotticelliDriver for AnthropicClient {
         &self,
         request: &GenerateRequest,
     ) -> Result<GenerateResponse, botticelli_error::BotticelliError> {
-        debug!("Generating response with Anthropic");
+        debug!("Generating response with Anthropic - delegating to generate_with_tools");
 
-        let anthropic_request = self.convert_request(request)?;
-        let anthropic_response = self.generate_anthropic(&anthropic_request).await?;
-        let response = Self::convert_response(&anthropic_response)?;
+        // Convert tools from request to interface type if present
+        let interface_tools: Vec<botticelli_interface::ToolDefinition> = request
+            .tools()
+            .as_ref()
+            .map(|tools| {
+                tools
+                    .iter()
+                    .map(|t| {
+                        botticelli_interface::ToolDefinition::new(
+                            t.name().clone(),
+                            t.description().clone(),
+                            t.input_schema().clone(),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
 
-        Ok(response)
+        // Delegate to generate_with_tools (the real implementation)
+        self.generate_with_tools(request, &interface_tools).await
     }
 }
 
