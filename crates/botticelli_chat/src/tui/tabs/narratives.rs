@@ -174,12 +174,7 @@ impl NarrativesTab {
     /// Renders the narratives tab
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         use crate::tui::widgets::NavigationPanel;
-        use ratatui::{
-            layout::{Constraint, Direction, Layout},
-            style::{Color, Modifier, Style},
-            text::{Line, Span},
-            widgets::{Block, Borders, Paragraph, Wrap},
-        };
+        use ratatui::layout::{Constraint, Direction, Layout};
 
         // Create layout: navigation panel on left, content on right
         let chunks = Layout::default()
@@ -210,7 +205,7 @@ impl NarrativesTab {
     /// Renders the detail view for a selected narrative
     fn render_narrative_detail(&self, narrative: &NarrativeEntry, area: Rect, buf: &mut Buffer) {
         use ratatui::{
-            style::{Color, Modifier, Style},
+            style::{Modifier, Style},
             text::{Line, Span},
             widgets::{Block, Borders, Paragraph, Wrap},
         };
@@ -265,7 +260,7 @@ impl NarrativesTab {
     /// Renders empty state when no narrative is selected
     fn render_empty_state(&self, area: Rect, buf: &mut Buffer) {
         use ratatui::{
-            style::{Color, Modifier, Style},
+            style::{Color, Style},
             text::Line,
             widgets::{Block, Borders, Paragraph, Widget},
         };

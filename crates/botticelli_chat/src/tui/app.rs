@@ -3,7 +3,7 @@
 use crate::tui::{AppState, EventHandler, EventResult};
 
 #[cfg(feature = "tui")]
-use crossterm::event::{self, Event};
+use crossterm::event;
 #[cfg(feature = "tui")]
 use ratatui::{backend::Backend, Terminal};
 
@@ -53,7 +53,6 @@ impl TuiApp {
         use ratatui::{
             layout::{Constraint, Direction, Layout},
             style::{Color, Modifier, Style},
-            text::Span,
             widgets::{Block, Borders, Paragraph, Tabs},
         };
 
@@ -124,7 +123,6 @@ impl TuiApp {
     /// Renders the currently active tab
     fn render_active_tab(&mut self, frame: &mut ratatui::Frame, area: ratatui::layout::Rect) {
         use crate::tui::state::Tab;
-        use ratatui::widgets::{Block, Borders, Paragraph};
 
         match self.state.active_tab {
             Tab::Narratives => {
