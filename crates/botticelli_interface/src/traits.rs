@@ -267,42 +267,6 @@ pub trait ToolCalling: BotticelliDriver {
     }
 }
 
-/// Trait for models that support function/tool calling (legacy).
-///
-/// **DEPRECATED**: Use `ToolCalling` trait instead. This trait will be
-/// removed in v0.4.0.
-///
-/// The old architecture allowed tools to be passed via `GenerateRequest.tools`
-/// field, which conflated data with capabilities. The new `ToolCalling` trait
-/// makes tools an explicit parameter.
-#[deprecated(
-    since = "0.3.0",
-    note = "Use ToolCalling trait instead - tools should be explicit parameters, not request fields"
-)]
-#[async_trait]
-pub trait ToolUse: BotticelliDriver {
-    /// Generate with available tools/functions.
-    ///
-    /// The response may contain tool calls (in `Output::ToolCalls`) instead of
-    /// or in addition to text output. Your application should execute these
-    /// tools and send results back in a follow-up request.
-    async fn generate_with_tools(
-        &self,
-        req: &GenerateRequest,
-        tools: &[ToolDefinition],
-    ) -> BotticelliResult<GenerateResponse>;
-
-    /// Maximum number of tools that can be provided.
-    fn max_tools(&self) -> usize {
-        128
-    }
-
-    /// Whether the model supports parallel tool calling (multiple tools in one turn).
-    fn supports_parallel_tool_calls(&self) -> bool {
-        false
-    }
-}
-
 /// Trait for models that support structured JSON output.
 #[async_trait]
 pub trait JsonMode: BotticelliDriver {

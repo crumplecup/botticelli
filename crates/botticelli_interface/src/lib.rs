@@ -28,7 +28,7 @@ pub use table_query_view::{
 pub use table_view::{TableReference, TableView};
 pub use traits::{
     Audio, BatchGeneration, BotticelliDriver, ContentRepository, DocumentProcessing, Embeddings,
-    Health, JsonMode, Metadata, Streaming, TableQueryRegistry, TokenCounting, ToolCalling, ToolUse,
+    Health, JsonMode, Metadata, Streaming, TableQueryRegistry, TokenCounting, ToolCalling,
     Video, Vision,
 };
 pub use types::{

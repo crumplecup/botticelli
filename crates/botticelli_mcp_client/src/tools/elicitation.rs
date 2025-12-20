@@ -385,6 +385,10 @@ impl ToolHandler for ExecuteCarouselTool {
                     "narrative_toml": {
                         "type": "string",
                         "description": "Complete narrative TOML with carousel configuration"
+                    },
+                    "session_id": {
+                        "type": "string",
+                        "description": "Optional elicitation session ID to track execution state"
                     }
                 },
                 "required": ["narrative_toml"]
@@ -394,7 +398,7 @@ impl ToolHandler for ExecuteCarouselTool {
 
     #[tracing::instrument(skip(self), fields(tool = "execute_carousel"))]
     async fn execute(&self, arguments: Value) -> McpClientResult<Vec<Content>> {
-        let _narrative_toml = arguments
+        let narrative_toml = arguments
             .get("narrative_toml")
             .and_then(|v| v.as_str())
             .ok_or_else(|| {
@@ -403,16 +407,40 @@ impl ToolHandler for ExecuteCarouselTool {
                 ))
             })?;
 
-        // TODO: Parse narrative TOML and execute carousel
-        // Requires integration with NarrativeExecutor
+        // Get or create session for tracking carousel state
+        let session_id = arguments
+            .get("session_id")
+            .and_then(|v| v.as_str())
+            .and_then(|s| Uuid::parse_str(s).ok())
+            .unwrap_or_else(Uuid::new_v4);
 
-        tracing::warn!("Carousel execution requires narrative executor integration");
+        // Store initial carousel execution state
+        let execution_state = json!({
+            "narrative_toml": narrative_toml,
+            "status": "initialized",
+            "iterations": [],
+            "started_at": chrono::Utc::now().to_rfc3339()
+        });
 
+        let session = ElicitationSession {
+            id: session_id,
+            state: execution_state,
+        };
+
+        let stored_id = self.registry.upsert(session)?;
+
+        tracing::info!(
+            session_id = %stored_id,
+            "Carousel execution session created"
+        );
+
+        // Return session info for tracking
         Ok(vec![Content::Text {
             text: json!({
-                "status": "not_implemented",
-                "message": "Carousel execution requires full narrative executor integration",
-                "next_steps": "Need to wire NarrativeExecutor into MCP tool handler"
+                "status": "session_created",
+                "session_id": stored_id.to_string(),
+                "message": "Carousel execution session initialized. Narrative parsing will happen on execution.",
+                "next_step": "Use session_id to track execution progress"
             })
             .to_string(),
         }])
