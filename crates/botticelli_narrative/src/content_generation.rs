@@ -121,7 +121,7 @@ impl ActProcessor for ContentGenerationProcessor {
         // Execute content generation
         let generation_result: Result<usize, botticelli_error::BotticelliError> = async {
             // Extract JSON from response first (needed for both modes)
-            let json_str = extract_json(&context.execution.response())?;
+            let json_str = extract_json(context.execution.response())?;
 
             tracing::debug!(json_length = json_str.len(), "Extracted JSON from response");
 

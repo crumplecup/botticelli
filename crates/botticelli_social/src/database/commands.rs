@@ -218,8 +218,7 @@ impl DatabaseCommandExecutor {
 
         // PostgreSQL doesn't support LIMIT in UPDATE without a subquery
         // Rewrite query for PostgreSQL compatibility
-        let query = if limit.is_some() {
-            let limit_val = limit.unwrap();
+        let query = if let Some(limit_val) = limit {
             format!(
                 "UPDATE {} SET {} WHERE ctid IN (SELECT ctid FROM {} WHERE {} LIMIT {})",
                 table_name, set_clause, table_name, where_clause, limit_val

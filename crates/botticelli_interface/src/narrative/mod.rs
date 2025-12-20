@@ -6,5 +6,5 @@
 pub mod execution;
 pub mod repository;
 
-pub use execution::{ActExecution, NarrativeExecution};
+pub use execution::{ActExecution, ActExecutionBuilder, NarrativeExecution};
 pub use repository::{ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeRepository};

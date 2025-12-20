@@ -95,8 +95,8 @@ impl AnthropicClient {
         let outputs: Vec<Output> = response
             .content()
             .iter()
-            .filter_map(|content| match content {
-                AnthropicContent::Text { text } => Some(Output::Text(text.clone())),
+            .map(|content| match content {
+                AnthropicContent::Text { text } => Output::Text(text.clone()),
                 AnthropicContent::ToolUse { id, name, input } => {
                     // Convert to ToolCall
                     let tool_call = botticelli_core::ToolCall::new(
@@ -104,7 +104,7 @@ impl AnthropicClient {
                         name.clone(),
                         input.clone(),
                     );
-                    Some(Output::ToolCalls(vec![tool_call]))
+                    Output::ToolCalls(vec![tool_call])
                 }
             })
             .collect();

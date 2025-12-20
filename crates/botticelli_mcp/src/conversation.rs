@@ -103,7 +103,6 @@ pub enum ConversationTurn {
 ///
 /// **Note**: This type has been moved to `botticelli_core`.
 /// Import from there: `use botticelli_core::ToolResult;`
-
 /// Attachment to a user message (image, file, etc.)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Attachment {

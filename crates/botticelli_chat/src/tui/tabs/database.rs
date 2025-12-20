@@ -83,8 +83,6 @@ pub struct ColumnDisplay {
 pub struct ContentRow {
     /// Row data as JSON
     pub data: JsonValue,
-    /// Selected for detailed view
-    pub selected: bool,
 }
 
 /// Filter options for content browsing
@@ -92,15 +90,12 @@ pub struct ContentRow {
 pub struct ContentFilter {
     /// Review status filter ("pending", "approved", "rejected", or None for all)
     pub review_status: Option<String>,
-    /// Maximum number of rows to display
-    pub limit: usize,
 }
 
 impl Default for ContentFilter {
     fn default() -> Self {
         Self {
             review_status: None,
-            limit: 100,
         }
     }
 }
@@ -212,10 +207,7 @@ impl DatabaseTab {
     pub fn set_content(&mut self, content: Vec<JsonValue>) {
         self.content = content
             .into_iter()
-            .map(|data| ContentRow {
-                data,
-                selected: false,
-            })
+            .map(|data| ContentRow { data })
             .collect();
 
         #[cfg(feature = "tui")]

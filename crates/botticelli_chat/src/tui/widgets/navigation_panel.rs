@@ -11,9 +11,6 @@ use ratatui::{
 #[cfg(feature = "tui")]
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
-#[cfg(feature = "tui")]
-use crossterm::event::KeyCode;
-
 /// Navigation panel widget for hierarchical browsing
 pub struct NavigationPanel {
     #[cfg(feature = "tui")]
@@ -61,42 +58,5 @@ impl NavigationPanel {
 
             StatefulWidget::render(tree_widget, area, buf, &mut self.tree_state);
         }
-    }
-
-    #[cfg(feature = "tui")]
-    /// Handles keyboard input for navigation
-    pub fn handle_key(&mut self, key: KeyCode) {
-        match key {
-            // Arrow keys
-            KeyCode::Down => {
-                self.tree_state.key_down();
-            }
-            KeyCode::Up => {
-                self.tree_state.key_up();
-            }
-            KeyCode::Right | KeyCode::Left | KeyCode::Enter | KeyCode::Char(' ') => {
-                // Toggle expansion for selected item
-                self.tree_state.toggle_selected();
-            }
-
-            // Vim keys
-            KeyCode::Char('j') => {
-                self.tree_state.key_down();
-            }
-            KeyCode::Char('k') => {
-                self.tree_state.key_up();
-            }
-            KeyCode::Char('l') | KeyCode::Char('h') => {
-                self.tree_state.toggle_selected();
-            }
-
-            _ => {}
-        }
-    }
-
-    #[cfg(feature = "tui")]
-    /// Gets the currently selected item path
-    pub fn selected(&self) -> &[String] {
-        self.tree_state.selected()
     }
 }

@@ -2,11 +2,7 @@
 
 use crate::{parse_intent, ChatInterface, CommandExecutor, Message, Response, UserInput};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
-use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
+use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
@@ -15,7 +11,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
     Terminal,
 };
-use std::io::{self, Stdout};
+use std::io::Stdout;
 use tracing::instrument;
 
 use crate::ServiceContainer;
@@ -250,23 +246,3 @@ impl ChatInterface for TuiInterface {
     }
 }
 
-/// Setup terminal for TUI mode.
-pub fn setup_terminal() -> io::Result<Terminal<CrosstermBackend<Stdout>>> {
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    Terminal::new(backend)
-}
-
-/// Restore terminal to normal mode.
-pub fn restore_terminal(mut terminal: Terminal<CrosstermBackend<Stdout>>) -> io::Result<()> {
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
-    Ok(())
-}

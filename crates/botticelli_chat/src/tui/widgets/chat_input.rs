@@ -78,12 +78,6 @@ impl ChatInput {
         self.textarea.cut();
         content
     }
-
-    #[cfg(feature = "tui")]
-    /// Checks if the input is empty
-    pub fn is_empty(&self) -> bool {
-        self.textarea.lines().iter().all(|l| l.trim().is_empty())
-    }
 }
 
 impl Default for ChatInput {

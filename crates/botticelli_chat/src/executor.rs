@@ -626,7 +626,9 @@ Other:
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     async fn handle_save_narrative(&self, _path: String) -> ChatResult<Response> {
-        use botticelli_interface::{ActExecution, NarrativeExecution, NarrativeRepository};
+        use botticelli_interface::{
+            ActExecutionBuilder, NarrativeExecution, NarrativeRepository,
+        };
         use tracing::info;
 
         // Check current state
@@ -647,18 +649,24 @@ Other:
 
         // Create a placeholder act execution
         // TODO: This should be replaced with actual generated content from MCP
-        let act = ActExecution::new(
-            "manual_entry".to_string(),
-            vec![],
-            model,
-            temperature,
-            max_tokens,
-            "This is a placeholder. Generate actual content via MCP.".to_string(),
-            0,
-            None,
-            None,
-            None,
-        );
+        let act = ActExecutionBuilder::default()
+            .act_name("manual_entry".to_string())
+            .inputs(vec![])
+            .model(model)
+            .temperature(temperature)
+            .max_tokens(max_tokens)
+            .response("This is a placeholder. Generate actual content via MCP.".to_string())
+            .sequence_number(0_usize)
+            .token_usage(None)
+            .estimated_cost_usd(None)
+            .duration_ms(None)
+            .build()
+            .map_err(|e| {
+                ChatError::new(ChatErrorKind::InvalidInput(format!(
+                    "Failed to build ActExecution: {}",
+                    e
+                )))
+            })?;
 
         let execution = NarrativeExecution::new(
             prompt.clone(),

@@ -14,8 +14,8 @@ mod types;
 
 pub use bot_server::{BotActor, BotResult, BotServer, BotServerConfig, BotState, BotStats};
 pub use narrative::{
-    ActExecution, ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution,
-    NarrativeRepository,
+    ActExecution, ActExecutionBuilder, ExecutionFilter, ExecutionStatus, ExecutionSummary,
+    NarrativeExecution, NarrativeRepository,
 };
 pub use registry::RegistryOperations;
 pub use registry_traits::{

@@ -238,19 +238,16 @@ impl GroqModel {
 }
 
 /// Selection strategy for fallback behavior.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, Default,
+)]
 pub enum SelectionStrategy {
     /// Try loyal movement first (within family), then friendly (cross-family)
     LoyalFirst,
     /// Try friendly movement first (cross-family), then loyal (within family)
     #[serde(rename = "friendly_first")]
+    #[default]
     FriendlyFirst,
-}
-
-impl Default for SelectionStrategy {
-    fn default() -> Self {
-        Self::FriendlyFirst
-    }
 }
 
 /// Orchestrates model selection with fallback logic.

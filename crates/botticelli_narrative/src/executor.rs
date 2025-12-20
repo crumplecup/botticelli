@@ -8,9 +8,11 @@ use crate::{
     ProcessorRegistry, StateManager,
 };
 use botticelli_core::{GenerateRequest, Input, Message, MessageBuilder, Output, Role};
-use botticelli_error::{BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind};
+use botticelli_error::{
+    BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
+};
 use botticelli_interface::{
-    ActExecution, BotticelliDriver, NarrativeExecution, TableQueryRegistry,
+    ActExecution, ActExecutionBuilder, BotticelliDriver, NarrativeExecution, TableQueryRegistry,
 };
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -441,18 +443,26 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     );
 
                     // Record the composition as a single act
-                    act_executions.push(ActExecution::new(
-                        act_name.clone(),
-                        Vec::new(),
-                        config.model().clone(),
-                        *config.temperature(),
-                        *config.max_tokens(),
-                        combined_response.clone(),
-                        sequence_number,
-                        None, // TODO: Aggregate from nested executions
-                        None,
-                        None,
-                    ));
+                    act_executions.push(
+                        ActExecutionBuilder::default()
+                            .act_name(act_name.clone())
+                            .inputs(Vec::new())
+                            .model(config.model().clone())
+                            .temperature(*config.temperature())
+                            .max_tokens(*config.max_tokens())
+                            .response(combined_response.clone())
+                            .sequence_number(sequence_number)
+                            .token_usage(None) // TODO: Aggregate from nested executions
+                            .estimated_cost_usd(None)
+                            .duration_ms(None)
+                            .build()
+                            .map_err(|e| {
+                                BotticelliError::from(BackendError::new(format!(
+                                    "Failed to build ActExecution: {}",
+                                    e
+                                )))
+                            })?,
+                    );
 
                     // Add the combined response to conversation history
                     conversation_history.push(
@@ -645,18 +655,24 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                 };
 
             // Create the act execution (store processed inputs)
-            let act_execution = ActExecution::new(
-                act_name.clone(),
-                processed_inputs.clone(),
-                model,
-                temperature,
-                max_tokens,
-                response_text.clone(),
-                sequence_number,
-                token_usage,
-                None, // TODO: Calculate from token_usage + model pricing
-                duration.map(|d| d.as_millis() as u64),
-            );
+            let act_execution = ActExecutionBuilder::default()
+                .act_name(act_name.clone())
+                .inputs(processed_inputs.clone())
+                .model(model)
+                .temperature(temperature)
+                .max_tokens(max_tokens)
+                .response(response_text.clone())
+                .sequence_number(sequence_number)
+                .token_usage(token_usage)
+                .estimated_cost_usd(None) // TODO: Calculate from token_usage + model pricing
+                .duration_ms(duration.map(|d| d.as_millis() as u64))
+                .build()
+                .map_err(|e| {
+                    BotticelliError::from(BackendError::new(format!(
+                        "Failed to build ActExecution: {}",
+                        e
+                    )))
+                })?;
 
             tracing::debug!(
                 act = %act_name,

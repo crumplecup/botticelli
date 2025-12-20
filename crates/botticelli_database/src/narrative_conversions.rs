@@ -2,7 +2,7 @@
 
 use botticelli_core::Input;
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
-use botticelli_interface::{ActExecution, ExecutionStatus, NarrativeExecution};
+use botticelli_interface::{ActExecution, ActExecutionBuilder, ExecutionStatus, NarrativeExecution};
 use tracing::instrument;
 
 use crate::{
@@ -204,18 +204,24 @@ pub fn rows_to_act_execution(
         inputs.push(row_to_input(input_row)?);
     }
 
-    Ok(ActExecution::new(
-        act_row.act_name,
-        inputs,
-        act_row.model,
-        act_row.temperature,
-        act_row.max_tokens.map(|t| t as u32),
-        act_row.response,
-        act_row.sequence_number as usize,
-        None, // token_usage - TODO: Load from database once schema is updated
-        None, // estimated_cost_usd
-        None, // duration_ms
-    ))
+    ActExecutionBuilder::default()
+        .act_name(act_row.act_name)
+        .inputs(inputs)
+        .model(act_row.model)
+        .temperature(act_row.temperature)
+        .max_tokens(act_row.max_tokens.map(|t| t as u32))
+        .response(act_row.response)
+        .sequence_number(act_row.sequence_number as usize)
+        .token_usage(None) // TODO: Load from database once schema is updated
+        .estimated_cost_usd(None)
+        .duration_ms(None)
+        .build()
+        .map_err(|e| {
+            BotticelliError::from(BackendError::new(format!(
+                "Failed to build ActExecution: {}",
+                e
+            )))
+        })
 }
 
 /// Convert ActInputRow to Input.

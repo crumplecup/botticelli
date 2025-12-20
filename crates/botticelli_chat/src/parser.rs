@@ -214,11 +214,11 @@ fn extract_after_keywords(input: &str, keywords: &[&str]) -> Option<String> {
     let mut best_len = 0;
 
     for keyword in keywords {
-        if let Some(pos) = input.rfind(keyword) {
-            if best_pos.is_none() || pos > best_pos.unwrap() {
-                best_pos = Some(pos);
-                best_len = keyword.len();
-            }
+        if let Some(pos) = input.rfind(keyword)
+            && (best_pos.is_none() || pos > best_pos.unwrap())
+        {
+            best_pos = Some(pos);
+            best_len = keyword.len();
         }
     }
 

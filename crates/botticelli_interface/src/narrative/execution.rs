@@ -16,9 +16,10 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     derive_getters::Getters,
     derive_setters::Setters,
-    derive_new::new,
+    derive_builder::Builder,
 )]
 #[setters(prefix = "with_")]
+#[builder(setter(into))]
 pub struct ActExecution {
     /// Name of the act (from the narrative).
     act_name: String,
