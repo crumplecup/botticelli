@@ -6,5 +6,5 @@ pub use client::AnthropicClient;
 pub use types::{
     AnthropicContent, AnthropicContentBlock, AnthropicImageSource, AnthropicMessage,
     AnthropicMessageBuilder, AnthropicRequest, AnthropicRequestBuilder, AnthropicResponse,
-    AnthropicResponseBuilder, AnthropicUsage,
+    AnthropicResponseBuilder, AnthropicTool, AnthropicUsage,
 };

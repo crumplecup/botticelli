@@ -88,7 +88,7 @@ pub use ollama::{OllamaClient, OllamaError, OllamaErrorKind, OllamaResult};
 pub use anthropic::{
     AnthropicClient, AnthropicContent, AnthropicContentBlock, AnthropicImageSource,
     AnthropicMessage, AnthropicMessageBuilder, AnthropicRequest, AnthropicRequestBuilder,
-    AnthropicResponse, AnthropicResponseBuilder, AnthropicUsage,
+    AnthropicResponse, AnthropicResponseBuilder, AnthropicTool, AnthropicUsage,
 };
 
 #[cfg(feature = "huggingface")]

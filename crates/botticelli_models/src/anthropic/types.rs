@@ -1,7 +1,53 @@
 //! Anthropic API request and response types.
 
+use botticelli_core::ToolDefinition;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
+
+/// Anthropic tool definition format.
+///
+/// Represents a tool in Anthropic's API format, converted from MCP ToolDefinition.
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+pub struct AnthropicTool {
+    /// Tool name
+    name: String,
+    /// Tool description
+    description: String,
+    /// JSON Schema for input parameters
+    input_schema: serde_json::Value,
+}
+
+impl AnthropicTool {
+    /// Convert MCP ToolDefinition to Anthropic format.
+    ///
+    /// # Arguments
+    ///
+    /// * `tool` - The MCP tool definition to convert
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use botticelli_core::ToolDefinition;
+    /// use botticelli_models::anthropic::AnthropicTool;
+    /// use serde_json::json;
+    ///
+    /// let mcp_tool = ToolDefinition::new(
+    ///     "echo".to_string(),
+    ///     "Echoes input".to_string(),
+    ///     json!({"type": "object", "properties": {"message": {"type": "string"}}}),
+    /// );
+    ///
+    /// let anthropic_tool = AnthropicTool::from_mcp(&mcp_tool);
+    /// assert_eq!(anthropic_tool.name(), "echo");
+    /// ```
+    pub fn from_mcp(tool: &ToolDefinition) -> Self {
+        Self {
+            name: tool.name().to_string(),
+            description: tool.description().to_string(),
+            input_schema: tool.input_schema().clone(),
+        }
+    }
+}
 
 /// Anthropic API request.
 #[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
@@ -21,6 +67,10 @@ pub struct AnthropicRequest {
     #[builder(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     temperature: Option<f32>,
+    /// Available tools for the LLM to call
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Vec<AnthropicTool>>,
 }
 
 impl AnthropicRequest {
@@ -116,22 +166,25 @@ impl AnthropicResponse {
 }
 
 /// Content in an Anthropic response.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
-#[builder(setter(into), pattern = "owned")]
-pub struct AnthropicContent {
-    /// Content type (always "text" for now)
-    #[builder(default = "\"text\".to_string()")]
-    #[serde(rename = "type")]
-    content_type: String,
+///
+/// Can be either text or a tool use request from the model.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum AnthropicContent {
     /// Text content
-    text: String,
-}
-
-impl AnthropicContent {
-    /// Creates a builder for `AnthropicContent`.
-    pub fn builder() -> AnthropicContentBuilder {
-        AnthropicContentBuilder::default()
-    }
+    Text {
+        /// The text content
+        text: String,
+    },
+    /// Tool use request from the model
+    ToolUse {
+        /// Unique identifier for this tool use
+        id: String,
+        /// Name of the tool to call
+        name: String,
+        /// Arguments to pass to the tool (JSON object)
+        input: serde_json::Value,
+    },
 }
 
 /// Usage information from Anthropic API.

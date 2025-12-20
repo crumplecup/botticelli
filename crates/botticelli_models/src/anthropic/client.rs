@@ -1,4 +1,6 @@
-use crate::{AnthropicContentBlock, AnthropicMessage, AnthropicRequest, AnthropicResponse};
+use crate::{
+    AnthropicContentBlock, AnthropicMessage, AnthropicRequest, AnthropicResponse, AnthropicTool,
+};
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{AnthropicErrorKind, ModelsError};
 use botticelli_interface::BotticelliDriver;
@@ -151,6 +153,16 @@ impl AnthropicClient {
             builder = builder.temperature(*temp);
         }
 
+        // Convert tools if present
+        if let Some(tools) = request.tools() {
+            let anthropic_tools: Vec<AnthropicTool> = tools.iter()
+                .map(AnthropicTool::from_mcp)
+                .collect();
+            let tool_count = anthropic_tools.len();
+            builder = builder.tools(Some(anthropic_tools));
+            debug!(tool_count, "Added tools to request");
+        }
+
         builder
             .build()
             .map_err(|e| ModelsError::new(AnthropicErrorKind::Builder(e.to_string()).into()))
@@ -163,10 +175,23 @@ impl AnthropicClient {
     ) -> Result<GenerateResponse, ModelsError> {
         debug!("Converting AnthropicResponse to GenerateResponse");
 
+        use crate::AnthropicContent;
+
         let outputs: Vec<Output> = response
             .content()
             .iter()
-            .map(|content| Output::Text(content.text().clone()))
+            .filter_map(|content| match content {
+                AnthropicContent::Text { text } => Some(Output::Text(text.clone())),
+                AnthropicContent::ToolUse { id, name, input } => {
+                    // Convert to ToolCall
+                    let tool_call = botticelli_core::ToolCall::new(
+                        id.clone(),
+                        name.clone(),
+                        input.clone(),
+                    );
+                    Some(Output::ToolCalls(vec![tool_call]))
+                }
+            })
             .collect();
 
         // Extract token usage if available
