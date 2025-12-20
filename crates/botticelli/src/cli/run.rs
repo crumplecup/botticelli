@@ -1,6 +1,6 @@
 //! Narrative execution command handler.
 
-use botticelli::BotticelliResult;
+use botticelli_error::BotticelliResult;
 #[cfg(feature = "gemini")]
 use botticelli_core::BudgetConfig;
 #[cfg(feature = "gemini")]

@@ -1,7 +1,7 @@
 //! Content management command handlers.
 
 use super::commands::{ContentCommands, OutputFormat};
-use botticelli::BotticelliResult;
+use botticelli_error::BotticelliResult;
 
 /// Handle content management commands.
 pub async fn handle_content_command(cmd: ContentCommands) -> BotticelliResult<()> {

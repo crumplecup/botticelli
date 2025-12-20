@@ -1,6 +1,6 @@
 //! TUI launch command handler.
 
-use botticelli::BotticelliResult;
+use botticelli_error::BotticelliResult;
 
 /// Launch the terminal user interface for a table.
 #[cfg(all(feature = "tui", feature = "database"))]

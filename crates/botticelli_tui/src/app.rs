@@ -3,7 +3,6 @@
 //! Wires together views, commands, state, and provides clean library entry points.
 
 use crate::{AppState, Command, Event, EventHandler, McpMessage, TuiResult, ViewMode};
-use botticelli_interface::BotticelliDriver;
 use crossterm::event::KeyEvent;
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{io, sync::Arc};
