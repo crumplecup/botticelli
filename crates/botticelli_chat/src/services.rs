@@ -215,6 +215,22 @@ impl ServiceContainer {
     }
 
     #[cfg(feature = "cli")]
+    /// Get or initialize LLM provider with tool calling support.
+    ///
+    /// Returns provider cast as ToolCalling trait for MCP integration.
+    /// Since GeminiClient (our default) implements ToolCalling, this is safe.
+    #[instrument(skip(self))]
+    pub async fn llm_provider_with_tools(&self) -> ChatResult<Arc<dyn botticelli_interface::ToolCalling>> {
+        // Ensure base provider is initialized
+        let _ = self.llm_provider().await?;
+        
+        // Create new client instance that we can cast to ToolCalling
+        // This is necessary because we can't downcast trait objects
+        let model_id = *self.config.chat.initial_model();
+        self.create_tool_calling_client(model_id)
+    }
+
+    #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_interface::BotticelliDriver>> {
         let model_id = *self.config.chat.initial_model();
@@ -253,6 +269,41 @@ impl ServiceContainer {
             }
             ModelId::Groq(_model) => {
                 // TODO: Add GroqDriver when groq feature available
+                Err(ChatError::new(ChatErrorKind::NotImplemented(
+                    "Groq provider implementation pending".into(),
+                )))
+            }
+        }
+    }
+
+    /// Create a tool-calling client for the specified model ID.
+    ///
+    /// Returns the client cast as ToolCalling trait for MCP integration.
+    ///
+    /// # Available with the `cli` feature
+    #[cfg(feature = "cli")]
+    #[instrument(skip(self))]
+    fn create_tool_calling_client(
+        &self,
+        model_id: botticelli_models::ModelId,
+    ) -> ChatResult<Arc<dyn botticelli_interface::ToolCalling>> {
+        use botticelli_models::{GeminiClient, ModelId};
+
+        debug!(model = ?model_id, "Creating tool-calling client for model");
+
+        match model_id {
+            ModelId::Gemini(_model) => {
+                let client = GeminiClient::new().map_err(|e| {
+                    ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                        "Failed to create Gemini client: {}",
+                        e
+                    )))
+                })?;
+
+                info!(model = ?model_id, "Gemini tool-calling client created");
+                Ok(Arc::new(client) as Arc<dyn botticelli_interface::ToolCalling>)
+            }
+            ModelId::Groq(_model) => {
                 Err(ChatError::new(ChatErrorKind::NotImplemented(
                     "Groq provider implementation pending".into(),
                 )))

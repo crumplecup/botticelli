@@ -61,34 +61,48 @@ use crate::ServiceContainer;
 pub struct CommandExecutor {
     narrative_state: Arc<RwLock<NarrativeState>>,
     services: Arc<ServiceContainer>,
+    
+    #[cfg(feature = "cli")]
     sampling: Arc<SamplingIntegration>,
+    
     current_narrative: Arc<RwLock<Option<PartialNarrative>>>,
 }
 
 impl CommandExecutor {
     /// Create a new command executor.
     #[instrument]
-    pub fn new() -> Self {
+    pub async fn new() -> ChatResult<Self> {
         let services = Arc::new(ServiceContainer::new(crate::ChatAppConfig::default()));
-        let sampling = Arc::new(SamplingIntegration::new(services.clone()));
-        Self {
+        
+        #[cfg(feature = "cli")]
+        let sampling = Arc::new(SamplingIntegration::new(services.clone()).await?);
+        
+        Ok(Self {
             narrative_state: Arc::new(RwLock::new(NarrativeState::new())),
             services,
+            
+            #[cfg(feature = "cli")]
             sampling,
+            
             current_narrative: Arc::new(RwLock::new(None)),
-        }
+        })
     }
 
     /// Create a new command executor with services.
     #[instrument(skip(services))]
-    pub fn with_services(services: Arc<ServiceContainer>) -> Self {
-        let sampling = Arc::new(SamplingIntegration::new(services.clone()));
-        Self {
+    pub async fn with_services(services: Arc<ServiceContainer>) -> ChatResult<Self> {
+        #[cfg(feature = "cli")]
+        let sampling = Arc::new(SamplingIntegration::new(services.clone()).await?);
+        
+        Ok(Self {
             narrative_state: Arc::new(RwLock::new(NarrativeState::new())),
             services,
+            
+            #[cfg(feature = "cli")]
             sampling,
+            
             current_narrative: Arc::new(RwLock::new(None)),
-        }
+        })
     }
 
     /// Get reference to services.
@@ -423,6 +437,7 @@ Other:
     }
 
     #[cfg(feature = "cli")]
+    #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     async fn handle_create_narrative(&self, prompt: String) -> ChatResult<Response> {
         use tracing::info;
@@ -679,11 +694,5 @@ Other:
         Err(ChatError::new(ChatErrorKind::NotImplemented(
             "Save narrative (requires cli feature)".to_string(),
         )))
-    }
-}
-
-impl Default for CommandExecutor {
-    fn default() -> Self {
-        Self::new()
     }
 }

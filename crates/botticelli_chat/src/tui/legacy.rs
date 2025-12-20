@@ -44,23 +44,23 @@ enum MessageRole {
 
 impl TuiInterface {
     /// Create a new TUI interface.
-    pub fn new() -> Self {
-        Self {
+    pub async fn new() -> ChatResult<Self> {
+        Ok(Self {
             messages: Vec::new(),
             input_buffer: String::new(),
             scroll_offset: 0,
-            executor: CommandExecutor::new(),
-        }
+            executor: CommandExecutor::new().await?,
+        })
     }
 
     /// Create a new TUI interface with services.
-    pub fn with_services(services: Arc<ServiceContainer>) -> Self {
-        Self {
+    pub async fn with_services(services: Arc<ServiceContainer>) -> ChatResult<Self> {
+        Ok(Self {
             messages: Vec::new(),
             input_buffer: String::new(),
             scroll_offset: 0,
-            executor: CommandExecutor::with_services(services),
-        }
+            executor: CommandExecutor::with_services(services).await?,
+        })
     }
 
     /// Run the interactive TUI loop.
