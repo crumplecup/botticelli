@@ -46,7 +46,7 @@ impl TuiApp {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(driver: Arc<dyn BotticelliDriver>) -> TuiResult<Self> {
+    pub fn new(driver: Arc<dyn botticelli_interface::ToolCalling>) -> TuiResult<Self> {
         let backend = CrosstermBackend::new(io::stdout());
         let terminal = Terminal::new(backend)?;
         let events = EventHandler::new(std::time::Duration::from_millis(250));

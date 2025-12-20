@@ -42,7 +42,7 @@ impl Tui {
     /// Takes an LLM driver (Anthropic, Gemini, etc.) and initializes the full
     /// MCP stack for tool execution.
     pub fn with_mcp(
-        driver: std::sync::Arc<dyn botticelli_interface::BotticelliDriver>,
+        driver: std::sync::Arc<dyn botticelli_interface::ToolCalling>,
     ) -> TuiResult<Self> {
         let backend = CrosstermBackend::new(io::stdout());
         let terminal = Terminal::new(backend)?;

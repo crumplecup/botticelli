@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, Input as CoreInput, Message as CoreMessage, Role};
-use botticelli_interface::BotticelliDriver;
+use botticelli_interface::ToolCalling;
 use botticelli_mcp_client::{
     LlmBackend, ToolDefinition, ToolHandler, UnifiedMcpClient,
     tools::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool},
@@ -13,14 +13,14 @@ use pmcp::{Content, ToolInfo};
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
-/// Simple LlmBackend adapter for BotticelliDriver.
+/// Simple LlmBackend adapter that wraps a ToolCalling provider.
 pub struct TuiLlmBackend {
-    driver: Arc<dyn BotticelliDriver>,
+    driver: Arc<dyn ToolCalling>,
 }
 
 impl TuiLlmBackend {
     /// Create a new TUI LLM backend.
-    pub fn new(driver: Arc<dyn BotticelliDriver>) -> Self {
+    pub fn new(driver: Arc<dyn ToolCalling>) -> Self {
         Self { driver }
     }
 }
@@ -28,7 +28,7 @@ impl TuiLlmBackend {
 impl std::fmt::Debug for TuiLlmBackend {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TuiLlmBackend")
-            .field("driver", &self.driver.model_name())
+            .field("driver", &"<driver>")
             .finish()
     }
 }
@@ -44,14 +44,27 @@ impl LlmBackend for TuiLlmBackend {
         use botticelli_core::Output;
         use serde_json::json;
 
-        // Build request with tools - driver handles conversion to provider format
+        // Build request without tools field
         let request = GenerateRequest::builder()
             .messages(messages.to_vec())
-            .tools(Some(tools.to_vec()))
             .build()?;
 
-        tracing::debug!("Sending request with {} tools", tools.len());
-        let response = self.driver.generate(&request).await?;
+        // Convert MCP ToolDefinition to interface ToolDefinition
+        let interface_tools: Vec<botticelli_interface::ToolDefinition> = tools
+            .iter()
+            .map(|t| {
+                botticelli_interface::ToolDefinition::new(
+                    t.name().clone(),
+                    t.description().clone(),
+                    t.input_schema().clone(),
+                )
+            })
+            .collect();
+
+        tracing::debug!("Sending request with {} tools via ToolCalling trait", tools.len());
+        
+        // Use ToolCalling trait
+        let response = self.driver.generate_with_tools(&request, &interface_tools).await?;
 
         // Convert response to format expected by extract_tool_calls
         // The extract_tool_calls function expects JSON with "content" array containing
@@ -531,7 +544,7 @@ impl AppState {
     /// - LLM backend with provided driver
     /// - Tool registry with basic tools
     /// - UnifiedMcpClient for orchestration
-    pub fn with_mcp_integration(driver: Arc<dyn BotticelliDriver>) -> Self {
+    pub fn with_mcp_integration(driver: Arc<dyn ToolCalling>) -> Self {
         info!("Initializing AppState with MCP integration");
 
         // Create LLM backend
