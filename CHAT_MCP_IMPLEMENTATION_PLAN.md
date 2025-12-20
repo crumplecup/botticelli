@@ -42,7 +42,11 @@ SamplingIntegration
 **Implementation:**
 - [x] ServiceContainer creates initial client for configured model
 - [x] Fallback handled at execution layer via ChatSession
-- [ ] Add retry logic wrapper around LLM calls with fallback
+- [x] Retry logic implemented in ChatLlmSampler::generate() (sampling.rs:172-220)
+  - MAX_RETRIES = 3
+  - Uses ChatSession::handle_rate_limit() on error
+  - Uses ServiceContainer::create_tool_calling_client() for fallback
+  - Updates provider via RwLock on successful fallback
 
 ## Phase 2: MCP Client Integration ✅
 
