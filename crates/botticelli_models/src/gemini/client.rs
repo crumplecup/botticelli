@@ -855,7 +855,28 @@ impl GeminiClient {
 #[async_trait]
 impl BotticelliDriver for GeminiClient {
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
-        self.generate_internal(req).await.map_err(Into::into)
+        use botticelli_interface::ToolCalling;
+        
+        // Convert tools from request to interface type if present
+        let interface_tools: Vec<botticelli_interface::ToolDefinition> = req
+            .tools()
+            .as_ref()
+            .map(|tools| {
+                tools
+                    .iter()
+                    .map(|t| {
+                        botticelli_interface::ToolDefinition::new(
+                            t.name().clone(),
+                            t.description().clone(),
+                            t.input_schema().clone(),
+                        )
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        // Delegate to generate_with_tools (the real implementation)
+        self.generate_with_tools(req, &interface_tools).await
     }
 
     fn provider_name(&self) -> &'static str {
@@ -888,6 +909,41 @@ impl BotticelliDriver for GeminiClient {
             json_mode: true,
             batch_generation: false,
         }
+    }
+}
+
+/// Implement ToolCalling trait - new clean architecture
+///
+/// Note: Gemini tool calling is not fully implemented yet. This provides
+/// the architecture and will warn if tools are provided.
+#[async_trait]
+impl botticelli_interface::ToolCalling for GeminiClient {
+    #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
+    async fn generate_with_tools(
+        &self,
+        request: &GenerateRequest,
+        tools: &[botticelli_interface::ToolDefinition],
+    ) -> BotticelliResult<GenerateResponse> {
+        use tracing::warn;
+        
+        if !tools.is_empty() {
+            warn!(
+                tool_count = tools.len(),
+                "Gemini tool calling not yet implemented - tools will be ignored"
+            );
+        }
+
+        // For now, delegate to generate_internal ignoring tools
+        // TODO: Implement actual Gemini tool calling
+        self.generate_internal(request).await.map_err(Into::into)
+    }
+
+    fn max_tools(&self) -> usize {
+        64 // Gemini's typical limit
+    }
+
+    fn supports_parallel_tool_calls(&self) -> bool {
+        true // Gemini supports parallel tool calls when implemented
     }
 }
 
