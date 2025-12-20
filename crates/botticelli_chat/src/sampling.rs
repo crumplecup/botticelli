@@ -7,28 +7,44 @@ use botticelli_mcp::{
     ToolRegistry, ToolResult,
 };
 use std::sync::Arc;
-use tracing::{debug, error, instrument};
+use tokio::sync::RwLock;
+use tracing::{debug, error, info, instrument, warn};
 
 /// LLM sampler implementation for chat system.
 pub struct ChatLlmSampler {
     /// LLM provider with tool calling support
-    provider: Arc<dyn ToolCalling>,
+    provider: Arc<RwLock<Arc<dyn ToolCalling>>>,
 
     /// Tool registry for execution
     tool_registry: Arc<ToolRegistry>,
+
+    /// Chat session for model selection and fallback
+    chat_session: Arc<RwLock<crate::ChatSession>>,
+
+    /// Service container for creating new clients
+    services: Arc<crate::ServiceContainer>,
 }
 
 impl ChatLlmSampler {
-    /// Create new sampler with provider and tool registry.
+    /// Create new sampler with provider, tool registry, and fallback support.
     ///
     /// # Arguments
     ///
     /// * `provider` - Provider that implements ToolCalling trait
     /// * `tool_registry` - Registry of available MCP tools
-    pub fn new(provider: Arc<dyn ToolCalling>, tool_registry: Arc<ToolRegistry>) -> Self {
+    /// * `chat_session` - Session tracking current model with fallback logic
+    /// * `services` - Service container for creating new clients on fallback
+    pub fn new(
+        provider: Arc<dyn ToolCalling>,
+        tool_registry: Arc<ToolRegistry>,
+        chat_session: Arc<tokio::sync::RwLock<crate::ChatSession>>,
+        services: Arc<crate::ServiceContainer>,
+    ) -> Self {
         Self {
-            provider,
+            provider: Arc::new(tokio::sync::RwLock::new(provider)),
             tool_registry,
+            chat_session,
+            services,
         }
     }
 
@@ -152,26 +168,92 @@ impl LlmSampler for ChatLlmSampler {
         // Build request from session
         let request = self.build_request(session)?;
 
-        // Use ToolCalling trait to pass tools to provider
-        let response = if available_tools.is_empty() {
-            // No tools - use base BotticelliDriver method
-            debug!("No tools available, using base generate");
-            self.provider
-                .generate(&request)
-                .await
-                .map_err(|e| SamplingError::new(SamplingErrorKind::ProviderError(e.to_string())))?
-        } else {
-            // Pass tools via ToolCalling trait
-            debug!(tool_count = available_tools.len(), "Generating with tools");
-            self.provider
-                .generate_with_tools(&request, available_tools)
-                .await
-                .map_err(|e| SamplingError::new(SamplingErrorKind::ProviderError(e.to_string())))?
-        };
+        // Retry loop with fallback on rate limits
+        const MAX_RETRIES: usize = 3;
+        let mut attempts = 0;
 
-        debug!(output_count = response.outputs().len(), "Received response");
+        loop {
+            attempts += 1;
 
-        Ok(response)
+            // Get current provider
+            let provider = {
+                let guard = self.provider.read().await;
+                guard.clone()
+            };
+
+            // Try to generate
+            let response = if available_tools.is_empty() {
+                debug!("No tools available, using base generate");
+                provider.generate(&request).await
+            } else {
+                debug!(tool_count = available_tools.len(), "Generating with tools");
+                provider.generate_with_tools(&request, available_tools).await
+            };
+
+            match response {
+                Ok(resp) => {
+                    debug!(output_count = resp.outputs().len(), "Received response");
+                    return Ok(resp);
+                }
+                Err(e) => {
+                    let error_msg = e.to_string();
+
+                    // Try fallback if this looks like a rate limit error and we have retries left
+                    if attempts < MAX_RETRIES {
+                        let mut session_guard = self.chat_session.write().await;
+
+                        match session_guard.handle_rate_limit(&error_msg) {
+                            Ok(next_model) => {
+                                info!(
+                                    current_model = ?session_guard.current_model(),
+                                    next_model = ?next_model,
+                                    attempt = attempts,
+                                    "Rate limit hit, falling back to next model"
+                                );
+
+                                // Create new client for fallback model
+                                match self.services.create_tool_calling_client(next_model) {
+                                    Ok(new_provider) => {
+                                        // Update provider with new client
+                                        let mut provider_guard = self.provider.write().await;
+                                        *provider_guard = new_provider;
+                                        drop(provider_guard);
+                                        drop(session_guard);
+
+                                        debug!("Retrying with fallback provider");
+                                        continue; // Retry with new provider
+                                    }
+                                    Err(create_err) => {
+                                        error!(error = %create_err, "Failed to create fallback client");
+                                        return Err(SamplingError::new(
+                                            SamplingErrorKind::ProviderError(format!(
+                                                "Fallback failed: {}",
+                                                create_err
+                                            )),
+                                        ));
+                                    }
+                                }
+                            }
+                            Err(_) => {
+                                // Not a rate limit error or no fallback available
+                                warn!(
+                                    attempts,
+                                    "No fallback available or not a rate limit error"
+                                );
+                                return Err(SamplingError::new(SamplingErrorKind::ProviderError(
+                                    error_msg,
+                                )));
+                            }
+                        }
+                    } else {
+                        error!(attempts, "Max retries exceeded");
+                        return Err(SamplingError::new(SamplingErrorKind::ProviderError(
+                            format!("Max retries ({}) exceeded: {}", MAX_RETRIES, error_msg),
+                        )));
+                    }
+                }
+            }
+        }
     }
 
     #[instrument(skip(self, calls))]

@@ -1,5 +1,6 @@
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use async_trait::async_trait;
+use botticelli_core::ToolResult;
 use derive_getters::Getters;
 use serde_json::Value;
 
@@ -66,29 +67,6 @@ impl ToolCall {
             id,
             name,
             arguments,
-        }
-    }
-}
-
-/// Result from executing a tool
-#[derive(Debug, Clone, Getters)]
-pub struct ToolResult {
-    /// ID of the tool call this is responding to
-    tool_call_id: String,
-    /// Result content as JSON
-    content: Value,
-    /// Whether the tool execution was successful
-    is_error: bool,
-}
-
-impl ToolResult {
-    /// Creates a new tool result.
-    #[must_use]
-    pub fn new(tool_call_id: String, content: Value, is_error: bool) -> Self {
-        Self {
-            tool_call_id,
-            content,
-            is_error,
         }
     }
 }

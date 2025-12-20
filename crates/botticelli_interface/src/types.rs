@@ -64,26 +64,10 @@ pub enum FinishReason {
 ///
 /// After the model requests a tool call, your application executes it
 /// and sends the result back using this structure.
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Serialize,
-    Deserialize,
-    derive_getters::Getters,
-    derive_setters::Setters,
-)]
-#[setters(prefix = "with_")]
-pub struct ToolResult {
-    /// ID matching the tool call this is responding to
-    id: String,
-    /// The output from executing the tool (as JSON)
-    output: serde_json::Value,
-    /// Whether the tool execution resulted in an error
-    is_error: bool,
-}
-
+///
+/// **Note**: This type has been moved to `botticelli_core`.
+/// Import from there: `use botticelli_core::ToolResult;`
+///
 /// Information about model capabilities and limits.
 #[derive(Debug, Clone, PartialEq, Eq, derive_getters::Getters, derive_builder::Builder)]
 pub struct ModelMetadata {

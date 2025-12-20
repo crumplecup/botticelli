@@ -1,10 +1,11 @@
 use crate::llm_adapter::{
     FinishReason, GenerationConfig, LlmAdapter, Message, MessageRole, ToolCall as LlmToolCall,
-    ToolResult, ToolSchema as LlmToolSchema,
+    ToolSchema as LlmToolSchema,
 };
 use crate::schema::{ToolSchema, ToolSchemaConverter};
 use crate::tool_registry::ToolRegistry;
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
+use botticelli_core::ToolResult;
 use pmcp::{Content, ToolInfo};
 use serde_json::Value;
 use std::sync::Arc;

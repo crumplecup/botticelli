@@ -76,8 +76,8 @@ botticelli_interface = { path = "../botticelli_interface", optional = true }
 # Rate limiting (for BotticelliDriver trait)
 botticelli_rate_limit = { path = "../botticelli_rate_limit", optional = true }
 
-# MCP client (optional - for binary)
-botticelli_mcp_client = { path = "../botticelli_mcp_client", optional = true }
+# MCP client
+botticelli_mcp_client = { path = "../botticelli_mcp_client" }
 
 # HTTP client (for health checks)
 reqwest = { version = "0.12", features = ["json"], optional = true }
@@ -106,7 +106,6 @@ cli = [
     "dep:botticelli_interface",
     "dep:botticelli_rate_limit",
     "dep:botticelli_storage",
-    "dep:botticelli_mcp_client",
     "dep:diesel",
     "dep:reqwest",
     "dep:tracing-subscriber",
@@ -131,6 +130,5 @@ dotenvy = "0.15"
 botticelli_database = { path = "../botticelli_database" }
 botticelli_interface = { path = "../botticelli_interface" }
 botticelli_storage = { path = "../botticelli_storage" }
-botticelli_mcp_client = { path = "../botticelli_mcp_client" }
 diesel = { workspace = true, features = ["postgres"] }
 color-eyre = "0.6"

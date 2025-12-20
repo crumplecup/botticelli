@@ -231,31 +231,13 @@ impl ServiceContainer {
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_interface::BotticelliDriver>> {
-        use crate::ChatSession;
-        use botticelli_models::{ModelBounds, ModelSelector, RateLimitDetector};
-
         let initial_model = *self.config.chat.initial_model();
-        let strategy = *self.config.chat.fallback_strategy();
-        let bounds = self
-            .config
-            .chat
-            .model_bounds()
-            .cloned()
-            .unwrap_or_else(ModelBounds::none);
         
-        debug!(model = ?initial_model, strategy = ?strategy, "Initializing LLM provider with fallback");
+        debug!(model = ?initial_model, "Initializing LLM provider");
 
-        // Create ModelSelector with configured strategy
-        let selector = ModelSelector::new(bounds, strategy, RateLimitDetector::new());
-
-        // Create ChatSession to manage model selection
-        let _session = ChatSession::new(selector, initial_model);
-
-        // Create initial client
+        // Create initial client - fallback is handled at the executor level
+        // using ChatSession and ModelSelector
         let client = self.create_client_for_model(initial_model)?;
-
-        // TODO: Wrap in FallbackProvider that uses ChatSession for rate limit handling
-        // For now, just return the initial client
         
         Ok(client)
     }

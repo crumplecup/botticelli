@@ -1,7 +1,6 @@
-use crate::{ConversationSession, ConversationTurn, SessionState, ToolRegistry, ToolResult};
-use botticelli_core::{GenerateResponse, ToolCall, ToolDefinition};
+use crate::{ConversationSession, ConversationTurn, SessionState, ToolRegistry};
+use botticelli_core::{GenerateResponse, ToolCall, ToolDefinition, ToolResult};
 use botticelli_error::BotticelliResult;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::instrument;
 

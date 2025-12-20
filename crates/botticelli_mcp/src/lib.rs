@@ -49,9 +49,7 @@ mod pmcp_http_server;
 #[cfg(feature = "http")]
 pub mod http;
 
-pub use conversation::{
-    Attachment, ConversationSession, ConversationTurn, SessionState, ToolResult,
-};
+pub use conversation::{Attachment, ConversationSession, ConversationTurn, SessionState};
 pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };

@@ -1,8 +1,8 @@
 //! Tool call result handler for MCP integration.
 
-use botticelli_core::ToolCall;
+use botticelli_core::{ToolCall, ToolResult};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
-use botticelli_mcp_client::{ToolResult, UnifiedMcpClient};
+use botticelli_mcp_client::UnifiedMcpClient;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, instrument, warn};

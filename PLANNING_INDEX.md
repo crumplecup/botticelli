@@ -22,11 +22,11 @@ This index tracks all planning documents in the workspace. When documents are co
   - 5-phase migration plan
   - Status: 📋 Strategic design - ready for implementation
 
-- **CHAT_MCP_IMPLEMENTATION_STRATEGY.md** - `f9dafd6` (2025-12-20)
+- **CHAT_MCP_IMPLEMENTATION_PLAN.md** - `current` (2025-12-20)
   - Strategic plan for Chat as MCP host with multi-provider LLM support
-  - Phases 1-2 complete: LLM client and MCP integration
-  - Uses existing fallback architecture
-  - Status: 🚧 Active - Phase 3 pending
+  - Phases 1-3 complete: LLM client, MCP integration, tool execution flow
+  - Uses existing ChatSession/ModelSelector fallback architecture
+  - Status: 🚧 Active - Phase 4 fallback integration in progress
 
 ### Documentation & Guides
 

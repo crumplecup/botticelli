@@ -25,7 +25,7 @@ pub use external_client::{ExternalMcpClient, ExternalServerConfig};
 pub use llm_adapter::{
     AnthropicAdapter, FinishReason, GeminiAdapter, GenerationConfig, GenerationResponse,
     GroqAdapter, LlmAdapter, Message, MessageRole, OllamaAdapter, TokenUsage,
-    ToolCall as LlmToolCall, ToolResult, ToolSchema as LlmToolSchema,
+    ToolCall as LlmToolCall, ToolSchema as LlmToolSchema,
 };
 pub use metrics::McpClientMetrics;
 pub use orchestrator::{Orchestrator, tool_info_to_provider_schema, tool_info_to_schema};

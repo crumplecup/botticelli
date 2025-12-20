@@ -3,7 +3,7 @@
 //! This module provides clean abstractions for managing multi-turn conversations
 //! with LLMs, including tool calls and results.
 
-use botticelli_core::ToolCall;
+use botticelli_core::{ToolCall, ToolResult};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -100,21 +100,9 @@ pub enum ConversationTurn {
 }
 
 /// Result from executing a tool.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ToolResult {
-    /// ID of the tool call this responds to
-    pub tool_call_id: String,
-
-    /// Output from the tool
-    pub output: serde_json::Value,
-
-    /// Whether this was an error
-    pub is_error: bool,
-
-    /// Optional error message
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error_message: Option<String>,
-}
+///
+/// **Note**: This type has been moved to `botticelli_core`.
+/// Import from there: `use botticelli_core::ToolResult;`
 
 /// Attachment to a user message (image, file, etc.)
 #[derive(Debug, Clone, Serialize, Deserialize)]

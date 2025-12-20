@@ -1,7 +1,7 @@
 //! Tests for conversation modeling types.
 
-use botticelli_core::ToolCall;
-use botticelli_mcp::{ConversationSession, ConversationTurn, ToolResult};
+use botticelli_core::{ToolCall, ToolResult};
+use botticelli_mcp::{ConversationSession, ConversationTurn};
 
 #[test]
 fn test_conversation_session_creation() {
