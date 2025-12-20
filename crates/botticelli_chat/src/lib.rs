@@ -22,6 +22,8 @@ mod startup;
 mod state;
 
 mod config;
+#[cfg(feature = "cli")]
+mod conversation_loop;
 mod elicitation;
 mod tool_handler;
 
@@ -70,4 +72,6 @@ pub use services::ServiceContainer;
 #[cfg(feature = "cli")]
 pub use startup::startup_sequence;
 pub use state::ConversationState;
+#[cfg(feature = "cli")]
+pub use conversation_loop::ConversationLoop;
 pub use tool_handler::ToolCallHandler;

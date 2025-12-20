@@ -65,15 +65,24 @@ The chat binary is an MCP host that:
 ### Phase 2: MCP Host Integration
 **Goal:** Connect to MCP servers and enable tool calling
 
+**Status:** In Progress
+
 #### Task 2.1: Initialize MCP Client
-- [ ] Connect to configured MCP servers from `chat.toml`
-- [ ] Load available tools into registry
-- [ ] Verify tools loaded with debug logging
+- [x] Connect to configured MCP servers from `chat.toml`
+- [x] Load available tools into registry
+- [x] Verify tools loaded with debug logging
 
 **Success Criteria:**
-- `just run-chat` connects to MCP servers
-- Tools logged at startup
-- Clean error if servers unavailable
+- ✅ `just run-chat` connects to MCP servers
+- ✅ Tools logged at startup
+- ✅ Clean error if servers unavailable
+
+**Implementation Notes:**
+- Added `UnifiedMcpClient` initialization in `botticelli-chat.rs`
+- Internal narrative tools registered from `./narratives` directory
+- External MCP server connected via `ExternalServerConfig`
+- All available tools logged at startup with tool count and names
+- Errors gracefully handled with warnings (non-blocking)
 
 #### Task 2.2: Integrate Tool Execution Flow
 - [ ] Detect tool calls in LLM responses (via `ToolCalling` trait)

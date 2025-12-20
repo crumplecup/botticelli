@@ -287,7 +287,7 @@ impl ServiceContainer {
     /// # Available with the `cli` feature
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
-    fn create_tool_calling_client(
+    pub fn create_tool_calling_client(
         &self,
         model_id: botticelli_models::ModelId,
     ) -> ChatResult<Arc<dyn botticelli_interface::ToolCalling>> {

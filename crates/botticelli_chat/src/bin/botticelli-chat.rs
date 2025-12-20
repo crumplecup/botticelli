@@ -3,9 +3,10 @@
 //! Interactive chat interface for directing botticelli operations.
 
 use botticelli_chat::{ChatAppConfig, EnvironmentMode};
+use botticelli_mcp_client::{ExternalServerConfig, UnifiedMcpClient, register_internal_tools};
 use clap::Parser;
 use std::path::PathBuf;
-use tracing::info;
+use tracing::{info, warn};
 
 #[derive(Debug, Parser)]
 #[command(name = "botticelli-chat")]
@@ -87,9 +88,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("Skipping startup checks");
     }
 
-    // Initialize services
-    let _db_url = config.postgres.database_url();
-    let _mcp_url = config.mcp_server.server_url();
+    // Initialize MCP client
+    info!("Initializing MCP client");
+    let mut mcp_client = UnifiedMcpClient::builder().build();
+    
+    // Register internal narrative tools
+    match register_internal_tools(mcp_client.internal_registry_mut(), "./narratives") {
+        Ok(()) => info!("Internal narrative tools registered"),
+        Err(e) => warn!(error = ?e, "Failed to register internal tools"),
+    }
+    
+    // Connect to external MCP servers from configuration
+    let mcp_url = config.mcp_server.server_url();
+    let external_config = ExternalServerConfig::builder()
+        .name("botticelli-mcp")
+        .url(mcp_url.clone())
+        .build();
+        
+    match mcp_client.connect_external_server(external_config).await {
+        Ok(()) => info!(url = %mcp_url, "Connected to external MCP server"),
+        Err(e) => warn!(error = ?e, url = %mcp_url, "Failed to connect to external MCP server"),
+    }
+    
+    // List all available tools
+    let available_tools = mcp_client.list_all_tools();
+    info!(
+        tool_count = available_tools.len(),
+        tools = ?available_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
+        "MCP tools loaded"
+    );
 
     info!("All dependencies ready");
 

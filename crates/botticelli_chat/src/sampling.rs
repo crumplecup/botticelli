@@ -1,10 +1,12 @@
 #![cfg(feature = "cli")]
 
-use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, Role, ToolDefinition};
+use botticelli_core::{
+    GenerateRequest, GenerateResponse, Input, Message, Role, ToolDefinition, ToolResult,
+};
 use botticelli_interface::{BotticelliDriver, ToolCalling};
 use botticelli_mcp::{
     ConversationSession, ConversationTurn, LlmSampler, SamplingError, SamplingErrorKind,
-    ToolRegistry, ToolResult,
+    ToolRegistry,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -120,9 +122,9 @@ impl ChatLlmSampler {
                     let content: Vec<_> = results
                         .iter()
                         .map(|result| Input::ToolResult {
-                            tool_call_id: result.tool_call_id.clone(),
-                            content: result.output.to_string(),
-                            is_error: result.is_error,
+                            tool_call_id: result.tool_call_id().clone(),
+                            content: result.content().to_string(),
+                            is_error: *result.is_error(),
                         })
                         .collect();
 
@@ -274,21 +276,11 @@ impl LlmSampler for ChatLlmSampler {
             let result = match output {
                 Ok(value) => {
                     debug!(tool = call.name(), "Tool executed successfully");
-                    ToolResult {
-                        tool_call_id: call.id().clone(),
-                        output: value,
-                        is_error: false,
-                        error_message: None,
-                    }
+                    ToolResult::new(call.id().clone(), value, false)
                 }
                 Err(e) => {
                     error!(tool = call.name(), error = %e, "Tool execution failed");
-                    ToolResult {
-                        tool_call_id: call.id().clone(),
-                        output: serde_json::json!(null),
-                        is_error: true,
-                        error_message: Some(e.to_string()),
-                    }
+                    ToolResult::new(call.id().clone(), serde_json::json!(null), true)
                 }
             };
 
