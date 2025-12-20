@@ -181,7 +181,31 @@ The chat binary is an MCP host that:
 
 ## Next Steps
 
-1. **Phase 2, Task 2.1** - Initialize MCP client in chat binary
-2. Verify compilation after each task
-3. Test incrementally
+**Phase 3: Testing & Validation - ✅ COMPLETE**
+
+Successfully created and verified tests for the unified trait refactor:
+
+### Tests Implemented:
+1. **Unit Tests** (`chat_config_test.rs`)
+   - ✅ Config with bounds and selection strategy
+   - ✅ Config without bounds
+   - ✅ Default configuration
+   - ✅ Serialization/deserialization
+
+2. **Integration Tests** (`chat_mcp_integration_test.rs`)
+   - ✅ Chat with MCP tools
+   - ✅ Fallback on provider failure
+   - Feature-gated with `api` flag
+
+### Legacy Test Updates Needed:
+The following existing tests need updates to work with new architecture (out of scope for trait refactor):
+- `llm_fallback_integration_test.rs` - Uses old API patterns
+- `model_selection_integration_test.rs` - Needs ServiceContainer updates
+- `mcp_tools_integration_test.rs` - CommandExecutor API changed
+- `narrative_mint_test.rs` - Executor interface changed
+
+### Next Priority:
+1. Fix legacy integration tests
+2. Run full test suite with `just test-api`
+3. Verify end-to-end MCP tool execution
 4. Update this document as we learn
