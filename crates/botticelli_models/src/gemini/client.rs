@@ -895,9 +895,6 @@ impl BotticelliDriver for GeminiClient {
 }
 
 /// Implement ToolCalling trait - new clean architecture
-///
-/// Note: Gemini tool calling is not fully implemented yet. This provides
-/// the architecture and will warn if tools are provided.
 #[async_trait]
 impl botticelli_interface::ToolCalling for GeminiClient {
     #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
@@ -906,18 +903,187 @@ impl botticelli_interface::ToolCalling for GeminiClient {
         request: &GenerateRequest,
         tools: &[botticelli_interface::ToolDefinition],
     ) -> BotticelliResult<GenerateResponse> {
-        use tracing::warn;
+        use gemini_rust::{FunctionDeclaration, Tool};
+        use tracing::{debug, error};
         
-        if !tools.is_empty() {
-            warn!(
-                tool_count = tools.len(),
-                "Gemini tool calling not yet implemented - tools will be ignored"
-            );
+        if tools.is_empty() {
+            // No tools - delegate to normal generate
+            return self.generate_internal(request).await.map_err(Into::into);
         }
 
-        // For now, delegate to generate_internal ignoring tools
-        // TODO: Implement actual Gemini tool calling
-        self.generate_internal(request).await.map_err(Into::into)
+        debug!(tool_count = tools.len(), "Generating with tools");
+
+        // Start timing for metrics
+        let start = std::time::Instant::now();
+        let metrics = crate::LlmMetrics::get();
+
+        // Determine which model to use
+        let model_name = request.model().as_ref().unwrap_or(&self.model_name);
+
+        // Record request
+        metrics.requests.add(
+            1,
+            &[
+                opentelemetry::KeyValue::new("provider", "gemini"),
+                opentelemetry::KeyValue::new("model", model_name.to_string()),
+            ],
+        );
+
+        // Convert tools to Gemini FunctionDeclarations
+        let function_declarations: Vec<FunctionDeclaration> = tools
+            .iter()
+            .map(|t| {
+                // Create FunctionDeclaration using builder pattern
+                // Note: We can't use with_parameters<T> since we have runtime JSON schema
+                // So we create the declaration manually using new() and set fields directly isn't possible
+                // Let's use serde to work around this
+                let decl_json = serde_json::json!({
+                    "name": t.name(),
+                    "description": t.description(),
+                    "parameters": t.parameters(),
+                });
+                serde_json::from_value(decl_json)
+                    .expect("Failed to create FunctionDeclaration from JSON")
+            })
+            .collect();
+
+        let gemini_tool = Tool::with_functions(function_declarations);
+        debug!(function_count = tools.len(), "Converted tools to Gemini format");
+
+        // Get or create rate-limited client for this model
+        let rate_limited_client = {
+            let mut clients = self.clients.lock().unwrap();
+            clients
+                .entry(model_name.clone())
+                .or_insert_with(|| {
+                    let model_enum = Self::model_name_to_enum(model_name);
+                    let client = Gemini::with_model(&self.api_key, model_enum)
+                        .expect("Failed to create Gemini client");
+                    let model_tier = self.base_tier.for_model(model_name);
+                    let tiered = TieredGemini { client, tier: model_tier };
+                    RateLimiter::new_with_retry(tiered, self.no_retry, self.max_retries, self.retry_backoff_ms)
+                })
+                .clone()
+        };
+
+        // Estimate tokens
+        let estimated_tokens: u64 = request
+            .messages()
+            .iter()
+            .flat_map(|msg| msg.content())
+            .filter_map(Self::extract_text)
+            .map(|text| Self::estimate_tokens(&text))
+            .sum();
+        let total_estimate = estimated_tokens + request.max_tokens().unwrap_or(1000) as u64;
+
+        // Clone data for closure
+        let messages = request.messages().clone();
+        let temperature = request.temperature();
+        let max_tokens = request.max_tokens();
+
+        // Execute with rate limiting
+        let response = rate_limited_client
+            .execute(total_estimate, || async {
+                let client = &rate_limited_client.inner().client;
+                let mut builder = client.generate_content();
+
+                // Process messages
+                let mut system_prompt = None;
+                for msg in &messages {
+                    match msg.role() {
+                        Role::System => {
+                            if let Some(text) = msg.content().iter().find_map(Self::extract_text) {
+                                system_prompt = Some(text);
+                            }
+                        }
+                        Role::User => {
+                            for input in msg.content() {
+                                if let Some(text) = Self::extract_text(input) {
+                                    builder = builder.with_user_message(&text);
+                                }
+                            }
+                            if Self::has_media(msg.content()) {
+                                return Err(GeminiError::new(GeminiErrorKind::MultimodalNotSupported));
+                            }
+                        }
+                        Role::Assistant => {
+                            if let Some(text) = msg.content().iter().find_map(Self::extract_text) {
+                                builder = builder.with_model_message(&text);
+                            }
+                        }
+                    }
+                }
+
+                if let Some(prompt) = system_prompt {
+                    builder = builder.with_system_prompt(&prompt);
+                }
+                if let Some(temp) = temperature {
+                    builder = builder.with_temperature(*temp);
+                }
+                if let Some(max_tok) = max_tokens {
+                    builder = builder.with_max_output_tokens(*max_tok as i32);
+                }
+
+                // Add tool (clone since closure may be called multiple times on retry)
+                builder = builder.with_tool(gemini_tool.clone());
+                debug!("Added tools to Gemini builder");
+
+                builder.execute().await.map_err(Self::parse_gemini_error)
+            })
+            .await;
+
+        // Handle result
+        match response {
+            Ok(resp) => {
+                let duration = start.elapsed().as_secs_f64();
+                metrics.record_request("gemini", model_name, duration);
+
+                // Convert response - check for function calls
+                let function_calls = resp.function_calls();
+                
+                let outputs = if !function_calls.is_empty() {
+                    // Convert function calls to ToolCalls
+                    debug!(call_count = function_calls.is_empty(), "Response contains function calls");
+                    let tool_calls: Vec<botticelli_core::ToolCall> = function_calls
+                        .iter()
+                        .enumerate()
+                        .map(|(idx, fc)| {
+                            // Generate ID since Gemini doesn't provide one
+                            let id = format!("call_{}", idx);
+                            botticelli_core::ToolCall::new(
+                                id,
+                                fc.name.clone(),
+                                fc.args.clone(),
+                            )
+                        })
+                        .collect();
+                    vec![Output::ToolCalls(tool_calls)]
+                } else {
+                    // Regular text response
+                    vec![Output::Text(resp.text())]
+                };
+
+                let stop_reason = if !function_calls.is_empty() {
+                    botticelli_core::StopReason::ToolUse
+                } else {
+                    botticelli_core::StopReason::EndTurn
+                };
+
+                Ok(GenerateResponse::builder()
+                    .outputs(outputs)
+                    .stop_reason(stop_reason)
+                    .build()
+                    .map_err(|e| {
+                        GeminiError::new(GeminiErrorKind::BuilderError(e.to_string()))
+                    })?)
+            }
+            Err(e) => {
+                let error_type = crate::classify_error(&e);
+                metrics.record_error("gemini", model_name, error_type);
+                error!(error = %e, "Gemini tool calling failed");
+                Err(e.into())
+            }
+        }
     }
 
     fn max_tools(&self) -> usize {
@@ -925,7 +1091,7 @@ impl botticelli_interface::ToolCalling for GeminiClient {
     }
 
     fn supports_parallel_tool_calls(&self) -> bool {
-        true // Gemini supports parallel tool calls when implemented
+        true
     }
 }
 
