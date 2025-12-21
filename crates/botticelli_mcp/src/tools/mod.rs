@@ -25,6 +25,7 @@ mod prometheus;
 mod sampling;
 mod sampling_session_manager;
 mod save_narrative;
+mod scene;
 mod server_info;
 #[cfg(feature = "discord")]
 mod social;
@@ -81,6 +82,10 @@ pub use sampling::{
     SamplingResult,
 };
 pub use sampling_session_manager::SamplingSessionManager;
+pub use scene::{
+    create_scene, delete_scene, list_scenes, scene_tools, update_scene, CreateSceneTool,
+    DeleteSceneTool, ListScenesTool, UpdateSceneTool,
+};
 
 // Export LLM tools based on features
 #[cfg(feature = "anthropic")]
@@ -222,6 +227,12 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(CreateNarrativeTool));
         registry.register(Arc::new(ModifyNarrativeTool));
         registry.register(Arc::new(SaveNarrativeTool));
+
+        // Scene management tools
+        registry.register(Arc::new(CreateSceneTool));
+        registry.register(Arc::new(ListScenesTool));
+        registry.register(Arc::new(UpdateSceneTool));
+        registry.register(Arc::new(DeleteSceneTool));
 
         // Execution tools (Phase 2 & 3)
         registry.register(Arc::new(GenerateTool));
