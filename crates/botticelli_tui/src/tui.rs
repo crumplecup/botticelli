@@ -44,6 +44,13 @@ impl Tui {
     pub fn with_mcp(
         driver: std::sync::Arc<dyn botticelli_interface::ToolCalling>,
     ) -> TuiResult<Self> {
+        Self::with_mcp_and_tools(driver, vec![])
+    }
+
+    pub fn with_mcp_and_tools(
+        driver: std::sync::Arc<dyn botticelli_interface::ToolCalling>,
+        tools: Vec<botticelli_core::ToolDefinition>,
+    ) -> TuiResult<Self> {
         let backend = CrosstermBackend::new(io::stdout());
         let terminal = Terminal::new(backend)?;
         let events = EventHandler::new(std::time::Duration::from_millis(250));
@@ -51,9 +58,10 @@ impl Tui {
         // Create channel for MCP updates
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
 
-        // Initialize AppState with MCP integration
+        // Initialize AppState with MCP integration and tools
         let mut state = AppState::with_mcp_integration(driver);
         state.set_mcp_channel(mcp_tx);
+        state.set_available_tools(tools);
 
         Ok(Self {
             terminal,

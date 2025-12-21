@@ -122,8 +122,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Initializing MCP client");
     let mcp_client = initialize_mcp_client().await?;
     
-    // List all available tools from server
-    let available_tools = mcp_client.list_all_tools();
+    // Fetch available tools from HTTP server
+    let available_tools = fetch_tools_from_http_server().await?;
     tracing::info!(
         tool_count = available_tools.len(),
         tools = ?available_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
@@ -184,8 +184,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // Create TUI with MCP integration
-    let mut tui = botticelli_tui::Tui::with_mcp(llm_backend)?;
+    // Create TUI with MCP integration and available tools
+    let mut tui = botticelli_tui::Tui::with_mcp_and_tools(llm_backend, available_tools)?;
 
     // Run the app
     let result = tui.run().await;
@@ -206,12 +206,67 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> {
     tracing::debug!("Building MCP host");
     
-    // Create MCP host - currently with no external servers configured
-    // Internal tools will be registered via the tool registry
+    // The MCP server is already running and provides tools via HTTP
+    // We create a simple McpHost without external clients
+    // Tools will be fetched directly from HTTP server
     let mcp_host = McpHost::builder().build();
     
     tracing::info!("MCP host initialized");
     Ok(mcp_host)
+}
+
+#[tracing::instrument(skip_all, name = "fetch_tools_from_http_server")]
+async fn fetch_tools_from_http_server() -> Result<Vec<botticelli_core::ToolDefinition>, Box<dyn std::error::Error>> {
+    let server_url = std::env::var("MCP_SERVER_URL")
+        .unwrap_or_else(|_| "http://localhost:8080".to_string());
+    
+    tracing::debug!(server_url = %server_url, "Fetching tools from MCP server");
+    
+    let client = reqwest::Client::new();
+    let request_body = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/list",
+        "params": {}
+    });
+    
+    let response = client
+        .post(&server_url)
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json")
+        .json(&request_body)
+        .send()
+        .await?
+        .json::<serde_json::Value>()
+        .await?;
+    
+    tracing::debug!(response = ?response, "Received response from MCP server");
+    
+    // Parse tools from response
+    let tools_array = response
+        .get("result")
+        .and_then(|r| r.get("tools"))
+        .and_then(|t| t.as_array())
+        .ok_or("Invalid response format")?;
+    
+    tracing::debug!(tools_count = tools_array.len(), "Found tools in response");
+    
+    let tools: Vec<botticelli_core::ToolDefinition> = tools_array
+        .iter()
+        .filter_map(|t| {
+            let name = t.get("name")?.as_str()?.to_string();
+            let description = t.get("description")
+                .and_then(|d| d.as_str())
+                .unwrap_or("No description")
+                .to_string();
+            let input_schema = t.get("inputSchema")?.clone();
+            
+            Some(botticelli_core::ToolDefinition::new(name, description, input_schema))
+        })
+        .collect();
+    
+    tracing::info!(tool_count = tools.len(), "Fetched tools from server");
+    Ok(tools)
 }
 
 #[tracing::instrument(skip_all, name = "init_logging")]

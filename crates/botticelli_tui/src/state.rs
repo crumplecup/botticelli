@@ -137,6 +137,8 @@ pub struct AppState {
     mcp_channel: Option<tokio::sync::mpsc::UnboundedSender<crate::McpMessage>>,
     /// Conversation storage for persistence.
     storage: crate::storage::ConversationStorage,
+    /// Available tools from MCP.
+    available_tools: Vec<botticelli_core::ToolDefinition>,
 }
 
 impl std::fmt::Debug for AppState {
@@ -482,6 +484,7 @@ impl Default for AppState {
             llm_backend: None,
             mcp_channel: None,
             storage,
+            available_tools: Vec::new(),
         }
     }
 }
@@ -527,6 +530,16 @@ impl AppState {
     /// Set the channel for sending MCP updates.
     pub fn set_mcp_channel(&mut self, tx: tokio::sync::mpsc::UnboundedSender<crate::McpMessage>) {
         self.mcp_channel = Some(tx);
+    }
+
+    /// Set available tools from MCP.
+    pub fn set_available_tools(&mut self, tools: Vec<botticelli_core::ToolDefinition>) {
+        self.available_tools = tools;
+    }
+
+    /// Get available tools.
+    pub fn available_tools(&self) -> &[botticelli_core::ToolDefinition] {
+        &self.available_tools
     }
 
     /// Check if MCP integration is enabled.
