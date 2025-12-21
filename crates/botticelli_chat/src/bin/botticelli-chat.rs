@@ -223,6 +223,7 @@ async fn initialize_mcp_client() -> Result<UnifiedMcpClient, Box<dyn std::error:
     tracing::info!(binary = ?mcp_binary, "Using MCP server binary");
     
     // Connect to MCP server subprocess (where tools are registered)
+    // Note: Using stdio transport. HTTP transport requires separate server + HTTP client implementation.
     let mcp_server_config = botticelli_mcp_client::ExternalServerConfig::builder()
         .name("botticelli-mcp-pmcp".to_string())
         .command(mcp_binary.to_string_lossy().to_string())

@@ -15,6 +15,7 @@ mod retry;
 pub mod schema;
 mod tool_registry;
 pub mod tools;
+mod transport;
 mod unified_client;
 
 pub use adapter_bridge::DriverAdapter;
@@ -31,6 +32,7 @@ pub use metrics::McpClientMetrics;
 pub use orchestrator::{Orchestrator, tool_info_to_provider_schema, tool_info_to_schema};
 pub use retry::{CircuitBreaker, CircuitState, RetryConfig, RetryState, retry_with_backoff};
 pub use tool_registry::{ToolHandler, ToolRegistry};
+pub use transport::{HttpTransport, McpTransport, StdioTransport};
 
 // Re-export from botticelli_core for backward compatibility
 pub use botticelli_core::ToolDefinition;
