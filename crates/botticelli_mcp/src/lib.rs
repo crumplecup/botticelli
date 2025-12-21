@@ -37,6 +37,7 @@ mod elicitation;
 mod resources;
 mod server;
 pub mod tools;
+mod transport;
 
 // PMCP migration - new implementation
 mod pmcp_adapters;
@@ -64,6 +65,7 @@ pub use tools::{
     SamplingErrorKind, SamplingHelper, SamplingResult, SaveNarrativeTool, ServerInfoTool,
     StartNarrativeInput, StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
+pub use transport::{HttpTransport, McpTransport, McpTransportError};
 
 #[cfg(feature = "discord")]
 pub use tools::{
