@@ -259,10 +259,18 @@ impl ChatTab {
                     ),
                 ]);
 
+                // Wrap content to available width (accounting for borders and padding)
+                let max_width = area.width.saturating_sub(4) as usize;
                 let content_lines: Vec<Line> = msg
                     .content
                     .lines()
-                    .map(|line| Line::from(line.to_string()))
+                    .flat_map(|line| {
+                        if line.is_empty() {
+                            vec![Line::from("")]
+                        } else {
+                            wrap_text(line, max_width)
+                        }
+                    })
                     .collect();
 
                 let mut lines = vec![header];
@@ -292,5 +300,48 @@ impl ChatTab {
 impl Default for ChatTab {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(feature = "tui")]
+/// Wraps text to fit within a maximum width, breaking on word boundaries
+fn wrap_text(text: &str, max_width: usize) -> Vec<Line<'static>> {
+    if max_width == 0 {
+        return vec![Line::from(text.to_string())];
+    }
+
+    let mut lines = Vec::new();
+    let mut current_line = String::new();
+    let mut current_width = 0;
+
+    for word in text.split_whitespace() {
+        let word_len = word.len();
+
+        // If adding this word would exceed max_width, start a new line
+        if current_width + word_len + 1 > max_width && !current_line.is_empty() {
+            lines.push(Line::from(current_line.clone()));
+            current_line.clear();
+            current_width = 0;
+        }
+
+        // Add word to current line
+        if !current_line.is_empty() {
+            current_line.push(' ');
+            current_width += 1;
+        }
+        current_line.push_str(word);
+        current_width += word_len;
+    }
+
+    // Add the last line if not empty
+    if !current_line.is_empty() {
+        lines.push(Line::from(current_line));
+    }
+
+    // Return at least one line
+    if lines.is_empty() {
+        vec![Line::from("")]
+    } else {
+        lines
     }
 }
