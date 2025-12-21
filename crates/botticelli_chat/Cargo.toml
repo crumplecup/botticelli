@@ -91,6 +91,7 @@ botticelli_actor = { path = "../botticelli_actor", optional = true }
 
 [features]
 tui = [
+    "dep:botticelli_tui",
     "dep:ratatui",
     "dep:crossterm",
     "dep:tui-tree-widget",

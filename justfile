@@ -390,6 +390,13 @@ container-setup: obs-up container-build container-run
 # Chat Interface
 # ==============
 
+# Run chat interface locally for development (requires postgres and MCP server running)
+chat:
+    @echo "💬 Starting chat interface (local development)..."
+    @echo "📋 Using configuration: chat.toml"
+    @echo "🔗 Ensure postgres and MCP server are running first"
+    cargo run --bin botticelli-chat --features "mcp,cli,tui" -- --config chat.toml
+
 # Build the chat interface container image
 chat-build:
     @echo "🐳 Building chat interface container..."
