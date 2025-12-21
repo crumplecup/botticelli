@@ -12,9 +12,9 @@ use std::collections::HashMap;
 use std::time::Instant;
 use typed_builder::TypedBuilder;
 
-/// MCP client that orchestrates internal and external tool execution.
+/// MCP host that orchestrates internal and external tool execution.
 ///
-/// This client:
+/// This host manages multiple MCP client connections:
 /// - Executes internal Botticelli tools via ToolRegistry
 /// - Connects to external MCP servers (filesystem, git, search, etc.)
 /// - Routes tool calls to the appropriate handler
@@ -24,21 +24,21 @@ use typed_builder::TypedBuilder;
 /// # Example
 ///
 /// ```no_run
-/// use botticelli_mcp_client::{McpClient, register_internal_tools};
+/// use botticelli_mcp_client::{McpHost, register_internal_tools};
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-/// // Create client with internal tools registered
-/// let mut client = McpClient::builder().build();
-/// register_internal_tools(client.internal_registry_mut(), "./narratives")?;
+/// // Create host with internal tools registered
+/// let mut host = McpHost::builder().build();
+/// register_internal_tools(host.internal_registry_mut(), "./narratives")?;
 ///
 /// // Now internal narrative tools are available for LLM orchestration
-/// let tools = client.list_all_tools();
+/// let tools = host.list_all_tools();
 /// assert!(tools.iter().any(|t| t.name == "create_narrative"));
 /// # Ok(())
 /// # }
 /// ```
 #[derive(Debug, TypedBuilder)]
-pub struct McpClient {
+pub struct McpHost {
     /// Internal tool registry for Botticelli capabilities
     #[builder(default)]
     internal_registry: ToolRegistry,
@@ -88,7 +88,7 @@ pub struct ToolCallRecord {
     pub success: bool,
 }
 
-impl McpClient {
+impl McpHost {
     /// Connects to an external MCP server and adds it to available clients.
     #[tracing::instrument(skip(self, config), fields(server = %config.name))]
     pub async fn connect_external_server(

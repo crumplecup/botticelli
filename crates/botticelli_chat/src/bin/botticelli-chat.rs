@@ -6,7 +6,7 @@ use botticelli_chat::{ChatAppConfig, EnvironmentMode};
 #[cfg(feature = "database")]
 use botticelli_database::create_pool_from_url;
 use botticelli_interface::ToolCalling;
-use botticelli_mcp_client::McpClient;
+use botticelli_mcp_client::McpHost;
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -203,7 +203,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[tracing::instrument(skip_all, name = "initialize_mcp_client")]
-async fn initialize_mcp_client() -> Result<McpClient, Box<dyn std::error::Error>> {
+async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> {
     tracing::debug!("Building MCP client with HTTP transport");
     
     // Use HTTP transport - cleaner than stdio and easier to debug

@@ -16,7 +16,7 @@ pub mod schema;
 mod tool_registry;
 pub mod tools;
 mod transport;
-mod unified_client;
+mod client;
 
 pub use adapter_bridge::DriverAdapter;
 pub use approval::{ApprovalHandler, ApprovalManager, ApprovalPolicy, ConsoleApprovalHandler};
@@ -51,7 +51,7 @@ pub use tools::{
 // Discord tools temporarily disabled - need proper implementation
 // #[cfg(feature = "discord")]
 // pub use tools::{DiscordGetMessagesTool, DiscordSendMessageTool};
-pub use unified_client::{
-    ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics, McpClient,
+pub use client::{
+    ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics, McpHost,
     extract_tool_calls,
 };

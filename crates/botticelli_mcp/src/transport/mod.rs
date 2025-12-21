@@ -24,9 +24,9 @@ pub trait McpTransport: Send + Sync {
     fn is_connected(&self) -> bool;
 }
 
-/// Transport layer errors.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
-pub enum McpTransportError {
+/// Transport layer error kinds.
+#[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
+pub enum McpTransportErrorKind {
     /// Connection failed
     #[display("Connection failed: {}", _0)]
     ConnectionFailed(String),
@@ -42,4 +42,29 @@ pub enum McpTransportError {
     /// Not initialized
     #[display("Transport not initialized")]
     NotInitialized,
+}
+
+/// Transport layer errors with location tracking.
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("Transport: {} at {}:{}", kind, file, line)]
+pub struct McpTransportError {
+    /// Error kind
+    pub kind: McpTransportErrorKind,
+    /// Line number where error occurred
+    pub line: u32,
+    /// File where error occurred
+    pub file: &'static str,
+}
+
+impl McpTransportError {
+    /// Create a new transport error.
+    #[track_caller]
+    pub fn new(kind: McpTransportErrorKind) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind,
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
 }

@@ -13,7 +13,7 @@ use {
 #[cfg(feature = "cli")]
 use {
     botticelli_database::PostgresNarrativeRepository,
-    botticelli_mcp_client::McpClient,
+    botticelli_mcp_client::McpHost,
     botticelli_storage::FileSystemStorage,
     diesel::r2d2::{ConnectionManager, Pool},
     diesel::PgConnection,
@@ -30,7 +30,7 @@ pub struct ServiceContainer {
     db_pool: OnceCell<Pool<ConnectionManager<PgConnection>>>,
 
     #[cfg(feature = "cli")]
-    mcp_client: OnceCell<McpClient>,
+    mcp_client: OnceCell<McpHost>,
 
     #[cfg(feature = "cli")]
     narrative_repo: OnceCell<PostgresNarrativeRepository>,
@@ -107,7 +107,7 @@ impl ServiceContainer {
     ///
     /// The client is created lazily on first access.
     #[instrument(skip(self))]
-    pub async fn mcp_client(&self) -> ChatResult<&McpClient> {
+    pub async fn mcp_client(&self) -> ChatResult<&McpHost> {
         self.mcp_client
             .get_or_try_init(|| async {
                 info!("Initializing MCP client");
@@ -118,15 +118,15 @@ impl ServiceContainer {
 
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
-    fn init_mcp_client(&self) -> ChatResult<McpClient> {
+    fn init_mcp_client(&self) -> ChatResult<McpHost> {
         debug!(
             url = %self.config.mcp_server().server_url(),
             "Creating MCP client"
         );
 
-        // Create unified MCP client
+        // Create MCP host to manage tool connections
         // TODO: Configure with external MCP servers from config
-        let client = McpClient::builder().max_iterations(10).build();
+        let client = McpHost::builder().max_iterations(10).build();
 
         info!("MCP client initialized");
         Ok(client)
