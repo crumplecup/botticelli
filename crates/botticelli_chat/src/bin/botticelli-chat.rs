@@ -6,7 +6,7 @@ use botticelli_chat::{ChatAppConfig, EnvironmentMode};
 #[cfg(feature = "database")]
 use botticelli_database::create_pool_from_url;
 use botticelli_interface::ToolCalling;
-use botticelli_mcp_client::{UnifiedMcpClient, register_internal_tools};
+use botticelli_mcp_client::UnifiedMcpClient;
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -94,7 +94,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize database pool if database feature is enabled
     #[cfg(feature = "database")]
-    let db_pool = {
+    let _db_pool = {
         info!("Creating database connection pool");
         let database_url = format!(
             "postgres://{}:{}@{}:{}/{}",
@@ -117,53 +117,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // Initialize MCP client
+    // Initialize MCP client and connect to subprocess server
     info!("Initializing MCP client");
     let mut mcp_client = UnifiedMcpClient::builder().build();
     
-    // Register internal tools
-    #[cfg(feature = "database")]
-    match register_internal_tools(
-        mcp_client.internal_registry_mut(),
-        "./narratives",
-        db_pool,
-    ) {
-        Ok(()) => info!("Internal tools registered"),
-        Err(e) => tracing::warn!(error = ?e, "Failed to register internal tools"),
-    }
+    // Determine MCP server binary path (dev vs production)
+    let mcp_binary = if cfg!(debug_assertions) {
+        // Development: use target/debug
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.join("botticelli-mcp")))
+            .and_then(|p| if p.exists() { Some(p) } else { None })
+            .unwrap_or_else(|| std::path::PathBuf::from("botticelli-mcp"))
+    } else {
+        // Production: assume in PATH
+        std::path::PathBuf::from("botticelli-mcp")
+    };
     
-    #[cfg(not(feature = "database"))]
-    match register_internal_tools(
-        mcp_client.internal_registry_mut(),
-        "./narratives",
-    ) {
-        Ok(()) => info!("Internal tools registered"),
-        Err(e) => tracing::warn!(error = ?e, "Failed to register internal tools"),
-    }
+    info!(binary = ?mcp_binary, "Using MCP server binary");
     
-    // Connect to external MCP servers from configuration
-    // TODO: Parse MCP server config from TOML to get command and args
-    // For now, commenting out as we need proper config structure
-    /*
-    let mcp_url = config.mcp_server.server_url();
-    let external_config = ExternalServerConfig::builder()
+    // Connect to MCP server subprocess (where tools are registered)
+    let mcp_server_config = botticelli_mcp_client::ExternalServerConfig::builder()
         .name("botticelli-mcp".to_string())
-        .command("node".to_string())
-        .args(vec!["path/to/server.js".to_string()])
+        .command(mcp_binary.to_string_lossy().to_string())
+        .args(vec![])
         .build();
         
-    match mcp_client.connect_external_server(external_config).await {
-        Ok(()) => info!(url = %mcp_url, "Connected to external MCP server"),
-        Err(e) => warn!(error = ?e, url = %mcp_url, "Failed to connect to external MCP server"),
+    match mcp_client.connect_external_server(mcp_server_config).await {
+        Ok(()) => info!("Connected to botticelli-mcp subprocess"),
+        Err(e) => {
+            tracing::error!(error = ?e, "Failed to connect to MCP server");
+            return Err(e.into());
+        }
     }
-    */
     
-    // List all available tools
+    // List all available tools from server
     let available_tools = mcp_client.list_all_tools();
     info!(
         tool_count = available_tools.len(),
         tools = ?available_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
-        "MCP tools loaded"
+        "MCP tools loaded from server"
     );
 
     info!("All dependencies ready");
