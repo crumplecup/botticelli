@@ -120,14 +120,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize MCP client and connect to subprocess server
     tracing::info!("Initializing MCP client");
-    let mcp_client = initialize_mcp_client().await?;
+    let mcp_host = initialize_mcp_client().await?;
     
-    // Get available tools from the MCP host
-    let available_tools = mcp_client.list_all_tools();
+    // Log available tools
+    let available_tools = mcp_host.list_all_tools();
     tracing::info!(
         tool_count = available_tools.len(),
         tools = ?available_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
-        "MCP tools available"
+        "MCP tools loaded from HTTP server"
     );
 
     info!("All dependencies ready");
@@ -152,18 +152,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Small delay for user to read
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-    info!("Setting up conversation components");
-
-    // Wrap MCP client in Arc<RwLock> for shared access
-    let mcp_client = std::sync::Arc::new(tokio::sync::RwLock::new(mcp_client));
-    
-    // Create tool call handler
-    let tool_handler = botticelli_chat::ToolCallHandler::new(mcp_client.clone());
-    let tool_handler = std::sync::Arc::new(tokio::sync::RwLock::new(tool_handler));
-    
-    // Create conversation loop
-    let _conversation_loop = botticelli_chat::ConversationLoop::new(tool_handler.clone());
-
     info!("Starting TUI interface");
 
     // Create service container with configuration
@@ -184,8 +172,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // Create TUI with MCP integration and available tools
-    let mut tui = botticelli_tui::Tui::with_mcp_and_tools(llm_backend, available_tools)?;
+    // Create TUI with MCP host (which contains all tools)
+    let mut tui = botticelli_tui::Tui::with_mcp_and_tools(llm_backend, mcp_host)?;
 
     // Run the app
     let result = tui.run().await;
@@ -213,17 +201,17 @@ async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> 
     // Initialize database pool if DATABASE_URL is set
     #[cfg(feature = "database")]
     let db_pool = {
-        use botticelli_database::establish_connection;
+        use botticelli_database::create_pool;
         match std::env::var("DATABASE_URL") {
-            Ok(url) => {
-                tracing::info!("Initializing database connection");
-                match establish_connection(&url) {
+            Ok(_url) => {
+                tracing::info!("Initializing database connection pool");
+                match create_pool() {
                     Ok(pool) => {
-                        tracing::info!("Database connection established successfully");
+                        tracing::info!("Database pool created successfully");
                         Some(pool)
                     }
                     Err(e) => {
-                        tracing::warn!(error = ?e, "Failed to establish database connection, continuing without database tools");
+                        tracing::warn!(error = ?e, "Failed to create database pool, continuing without database tools");
                         None
                     }
                 }

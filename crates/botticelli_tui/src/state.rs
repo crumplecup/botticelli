@@ -494,25 +494,29 @@ impl AppState {
     ///
     /// Initializes:
     /// - LLM backend with provided driver
-    /// - Tool registry with basic tools
-    /// - McpClient for orchestration
-    pub fn with_mcp_integration(driver: Arc<dyn ToolCalling>) -> Self {
-        info!("Initializing AppState with MCP integration");
+    /// - Tool registry from provided McpHost
+    /// - MCP client for orchestration
+    pub fn with_mcp_integration(
+        driver: Arc<dyn ToolCalling>,
+        mcp_host: botticelli_mcp_client::McpHost,
+    ) -> Self {
+        tracing::info!("Initializing AppState with MCP integration");
 
         // Create LLM backend
         let llm_backend = TuiLlmBackend::new(driver);
 
-        // Create MCP client - tools will be provided via HTTP from MCP server
-        let mcp_client = McpHost::builder().max_iterations(10).build();
-
-        info!(
-            tool_count = mcp_client.list_all_tools().len(),
-            "Tools available from MCP server"
+        // Get tools from the provided MCP host
+        let tools = mcp_host.list_all_tools();
+        tracing::info!(
+            tool_count = tools.len(),
+            tools = ?tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
+            "Tools available from MCP host"
         );
 
         let mut state = Self::default();
         state.set_llm_backend(llm_backend);
-        state.set_mcp_client(mcp_client);
+        state.set_mcp_client(mcp_host);
+        state.set_available_tools(tools);
 
         state
     }
@@ -534,6 +538,11 @@ impl AppState {
 
     /// Set available tools from MCP.
     pub fn set_available_tools(&mut self, tools: Vec<botticelli_core::ToolDefinition>) {
+        tracing::info!(
+            tool_count = tools.len(),
+            tools = ?tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
+            "Setting available tools in AppState"
+        );
         self.available_tools = tools;
     }
 

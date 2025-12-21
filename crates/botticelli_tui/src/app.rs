@@ -53,8 +53,9 @@ impl TuiApp {
         // Create channel for MCP updates
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
 
-        // Initialize AppState with MCP integration
-        let mut state = AppState::with_mcp_integration(driver);
+        // Initialize AppState with MCP integration (empty McpHost for now)
+        let mcp_host = botticelli_mcp_client::McpHost::builder().build();
+        let mut state = AppState::with_mcp_integration(driver, mcp_host);
         state.set_mcp_channel(mcp_tx);
 
         Ok(Self {
