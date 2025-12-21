@@ -259,10 +259,8 @@ impl ChatTab {
                 ),
             ]));
 
-            // Add content lines (Paragraph will wrap automatically)
-            for line in msg.content.lines() {
-                all_lines.push(Line::from(line.to_string()));
-            }
+            // Add content as a single line - Paragraph will wrap it
+            all_lines.push(Line::from(msg.content.clone()));
             
             // Add blank line between messages
             all_lines.push(Line::from(""));

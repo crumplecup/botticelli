@@ -241,18 +241,30 @@ impl BotticelliRouterBuilder {
             registry.register(Arc::new(crate::tools::ExecuteNarrativeTool::new()));
 
             // Elicitation tools
-            let elicitation_registry = crate::tools::NarrativeRegistry::new();
+            let elicitation_registry = Arc::new(crate::tools::NarrativeRegistry::new());
             registry.register(Arc::new(crate::tools::CreateNarrativeSessionTool::new(
-                elicitation_registry.clone(),
+                (*elicitation_registry).clone(),
             )));
             registry.register(Arc::new(crate::tools::ElicitMetadataTool::new(
-                elicitation_registry.clone(),
+                (*elicitation_registry).clone(),
             )));
             registry.register(Arc::new(crate::tools::ElicitActTool::new(
-                elicitation_registry.clone(),
+                (*elicitation_registry).clone(),
             )));
             registry.register(Arc::new(crate::tools::FinalizeNarrativeTool::new(
-                elicitation_registry,
+                (*elicitation_registry).clone(),
+            )));
+            registry.register(Arc::new(crate::tools::ElicitCarouselTool::new(
+                Arc::clone(&elicitation_registry),
+            )));
+            registry.register(Arc::new(crate::tools::GetNarrativeStateTool::new(
+                Arc::clone(&elicitation_registry),
+            )));
+            registry.register(Arc::new(crate::tools::ValidateNarrativeSessionTool::new(
+                Arc::clone(&elicitation_registry),
+            )));
+            registry.register(Arc::new(crate::tools::ApplyValidationFixesTool::new(
+                Arc::clone(&elicitation_registry),
             )));
 
             // LLM generation tools
