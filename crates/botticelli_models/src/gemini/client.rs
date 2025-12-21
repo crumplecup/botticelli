@@ -339,7 +339,7 @@ impl GeminiClient {
             .map_err(|_| BotticelliError::from(GeminiError::new(GeminiErrorKind::MissingApiKey)))?;
 
         let base_tier = tier_config.unwrap_or_else(|| {
-            // Default tier configuration (Free tier, gemini-2.0-flash-lite for development)
+            // Default tier configuration (Free tier, gemini-2.5-flash for development)
             TierConfig {
                 name: "Free".to_string(),
                 rpm: Some(10),
@@ -363,7 +363,7 @@ impl GeminiClient {
             clients: Arc::new(Mutex::new(HashMap::new())),
             live_client,
             api_key,
-            model_name: "gemini-2.0-flash-lite".to_string(),
+            model_name: "gemini-2.5-flash".to_string(),
             base_tier,
             no_retry: false,
             max_retries: None,
@@ -395,7 +395,7 @@ impl GeminiClient {
                 models: HashMap::new(), // Will be empty for non-TierConfig tiers
             }
         } else {
-            // Default tier configuration (Free tier, gemini-2.0-flash-lite for development)
+            // Default tier configuration (Free tier, gemini-2.5-flash for development)
             TierConfig {
                 name: "Free".to_string(),
                 rpm: Some(10),
@@ -419,7 +419,7 @@ impl GeminiClient {
             clients: Arc::new(Mutex::new(HashMap::new())),
             live_client,
             api_key,
-            model_name: "gemini-2.0-flash-lite".to_string(),
+            model_name: "gemini-2.5-flash".to_string(),
             base_tier,
             no_retry: false,
             max_retries: None,
@@ -439,6 +439,14 @@ impl GeminiClient {
         client.max_retries = max_retries;
         client.retry_backoff_ms = retry_backoff_ms;
         Ok(client)
+    }
+
+    /// Set the default model for this client.
+    ///
+    /// This changes the model used when `GenerateRequest.model` is `None`.
+    /// Does not affect requests that explicitly specify a model.
+    pub fn set_default_model(&mut self, model: String) {
+        self.model_name = model;
     }
 
     /// Check if a model name indicates a Live API model (requires WebSocket).

@@ -261,6 +261,7 @@ impl ServiceContainer {
         match model_id {
             ModelId::Gemini(_model) => {
                 // GeminiClient::new() reads from GEMINI_API_KEY environment variable
+                // and uses gemini-2.5-flash as the default model
                 let client = GeminiClient::new().map_err(|e| {
                     ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                         "Failed to create Gemini client: {}",

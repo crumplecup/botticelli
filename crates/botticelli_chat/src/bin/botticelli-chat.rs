@@ -130,6 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Show configuration summary
     println!("\nBotticelli Chat Interface");
     println!("========================");
+    println!("\nLogs: botticelli-chat.log");
     println!("\nConfiguration loaded:");
     println!("  Mode:       {:?}", config.environment().mode());
     println!(
@@ -199,11 +200,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn init_logging(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let log_level = if args.verbose { "debug" } else { "info" };
 
+    // Write logs to file to avoid interfering with TUI
+    let log_file = std::fs::File::create("botticelli-chat.log")?;
+    
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new(log_level)),
         )
+        .with_writer(std::sync::Arc::new(log_file))
+        .with_ansi(false) // Disable ANSI colors in log file
         .init();
 
     Ok(())
