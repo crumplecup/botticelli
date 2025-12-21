@@ -86,18 +86,10 @@ pub struct ContentRow {
 }
 
 /// Filter options for content browsing
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct ContentFilter {
     /// Review status filter ("pending", "approved", "rejected", or None for all)
     pub review_status: Option<String>,
-}
-
-impl Default for ContentFilter {
-    fn default() -> Self {
-        Self {
-            review_status: None,
-        }
-    }
 }
 
 /// State for the Database tab
@@ -788,15 +780,15 @@ impl DatabaseTab {
                     .or_else(|| obj.get("title"))
                     .or_else(|| obj.get("name"));
 
-                if let Some(content_val) = content {
-                    if let Some(text) = content_val.as_str() {
-                        let preview = if text.len() > 60 {
-                            format!("{}...", &text[..57])
-                        } else {
-                            text.to_string()
-                        };
-                        return format!("#{} - {}", id_str, preview);
-                    }
+                if let Some(content_val) = content
+                    && let Some(text) = content_val.as_str()
+                {
+                    let preview = if text.len() > 60 {
+                        format!("{}...", &text[..57])
+                    } else {
+                        text.to_string()
+                    };
+                    return format!("#{} - {}", id_str, preview);
                 }
 
                 return format!("#{}", id_str);

@@ -60,10 +60,10 @@ impl EventHandler {
                 state.narratives_state.handle_nav_key(key.code);
 
                 // Handle narrative actions
-                if let KeyCode::Char(c) = key.code {
-                    if let Some(action) = state.narratives_state.handle_action_key(c) {
-                        return Some(self.execute_narrative_action(action, state));
-                    }
+                if let KeyCode::Char(c) = key.code
+                    && let Some(action) = state.narratives_state.handle_action_key(c)
+                {
+                    return Some(self.execute_narrative_action(action, state));
                 }
 
                 Some(EventResult::Handled)

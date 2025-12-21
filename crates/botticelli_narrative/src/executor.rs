@@ -956,18 +956,11 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
     #[tracing::instrument(
         skip(self, narrative, inputs, act_executions),
         fields(
-            current_index,
-            input_count = inputs.len(),
-            bot_commands = 0,
-            tables = 0
-        )
-    )]
-    #[tracing::instrument(
-        skip(self, narrative, inputs, act_executions),
-        fields(
             narrative_name = narrative.name(),
             input_count = inputs.len(),
             act_index = current_index,
+            bot_commands = 0,
+            tables = 0
         )
     )]
     async fn process_inputs<N: NarrativeProvider + ?Sized>(

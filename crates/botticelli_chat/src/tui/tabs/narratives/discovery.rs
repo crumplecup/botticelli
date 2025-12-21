@@ -99,20 +99,20 @@ fn extract_metadata(narrative_meta: &NarrativeMetadata) -> EntryMetadata {
 /// Infers category from file path relative to root
 fn infer_category(path: &Path, root: &Path) -> String {
     // Get parent directory relative to root
-    if let Ok(relative) = path.strip_prefix(root) {
-        if let Some(parent) = relative.parent() {
-            if parent == Path::new("") {
-                return "Uncategorized".to_string();
-            }
+    if let Ok(relative) = path.strip_prefix(root)
+        && let Some(parent) = relative.parent()
+    {
+        if parent == Path::new("") {
+            return "Uncategorized".to_string();
+        }
 
-            // Use first directory component as category
-            if let Some(first_component) = parent.components().next() {
-                return first_component
-                    .as_os_str()
-                    .to_str()
-                    .unwrap_or("Uncategorized")
-                    .to_string();
-            }
+        // Use first directory component as category
+        if let Some(first_component) = parent.components().next() {
+            return first_component
+                .as_os_str()
+                .to_str()
+                .unwrap_or("Uncategorized")
+                .to_string();
         }
     }
 

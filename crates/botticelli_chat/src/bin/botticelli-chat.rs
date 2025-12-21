@@ -93,7 +93,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut mcp_client = UnifiedMcpClient::builder().build();
     
     // Register internal narrative tools
-    // Database feature is in botticelli_mcp_client, always pass None for now
     match register_internal_tools(mcp_client.internal_registry_mut(), "./narratives", None) {
         Ok(()) => info!("Internal narrative tools registered"),
         Err(e) => warn!(error = ?e, "Failed to register internal tools"),

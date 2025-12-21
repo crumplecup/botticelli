@@ -299,24 +299,23 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
         }
 
         // Try target/debug (for tests running from deps/)
-        if exe_dir.ends_with("deps") {
-            if let Some(target_dir) = exe_dir.parent() {
-                let debug_binary = target_dir.join("botticelli-mcp-http");
-                if debug_binary.exists() {
-                    return Some(debug_binary);
-                }
+        if exe_dir.ends_with("deps")
+            && let Some(target_dir) = exe_dir.parent()
+        {
+            let debug_binary = target_dir.join("botticelli-mcp-http");
+            if debug_binary.exists() {
+                return Some(debug_binary);
             }
         }
 
         // Try target/release
-        if let Some(target_dir) = exe_dir.parent() {
-            if target_dir.ends_with("debug") || target_dir.ends_with("release") {
-                if let Some(profile_parent) = target_dir.parent() {
-                    let release_binary = profile_parent.join("release/botticelli-mcp-http");
-                    if release_binary.exists() {
-                        return Some(release_binary);
-                    }
-                }
+        if let Some(target_dir) = exe_dir.parent()
+            && (target_dir.ends_with("debug") || target_dir.ends_with("release"))
+            && let Some(profile_parent) = target_dir.parent()
+        {
+            let release_binary = profile_parent.join("release/botticelli-mcp-http");
+            if release_binary.exists() {
+                return Some(release_binary);
             }
         }
 
