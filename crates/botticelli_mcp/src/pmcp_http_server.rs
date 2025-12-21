@@ -60,6 +60,46 @@ fn build_server(
         )
         .tool("save_narrative", McpToolAdapter::new(SaveNarrativeTool))
         .tool("modify_narrative", McpToolAdapter::new(ModifyNarrativeTool));
+    
+    // Register elicitation tools
+    use crate::tools::{
+        CreateNarrativeSessionTool, ElicitMetadataTool, ElicitActTool,
+        FinalizeNarrativeTool, ElicitCarouselTool, GetNarrativeStateTool,
+        ValidateNarrativeSessionTool, ApplyValidationFixesTool, NarrativeRegistry,
+    };
+    let elicitation_registry = Arc::new(NarrativeRegistry::new());
+    
+    builder = builder
+        .tool("create_narrative_session", McpToolAdapter::new(CreateNarrativeSessionTool::new(
+            (*elicitation_registry).clone(),
+        )))
+        .tool("elicit_metadata", McpToolAdapter::new(ElicitMetadataTool::new(
+            (*elicitation_registry).clone(),
+        )))
+        .tool("elicit_act", McpToolAdapter::new(ElicitActTool::new(
+            (*elicitation_registry).clone(),
+        )))
+        .tool("finalize_narrative", McpToolAdapter::new(FinalizeNarrativeTool::new(
+            (*elicitation_registry).clone(),
+        )))
+        .tool("elicit_carousel", McpToolAdapter::new(ElicitCarouselTool::new(
+            Arc::clone(&elicitation_registry),
+        )))
+        .tool("get_narrative_state", McpToolAdapter::new(GetNarrativeStateTool::new(
+            Arc::clone(&elicitation_registry),
+        )))
+        .tool("validate_narrative_session", McpToolAdapter::new(ValidateNarrativeSessionTool::new(
+            Arc::clone(&elicitation_registry),
+        )))
+        .tool("apply_validation_fixes", McpToolAdapter::new(ApplyValidationFixesTool::new(
+            Arc::clone(&elicitation_registry),
+        )));
+    
+    // Register execution tools
+    use crate::tools::{ExecuteActTool, GenerateTool};
+    builder = builder
+        .tool("execute_act", McpToolAdapter::new(ExecuteActTool::new()))
+        .tool("generate", McpToolAdapter::new(GenerateTool));
 
     // Register ExecuteNarrativeTool (only when LLM features are enabled)
     #[cfg(any(

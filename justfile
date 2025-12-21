@@ -395,10 +395,13 @@ chat:
     @echo "💬 Starting chat interface (local development)..."
     @echo "📋 Using configuration: chat.toml"
     @echo "🔗 Ensure postgres is running first"
-    @echo "🔧 Building MCP server binary (pmcp stdio)..."
-    @cargo build --bin botticelli-mcp-pmcp --features "database,llm"
-    @echo "🚀 Starting chat interface (will spawn MCP server subprocess)..."
-    cargo run --bin botticelli-chat --features "mcp,cli,tui,database" -- --config chat.toml
+    @echo "🔧 Building MCP server binary (pmcp HTTP)..."
+    @cargo build --bin botticelli-mcp-pmcp-http --features "database,gemini,groq,streamable-http"
+    @echo "🚀 Starting MCP server on http://localhost:8080..."
+    @cargo run --bin botticelli-mcp-pmcp-http --features "database,gemini,groq,streamable-http" &
+    @sleep 2
+    @echo "🚀 Starting chat interface..."
+    cargo run --bin botticelli-chat --features "mcp,cli,tui,database,gemini" -- --config chat.toml
 
 # Build the chat interface container image
 chat-build:
