@@ -126,25 +126,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Development: use target/debug
         std::env::current_exe()
             .ok()
-            .and_then(|p| p.parent().map(|p| p.join("botticelli-mcp")))
+            .and_then(|p| p.parent().map(|p| p.join("botticelli-mcp-pmcp")))
             .and_then(|p| if p.exists() { Some(p) } else { None })
-            .unwrap_or_else(|| std::path::PathBuf::from("botticelli-mcp"))
+            .unwrap_or_else(|| std::path::PathBuf::from("botticelli-mcp-pmcp"))
     } else {
         // Production: assume in PATH
-        std::path::PathBuf::from("botticelli-mcp")
+        std::path::PathBuf::from("botticelli-mcp-pmcp")
     };
     
     info!(binary = ?mcp_binary, "Using MCP server binary");
     
     // Connect to MCP server subprocess (where tools are registered)
     let mcp_server_config = botticelli_mcp_client::ExternalServerConfig::builder()
-        .name("botticelli-mcp".to_string())
+        .name("botticelli-mcp-pmcp".to_string())
         .command(mcp_binary.to_string_lossy().to_string())
         .args(vec![])
         .build();
         
     match mcp_client.connect_external_server(mcp_server_config).await {
-        Ok(()) => info!("Connected to botticelli-mcp subprocess"),
+        Ok(()) => info!("Connected to botticelli-mcp-pmcp subprocess"),
         Err(e) => {
             tracing::error!(error = ?e, "Failed to connect to MCP server");
             return Err(e.into());

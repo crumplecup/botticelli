@@ -9,13 +9,19 @@ async fn main() -> Result<()> {
     // Load environment variables from .env file
     let _ = dotenvy::dotenv();
 
-    // Initialize tracing
+    // Initialize tracing to file (not stdout - that's for JSON-RPC)
+    let log_file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("botticelli-mcp.log")?;
+
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
         .with_target(false)
         .with_thread_ids(false)
         .with_file(true)
         .with_line_number(true)
+        .with_writer(std::sync::Arc::new(log_file))
         .init();
 
     tracing::info!("Starting Botticelli MCP server (PMCP implementation)");
