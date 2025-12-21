@@ -3,10 +3,12 @@
 //! Interactive chat interface for directing botticelli operations.
 
 use botticelli_chat::{ChatAppConfig, EnvironmentMode};
+use botticelli_interface::ToolCalling;
 use botticelli_mcp_client::{UnifiedMcpClient, register_internal_tools};
 use clap::Parser;
 use std::path::PathBuf;
-use tracing::{info, warn};
+use std::sync::Arc;
+use tracing::{info, warn, debug};
 
 #[derive(Debug, Parser)]
 #[command(name = "botticelli-chat")]
@@ -161,9 +163,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create service container with configuration
     let _services = std::sync::Arc::new(botticelli_chat::ServiceContainer::new(config));
 
-    // Create and run new TUI app
-    // TODO: Pass mcp_client and conversation components to TUI
-    let mut tui = botticelli_tui::Tui::new()?;
+    // Initialize LLM backend with fallback
+    let llm_backend = match initialize_llm_backend().await {
+        Ok(backend) => {
+            info!("LLM backend initialized successfully");
+            backend
+        }
+        Err(e) => {
+            warn!(error = ?e, "Failed to initialize LLM backend, continuing without it");
+            warn!("Set GEMINI_API_KEY or GROQ_API_KEY in .env file to enable LLM features");
+            // Continue without LLM backend - TUI will show appropriate message
+            let mut tui = botticelli_tui::Tui::new()?;
+            return tui.run().await.map_err(|e| e.into());
+        }
+    };
+
+    // Create TUI with MCP integration
+    let mut tui = botticelli_tui::Tui::with_mcp(llm_backend)?;
 
     // Run the app
     let result = tui.run().await;
@@ -243,4 +259,40 @@ fn load_config(args: &Args) -> Result<ChatAppConfig, Box<dyn std::error::Error>>
     let config = builder.build()?;
 
     Ok(config)
+}
+
+/// Initialize LLM backend with fallback support.
+///
+/// Tries to create providers in priority order based on available API keys.
+/// Returns the highest priority provider.
+async fn initialize_llm_backend() -> Result<Arc<dyn ToolCalling>, Box<dyn std::error::Error>> {
+    debug!("Initializing LLM backend");
+
+    // Try Gemini (has tool calling support)
+    if let Ok(api_key) = std::env::var("GEMINI_API_KEY") {
+        if !api_key.is_empty() {
+            debug!("Found GEMINI_API_KEY, creating Gemini provider");
+            match botticelli_models::GeminiClient::new() {
+                Ok(client) => {
+                    info!("Using Gemini as LLM backend");
+                    return Ok(Arc::new(client) as Arc<dyn ToolCalling>);
+                }
+                Err(e) => {
+                    warn!(error = ?e, "Failed to create Gemini client");
+                }
+            }
+        }
+    }
+
+    // Try Anthropic (has tool calling support)
+    if let Ok(api_key) = std::env::var("ANTHROPIC_API_KEY") {
+        if !api_key.is_empty() {
+            debug!("Found ANTHROPIC_API_KEY, creating Anthropic provider");
+            let client = botticelli_models::AnthropicClient::new(&api_key, "claude-3-5-sonnet-20241022");
+            info!("Using Anthropic as LLM backend");
+            return Ok(Arc::new(client) as Arc<dyn ToolCalling>);
+        }
+    }
+
+    Err("No LLM provider API keys found. Set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env file".into())
 }
