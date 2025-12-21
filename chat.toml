@@ -40,8 +40,8 @@ retry_attempts = 3
 # Chat session configuration
 # Default model and fallback strategy for free-tier usage
 
-# Primary model (free tier: Gemini 2.5 Flash)
-initial_model = { Gemini = "Gemini25Flash" }
+# Primary model (free tier: Groq Llama)
+initial_model = { Groq = "GroqLlama370b8192" }
 
 # Fallback strategy: "friendly_first" tries other providers before downgrading within family
 # "loyal_first" downgrades within family before trying other providers  
