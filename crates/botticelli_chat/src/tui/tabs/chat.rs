@@ -8,8 +8,8 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span, Text},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap},
+    text::{Line, Span},
+    widgets::{Block, Borders, ListState, Paragraph, Wrap},
 };
 
 #[cfg(feature = "tui")]
@@ -218,7 +218,7 @@ impl ChatTab {
     #[cfg(feature = "tui")]
     /// Renders the message history
     fn render_messages(&mut self, area: Rect, buf: &mut Buffer) {
-        use ratatui::widgets::{StatefulWidget, Widget};
+        use ratatui::widgets::Widget;
 
         if self.messages.is_empty() {
             let empty_text = Paragraph::new(vec![
@@ -235,113 +235,54 @@ impl ChatTab {
             return;
         }
 
-        // Create list items from messages
-        let items: Vec<ListItem> = self
-            .messages
-            .iter()
-            .map(|msg| {
-                let timestamp = msg.timestamp.format("%H:%M:%S");
+        // Build all message lines with proper wrapping
+        let mut all_lines: Vec<Line> = Vec::new();
+        
+        for msg in &self.messages {
+            let timestamp = msg.timestamp.format("%H:%M:%S");
 
-                let (role_str, role_color) = match msg.role {
-                    Role::User => ("You", Color::Cyan),
-                    Role::Assistant => ("Assistant", Color::Green),
-                    Role::System => ("System", Color::Yellow),
-                };
+            let (role_str, role_color) = match msg.role {
+                Role::User => ("You", Color::Cyan),
+                Role::Assistant => ("Assistant", Color::Green),
+                Role::System => ("System", Color::Yellow),
+            };
 
-                let header = Line::from(vec![
-                    Span::styled(
-                        format!("[{}] ", timestamp),
-                        Style::default().fg(Color::DarkGray),
-                    ),
-                    Span::styled(
-                        role_str,
-                        Style::default().fg(role_color).add_modifier(Modifier::BOLD),
-                    ),
-                ]);
+            // Add header line
+            all_lines.push(Line::from(vec![
+                Span::styled(
+                    format!("[{}] ", timestamp),
+                    Style::default().fg(Color::DarkGray),
+                ),
+                Span::styled(
+                    role_str,
+                    Style::default().fg(role_color).add_modifier(Modifier::BOLD),
+                ),
+            ]));
 
-                // Wrap content to available width (accounting for borders and padding)
-                let max_width = area.width.saturating_sub(4) as usize;
-                let content_lines: Vec<Line> = msg
-                    .content
-                    .lines()
-                    .flat_map(|line| {
-                        if line.is_empty() {
-                            vec![Line::from("")]
-                        } else {
-                            wrap_text(line, max_width)
-                        }
-                    })
-                    .collect();
+            // Add content lines (Paragraph will wrap automatically)
+            for line in msg.content.lines() {
+                all_lines.push(Line::from(line.to_string()));
+            }
+            
+            // Add blank line between messages
+            all_lines.push(Line::from(""));
+        }
 
-                let mut lines = vec![header];
-                lines.extend(content_lines);
-                lines.push(Line::from(""));
-
-                ListItem::new(Text::from(lines))
-            })
-            .collect();
-
-        let list = List::new(items)
+        let paragraph = Paragraph::new(all_lines)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
                     .title(format!("Chat ({} messages)", self.messages.len())),
             )
-            .highlight_style(
-                Style::default()
-                    .bg(Color::DarkGray)
-                    .add_modifier(Modifier::BOLD),
-            );
+            .wrap(Wrap { trim: false })
+            .scroll((self.list_state.selected().unwrap_or(0) as u16, 0));
 
-        StatefulWidget::render(list, area, buf, &mut self.list_state);
+        Widget::render(paragraph, area, buf);
     }
 }
 
 impl Default for ChatTab {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(feature = "tui")]
-/// Wraps text to fit within a maximum width, breaking on word boundaries
-fn wrap_text(text: &str, max_width: usize) -> Vec<Line<'static>> {
-    if max_width == 0 {
-        return vec![Line::from(text.to_string())];
-    }
-
-    let mut lines = Vec::new();
-    let mut current_line = String::new();
-    let mut current_width = 0;
-
-    for word in text.split_whitespace() {
-        let word_len = word.len();
-
-        // If adding this word would exceed max_width, start a new line
-        if current_width + word_len + 1 > max_width && !current_line.is_empty() {
-            lines.push(Line::from(current_line.clone()));
-            current_line.clear();
-            current_width = 0;
-        }
-
-        // Add word to current line
-        if !current_line.is_empty() {
-            current_line.push(' ');
-            current_width += 1;
-        }
-        current_line.push_str(word);
-        current_width += word_len;
-    }
-
-    // Add the last line if not empty
-    if !current_line.is_empty() {
-        lines.push(Line::from(current_line));
-    }
-
-    // Return at least one line
-    if lines.is_empty() {
-        vec![Line::from("")]
-    } else {
-        lines
     }
 }
