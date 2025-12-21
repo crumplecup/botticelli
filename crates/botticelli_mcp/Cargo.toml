@@ -43,8 +43,8 @@ chrono = "0.4"
 # UUID generation
 uuid = { workspace = true }
 
-# HTTP client (for Discord tools)
-reqwest = { version = "0.12", features = ["json"], optional = true }
+# HTTP client (for HTTP transport and Discord tools)
+reqwest = { version = "0.12", features = ["json"] }
 
 # HTTP server (for HTTP transport)
 axum = { version = "0.7", optional = true }
@@ -78,8 +78,8 @@ streamable-http = ["pmcp/streamable-http"]
 # Database integration
 database = ["dep:botticelli_database", "dep:diesel"]
 
-# Discord integration (includes database)
-discord = ["dep:reqwest", "dep:botticelli_social"]
+# Discord integration
+discord = ["dep:botticelli_social"]
 
 # HTTP server (old axum-based implementation)
 http = ["dep:axum", "dep:tower", "dep:tower-http"]

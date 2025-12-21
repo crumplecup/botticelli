@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, Input as CoreInput, Message as CoreMessage, Role};
 use botticelli_interface::ToolCalling;
 use botticelli_mcp_client::{
-    LlmBackend, ToolDefinition, ToolHandler, McpClient,
+    LlmBackend, ToolDefinition, ToolHandler, McpHost,
     tools::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool},
 };
 use botticelli_narrative::FilesystemNarrativeStorage;
@@ -133,7 +133,7 @@ pub struct AppState {
     /// Editor content buffer.
     editor_content: String,
     /// MCP client for tool execution (optional).
-    mcp_client: Option<Arc<tokio::sync::Mutex<McpClient>>>,
+    mcp_client: Option<Arc<tokio::sync::Mutex<McpHost>>>,
     /// LLM backend for generation (optional).
     llm_backend: Option<Arc<TuiLlmBackend>>,
     /// Channel to send MCP updates to UI thread.
@@ -540,7 +540,7 @@ impl AppState {
         let llm_backend = TuiLlmBackend::new(driver);
 
         // Create MCP client first (so we can populate its internal registry)
-        let mut mcp_client = McpClient::builder().max_iterations(10).build();
+        let mut mcp_client = McpHost::builder().max_iterations(10).build();
 
         // Get mutable reference to internal tool registry
         let registry = mcp_client.internal_registry_mut();
@@ -595,7 +595,7 @@ impl AppState {
     }
 
     /// Set the MCP client for tool execution.
-    pub fn set_mcp_client(&mut self, client: McpClient) {
+    pub fn set_mcp_client(&mut self, client: McpHost) {
         self.mcp_client = Some(Arc::new(tokio::sync::Mutex::new(client)));
     }
 
