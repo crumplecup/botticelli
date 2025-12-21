@@ -3,12 +3,14 @@
 //! Interactive chat interface for directing botticelli operations.
 
 use botticelli_chat::{ChatAppConfig, EnvironmentMode};
+#[cfg(feature = "database")]
+use botticelli_database::establish_connection;
 use botticelli_interface::ToolCalling;
 use botticelli_mcp_client::{UnifiedMcpClient, register_internal_tools};
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tracing::{info, warn, debug};
+use tracing::{info, warn, debug, error};
 
 #[derive(Debug, Parser)]
 #[command(name = "botticelli-chat")]
@@ -90,13 +92,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("Skipping startup checks");
     }
 
+    // Initialize database pool if database feature is enabled
+    #[cfg(feature = "database")]
+    let db_pool = {
+        info!("Establishing database connection");
+        let database_url = format!(
+            "postgres://{}:{}@{}:{}/{}",
+            config.postgres().user(),
+            config.postgres().password(),
+            config.postgres().host(),
+            config.postgres().port(),
+            config.postgres().database()
+        );
+        match establish_connection(&database_url) {
+            Ok(pool) => {
+                info!("Database connection established");
+                Some(pool)
+            }
+            Err(e) => {
+                error!(error = ?e, "Failed to establish database connection");
+                warn!("Continuing without database - some tools will be unavailable");
+                None
+            }
+        }
+    };
+
     // Initialize MCP client
     info!("Initializing MCP client");
     let mut mcp_client = UnifiedMcpClient::builder().build();
     
-    // Register internal narrative tools
-    match register_internal_tools(mcp_client.internal_registry_mut(), "./narratives") {
-        Ok(()) => info!("Internal narrative tools registered"),
+    // Register internal tools
+    match register_internal_tools(
+        mcp_client.internal_registry_mut(),
+        "./narratives",
+        #[cfg(feature = "database")]
+        db_pool.clone(),
+    ) {
+        Ok(()) => info!("Internal tools registered"),
         Err(e) => warn!(error = ?e, "Failed to register internal tools"),
     }
     
