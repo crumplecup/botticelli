@@ -1,4 +1,4 @@
-//! Unified MCP client for external tool execution via MCP servers.
+//! MCP client for tool execution via MCP servers (both internal and external).
 
 use crate::approval::ApprovalManager;
 use crate::external_client::{ExternalMcpClient, ExternalServerConfig};
@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 use typed_builder::TypedBuilder;
 
-/// Unified MCP client that orchestrates internal and external tool execution.
+/// MCP client that orchestrates internal and external tool execution.
 ///
 /// This client:
 /// - Executes internal Botticelli tools via ToolRegistry
@@ -24,11 +24,11 @@ use typed_builder::TypedBuilder;
 /// # Example
 ///
 /// ```no_run
-/// use botticelli_mcp_client::{UnifiedMcpClient, register_internal_tools};
+/// use botticelli_mcp_client::{McpClient, register_internal_tools};
 ///
 /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// // Create client with internal tools registered
-/// let mut client = UnifiedMcpClient::builder().build();
+/// let mut client = McpClient::builder().build();
 /// register_internal_tools(client.internal_registry_mut(), "./narratives")?;
 ///
 /// // Now internal narrative tools are available for LLM orchestration
@@ -38,7 +38,7 @@ use typed_builder::TypedBuilder;
 /// # }
 /// ```
 #[derive(Debug, TypedBuilder)]
-pub struct UnifiedMcpClient {
+pub struct McpClient {
     /// Internal tool registry for Botticelli capabilities
     #[builder(default)]
     internal_registry: ToolRegistry,
@@ -88,7 +88,7 @@ pub struct ToolCallRecord {
     pub success: bool,
 }
 
-impl UnifiedMcpClient {
+impl McpClient {
     /// Connects to an external MCP server and adds it to available clients.
     #[tracing::instrument(skip(self, config), fields(server = %config.name))]
     pub async fn connect_external_server(

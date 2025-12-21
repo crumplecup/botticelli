@@ -52,6 +52,6 @@ pub use tools::{
 // #[cfg(feature = "discord")]
 // pub use tools::{DiscordGetMessagesTool, DiscordSendMessageTool};
 pub use unified_client::{
-    ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics, UnifiedMcpClient,
+    ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics, McpClient,
     extract_tool_calls,
 };

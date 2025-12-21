@@ -2,20 +2,20 @@
 
 use botticelli_core::{ToolCall, ToolResult};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
-use botticelli_mcp_client::UnifiedMcpClient;
+use botticelli_mcp_client::McpClient;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, error, info, instrument, warn};
 
 /// Handles tool call execution and result processing.
 pub struct ToolCallHandler {
-    mcp_client: Arc<RwLock<UnifiedMcpClient>>,
+    mcp_client: Arc<RwLock<McpClient>>,
 }
 
 impl ToolCallHandler {
     /// Create a new tool call handler.
     #[instrument(skip(mcp_client))]
-    pub fn new(mcp_client: Arc<RwLock<UnifiedMcpClient>>) -> Self {
+    pub fn new(mcp_client: Arc<RwLock<McpClient>>) -> Self {
         Self { mcp_client }
     }
 

@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, Input as CoreInput, Message as CoreMessage, Role};
 use botticelli_interface::ToolCalling;
 use botticelli_mcp_client::{
-    LlmBackend, ToolDefinition, ToolHandler, UnifiedMcpClient,
+    LlmBackend, ToolDefinition, ToolHandler, McpClient,
     tools::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool},
 };
 use botticelli_narrative::FilesystemNarrativeStorage;
@@ -133,7 +133,7 @@ pub struct AppState {
     /// Editor content buffer.
     editor_content: String,
     /// MCP client for tool execution (optional).
-    mcp_client: Option<Arc<tokio::sync::Mutex<UnifiedMcpClient>>>,
+    mcp_client: Option<Arc<tokio::sync::Mutex<McpClient>>>,
     /// LLM backend for generation (optional).
     llm_backend: Option<Arc<TuiLlmBackend>>,
     /// Channel to send MCP updates to UI thread.
@@ -532,7 +532,7 @@ impl AppState {
     /// Initializes:
     /// - LLM backend with provided driver
     /// - Tool registry with basic tools
-    /// - UnifiedMcpClient for orchestration
+    /// - McpClient for orchestration
     pub fn with_mcp_integration(driver: Arc<dyn ToolCalling>) -> Self {
         info!("Initializing AppState with MCP integration");
 
@@ -540,7 +540,7 @@ impl AppState {
         let llm_backend = TuiLlmBackend::new(driver);
 
         // Create MCP client first (so we can populate its internal registry)
-        let mut mcp_client = UnifiedMcpClient::builder().max_iterations(10).build();
+        let mut mcp_client = McpClient::builder().max_iterations(10).build();
 
         // Get mutable reference to internal tool registry
         let registry = mcp_client.internal_registry_mut();
@@ -584,7 +584,7 @@ impl AppState {
 
         info!(
             tool_count = mcp_client.internal_registry().tool_count(),
-            "Internal tools registered in UnifiedMcpClient"
+            "Internal tools registered in McpClient"
         );
 
         let mut state = Self::default();
@@ -595,7 +595,7 @@ impl AppState {
     }
 
     /// Set the MCP client for tool execution.
-    pub fn set_mcp_client(&mut self, client: UnifiedMcpClient) {
+    pub fn set_mcp_client(&mut self, client: McpClient) {
         self.mcp_client = Some(Arc::new(tokio::sync::Mutex::new(client)));
     }
 

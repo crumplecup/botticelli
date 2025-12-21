@@ -6,7 +6,7 @@ use botticelli_chat::{ChatAppConfig, EnvironmentMode};
 #[cfg(feature = "database")]
 use botticelli_database::create_pool_from_url;
 use botticelli_interface::ToolCalling;
-use botticelli_mcp_client::UnifiedMcpClient;
+use botticelli_mcp_client::McpClient;
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -203,41 +203,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[tracing::instrument(skip_all, name = "initialize_mcp_client")]
-async fn initialize_mcp_client() -> Result<UnifiedMcpClient, Box<dyn std::error::Error>> {
-    tracing::debug!("Building MCP client");
-    let mut mcp_client = UnifiedMcpClient::builder().build();
+async fn initialize_mcp_client() -> Result<McpClient, Box<dyn std::error::Error>> {
+    tracing::debug!("Building MCP client with HTTP transport");
     
-    // Determine MCP server binary path (dev vs production)
-    let mcp_binary = if cfg!(debug_assertions) {
-        // Development: use target/debug
-        std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.join("botticelli-mcp-pmcp")))
-            .and_then(|p| if p.exists() { Some(p) } else { None })
-            .unwrap_or_else(|| std::path::PathBuf::from("botticelli-mcp-pmcp"))
-    } else {
-        // Production: assume in PATH
-        std::path::PathBuf::from("botticelli-mcp-pmcp")
-    };
+    // Use HTTP transport - cleaner than stdio and easier to debug
+    let http_transport = botticelli_mcp::HttpTransport::new("http://localhost:3000");
+    let mut mcp_client = McpClient::with_transport(Box::new(http_transport));
     
-    tracing::info!(binary = ?mcp_binary, "Using MCP server binary");
-    
-    // Connect to MCP server subprocess (where tools are registered)
-    // Note: Using stdio transport. HTTP transport requires separate server + HTTP client implementation.
-    let mcp_server_config = botticelli_mcp_client::ExternalServerConfig::builder()
-        .name("botticelli-mcp-pmcp".to_string())
-        .command(mcp_binary.to_string_lossy().to_string())
-        .args(vec![])
-        .build();
-        
-    tracing::debug!(config = ?mcp_server_config, "Connecting to MCP server");
-    match mcp_client.connect_external_server(mcp_server_config).await {
+    // Initialize the connection
+    tracing::debug!("Initializing HTTP transport");
+    match mcp_client.initialize().await {
         Ok(()) => {
-            tracing::info!("Connected to botticelli-mcp-pmcp subprocess");
+            tracing::info!("Connected to MCP server via HTTP");
             Ok(mcp_client)
         }
         Err(e) => {
-            tracing::error!(error = ?e, "Failed to connect to MCP server");
+            tracing::error!(error = ?e, "Failed to connect to MCP server via HTTP");
             Err(e.into())
         }
     }
