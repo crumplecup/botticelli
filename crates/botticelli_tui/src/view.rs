@@ -128,7 +128,8 @@ impl View for ChatView {
         };
 
         let messages_widget = Paragraph::new(message_lines)
-            .block(Block::default().title("Chat").borders(Borders::ALL));
+            .block(Block::default().title("Chat").borders(Borders::ALL))
+            .wrap(ratatui::widgets::Wrap { trim: false });
         frame.render_widget(messages_widget, chunks[0]);
 
         // Input area
