@@ -17,7 +17,9 @@ pub struct TuiApp {
 
 impl TuiApp {
     /// Creates a new TUI application
+    #[tracing::instrument(name = "TuiApp::new")]
     pub fn new() -> Self {
+        tracing::debug!("Creating new TUI application");
         Self {
             state: AppState::new(),
             event_handler: EventHandler::new(),
@@ -26,7 +28,9 @@ impl TuiApp {
 
     #[cfg(feature = "tui")]
     /// Runs the application main loop
+    #[tracing::instrument(skip_all, name = "TuiApp::run")]
     pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> std::io::Result<()> {
+        tracing::info!("Starting TUI main loop");
         loop {
             // Render the UI
             terminal.draw(|frame| {

@@ -158,12 +158,20 @@ impl ExternalMcpClient {
         tracing::info!("Process spawned successfully: {}", config.name);
 
         // Create custom transport and pmcp client
+        tracing::debug!("Creating transport for child process");
         let transport = ChildProcessTransport::new(stdin, stdout);
+        tracing::debug!("Creating pmcp client");
         let mut client = Client::new(transport);
 
         // Initialize MCP connection
+        tracing::debug!("Preparing to initialize MCP connection");
         let capabilities = ClientCapabilities::minimal();
+        tracing::info!(
+            "Calling initialize on MCP server: {}",
+            config.name
+        );
         let server_info = client.initialize(capabilities).await.map_err(|e| {
+            tracing::error!(error = ?e, "Initialize failed");
             McpClientError::new(McpClientErrorKind::ExternalServerConnectionFailed(format!(
                 "Failed to initialize MCP connection with {}: {}",
                 config.name, e

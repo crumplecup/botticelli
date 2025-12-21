@@ -63,6 +63,7 @@ struct Args {
 }
 
 #[tokio::main]
+#[tracing::instrument(name = "main")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load .env file if present
     let _ = dotenvy::dotenv();
@@ -72,7 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logging
     init_logging(&args)?;
 
-    info!("Starting Botticelli Chat Interface");
+    tracing::info!("Starting Botticelli Chat Interface");
 
     // Load configuration
     let config = load_config(&args)?;
@@ -118,42 +119,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Initialize MCP client and connect to subprocess server
-    info!("Initializing MCP client");
-    let mut mcp_client = UnifiedMcpClient::builder().build();
-    
-    // Determine MCP server binary path (dev vs production)
-    let mcp_binary = if cfg!(debug_assertions) {
-        // Development: use target/debug
-        std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.join("botticelli-mcp-pmcp")))
-            .and_then(|p| if p.exists() { Some(p) } else { None })
-            .unwrap_or_else(|| std::path::PathBuf::from("botticelli-mcp-pmcp"))
-    } else {
-        // Production: assume in PATH
-        std::path::PathBuf::from("botticelli-mcp-pmcp")
-    };
-    
-    info!(binary = ?mcp_binary, "Using MCP server binary");
-    
-    // Connect to MCP server subprocess (where tools are registered)
-    let mcp_server_config = botticelli_mcp_client::ExternalServerConfig::builder()
-        .name("botticelli-mcp-pmcp".to_string())
-        .command(mcp_binary.to_string_lossy().to_string())
-        .args(vec![])
-        .build();
-        
-    match mcp_client.connect_external_server(mcp_server_config).await {
-        Ok(()) => info!("Connected to botticelli-mcp-pmcp subprocess"),
-        Err(e) => {
-            tracing::error!(error = ?e, "Failed to connect to MCP server");
-            return Err(e.into());
-        }
-    }
+    tracing::info!("Initializing MCP client");
+    let mcp_client = initialize_mcp_client().await?;
     
     // List all available tools from server
     let available_tools = mcp_client.list_all_tools();
-    info!(
+    tracing::info!(
         tool_count = available_tools.len(),
         tools = ?available_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
         "MCP tools loaded from server"
@@ -231,6 +202,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
+#[tracing::instrument(skip_all, name = "initialize_mcp_client")]
+async fn initialize_mcp_client() -> Result<UnifiedMcpClient, Box<dyn std::error::Error>> {
+    tracing::debug!("Building MCP client");
+    let mut mcp_client = UnifiedMcpClient::builder().build();
+    
+    // Determine MCP server binary path (dev vs production)
+    let mcp_binary = if cfg!(debug_assertions) {
+        // Development: use target/debug
+        std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.join("botticelli-mcp-pmcp")))
+            .and_then(|p| if p.exists() { Some(p) } else { None })
+            .unwrap_or_else(|| std::path::PathBuf::from("botticelli-mcp-pmcp"))
+    } else {
+        // Production: assume in PATH
+        std::path::PathBuf::from("botticelli-mcp-pmcp")
+    };
+    
+    tracing::info!(binary = ?mcp_binary, "Using MCP server binary");
+    
+    // Connect to MCP server subprocess (where tools are registered)
+    let mcp_server_config = botticelli_mcp_client::ExternalServerConfig::builder()
+        .name("botticelli-mcp-pmcp".to_string())
+        .command(mcp_binary.to_string_lossy().to_string())
+        .args(vec![])
+        .build();
+        
+    tracing::debug!(config = ?mcp_server_config, "Connecting to MCP server");
+    match mcp_client.connect_external_server(mcp_server_config).await {
+        Ok(()) => {
+            tracing::info!("Connected to botticelli-mcp-pmcp subprocess");
+            Ok(mcp_client)
+        }
+        Err(e) => {
+            tracing::error!(error = ?e, "Failed to connect to MCP server");
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument(skip_all, name = "init_logging")]
 fn init_logging(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     let log_level = if args.verbose { "debug" } else { "info" };
 
@@ -249,6 +261,7 @@ fn init_logging(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[tracing::instrument(skip_all, name = "load_config")]
 fn load_config(args: &Args) -> Result<ChatAppConfig, Box<dyn std::error::Error>> {
     let mut builder = ChatAppConfig::builder();
 
