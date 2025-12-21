@@ -50,6 +50,7 @@ impl ConversationLoop {
         info!(
             message_count = messages.len(),
             tool_count = available_tools.len(),
+            tool_names = ?available_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
             "Starting conversation loop"
         );
 
@@ -82,6 +83,11 @@ impl ConversationLoop {
                 })?;
 
             // Generate LLM response with tool support
+            debug!(
+                tool_count = available_tools.len(),
+                tool_names = ?available_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
+                "Calling LLM with tools"
+            );
             let response = provider
                 .generate_with_tools(&request, available_tools)
                 .await

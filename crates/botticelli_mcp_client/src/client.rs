@@ -112,7 +112,12 @@ impl McpHost {
         let mut tools = Vec::new();
 
         // Add internal tools from registry
+        tracing::debug!(
+            internal_tool_count = self.internal_registry.tool_count(),
+            "Fetching internal tools from registry"
+        );
         for tool_info in self.internal_registry.list_tools() {
+            tracing::trace!(tool_name = %tool_info.name, "Adding internal tool");
             tools.push(ToolDefinition::new(
                 tool_info.name.clone(),
                 tool_info.description.clone().unwrap_or_default(),
@@ -121,11 +126,22 @@ impl McpHost {
         }
 
         // Add external tools
-        for client in self.external_clients.values() {
-            tools.extend(client.tools());
+        tracing::debug!(
+            external_client_count = self.external_clients.len(),
+            "Fetching tools from external clients"
+        );
+        for (server_name, client) in &self.external_clients {
+            let client_tools = client.tools();
+            tracing::debug!(
+                server = %server_name,
+                tool_count = client_tools.len(),
+                tool_names = ?client_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
+                "External client tools"
+            );
+            tools.extend(client_tools);
         }
 
-        tracing::debug!(
+        tracing::info!(
             internal_tools = self.internal_registry.tool_count(),
             external_tools = self.external_clients.len(),
             total_tools = tools.len(),

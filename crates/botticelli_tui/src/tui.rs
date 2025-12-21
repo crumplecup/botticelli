@@ -47,6 +47,7 @@ impl Tui {
         Self::with_mcp_and_tools(driver, vec![])
     }
 
+    /// Creates TUI with MCP integration and tool definitions.
     pub fn with_mcp_and_tools(
         driver: std::sync::Arc<dyn botticelli_interface::ToolCalling>,
         tools: Vec<botticelli_core::ToolDefinition>,

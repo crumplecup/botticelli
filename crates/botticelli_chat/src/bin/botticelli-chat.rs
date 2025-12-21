@@ -122,12 +122,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Initializing MCP client");
     let mcp_client = initialize_mcp_client().await?;
     
-    // Fetch available tools from HTTP server
-    let available_tools = fetch_tools_from_http_server().await?;
+    // Get available tools from the MCP host
+    let available_tools = mcp_client.list_all_tools();
     tracing::info!(
         tool_count = available_tools.len(),
         tools = ?available_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
-        "MCP tools loaded from server"
+        "MCP tools available"
     );
 
     info!("All dependencies ready");
@@ -206,11 +206,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> {
     tracing::debug!("Building MCP host");
     
-    // The MCP server is already running and provides tools via HTTP
-    // We create a simple McpHost without external clients
-    // Tools will be fetched directly from HTTP server
-    let mcp_host = McpHost::builder().build();
+    let server_url = std::env::var("MCP_SERVER_URL")
+        .unwrap_or_else(|_| "http://localhost:8080".to_string());
     
+    tracing::info!(server_url = %server_url, "Connecting to MCP server");
+    
+    // Create HTTP transport for the server
+    let transport = botticelli_mcp_client::HttpTransport::new(server_url.clone())?;
+    
+    // Create MCP host
+    let mcp_host = botticelli_mcp_client::McpHost::builder().build();
+    
+    // Tools will be discovered when we make requests
     tracing::info!("MCP host initialized");
     Ok(mcp_host)
 }
