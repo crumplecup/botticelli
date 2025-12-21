@@ -206,18 +206,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> {
     tracing::debug!("Building MCP host");
     
-    let server_url = std::env::var("MCP_SERVER_URL")
-        .unwrap_or_else(|_| "http://localhost:8080".to_string());
+    // Get narratives directory from environment or use default
+    let narratives_dir = std::env::var("NARRATIVES_DIR")
+        .unwrap_or_else(|_| "./narratives".to_string());
     
-    tracing::info!(server_url = %server_url, "Connecting to MCP server");
-    
-    // Create HTTP transport for the server
-    let transport = botticelli_mcp_client::HttpTransport::new(server_url.clone())?;
+    // Initialize database pool if DATABASE_URL is set
+    #[cfg(feature = "database")]
+    let db_pool = {
+        use botticelli_database::establish_connection;
+        match std::env::var("DATABASE_URL") {
+            Ok(url) => {
+                tracing::info!("Initializing database connection");
+                match establish_connection(&url) {
+                    Ok(pool) => {
+                        tracing::info!("Database connection established successfully");
+                        Some(pool)
+                    }
+                    Err(e) => {
+                        tracing::warn!(error = ?e, "Failed to establish database connection, continuing without database tools");
+                        None
+                    }
+                }
+            }
+            Err(_) => {
+                tracing::info!("DATABASE_URL not set, skipping database tools");
+                None
+            }
+        }
+    };
     
     // Create MCP host
-    let mcp_host = botticelli_mcp_client::McpHost::builder().build();
+    let mut mcp_host = botticelli_mcp_client::McpHost::builder().build();
     
-    // Tools will be discovered when we make requests
+    // Register internal narrative and elicitation tools
+    tracing::info!(narratives_dir = %narratives_dir, "Registering internal tools");
+    botticelli_mcp_client::register_internal_tools(
+        mcp_host.internal_registry_mut(),
+        &narratives_dir,
+        #[cfg(feature = "database")]
+        db_pool,
+    )?;
+    
+    // List all available tools
+    let tools = mcp_host.list_all_tools();
+    tracing::info!(tool_count = tools.len(), "Total tools available");
+    for tool in &tools {
+        tracing::debug!(tool_name = %tool.name(), "Available tool");
+    }
     tracing::info!("MCP host initialized");
     Ok(mcp_host)
 }
