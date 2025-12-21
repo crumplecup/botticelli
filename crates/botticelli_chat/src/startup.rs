@@ -238,17 +238,26 @@ async fn setup_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
 #[cfg(feature = "cli")]
 #[instrument]
 async fn check_mcp_health(url: &str) -> ChatResult<()> {
+    // Try to list tools as a health check since /health endpoint not yet implemented
     let client = reqwest::Client::new();
-    let health_url = format!("{}/health", url);
+    
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/list",
+        "params": {}
+    });
 
     match client
-        .get(&health_url)
+        .post(url)  // PMCP server uses root path
+        .header("Accept", "application/json")
+        .json(&request)
         .timeout(std::time::Duration::from_secs(2))
         .send()
         .await
     {
         Ok(response) if response.status().is_success() => {
-            debug!("MCP server health check passed");
+            debug!("MCP server health check passed (tools/list)");
             Ok(())
         }
         Ok(response) => {

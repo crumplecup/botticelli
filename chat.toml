@@ -29,7 +29,7 @@ database = "botticelli"
 # In container mode, host defaults to "mcp-server" (service name)
 # In local mode, host defaults to "localhost"
 host = "localhost"
-port = 3000
+port = 8080
 
 [mcp_client]
 # MCP client behavior
@@ -41,7 +41,7 @@ retry_attempts = 3
 # Default model and fallback strategy for free-tier usage
 
 # Primary model (free tier: Groq Llama)
-initial_model = { Groq = "GroqLlama370b8192" }
+initial_model = { Groq = "Llama33_70BVersatile" }
 
 # Fallback strategy: "friendly_first" tries other providers before downgrading within family
 # "loyal_first" downgrades within family before trying other providers  

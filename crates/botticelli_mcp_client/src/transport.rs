@@ -49,10 +49,18 @@ impl HttpTransport {
 #[async_trait]
 impl McpTransport for HttpTransport {
     async fn connect(&mut self) -> McpClientResult<()> {
-        // Test connection with a health check or initialization
-        let url = format!("{}/health", self.base_url);
+        // Test connection with a tools/list request (PMCP server uses root path)
+        let request_body = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/list",
+            "params": {}
+        });
+
         self.client
-            .get(&url)
+            .post(&self.base_url)
+            .header("Accept", "application/json")
+            .json(&request_body)
             .send()
             .await
             .map_err(|e| {
@@ -74,7 +82,6 @@ impl McpTransport for HttpTransport {
             )));
         }
 
-        let url = format!("{}/mcp", self.base_url);
         let request_body = serde_json::json!({
             "jsonrpc": "2.0",
             "id": 1,
@@ -84,7 +91,8 @@ impl McpTransport for HttpTransport {
 
         let response = self
             .client
-            .post(&url)
+            .post(&self.base_url)  // PMCP uses root path
+            .header("Accept", "application/json")
             .json(&request_body)
             .send()
             .await
