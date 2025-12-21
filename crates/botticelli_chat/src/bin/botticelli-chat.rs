@@ -4,13 +4,13 @@
 
 use botticelli_chat::{ChatAppConfig, EnvironmentMode};
 #[cfg(feature = "database")]
-use botticelli_database::establish_connection;
+use botticelli_database::create_pool_from_url;
 use botticelli_interface::ToolCalling;
 use botticelli_mcp_client::{UnifiedMcpClient, register_internal_tools};
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tracing::{info, warn, debug, error};
+use tracing::{info, warn, debug};
 
 #[derive(Debug, Parser)]
 #[command(name = "botticelli-chat")]
@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize database pool if database feature is enabled
     #[cfg(feature = "database")]
     let db_pool = {
-        info!("Establishing database connection");
+        info!("Creating database connection pool");
         let database_url = format!(
             "postgres://{}:{}@{}:{}/{}",
             config.postgres().user(),
@@ -104,14 +104,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             config.postgres().port(),
             config.postgres().database()
         );
-        match establish_connection(&database_url) {
+        match create_pool_from_url(&database_url) {
             Ok(pool) => {
-                info!("Database connection established");
+                info!("Database connection pool created");
                 Some(pool)
             }
             Err(e) => {
-                error!(error = ?e, "Failed to establish database connection");
-                warn!("Continuing without database - some tools will be unavailable");
+                tracing::error!(error = ?e, "Failed to create database connection pool");
+                tracing::warn!("Continuing without database - some tools will be unavailable");
                 None
             }
         }
@@ -122,14 +122,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut mcp_client = UnifiedMcpClient::builder().build();
     
     // Register internal tools
+    #[cfg(feature = "database")]
     match register_internal_tools(
         mcp_client.internal_registry_mut(),
         "./narratives",
-        #[cfg(feature = "database")]
-        db_pool.clone(),
+        db_pool,
     ) {
         Ok(()) => info!("Internal tools registered"),
-        Err(e) => warn!(error = ?e, "Failed to register internal tools"),
+        Err(e) => tracing::warn!(error = ?e, "Failed to register internal tools"),
+    }
+    
+    #[cfg(not(feature = "database"))]
+    match register_internal_tools(
+        mcp_client.internal_registry_mut(),
+        "./narratives",
+    ) {
+        Ok(()) => info!("Internal tools registered"),
+        Err(e) => tracing::warn!(error = ?e, "Failed to register internal tools"),
     }
     
     // Connect to external MCP servers from configuration
@@ -308,7 +317,9 @@ async fn initialize_llm_backend() -> Result<Arc<dyn ToolCalling>, Box<dyn std::e
 
     // Try Gemini (has tool calling support)
     if let Ok(api_key) = std::env::var("GEMINI_API_KEY") {
-        if !api_key.is_empty() {
+        if api_key.is_empty() {
+            debug!("GEMINI_API_KEY is empty, skipping");
+        } else {
             debug!("Found GEMINI_API_KEY, creating Gemini provider");
             match botticelli_models::GeminiClient::new() {
                 Ok(client) => {
@@ -324,7 +335,9 @@ async fn initialize_llm_backend() -> Result<Arc<dyn ToolCalling>, Box<dyn std::e
 
     // Try Anthropic (has tool calling support)
     if let Ok(api_key) = std::env::var("ANTHROPIC_API_KEY") {
-        if !api_key.is_empty() {
+        if api_key.is_empty() {
+            debug!("ANTHROPIC_API_KEY is empty, skipping");
+        } else {
             debug!("Found ANTHROPIC_API_KEY, creating Anthropic provider");
             let client = botticelli_models::AnthropicClient::new(&api_key, "claude-3-5-sonnet-20241022");
             info!("Using Anthropic as LLM backend");

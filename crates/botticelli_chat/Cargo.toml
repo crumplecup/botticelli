@@ -114,6 +114,13 @@ cli = [
 ]
 demo = ["cli", "dep:botticelli_actor"]
 local = ["cli"]  # For local testing
+database = [
+    "dep:botticelli_database",
+    "dep:botticelli_interface",
+    "dep:botticelli_storage",
+    "dep:diesel",
+    "botticelli_mcp_client/database",  # Enable database feature on mcp_client
+]
 
 [[bin]]
 name = "botticelli-chat"
