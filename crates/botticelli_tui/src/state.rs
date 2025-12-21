@@ -5,11 +5,8 @@ use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, Input as CoreInput, Message as CoreMessage, Role};
 use botticelli_interface::ToolCalling;
 use botticelli_mcp_client::{
-    LlmBackend, ToolDefinition, ToolHandler, McpHost,
-    tools::{CreateNarrativeTool, ListNarrativesTool, LoadNarrativeTool, ValidateNarrativeTool},
+    LlmBackend, ToolDefinition, McpHost,
 };
-use botticelli_narrative::FilesystemNarrativeStorage;
-use pmcp::{Content, ToolInfo};
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
@@ -489,43 +486,6 @@ impl Default for AppState {
     }
 }
 
-/// Simple echo tool for testing.
-struct EchoTool;
-
-#[async_trait]
-impl ToolHandler for EchoTool {
-    async fn execute(
-        &self,
-        args: serde_json::Value,
-    ) -> botticelli_mcp_client::McpClientResult<Vec<Content>> {
-        let message = args
-            .get("message")
-            .and_then(|v| v.as_str())
-            .unwrap_or("No message provided");
-
-        Ok(vec![Content::Text {
-            text: format!("Echo: {}", message),
-        }])
-    }
-
-    fn tool_info(&self) -> ToolInfo {
-        ToolInfo::new(
-            "echo",
-            Some("Echoes back the message you send. Useful for testing.".to_string()),
-            serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "message": {
-                        "type": "string",
-                        "description": "The message to echo back"
-                    }
-                },
-                "required": ["message"]
-            }),
-        )
-    }
-}
-
 impl AppState {
     /// Create AppState with MCP integration enabled.
     ///
@@ -539,52 +499,12 @@ impl AppState {
         // Create LLM backend
         let llm_backend = TuiLlmBackend::new(driver);
 
-        // Create MCP client first (so we can populate its internal registry)
-        let mut mcp_client = McpHost::builder().max_iterations(10).build();
-
-        // Get mutable reference to internal tool registry
-        let registry = mcp_client.internal_registry_mut();
-
-        // Register echo tool for testing
-        registry
-            .register("echo".to_string(), Arc::new(EchoTool))
-            .expect("Failed to register echo tool");
-
-        // Register narrative tools
-        let narratives_dir = "narratives";
-        let storage = FilesystemNarrativeStorage::new(narratives_dir.into());
-
-        registry
-            .register(
-                "create_narrative".to_string(),
-                Arc::new(CreateNarrativeTool::new(storage.clone())),
-            )
-            .expect("Failed to register create_narrative tool");
-
-        registry
-            .register(
-                "validate_narrative".to_string(),
-                Arc::new(ValidateNarrativeTool::new(storage.clone())),
-            )
-            .expect("Failed to register validate_narrative tool");
-
-        registry
-            .register(
-                "list_narratives".to_string(),
-                Arc::new(ListNarrativesTool::new(storage.clone())),
-            )
-            .expect("Failed to register list_narratives tool");
-
-        registry
-            .register(
-                "load_narrative".to_string(),
-                Arc::new(LoadNarrativeTool::new(storage)),
-            )
-            .expect("Failed to register load_narrative tool");
+        // Create MCP client - tools will be provided via HTTP from MCP server
+        let mcp_client = McpHost::builder().max_iterations(10).build();
 
         info!(
-            tool_count = mcp_client.internal_registry().tool_count(),
-            "Internal tools registered in McpClient"
+            tool_count = mcp_client.list_all_tools().len(),
+            "Tools available from MCP server"
         );
 
         let mut state = Self::default();
