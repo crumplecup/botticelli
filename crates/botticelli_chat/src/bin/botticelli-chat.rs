@@ -204,24 +204,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tracing::instrument(skip_all, name = "initialize_mcp_client")]
 async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> {
-    tracing::debug!("Building MCP client with HTTP transport");
+    tracing::debug!("Building MCP host");
     
-    // Use HTTP transport - cleaner than stdio and easier to debug
-    let http_transport = botticelli_mcp::HttpTransport::new("http://localhost:3000");
-    let mut mcp_client = McpClient::with_transport(Box::new(http_transport));
+    // Create MCP host - currently with no external servers configured
+    // Internal tools will be registered via the tool registry
+    let mcp_host = McpHost::builder().build();
     
-    // Initialize the connection
-    tracing::debug!("Initializing HTTP transport");
-    match mcp_client.initialize().await {
-        Ok(()) => {
-            tracing::info!("Connected to MCP server via HTTP");
-            Ok(mcp_client)
-        }
-        Err(e) => {
-            tracing::error!(error = ?e, "Failed to connect to MCP server via HTTP");
-            Err(e.into())
-        }
-    }
+    tracing::info!("MCP host initialized");
+    Ok(mcp_host)
 }
 
 #[tracing::instrument(skip_all, name = "init_logging")]
