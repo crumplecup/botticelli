@@ -31,4 +31,16 @@ pub enum Command {
     DeleteChar,
     /// Quit the application.
     Quit,
+    /// Show database tables view.
+    DatabaseShowTables,
+    /// Show database schema view.
+    DatabaseShowSchema,
+    /// Show database content view.
+    DatabaseShowContent,
+    /// Cycle database content filter.
+    DatabaseCycleFilter,
+    /// Load tables from database.
+    DatabaseLoadTables,
+    /// Select current database table.
+    DatabaseSelectTable,
 }

@@ -657,3 +657,422 @@ impl BotsView {
         Ok(())
     }
 }
+
+// ============================================================================
+// DatabaseView - Database browser with schema and content viewing
+// ============================================================================
+
+use serde_json::Value as JsonValue;
+
+/// Database view mode within the database browser.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DatabaseViewMode {
+    /// Browsing list of tables.
+    Tables,
+    /// Viewing table schema.
+    Schema,
+    /// Browsing table content.
+    Content,
+}
+
+/// Table information.
+#[derive(Debug, Clone)]
+pub struct TableInfo {
+    /// Table name.
+    pub name: String,
+    /// Row count (if known).
+    pub row_count: Option<i64>,
+    /// Whether this is a generated content table.
+    pub is_content_table: bool,
+}
+
+impl TableInfo {
+    /// Creates a new table info.
+    pub fn new(name: String) -> Self {
+        let is_content_table = name.starts_with("content_")
+            || name.starts_with("generated_")
+            || ![
+                "narratives",
+                "narrative_executions",
+                "act_executions",
+                "act_inputs",
+                "model_responses",
+                "actor_server_state",
+                "actor_server_executions",
+            ]
+            .contains(&name.as_str());
+
+        Self {
+            name,
+            row_count: None,
+            is_content_table,
+        }
+    }
+
+    /// Sets the row count.
+    pub fn with_row_count(mut self, count: i64) -> Self {
+        self.row_count = Some(count);
+        self
+    }
+}
+
+/// Column information for schema display.
+#[derive(Debug, Clone)]
+pub struct ColumnDisplay {
+    /// Column name.
+    pub name: String,
+    /// Data type.
+    pub data_type: String,
+    /// Whether nullable.
+    pub nullable: bool,
+    /// Default value.
+    pub default: Option<String>,
+}
+
+/// Content row for display.
+#[derive(Debug, Clone)]
+pub struct ContentRow {
+    /// Row data as JSON.
+    pub data: JsonValue,
+}
+
+/// Filter options for content browsing.
+#[derive(Debug, Clone, Default)]
+pub struct ContentFilter {
+    /// Review status filter ("pending", "approved", "rejected", or None for all).
+    pub review_status: Option<String>,
+}
+
+/// Database browser view.
+#[derive(Debug, Default)]
+pub struct DatabaseView;
+
+impl View for DatabaseView {
+    fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
+        use ratatui::layout::{Constraint, Direction, Layout};
+        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
+
+        let area = frame.area();
+        
+        match state.database_view_mode() {
+            DatabaseViewMode::Tables => self.render_tables(frame, area, state)?,
+            DatabaseViewMode::Schema => self.render_schema(frame, area, state)?,
+            DatabaseViewMode::Content => self.render_content(frame, area, state)?,
+        }
+
+        Ok(())
+    }
+
+    fn handle_input(
+        &self,
+        key: crossterm::event::KeyEvent,
+        _state: &AppState,
+    ) -> TuiResult<Option<Command>> {
+        use crossterm::event::{KeyCode, KeyModifiers};
+
+        match (key.code, key.modifiers) {
+            (KeyCode::Char('t'), KeyModifiers::NONE) => {
+                Ok(Some(Command::DatabaseShowTables))
+            }
+            (KeyCode::Char('s'), KeyModifiers::NONE) => {
+                Ok(Some(Command::DatabaseShowSchema))
+            }
+            (KeyCode::Char('c'), KeyModifiers::NONE) => {
+                Ok(Some(Command::DatabaseShowContent))
+            }
+            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => {
+                Ok(Some(Command::NavigateUp))
+            }
+            (KeyCode::Down | KeyCode::Char('j'), KeyModifiers::NONE) => {
+                Ok(Some(Command::NavigateDown))
+            }
+            (KeyCode::Char('f'), KeyModifiers::NONE) => {
+                Ok(Some(Command::DatabaseCycleFilter))
+            }
+            (KeyCode::Char('l'), KeyModifiers::NONE) => {
+                Ok(Some(Command::DatabaseLoadTables))
+            }
+            (KeyCode::Enter, KeyModifiers::NONE) => {
+                Ok(Some(Command::DatabaseSelectTable))
+            }
+            _ => Ok(None),
+        }
+    }
+}
+
+impl DatabaseView {
+    /// Renders the tables list view.
+    fn render_tables(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+        use ratatui::layout::{Constraint, Direction, Layout};
+        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Min(3),       // Table list
+                Constraint::Length(3),    // Status bar
+            ])
+            .split(area);
+
+        // Render table list
+        let tables = state.database_tables();
+        
+        if tables.is_empty() {
+            let empty = Paragraph::new(vec![
+                Line::from(""),
+                Line::from("No tables loaded"),
+                Line::from(""),
+                Line::from("Press 'l' to load tables from database"),
+            ])
+            .block(Block::default().title("Database Tables").borders(Borders::ALL))
+            .style(Style::default().fg(Color::Gray));
+            
+            frame.render_widget(empty, chunks[0]);
+        } else {
+            let items: Vec<ListItem> = tables
+                .iter()
+                .enumerate()
+                .map(|(i, table)| {
+                    let prefix = if *state.selected_database_table() == Some(i) {
+                        "> "
+                    } else {
+                        "  "
+                    };
+
+                    let table_type = if table.is_content_table {
+                        Span::styled(" [content]", Style::default().fg(Color::Cyan))
+                    } else {
+                        Span::styled(" [system]", Style::default().fg(Color::Green))
+                    };
+
+                    let row_count = if let Some(count) = table.row_count {
+                        Span::styled(
+                            format!(" ({} rows)", count),
+                            Style::default().fg(Color::DarkGray),
+                        )
+                    } else {
+                        Span::raw("")
+                    };
+
+                    let content = Line::from(vec![
+                        Span::raw(prefix),
+                        Span::raw(&table.name),
+                        table_type,
+                        row_count,
+                    ]);
+
+                    ListItem::new(content)
+                })
+                .collect();
+
+            let list = List::new(items)
+                .block(
+                    Block::default()
+                        .title("Database Tables (t=tables, s=schema, c=content, l=load)")
+                        .borders(Borders::ALL),
+                )
+                .style(Style::default().fg(Color::White));
+
+            frame.render_widget(list, chunks[0]);
+        }
+
+        // Status bar
+        let status = if *state.database_connected() {
+            Paragraph::new("● Connected")
+                .style(Style::default().fg(Color::Green))
+        } else {
+            Paragraph::new("○ Not connected")
+                .style(Style::default().fg(Color::Red))
+        };
+        
+        let status_block = Block::default().borders(Borders::ALL);
+        frame.render_widget(status.block(status_block), chunks[1]);
+
+        Ok(())
+    }
+
+    /// Renders the schema view.
+    fn render_schema(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+        use ratatui::layout::{Constraint, Direction, Layout};
+        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3),    // Header
+                Constraint::Min(5),       // Schema
+            ])
+            .split(area);
+
+        // Header
+        let selected_table = state.selected_database_table()
+            .and_then(|idx| state.database_tables().get(idx));
+        
+        let table_name = selected_table
+            .map(|t| t.name.clone())
+            .unwrap_or_else(|| "No table selected".to_string());
+
+        let header = Paragraph::new(format!("Table: {}", table_name))
+            .block(Block::default().borders(Borders::ALL))
+            .style(Style::default().add_modifier(Modifier::BOLD));
+        
+        frame.render_widget(header, chunks[0]);
+
+        // Schema display
+        let schema = state.database_schema();
+        
+        if schema.is_empty() {
+            let empty = Paragraph::new("No schema loaded\n\nPress 't' to return to tables")
+                .block(Block::default().title("Schema").borders(Borders::ALL))
+                .style(Style::default().fg(Color::Gray));
+            
+            frame.render_widget(empty, chunks[1]);
+        } else {
+            let mut lines = vec![
+                Line::from(vec![
+                    Span::styled("Column", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw("        "),
+                    Span::styled("Type", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw("                "),
+                    Span::styled("Nullable", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::raw("  "),
+                    Span::styled("Default", Style::default().add_modifier(Modifier::BOLD)),
+                ]),
+                Line::from("─".repeat(60)),
+            ];
+
+            for col in schema {
+                let nullable = if col.nullable { "YES" } else { "NO" };
+                let default = col.default.as_deref().unwrap_or("-");
+
+                lines.push(Line::from(format!(
+                    "{:<15} {:<20} {:<8} {}",
+                    col.name, col.data_type, nullable, default
+                )));
+            }
+
+            let schema_text = Paragraph::new(lines)
+                .block(Block::default().title("Schema (t=tables)").borders(Borders::ALL))
+                .wrap(Wrap { trim: false });
+
+            frame.render_widget(schema_text, chunks[1]);
+        }
+
+        Ok(())
+    }
+
+    /// Renders the content view.
+    fn render_content(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+        use ratatui::layout::{Constraint, Direction, Layout};
+        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
+
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(40), // Row list
+                Constraint::Percentage(60), // Row detail
+            ])
+            .split(area);
+
+        // Row list
+        let content = state.database_content();
+        
+        if content.is_empty() {
+            let empty = Paragraph::new("No content loaded\n\nPress 't' to return to tables")
+                .block(Block::default().title("Content").borders(Borders::ALL))
+                .style(Style::default().fg(Color::Gray));
+            
+            frame.render_widget(empty, chunks[0]);
+        } else {
+            let items: Vec<ListItem> = content
+                .iter()
+                .enumerate()
+                .map(|(i, row)| {
+                    let prefix = if *state.selected_database_content_row() == Some(i) {
+                        "> "
+                    } else {
+                        "  "
+                    };
+
+                    // Try to extract ID or first field for display
+                    let display = if let Some(id) = row.data.get("id") {
+                        format!("Row {}: {}", i + 1, id)
+                    } else {
+                        format!("Row {}", i + 1)
+                    };
+
+                    let content = Line::from(vec![
+                        Span::raw(prefix),
+                        Span::raw(display),
+                    ]);
+
+                    ListItem::new(content)
+                })
+                .collect();
+
+            let filter = state.database_filter();
+            let filter_text = if let Some(status) = &filter.review_status {
+                format!("Content (filter: {}) (f=cycle filter)", status)
+            } else {
+                "Content (filter: all) (f=cycle filter)".to_string()
+            };
+
+            let list = List::new(items)
+                .block(
+                    Block::default()
+                        .title(filter_text)
+                        .borders(Borders::ALL),
+                )
+                .style(Style::default().fg(Color::White));
+
+            frame.render_widget(list, chunks[0]);
+
+            // Row detail
+            if let Some(row_idx) = state.selected_database_content_row() {
+                if let Some(row) = content.get(*row_idx) {
+                    self.render_row_detail(&row.data, frame, chunks[1])?;
+                }
+            } else {
+                let empty = Paragraph::new("No row selected")
+                    .block(Block::default().title("Row Detail").borders(Borders::ALL))
+                    .style(Style::default().fg(Color::Gray));
+                
+                frame.render_widget(empty, chunks[1]);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Renders detailed view of a single row.
+    fn render_row_detail(&self, data: &JsonValue, frame: &mut Frame, area: ratatui::layout::Rect) -> TuiResult<()> {
+        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+
+        let formatted = serde_json::to_string_pretty(data)
+            .unwrap_or_else(|_| "Error formatting JSON".to_string());
+
+        let lines: Vec<Line> = formatted
+            .lines()
+            .map(|line| Line::from(line.to_string()))
+            .collect();
+
+        let detail = Paragraph::new(lines)
+            .block(Block::default().title("Row Detail").borders(Borders::ALL))
+            .wrap(Wrap { trim: false })
+            .style(Style::default().fg(Color::White));
+
+        frame.render_widget(detail, area);
+
+        Ok(())
+    }
+}

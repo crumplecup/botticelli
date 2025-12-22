@@ -39,6 +39,22 @@ pub struct AppState {
     bots: Vec<crate::view::BotInfo>,
     /// Selected bot index.
     selected_bot: Option<usize>,
+    /// Database view mode.
+    database_view_mode: crate::view::DatabaseViewMode,
+    /// Database tables list.
+    database_tables: Vec<crate::view::TableInfo>,
+    /// Selected table index.
+    selected_database_table: Option<usize>,
+    /// Database schema for selected table.
+    database_schema: Vec<crate::view::ColumnDisplay>,
+    /// Database content rows.
+    database_content: Vec<crate::view::ContentRow>,
+    /// Selected content row.
+    selected_database_content_row: Option<usize>,
+    /// Database content filter.
+    database_filter: crate::view::ContentFilter,
+    /// Database connection status.
+    database_connected: bool,
 }
 
 impl std::fmt::Debug for AppState {
@@ -65,6 +81,14 @@ impl Default for AppState {
             conversations: std::collections::HashMap::new(),
             bots: Vec::new(),
             selected_bot: None,
+            database_view_mode: crate::view::DatabaseViewMode::Tables,
+            database_tables: Vec::new(),
+            selected_database_table: None,
+            database_schema: Vec::new(),
+            database_content: Vec::new(),
+            selected_database_content_row: None,
+            database_filter: crate::view::ContentFilter::default(),
+            database_connected: false,
         }
     }
 }
@@ -85,6 +109,14 @@ impl AppState {
             conversations: std::collections::HashMap::new(),
             bots: Vec::new(),
             selected_bot: None,
+            database_view_mode: crate::view::DatabaseViewMode::Tables,
+            database_tables: Vec::new(),
+            selected_database_table: None,
+            database_schema: Vec::new(),
+            database_content: Vec::new(),
+            selected_database_content_row: None,
+            database_filter: crate::view::ContentFilter::default(),
+            database_connected: false,
         }
     }
 
