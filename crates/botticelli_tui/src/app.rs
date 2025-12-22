@@ -5,7 +5,7 @@
 use crate::{AppState, Command, Event, EventHandler, McpMessage, TuiResult, ViewMode};
 use crossterm::event::KeyEvent;
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::{io, sync::Arc};
+use std::io;
 use tokio::sync::mpsc;
 use tracing::debug;
 
@@ -144,19 +144,12 @@ impl TuiApp {
         match event {
             Event::Quit => return Ok(false),
             Event::Key(key_event) => {
-                // First, let the current view handle the key
-                if let Some(command) = self
-                    .state
-                    .current_view()
-                    .handle_input(key_event, &self.state)?
-                {
-                    return self.handle_command(command).await;
-                }
-
-                // If view didn't handle it, check for global keybindings
+                // Check for global keybindings first
                 if let Some(command) = self.handle_global_keys(key_event) {
                     return self.handle_command(command).await;
                 }
+                // Otherwise, let the application handle the key
+                // (View-specific handling would go here)
             }
             Event::Mouse(mouse_event) => {
                 self.state.handle_mouse(mouse_event)?;
@@ -234,7 +227,7 @@ impl TuiApp {
                 }
                 ViewMode::NarrativeBrowser => {
                     if let Some(idx) = self.state.selected_narrative()
-                        && idx > 0
+                        && *idx > 0
                     {
                         self.state.set_selected_narrative(Some(idx - 1));
                     }
