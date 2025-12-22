@@ -68,17 +68,25 @@ impl Router for BotticelliRouter {
     }
 
     fn list_tools(&self) -> Vec<Tool> {
-        self.tools
+        let tools: Vec<Tool> = self.tools
             .list()
             .iter()
             .map(|tool| {
+                tracing::debug!(
+                    tool_name = %tool.name(),
+                    tool_desc = %tool.description(),
+                    "Returning tool from registry"
+                );
                 Tool::new(
                     tool.name().to_string(),
                     tool.description().to_string(),
                     tool.input_schema(),
                 )
             })
-            .collect()
+            .collect();
+        
+        tracing::info!(count = tools.len(), "Total tools returned from list_tools");
+        tools
     }
 
     #[instrument(skip(self, arguments), fields(tool = %tool_name))]
