@@ -43,30 +43,3 @@ impl<T: McpTool + 'static> ToolHandler for McpToolAdapter<T> {
     }
 }
 
-/// Type-erased adapter for Arc<dyn McpTool>.
-///
-/// This allows registering tools from a ToolRegistry that returns trait objects.
-pub struct DynMcpToolAdapter {
-    tool: Arc<dyn McpTool>,
-}
-
-impl DynMcpToolAdapter {
-    /// Creates a new adapter from an Arc<dyn McpTool>.
-    pub fn new(tool: Arc<dyn McpTool>) -> Self {
-        Self { tool }
-    }
-}
-
-#[async_trait]
-impl ToolHandler for DynMcpToolAdapter {
-    #[instrument(skip(self, _extra), fields(tool_name = self.tool.name()))]
-    async fn handle(&self, args: Value, _extra: RequestHandlerExtra) -> pmcp::Result<Value> {
-        match self.tool.execute(args).await {
-            Ok(result) => Ok(result),
-            Err(e) => {
-                error!(error = ?e, "Tool execution failed");
-                Err(pmcp::Error::internal(e.to_string()))
-            }
-        }
-    }
-}

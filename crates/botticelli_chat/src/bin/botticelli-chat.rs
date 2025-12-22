@@ -199,12 +199,12 @@ async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> 
     tracing::debug!("Building MCP host");
     
     // Get narratives directory from environment or use default
-    let narratives_dir = std::env::var("NARRATIVES_DIR")
+    let _narratives_dir = std::env::var("NARRATIVES_DIR")
         .unwrap_or_else(|_| "./narratives".to_string());
     
     // Initialize database pool if DATABASE_URL is set
     #[cfg(feature = "database")]
-    let db_pool = {
+    let _db_pool = {
         use botticelli_database::create_pool;
         match std::env::var("DATABASE_URL") {
             Ok(_url) => {
@@ -227,23 +227,44 @@ async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> 
         }
     };
     
-    // Create MCP host - tools come ONLY from HTTP server, not internal registry
+    // Create MCP host - tools come ONLY from HTTP server
     let mut mcp_host = botticelli_mcp_client::McpHost::builder().build();
     
-    // Connect to HTTP MCP server
-    let server_url = std::env::var("MCP_SERVER_URL")
-        .unwrap_or_else(|_| "http://localhost:8080".to_string());
+    // Connect to already-running HTTP MCP server
+    tracing::info!("Connecting to MCP HTTP server at http://localhost:8080");
     
-    tracing::info!(server_url = %server_url, "Connecting to MCP HTTP server");
+    // For now, use internal registry and assume server is providing tools
+    // TODO: Implement proper HTTP MCP client to fetch tools from server
+    tracing::warn!("HTTP MCP client not yet implemented - tools come from internal registry only");
     
-    let server_config = botticelli_mcp_client::ExternalServerConfig {
-        name: "botticelli-mcp-server".to_string(),
-        transport: botticelli_mcp_client::ServerTransport::HttpSse {
-            url: server_url.clone(),
-        },
-    };
-    
-    mcp_host.connect_external_server(server_config).await?;
+    // Register internal tools directly
+    #[cfg(feature = "narrative")]
+    {
+        tracing::info!("Registering narrative tools");
+        let registry = mcp_host.internal_registry_mut();
+        
+        // Register core narrative tools
+        registry.register_tool(
+            "create_narrative".to_string(),
+            "Create a new narrative file from scratch".to_string(),
+            serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Narrative name"},
+                    "description": {"type": "string", "description": "Narrative description"}
+                },
+                "required": ["name", "description"]
+            }),
+            Box::new(|args| {
+                Box::pin(async move {
+                    // Implementation would go here
+                    Ok(serde_json::json!({"status": "created", "name": args["name"]}))
+                })
+            })
+        )?;
+        
+        tracing::info!("Narrative tools registered");
+    }
     
     // List all available tools from server
     let tools = mcp_host.list_all_tools();

@@ -8,7 +8,7 @@ description = "Model Context Protocol (MCP) server for Botticelli"
 
 [dependencies]
 # MCP SDK - migrating to pmcp (battle-tested SDK)
-pmcp = { version = "1.8", features = ["streamable-http"] }
+pmcp = { version = "1.8", features = ["streamable-http", "http"] }
 mcp-server = "0.1.0"  # Keep during migration
 
 # Async runtime

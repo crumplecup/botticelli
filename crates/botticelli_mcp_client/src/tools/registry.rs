@@ -5,10 +5,7 @@ use super::{
     ElicitationRegistry, ExecuteCarouselTool, FinalizeElicitationTool,
 };
 #[cfg(feature = "database")]
-use super::{
-    CreateNarrativeTool, CreateTableTool, InspectTableTool, ListNarrativesTool,
-    LoadNarrativeTool, QueryTableTool, TableExistsTool, ValidateNarrativeTool,
-};
+use super::{CreateTableTool, InspectTableTool, QueryTableTool, TableExistsTool};
 use crate::{McpClientResult, ToolRegistry};
 #[cfg(feature = "database")]
 use botticelli_database::{DbOperationsImpl, DbPool};
