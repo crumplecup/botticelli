@@ -213,6 +213,7 @@ impl AppState {
 
         // Execute with MCP if available
         if self.has_mcp_integration() {
+            tracing::info!("Has MCP integration, proceeding with orchestration");
             let chat_host = self.chat_host.as_ref().unwrap().clone();
             let tx = self.mcp_channel.as_ref().unwrap().clone();
             let user_msg = user_message.clone();
@@ -221,29 +222,37 @@ impl AppState {
             let mut updated_messages = messages.clone();
             updated_messages.push(ChatMessage::user(user_message.clone()));
             self.update_conversation(conv_id, updated_messages);
+            tracing::debug!("Updated conversation with user message");
 
             // Spawn blocking task to execute via chat host (sync trait)
+            tracing::info!("Spawning blocking task for chat host");
             tokio::task::spawn_blocking(move || {
-                tracing::info!("Processing message with MCP orchestration");
+                tracing::info!("Inside blocking task, acquiring chat host lock");
                 
                 // Use the chat host to send the message
                 let response = match chat_host.lock() {
-                    Ok(mut host) => host.send_message(user_msg.clone()),
+                    Ok(mut host) => {
+                        tracing::info!("Acquired lock, calling send_message");
+                        host.send_message(user_msg.clone())
+                    }
                     Err(e) => {
                         tracing::error!("Failed to lock chat host: {}", e);
                         return;
                     }
                 };
                 
+                tracing::info!("send_message returned, processing response");
                 match response {
                     Ok(response) => {
-                        tracing::debug!(response = %response, "Received LLM response");
+                        tracing::info!(response = %response, "Received LLM response");
                         if let Err(e) = tx.send(crate::McpMessage::Update(crate::McpUpdate {
                             conversation_id: conv_id,
                             user_message: user_msg.clone(),
                             assistant_message: response,
                         })) {
                             tracing::error!(error = %e, "Failed to send MCP update to UI");
+                        } else {
+                            tracing::info!("Successfully sent MCP update to UI");
                         }
                     }
                     Err(e) => {
@@ -257,8 +266,11 @@ impl AppState {
                         }
                     }
                 }
+                tracing::info!("Blocking task completed");
             });
+            tracing::info!("Spawned blocking task successfully");
         } else {
+            tracing::warn!("No MCP integration available");
             // No MCP - add placeholder response immediately
             let mut updated_messages = messages;
             updated_messages.push(ChatMessage::user(user_message));
