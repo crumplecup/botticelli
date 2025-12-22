@@ -9,6 +9,7 @@ use crossterm::{
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> TuiResult<()> {
@@ -21,7 +22,11 @@ async fn main() -> TuiResult<()> {
         .with_ansi(false)
         .init();
     
-    tracing::info!("Botticelli TUI starting");
+    info!("Botticelli TUI starting");
+    
+    // TODO: Load configuration and spawn HTTP client background task
+    // For now, just log that we would connect to MCP server
+    info!("TODO: Connect to MCP server in background task");
     
     // Setup terminal
     enable_raw_mode()?;

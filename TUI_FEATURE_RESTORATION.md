@@ -4,7 +4,7 @@
 
 The minimal event loop in `minimal_loop.rs` successfully achieves instant keyboard response with zero lag.
 
-## Current State
+## Current State (Last Updated: 2025-12-22)
 
 ✅ **Working:**
 - Instant keyboard input with tokio::select!
@@ -14,17 +14,18 @@ The minimal event loop in `minimal_loop.rs` successfully achieves instant keyboa
 - Basic text entry (typing characters)
 - Backspace support
 - Ctrl+C to quit
-- **View switching (Tab key)** - cycles through all views
+- **View switching (Tab/BackTab keys)** - cycles through all views
 - **Status bar** - shows current view and key bindings
+- **Message sending** - Enter key sends via background task
+- **Command system** - AppendChar, DeleteChar, SendMessage all working
+- **All 8 views migrated** - Chat, ConversationHistory, NarrativeBrowser, NarrativeEditor, Settings, Bots, Database, Schedule
 
 ❌ **Missing Features:**
-1. Message sending (Enter key clears input but doesn't send)
-2. HTTP client connection to MCP server
-3. Actual message display from conversations
-4. Proper rendering for non-Chat views (Bots, Database, Schedule, etc.)
-5. Background tasks for server communication
-6. Error handling and display
-7. Conversation management
+1. HTTP client connection to MCP server (background task exists but not connected)
+2. Actual message display from conversations
+3. Streaming response handling
+4. Conversation management
+5. Error handling and display
 
 ## Architecture Principles (DO NOT VIOLATE)
 

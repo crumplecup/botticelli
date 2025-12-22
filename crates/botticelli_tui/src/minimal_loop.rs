@@ -45,18 +45,62 @@ pub async fn minimal_event_loop<B: Backend>(
     let (ui_tx, mut ui_rx) = mpsc::channel::<UiMessage>(100);
     let (_bg_tx, mut bg_rx) = mpsc::channel::<BackgroundMessage>(100);
     
-    // Spawn background task for HTTP requests
-    // TODO: Actually connect to MCP server when ready
+    // Spawn background task for MCP HTTP client
+    #[cfg(feature = "cli")]
+    info!("Spawning MCP HTTP client background task");
+    #[cfg(not(feature = "cli"))]
+    info!("CLI feature not enabled - no MCP HTTP client");
+    
+    #[cfg(feature = "cli")]
+    let http_client = reqwest::Client::new();
+    #[cfg(feature = "cli")]
+    let mcp_url = "http://localhost:3000".to_string(); // TODO: Get from config
+    
     tokio::spawn(async move {
+        info!("MCP client task started");
+        
+        // Process messages from UI
         while let Some(msg) = ui_rx.recv().await {
+            debug!(?msg, "Received UI message");
+            
             match msg {
                 UiMessage::SendChat(text) => {
-                    debug!(message = %text, "Background: received chat message");
-                    // TODO: Send to HTTP server
-                    // For now, just log it
+                    #[cfg(feature = "cli")]
+                    {
+                        info!(text = %text, "Sending chat to MCP server");
+                        
+                        // Send HTTP request to MCP server
+                        match http_client
+                            .post(&format!("{}/chat", mcp_url))
+                            .json(&serde_json::json!({ "message": text }))
+                            .send()
+                            .await
+                        {
+                            Ok(response) => {
+                                info!(status = ?response.status(), "Got MCP response");
+                                match response.text().await {
+                                    Ok(body) => {
+                                        info!(body = %body, "MCP response body");
+                                        // TODO: Parse and send to UI via bg_tx
+                                    }
+                                    Err(e) => {
+                                        warn!(error = ?e, "Failed to read MCP response body");
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                warn!(error = ?e, "Failed to send to MCP server");
+                            }
+                        }
+                    }
+                    
+                    #[cfg(not(feature = "cli"))]
+                    debug!(text = %text, "Mock: would send to MCP server");
                 }
             }
         }
+        
+        info!("MCP client task ending");
     });
     
     info!("Entering event loop");

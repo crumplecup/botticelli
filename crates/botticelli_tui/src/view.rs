@@ -749,10 +749,10 @@ pub struct DatabaseView;
 
 impl View for DatabaseView {
     fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
-        use ratatui::layout::{Constraint, Direction, Layout};
-        use ratatui::style::{Color, Modifier, Style};
-        use ratatui::text::{Line, Span};
-        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
+        
+        
+        
+        
 
         let area = frame.area();
         
@@ -806,7 +806,7 @@ impl DatabaseView {
     /// Renders the tables list view.
     fn render_tables(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
         use ratatui::layout::{Constraint, Direction, Layout};
-        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::style::{Color, Style};
         use ratatui::text::{Line, Span};
         use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
@@ -970,9 +970,9 @@ impl DatabaseView {
     /// Renders the content view.
     fn render_content(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
         use ratatui::layout::{Constraint, Direction, Layout};
-        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::style::{Color, Style};
         use ratatui::text::{Line, Span};
-        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
+        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -1054,8 +1054,8 @@ impl DatabaseView {
 
     /// Renders detailed view of a single row.
     fn render_row_detail(&self, data: &JsonValue, frame: &mut Frame, area: ratatui::layout::Rect) -> TuiResult<()> {
-        use ratatui::style::{Color, Modifier, Style};
-        use ratatui::text::{Line, Span};
+        use ratatui::style::{Color, Style};
+        use ratatui::text::Line;
         use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 
         let formatted = serde_json::to_string_pretty(data)
@@ -1239,7 +1239,7 @@ impl View for ScheduleView {
 impl ScheduleView {
     /// Renders the task list.
     fn render_task_list(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
-        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::style::{Color, Style};
         use ratatui::text::{Line, Span};
         use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
