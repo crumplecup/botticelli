@@ -43,7 +43,8 @@ tracing-subscriber = { workspace = true }
 
 # TUI libraries
 ratatui = { workspace = true }
-crossterm = { workspace = true }
+crossterm = { workspace = true, features = ["event-stream"] }
+futures = { workspace = true }
 
 # UUID
 uuid = { workspace = true }

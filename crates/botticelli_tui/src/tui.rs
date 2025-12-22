@@ -1,7 +1,8 @@
 //! Main TUI entry point and coordinator.
 
 use crate::{AppState, Event, McpMessage, TuiResult};
-use crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
+use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyModifiers};
+use futures::StreamExt;
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{io, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
@@ -37,18 +38,19 @@ impl Tui {
         // Create channel for crossterm events
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         
-        // Spawn event reader task
+        // Spawn async event reader using crossterm's EventStream
         tokio::spawn(async move {
+            let mut reader = EventStream::new();
+            
             loop {
-                // Non-blocking check for events
-                if event::poll(Duration::from_millis(0)).unwrap_or(false) {
-                    if let Ok(crossterm_event) = event::read() {
+                match reader.next().await {
+                    Some(Ok(crossterm_event)) => {
                         let tui_event = match crossterm_event {
                             CrosstermEvent::Key(key) => {
                                 // Check for quit
-                                if key.code == event::KeyCode::Char('q')
-                                    || (key.code == event::KeyCode::Char('c')
-                                        && key.modifiers.contains(event::KeyModifiers::CONTROL))
+                                if key.code == KeyCode::Char('q')
+                                    || (key.code == KeyCode::Char('c')
+                                        && key.modifiers.contains(KeyModifiers::CONTROL))
                                 {
                                     Some(Event::Quit)
                                 } else {
@@ -66,10 +68,14 @@ impl Tui {
                             }
                         }
                     }
+                    Some(Err(_)) => {
+                        // Error reading event, continue
+                    }
+                    None => {
+                        // Stream ended, exit task
+                        break;
+                    }
                 }
-                
-                // Small sleep to avoid busy-waiting
-                tokio::time::sleep(Duration::from_micros(100)).await;
             }
         });
 
