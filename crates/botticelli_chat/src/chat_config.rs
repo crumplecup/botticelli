@@ -57,7 +57,7 @@ impl Default for ChatConfig {
     fn default() -> Self {
         Self {
             model_bounds: None,
-            initial_model: ModelId::Gemini(botticelli_models::GeminiModel::Gemini25Flash),
+            initial_model: ModelId::Groq(botticelli_models::GroqModel::Llama33_70BVersatile),
             fallback_strategy: SelectionStrategy::FriendlyFirst,
         }
     }
