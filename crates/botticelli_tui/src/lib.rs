@@ -38,7 +38,6 @@ mod elicitation_dialog;
 mod error;
 mod events;
 mod state;
-mod storage;
 mod tui;
 mod view;
 

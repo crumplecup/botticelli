@@ -45,7 +45,7 @@ impl ConversationLoop {
         available_tools: &[ToolDefinition],
     ) -> ChatResult<Vec<Message>>
     where
-        P: ToolCalling + Send + Sync,
+        P: ToolCalling + Send + Sync + ?Sized,
     {
         info!(
             message_count = messages.len(),

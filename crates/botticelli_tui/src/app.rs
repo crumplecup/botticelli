@@ -5,7 +5,7 @@
 use crate::{AppState, Command, Event, EventHandler, McpMessage, TuiResult, View, ViewMode, ChatView};
 use crossterm::event::KeyEvent;
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::{io, sync::Arc};
+use std::{io, sync::{Arc, Mutex}};
 use tokio::sync::mpsc;
 use tracing::debug;
 
@@ -38,13 +38,13 @@ impl TuiApp {
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// let chat_host = ChatHostImpl::new().await?;
     ///
-    /// let mut app = TuiApp::new(Box::new(chat_host))?;
+    /// let mut app = TuiApp::new(Arc::new(Mutex::new(chat_host)))?;
     /// app.run().await?;
     /// # Ok(())
     /// # }
     /// ```
     #[tracing::instrument(skip(chat_host))]
-    pub fn new(chat_host: Box<dyn botticelli_interface::ChatHost>) -> TuiResult<Self> {
+    pub fn new(chat_host: Arc<Mutex<dyn botticelli_interface::ChatHost>>) -> TuiResult<Self> {
         tracing::debug!("Creating TuiApp");
         
         let backend = CrosstermBackend::new(io::stdout());
@@ -55,7 +55,7 @@ impl TuiApp {
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
 
         // Initialize AppState with ChatHost
-        let mut state = AppState::new(Arc::from(chat_host));
+        let mut state = AppState::new(chat_host);
         state.with_mcp_channel(Some(mcp_tx));
 
         tracing::debug!("TuiApp created successfully");

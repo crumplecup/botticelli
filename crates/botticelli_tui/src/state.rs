@@ -65,7 +65,7 @@ impl Default for AppState {
 
 impl AppState {
     /// Creates a new AppState with the given chat host.
-    pub fn new(chat_host: Arc<dyn ChatHost>) -> Self {
+    pub fn new(chat_host: Arc<Mutex<dyn ChatHost>>) -> Self {
         Self {
             mode: ViewMode::Chat,
             input_buffer: String::new(),

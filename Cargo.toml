@@ -79,6 +79,7 @@ botticelli_cache = { path = "crates/botticelli_cache", version = "0.2.0" }
 # Internal crates (MCP integration)
 botticelli_mcp = { path = "crates/botticelli_mcp", version = "0.2.0" }
 botticelli_mcp_client = { path = "crates/botticelli_mcp_client", version = "0.2.0" }
+botticelli_chat = { path = "crates/botticelli_chat", version = "0.2.0" }
 
 # Internal crates (Phase 7 facade)
 botticelli = { path = "crates/botticelli", version = "0.2.0" }

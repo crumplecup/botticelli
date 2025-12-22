@@ -84,9 +84,9 @@ impl ChatHost for McpChatHost {
             .rev()
             .find(|m| m.role() == &Role::Assistant)
             .and_then(|m| m.content().first())
-            .and_then(|output| {
-                use botticelli_core::Output;
-                if let Output::Text(text) = output {
+            .and_then(|input| {
+                use botticelli_core::Input;
+                if let Input::Text(text) = input {
                     Some(text.clone())
                 } else {
                     None
@@ -110,11 +110,11 @@ impl ChatHost for McpChatHost {
                     Role::System => "system",
                 };
                 
-                use botticelli_core::Output;
+                use botticelli_core::Input;
                 let content = msg.content()
                     .iter()
-                    .filter_map(|output| {
-                        if let Output::Text(text) = output {
+                    .filter_map(|input| {
+                        if let Input::Text(text) = input {
                             Some(text.clone())
                         } else {
                             None
@@ -145,10 +145,9 @@ impl ChatHost for McpChatHost {
             .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to create runtime: {}", e))))?;
         
         let mcp_host = rt.block_on(self.mcp_host.lock());
-        let tools = mcp_host.list_tools()
-            .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to list tools: {}", e))))?;
+        let tools = mcp_host.list_all_tools()?;
         
-        tracing::debug!(tool_count = tools.len(), tool_names = ?tools.iter().map(|t| t.name()).collect::<Vec<_>>(), "Retrieved tools");
+        tracing::debug!(tool_count = tools.len(), tool_names = ?tools.iter().map(|t: &botticelli_core::ToolDefinition| t.name()).collect::<Vec<_>>(), "Retrieved tools");
         
         Ok(tools)
     }
@@ -162,7 +161,7 @@ impl ChatHost for McpChatHost {
         
         let result = rt.block_on(async {
             let mut mcp_host = self.mcp_host.lock().await;
-            mcp_host.call_tool(name, arguments).await
+            mcp_host.execute_tool(name, arguments).await
         })
         .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Tool execution failed: {}", e))))?;
         

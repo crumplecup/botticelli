@@ -2,7 +2,7 @@
 
 use crate::{AppState, Event, EventHandler, McpMessage, TuiResult};
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::{io, sync::{Arc, Mutex}};
+use std::io;
 use tokio::sync::mpsc;
 
 /// Main TUI coordinator.
@@ -27,41 +27,6 @@ impl Tui {
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
 
         let mut state = AppState::default();
-        state.with_mcp_channel(Some(mcp_tx));
-
-        Ok(Self {
-            terminal,
-            events,
-            state,
-            mcp_rx,
-        })
-    }
-
-    /// Create TUI with MCP integration.
-    ///
-    /// Takes an LLM driver (Anthropic, Gemini, etc.) and initializes the full
-    /// MCP stack for tool execution.
-    pub fn with_mcp(
-        driver: std::sync::Arc<dyn botticelli_interface::ToolCalling>,
-    ) -> TuiResult<Self> {
-        let mcp_host = botticelli_mcp_client::McpHost::builder().build();
-        Self::with_mcp_and_tools(driver, mcp_host)
-    }
-
-    /// Creates TUI with MCP integration and tool definitions.
-    pub fn with_mcp_and_tools(
-        driver: std::sync::Arc<dyn botticelli_interface::ToolCalling>,
-        mcp_host: botticelli_mcp_client::McpHost,
-    ) -> TuiResult<Self> {
-        let backend = CrosstermBackend::new(io::stdout());
-        let terminal = Terminal::new(backend)?;
-        let events = EventHandler::new(std::time::Duration::from_millis(250));
-
-        // Create channel for MCP updates
-        let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
-
-        // Initialize AppState with MCP integration
-        let mut state = AppState::with_mcp_integration(driver, Arc::new(Mutex::new(mcp_host)));
         state.with_mcp_channel(Some(mcp_tx));
 
         Ok(Self {
