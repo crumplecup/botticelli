@@ -33,6 +33,7 @@
 
 mod app;
 mod commands;
+mod debug;
 mod elicitation;
 mod elicitation_dialog;
 mod error;

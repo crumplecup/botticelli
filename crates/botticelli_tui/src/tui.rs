@@ -120,7 +120,13 @@ impl Tui {
                 
                 // Priority 1: Keyboard events (instant)
                 Some(event) = self.event_rx.recv() => {
-                    if !self.handle_event(event).await? {
+                    let start = std::time::Instant::now();
+                    let should_continue = self.handle_event(event).await?;
+                    let elapsed = start.elapsed();
+                    if elapsed.as_millis() > 10 {
+                        tracing::warn!("Event handling took {:?} (SLOW!)", elapsed);
+                    }
+                    if !should_continue {
                         break;
                     }
                 }
@@ -136,7 +142,12 @@ impl Tui {
                 
                 // Priority 3: Periodic render tick (60fps)
                 _ = ticker.tick() => {
+                    let start = std::time::Instant::now();
                     self.render()?;
+                    let elapsed = start.elapsed();
+                    if elapsed.as_millis() > 16 {
+                        tracing::warn!("Render took {:?} (dropped frame!)", elapsed);
+                    }
                 }
             }
         }
