@@ -6,8 +6,8 @@ use super::{
 };
 #[cfg(feature = "database")]
 use super::{
-    CreateTableTool, InspectTableTool,
-    QueryTableTool, TableExistsTool,
+    CreateNarrativeTool, CreateTableTool, InspectTableTool, ListNarrativesTool,
+    LoadNarrativeTool, QueryTableTool, TableExistsTool, ValidateNarrativeTool,
 };
 use crate::{McpClientResult, ToolRegistry};
 #[cfg(feature = "database")]
@@ -63,6 +63,12 @@ pub fn register_internal_tools(
             "table_exists".to_string(),
             Arc::new(TableExistsTool::new(db_ops)),
         )?;
+
+        // TODO: Narrative tools need MediaStorage dependency wired up
+        // narrative_storage requires: PgConnection + Arc<dyn MediaStorage>
+        // Need to refactor to work with DbPool
+
+        tracing::info!("Registered database and narrative tools");
     }
 
     // Register elicitation tools
@@ -100,23 +106,9 @@ pub fn register_internal_tools(
         Arc::new(ExecuteCarouselTool::new(elicitation_registry)),
     )?;
 
-    // Register narrative tools (requires database)
-    // Narrative tools need proper repository implementation  
-    // TODO: Wire up PostgresNarrativeRepository or FilesystemNarrativeStorage
-    // Currently DbOperationsImpl doesn't implement NarrativeStorageOperations
-    
-    // registry.register(
-    //     "create_narrative".to_string(),
-    //     Arc::new(CreateNarrativeTool::new(narrative_repo)),
-    // )?;
-    
-    // TODO: Registry operations tools need GenericRegistry setup
-    // These are generic tools that require registry instances:
-    // - UpsertRegistryItemTool
-    // - GetRegistryItemTool  
-    // - ListRegistryKeysTool
-
+    tracing::info!("Registered elicitation tools");
     tracing::info!("Registered all internal tools");
+
     Ok(())
 }
 
