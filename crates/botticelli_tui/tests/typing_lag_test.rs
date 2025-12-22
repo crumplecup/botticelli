@@ -22,7 +22,7 @@ async fn test_rapid_typing_simulation() {
             crossterm::event::KeyModifiers::NONE,
         );
         
-        state.handle_key(key_event).await.expect("handle_key failed");
+        state.handle_key(key_event).expect("handle_key failed");
         
         let char_elapsed = char_start.elapsed();
         if char_elapsed > slowest_char {
@@ -48,4 +48,3 @@ async fn test_rapid_typing_simulation() {
         panic!("Typing is TOO SLOW! Avg {:?} per char (need < 5ms)", avg_per_char);
     }
 }
-EOF
