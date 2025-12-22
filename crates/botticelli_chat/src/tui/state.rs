@@ -133,6 +133,12 @@ impl AppState {
             Tab::Settings => "Settings",
         }
     }
+    
+    /// Poll for LLM responses in chat tab
+    #[tracing::instrument(skip(self))]
+    pub fn poll_responses(&mut self) {
+        self.chat_state.poll_responses();
+    }
 }
 
 impl Default for AppState {

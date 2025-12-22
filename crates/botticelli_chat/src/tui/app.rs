@@ -32,6 +32,9 @@ impl TuiApp {
     pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> std::io::Result<()> {
         tracing::info!("Starting TUI main loop");
         loop {
+            // Poll for LLM responses (non-blocking)
+            self.state.poll_responses();
+            
             // Render the UI
             terminal.draw(|frame| {
                 self.render(frame);

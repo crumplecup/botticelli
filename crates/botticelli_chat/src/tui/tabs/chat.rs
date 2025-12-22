@@ -4,6 +4,7 @@ use botticelli_core::{Input, Message, Role};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
+use tokio::sync::mpsc;
 
 use crate::services::ServiceContainer;
 
@@ -83,11 +84,19 @@ pub struct ChatTab {
     
     /// Services for LLM and tool execution
     services: Option<Arc<ServiceContainer>>,
+    
+    /// Channel for receiving LLM responses
+    response_rx: Option<mpsc::UnboundedReceiver<String>>,
+    
+    /// Channel for sending LLM responses
+    response_tx: Option<mpsc::UnboundedSender<String>>,
 }
 
 impl ChatTab {
     /// Creates a new chat tab
     pub fn new() -> Self {
+        let (response_tx, response_rx) = mpsc::unbounded_channel();
+        
         Self {
             messages: Vec::new(),
             #[cfg(feature = "tui")]
@@ -96,6 +105,8 @@ impl ChatTab {
             input: ChatInput::new(),
             input_focused: true,
             services: None,
+            response_rx: Some(response_rx),
+            response_tx: Some(response_tx),
         }
     }
     
@@ -117,7 +128,7 @@ impl ChatTab {
         }
     }
 
-    /// Sends a user message
+    /// Sends a user message and triggers LLM response
     #[tracing::instrument(skip(self))]
     pub fn send_message(&mut self, content: String) {
         if content.trim().is_empty() {
@@ -135,17 +146,45 @@ impl ChatTab {
             self.add_message(error_msg);
             return;
         };
+        
+        // Get response sender
+        let Some(response_tx) = self.response_tx.clone() else {
+            tracing::error!("Response channel not configured");
+            return;
+        };
 
         tracing::debug!("Spawning async LLM response handler");
-        // Trigger async LLM response
-        let messages_clone = self.messages.clone();
+        // Clone messages for async task
+        let messages_for_task = self.messages.clone();
+        
         tokio::spawn(async move {
             tracing::info!("LLM response handler started");
-            if let Err(e) = Self::handle_llm_response(content, messages_clone, services).await {
-                tracing::error!(error = %e, "Failed to get LLM response");
+            match Self::handle_llm_response(content, messages_for_task, services).await {
+                Ok(response) => {
+                    tracing::info!(response_len = response.len(), "Got LLM response");
+                    if let Err(e) = response_tx.send(response) {
+                        tracing::error!(error = ?e, "Failed to send response to UI");
+                    }
+                }
+                Err(e) => {
+                    tracing::error!(error = %e, "Failed to get LLM response");
+                    let _ = response_tx.send(format!("Error: {}", e));
+                }
             }
             tracing::info!("LLM response handler completed");
         });
+    }
+    
+    /// Poll for LLM responses and add to message history
+    #[tracing::instrument(skip(self))]
+    pub fn poll_responses(&mut self) {
+        if let Some(rx) = &mut self.response_rx {
+            while let Ok(response) = rx.try_recv() {
+                tracing::info!(response_len = response.len(), "Received LLM response");
+                let message = DisplayMessage::new(Role::Assistant, response);
+                self.add_message(message);
+            }
+        }
     }
     
     #[tracing::instrument(skip(_messages, services))]
