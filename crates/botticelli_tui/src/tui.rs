@@ -112,6 +112,8 @@ impl Tui {
         // Create ticker for periodic renders (60fps = ~16ms)
         let mut ticker = tokio::time::interval(Duration::from_millis(16));
         ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        
+        let mut needs_render = true; // Initial render needed
 
         // Main event loop with biased select (keyboard events first)
         loop {
@@ -122,6 +124,7 @@ impl Tui {
                 Some(event) = self.event_rx.recv() => {
                     let start = std::time::Instant::now();
                     let should_continue = self.handle_event(event).await?;
+                    needs_render = true; // State changed, need render
                     let elapsed = start.elapsed();
                     if elapsed.as_millis() > 10 {
                         tracing::warn!("Event handling took {:?} (SLOW!)", elapsed);
@@ -138,12 +141,14 @@ impl Tui {
                         McpMessage::Error(error) => Event::McpError(error),
                     };
                     self.handle_event(event).await?;
+                    needs_render = true; // State changed, need render
                 }
                 
-                // Priority 3: Periodic render tick (60fps)
-                _ = ticker.tick() => {
+                // Priority 3: Periodic render tick (60fps) - only if needed
+                _ = ticker.tick(), if needs_render => {
                     let start = std::time::Instant::now();
                     self.render()?;
+                    needs_render = false; // Rendered, clear flag
                     let elapsed = start.elapsed();
                     if elapsed.as_millis() > 16 {
                         tracing::warn!("Render took {:?} (dropped frame!)", elapsed);
