@@ -1,8 +1,9 @@
 use std::time::Duration;
 
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
+use tokio::sync::mpsc;
 
-use crate::{TuiError, TuiErrorKind, TuiResult};
+use crate::TuiResult;
 
 /// Update from MCP execution.
 #[derive(Debug, Clone)]
@@ -55,57 +56,77 @@ pub enum Event {
 }
 
 /// Event handler for the TUI.
-#[derive(Debug)]
 pub struct EventHandler {
-    /// Tick rate for periodic updates.
-    tick_rate: Duration,
+    /// Event receiver channel.
+    rx: mpsc::UnboundedReceiver<Event>,
 }
 
 impl EventHandler {
-    /// Creates a new event handler.
+    /// Creates a new event handler with event-driven input.
     pub fn new(tick_rate: Duration) -> Self {
-        Self { tick_rate }
-    }
+        let (tx, rx) = mpsc::unbounded_channel();
 
-    /// Polls for the next event.
-    pub async fn next(&self) -> TuiResult<Option<Event>> {
-        if event::poll(self.tick_rate).map_err(|e| {
-            TuiError::new(TuiErrorKind::EventPoll(format!(
-                "Failed to poll events: {}",
-                e
-            )))
-        })? {
-            match event::read().map_err(|e| {
-                TuiError::new(TuiErrorKind::EventRead(format!(
-                    "Failed to read event: {}",
-                    e
-                )))
-            })? {
-                CrosstermEvent::Key(key) => {
-                    // Check for quit (Ctrl+C or 'q')
-                    if key.code == crossterm::event::KeyCode::Char('q')
-                        || (key.code == crossterm::event::KeyCode::Char('c')
-                            && key
-                                .modifiers
-                                .contains(crossterm::event::KeyModifiers::CONTROL))
-                    {
-                        Ok(Some(Event::Quit))
-                    } else {
-                        Ok(Some(Event::Key(key)))
+        // Spawn blocking task for crossterm events (immediate, no polling delay)
+        let event_tx = tx.clone();
+        std::thread::spawn(move || {
+            loop {
+                if let Ok(true) = event::poll(Duration::from_millis(10)) {
+                    match event::read() {
+                        Ok(CrosstermEvent::Key(key)) => {
+                            // Check for quit (Ctrl+C or 'q')
+                            let evt = if key.code == crossterm::event::KeyCode::Char('q')
+                                || (key.code == crossterm::event::KeyCode::Char('c')
+                                    && key
+                                        .modifiers
+                                        .contains(crossterm::event::KeyModifiers::CONTROL))
+                            {
+                                Event::Quit
+                            } else {
+                                Event::Key(key)
+                            };
+                            if event_tx.send(evt).is_err() {
+                                break;
+                            }
+                        }
+                        Ok(CrosstermEvent::Mouse(mouse)) => {
+                            if event_tx.send(Event::Mouse(mouse)).is_err() {
+                                break;
+                            }
+                        }
+                        Ok(CrosstermEvent::Resize(w, h)) => {
+                            if event_tx.send(Event::Resize(w, h)).is_err() {
+                                break;
+                            }
+                        }
+                        Err(_) => break,
+                        _ => {}
                     }
                 }
-                CrosstermEvent::Mouse(mouse) => Ok(Some(Event::Mouse(mouse))),
-                CrosstermEvent::Resize(w, h) => Ok(Some(Event::Resize(w, h))),
-                _ => Ok(Some(Event::Tick)),
             }
-        } else {
-            Ok(Some(Event::Tick))
-        }
+        });
+
+        // Spawn tick task
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(tick_rate);
+            loop {
+                interval.tick().await;
+                if tx.send(Event::Tick).is_err() {
+                    break;
+                }
+            }
+        });
+
+        Self { rx }
+    }
+
+    /// Gets the next event (non-blocking with async).
+    pub async fn next(&mut self) -> TuiResult<Option<Event>> {
+        Ok(self.rx.recv().await)
     }
 }
 
 impl Default for EventHandler {
     fn default() -> Self {
-        Self::new(Duration::from_millis(50))
+        Self::new(Duration::from_millis(250))
     }
 }
