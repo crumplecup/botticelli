@@ -1,98 +1,13 @@
-use std::collections::HashMap;
+use std::sync::Arc;
 
-use botticelli_interface::ChatHost;
-use tracing::{error, info, warn};
+use derive_getters::Getters;
 use uuid::Uuid;
 
-#[async_trait]
-impl LlmBackend for TuiLlmBackend {
-    #[tracing::instrument(skip(self, messages, tools), fields(tool_count = tools.len()))]
-    async fn generate_with_tools(
-        &self,
-        messages: &[botticelli_core::Message],
-        tools: &[ToolDefinition],
-    ) -> Result<String, Box<dyn std::error::Error>> {
-        use botticelli_core::Output;
-        use serde_json::json;
-
-        // Build request without tools field
-        let request = GenerateRequest::builder()
-            .messages(messages.to_vec())
-            .build()?;
-
-        // Tools are already botticelli_core::ToolDefinition - no conversion needed
-        tracing::debug!("Sending request with {} tools via ToolCalling trait", tools.len());
-        
-        // Use ToolCalling trait
-        let response = self.driver.generate_with_tools(&request, tools).await?;
-
-        // Convert response to format expected by extract_tool_calls
-        // The extract_tool_calls function expects JSON with "content" array containing
-        // objects with type="tool_use", name, and input fields
-
-        let mut has_tool_calls = false;
-        let mut content_array = Vec::new();
-
-        for output in response.outputs() {
-            match output {
-                Output::Text(text) => {
-                    // Include text content
-                    content_array.push(json!({
-                        "type": "text",
-                        "text": text
-                    }));
-                }
-                Output::ToolCalls(calls) => {
-                    // Convert to Anthropic tool_use format
-                    has_tool_calls = true;
-                    for call in calls {
-                        content_array.push(json!({
-                            "type": "tool_use",
-                            "id": call.id(),
-                            "name": call.name(),
-                            "input": call.arguments()
-                        }));
-                    }
-                }
-                _ => {
-                    // Other output types not relevant for tool calling
-                    tracing::debug!("Skipping non-text/non-tool output");
-                }
-            }
-        }
-
-        if has_tool_calls {
-            // Return structured JSON for tool calls
-            let result = json!({
-                "content": content_array
-            });
-            Ok(serde_json::to_string(&result)?)
-        } else {
-            // No tool calls - return text only
-            let text = response
-                .outputs()
-                .iter()
-                .find_map(|output| match output {
-                    Output::Text(t) => Some(t.clone()),
-                    _ => None,
-                })
-                .unwrap_or_else(|| "No response from model".to_string());
-            Ok(text)
-        }
-    }
-}
-
-/// Application state for the TUI.
-#[derive(Clone)]
+/// Application state for the TUI - thin UI layer over ChatHost trait.
+#[derive(Clone, Getters)]
 pub struct AppState {
     /// Active view mode.
     mode: ViewMode,
-    /// Current conversation (if any).
-    current_conversation: Option<ConversationId>,
-    /// Current narrative (if any).
-    current_narrative: Option<NarrativeId>,
-    /// Conversation history cache.
-    conversations: HashMap<ConversationId, Vec<ChatMessage>>,
     /// Input buffer for current view.
     input_buffer: String,
     /// List of narrative names.
@@ -103,16 +18,10 @@ pub struct AppState {
     selected_conversation_history: Option<usize>,
     /// Editor content buffer.
     editor_content: String,
-    /// MCP client for tool execution (optional).
-    mcp_client: Option<Arc<tokio::sync::Mutex<McpHost>>>,
-    /// LLM backend for generation (optional).
-    llm_backend: Option<Arc<TuiLlmBackend>>,
+    /// Chat host providing LLM and MCP integration.
+    chat_host: Option<Arc<dyn botticelli_interface::ChatHost>>,
     /// Channel to send MCP updates to UI thread.
     mcp_channel: Option<tokio::sync::mpsc::UnboundedSender<crate::McpMessage>>,
-    /// Conversation storage for persistence.
-    storage: crate::storage::ConversationStorage,
-    /// Available tools from MCP.
-    available_tools: Vec<botticelli_core::ToolDefinition>,
 }
 
 impl std::fmt::Debug for AppState {
