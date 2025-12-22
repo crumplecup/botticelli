@@ -158,7 +158,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _services = std::sync::Arc::new(botticelli_chat::ServiceContainer::new(config));
 
     // Initialize LLM backend with fallback
-    let llm_backend = match initialize_llm_backend().await {
+    let _llm_backend = match initialize_llm_backend().await {
         Ok(backend) => {
             info!("LLM backend initialized successfully");
             backend
@@ -172,8 +172,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    // Create TUI with MCP host (which contains all tools)
-    let mut tui = botticelli_tui::Tui::with_mcp_and_tools(llm_backend, mcp_host)?;
+    // Create TUI
+    let mut tui = botticelli_tui::Tui::new()?;
 
     // Run the app
     let result = tui.run().await;
@@ -246,7 +246,7 @@ async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> 
 }
 
 #[tracing::instrument(skip_all, name = "fetch_tools_from_http_server")]
-async fn fetch_tools_from_http_server() -> Result<Vec<botticelli_core::ToolDefinition>, Box<dyn std::error::Error>> {
+async fn _fetch_tools_from_http_server() -> Result<Vec<botticelli_core::ToolDefinition>, Box<dyn std::error::Error>> {
     let server_url = std::env::var("MCP_SERVER_URL")
         .unwrap_or_else(|_| "http://localhost:8080".to_string());
     

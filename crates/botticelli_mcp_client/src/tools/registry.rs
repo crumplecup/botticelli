@@ -6,9 +6,8 @@ use super::{
 };
 #[cfg(feature = "database")]
 use super::{
-    CreateNarrativeTool, CreateTableTool, GetRegistryItemTool, InspectTableTool,
-    ListNarrativesTool, ListRegistryKeysTool, LoadNarrativeTool, QueryTableTool,
-    TableExistsTool, UpsertRegistryItemTool, ValidateNarrativeTool,
+    CreateTableTool, InspectTableTool,
+    QueryTableTool, TableExistsTool,
 };
 use crate::{McpClientResult, ToolRegistry};
 #[cfg(feature = "database")]

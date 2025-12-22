@@ -5,7 +5,7 @@ use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use botticelli_interface::{ChatHost, ChatMessage, ToolCalling};
 use botticelli_mcp_client::McpHost;
 use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::Mutex;
 
 use crate::{ConversationLoop, ToolCallHandler};
 
@@ -16,7 +16,7 @@ pub struct McpChatHost {
     mcp_host: Arc<Mutex<McpHost>>,
     
     /// Tool call handler
-    tool_handler: Arc<RwLock<ToolCallHandler>>,
+    tool_handler: Arc<Mutex<ToolCallHandler>>,
     
     /// Conversation loop
     conversation_loop: ConversationLoop,
@@ -34,7 +34,7 @@ impl McpChatHost {
         mcp_host: Arc<Mutex<McpHost>>,
         llm_provider: Arc<dyn ToolCalling + Send + Sync>,
     ) -> Self {
-        let tool_handler = Arc::new(RwLock::new(ToolCallHandler::new(mcp_host.clone())));
+        let tool_handler = Arc::new(Mutex::new(ToolCallHandler::new(mcp_host.clone())));
         let conversation_loop = ConversationLoop::new(tool_handler.clone());
         
         Self {
@@ -145,7 +145,7 @@ impl ChatHost for McpChatHost {
             .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to create runtime: {}", e))))?;
         
         let mcp_host = rt.block_on(self.mcp_host.lock());
-        let tools = mcp_host.list_all_tools()?;
+        let tools = mcp_host.list_all_tools();
         
         tracing::debug!(tool_count = tools.len(), tool_names = ?tools.iter().map(|t: &botticelli_core::ToolDefinition| t.name()).collect::<Vec<_>>(), "Retrieved tools");
         

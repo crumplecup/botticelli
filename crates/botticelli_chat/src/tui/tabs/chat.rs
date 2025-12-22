@@ -1,11 +1,11 @@
 // Chat tab implementation
 
 use botticelli_core::{Input, Message, Role};
-use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_error::ChatResult;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 
-use crate::{ConversationLoop, Services};
+use crate::services::ServiceContainer;
 
 #[cfg(feature = "tui")]
 use ratatui::{
@@ -82,7 +82,7 @@ pub struct ChatTab {
     input_focused: bool,
     
     /// Services for LLM and tool execution
-    services: Option<Arc<Services>>,
+    services: Option<Arc<ServiceContainer>>,
 }
 
 impl ChatTab {
@@ -100,7 +100,7 @@ impl ChatTab {
     }
     
     /// Sets the services for LLM integration
-    pub fn set_services(&mut self, services: Arc<Services>) {
+    pub fn set_services(&mut self, services: Arc<ServiceContainer>) {
         self.services = Some(services);
     }
 
@@ -146,36 +146,14 @@ impl ChatTab {
     async fn handle_llm_response(
         user_content: String,
         _messages: Vec<DisplayMessage>,
-        services: Arc<Services>,
+        _services: Arc<ServiceContainer>,
     ) -> ChatResult<()> {
-        use botticelli_core::{Input, MessageBuilder};
-        
-        // Build message history
-        let user_message = MessageBuilder::default()
-            .role(Role::User)
-            .content(vec![Input::Text(user_content)])
-            .build()
-            .map_err(|e| ChatError::new(ChatErrorKind::ValidationError(format!("Failed to build message: {}", e))))?;
-        
-        let messages = vec![user_message];
-        
-        // Get available tools from MCP
-        let mcp_host = services.mcp_host().read().await;
-        let available_tools = mcp_host.list_tools().await
-            .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to list tools: {}", e))))?;
-        drop(mcp_host);
-        
-        tracing::info!(tool_count = available_tools.len(), "Running conversation with tools");
-        
-        // Run conversation loop
-        let conversation_loop = ConversationLoop::new(services.tool_handler().clone());
-        let provider = services.provider();
-        
-        let _final_messages = conversation_loop
-            .run_conversation(provider.as_ref(), messages, &available_tools)
-            .await?;
-            
-        // TODO: Update UI with final messages
+        // TODO: Implement full LLM integration with MCP tools
+        // This requires:
+        // 1. ServiceContainer to expose MCP host and LLM provider
+        // 2. Tool discovery from MCP host
+        // 3. Conversation loop with tool calling
+        tracing::warn!("LLM response handling not yet fully implemented: {}", user_content);
         Ok(())
     }
 

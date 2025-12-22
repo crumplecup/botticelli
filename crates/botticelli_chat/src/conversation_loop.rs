@@ -1,14 +1,12 @@
 //! Multi-turn conversation loop with tool calling support.
 
-#[cfg(feature = "cli")]
-use botticelli_interface::ToolCalling;
-
 use botticelli_core::{
     GenerateRequest, Input, Message, MessageBuilder, Output, Role, ToolCall, ToolDefinition,
 };
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
+use botticelli_interface::ToolCalling;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::Mutex;
 use tracing::{debug, info, instrument, warn};
 
 use crate::ToolCallHandler;
@@ -18,13 +16,13 @@ const MAX_CONVERSATION_TURNS: usize = 10;
 
 /// Orchestrates multi-turn conversations with tool calling support.
 pub struct ConversationLoop {
-    tool_handler: Arc<RwLock<ToolCallHandler>>,
+    tool_handler: Arc<Mutex<ToolCallHandler>>,
 }
 
 impl ConversationLoop {
     /// Create a new conversation loop.
     #[instrument(skip(tool_handler))]
-    pub fn new(tool_handler: Arc<RwLock<ToolCallHandler>>) -> Self {
+    pub fn new(tool_handler: Arc<Mutex<ToolCallHandler>>) -> Self {
         Self { tool_handler }
     }
 
@@ -159,7 +157,7 @@ impl ConversationLoop {
             );
 
             // Execute tool calls
-            let handler = self.tool_handler.read().await;
+            let handler = self.tool_handler.lock().await;
             let tool_results = handler.execute_tool_calls(tool_calls).await?;
 
             // Add tool results to message history

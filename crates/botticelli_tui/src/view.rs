@@ -33,7 +33,7 @@ impl View for ChatView {
 
         // Message area - render messages with styling
         let message_lines = if let Some(conv_id) = state.current_conversation() {
-            if let Some(msgs) = state.conversation_messages(&conv_id) {
+            if let Some(msgs) = state.conversation_messages(conv_id) {
                 let mut lines = Vec::new();
                 for msg in msgs {
                     // Match based on role field

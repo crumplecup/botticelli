@@ -4,18 +4,18 @@ use botticelli_core::{ToolCall, ToolResult};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use botticelli_mcp_client::McpHost;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::Mutex;
 use tracing::{debug, error, info, instrument, warn};
 
 /// Handles tool call execution and result processing.
 pub struct ToolCallHandler {
-    mcp_client: Arc<RwLock<McpHost>>,
+    mcp_client: Arc<Mutex<McpHost>>,
 }
 
 impl ToolCallHandler {
     /// Create a new tool call handler.
     #[instrument(skip(mcp_client))]
-    pub fn new(mcp_client: Arc<RwLock<McpHost>>) -> Self {
+    pub fn new(mcp_client: Arc<Mutex<McpHost>>) -> Self {
         Self { mcp_client }
     }
 
@@ -61,7 +61,7 @@ impl ToolCallHandler {
         );
 
         // Get mutable lock on MCP client
-        let mut client = self.mcp_client.write().await;
+        let mut client = self.mcp_client.lock().await;
 
         // Execute via MCP client
         match client

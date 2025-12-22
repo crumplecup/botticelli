@@ -132,10 +132,10 @@ impl AppState {
 
     /// Moves selection up in conversation history browser.
     pub fn select_previous_conversation_history(&mut self) {
-        if let Some(idx) = self.selected_conversation_history {
-            if idx > 0 {
-                self.selected_conversation_history = Some(idx - 1);
-            }
+        if let Some(idx) = self.selected_conversation_history
+            && idx > 0
+        {
+            self.selected_conversation_history = Some(idx - 1);
         }
     }
 
