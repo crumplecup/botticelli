@@ -34,9 +34,6 @@ mod sampling;
 #[cfg(feature = "cli")]
 mod sampling_integration;
 
-#[cfg(feature = "tui")]
-mod tui;
-
 pub use botticelli_mcp::{
     ConversationSession, ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative,
     PartialNarrativeBuilder,
@@ -51,10 +48,6 @@ pub use elicitation::{
     ActElicitor, CarouselElicitor, ElicitationSession, InputElicitor, MetadataElicitor,
     ValidationElicitor,
 };
-
-// TUI module re-exports
-#[cfg(feature = "tui")]
-pub use tui::{AppState, TuiApp, TuiInterface};
 
 pub use executor::{CommandExecutor, NarrativeState};
 pub use input::UserInput;
