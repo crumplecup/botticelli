@@ -227,25 +227,32 @@ async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> 
         }
     };
     
-    // Create MCP host
+    // Create MCP host - tools come ONLY from HTTP server, not internal registry
     let mut mcp_host = botticelli_mcp_client::McpHost::builder().build();
     
-    // Register internal narrative and elicitation tools
-    tracing::info!(narratives_dir = %narratives_dir, "Registering internal tools");
-    botticelli_mcp_client::register_internal_tools(
-        mcp_host.internal_registry_mut(),
-        &narratives_dir,
-        #[cfg(feature = "database")]
-        db_pool,
-    )?;
+    // Connect to HTTP MCP server
+    let server_url = std::env::var("MCP_SERVER_URL")
+        .unwrap_or_else(|_| "http://localhost:8080".to_string());
     
-    // List all available tools
+    tracing::info!(server_url = %server_url, "Connecting to MCP HTTP server");
+    
+    let server_config = botticelli_mcp_client::ExternalServerConfig {
+        name: "botticelli-mcp-server".to_string(),
+        transport: botticelli_mcp_client::ServerTransport::HttpSse {
+            url: server_url.clone(),
+        },
+    };
+    
+    mcp_host.connect_external_server(server_config).await?;
+    
+    // List all available tools from server
     let tools = mcp_host.list_all_tools();
-    tracing::info!(tool_count = tools.len(), "Total tools available");
+    tracing::info!(tool_count = tools.len(), "Total tools available from MCP server");
     for tool in &tools {
         tracing::debug!(tool_name = %tool.name(), "Available tool");
     }
-    tracing::info!("MCP host initialized");
+    
+    tracing::info!("MCP host initialized with HTTP server connection");
     Ok(mcp_host)
 }
 
