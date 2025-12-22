@@ -125,7 +125,7 @@ impl Tui {
         match event {
             Event::Quit => return Ok(false),
             Event::Key(key_event) => {
-                self.state.handle_key(key_event).await?;
+                self.state.handle_key(key_event)?;
             }
             Event::Mouse(mouse_event) => {
                 self.state.handle_mouse(mouse_event)?;

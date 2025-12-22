@@ -195,7 +195,7 @@ impl TuiApp {
                     return self.handle_command(command).await;
                 }
                 // Pass to state for view-specific handling
-                self.state.handle_key(key_event).await?;
+                self.state.handle_key(key_event)?;
             }
             Event::Mouse(mouse_event) => {
                 self.state.handle_mouse(mouse_event)?;

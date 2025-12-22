@@ -284,8 +284,7 @@ impl AppState {
     }
 
     /// Handles keyboard input events.
-    #[tracing::instrument(skip(self))]
-    pub async fn handle_key(&mut self, key: crossterm::event::KeyEvent) -> crate::TuiResult<()> {
+    pub fn handle_key(&mut self, key: crossterm::event::KeyEvent) -> crate::TuiResult<()> {
         use crossterm::event::{KeyCode, KeyModifiers};
 
         match key.code {
