@@ -14,7 +14,7 @@ mod traits;
 mod types;
 
 pub use bot_server::{BotActor, BotResult, BotServer, BotServerConfig, BotState, BotStats};
-pub use chat_host::ChatHost;
+pub use chat_host::{ChatHost, ChatMessage};
 pub use narrative::{
     ActExecution, ActExecutionBuilder, ExecutionFilter, ExecutionStatus, ExecutionSummary,
     NarrativeExecution, NarrativeRepository,

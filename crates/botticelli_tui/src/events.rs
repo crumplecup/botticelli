@@ -11,8 +11,8 @@ pub struct McpUpdate {
     pub conversation_id: uuid::Uuid,
     /// Original user message that triggered this execution
     pub user_message: String,
-    /// Execution result with tool calls
-    pub result: botticelli_mcp_client::ExecutionResult,
+    /// Assistant's response
+    pub assistant_message: String,
 }
 
 /// Error from MCP execution in a conversation.

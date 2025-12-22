@@ -26,8 +26,6 @@ impl View for ChatView {
         use ratatui::text::{Line, Span};
         use ratatui::widgets::{Block, Borders, Paragraph};
 
-        use crate::ChatMessage;
-
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([Constraint::Min(1), Constraint::Length(3)])
@@ -38,84 +36,23 @@ impl View for ChatView {
             if let Some(msgs) = state.conversation_messages(&conv_id) {
                 let mut lines = Vec::new();
                 for msg in msgs {
-                    match msg {
-                        ChatMessage::User { content } => {
-                            lines.push(Line::from(vec![
-                                Span::styled(
-                                    "You: ",
-                                    Style::default()
-                                        .fg(Color::Green)
-                                        .add_modifier(Modifier::BOLD),
-                                ),
-                                Span::raw(content),
-                            ]));
-                        }
-                        ChatMessage::Assistant { content } => {
-                            lines.push(Line::from(vec![
-                                Span::styled(
-                                    "Bot: ",
-                                    Style::default()
-                                        .fg(Color::Blue)
-                                        .add_modifier(Modifier::BOLD),
-                                ),
-                                Span::raw(content),
-                            ]));
-                        }
-                        ChatMessage::ToolCall {
-                            tool_name,
-                            arguments,
-                        } => {
-                            // Format: 🔧 tool_name(args)
-                            let args_str = serde_json::to_string_pretty(arguments)
-                                .unwrap_or_else(|_| "{}".to_string());
-                            lines.push(Line::from(vec![
-                                Span::styled(
-                                    "🔧 ",
-                                    Style::default()
-                                        .fg(Color::Cyan)
-                                        .add_modifier(Modifier::BOLD),
-                                ),
-                                Span::styled(tool_name.clone(), Style::default().fg(Color::Cyan)),
-                                Span::raw("("),
-                                Span::styled(args_str, Style::default().fg(Color::Gray)),
-                                Span::raw(")"),
-                            ]));
-                        }
-                        ChatMessage::ToolResult {
-                            tool_name,
-                            result,
-                            success,
-                        } => {
-                            // Format: ✅/❌ result
-                            let (icon, color) = if *success {
-                                ("✅ ", Color::Green)
-                            } else {
-                                ("❌ ", Color::Red)
-                            };
-                            lines.push(Line::from(vec![
-                                Span::styled(icon, Style::default().fg(color)),
-                                Span::styled(
-                                    format!("{}: ", tool_name),
-                                    Style::default().fg(color),
-                                ),
-                                Span::raw(result),
-                            ]));
-                        }
-                        ChatMessage::Thinking { content } => {
-                            lines.push(Line::from(vec![
-                                Span::styled(
-                                    "💭 Thinking: ",
-                                    Style::default()
-                                        .fg(Color::Yellow)
-                                        .add_modifier(Modifier::ITALIC),
-                                ),
-                                Span::styled(
-                                    content,
-                                    Style::default().add_modifier(Modifier::ITALIC),
-                                ),
-                            ]));
-                        }
-                    }
+                    // Match based on role field
+                    let (prefix, color) = match msg.role.as_str() {
+                        "user" => ("You: ", Color::Green),
+                        "assistant" => ("Assistant: ", Color::Blue),
+                        "system" => ("System: ", Color::Yellow),
+                        _ => ("Unknown: ", Color::White),
+                    };
+                    
+                    lines.push(Line::from(vec![
+                        Span::styled(
+                            prefix,
+                            Style::default()
+                                .fg(color)
+                                .add_modifier(Modifier::BOLD),
+                        ),
+                        Span::raw(&msg.content),
+                    ]));
                     // Add blank line between messages
                     lines.push(Line::from(""));
                 }

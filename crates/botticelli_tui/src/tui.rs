@@ -27,7 +27,7 @@ impl Tui {
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
 
         let mut state = AppState::default();
-        state.set_mcp_channel(mcp_tx);
+        state.with_mcp_channel(Some(mcp_tx));
 
         Ok(Self {
             terminal,
@@ -62,7 +62,7 @@ impl Tui {
 
         // Initialize AppState with MCP integration
         let mut state = AppState::with_mcp_integration(driver, mcp_host);
-        state.set_mcp_channel(mcp_tx);
+        state.with_mcp_channel(Some(mcp_tx));
 
         Ok(Self {
             terminal,

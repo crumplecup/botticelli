@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
-use botticelli_interface::ChatHost;
+use botticelli_interface::{ChatHost, ChatMessage};
 use derive_getters::Getters;
-use derive_setters::Setters;
 use uuid::Uuid;
 
 /// Conversation identifier.
@@ -12,8 +11,8 @@ pub type ConversationId = Uuid;
 pub type NarrativeId = Uuid;
 
 /// Application state for the TUI - thin UI layer over ChatHost trait.
-#[derive(Clone, Getters, Setters)]
-#[setters(prefix = "set_", borrow_self)]
+#[derive(Clone, Getters, derive_setters::Setters)]
+#[setters(prefix = "with_", borrow_self)]
 pub struct AppState {
     /// Active view mode.
     mode: ViewMode,
@@ -47,6 +46,23 @@ impl std::fmt::Debug for AppState {
     }
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            mode: ViewMode::Chat,
+            input_buffer: String::new(),
+            narrative_list: Vec::new(),
+            selected_narrative: None,
+            selected_conversation_history: None,
+            editor_content: String::new(),
+            chat_host: None,
+            mcp_channel: None,
+            current_conversation: None,
+            conversations: std::collections::HashMap::new(),
+        }
+    }
+}
+
 impl AppState {
     /// Creates a new AppState with the given chat host.
     pub fn new(chat_host: Arc<dyn ChatHost>) -> Self {
@@ -62,6 +78,14 @@ impl AppState {
             current_conversation: None,
             conversations: std::collections::HashMap::new(),
         }
+    }
+
+    /// Creates AppState with MCP integration (compatibility wrapper).
+    pub fn with_mcp_integration(
+        _driver: impl botticelli_interface::BotticelliDriver,
+        mcp_host: Arc<dyn ChatHost>,
+    ) -> Self {
+        Self::new(mcp_host)
     }
 
     /// Appends to the input buffer.
@@ -113,6 +137,23 @@ impl AppState {
                 self.selected_conversation_history = Some(idx - 1);
             }
         }
+    }
+
+    /// Moves selection down in conversation history browser.
+    pub fn select_next_conversation_history(&mut self) {
+        let max = self.conversations.len().saturating_sub(1);
+        if let Some(idx) = self.selected_conversation_history {
+            if idx < max {
+                self.selected_conversation_history = Some(idx + 1);
+            }
+        } else if !self.conversations.is_empty() {
+            self.selected_conversation_history = Some(0);
+        }
+    }
+
+    /// Gets list of conversation IDs.
+    pub fn conversation_ids(&self) -> Vec<Uuid> {
+        self.conversations.keys().copied().collect()
     }
 
     /// Clears the current conversation.
@@ -181,12 +222,12 @@ impl AppState {
             updated_messages.push(ChatMessage::user(user_message.clone()));
             self.update_conversation(conv_id, updated_messages);
 
-            // Spawn async task to execute via chat host
-            tokio::spawn(async move {
+            // Spawn blocking task to execute via chat host (sync trait)
+            tokio::task::spawn_blocking(move || {
                 tracing::info!("Processing message with MCP orchestration");
                 
                 // Use the chat host to send the message
-                match chat_host.send_message(&user_msg).await {
+                match chat_host.send_message(user_msg.clone()) {
                     Ok(response) => {
                         tracing::debug!(response = %response, "Received LLM response");
                         if let Err(e) = tx.send(crate::McpMessage::Update(crate::McpUpdate {
@@ -220,6 +261,41 @@ impl AppState {
         }
 
         Ok(())
+    }
+
+    /// Handles keyboard input events.
+    #[tracing::instrument(skip(self))]
+    pub async fn handle_key(&mut self, key: crossterm::event::KeyEvent) -> crate::TuiResult<()> {
+        use crossterm::event::{KeyCode, KeyModifiers};
+
+        match key.code {
+            KeyCode::Char(_c) if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                // Control key combinations are handled by EventHandler (Ctrl+C for quit)
+                Ok(())
+            }
+            KeyCode::Char(c) => {
+                // Regular character input
+                self.append_input(&c.to_string());
+                Ok(())
+            }
+            KeyCode::Backspace => {
+                // Delete last character
+                self.delete_char();
+                Ok(())
+            }
+            KeyCode::Enter => {
+                // Submit input based on current mode
+                let user_message = self.input_buffer.clone();
+                if !user_message.is_empty() {
+                    self.send_message_with_orchestration(user_message)?;
+                }
+                Ok(())
+            }
+            _ => {
+                // Other keys ignored
+                Ok(())
+            }
+        }
     }
 
     /// Returns the current view command (for command palette).
@@ -262,116 +338,6 @@ impl AppState {
         tracing::error!("MCP error: {:?}", error);
         // Could display error in UI
         Ok(())
-    }
-
-    /// Sets the view mode.
-    pub fn set_mode(&mut self, mode: ViewMode) {
-        self.mode = mode;
-    }
-}
-
-/// A chat message for display.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub enum ChatMessage {
-    /// User message.
-    User {
-        /// Message content from the user.
-        content: String,
-    },
-    /// Assistant message.
-    Assistant {
-        /// Message content from the assistant.
-        content: String,
-    },
-    /// Tool call by the LLM.
-    ToolCall {
-        /// Name of the tool being called.
-        tool_name: String,
-        /// JSON arguments for the tool.
-        arguments: serde_json::Value,
-    },
-    /// Tool execution result.
-    ToolResult {
-        /// Name of the tool that was executed.
-        tool_name: String,
-        /// Result text from the tool execution.
-        result: String,
-        /// Whether the tool execution succeeded.
-        success: bool,
-    },
-    /// Thinking/reasoning content.
-    Thinking {
-        /// Thinking/reasoning text.
-        content: String,
-    },
-}
-
-impl ChatMessage {
-    /// Create a new user message.
-    pub fn user(content: String) -> Self {
-        Self::User { content }
-    }
-
-    /// Create a new assistant message.
-    pub fn assistant(content: String) -> Self {
-        Self::Assistant { content }
-    }
-
-    /// Create a new tool call message.
-    pub fn tool_call(tool_name: String, arguments: serde_json::Value) -> Self {
-        Self::ToolCall {
-            tool_name,
-            arguments,
-        }
-    }
-
-    /// Create a new tool result message.
-    pub fn tool_result(tool_name: String, result: String, success: bool) -> Self {
-        Self::ToolResult {
-            tool_name,
-            result,
-            success,
-        }
-    }
-
-    /// Create a new thinking message.
-    pub fn thinking(content: String) -> Self {
-        Self::Thinking { content }
-    }
-
-    /// Get message content (for User and Assistant variants).
-    pub fn content(&self) -> Option<&str> {
-        match self {
-            Self::User { content } | Self::Assistant { content } | Self::Thinking { content } => {
-                Some(content)
-            }
-            Self::ToolCall { .. } | Self::ToolResult { .. } => None,
-        }
-    }
-
-    /// Check if this is a user message.
-    pub fn is_user(&self) -> bool {
-        matches!(self, Self::User { .. })
-    }
-
-    /// Check if this is an assistant message.
-    pub fn is_assistant(&self) -> bool {
-        matches!(self, Self::Assistant { .. })
-    }
-
-    /// Check if this is a tool call.
-    pub fn is_tool_call(&self) -> bool {
-        matches!(self, Self::ToolCall { .. })
-    }
-
-    /// Check if this is a tool result.
-    pub fn is_tool_result(&self) -> bool {
-        matches!(self, Self::ToolResult { .. })
-    }
-
-    /// Check if this is thinking content.
-    pub fn is_thinking(&self) -> bool {
-        matches!(self, Self::Thinking { .. })
     }
 }
 

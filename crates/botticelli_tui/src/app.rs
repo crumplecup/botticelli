@@ -2,10 +2,10 @@
 //!
 //! Wires together views, commands, state, and provides clean library entry points.
 
-use crate::{AppState, Command, Event, EventHandler, McpMessage, TuiResult, ViewMode};
+use crate::{AppState, Command, Event, EventHandler, McpMessage, TuiResult, View, ViewMode, ChatView};
 use crossterm::event::KeyEvent;
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::io;
+use std::{io, sync::Arc};
 use tokio::sync::mpsc;
 use tracing::debug;
 
@@ -55,8 +55,8 @@ impl TuiApp {
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
 
         // Initialize AppState with ChatHost
-        let mut state = AppState::new(chat_host);
-        state.set_mcp_channel(mcp_tx);
+        let mut state = AppState::new(Arc::from(chat_host));
+        state.with_mcp_channel(Some(mcp_tx));
 
         tracing::debug!("TuiApp created successfully");
 
@@ -132,9 +132,11 @@ impl TuiApp {
     /// Render the current view.
     fn render(&mut self) -> TuiResult<()> {
         let state = &self.state;
+        let view = ChatView; // For now, always use ChatView
+        
         self.terminal.draw(|frame| {
-            // Render current view
-            state.current_view().render(frame, state).ok();
+            // Render view
+            view.render(frame, state).ok();
         })?;
         Ok(())
     }
@@ -211,7 +213,7 @@ impl TuiApp {
             Command::Quit => return Ok(false),
             Command::SwitchMode(mode) => {
                 debug!(?mode, "Switching to view mode");
-                self.state.set_mode(mode);
+                self.state.with_mode(mode);
             }
             Command::SendMessage(message) => {
                 // Send message with orchestration (tool calling support)
@@ -229,7 +231,7 @@ impl TuiApp {
                     if let Some(idx) = self.state.selected_narrative()
                         && *idx > 0
                     {
-                        self.state.set_selected_narrative(Some(idx - 1));
+                        self.state.with_selected_narrative(Some(idx - 1));
                     }
                 }
                 _ => {}
@@ -241,11 +243,11 @@ impl TuiApp {
                 ViewMode::NarrativeBrowser => {
                     if let Some(idx) = self.state.selected_narrative() {
                         let max = self.state.narrative_list().len().saturating_sub(1);
-                        if idx < max {
-                            self.state.set_selected_narrative(Some(idx + 1));
+                        if *idx < max {
+                            self.state.with_selected_narrative(Some(idx + 1));
                         }
                     } else if !self.state.narrative_list().is_empty() {
-                        self.state.set_selected_narrative(Some(0));
+                        self.state.with_selected_narrative(Some(0));
                     }
                 }
                 _ => {}
@@ -263,10 +265,10 @@ impl TuiApp {
                         // Load selected conversation
                         if let Some(idx) = self.state.selected_conversation_history() {
                             let conversation_ids = self.state.conversation_ids();
-                            if let Some(conversation_id) = conversation_ids.get(idx) {
+                            if let Some(conversation_id) = conversation_ids.get(*idx) {
                                 debug!(conversation_id = %conversation_id, "Loading conversation");
-                                self.state.set_current_conversation(Some(*conversation_id));
-                                self.state.set_mode(ViewMode::Chat);
+                                self.state.with_current_conversation(Some(*conversation_id));
+                                self.state.with_mode(ViewMode::Chat);
                             }
                         }
                     }
@@ -279,8 +281,8 @@ impl TuiApp {
             }
             Command::LoadConversation(conversation_id) => {
                 debug!(conversation_id = %conversation_id, "Loading conversation");
-                self.state.set_current_conversation(Some(conversation_id));
-                self.state.set_mode(ViewMode::Chat);
+                self.state.with_current_conversation(Some(conversation_id));
+                self.state.with_mode(ViewMode::Chat);
             }
             _ => {
                 // Other commands not yet implemented

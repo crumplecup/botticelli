@@ -47,8 +47,11 @@ pub use commands::Command;
 pub use elicitation_dialog::TuiElicitationDialog;
 pub use error::{TuiError, TuiErrorKind, TuiResult};
 pub use events::{Event, EventHandler, McpConversationError, McpMessage, McpUpdate};
-pub use state::{AppState, ChatMessage, ConversationId, NarrativeId, ViewMode};
+pub use state::{AppState, ConversationId, NarrativeId, ViewMode};
 pub use tui::Tui;
 pub use view::{
     ChatView, ConversationHistoryView, NarrativeBrowserView, NarrativeEditorView, View,
 };
+
+// Re-export ChatMessage from botticelli_interface for convenience
+pub use botticelli_interface::ChatMessage;

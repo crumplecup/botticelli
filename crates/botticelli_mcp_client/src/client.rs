@@ -543,23 +543,3 @@ pub struct UnifiedClientMetrics {
     /// Total tools available (internal + external)
     pub total_tool_count: usize,
 }
-
-/// ChatHost implementation for McpHost.
-impl botticelli_interface::ChatHost for McpHost {
-    #[tracing::instrument(skip(self))]
-    fn available_tools(&self) -> botticelli_error::ChatResult<Vec<ToolDefinition>> {
-        Ok(self.list_all_tools())
-    }
-
-    #[tracing::instrument(skip(self, arguments), fields(tool = %name))]
-    fn execute_tool(&mut self, name: &str, arguments: serde_json::Value) -> botticelli_error::ChatResult<serde_json::Value> {
-        // We need to make this async-compatible, but for now use blocking
-        let rt = tokio::runtime::Runtime::new()
-            .map_err(|e| botticelli_error::ChatError::execution_failed(format!("Runtime error: {}", e)))?;
-        
-        rt.block_on(async {
-            self.execute_tool_inner(name, arguments).await
-                .map_err(|e| botticelli_error::ChatError::execution_failed(e.to_string()))
-        })
-    }
-}

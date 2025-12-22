@@ -25,6 +25,8 @@ mod config;
 #[cfg(feature = "cli")]
 mod conversation_loop;
 mod elicitation;
+#[cfg(feature = "cli")]
+mod mcp_chat_host;
 mod tool_handler;
 
 #[cfg(feature = "cli")]
@@ -68,6 +70,9 @@ pub use sampling::ChatLlmSampler;
 pub use sampling_integration::SamplingIntegration;
 
 pub use services::ServiceContainer;
+
+#[cfg(feature = "cli")]
+pub use mcp_chat_host::McpChatHost;
 
 #[cfg(feature = "cli")]
 pub use startup::startup_sequence;
