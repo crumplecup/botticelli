@@ -160,11 +160,8 @@ impl ChatTab {
         tokio::spawn(async move {
             tracing::info!("LLM response handler started");
             match Self::handle_llm_response(content, messages_for_task, services).await {
-                Ok(response) => {
-                    tracing::info!(response_len = response.len(), "Got LLM response");
-                    if let Err(e) = response_tx.send(response) {
-                        tracing::error!(error = ?e, "Failed to send response to UI");
-                    }
+                Ok(()) => {
+                    tracing::info!("LLM response handled");
                 }
                 Err(e) => {
                     tracing::error!(error = %e, "Failed to get LLM response");
@@ -178,12 +175,16 @@ impl ChatTab {
     /// Poll for LLM responses and add to message history
     #[tracing::instrument(skip(self))]
     pub fn poll_responses(&mut self) {
+        let mut responses = Vec::new();
         if let Some(rx) = &mut self.response_rx {
             while let Ok(response) = rx.try_recv() {
                 tracing::info!(response_len = response.len(), "Received LLM response");
-                let message = DisplayMessage::new(Role::Assistant, response);
-                self.add_message(message);
+                responses.push(response);
             }
+        }
+        for response in responses {
+            let message = DisplayMessage::new(Role::Assistant, response);
+            self.add_message(message);
         }
     }
     

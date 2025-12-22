@@ -386,7 +386,11 @@ async fn initialize_llm_backend() -> Result<Arc<dyn ToolCalling>, Box<dyn std::e
     if let Ok(api_key) = std::env::var("GROQ_API_KEY") {
         if !api_key.is_empty() {
             tracing::info!("Found GROQ_API_KEY in environment");
-            match botticelli_models::GroqDriver::new(api_key) {
+            // Use default model: llama-3.3-70b-versatile
+            match botticelli_models::GroqDriver::with_api_key(
+                api_key,
+                "llama-3.3-70b-versatile".to_string()
+            ) {
                 Ok(client) => {
                     tracing::info!("✓ Successfully created Groq client - using as LLM backend");
                     return Ok(Arc::new(client) as Arc<dyn ToolCalling>);
