@@ -162,8 +162,8 @@ impl TuiApp {
                 if let Some(command) = self.handle_global_keys(key_event) {
                     return self.handle_command(command).await;
                 }
-                // Otherwise, let the application handle the key
-                // (View-specific handling would go here)
+                // Pass to state for view-specific handling
+                self.state.handle_key(key_event).await?;
             }
             Event::Mouse(mouse_event) => {
                 self.state.handle_mouse(mouse_event)?;
