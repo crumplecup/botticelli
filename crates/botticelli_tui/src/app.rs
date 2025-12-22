@@ -78,19 +78,32 @@ impl TuiApp {
         // Initial render
         self.render()?;
 
-        // Create tick interval
+        // Create tick interval for state updates
         let mut tick_interval = tokio::time::interval(std::time::Duration::from_millis(250));
+        
+        // Create render interval (60fps = ~16ms)
+        let mut render_interval = tokio::time::interval(std::time::Duration::from_millis(16));
+        render_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        
+        let mut needs_render = false;
 
         // Main event loop
         loop {
             tokio::select! {
-                // Handle tick events for periodic updates
-                _ = tick_interval.tick() => {
-                    self.state.update()?;
-                    self.render()?;
+                // Use biased to prioritize keyboard input over ticks
+                biased;
+                
+                // Handle keyboard/terminal events (HIGHEST PRIORITY - checked first)
+                event = Self::read_crossterm_event() => {
+                    if let Some(evt) = event? {
+                        if !self.handle_event(evt).await? {
+                            break;
+                        }
+                        needs_render = true;
+                    }
                 }
                 
-                // Handle MCP updates
+                // Handle MCP updates (HIGH PRIORITY)
                 Some(msg) = self.mcp_rx.recv() => {
                     let event = match msg {
                         McpMessage::Update(update) => Event::McpUpdate(update),
@@ -99,17 +112,21 @@ impl TuiApp {
                     if !self.handle_event(event).await? {
                         break;
                     }
-                    self.render()?;
+                    needs_render = true;
                 }
                 
-                // Handle keyboard/terminal events (instant response)
-                event = Self::read_crossterm_event() => {
-                    if let Some(evt) = event? {
-                        if !self.handle_event(evt).await? {
-                            break;
-                        }
+                // Render timer (60fps - only if needed)
+                _ = render_interval.tick() => {
+                    if needs_render {
                         self.render()?;
+                        needs_render = false;
                     }
+                }
+                
+                // State update tick (lowest priority)
+                _ = tick_interval.tick() => {
+                    self.state.update()?;
+                    needs_render = true;
                 }
             }
         }
