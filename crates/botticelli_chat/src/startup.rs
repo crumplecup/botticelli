@@ -296,6 +296,15 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
         )));
     }
 
+    // First, check if server is already running
+    let url = format!("http://{}:{}/health", config.mcp_server().host(), config.mcp_server().port());
+    if let Ok(response) = reqwest::get(&url).await {
+        if response.status().is_success() {
+            info!("MCP server already running, connecting to existing instance");
+            return Ok(());
+        }
+    }
+
     // First, try to find a pre-built binary
     // Check multiple locations: same dir as current exe, and target/debug or target/release
     let binary_path = std::env::current_exe().ok().and_then(|exe_path| {
@@ -358,15 +367,8 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
             }
         }
     } else {
-        // No binary found, provide helpful error
-        error!("MCP server binary not found");
-        Err(ChatError::new(ChatErrorKind::ExecutionFailed(
-            "MCP server binary not found.\n\n\
-            Please build it first:\n\
-              cargo build --bin botticelli-mcp-http --features=\"http,database,llm\"\n\n\
-            Or start it manually in another terminal:\n\
-              cargo run --bin botticelli-mcp-http --features=\"http,database,llm\""
-                .to_string(),
-        )))
+        // No binary found - try to connect to existing server
+        tracing::info!("MCP server binary not found, attempting to connect to existing server");
+        Ok(())
     }
 }

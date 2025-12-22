@@ -171,7 +171,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Err(e) => {
             warn!(error = ?e, "Failed to initialize LLM backend, continuing without it");
-            warn!("Set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env file to enable LLM features");
+            warn!("Set GROQ_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY in .env file to enable LLM features");
             None
         }
     };
@@ -378,12 +378,31 @@ fn load_config(args: &Args) -> Result<ChatAppConfig, Box<dyn std::error::Error>>
 /// Initialize LLM backend with fallback support.
 ///
 /// Tries to create providers in priority order based on available API keys.
-/// Priority: Gemini (tool calling + generous free tier) -> Anthropic (tool calling, no free tier)
-/// Note: Groq doesn't support tool calling in our implementation yet.
+/// Priority: Groq (tool calling + generous free tier) -> Gemini (fallback) -> Anthropic (paid)
 async fn initialize_llm_backend() -> Result<Arc<dyn ToolCalling>, Box<dyn std::error::Error>> {
     tracing::info!("=== Initializing LLM backend ===");
 
-    // Try Gemini first (has tool calling support, generous free tier)
+    // Try Groq first (has tool calling support, generous free tier)
+    if let Ok(api_key) = std::env::var("GROQ_API_KEY") {
+        if !api_key.is_empty() {
+            tracing::info!("Found GROQ_API_KEY in environment");
+            match botticelli_models::GroqDriver::new(api_key) {
+                Ok(client) => {
+                    tracing::info!("✓ Successfully created Groq client - using as LLM backend");
+                    return Ok(Arc::new(client) as Arc<dyn ToolCalling>);
+                }
+                Err(e) => {
+                    tracing::warn!(error = ?e, "✗ Failed to create Groq client, trying next provider");
+                }
+            }
+        } else {
+            tracing::debug!("GROQ_API_KEY is set but empty, skipping");
+        }
+    } else {
+        tracing::debug!("GROQ_API_KEY not found in environment");
+    }
+
+    // Try Gemini second (fallback, reduced free tier)
     if let Ok(api_key) = std::env::var("GEMINI_API_KEY") {
         if !api_key.is_empty() {
             tracing::info!("Found GEMINI_API_KEY in environment");
@@ -403,7 +422,7 @@ async fn initialize_llm_backend() -> Result<Arc<dyn ToolCalling>, Box<dyn std::e
         tracing::debug!("GEMINI_API_KEY not found in environment");
     }
 
-    // Try Anthropic second (has tool calling, no free tier)
+    // Try Anthropic third (has tool calling, paid tier only)
     if let Ok(api_key) = std::env::var("ANTHROPIC_API_KEY") {
         if !api_key.is_empty() {
             tracing::info!("Found ANTHROPIC_API_KEY in environment");
@@ -416,9 +435,7 @@ async fn initialize_llm_backend() -> Result<Arc<dyn ToolCalling>, Box<dyn std::e
     } else {
         tracing::debug!("ANTHROPIC_API_KEY not found in environment");
     }
-    
-    // TODO: Add Groq support once ToolCalling trait is implemented for OpenAICompatibleClient
 
     tracing::error!("✗ No LLM provider API keys found in environment");
-    Err("No LLM provider API keys found. Set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env file.".into())
+    Err("No LLM provider API keys found. Set GROQ_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY in .env file.".into())
 }

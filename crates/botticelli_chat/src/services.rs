@@ -259,9 +259,9 @@ impl ServiceContainer {
         debug!(model = ?model_id, "Creating client for model");
 
         match model_id {
-            ModelId::Groq(_model) => {
+            ModelId::Groq(model) => {
                 // GroqDriver::new() reads from GROQ_API_KEY environment variable
-                let client = GroqDriver::new().map_err(|e| {
+                let client = GroqDriver::new(model.to_string()).map_err(|e| {
                     ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                         "Failed to create Groq client: {}",
                         e
@@ -303,8 +303,8 @@ impl ServiceContainer {
         debug!(model = ?model_id, "Creating tool-calling client for model");
 
         match model_id {
-            ModelId::Groq(_model) => {
-                let client = GroqDriver::new().map_err(|e| {
+            ModelId::Groq(model) => {
+                let client = GroqDriver::new(model.to_string()).map_err(|e| {
                     ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                         "Failed to create Groq client: {}",
                         e

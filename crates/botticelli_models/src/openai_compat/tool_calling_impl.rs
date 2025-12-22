@@ -42,15 +42,22 @@ impl BotticelliDriver for OpenAICompatibleClient {
 
 #[async_trait]
 impl ToolCalling for OpenAICompatibleClient {
-    #[tracing::instrument(skip(self, request), fields(provider = self.provider_name()))]
+    #[tracing::instrument(skip(self, request), fields(provider = self.provider_name(), model = self.model_name()))]
     async fn generate_with_tools(
         &self,
         request: &GenerateRequest,
         tools: &[ToolDefinition],
     ) -> BotticelliResult<GenerateResponse> {
-        tracing::debug!(
+        tracing::info!(
             tool_count = tools.len(),
-            "Generating with tools"
+            provider = self.provider_name(),
+            model = self.model_name(),
+            "Starting generate_with_tools"
+        );
+        
+        tracing::debug!(
+            tool_names = ?tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
+            "Tool definitions"
         );
 
         // Convert tools to OpenAI format
@@ -81,13 +88,18 @@ impl ToolCalling for OpenAICompatibleClient {
             .build()
             .map_err(|e| BotticelliError::from(BackendError::new(e.to_string())))?;
 
-        tracing::debug!("Sending request with tools");
+        tracing::info!("Sending HTTP request to provider with tools");
 
         // Send request (use existing client logic)
         let response = self
             .generate_internal(&chat_request)
             .await
-            .map_err(|e| BotticelliError::from(BackendError::new(e.to_string())))?;
+            .map_err(|e| {
+                tracing::error!(error = %e, "HTTP request failed");
+                BotticelliError::from(BackendError::new(e.to_string()))
+            })?;
+        
+        tracing::info!("Received response from provider");
 
         // Check if response contains tool calls
         if let Some(tool_calls) = response
@@ -106,7 +118,7 @@ impl ToolCalling for OpenAICompatibleClient {
                 })
                 .collect();
 
-            tracing::debug!(tool_call_count = parsed_calls.len(), "Extracted tool calls");
+            tracing::info!(tool_call_count = parsed_calls.len(), "Response contains tool calls");
 
             Ok(GenerateResponse::builder()
                 .outputs(vec![Output::ToolCalls(parsed_calls)])
@@ -114,6 +126,7 @@ impl ToolCalling for OpenAICompatibleClient {
                 .build()
                 .expect("Valid response"))
         } else {
+            tracing::info!("Response contains text, no tool calls");
             // No tool calls, convert to text response
             conversions::from_chat_response(&response)
                 .map_err(|e| BotticelliError::from(BackendError::new(e.to_string())))

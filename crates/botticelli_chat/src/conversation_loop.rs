@@ -81,7 +81,8 @@ impl ConversationLoop {
                 })?;
 
             // Generate LLM response with tool support
-            debug!(
+            info!(
+                turn = turn_count,
                 tool_count = available_tools.len(),
                 tool_names = ?available_tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
                 "Calling LLM with tools"
@@ -90,11 +91,14 @@ impl ConversationLoop {
                 .generate_with_tools(&request, available_tools)
                 .await
                 .map_err(|e| {
+                    warn!(error = %e, "LLM generation failed");
                     ChatError::new(ChatErrorKind::ExecutionFailed(format!(
                         "LLM generation failed: {}",
                         e
                     )))
                 })?;
+            
+            info!("Received response from LLM");
 
             // Extract output from response
             let output = response

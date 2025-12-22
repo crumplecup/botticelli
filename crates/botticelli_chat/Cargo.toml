@@ -14,7 +14,7 @@ derive-getters.workspace = true
 derive_setters.workspace = true
 
 # Internal dependencies
-botticelli_models = { path = "../botticelli_models", features = ["gemini", "anthropic"] }
+botticelli_models = { path = "../botticelli_models", features = ["gemini", "anthropic", "groq"] }
 botticelli_mcp = { path = "../botticelli_mcp" }
 botticelli_narrative = { path = "../botticelli_narrative" }
 botticelli_core = { path = "../botticelli_core" }

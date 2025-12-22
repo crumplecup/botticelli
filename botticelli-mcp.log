@@ -1,45 +1,890 @@
-[2m2025-12-21T21:35:45.811751Z[0m [32m INFO[0m [2mcrates/botticelli_mcp/src/bin/botticelli-mcp-pmcp.rs[0m[2m:[0m[2m27:[0m Starting Botticelli MCP server (PMCP implementation)
-[2m2025-12-21T21:35:45.811957Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m22:[0m Starting PMCP-based MCP server
-[2m2025-12-21T21:35:45.820463Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:35:45.842757Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:35:45.867263Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:35:45.886275Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:35:45.970634Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:35:45.970822Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:35:46.028721Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m265:[0m Server built successfully, running on stdio
-[2m2025-12-21T21:36:49.960188Z[0m [32m INFO[0m [2mcrates/botticelli_mcp/src/bin/botticelli-mcp-pmcp.rs[0m[2m:[0m[2m27:[0m Starting Botticelli MCP server (PMCP implementation)
-[2m2025-12-21T21:36:49.960373Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m22:[0m Starting PMCP-based MCP server
-[2m2025-12-21T21:36:49.966332Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:36:49.987872Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:36:50.014226Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:36:50.032494Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:36:50.114298Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:36:50.114465Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:36:50.169271Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m265:[0m Server built successfully, running on stdio
-[2m2025-12-21T21:37:44.068248Z[0m [32m INFO[0m [2mcrates/botticelli_mcp/src/bin/botticelli-mcp-pmcp.rs[0m[2m:[0m[2m27:[0m Starting Botticelli MCP server (PMCP implementation)
-[2m2025-12-21T21:37:44.068460Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m22:[0m Starting PMCP-based MCP server
-[2m2025-12-21T21:37:44.074573Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:37:44.095992Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:37:44.121084Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:37:44.139301Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:37:44.220316Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:37:44.220486Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:37:44.276469Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m265:[0m Server built successfully, running on stdio
-[2m2025-12-21T21:39:41.095412Z[0m [32m INFO[0m [2mcrates/botticelli_mcp/src/bin/botticelli-mcp-pmcp.rs[0m[2m:[0m[2m27:[0m Starting Botticelli MCP server (PMCP implementation)
-[2m2025-12-21T21:39:41.095643Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m22:[0m Starting PMCP-based MCP server
-[2m2025-12-21T21:39:41.103611Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:39:41.129601Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:39:41.154976Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:39:41.172666Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:39:41.255438Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:39:41.255621Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:39:41.312210Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m265:[0m Server built successfully, running on stdio
-[2m2025-12-21T21:49:01.608883Z[0m [32m INFO[0m [2mcrates/botticelli_mcp/src/bin/botticelli-mcp-pmcp.rs[0m[2m:[0m[2m27:[0m Starting Botticelli MCP server (PMCP implementation)
-[2m2025-12-21T21:49:01.609083Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m22:[0m Starting PMCP-based MCP server
-[2m2025-12-21T21:49:01.615080Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:49:01.638771Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:49:01.663974Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:49:01.683301Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:49:01.766270Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
-[2m2025-12-21T21:49:01.766437Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m[1mnew[0m[2m:[0m[1mnew_with_url[0m[2m:[0m [2mcrates/botticelli_models/src/ollama/client.rs[0m[2m:[0m[2m42:[0m Creating Ollama client [3mmodel[0m[2m=[0mllama3.2 [3murl[0m[2m=[0mhttp://localhost:11434
-[2m2025-12-21T21:49:01.825581Z[0m [32m INFO[0m [1mrun_pmcp_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m265:[0m Server built successfully, running on stdio
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.32s
+     Running `target/debug/botticelli-mcp-pmcp-http`
+[2m2025-12-22T05:46:47.459929Z[0m [32m INFO[0m [2mcrates/botticelli_mcp/src/bin/botticelli-mcp-pmcp-http.rs[0m[2m:[0m[2m35:[0m Starting Botticelli MCP HTTP server (PMCP implementation)
+[2m2025-12-22T05:46:47.460108Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_http_server.rs[0m[2m:[0m[2m52:[0m Starting PMCP HTTP server on 0.0.0.0:8080
+[2m2025-12-22T05:46:47.460166Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m[1mbuild_server[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_http_server.rs[0m[2m:[0m[2m26:[0m Building MCP server for HTTP transport
+[2m2025-12-22T05:46:47.460251Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m[1mbuild_server[0m[2m:[0m[1mregister_all_tools[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m27:[0m Registering all MCP tools
+[2m2025-12-22T05:46:47.460357Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m[1mbuild_server[0m[2m:[0m[1mregister_all_tools[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m70:[0m Registering elicitation tools
+[2m2025-12-22T05:46:47.460421Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m[1mbuild_server[0m[2m:[0m[1mregister_all_tools[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m104:[0m Registered 8 elicitation tools
+[2m2025-12-22T05:46:47.466462Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m[1mbuild_server[0m[2m:[0m[1mregister_all_tools[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
+[2m2025-12-22T05:46:47.472141Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m[1mbuild_server[0m[2m:[0m[1mregister_all_tools[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
+[2m2025-12-22T05:46:47.500897Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m[1mbuild_server[0m[2m:[0m[1mregister_all_tools[0m[2m:[0m[1mgemini_client_new[0m[2m:[0m[1mgemini_client_new_with_config[0m[1m{[0m[3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m[1mget_tier[0m[1m{[0m[3mprovider[0m[2m=[0m"gemini" [3mtier_name[0m[2m=[0mNone[1m}[0m[2m:[0m [2mcrates/botticelli_rate_limit/src/config.rs[0m[2m:[0m[2m445:[0m Applied budget multipliers to tier [3mprovider[0m[2m=[0m"gemini" [3mtier[0m[2m=[0m"free" [3moriginal_rpm[0m[2m=[0mSome(10) [3madjusted_rpm[0m[2m=[0mSome(8) [3mrpm_multiplier[0m[2m=[0m0.8
+[2m2025-12-22T05:46:47.519317Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m[1mbuild_server[0m[2m:[0m[1mregister_all_tools[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_server.rs[0m[2m:[0m[2m280:[0m All tools registered successfully
+[2m2025-12-22T05:46:47.519451Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_http_server.rs[0m[2m:[0m[2m59:[0m Server built successfully with all tools
+[2m2025-12-22T05:46:47.519501Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_http_server.rs[0m[2m:[0m[2m67:[0m Configuring HTTP server for 0.0.0.0:8080
+[2m2025-12-22T05:46:47.520098Z[0m [32m INFO[0m [1mrun_pmcp_http_server[0m[1m{[0m[3mhost[0m[2m=[0m"0.0.0.0" [3mport[0m[2m=[0m8080[1m}[0m[2m:[0m [2mcrates/botticelli_mcp/src/pmcp_http_server.rs[0m[2m:[0m[2m85:[0m HTTP server successfully started on 0.0.0.0:8080
+╔════════════════════════════════════════════════════════════╗
+║         BOTTICELLI MCP HTTP SERVER (PMCP)                 ║
+╠════════════════════════════════════════════════════════════╣
+║ Address: http://0.0.0.0:8080                                ║
+║ Mode:    Stateless (serverless-friendly)                  ║
+╠════════════════════════════════════════════════════════════╣
+║ Features:                                                  ║
+║ • All 26 tools available via HTTP                         ║
+║ • Stateless operation (no session management)             ║
+║ • Horizontal scaling ready                                ║
+║ • Full observability via tracing                          ║
+╠════════════════════════════════════════════════════════════╣
+║ Endpoints:                                                 ║
+║ • POST /mcp - MCP JSON-RPC requests                       ║
+║ • GET  /health - Health check (future)                    ║
+║ • GET  /metrics - Prometheus metrics (future)             ║
+╚════════════════════════════════════════════════════════════╝
+[DEBUG] StreamableHttpServer: JSON response payload:
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "echo",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "finalize_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_metadata",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_groq",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "save_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_gemini",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "modify_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_carousel",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "apply_validation_fixes",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "server_info",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "get_narrative_state",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ]
+  }
+}
+[DEBUG] build_response (JSON mode): Serialized bytes:
+{"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object","properties":{}}},{"name":"finalize_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"create_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"execute_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"elicit_metadata","inputSchema":{"type":"object","properties":{}}},{"name":"generate_groq","inputSchema":{"type":"object","properties":{}}},{"name":"generate","inputSchema":{"type":"object","properties":{}}},{"name":"validate_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"elicit_act","inputSchema":{"type":"object","properties":{}}},{"name":"save_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"generate_gemini","inputSchema":{"type":"object","properties":{}}},{"name":"modify_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"validate_narrative_session","inputSchema":{"type":"object","properties":{}}},{"name":"elicit_carousel","inputSchema":{"type":"object","properties":{}}},{"name":"apply_validation_fixes","inputSchema":{"type":"object","properties":{}}},{"name":"execute_act","inputSchema":{"type":"object","properties":{}}},{"name":"server_info","inputSchema":{"type":"object","properties":{}}},{"name":"get_narrative_state","inputSchema":{"type":"object","properties":{}}},{"name":"create_narrative_session","inputSchema":{"type":"object","properties":{}}}]}}
+[DEBUG] build_response (JSON mode): Final JSON value:
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "echo",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "finalize_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_metadata",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_groq",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "save_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_gemini",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "modify_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_carousel",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "apply_validation_fixes",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "server_info",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "get_narrative_state",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ]
+  }
+}
+[DEBUG] StreamableHttpServer: JSON response payload:
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "echo",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "finalize_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_metadata",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_groq",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "save_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_gemini",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "modify_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_carousel",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "apply_validation_fixes",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "server_info",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "get_narrative_state",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ]
+  }
+}
+[DEBUG] build_response (JSON mode): Serialized bytes:
+{"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object","properties":{}}},{"name":"finalize_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"create_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"execute_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"elicit_metadata","inputSchema":{"type":"object","properties":{}}},{"name":"generate_groq","inputSchema":{"type":"object","properties":{}}},{"name":"generate","inputSchema":{"type":"object","properties":{}}},{"name":"validate_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"elicit_act","inputSchema":{"type":"object","properties":{}}},{"name":"save_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"generate_gemini","inputSchema":{"type":"object","properties":{}}},{"name":"modify_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"validate_narrative_session","inputSchema":{"type":"object","properties":{}}},{"name":"elicit_carousel","inputSchema":{"type":"object","properties":{}}},{"name":"apply_validation_fixes","inputSchema":{"type":"object","properties":{}}},{"name":"execute_act","inputSchema":{"type":"object","properties":{}}},{"name":"server_info","inputSchema":{"type":"object","properties":{}}},{"name":"get_narrative_state","inputSchema":{"type":"object","properties":{}}},{"name":"create_narrative_session","inputSchema":{"type":"object","properties":{}}}]}}
+[DEBUG] build_response (JSON mode): Final JSON value:
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "echo",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "finalize_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_metadata",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_groq",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "save_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_gemini",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "modify_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_carousel",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "apply_validation_fixes",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "server_info",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "get_narrative_state",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ]
+  }
+}
+[DEBUG] StreamableHttpServer: JSON response payload:
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "echo",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "finalize_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_metadata",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_groq",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "save_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_gemini",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "modify_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_carousel",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "apply_validation_fixes",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "server_info",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "get_narrative_state",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ]
+  }
+}
+[DEBUG] build_response (JSON mode): Serialized bytes:
+{"jsonrpc":"2.0","id":1,"result":{"tools":[{"name":"echo","inputSchema":{"type":"object","properties":{}}},{"name":"finalize_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"create_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"execute_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"elicit_metadata","inputSchema":{"type":"object","properties":{}}},{"name":"generate_groq","inputSchema":{"type":"object","properties":{}}},{"name":"generate","inputSchema":{"type":"object","properties":{}}},{"name":"validate_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"elicit_act","inputSchema":{"type":"object","properties":{}}},{"name":"save_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"generate_gemini","inputSchema":{"type":"object","properties":{}}},{"name":"modify_narrative","inputSchema":{"type":"object","properties":{}}},{"name":"validate_narrative_session","inputSchema":{"type":"object","properties":{}}},{"name":"elicit_carousel","inputSchema":{"type":"object","properties":{}}},{"name":"apply_validation_fixes","inputSchema":{"type":"object","properties":{}}},{"name":"execute_act","inputSchema":{"type":"object","properties":{}}},{"name":"server_info","inputSchema":{"type":"object","properties":{}}},{"name":"get_narrative_state","inputSchema":{"type":"object","properties":{}}},{"name":"create_narrative_session","inputSchema":{"type":"object","properties":{}}}]}}
+[DEBUG] build_response (JSON mode): Final JSON value:
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "echo",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "finalize_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_metadata",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_groq",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "save_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "generate_gemini",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "modify_narrative",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "validate_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "elicit_carousel",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "apply_validation_fixes",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "execute_act",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "server_info",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "get_narrative_state",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "create_narrative_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ]
+  }
+}
