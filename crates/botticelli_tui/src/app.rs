@@ -75,25 +75,37 @@ impl TuiApp {
         // Setup terminal
         self.setup_terminal()?;
 
+        // Initial render
+        self.render()?;
+
         // Main event loop
         loop {
-            // Render current view
-            self.render()?;
-
             // Check for MCP updates (non-blocking)
+            let mut needs_render = false;
             while let Ok(msg) = self.mcp_rx.try_recv() {
                 let event = match msg {
                     McpMessage::Update(update) => Event::McpUpdate(update),
                     McpMessage::Error(error) => Event::McpError(error),
                 };
-                self.handle_event(event).await?;
+                if !self.handle_event(event).await? {
+                    break;
+                }
+                needs_render = true;
             }
 
             // Handle terminal events
-            if let Some(event) = self.events.next().await?
-                && !self.handle_event(event).await?
-            {
-                break;
+            if let Some(event) = self.events.next().await? {
+                let should_continue = self.handle_event(event).await?;
+                needs_render = true;
+                
+                if !should_continue {
+                    break;
+                }
+            }
+
+            // Only render if something changed
+            if needs_render {
+                self.render()?;
             }
         }
 
