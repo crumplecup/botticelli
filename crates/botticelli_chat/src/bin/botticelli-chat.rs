@@ -158,22 +158,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _services = std::sync::Arc::new(botticelli_chat::ServiceContainer::new(config));
 
     // Initialize LLM backend with fallback
-    let _llm_backend = match initialize_llm_backend().await {
-        Ok(backend) => {
+    let chat_host = match initialize_llm_backend().await {
+        Ok(llm_backend) => {
             info!("LLM backend initialized successfully");
-            backend
+            // Create MCP host and chat host with LLM
+            let mcp_host = Arc::new(tokio::sync::Mutex::new(
+                McpHost::builder()
+                    .build()
+            ));
+            let chat_host = botticelli_chat::McpChatHost::new(mcp_host, llm_backend);
+            Some(Arc::new(std::sync::Mutex::new(chat_host)) as Arc<std::sync::Mutex<dyn botticelli_interface::ChatHost>>)
         }
         Err(e) => {
             warn!(error = ?e, "Failed to initialize LLM backend, continuing without it");
-            warn!("Set GEMINI_API_KEY or GROQ_API_KEY in .env file to enable LLM features");
-            // Continue without LLM backend - TUI will show appropriate message
-            let mut tui = botticelli_tui::Tui::new()?;
-            return tui.run().await.map_err(|e| e.into());
+            warn!("Set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env file to enable LLM features");
+            None
         }
     };
 
-    // Create TUI
-    let mut tui = botticelli_tui::Tui::new()?;
+    // Create TUI with optional chat host
+    let mut tui = botticelli_tui::Tui::with_llm(chat_host)?;
 
     // Run the app
     let result = tui.run().await;
@@ -374,39 +378,40 @@ fn load_config(args: &Args) -> Result<ChatAppConfig, Box<dyn std::error::Error>>
 /// Initialize LLM backend with fallback support.
 ///
 /// Tries to create providers in priority order based on available API keys.
-/// Returns the highest priority provider.
+/// Priority: Gemini (default, has tool calling) -> Anthropic (fallback).
+/// Note: Groq doesn't support tool calling yet.
 async fn initialize_llm_backend() -> Result<Arc<dyn ToolCalling>, Box<dyn std::error::Error>> {
-    debug!("Initializing LLM backend");
+    tracing::debug!("Initializing LLM backend");
 
-    // Try Gemini (has tool calling support)
+    // Try Gemini first (has tool calling support, generous free tier)
     if let Ok(api_key) = std::env::var("GEMINI_API_KEY") {
-        if api_key.is_empty() {
-            debug!("GEMINI_API_KEY is empty, skipping");
-        } else {
-            debug!("Found GEMINI_API_KEY, creating Gemini provider");
+        if !api_key.is_empty() {
+            tracing::debug!("Found GEMINI_API_KEY, creating Gemini provider");
             match botticelli_models::GeminiClient::new() {
                 Ok(client) => {
-                    info!("Using Gemini as LLM backend");
+                    tracing::info!("Using Gemini as LLM backend");
                     return Ok(Arc::new(client) as Arc<dyn ToolCalling>);
                 }
                 Err(e) => {
-                    warn!(error = ?e, "Failed to create Gemini client");
+                    tracing::warn!(error = ?e, "Failed to create Gemini client");
                 }
             }
-        }
-    }
-
-    // Try Anthropic (has tool calling support)
-    if let Ok(api_key) = std::env::var("ANTHROPIC_API_KEY") {
-        if api_key.is_empty() {
-            debug!("ANTHROPIC_API_KEY is empty, skipping");
         } else {
-            debug!("Found ANTHROPIC_API_KEY, creating Anthropic provider");
-            let client = botticelli_models::AnthropicClient::new(&api_key, "claude-3-5-sonnet-20241022");
-            info!("Using Anthropic as LLM backend");
-            return Ok(Arc::new(client) as Arc<dyn ToolCalling>);
+            tracing::debug!("GEMINI_API_KEY is empty, skipping");
         }
     }
 
-    Err("No LLM provider API keys found. Set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env file".into())
+    // Try Anthropic (has tool calling, no free tier)
+    if let Ok(api_key) = std::env::var("ANTHROPIC_API_KEY") {
+        if !api_key.is_empty() {
+            tracing::debug!("Found ANTHROPIC_API_KEY, creating Anthropic provider");
+            let client = botticelli_models::AnthropicClient::new(&api_key, "claude-3-5-sonnet-20241022");
+            tracing::info!("Using Anthropic as LLM backend");
+            return Ok(Arc::new(client) as Arc<dyn ToolCalling>);
+        } else {
+            tracing::debug!("ANTHROPIC_API_KEY is empty, skipping");
+        }
+    }
+
+    Err("No LLM provider API keys found in environment. Set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env file. Note: Groq doesn't support tool calling yet.".into())
 }

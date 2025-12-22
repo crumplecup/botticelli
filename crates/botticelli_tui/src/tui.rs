@@ -2,7 +2,7 @@
 
 use crate::{AppState, Event, EventHandler, McpMessage, TuiResult};
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::io;
+use std::{io, sync::Arc};
 use tokio::sync::mpsc;
 
 /// Main TUI coordinator.
@@ -19,6 +19,13 @@ pub struct Tui {
 impl Tui {
     /// Create a new TUI instance.
     pub fn new() -> TuiResult<Self> {
+        Self::with_llm(None)
+    }
+
+    /// Create a new TUI instance with an LLM backend.
+    ///
+    /// The chat_host should implement the ChatHost trait, integrating LLM and MCP tools.
+    pub fn with_llm(chat_host: Option<Arc<std::sync::Mutex<dyn botticelli_interface::ChatHost>>>) -> TuiResult<Self> {
         let backend = CrosstermBackend::new(io::stdout());
         let terminal = Terminal::new(backend)?;
         let events = EventHandler::new(std::time::Duration::from_millis(250));
@@ -26,8 +33,15 @@ impl Tui {
         // Create channel for MCP updates
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
 
-        let mut state = AppState::default();
-        state.with_mcp_channel(Some(mcp_tx));
+        let state = if let Some(host) = chat_host {
+            let mut state = AppState::new(host);
+            state.with_mcp_channel(Some(mcp_tx));
+            state
+        } else {
+            let mut state = AppState::default();
+            state.with_mcp_channel(Some(mcp_tx));
+            state
+        };
 
         Ok(Self {
             terminal,
