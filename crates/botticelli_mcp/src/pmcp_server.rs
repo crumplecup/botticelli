@@ -115,6 +115,19 @@ pub fn register_all_tools(
             );
         tracing::info!("Registered 8 elicitation tools");
     }
+    
+    // Register scene management tools
+    {
+        use crate::tools::{CreateSceneTool, DeleteSceneTool, ListScenesTool, UpdateSceneTool};
+        
+        tracing::info!("Registering scene management tools");
+        builder = builder
+            .tool("create_scene", McpToolAdapter::new(CreateSceneTool))
+            .tool("list_scenes", McpToolAdapter::new(ListScenesTool))
+            .tool("update_scene", McpToolAdapter::new(UpdateSceneTool))
+            .tool("delete_scene", McpToolAdapter::new(DeleteSceneTool));
+        tracing::info!("Registered 4 scene management tools");
+    }
 
     // Register ExecuteActTool (only when LLM features are enabled)
     #[cfg(any(
@@ -304,7 +317,9 @@ pub fn register_all_tools(
     }
 
     tracing::info!("✅ Tool registration complete - all available tools registered");
-    tracing::info!("Total tools registered: Core(3) + Narrative(4) + Elicitation(8) + feature-gated tools");
+    tracing::info!(
+        "Tools registered: Core(3) + Narrative(4) + Elicitation(8) + Scenes(4) + feature-gated (LLM, Discord, Database)"
+    );
     builder
 }
 
