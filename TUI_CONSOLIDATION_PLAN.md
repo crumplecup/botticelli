@@ -104,9 +104,18 @@ This duplication leads to:
 - All tests pass
 - Tool execution flow works end-to-end
 
-### Phase 3: Refactor botticelli_tui to Use Traits
+### Phase 3: Refactor botticelli_tui to Use Traits 🚧 IN PROGRESS
 
 **Goal:** Remove all business logic from `botticelli_tui`, make it pure UI
+
+**Status:** Phase 3 started. TuiApp constructor updated, AppState refactor in progress (883 lines).
+
+**Completed:**
+- ✅ Updated TuiApp to accept `Box<dyn ChatHost>`
+- ✅ Added instrumentation
+
+**In Progress:**
+- 🚧 Refactoring AppState (large file, complex state)
 
 **Tasks:**
 1. Remove direct tool implementations from `botticelli_tui`
@@ -115,11 +124,11 @@ This duplication leads to:
    - Remove LLM integration
 
 2. Refactor TUI to use `ChatHost` trait
-   - Accept `impl ChatHost` as dependency
-   - Call trait methods for all operations
+   - Accept `impl ChatHost` as dependency ✅ DONE
+   - Call trait methods for all operations ⏸️ BLOCKED on AppState
    - Never directly touch MCP, tools, or LLM
 
-3. Clean up state management
+3. Clean up state management ⏸️ BLOCKED
    - UI state only (scroll, selection, input)
    - No conversation state (owned by ChatHost)
    - No tool registry (owned by ChatHost)
