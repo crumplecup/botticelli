@@ -1,118 +1,177 @@
-//! Keyboard input latency test - measures responsiveness.
+//! Keyboard input latency test - measures responsiveness of async event handling.
 
 use std::time::{Duration, Instant};
-use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyEvent};
+use crossterm::event;
 
-/// Test that keyboard events can be read quickly without blocking.
-/// 
-/// This simulates the event loop and measures how long it takes to process
-/// multiple keyboard events in sequence.
-#[test]
-fn test_keyboard_responsiveness() {
-    // This test can only run in an interactive terminal
-    // We'll test the EventHandler polling mechanism instead
-    
-    let tick_rate = Duration::from_millis(250);
-    
-    // Simulate multiple quick polls like the event loop does
+/// Test that non-blocking event poll returns immediately.
+#[tokio::test]
+async fn test_instant_keyboard_poll() {
+    // Test that poll with 0ms timeout returns immediately
     let start = Instant::now();
-    let mut poll_count = 0;
     
-    // Try to poll 10 times (should complete quickly if not blocking)
-    for _ in 0..10 {
-        // This is what EventHandler does
-        if event::poll(Duration::from_millis(1)).unwrap_or(false) {
-            // Event available, read it
-            let _ = event::read();
-        }
-        poll_count += 1;
-    }
+    // This is what our async event handler does - 0ms poll
+    let has_event = event::poll(Duration::from_millis(0)).unwrap_or(false);
     
     let elapsed = start.elapsed();
     
-    // 10 polls with 1ms timeout should take < 50ms total
+    // Should return in < 5ms (instant)
     assert!(
-        elapsed < Duration::from_millis(50),
-        "Polling took too long: {:?} for {} polls (indicates blocking)",
-        elapsed,
-        poll_count
+        elapsed < Duration::from_millis(5),
+        "Non-blocking poll took too long: {:?} (should be instant)",
+        elapsed
     );
     
-    println!("✓ Event polling test passed: {:?} for {} polls", elapsed, poll_count);
-}
-
-/// Test that the tick rate doesn't cause excessive delays.
-#[test]
-fn test_tick_rate_impact() {
-    let tick_rates = [
-        Duration::from_millis(10),
-        Duration::from_millis(50),
-        Duration::from_millis(100),
-        Duration::from_millis(250),
-    ];
-    
-    for tick_rate in tick_rates {
-        let start = Instant::now();
-        
-        // Single poll - should return immediately if no events
-        let has_event = event::poll(tick_rate).unwrap_or(false);
-        
-        let elapsed = start.elapsed();
-        
-        if has_event {
-            println!("Event detected during test (user input?), skipping timing assertion");
-            continue;
-        }
-        
-        // If no events, should have waited the full tick_rate
-        assert!(
-            elapsed >= tick_rate,
-            "Poll returned too early: {:?} < {:?}",
-            elapsed,
-            tick_rate
-        );
-        
-        // But not much longer (allow 20ms variance)
-        assert!(
-            elapsed < tick_rate + Duration::from_millis(20),
-            "Poll took too long: {:?} vs expected {:?}",
-            elapsed,
-            tick_rate
-        );
-        
-        println!("✓ Tick rate {:?} test passed: actual {:?}", tick_rate, elapsed);
+    if has_event {
+        println!("✓ Event detected and poll returned instantly: {:?}", elapsed);
+    } else {
+        println!("✓ No event, poll returned instantly: {:?}", elapsed);
     }
 }
 
-/// Demonstrate the problem: 250ms tick rate means 250ms minimum delay per keystroke.
-#[test]
-fn test_demonstrate_250ms_problem() {
-    // With 250ms tick rate, if user types 5 characters quickly,
-    // and each poll() call blocks for up to 250ms when no event is present,
-    // the UI feels laggy
-    
-    let tick_rate = Duration::from_millis(250);
-    
-    println!("\n=== Demonstrating 250ms tick rate problem ===");
-    println!("Tick rate: {:?}", tick_rate);
-    println!("If user types quickly, each character could wait up to {:?}", tick_rate);
-    println!("Typing 'hello' (5 chars) could take up to {:?}", tick_rate * 5);
-    println!("\nSolution: Use shorter tick rate (e.g., 16ms for 60fps)");
-    println!("Or: Use non-blocking event reading in separate thread");
-}
-
-/// Test recommended tick rate for responsive UI.
-#[test]
-fn test_recommended_tick_rate() {
-    // For 60fps feel, we want ~16ms frame time
-    let recommended_tick_rate = Duration::from_millis(16);
-    
+/// Test that spawn_blocking doesn't delay other tasks.
+#[tokio::test]
+async fn test_spawn_blocking_concurrency() {
     let start = Instant::now();
-    let _ = event::poll(recommended_tick_rate);
+    
+    // Simulate what our event loop does - spawn_blocking for event reading
+    let event_task = tokio::task::spawn_blocking(|| {
+        event::poll(Duration::from_millis(0))
+    });
+    
+    // This should complete quickly even though spawn_blocking is used
+    let result = tokio::time::timeout(Duration::from_millis(10), event_task).await;
+    
     let elapsed = start.elapsed();
     
-    println!("\n=== Recommended tick rate ===");
-    println!("Tick rate: {:?} (60fps)", recommended_tick_rate);
-    println!("Actual poll time: {:?}", elapsed);
-    println!("This gives smooth, responsive UI");
+    assert!(
+        result.is_ok(),
+        "spawn_blocking took > 10ms (indicates blocking)"
+    );
+    
+    println!("✓ spawn_blocking with 0ms poll completed in: {:?}", elapsed);
+}
+
+/// Test tokio::select! with multiple event sources.
+#[tokio::test]
+async fn test_select_responsiveness() {
+    let start = Instant::now();
+    
+    // Create a tick interval (like our TUI does)
+    let mut tick = tokio::time::interval(Duration::from_millis(250));
+    
+    // Create a mock event channel
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<String>();
+    
+    // Send a message immediately
+    tx.send("test".to_string()).unwrap();
+    
+    // Use select! to handle multiple sources
+    tokio::select! {
+        _ = tick.tick() => {
+            panic!("Tick fired first (should not happen - message was sent immediately)");
+        }
+        msg = rx.recv() => {
+            let elapsed = start.elapsed();
+            assert!(msg.is_some());
+            assert!(
+                elapsed < Duration::from_millis(10),
+                "Message receipt took too long: {:?}",
+                elapsed
+            );
+            println!("✓ tokio::select! processed immediate message in: {:?}", elapsed);
+        }
+    }
+}
+
+/// Test that keyboard event reading doesn't block tick events.
+#[tokio::test]
+async fn test_independent_tick_and_events() {
+    let mut tick = tokio::time::interval(Duration::from_millis(50));
+    let mut tick_count = 0;
+    
+    let start = Instant::now();
+    
+    // Run for 200ms and count ticks
+    loop {
+        tokio::select! {
+            _ = tick.tick() => {
+                tick_count += 1;
+                if tick_count >= 3 {
+                    break;
+                }
+            }
+            // Simulate keyboard event checking (non-blocking)
+            _ = tokio::task::spawn_blocking(|| {
+                event::poll(Duration::from_millis(0))
+            }) => {
+                // Event check completed, continue
+            }
+        }
+    }
+    
+    let elapsed = start.elapsed();
+    
+    // Should have gotten at least 3 ticks in ~150ms
+    assert!(tick_count >= 3, "Not enough ticks: {}", tick_count);
+    assert!(
+        elapsed >= Duration::from_millis(100) && elapsed < Duration::from_millis(250),
+        "Timing incorrect: {:?} for {} ticks",
+        elapsed,
+        tick_count
+    );
+    
+    println!("✓ Got {} ticks in {:?} - events didn't block ticks", tick_count, elapsed);
+}
+
+/// Demonstrate the fix: 0ms poll + tokio::select! = instant response.
+#[test]
+fn test_demonstrate_solution() {
+    println!("\n=== Solution: Async event handling ===");
+    println!("Old approach:");
+    println!("  - event::poll(250ms) blocks for 250ms if no event");
+    println!("  - Typing 'hello' could take 1.25s");
+    println!("\nNew approach:");
+    println!("  - tokio::select! with multiple event sources");
+    println!("  - spawn_blocking + event::poll(0ms) = instant check");
+    println!("  - Keyboard events: Instant (no blocking)");
+    println!("  - Tick events: Independent 250ms interval");
+    println!("  - MCP events: Channel-based (instant)");
+    println!("\nResult: All events processed immediately without blocking!");
+}
+
+/// Test the actual pattern used in TuiApp.
+#[tokio::test]
+async fn test_tuiapp_event_pattern() {
+    let start = Instant::now();
+    
+    // Simulate the TuiApp event loop pattern
+    let mut tick_interval = tokio::time::interval(Duration::from_millis(250));
+    let (mcp_tx, mut mcp_rx) = tokio::sync::mpsc::unbounded_channel::<String>();
+    
+    // Send an MCP message immediately
+    mcp_tx.send("mcp_update".to_string()).unwrap();
+    
+    // Simulate one loop iteration
+    tokio::select! {
+        _ = tick_interval.tick() => {
+            panic!("Tick should not fire first");
+        }
+        
+        Some(_msg) = mcp_rx.recv() => {
+            let elapsed = start.elapsed();
+            assert!(
+                elapsed < Duration::from_millis(10),
+                "MCP message took too long: {:?}",
+                elapsed
+            );
+            println!("✓ TuiApp pattern: MCP message processed instantly in {:?}", elapsed);
+        }
+        
+        event = tokio::task::spawn_blocking(|| {
+            event::poll(Duration::from_millis(0))
+        }) => {
+            // This arm could also fire instantly
+            println!("✓ Event check completed in {:?}", start.elapsed());
+        }
+    }
 }
