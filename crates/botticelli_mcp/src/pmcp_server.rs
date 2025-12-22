@@ -24,13 +24,15 @@ pub fn register_all_tools(
         std::sync::Arc<dyn botticelli_interface::DatabaseRegistryOperations>,
     >,
 ) -> pmcp::ServerBuilder {
-    tracing::info!("Registering all MCP tools");
+    tracing::info!("Starting tool registration");
 
     // Register core tools
+    tracing::debug!("Registering core tools: echo, server_info, generate");
     builder = builder
         .tool("echo", McpToolAdapter::new(EchoTool))
         .tool("server_info", McpToolAdapter::new(ServerInfoTool))
         .tool("generate", McpToolAdapter::new(GenerateTool));
+    tracing::info!("Registered 3 core tools");
 
     // TODO: Register ExportMetricsTool when metrics infrastructure is available
 
@@ -39,14 +41,23 @@ pub fn register_all_tools(
     {
         use crate::tools::QueryContentTool;
         if let Some(ops) = db_ops {
+            tracing::info!("Database feature enabled, registering query_content tool");
             builder = builder.tool(
                 "query_content",
                 McpToolAdapter::new(QueryContentTool::new(ops)),
             );
+            tracing::info!("Registered database tool");
+        } else {
+            tracing::warn!("Database feature enabled but no DatabaseRegistryOperations provided");
         }
+    }
+    #[cfg(not(feature = "database"))]
+    {
+        tracing::debug!("Database feature not enabled, skipping database tools");
     }
 
     // Register narrative tools
+    tracing::debug!("Registering narrative tools");
     builder = builder
         .tool("create_narrative", McpToolAdapter::new(CreateNarrativeTool))
         // StartNarrativeTool needs McpTool trait implementation - TODO
@@ -56,6 +67,7 @@ pub fn register_all_tools(
         )
         .tool("save_narrative", McpToolAdapter::new(SaveNarrativeTool))
         .tool("modify_narrative", McpToolAdapter::new(ModifyNarrativeTool));
+    tracing::info!("Registered 4 narrative tools");
 
     // Register elicitation tools
     {
@@ -114,7 +126,19 @@ pub fn register_all_tools(
     ))]
     {
         use crate::tools::ExecuteActTool;
+        tracing::debug!("LLM feature enabled, registering execute_act tool");
         builder = builder.tool("execute_act", McpToolAdapter::new(ExecuteActTool::new()));
+        tracing::info!("Registered execute_act tool");
+    }
+    #[cfg(not(any(
+        feature = "gemini",
+        feature = "anthropic",
+        feature = "ollama",
+        feature = "huggingface",
+        feature = "groq"
+    )))]
+    {
+        tracing::debug!("No LLM feature enabled, skipping execute_act tool");
     }
 
     // Register ExecuteNarrativeTool (only when LLM features are enabled)
@@ -127,10 +151,12 @@ pub fn register_all_tools(
     ))]
     {
         use crate::tools::ExecuteNarrativeTool;
+        tracing::debug!("LLM feature enabled, registering execute_narrative tool");
         builder = builder.tool(
             "execute_narrative",
             McpToolAdapter::new(ExecuteNarrativeTool::new()),
         );
+        tracing::info!("Registered execute_narrative tool");
     }
 
     // Register LLM tools (if features enabled)
@@ -277,7 +303,8 @@ pub fn register_all_tools(
         );
     }
 
-    tracing::info!("All tools registered successfully");
+    tracing::info!("✅ Tool registration complete - all available tools registered");
+    tracing::info!("Total tools registered: Core(3) + Narrative(4) + Elicitation(8) + feature-gated tools");
     builder
 }
 
