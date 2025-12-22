@@ -1,34 +1,8 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 
-use async_trait::async_trait;
-use botticelli_core::{GenerateRequest, Input as CoreInput, Message as CoreMessage, Role};
-use botticelli_interface::ToolCalling;
-use botticelli_mcp_client::{
-    LlmBackend, ToolDefinition, McpHost,
-};
+use botticelli_interface::ChatHost;
 use tracing::{error, info, warn};
 use uuid::Uuid;
-
-/// Simple LlmBackend adapter that wraps a ToolCalling provider.
-pub struct TuiLlmBackend {
-    driver: Arc<dyn ToolCalling>,
-}
-
-impl TuiLlmBackend {
-    /// Create a new TUI LLM backend.
-    pub fn new(driver: Arc<dyn ToolCalling>) -> Self {
-        Self { driver }
-    }
-}
-
-impl std::fmt::Debug for TuiLlmBackend {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TuiLlmBackend")
-            .field("driver", &"<driver>")
-            .finish()
-    }
-}
 
 #[async_trait]
 impl LlmBackend for TuiLlmBackend {

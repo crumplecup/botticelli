@@ -25,27 +25,28 @@ pub struct TuiApp {
 }
 
 impl TuiApp {
-    /// Create a new TUI application with MCP integration.
+    /// Create a new TUI application with ChatHost implementation.
     ///
     /// This is the main entry point for library usage.
     ///
     /// # Example
     ///
     /// ```no_run
-    /// use botticelli_models::AnthropicClient;
+    /// use botticelli_chat::ChatHostImpl;
     /// use botticelli_tui::TuiApp;
-    /// use std::sync::Arc;
     ///
     /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-    /// let api_key = std::env::var("ANTHROPIC_API_KEY")?;
-    /// let driver = Arc::new(AnthropicClient::new(api_key, "claude-3-5-sonnet-20241022"));
+    /// let chat_host = ChatHostImpl::new().await?;
     ///
-    /// let mut app = TuiApp::new(driver)?;
+    /// let mut app = TuiApp::new(Box::new(chat_host))?;
     /// app.run().await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub fn new(driver: Arc<dyn botticelli_interface::ToolCalling>) -> TuiResult<Self> {
+    #[tracing::instrument(skip(chat_host))]
+    pub fn new(chat_host: Box<dyn botticelli_interface::ChatHost>) -> TuiResult<Self> {
+        tracing::debug!("Creating TuiApp");
+        
         let backend = CrosstermBackend::new(io::stdout());
         let terminal = Terminal::new(backend)?;
         let events = EventHandler::new(std::time::Duration::from_millis(250));
@@ -53,10 +54,11 @@ impl TuiApp {
         // Create channel for MCP updates
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
 
-        // Initialize AppState with MCP integration (empty McpHost for now)
-        let mcp_host = botticelli_mcp_client::McpHost::builder().build();
-        let mut state = AppState::with_mcp_integration(driver, mcp_host);
+        // Initialize AppState with ChatHost
+        let mut state = AppState::new(chat_host);
         state.set_mcp_channel(mcp_tx);
+
+        tracing::debug!("TuiApp created successfully");
 
         Ok(Self {
             terminal,
