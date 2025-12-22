@@ -181,18 +181,32 @@ impl AppState {
             updated_messages.push(ChatMessage::user(user_message.clone()));
             self.update_conversation(conv_id, updated_messages);
 
-            // Spawn async task to execute
+            // Spawn async task to execute via chat host
             tokio::spawn(async move {
-                // TODO: Use chat_host.send_message or similar trait method
-                // For now, send placeholder response
                 tracing::info!("Processing message with MCP orchestration");
                 
-                if let Err(e) = tx.send(crate::McpMessage::Update(crate::McpUpdate {
-                    conversation_id: conv_id,
-                    user_message: user_msg.clone(),
-                    assistant_message: "Processing...".to_string(),
-                })) {
-                    tracing::error!(error = %e, "Failed to send MCP update to UI");
+                // Use the chat host to send the message
+                match chat_host.send_message(&user_msg).await {
+                    Ok(response) => {
+                        tracing::debug!(response = %response, "Received LLM response");
+                        if let Err(e) = tx.send(crate::McpMessage::Update(crate::McpUpdate {
+                            conversation_id: conv_id,
+                            user_message: user_msg.clone(),
+                            assistant_message: response,
+                        })) {
+                            tracing::error!(error = %e, "Failed to send MCP update to UI");
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!(error = ?e, "Failed to process message");
+                        if let Err(e) = tx.send(crate::McpMessage::Update(crate::McpUpdate {
+                            conversation_id: conv_id,
+                            user_message: user_msg.clone(),
+                            assistant_message: format!("Error: {}", e),
+                        })) {
+                            tracing::error!(error = %e, "Failed to send error to UI");
+                        }
+                    }
                 }
             });
         } else {

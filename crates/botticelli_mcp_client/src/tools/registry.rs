@@ -33,20 +33,17 @@ pub fn register_internal_tools(
 ) -> McpClientResult<()> {
     let _narratives_dir = narratives_dir.into();
 
-    // Register narrative tools (requires database)
-    // TODO: Narrative tools need refactoring to work with database backend properly
-    // Currently commented out due to architectural mismatch between file-based trait
-    // and database implementation
+    // Register database and narrative tools (requires database)
     #[cfg(feature = "database")]
     {
-        let _db_pool = db_pool.ok_or_else(|| {
+        let db_pool = db_pool.ok_or_else(|| {
             crate::McpClientErrorKind::Configuration(
-                "Database pool required for narrative tools".to_string(),
+                "Database pool required for database tools".to_string(),
             )
         })?;
 
         // Database operations for database tools
-        let db_ops = DbOperationsImpl::new(_db_pool.clone());
+        let db_ops = DbOperationsImpl::new(db_pool.clone());
 
         registry.register(
             "create_table".to_string(),
@@ -105,36 +102,20 @@ pub fn register_internal_tools(
     )?;
 
     // Register narrative tools (requires database)
-    #[cfg(feature = "database")]
-    {
-        let db_ops = DbOperationsImpl::new(_db_pool.clone());
-        
-        registry.register(
-            "create_narrative".to_string(),
-            Arc::new(CreateNarrativeTool::new(db_ops.clone())),
-        )?;
-        
-        registry.register(
-            "list_narratives".to_string(),
-            Arc::new(ListNarrativesTool::new(db_ops.clone())),
-        )?;
-        
-        registry.register(
-            "load_narrative".to_string(),
-            Arc::new(LoadNarrativeTool::new(db_ops.clone())),
-        )?;
-        
-        registry.register(
-            "validate_narrative".to_string(),
-            Arc::new(ValidateNarrativeTool::new(db_ops)),
-        )?;
-        
-        // TODO: Registry operations tools need GenericRegistry setup
-        // These are generic tools that require registry instances:
-        // - UpsertRegistryItemTool
-        // - GetRegistryItemTool  
-        // - ListRegistryKeysTool
-    }
+    // Narrative tools need proper repository implementation  
+    // TODO: Wire up PostgresNarrativeRepository or FilesystemNarrativeStorage
+    // Currently DbOperationsImpl doesn't implement NarrativeStorageOperations
+    
+    // registry.register(
+    //     "create_narrative".to_string(),
+    //     Arc::new(CreateNarrativeTool::new(narrative_repo)),
+    // )?;
+    
+    // TODO: Registry operations tools need GenericRegistry setup
+    // These are generic tools that require registry instances:
+    // - UpsertRegistryItemTool
+    // - GetRegistryItemTool  
+    // - ListRegistryKeysTool
 
     tracing::info!("Registered all internal tools");
     Ok(())
