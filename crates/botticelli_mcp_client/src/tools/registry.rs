@@ -5,7 +5,11 @@ use super::{
     ElicitationRegistry, ExecuteCarouselTool, FinalizeElicitationTool,
 };
 #[cfg(feature = "database")]
-use super::{CreateTableTool, InspectTableTool, QueryTableTool, TableExistsTool};
+use super::{
+    CreateNarrativeTool, CreateTableTool, GetRegistryItemTool, InspectTableTool,
+    ListNarrativesTool, ListRegistryKeysTool, LoadNarrativeTool, QueryTableTool,
+    TableExistsTool, UpsertRegistryItemTool, ValidateNarrativeTool,
+};
 use crate::{McpClientResult, ToolRegistry};
 #[cfg(feature = "database")]
 use botticelli_database::{DbOperationsImpl, DbPool};
@@ -99,6 +103,38 @@ pub fn register_internal_tools(
         "execute_carousel".to_string(),
         Arc::new(ExecuteCarouselTool::new(elicitation_registry)),
     )?;
+
+    // Register narrative tools (requires database)
+    #[cfg(feature = "database")]
+    {
+        let db_ops = DbOperationsImpl::new(_db_pool.clone());
+        
+        registry.register(
+            "create_narrative".to_string(),
+            Arc::new(CreateNarrativeTool::new(db_ops.clone())),
+        )?;
+        
+        registry.register(
+            "list_narratives".to_string(),
+            Arc::new(ListNarrativesTool::new(db_ops.clone())),
+        )?;
+        
+        registry.register(
+            "load_narrative".to_string(),
+            Arc::new(LoadNarrativeTool::new(db_ops.clone())),
+        )?;
+        
+        registry.register(
+            "validate_narrative".to_string(),
+            Arc::new(ValidateNarrativeTool::new(db_ops)),
+        )?;
+        
+        // TODO: Registry operations tools need GenericRegistry setup
+        // These are generic tools that require registry instances:
+        // - UpsertRegistryItemTool
+        // - GetRegistryItemTool  
+        // - ListRegistryKeysTool
+    }
 
     tracing::info!("Registered all internal tools");
     Ok(())

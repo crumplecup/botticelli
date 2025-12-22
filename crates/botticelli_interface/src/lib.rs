@@ -4,6 +4,7 @@
 //! the Botticelli interface.
 
 mod bot_server;
+mod chat_host;
 mod narrative;
 mod registry;
 mod registry_traits;
@@ -13,6 +14,7 @@ mod traits;
 mod types;
 
 pub use bot_server::{BotActor, BotResult, BotServer, BotServerConfig, BotState, BotStats};
+pub use chat_host::ChatHost;
 pub use narrative::{
     ActExecution, ActExecutionBuilder, ExecutionFilter, ExecutionStatus, ExecutionSummary,
     NarrativeExecution, NarrativeRepository,

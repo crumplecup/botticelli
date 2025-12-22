@@ -1,7 +1,11 @@
 // Chat tab implementation
 
 use botticelli_core::{Input, Message, Role};
+use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use chrono::{DateTime, Utc};
+use std::sync::Arc;
+
+use crate::{ConversationLoop, Services};
 
 #[cfg(feature = "tui")]
 use ratatui::{
@@ -76,6 +80,9 @@ pub struct ChatTab {
 
     /// Whether input is focused
     input_focused: bool,
+    
+    /// Services for LLM and tool execution
+    services: Option<Arc<Services>>,
 }
 
 impl ChatTab {
@@ -88,7 +95,13 @@ impl ChatTab {
             #[cfg(feature = "tui")]
             input: ChatInput::new(),
             input_focused: true,
+            services: None,
         }
+    }
+    
+    /// Sets the services for LLM integration
+    pub fn set_services(&mut self, services: Arc<Services>) {
+        self.services = Some(services);
     }
 
     /// Adds a message to the history
@@ -110,16 +123,60 @@ impl ChatTab {
             return;
         }
 
-        let message = DisplayMessage::new(Role::User, content);
+        let message = DisplayMessage::new(Role::User, content.clone());
         self.add_message(message);
 
-        // TODO: Trigger LLM response
-        // For now, just add a placeholder response
-        let response = DisplayMessage::new(
-            Role::Assistant,
-            "Chat integration coming soon...".to_string(),
-        );
-        self.add_message(response);
+        // Get services if available
+        let Some(services) = self.services.clone() else {
+            tracing::warn!("Services not configured, cannot send message to LLM");
+            let error_msg = DisplayMessage::new(Role::Assistant, "LLM not configured".to_string());
+            self.add_message(error_msg);
+            return;
+        };
+
+        // Trigger async LLM response
+        let messages_clone = self.messages.clone();
+        tokio::spawn(async move {
+            if let Err(e) = Self::handle_llm_response(content, messages_clone, services).await {
+                tracing::error!(error = %e, "Failed to get LLM response");
+            }
+        });
+    }
+    
+    async fn handle_llm_response(
+        user_content: String,
+        _messages: Vec<DisplayMessage>,
+        services: Arc<Services>,
+    ) -> ChatResult<()> {
+        use botticelli_core::{Input, MessageBuilder};
+        
+        // Build message history
+        let user_message = MessageBuilder::default()
+            .role(Role::User)
+            .content(vec![Input::Text(user_content)])
+            .build()
+            .map_err(|e| ChatError::new(ChatErrorKind::ValidationError(format!("Failed to build message: {}", e))))?;
+        
+        let messages = vec![user_message];
+        
+        // Get available tools from MCP
+        let mcp_host = services.mcp_host().read().await;
+        let available_tools = mcp_host.list_tools().await
+            .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to list tools: {}", e))))?;
+        drop(mcp_host);
+        
+        tracing::info!(tool_count = available_tools.len(), "Running conversation with tools");
+        
+        // Run conversation loop
+        let conversation_loop = ConversationLoop::new(services.tool_handler().clone());
+        let provider = services.provider();
+        
+        let _final_messages = conversation_loop
+            .run_conversation(provider.as_ref(), messages, &available_tools)
+            .await?;
+            
+        // TODO: Update UI with final messages
+        Ok(())
     }
 
     /// Clears the conversation

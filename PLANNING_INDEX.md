@@ -14,6 +14,13 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ### Core Architecture & Refactoring
 
+- **TUI_ARCHITECTURE_CONSOLIDATION.md** - `current` (2025-12-22) **🚨 CRITICAL REFACTOR**
+  - Eliminates parallel TUI implementations (botticelli_tui vs botticelli_chat)
+  - Establishes trait-based architecture with clear separation of concerns
+  - Interface traits → Chat business logic → TUI presentation layer
+  - 5-phase plan to consolidate duplicate code and fix tool execution
+  - Status: 📋 Strategic design - Phase 2 critical (tool loop broken)
+
 - **TRAIT_INTERFACE_UNIFIED_DESIGN.md** - `current` (2025-12-19) **🎯 ARCHITECTURAL VISION**
   - Clean, unified trait design achieving full provider interoperability
   - Vision: Traits define ALL behaviors, not request fields
