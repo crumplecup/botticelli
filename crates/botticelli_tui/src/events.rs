@@ -106,6 +106,6 @@ impl EventHandler {
 
 impl Default for EventHandler {
     fn default() -> Self {
-        Self::new(Duration::from_millis(250))
+        Self::new(Duration::from_millis(50))
     }
 }

@@ -60,12 +60,11 @@ fn test_add_tool_calls() {
 fn test_add_tool_results() {
     let mut session = ConversationSession::new("Test");
 
-    let result = ToolResult {
-        tool_call_id: "call_123".to_string(),
-        output: serde_json::json!({"result": "success"}),
-        is_error: false,
-        error_message: None,
-    };
+    let result = ToolResult::new(
+        "call_123".to_string(),
+        serde_json::json!({"result": "success"}),
+        false,
+    );
 
     session.add_turn(ConversationTurn::ToolResults {
         results: vec![result],
