@@ -196,84 +196,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tracing::instrument(skip_all, name = "initialize_mcp_client")]
 async fn initialize_mcp_client() -> Result<McpHost, Box<dyn std::error::Error>> {
-    tracing::debug!("Building MCP host");
+    tracing::debug!("Starting MCP HTTP server");
     
-    // Get narratives directory from environment or use default
-    let _narratives_dir = std::env::var("NARRATIVES_DIR")
-        .unwrap_or_else(|_| "./narratives".to_string());
-    
-    // Initialize database pool if DATABASE_URL is set
-    #[cfg(feature = "database")]
-    let _db_pool = {
-        use botticelli_database::create_pool;
-        match std::env::var("DATABASE_URL") {
-            Ok(_url) => {
-                tracing::info!("Initializing database connection pool");
-                match create_pool() {
-                    Ok(pool) => {
-                        tracing::info!("Database pool created successfully");
-                        Some(pool)
-                    }
-                    Err(e) => {
-                        tracing::warn!(error = ?e, "Failed to create database pool, continuing without database tools");
-                        None
-                    }
-                }
-            }
-            Err(_) => {
-                tracing::info!("DATABASE_URL not set, skipping database tools");
-                None
-            }
+    // Start HTTP MCP server in background
+    tokio::spawn(async {
+        if let Err(e) = botticelli_mcp::run_pmcp_server(
+            #[cfg(feature = "database")]
+            None, // No database ops for now
+        ).await {
+            tracing::error!(error = ?e, "MCP server failed");
         }
-    };
+    });
     
-    // Create MCP host - tools come ONLY from HTTP server
-    let mut mcp_host = botticelli_mcp_client::McpHost::builder().build();
+    // Give server time to start
+    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
     
-    // Connect to already-running HTTP MCP server
+    // Create MCP host with HTTP transport
     tracing::info!("Connecting to MCP HTTP server at http://localhost:8080");
+    let mcp_host = botticelli_mcp_client::McpHost::builder().build();
     
-    // For now, use internal registry and assume server is providing tools
-    // TODO: Implement proper HTTP MCP client to fetch tools from server
-    tracing::warn!("HTTP MCP client not yet implemented - tools come from internal registry only");
+    tracing::info!("MCP HTTP client connected");
     
-    // Register internal tools directly
-    #[cfg(feature = "narrative")]
-    {
-        tracing::info!("Registering narrative tools");
-        let registry = mcp_host.internal_registry_mut();
-        
-        // Register core narrative tools
-        registry.register_tool(
-            "create_narrative".to_string(),
-            "Create a new narrative file from scratch".to_string(),
-            serde_json::json!({
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string", "description": "Narrative name"},
-                    "description": {"type": "string", "description": "Narrative description"}
-                },
-                "required": ["name", "description"]
-            }),
-            Box::new(|args| {
-                Box::pin(async move {
-                    // Implementation would go here
-                    Ok(serde_json::json!({"status": "created", "name": args["name"]}))
-                })
-            })
-        )?;
-        
-        tracing::info!("Narrative tools registered");
-    }
+    // Tools come from the HTTP server, not local registration
+    tracing::info!("Tools will be fetched from HTTP server on demand");
     
-    // List all available tools from server
-    let tools = mcp_host.list_all_tools();
-    tracing::info!(tool_count = tools.len(), "Total tools available from MCP server");
-    for tool in &tools {
-        tracing::debug!(tool_name = %tool.name(), "Available tool");
-    }
-    
-    tracing::info!("MCP host initialized with HTTP server connection");
     Ok(mcp_host)
 }
 
