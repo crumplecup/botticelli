@@ -38,15 +38,18 @@ mod elicitation;
 mod elicitation_dialog;
 mod error;
 mod events;
+mod messages;
+mod minimal_loop;
 mod state;
 mod tui;
 mod view;
 
-pub use app::TuiApp;
 pub use commands::Command;
 pub use elicitation_dialog::TuiElicitationDialog;
 pub use error::{TuiError, TuiErrorKind, TuiResult};
-pub use events::{Event, EventHandler, McpConversationError, McpMessage, McpUpdate};
+pub use events::{Event, McpConversationError, McpMessage, McpUpdate};
+pub use messages::{StateUpdate, TickEvent, UserAction};
+pub use minimal_loop::minimal_event_loop;
 pub use state::{AppState, ConversationId, NarrativeId, ViewMode};
 pub use tui::Tui;
 pub use view::{
@@ -57,6 +60,7 @@ pub use view::{
     NarrativeBrowserView, 
     NarrativeEditorView, 
     ScheduleView, TaskStatus, TaskSchedule, ScheduledTask,
+    SettingsView,
     View,
 };
 

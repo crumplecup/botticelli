@@ -19,9 +19,6 @@ botticelli_mcp = { path = "../botticelli_mcp" }
 botticelli_narrative = { path = "../botticelli_narrative" }
 botticelli_core = { path = "../botticelli_core" }
 
-# TUI (for binary with tui feature)
-botticelli_tui = { path = "../botticelli_tui", optional = true }
-
 # Serialization
 serde.workspace = true
 toml.workspace = true
@@ -45,18 +42,6 @@ chrono = { version = "0.4", features = ["serde"] }
 # Async
 async-trait.workspace = true
 tokio.workspace = true
-
-# File operations
-walkdir = { version = "2.5", optional = true }
-itertools = { version = "0.13", optional = true }
-
-# TUI (optional)
-ratatui = { workspace = true, optional = true }
-crossterm = { version = "0.28", optional = true }
-tui-tree-widget = { version = "0.23", optional = true }
-tui-textarea = { version = "0.7", optional = true }
-tui-logger = { version = "0.13", optional = true }
-directories = { version = "5.0", optional = true }
 
 # CLI (optional - for binary)
 clap = { version = "4.5", features = ["derive", "env"], optional = true }
@@ -90,17 +75,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = tr
 botticelli_actor = { path = "../botticelli_actor", optional = true }
 
 [features]
-tui = [
-    "dep:botticelli_tui",
-    "dep:ratatui",
-    "dep:crossterm",
-    "dep:tui-tree-widget",
-    "dep:tui-textarea",
-    "dep:tui-logger",
-    "dep:directories",
-    "dep:walkdir",
-    "dep:itertools",
-]
 cli = [
     "dep:clap",
     "dep:dotenvy",
@@ -121,10 +95,6 @@ database = [
     "dep:diesel",
     "botticelli_mcp_client/database",  # Enable database feature on mcp_client
 ]
-
-[[bin]]
-name = "botticelli-chat"
-required-features = ["cli", "tui"]
 
 [[bin]]
 name = "demo"

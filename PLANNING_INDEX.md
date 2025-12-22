@@ -14,6 +14,18 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ### Core Architecture & Refactoring
 
+- **TUI_LAG_FIX_IMPLEMENTATION.md** - `current` (2025-12-22) **✅ IMPLEMENTED**
+  - Fixes severe keyboard input lag by decoupling rendering from input
+  - Root cause: terminal.draw() synchronous I/O blocking event loop
+  - Solution: Dirty flag + render at fixed 60fps, input updates state instantly
+  - Status: 🧪 Ready for user testing
+
+- **TUI_EVENT_LOOP_REFACTOR.md** - `current` (2025-12-22) **📋 ARCHITECTURAL ANALYSIS**
+  - Analysis document explaining the root cause of keyboard lag
+  - Documents why tests didn't catch the issue (TestBackend vs real terminal I/O)
+  - Architecture options evaluated, decoupled rendering selected
+  - Status: 📚 Reference documentation
+
 - **TUI_ARCHITECTURE_CONSOLIDATION.md** - `current` (2025-12-22) **🚨 CRITICAL REFACTOR**
   - Eliminates parallel TUI implementations (botticelli_tui vs botticelli_chat)
   - Establishes trait-based architecture with clear separation of concerns

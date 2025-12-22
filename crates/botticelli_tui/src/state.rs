@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use botticelli_interface::{ChatHost, ChatMessage};
 use derive_getters::Getters;
@@ -28,7 +28,7 @@ pub struct AppState {
     editor_content: String,
     /// Chat host providing LLM and MCP integration.
     #[setters(skip)]
-    chat_host: Option<Arc<Mutex<dyn ChatHost>>>,
+    chat_host: Option<Arc<tokio::sync::Mutex<dyn ChatHost>>>,
     /// Channel to send MCP updates to UI thread.
     mcp_channel: Option<tokio::sync::mpsc::UnboundedSender<crate::McpMessage>>,
     /// Current conversation ID.
@@ -61,6 +61,9 @@ pub struct AppState {
     selected_schedule_task: Option<usize>,
     /// Detail scroll offset for schedule view.
     schedule_detail_scroll: usize,
+    /// Dirty flag for rendering optimization.
+    /// Set to true when state changes, cleared after render.
+    dirty: bool,
 }
 
 impl std::fmt::Debug for AppState {
@@ -98,13 +101,14 @@ impl Default for AppState {
             schedule_tasks: Vec::new(),
             selected_schedule_task: None,
             schedule_detail_scroll: 0,
+            dirty: true, // Initial render needed
         }
     }
 }
 
 impl AppState {
     /// Creates a new AppState with the given chat host.
-    pub fn new(chat_host: Arc<Mutex<dyn ChatHost>>) -> Self {
+    pub fn new(chat_host: Arc<tokio::sync::Mutex<dyn ChatHost>>) -> Self {
         Self {
             mode: ViewMode::Chat,
             input_buffer: String::new(),
@@ -129,30 +133,57 @@ impl AppState {
             schedule_tasks: Vec::new(),
             selected_schedule_task: None,
             schedule_detail_scroll: 0,
+            dirty: true, // Initial render needed
         }
+    }
+
+    /// Checks if the state needs to be rendered.
+    pub fn needs_render(&self) -> bool {
+        self.dirty
+    }
+
+    /// Clears the dirty flag after rendering.
+    pub fn clear_dirty(&mut self) {
+        self.dirty = false;
+    }
+
+    /// Marks state as dirty (needs render).
+    fn mark_dirty(&mut self) {
+        self.dirty = true;
     }
 
     /// Creates AppState with MCP integration (compatibility wrapper).
     pub fn with_mcp_integration(
         _driver: impl botticelli_interface::BotticelliDriver,
-        mcp_host: Arc<Mutex<dyn ChatHost>>,
+        mcp_host: Arc<tokio::sync::Mutex<dyn ChatHost>>,
     ) -> Self {
         Self::new(mcp_host)
     }
 
     /// Appends to the input buffer.
+    #[tracing::instrument(skip(self), fields(buffer_len = self.input_buffer.len()))]
     pub fn append_input(&mut self, text: &str) {
+        let start = std::time::Instant::now();
         self.input_buffer.push_str(text);
+        self.mark_dirty();
+        let elapsed = start.elapsed();
+        tracing::trace!(new_len = self.input_buffer.len(), elapsed_us = elapsed.as_micros(), "Appended to input buffer");
     }
 
     /// Deletes the last character from the input buffer.
+    #[tracing::instrument(skip(self), fields(buffer_len = self.input_buffer.len()))]
     pub fn delete_char(&mut self) {
+        let start = std::time::Instant::now();
         self.input_buffer.pop();
+        self.mark_dirty();
+        let elapsed = start.elapsed();
+        tracing::trace!(new_len = self.input_buffer.len(), elapsed_us = elapsed.as_micros(), "Deleted char from buffer");
     }
 
     /// Clears the input buffer.
     pub fn clear_input(&mut self) {
         self.input_buffer.clear();
+        self.mark_dirty();
     }
 
     /// Moves selection up in narrative browser.
@@ -160,9 +191,11 @@ impl AppState {
         if let Some(idx) = self.selected_narrative {
             if idx > 0 {
                 self.selected_narrative = Some(idx - 1);
+                self.mark_dirty();
             }
         } else if !self.narrative_list.is_empty() {
             self.selected_narrative = Some(0);
+            self.mark_dirty();
         }
     }
 
@@ -171,15 +204,18 @@ impl AppState {
         if let Some(idx) = self.selected_narrative {
             if idx < self.narrative_list.len().saturating_sub(1) {
                 self.selected_narrative = Some(idx + 1);
+                self.mark_dirty();
             }
         } else if !self.narrative_list.is_empty() {
             self.selected_narrative = Some(0);
+            self.mark_dirty();
         }
     }
 
     /// Clears the editor content.
     pub fn clear_editor_content(&mut self) {
         self.editor_content.clear();
+        self.mark_dirty();
     }
 
     /// Moves selection up in conversation history browser.
@@ -188,6 +224,7 @@ impl AppState {
             && idx > 0
         {
             self.selected_conversation_history = Some(idx - 1);
+            self.mark_dirty();
         }
     }
 
@@ -197,9 +234,11 @@ impl AppState {
         if let Some(idx) = self.selected_conversation_history {
             if idx < max {
                 self.selected_conversation_history = Some(idx + 1);
+                self.mark_dirty();
             }
         } else if !self.conversations.is_empty() {
             self.selected_conversation_history = Some(0);
+            self.mark_dirty();
         }
     }
 
@@ -211,6 +250,7 @@ impl AppState {
     /// Clears the current conversation.
     pub fn clear_conversation(&mut self) {
         self.current_conversation = None;
+        self.mark_dirty();
     }
 
     /// Checks if MCP integration is available.
@@ -227,6 +267,7 @@ impl AppState {
     pub fn update_conversation(&mut self, id: Uuid, messages: Vec<ChatMessage>) {
         self.conversations.insert(id, messages);
         self.current_conversation = Some(id);
+        self.mark_dirty();
     }
 
     /// Gets the current conversation messages.
@@ -276,22 +317,16 @@ impl AppState {
             self.update_conversation(conv_id, updated_messages);
             tracing::debug!("Updated conversation with user message");
 
-            // Spawn blocking task to execute via chat host (sync trait)
-            tracing::info!("Spawning blocking task for chat host");
-            tokio::task::spawn_blocking(move || {
-                tracing::info!("Inside blocking task, acquiring chat host lock");
+            // Spawn async task for chat host (don't block event loop)
+            tracing::info!("Spawning async task for chat host");
+            tokio::spawn(async move {
+                tracing::info!("Inside async task, acquiring chat host lock");
                 
                 // Use the chat host to send the message
-                let response = match chat_host.lock() {
-                    Ok(mut host) => {
-                        tracing::info!("Acquired lock, calling send_message");
-                        host.send_message(user_msg.clone())
-                    }
-                    Err(e) => {
-                        tracing::error!("Failed to lock chat host: {}", e);
-                        return;
-                    }
-                };
+                let mut host = chat_host.lock().await;
+                tracing::info!("Acquired lock, calling send_message");
+                let response = host.send_message(user_msg.clone()).await;
+                drop(host); // Explicitly drop before processing
                 
                 tracing::info!("send_message returned, processing response");
                 match response {
@@ -336,25 +371,32 @@ impl AppState {
     }
 
     /// Handles keyboard input events.
+    #[tracing::instrument(skip(self), fields(key_code = ?key.code, modifiers = ?key.modifiers))]
     pub fn handle_key(&mut self, key: crossterm::event::KeyEvent) -> crate::TuiResult<()> {
         use crossterm::event::{KeyCode, KeyModifiers};
 
-        match key.code {
+        let start = std::time::Instant::now();
+        
+        let result = match key.code {
             KeyCode::Char(_c) if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                tracing::trace!("Control key combination");
                 // Control key combinations are handled by EventHandler (Ctrl+C for quit)
                 Ok(())
             }
             KeyCode::Char(c) => {
+                tracing::trace!(char = %c, "Character input");
                 // Regular character input
                 self.append_input(&c.to_string());
                 Ok(())
             }
             KeyCode::Backspace => {
+                tracing::trace!("Backspace");
                 // Delete last character
                 self.delete_char();
                 Ok(())
             }
             KeyCode::Enter => {
+                tracing::trace!("Enter key");
                 // Submit input based on current mode
                 let user_message = self.input_buffer.clone();
                 if !user_message.is_empty() {
@@ -363,10 +405,20 @@ impl AppState {
                 Ok(())
             }
             _ => {
+                tracing::trace!("Other key ignored");
                 // Other keys ignored
                 Ok(())
             }
+        };
+        
+        let elapsed = start.elapsed();
+        if elapsed.as_millis() > 1 {
+            tracing::warn!(elapsed_ms = elapsed.as_millis(), "handle_key SLOW!");
+        } else {
+            tracing::trace!(elapsed_us = elapsed.as_micros(), "handle_key completed");
         }
+        
+        result
     }
 
     /// Returns the current view command (for command palette).
@@ -431,4 +483,34 @@ pub enum ViewMode {
     Database,
     /// Schedule management.
     Schedule,
+}
+
+impl ViewMode {
+    /// Returns the next view mode in the cycle.
+    pub fn next(&self) -> Self {
+        match self {
+            Self::Chat => Self::ConversationHistory,
+            Self::ConversationHistory => Self::NarrativeBrowser,
+            Self::NarrativeBrowser => Self::NarrativeEditor,
+            Self::NarrativeEditor => Self::Settings,
+            Self::Settings => Self::Bots,
+            Self::Bots => Self::Database,
+            Self::Database => Self::Schedule,
+            Self::Schedule => Self::Chat,
+        }
+    }
+
+    /// Returns the previous view mode in the cycle.
+    pub fn previous(&self) -> Self {
+        match self {
+            Self::Chat => Self::Schedule,
+            Self::ConversationHistory => Self::Chat,
+            Self::NarrativeBrowser => Self::ConversationHistory,
+            Self::NarrativeEditor => Self::NarrativeBrowser,
+            Self::Settings => Self::NarrativeEditor,
+            Self::Bots => Self::Settings,
+            Self::Database => Self::Bots,
+            Self::Schedule => Self::Database,
+        }
+    }
 }

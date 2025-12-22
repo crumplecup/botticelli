@@ -1,8 +1,7 @@
 //! Main TUI entry point and coordinator.
 
 use crate::{AppState, Event, McpMessage, TuiResult};
-use crossterm::event::{Event as CrosstermEvent, EventStream, KeyCode, KeyModifiers};
-use futures::StreamExt;
+use crossterm::event::{self, Event as CrosstermEvent, KeyCode, KeyModifiers};
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{io, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
@@ -28,7 +27,7 @@ impl Tui {
     /// Create a new TUI instance with an LLM backend.
     ///
     /// The chat_host should implement the ChatHost trait, integrating LLM and MCP tools.
-    pub fn with_llm(chat_host: Option<Arc<std::sync::Mutex<dyn botticelli_interface::ChatHost>>>) -> TuiResult<Self> {
+    pub fn with_llm(chat_host: Option<Arc<tokio::sync::Mutex<dyn botticelli_interface::ChatHost>>>) -> TuiResult<Self> {
         let backend = CrosstermBackend::new(io::stdout());
         let terminal = Terminal::new(backend)?;
 
@@ -38,46 +37,88 @@ impl Tui {
         // Create channel for crossterm events
         let (event_tx, event_rx) = mpsc::unbounded_channel();
         
-        // Spawn async event reader using crossterm's EventStream
-        tokio::spawn(async move {
-            let mut reader = EventStream::new();
+        // Spawn dedicated thread (not tokio blocking pool) for event reading
+        // This ensures the event reader isn't starved by other blocking tasks
+        std::thread::Builder::new()
+            .name("crossterm-events".to_string())
+            .spawn(move || {
+            tracing::info!("Event reader thread started");
+            let mut event_count = 0u64;
             
             loop {
-                match reader.next().await {
-                    Some(Ok(crossterm_event)) => {
-                        let tui_event = match crossterm_event {
-                            CrosstermEvent::Key(key) => {
-                                // Check for quit
-                                if key.code == KeyCode::Char('q')
-                                    || (key.code == KeyCode::Char('c')
-                                        && key.modifiers.contains(KeyModifiers::CONTROL))
-                                {
-                                    Some(Event::Quit)
+                tracing::trace!("Polling for events...");
+                let wait_start = std::time::Instant::now();
+                
+                // Poll with minimal timeout for instant keyboard response
+                // Using 1ms keeps CPU usage reasonable while ensuring responsiveness
+                match event::poll(Duration::from_millis(1)) {
+                    Ok(true) => {
+                        match event::read() {
+                            Ok(crossterm_event) => {
+                                event_count += 1;
+                                let wait_elapsed = wait_start.elapsed();
+                                let process_start = std::time::Instant::now();
+                                
+                                tracing::info!(
+                                    event_num = event_count,
+                                    wait_time_us = wait_elapsed.as_micros(),
+                                    "Got event: {:?}", 
+                                    crossterm_event
+                                );
+                                
+                                let tui_event = match crossterm_event {
+                                    CrosstermEvent::Key(key) => {
+                                        tracing::info!("KEY EVENT: {:?}", key);
+                                        // Check for quit
+                                        if key.code == KeyCode::Char('q')
+                                            || (key.code == KeyCode::Char('c')
+                                                && key.modifiers.contains(KeyModifiers::CONTROL))
+                                        {
+                                            Some(Event::Quit)
+                                        } else {
+                                            Some(Event::Key(key))
+                                        }
+                                    }
+                                    CrosstermEvent::Mouse(mouse) => Some(Event::Mouse(mouse)),
+                                    CrosstermEvent::Resize(w, h) => Some(Event::Resize(w, h)),
+                                    _ => None,
+                                };
+                                
+                                if let Some(event) = tui_event {
+                                    let send_start = std::time::Instant::now();
+                                    if event_tx.send(event).is_err() {
+                                        tracing::warn!("Event channel closed");
+                                        break;
+                                    }
+                                    let send_elapsed = send_start.elapsed();
+                                    tracing::debug!("Channel send took {:?}", send_elapsed);
+                                    if send_elapsed.as_micros() > 100 {
+                                        tracing::warn!("Channel send SLOW: {:?}", send_elapsed);
+                                    }
+                                }
+                                
+                                let process_elapsed = process_start.elapsed();
+                                if process_elapsed.as_micros() > 500 {
+                                    tracing::warn!("Event processing SLOW: {:?}", process_elapsed);
                                 } else {
-                                    Some(Event::Key(key))
+                                    tracing::debug!("Event processed in {:?}", process_elapsed);
                                 }
                             }
-                            CrosstermEvent::Mouse(mouse) => Some(Event::Mouse(mouse)),
-                            CrosstermEvent::Resize(w, h) => Some(Event::Resize(w, h)),
-                            _ => None,
-                        };
-                        
-                        if let Some(event) = tui_event {
-                            if event_tx.send(event).is_err() {
-                                break; // Channel closed, exit task
+                            Err(e) => {
+                                tracing::error!("Event read error: {:?}", e);
                             }
                         }
                     }
-                    Some(Err(_)) => {
-                        // Error reading event, continue
+                    Ok(false) => {
+                        // No event available within timeout, continue polling
+                        // This is normal and expected
                     }
-                    None => {
-                        // Stream ended, exit task
-                        break;
+                    Err(e) => {
+                        tracing::error!("Event poll error: {:?}", e);
                     }
                 }
             }
-        });
+        })?;
 
         let state = if let Some(host) = chat_host {
             let mut state = AppState::new(host);
@@ -112,46 +153,59 @@ impl Tui {
         // Create ticker for periodic renders (60fps = ~16ms)
         let mut ticker = tokio::time::interval(Duration::from_millis(16));
         ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-        
-        let mut needs_render = true; // Initial render needed
 
         // Main event loop with biased select (keyboard events first)
         loop {
             tokio::select! {
                 biased;
                 
-                // Priority 1: Keyboard events (instant)
+                // Priority 1: Keyboard events (update state ONLY, no render)
                 Some(event) = self.event_rx.recv() => {
-                    let start = std::time::Instant::now();
+                    let recv_time = std::time::Instant::now();
+                    tracing::debug!("Received event from channel: {:?}", event);
+                    
                     let should_continue = self.handle_event(event).await?;
-                    needs_render = true; // State changed, need render
-                    let elapsed = start.elapsed();
-                    if elapsed.as_millis() > 10 {
-                        tracing::warn!("Event handling took {:?} (SLOW!)", elapsed);
+                    
+                    let handle_elapsed = recv_time.elapsed();
+                    if handle_elapsed.as_millis() > 5 {
+                        tracing::warn!("Event handling took {:?} (SLOW!)", handle_elapsed);
+                    } else {
+                        tracing::debug!("Event handled in {:?}", handle_elapsed);
                     }
+                    
+                    // NO RENDER HERE - state is updated, dirty flag set
+                    // Rendering happens in ticker branch at 60fps
+                    
                     if !should_continue {
                         break;
                     }
                 }
                 
-                // Priority 2: MCP updates
+                // Priority 2: MCP updates (update state, no render)
                 Some(msg) = self.mcp_rx.recv() => {
                     let event = match msg {
                         McpMessage::Update(update) => Event::McpUpdate(update),
                         McpMessage::Error(error) => Event::McpError(error),
                     };
                     self.handle_event(event).await?;
-                    needs_render = true; // State changed, need render
+                    // NO RENDER HERE - handled by ticker
                 }
                 
-                // Priority 3: Periodic render tick (60fps) - only if needed
-                _ = ticker.tick(), if needs_render => {
-                    let start = std::time::Instant::now();
-                    self.render()?;
-                    needs_render = false; // Rendered, clear flag
-                    let elapsed = start.elapsed();
-                    if elapsed.as_millis() > 16 {
-                        tracing::warn!("Render took {:?} (dropped frame!)", elapsed);
+                // Priority 3: Periodic render (ONLY place that calls terminal.draw!)
+                _ = ticker.tick() => {
+                    if self.state.needs_render() {
+                        let render_start = std::time::Instant::now();
+                        tracing::debug!("Rendering (state is dirty)");
+                        
+                        self.render()?;
+                        self.state.clear_dirty();
+                        
+                        let render_elapsed = render_start.elapsed();
+                        if render_elapsed.as_millis() > 16 {
+                            tracing::warn!("Render took {:?} (should be <16ms)", render_elapsed);
+                        } else {
+                            tracing::debug!("Render completed in {:?}", render_elapsed);
+                        }
                     }
                 }
             }

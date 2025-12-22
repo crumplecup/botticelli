@@ -46,6 +46,7 @@ impl ChatMessage {
 /// - Tool discovery and execution
 ///
 /// Implementors should provide full instrumentation for observability.
+#[async_trait::async_trait]
 pub trait ChatHost: Send + Sync {
     /// Send a user message and get the assistant's response.
     ///
@@ -58,7 +59,7 @@ pub trait ChatHost: Send + Sync {
     /// # Errors
     ///
     /// Returns error if message cannot be processed or LLM call fails.
-    fn send_message(&mut self, user_message: String) -> ChatResult<String>;
+    async fn send_message(&mut self, user_message: String) -> ChatResult<String>;
 
     /// Get the full conversation history.
     ///
@@ -67,24 +68,24 @@ pub trait ChatHost: Send + Sync {
     /// # Errors
     ///
     /// Returns error if conversation cannot be retrieved.
-    fn get_conversation(&self) -> ChatResult<Vec<ChatMessage>>;
+    async fn get_conversation(&self) -> ChatResult<Vec<ChatMessage>>;
 
     /// Get all available tools from connected MCP servers.
     ///
     /// # Errors
     ///
     /// Returns error if tools cannot be retrieved.
-    fn available_tools(&self) -> ChatResult<Vec<ToolDefinition>>;
+    async fn available_tools(&self) -> ChatResult<Vec<ToolDefinition>>;
 
     /// Execute a tool by name with given arguments.
     ///
     /// # Errors
     ///
     /// Returns error if tool execution fails.
-    fn execute_tool(&mut self, name: &str, arguments: serde_json::Value) -> ChatResult<serde_json::Value>;
+    async fn execute_tool(&mut self, name: &str, arguments: serde_json::Value) -> ChatResult<serde_json::Value>;
 
     /// Check if any MCP servers are connected.
-    fn has_tools(&self) -> bool {
-        self.available_tools().map(|tools| !tools.is_empty()).unwrap_or(false)
+    async fn has_tools(&self) -> bool {
+        self.available_tools().await.map(|tools| !tools.is_empty()).unwrap_or(false)
     }
 }

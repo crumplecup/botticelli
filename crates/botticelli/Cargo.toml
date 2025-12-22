@@ -22,7 +22,6 @@ botticelli_narrative = { workspace = true }
 botticelli_models = { workspace = true, optional = true }
 botticelli_database = { workspace = true, optional = true }
 botticelli_social = { workspace = true, optional = true }
-botticelli_tui = { workspace = true, optional = true }
 botticelli_bot = { workspace = true, optional = true }
 botticelli_mcp = { workspace = true, optional = true }
 botticelli_mcp_client = { workspace = true, optional = true }
@@ -69,8 +68,7 @@ database = ["botticelli_database", "botticelli_narrative/database", "dep:ractor"
 # Social platform features
 discord = ["botticelli_social", "botticelli_social/discord", "botticelli_social/database"]
 
-# TUI feature
-tui = ["botticelli_tui", "botticelli_database", "dep:ratatui", "dep:crossterm"]
+# TUI feature - removed, use botticelli_tui crate directly
 
 # Bot server feature (generation/curation/posting actors)
 bots = ["botticelli_bot", "gemini", "database", "discord", "dep:diesel"]
@@ -105,12 +103,11 @@ local = [
   "groq",
   "database",
   "discord",
-  "tui",
   "bots",
 ] # All features except api
 
 # Convenience feature for all optional features
-all = ["gemini", "database", "discord", "tui", "bots"]
+all = ["gemini", "database", "discord", "bots"]
 opentelemetry-stdout = ["dep:opentelemetry-stdout"]
 tracing-opentelemetry = ["dep:tracing-opentelemetry"]
 

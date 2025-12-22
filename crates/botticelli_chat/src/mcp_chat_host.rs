@@ -47,9 +47,10 @@ impl McpChatHost {
     }
 }
 
+#[async_trait::async_trait]
 impl ChatHost for McpChatHost {
     #[tracing::instrument(skip(self), fields(message_len = user_message.len()))]
-    fn send_message(&mut self, user_message: String) -> ChatResult<String> {
+    async fn send_message(&mut self, user_message: String) -> ChatResult<String> {
         tracing::info!(message = %user_message, "Received user message");
         
         // Add user message to conversation
@@ -63,20 +64,14 @@ impl ChatHost for McpChatHost {
         tracing::debug!(conversation_len = self.conversation.len(), "Added user message to conversation");
         
         // Get available tools
-        let tools = self.available_tools()?;
+        let tools = self.available_tools().await?;
         tracing::info!(tool_count = tools.len(), tool_names = ?tools.iter().map(|t| t.name()).collect::<Vec<_>>(), "Got available tools from MCP");
         
         // Run conversation loop with tools
-        tracing::info!("Creating tokio runtime for conversation loop");
-        let rt = tokio::runtime::Runtime::new()
-            .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to create runtime: {}", e))))?;
-        
         tracing::info!("Starting conversation loop with LLM provider");
-        let messages = rt.block_on(async {
-            self.conversation_loop
+        let messages = self.conversation_loop
                 .run_conversation(self.llm_provider.as_ref(), self.conversation.clone(), &tools)
-                .await
-        })?;
+                .await?;
         
         tracing::info!(final_message_count = messages.len(), "Conversation loop completed");
         
@@ -103,7 +98,7 @@ impl ChatHost for McpChatHost {
     }
 
     #[tracing::instrument(skip(self))]
-    fn get_conversation(&self) -> ChatResult<Vec<ChatMessage>> {
+    async fn get_conversation(&self) -> ChatResult<Vec<ChatMessage>> {
         tracing::debug!(count = self.conversation.len(), "Getting conversation");
         
         let chat_messages = self.conversation
@@ -143,13 +138,10 @@ impl ChatHost for McpChatHost {
     }
 
     #[tracing::instrument(skip(self))]
-    fn available_tools(&self) -> ChatResult<Vec<ToolDefinition>> {
+    async fn available_tools(&self) -> ChatResult<Vec<ToolDefinition>> {
         tracing::debug!("Getting available tools from MCP host");
         
-        let rt = tokio::runtime::Runtime::new()
-            .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to create runtime: {}", e))))?;
-        
-        let mcp_host = rt.block_on(self.mcp_host.lock());
+        let mcp_host = self.mcp_host.lock().await;
         let tools = mcp_host.list_all_tools();
         
         tracing::debug!(tool_count = tools.len(), tool_names = ?tools.iter().map(|t: &botticelli_core::ToolDefinition| t.name()).collect::<Vec<_>>(), "Retrieved tools");
@@ -158,17 +150,12 @@ impl ChatHost for McpChatHost {
     }
 
     #[tracing::instrument(skip(self, arguments))]
-    fn execute_tool(&mut self, name: &str, arguments: serde_json::Value) -> ChatResult<serde_json::Value> {
+    async fn execute_tool(&mut self, name: &str, arguments: serde_json::Value) -> ChatResult<serde_json::Value> {
         tracing::debug!(tool_name = name, "Executing tool");
         
-        let rt = tokio::runtime::Runtime::new()
-            .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to create runtime: {}", e))))?;
-        
-        let result = rt.block_on(async {
-            let mut mcp_host = self.mcp_host.lock().await;
-            mcp_host.execute_tool(name, arguments).await
-        })
-        .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Tool execution failed: {}", e))))?;
+        let mut mcp_host = self.mcp_host.lock().await;
+        let result = mcp_host.execute_tool(name, arguments).await
+            .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Tool execution failed: {}", e))))?;
         
         Ok(result)
     }
