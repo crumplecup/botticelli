@@ -109,6 +109,7 @@ impl Tui {
                 ViewMode::ConversationHistory => crate::view::ConversationHistoryView.render(frame, state),
                 ViewMode::NarrativeEditor => crate::view::NarrativeEditorView.render(frame, state),
                 ViewMode::Settings => crate::view::SettingsView.render(frame, state),
+                ViewMode::Bots => crate::view::BotsView.render(frame, state),
             };
             
             if let Err(e) = result {

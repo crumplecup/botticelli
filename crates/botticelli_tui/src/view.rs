@@ -424,3 +424,236 @@ impl View for SettingsView {
         }
     }
 }
+
+/// Bot status.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BotStatus {
+    /// Bot is running.
+    Running,
+    /// Bot is stopped.
+    Stopped,
+    /// Bot configuration only.
+    Configured,
+}
+
+/// Bot information for display.
+#[derive(Debug, Clone)]
+pub struct BotInfo {
+    /// Bot name.
+    pub name: String,
+    /// Bot description.
+    pub description: Option<String>,
+    /// Platform.
+    pub platform: String,
+    /// Current status.
+    pub status: BotStatus,
+    /// Configuration path.
+    pub config_path: Option<String>,
+}
+
+/// Bots management view.
+#[derive(Debug, Default)]
+pub struct BotsView;
+
+impl View for BotsView {
+    fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
+        use ratatui::layout::{Constraint, Direction, Layout};
+        
+        let area = frame.area();
+        
+        // Split into list and details
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(40), // Bot list
+                Constraint::Percentage(60), // Bot details
+            ])
+            .split(area);
+
+        // Render bot list
+        self.render_bot_list(frame, chunks[0], state)?;
+
+        // Render bot details
+        self.render_bot_details(frame, chunks[1], state)?;
+
+        Ok(())
+    }
+
+    fn handle_input(
+        &self,
+        key: crossterm::event::KeyEvent,
+        _state: &AppState,
+    ) -> TuiResult<Option<Command>> {
+        use crossterm::event::{KeyCode, KeyModifiers};
+
+        match (key.code, key.modifiers) {
+            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => {
+                Ok(Some(Command::NavigateUp))
+            }
+            (KeyCode::Down | KeyCode::Char('j'), KeyModifiers::NONE) => {
+                Ok(Some(Command::NavigateDown))
+            }
+            (KeyCode::Char('s'), KeyModifiers::NONE) => {
+                // TODO: Start bot command
+                Ok(None)
+            }
+            (KeyCode::Char('x'), KeyModifiers::NONE) => {
+                // TODO: Stop bot command
+                Ok(None)
+            }
+            (KeyCode::Char('r'), KeyModifiers::NONE) => {
+                // TODO: Restart bot command
+                Ok(None)
+            }
+            _ => Ok(None),
+        }
+    }
+}
+
+impl BotsView {
+    /// Renders the bot list.
+    fn render_bot_list(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+        use ratatui::style::{Color, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+        
+        // Get bots from state
+        let bots = state.bots();
+        
+        if bots.is_empty() {
+            let empty = Paragraph::new(vec![
+                Line::from(""),
+                Line::from("No bots configured"),
+                Line::from(""),
+                Line::from("Press 'a' to add a bot"),
+            ])
+            .block(Block::default().title("Bots").borders(Borders::ALL))
+            .style(Style::default().fg(Color::Gray));
+            
+            frame.render_widget(empty, area);
+            return Ok(());
+        }
+
+        // Create list items
+        let items: Vec<ListItem> = bots
+            .iter()
+            .enumerate()
+            .map(|(i, bot)| {
+                let status_color = match bot.status {
+                    BotStatus::Running => Color::Green,
+                    BotStatus::Stopped => Color::Red,
+                    BotStatus::Configured => Color::Yellow,
+                };
+
+                let status_text = match bot.status {
+                    BotStatus::Running => "●",
+                    BotStatus::Stopped => "○",
+                    BotStatus::Configured => "◐",
+                };
+
+                let prefix = if *state.selected_bot() == Some(i) {
+                    "> "
+                } else {
+                    "  "
+                };
+
+                let content = Line::from(vec![
+                    Span::raw(prefix),
+                    Span::styled(status_text, Style::default().fg(status_color)),
+                    Span::raw(" "),
+                    Span::raw(&bot.name),
+                    Span::raw(" "),
+                    Span::styled(
+                        format!("[{}]", bot.platform),
+                        Style::default().fg(Color::Cyan),
+                    ),
+                ]);
+
+                ListItem::new(content)
+            })
+            .collect();
+
+        let list = List::new(items)
+            .block(
+                Block::default()
+                    .title("Bots (↑/↓ navigate, s=start, x=stop, r=restart)")
+                    .borders(Borders::ALL),
+            )
+            .style(Style::default().fg(Color::White));
+
+        frame.render_widget(list, area);
+        Ok(())
+    }
+
+    /// Renders bot details panel.
+    fn render_bot_details(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+        
+        let bots = state.bots();
+        
+        let bot = state
+            .selected_bot()
+            .and_then(|idx| bots.get(idx));
+
+        if let Some(bot) = bot {
+            let mut lines = vec![];
+
+            // Name
+            lines.push(Line::from(vec![
+                Span::styled("Name: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(&bot.name),
+            ]));
+
+            // Platform
+            lines.push(Line::from(vec![
+                Span::styled("Platform: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(&bot.platform),
+            ]));
+
+            // Status
+            let (status_text, status_color) = match bot.status {
+                BotStatus::Running => ("Running", Color::Green),
+                BotStatus::Stopped => ("Stopped", Color::Red),
+                BotStatus::Configured => ("Configured", Color::Yellow),
+            };
+            lines.push(Line::from(vec![
+                Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled(status_text, Style::default().fg(status_color)),
+            ]));
+
+            // Description
+            if let Some(desc) = &bot.description {
+                lines.push(Line::from(""));
+                lines.push(Line::from(vec![
+                    Span::styled("Description:", Style::default().add_modifier(Modifier::BOLD)),
+                ]));
+                lines.push(Line::from(desc.clone()));
+            }
+
+            // Config path
+            if let Some(path) = &bot.config_path {
+                lines.push(Line::from(""));
+                lines.push(Line::from(vec![
+                    Span::styled("Config: ", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled(path, Style::default().fg(Color::Cyan)),
+                ]));
+            }
+
+            let details = Paragraph::new(lines)
+                .block(Block::default().title("Bot Details").borders(Borders::ALL))
+                .wrap(Wrap { trim: false });
+
+            frame.render_widget(details, area);
+        } else {
+            let empty = Paragraph::new("No bot selected")
+                .block(Block::default().title("Bot Details").borders(Borders::ALL))
+                .style(Style::default().fg(Color::Gray));
+
+            frame.render_widget(empty, area);
+        }
+
+        Ok(())
+    }
+}

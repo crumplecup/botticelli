@@ -35,6 +35,10 @@ pub struct AppState {
     current_conversation: Option<Uuid>,
     /// All conversations (keyed by ID).
     conversations: std::collections::HashMap<Uuid, Vec<ChatMessage>>,
+    /// Bot list for bot management.
+    bots: Vec<crate::view::BotInfo>,
+    /// Selected bot index.
+    selected_bot: Option<usize>,
 }
 
 impl std::fmt::Debug for AppState {
@@ -59,6 +63,8 @@ impl Default for AppState {
             mcp_channel: None,
             current_conversation: None,
             conversations: std::collections::HashMap::new(),
+            bots: Vec::new(),
+            selected_bot: None,
         }
     }
 }
@@ -77,6 +83,8 @@ impl AppState {
             mcp_channel: None,
             current_conversation: None,
             conversations: std::collections::HashMap::new(),
+            bots: Vec::new(),
+            selected_bot: None,
         }
     }
 
@@ -373,4 +381,6 @@ pub enum ViewMode {
     NarrativeEditor,
     /// Settings.
     Settings,
+    /// Bots management.
+    Bots,
 }
