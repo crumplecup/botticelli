@@ -13,20 +13,18 @@ use pmcp::Server;
 use std::sync::Arc;
 use tracing::{info, instrument};
 
-/// Runs the PMCP-based MCP server.
-#[instrument(skip(db_ops))]
-pub async fn run_pmcp_server(
+/// Registers all tools with the server builder.
+/// 
+/// This is the single source of truth for tool registration,
+/// used by both stdio and HTTP servers.
+#[instrument(skip(builder, db_ops))]
+pub fn register_all_tools(
+    mut builder: pmcp::ServerBuilder,
     #[cfg(feature = "database")] db_ops: Option<
         std::sync::Arc<dyn botticelli_interface::DatabaseRegistryOperations>,
     >,
-) -> Result<()> {
-    info!("Starting PMCP-based MCP server");
-
-    // Build server with all tools wrapped in adapters
-    let mut builder = Server::builder()
-        .name("botticelli-pmcp")
-        .version(env!("CARGO_PKG_VERSION"))
-        .capabilities(pmcp::types::capabilities::ServerCapabilities::tools_only());
+) -> pmcp::ServerBuilder {
+    tracing::info!("Registering all MCP tools");
 
     // Register core tools
     builder = builder
@@ -278,6 +276,32 @@ pub async fn run_pmcp_server(
             "Skipping discord_content_workflow tool (requires refactoring for tool dependencies)"
         );
     }
+
+    tracing::info!("All tools registered successfully");
+    builder
+}
+
+/// Runs the PMCP-based MCP server on stdio transport.
+#[instrument(skip(db_ops))]
+pub async fn run_pmcp_server(
+    #[cfg(feature = "database")] db_ops: Option<
+        std::sync::Arc<dyn botticelli_interface::DatabaseRegistryOperations>,
+    >,
+) -> Result<()> {
+    info!("Starting PMCP-based MCP server");
+
+    // Build server with all tools wrapped in adapters
+    let builder = Server::builder()
+        .name("botticelli-pmcp")
+        .version(env!("CARGO_PKG_VERSION"))
+        .capabilities(pmcp::types::capabilities::ServerCapabilities::tools_only());
+
+    // Register all tools using shared registration function
+    let builder = register_all_tools(
+        builder,
+        #[cfg(feature = "database")]
+        db_ops,
+    );
 
     // Build the server
     let server = builder.build()?;
