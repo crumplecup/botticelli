@@ -10,6 +10,7 @@ use crate::tools::{
 };
 use anyhow::Result;
 use pmcp::Server;
+use std::sync::Arc;
 use tracing::{info, instrument};
 
 /// Runs the PMCP-based MCP server.
@@ -61,12 +62,14 @@ pub async fn run_pmcp_server(
     // Register elicitation tools
     {
         use crate::tools::{
-            CreateNarrativeSessionTool, ElicitActTool, ElicitMetadataTool, FinalizeNarrativeTool,
-            NarrativeRegistry,
+            CreateNarrativeSessionTool, ElicitActTool, ElicitCarouselTool, ElicitMetadataTool,
+            FinalizeNarrativeTool, GetNarrativeStateTool, ApplyValidationFixesTool,
+            ValidateNarrativeSessionTool, NarrativeRegistry,
         };
 
-        let registry = NarrativeRegistry::new();
+        let registry = Arc::new(NarrativeRegistry::new());
 
+        tracing::info!("Registering elicitation tools");
         builder = builder
             .tool(
                 "create_narrative_session",
@@ -81,9 +84,26 @@ pub async fn run_pmcp_server(
                 McpToolAdapter::new(ElicitActTool::new(registry.clone())),
             )
             .tool(
+                "elicit_carousel",
+                McpToolAdapter::new(ElicitCarouselTool::new(registry.clone())),
+            )
+            .tool(
+                "get_narrative_state",
+                McpToolAdapter::new(GetNarrativeStateTool::new(registry.clone())),
+            )
+            .tool(
+                "validate_narrative_session",
+                McpToolAdapter::new(ValidateNarrativeSessionTool::new(registry.clone())),
+            )
+            .tool(
+                "apply_validation_fixes",
+                McpToolAdapter::new(ApplyValidationFixesTool::new(registry.clone())),
+            )
+            .tool(
                 "finalize_narrative",
                 McpToolAdapter::new(FinalizeNarrativeTool::new(registry)),
             );
+        tracing::info!("Registered 8 elicitation tools");
     }
 
     // Register ExecuteActTool (only when LLM features are enabled)

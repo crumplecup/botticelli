@@ -71,16 +71,16 @@ fn build_server(
     
     builder = builder
         .tool("create_narrative_session", McpToolAdapter::new(CreateNarrativeSessionTool::new(
-            (*elicitation_registry).clone(),
+            Arc::clone(&elicitation_registry),
         )))
         .tool("elicit_metadata", McpToolAdapter::new(ElicitMetadataTool::new(
-            (*elicitation_registry).clone(),
+            Arc::clone(&elicitation_registry),
         )))
         .tool("elicit_act", McpToolAdapter::new(ElicitActTool::new(
-            (*elicitation_registry).clone(),
+            Arc::clone(&elicitation_registry),
         )))
         .tool("finalize_narrative", McpToolAdapter::new(FinalizeNarrativeTool::new(
-            (*elicitation_registry).clone(),
+            Arc::clone(&elicitation_registry),
         )))
         .tool("elicit_carousel", McpToolAdapter::new(ElicitCarouselTool::new(
             Arc::clone(&elicitation_registry),

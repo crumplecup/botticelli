@@ -7,17 +7,18 @@ use crate::NarrativeHelper;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
 use serde_json::{json, Value};
+use std::sync::Arc;
 use tracing::{debug, instrument};
 use uuid::Uuid;
 
 /// Tool for creating a new narrative elicitation session.
 pub struct CreateNarrativeSessionTool {
-    registry: PartialNarrativeRegistry,
+    registry: Arc<PartialNarrativeRegistry>,
 }
 
 impl CreateNarrativeSessionTool {
     /// Create tool with registry.
-    pub fn new(registry: PartialNarrativeRegistry) -> Self {
+    pub fn new(registry: Arc<PartialNarrativeRegistry>) -> Self {
         Self { registry }
     }
 }
@@ -99,12 +100,12 @@ impl McpTool for CreateNarrativeSessionTool {
 
 /// Tool for setting narrative metadata.
 pub struct ElicitMetadataTool {
-    registry: PartialNarrativeRegistry,
+    registry: Arc<PartialNarrativeRegistry>,
 }
 
 impl ElicitMetadataTool {
     /// Create tool with registry.
-    pub fn new(registry: PartialNarrativeRegistry) -> Self {
+    pub fn new(registry: Arc<PartialNarrativeRegistry>) -> Self {
         Self { registry }
     }
 }
@@ -189,12 +190,12 @@ impl McpTool for ElicitMetadataTool {
 
 /// Tool for adding or updating an act.
 pub struct ElicitActTool {
-    registry: PartialNarrativeRegistry,
+    registry: Arc<PartialNarrativeRegistry>,
 }
 
 impl ElicitActTool {
     /// Create tool with registry.
-    pub fn new(registry: PartialNarrativeRegistry) -> Self {
+    pub fn new(registry: Arc<PartialNarrativeRegistry>) -> Self {
         Self { registry }
     }
 }
@@ -294,12 +295,12 @@ impl McpTool for ElicitActTool {
 
 /// Tool for finalizing and generating TOML.
 pub struct FinalizeNarrativeTool {
-    registry: PartialNarrativeRegistry,
+    registry: Arc<PartialNarrativeRegistry>,
 }
 
 impl FinalizeNarrativeTool {
     /// Create tool with registry.
-    pub fn new(registry: PartialNarrativeRegistry) -> Self {
+    pub fn new(registry: Arc<PartialNarrativeRegistry>) -> Self {
         Self { registry }
     }
 }

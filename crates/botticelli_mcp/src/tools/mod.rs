@@ -196,7 +196,7 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(ValidateNarrativeTool));
 
         // Narrative elicitation tools (LLM-driven creation)
-        let narrative_registry = NarrativeRegistry::new();
+        let narrative_registry = Arc::new(NarrativeRegistry::new());
         registry.register(Arc::new(CreateNarrativeSessionTool::new(
             narrative_registry.clone(),
         )));
@@ -209,18 +209,17 @@ impl Default for ToolRegistry {
         )));
 
         // Tools that need Arc-wrapped registry
-        let narrative_registry_arc = Arc::new(narrative_registry);
         registry.register(Arc::new(ElicitCarouselTool::new(
-            narrative_registry_arc.clone(),
+            narrative_registry.clone(),
         )));
         registry.register(Arc::new(GetNarrativeStateTool::new(
-            narrative_registry_arc.clone(),
+            narrative_registry.clone(),
         )));
         registry.register(Arc::new(ValidateNarrativeSessionTool::new(
-            narrative_registry_arc.clone(),
+            narrative_registry.clone(),
         )));
         registry.register(Arc::new(ApplyValidationFixesTool::new(
-            narrative_registry_arc,
+            narrative_registry,
         )));
 
         // Narrative generation tools (Phase 1)
