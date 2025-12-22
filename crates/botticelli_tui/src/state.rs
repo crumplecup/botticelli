@@ -55,6 +55,12 @@ pub struct AppState {
     database_filter: crate::view::ContentFilter,
     /// Database connection status.
     database_connected: bool,
+    /// Scheduled tasks list.
+    schedule_tasks: Vec<crate::view::ScheduledTask>,
+    /// Selected task index.
+    selected_schedule_task: Option<usize>,
+    /// Detail scroll offset for schedule view.
+    schedule_detail_scroll: usize,
 }
 
 impl std::fmt::Debug for AppState {
@@ -89,6 +95,9 @@ impl Default for AppState {
             selected_database_content_row: None,
             database_filter: crate::view::ContentFilter::default(),
             database_connected: false,
+            schedule_tasks: Vec::new(),
+            selected_schedule_task: None,
+            schedule_detail_scroll: 0,
         }
     }
 }
@@ -117,6 +126,9 @@ impl AppState {
             selected_database_content_row: None,
             database_filter: crate::view::ContentFilter::default(),
             database_connected: false,
+            schedule_tasks: Vec::new(),
+            selected_schedule_task: None,
+            schedule_detail_scroll: 0,
         }
     }
 

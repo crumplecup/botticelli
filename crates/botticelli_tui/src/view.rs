@@ -1076,3 +1076,369 @@ impl DatabaseView {
         Ok(())
     }
 }
+
+// ============================================================================
+// ScheduleView - Scheduled task management
+// ============================================================================
+
+use chrono::{DateTime, Utc};
+
+/// Task status.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TaskStatus {
+    /// Task is enabled and active.
+    Active,
+    /// Task is paused.
+    Paused,
+    /// Task is disabled.
+    Disabled,
+    /// Task failed and requires attention.
+    Failed,
+}
+
+/// Schedule type.
+#[derive(Debug, Clone)]
+pub enum TaskSchedule {
+    /// Fixed interval (in seconds).
+    Interval(u64),
+    /// Run immediately on startup.
+    Immediate,
+    /// Cron expression.
+    Cron(String),
+}
+
+impl TaskSchedule {
+    /// Gets a display string for the schedule.
+    pub fn display(&self) -> String {
+        match self {
+            TaskSchedule::Interval(seconds) => {
+                if *seconds < 60 {
+                    format!("Every {} seconds", seconds)
+                } else if *seconds < 3600 {
+                    format!("Every {} minutes", seconds / 60)
+                } else if *seconds < 86400 {
+                    format!("Every {} hours", seconds / 3600)
+                } else {
+                    format!("Every {} days", seconds / 86400)
+                }
+            }
+            TaskSchedule::Immediate => "On startup".to_string(),
+            TaskSchedule::Cron(expr) => format!("Cron: {}", expr),
+        }
+    }
+}
+
+/// Scheduled task information.
+#[derive(Debug, Clone)]
+pub struct ScheduledTask {
+    /// Task unique identifier.
+    pub id: String,
+    /// Task name/description.
+    pub name: String,
+    /// Associated narrative name.
+    pub narrative: Option<String>,
+    /// Associated bot name.
+    pub bot: Option<String>,
+    /// Schedule configuration.
+    pub schedule: TaskSchedule,
+    /// Current status.
+    pub status: TaskStatus,
+    /// Last execution time.
+    pub last_run: Option<DateTime<Utc>>,
+    /// Next scheduled run time.
+    pub next_run: Option<DateTime<Utc>>,
+    /// Consecutive failures.
+    pub failures: i32,
+    /// Last error message.
+    pub last_error: Option<String>,
+}
+
+impl ScheduledTask {
+    /// Creates a new scheduled task.
+    pub fn new(id: String, name: String, schedule: TaskSchedule) -> Self {
+        Self {
+            id,
+            name,
+            narrative: None,
+            bot: None,
+            schedule,
+            status: TaskStatus::Active,
+            last_run: None,
+            next_run: None,
+            failures: 0,
+            last_error: None,
+        }
+    }
+}
+
+/// Schedule management view.
+#[derive(Debug, Default)]
+pub struct ScheduleView;
+
+impl View for ScheduleView {
+    fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
+        use ratatui::layout::{Constraint, Direction, Layout};
+        
+        let area = frame.area();
+        
+        // Split into task list and details
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(45), // Task list
+                Constraint::Percentage(55), // Task details
+            ])
+            .split(area);
+
+        // Render task list
+        self.render_task_list(frame, chunks[0], state)?;
+
+        // Render task details
+        if let Some(task_idx) = state.selected_schedule_task() {
+            if let Some(task) = state.schedule_tasks().get(*task_idx) {
+                self.render_task_details(frame, chunks[1], task)?;
+            }
+        } else {
+            self.render_empty_state(frame, chunks[1])?;
+        }
+
+        Ok(())
+    }
+
+    fn handle_input(
+        &self,
+        key: crossterm::event::KeyEvent,
+        _state: &AppState,
+    ) -> TuiResult<Option<Command>> {
+        use crossterm::event::{KeyCode, KeyModifiers};
+
+        match (key.code, key.modifiers) {
+            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => {
+                Ok(Some(Command::NavigateUp))
+            }
+            (KeyCode::Down | KeyCode::Char('j'), KeyModifiers::NONE) => {
+                Ok(Some(Command::NavigateDown))
+            }
+            (KeyCode::Char(' ') | KeyCode::Char('p'), KeyModifiers::NONE) => {
+                Ok(Some(Command::ScheduleToggleTask))
+            }
+            (KeyCode::Char('r') | KeyCode::Enter, KeyModifiers::NONE) => {
+                Ok(Some(Command::ScheduleRunTask))
+            }
+            (KeyCode::PageUp, KeyModifiers::NONE) => {
+                Ok(Some(Command::ScheduleScrollUp))
+            }
+            (KeyCode::PageDown, KeyModifiers::NONE) => {
+                Ok(Some(Command::ScheduleScrollDown))
+            }
+            _ => Ok(None),
+        }
+    }
+}
+
+impl ScheduleView {
+    /// Renders the task list.
+    fn render_task_list(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+
+        let tasks = state.schedule_tasks();
+        
+        if tasks.is_empty() {
+            let empty = Paragraph::new(vec![
+                Line::from(""),
+                Line::from("No scheduled tasks"),
+                Line::from(""),
+                Line::from("Add tasks to begin scheduling"),
+            ])
+            .block(Block::default().title("Scheduled Tasks").borders(Borders::ALL))
+            .style(Style::default().fg(Color::Gray));
+            
+            frame.render_widget(empty, area);
+            return Ok(());
+        }
+
+        let items: Vec<ListItem> = tasks
+            .iter()
+            .enumerate()
+            .map(|(i, task)| {
+                let prefix = if *state.selected_schedule_task() == Some(i) {
+                    "> "
+                } else {
+                    "  "
+                };
+
+                let status_char = match task.status {
+                    TaskStatus::Active => "●",
+                    TaskStatus::Paused => "◐",
+                    TaskStatus::Disabled => "○",
+                    TaskStatus::Failed => "✖",
+                };
+
+                let status_color = match task.status {
+                    TaskStatus::Active => Color::Green,
+                    TaskStatus::Paused => Color::Yellow,
+                    TaskStatus::Disabled => Color::Gray,
+                    TaskStatus::Failed => Color::Red,
+                };
+
+                let next_run = if let Some(next) = task.next_run {
+                    let now = Utc::now();
+                    let duration = next - now;
+                    if duration.num_seconds() < 0 {
+                        " (overdue)".to_string()
+                    } else if duration.num_hours() < 1 {
+                        format!(" ({}m)", duration.num_minutes())
+                    } else if duration.num_days() < 1 {
+                        format!(" ({}h)", duration.num_hours())
+                    } else {
+                        format!(" ({}d)", duration.num_days())
+                    }
+                } else {
+                    String::new()
+                };
+
+                let content = Line::from(vec![
+                    Span::raw(prefix),
+                    Span::styled(status_char, Style::default().fg(status_color)),
+                    Span::raw(" "),
+                    Span::raw(&task.name),
+                    Span::styled(next_run, Style::default().fg(Color::DarkGray)),
+                ]);
+
+                ListItem::new(content)
+            })
+            .collect();
+
+        let list = List::new(items)
+            .block(
+                Block::default()
+                    .title("Scheduled Tasks (↑/↓ navigate, space=pause, r=run)")
+                    .borders(Borders::ALL),
+            )
+            .style(Style::default().fg(Color::White));
+
+        frame.render_widget(list, area);
+        Ok(())
+    }
+
+    /// Renders task details.
+    fn render_task_details(&self, frame: &mut Frame, area: ratatui::layout::Rect, task: &ScheduledTask) -> TuiResult<()> {
+        use ratatui::style::{Color, Modifier, Style};
+        use ratatui::text::{Line, Span};
+        use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+
+        let mut lines = vec![];
+
+        // Task name
+        lines.push(Line::from(vec![
+            Span::styled("Task: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(&task.name),
+        ]));
+        lines.push(Line::from(""));
+
+        // Status
+        let (status_text, status_color) = match task.status {
+            TaskStatus::Active => ("Active", Color::Green),
+            TaskStatus::Paused => ("Paused", Color::Yellow),
+            TaskStatus::Disabled => ("Disabled", Color::Gray),
+            TaskStatus::Failed => ("Failed", Color::Red),
+        };
+        lines.push(Line::from(vec![
+            Span::styled("Status: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::styled(status_text, Style::default().fg(status_color)),
+        ]));
+
+        // Schedule
+        lines.push(Line::from(vec![
+            Span::styled("Schedule: ", Style::default().add_modifier(Modifier::BOLD)),
+            Span::raw(task.schedule.display()),
+        ]));
+        lines.push(Line::from(""));
+
+        // Narrative
+        if let Some(narrative) = &task.narrative {
+            lines.push(Line::from(vec![
+                Span::styled("Narrative: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled(narrative, Style::default().fg(Color::Cyan)),
+            ]));
+        }
+
+        // Bot
+        if let Some(bot) = &task.bot {
+            lines.push(Line::from(vec![
+                Span::styled("Bot: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled(bot, Style::default().fg(Color::Cyan)),
+            ]));
+        }
+        lines.push(Line::from(""));
+
+        // Last run
+        if let Some(last) = task.last_run {
+            lines.push(Line::from(vec![
+                Span::styled("Last run: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(last.format("%Y-%m-%d %H:%M:%S UTC").to_string()),
+            ]));
+        } else {
+            lines.push(Line::from(vec![
+                Span::styled("Last run: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled("Never", Style::default().fg(Color::Gray)),
+            ]));
+        }
+
+        // Next run
+        if let Some(next) = task.next_run {
+            lines.push(Line::from(vec![
+                Span::styled("Next run: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::raw(next.format("%Y-%m-%d %H:%M:%S UTC").to_string()),
+            ]));
+        } else {
+            lines.push(Line::from(vec![
+                Span::styled("Next run: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled("Not scheduled", Style::default().fg(Color::Gray)),
+            ]));
+        }
+        lines.push(Line::from(""));
+
+        // Failures
+        if task.failures > 0 {
+            lines.push(Line::from(vec![
+                Span::styled("Failures: ", Style::default().add_modifier(Modifier::BOLD)),
+                Span::styled(
+                    task.failures.to_string(),
+                    Style::default().fg(Color::Red),
+                ),
+            ]));
+        }
+
+        // Last error
+        if let Some(error) = &task.last_error {
+            lines.push(Line::from(""));
+            lines.push(Line::from(vec![
+                Span::styled("Last error:", Style::default().add_modifier(Modifier::BOLD).fg(Color::Red)),
+            ]));
+            lines.push(Line::from(error.clone()));
+        }
+
+        let details = Paragraph::new(lines)
+            .block(Block::default().title("Task Details").borders(Borders::ALL))
+            .wrap(Wrap { trim: false });
+
+        frame.render_widget(details, area);
+        Ok(())
+    }
+
+    /// Renders empty state.
+    fn render_empty_state(&self, frame: &mut Frame, area: ratatui::layout::Rect) -> TuiResult<()> {
+        use ratatui::style::{Color, Style};
+        use ratatui::widgets::{Block, Borders, Paragraph};
+
+        let empty = Paragraph::new("No task selected")
+            .block(Block::default().title("Task Details").borders(Borders::ALL))
+            .style(Style::default().fg(Color::Gray));
+
+        frame.render_widget(empty, area);
+        Ok(())
+    }
+}

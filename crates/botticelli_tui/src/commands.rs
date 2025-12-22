@@ -43,4 +43,12 @@ pub enum Command {
     DatabaseLoadTables,
     /// Select current database table.
     DatabaseSelectTable,
+    /// Toggle selected scheduled task (pause/resume).
+    ScheduleToggleTask,
+    /// Run selected scheduled task immediately.
+    ScheduleRunTask,
+    /// Scroll schedule detail view up.
+    ScheduleScrollUp,
+    /// Scroll schedule detail view down.
+    ScheduleScrollDown,
 }
