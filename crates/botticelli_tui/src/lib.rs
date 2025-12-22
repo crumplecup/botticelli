@@ -49,7 +49,14 @@ pub use events::{Event, EventHandler, McpConversationError, McpMessage, McpUpdat
 pub use state::{AppState, ConversationId, NarrativeId, ViewMode};
 pub use tui::Tui;
 pub use view::{
-    BotsView, BotInfo, BotStatus, ChatView, ConversationHistoryView, NarrativeBrowserView, NarrativeEditorView, View,
+    BotsView, BotInfo, BotStatus, 
+    ChatView, 
+    ConversationHistoryView, 
+    DatabaseView, DatabaseViewMode, TableInfo, ColumnDisplay, ContentRow, ContentFilter,
+    NarrativeBrowserView, 
+    NarrativeEditorView, 
+    ScheduleView, TaskStatus, TaskSchedule, ScheduledTask,
+    View,
 };
 
 // Re-export ChatMessage from botticelli_interface for convenience

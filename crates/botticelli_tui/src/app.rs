@@ -2,8 +2,8 @@
 //!
 //! Wires together views, commands, state, and provides clean library entry points.
 
-use crate::{AppState, Command, Event, EventHandler, McpMessage, TuiResult, View, ViewMode, ChatView, BotsView};
-use crate::{ConversationHistoryView, NarrativeBrowserView, NarrativeEditorView};
+use crate::{AppState, Command, Event, EventHandler, McpMessage, TuiResult, View, ViewMode};
+use crate::{BotsView, ChatView, ConversationHistoryView, DatabaseView, NarrativeBrowserView, NarrativeEditorView, ScheduleView};
 use crate::view::SettingsView;
 use crossterm::event::KeyEvent;
 use ratatui::{Terminal, backend::CrosstermBackend};
@@ -247,7 +247,9 @@ impl TuiApp {
                     ViewMode::ConversationHistory => ViewMode::NarrativeBrowser,
                     ViewMode::NarrativeBrowser => ViewMode::NarrativeEditor,
                     ViewMode::NarrativeEditor => ViewMode::Bots,
-                    ViewMode::Bots => ViewMode::Settings,
+                    ViewMode::Bots => ViewMode::Database,
+                    ViewMode::Database => ViewMode::Schedule,
+                    ViewMode::Schedule => ViewMode::Settings,
                     ViewMode::Settings => ViewMode::Chat,
                 };
                 Some(Command::SwitchMode(next_mode))
@@ -256,7 +258,9 @@ impl TuiApp {
             (KeyCode::BackTab, _) => {
                 let prev_mode = match self.state.mode() {
                     ViewMode::Chat => ViewMode::Settings,
-                    ViewMode::Settings => ViewMode::Bots,
+                    ViewMode::Settings => ViewMode::Schedule,
+                    ViewMode::Schedule => ViewMode::Database,
+                    ViewMode::Database => ViewMode::Bots,
                     ViewMode::Bots => ViewMode::NarrativeEditor,
                     ViewMode::NarrativeEditor => ViewMode::NarrativeBrowser,
                     ViewMode::NarrativeBrowser => ViewMode::ConversationHistory,

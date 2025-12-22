@@ -110,6 +110,8 @@ impl Tui {
                 ViewMode::NarrativeEditor => crate::view::NarrativeEditorView.render(frame, state),
                 ViewMode::Settings => crate::view::SettingsView.render(frame, state),
                 ViewMode::Bots => crate::view::BotsView.render(frame, state),
+                ViewMode::Database => crate::view::DatabaseView.render(frame, state),
+                ViewMode::Schedule => crate::view::ScheduleView.render(frame, state),
             };
             
             if let Err(e) = result {

@@ -427,4 +427,8 @@ pub enum ViewMode {
     Settings,
     /// Bots management.
     Bots,
+    /// Database browser.
+    Database,
+    /// Schedule management.
+    Schedule,
 }
