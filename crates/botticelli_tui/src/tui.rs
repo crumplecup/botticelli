@@ -1,8 +1,9 @@
 //! Main TUI entry point and coordinator.
 
-use crate::{AppState, Event, EventHandler, McpMessage, TuiResult};
+use crate::{AppState, Event, McpMessage, TuiResult};
+use crossterm::event::{self, Event as CrosstermEvent, KeyEvent};
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::{io, sync::Arc};
+use std::{io, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
 
 /// Main TUI coordinator.
@@ -10,10 +11,11 @@ use tokio::sync::mpsc;
 /// Manages the terminal, event handling, and rendering loop.
 pub struct Tui {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
-    events: EventHandler,
     state: AppState,
     /// Receiver for MCP execution updates from async tasks
     mcp_rx: mpsc::UnboundedReceiver<McpMessage>,
+    /// Receiver for crossterm events
+    event_rx: mpsc::UnboundedReceiver<Event>,
 }
 
 impl Tui {
@@ -28,10 +30,48 @@ impl Tui {
     pub fn with_llm(chat_host: Option<Arc<std::sync::Mutex<dyn botticelli_interface::ChatHost>>>) -> TuiResult<Self> {
         let backend = CrosstermBackend::new(io::stdout());
         let terminal = Terminal::new(backend)?;
-        let events = EventHandler::new(std::time::Duration::from_millis(250));
 
         // Create channel for MCP updates
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
+        
+        // Create channel for crossterm events
+        let (event_tx, event_rx) = mpsc::unbounded_channel();
+        
+        // Spawn event reader task
+        tokio::spawn(async move {
+            loop {
+                // Non-blocking check for events
+                if event::poll(Duration::from_millis(0)).unwrap_or(false) {
+                    if let Ok(crossterm_event) = event::read() {
+                        let tui_event = match crossterm_event {
+                            CrosstermEvent::Key(key) => {
+                                // Check for quit
+                                if key.code == event::KeyCode::Char('q')
+                                    || (key.code == event::KeyCode::Char('c')
+                                        && key.modifiers.contains(event::KeyModifiers::CONTROL))
+                                {
+                                    Some(Event::Quit)
+                                } else {
+                                    Some(Event::Key(key))
+                                }
+                            }
+                            CrosstermEvent::Mouse(mouse) => Some(Event::Mouse(mouse)),
+                            CrosstermEvent::Resize(w, h) => Some(Event::Resize(w, h)),
+                            _ => None,
+                        };
+                        
+                        if let Some(event) = tui_event {
+                            if event_tx.send(event).is_err() {
+                                break; // Channel closed, exit task
+                            }
+                        }
+                    }
+                }
+                
+                // Small sleep to avoid busy-waiting
+                tokio::time::sleep(Duration::from_micros(100)).await;
+            }
+        });
 
         let state = if let Some(host) = chat_host {
             let mut state = AppState::new(host);
@@ -45,9 +85,9 @@ impl Tui {
 
         Ok(Self {
             terminal,
-            events,
             state,
             mcp_rx,
+            event_rx,
         })
     }
 
@@ -63,25 +103,35 @@ impl Tui {
 
         self.terminal.clear()?;
 
-        // Main event loop
+        // Create ticker for periodic renders (60fps = ~16ms)
+        let mut ticker = tokio::time::interval(Duration::from_millis(16));
+        ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+        // Main event loop with biased select (keyboard events first)
         loop {
-            // Render current view
-            self.render()?;
-
-            // Check for MCP updates (non-blocking)
-            while let Ok(msg) = self.mcp_rx.try_recv() {
-                let event = match msg {
-                    McpMessage::Update(update) => Event::McpUpdate(update),
-                    McpMessage::Error(error) => Event::McpError(error),
-                };
-                self.handle_event(event).await?;
-            }
-
-            // Handle terminal events
-            if let Some(event) = self.events.next().await?
-                && !self.handle_event(event).await?
-            {
-                break;
+            tokio::select! {
+                biased;
+                
+                // Priority 1: Keyboard events (instant)
+                Some(event) = self.event_rx.recv() => {
+                    if !self.handle_event(event).await? {
+                        break;
+                    }
+                }
+                
+                // Priority 2: MCP updates
+                Some(msg) = self.mcp_rx.recv() => {
+                    let event = match msg {
+                        McpMessage::Update(update) => Event::McpUpdate(update),
+                        McpMessage::Error(error) => Event::McpError(error),
+                    };
+                    self.handle_event(event).await?;
+                }
+                
+                // Priority 3: Periodic render tick (60fps)
+                _ = ticker.tick() => {
+                    self.render()?;
+                }
             }
         }
 
