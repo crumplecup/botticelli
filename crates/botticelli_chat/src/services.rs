@@ -254,11 +254,23 @@ impl ServiceContainer {
         &self,
         model_id: botticelli_models::ModelId,
     ) -> ChatResult<Arc<dyn botticelli_interface::BotticelliDriver>> {
-        use botticelli_models::{GeminiClient, ModelId};
+        use botticelli_models::{GeminiClient, GroqDriver, ModelId};
 
         debug!(model = ?model_id, "Creating client for model");
 
         match model_id {
+            ModelId::Groq(_model) => {
+                // GroqDriver::new() reads from GROQ_API_KEY environment variable
+                let client = GroqDriver::new().map_err(|e| {
+                    ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                        "Failed to create Groq client: {}",
+                        e
+                    )))
+                })?;
+
+                info!(model = ?model_id, "Groq client created successfully");
+                Ok(Arc::new(client))
+            }
             ModelId::Gemini(_model) => {
                 // GeminiClient::new() reads from GEMINI_API_KEY environment variable
                 // and uses gemini-2.5-flash as the default model
@@ -271,12 +283,6 @@ impl ServiceContainer {
 
                 info!(model = ?model_id, "Gemini client created successfully");
                 Ok(Arc::new(client))
-            }
-            ModelId::Groq(_model) => {
-                // TODO: Add GroqDriver when groq feature available
-                Err(ChatError::new(ChatErrorKind::NotImplemented(
-                    "Groq provider implementation pending".into(),
-                )))
             }
         }
     }
@@ -292,11 +298,22 @@ impl ServiceContainer {
         &self,
         model_id: botticelli_models::ModelId,
     ) -> ChatResult<Arc<dyn botticelli_interface::ToolCalling>> {
-        use botticelli_models::{GeminiClient, ModelId};
+        use botticelli_models::{GeminiClient, GroqDriver, ModelId};
 
         debug!(model = ?model_id, "Creating tool-calling client for model");
 
         match model_id {
+            ModelId::Groq(_model) => {
+                let client = GroqDriver::new().map_err(|e| {
+                    ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                        "Failed to create Groq client: {}",
+                        e
+                    )))
+                })?;
+
+                info!(model = ?model_id, "Groq tool-calling client created");
+                Ok(Arc::new(client) as Arc<dyn botticelli_interface::ToolCalling>)
+            }
             ModelId::Gemini(_model) => {
                 let client = GeminiClient::new().map_err(|e| {
                     ChatError::new(ChatErrorKind::ExecutionFailed(format!(
@@ -307,11 +324,6 @@ impl ServiceContainer {
 
                 info!(model = ?model_id, "Gemini tool-calling client created");
                 Ok(Arc::new(client) as Arc<dyn botticelli_interface::ToolCalling>)
-            }
-            ModelId::Groq(_model) => {
-                Err(ChatError::new(ChatErrorKind::NotImplemented(
-                    "Groq provider implementation pending".into(),
-                )))
             }
         }
     }
