@@ -78,34 +78,39 @@ impl TuiApp {
         // Initial render
         self.render()?;
 
+        // Create tick interval
+        let mut tick_interval = tokio::time::interval(std::time::Duration::from_millis(250));
+
         // Main event loop
         loop {
-            // Check for MCP updates (non-blocking)
-            let mut needs_render = false;
-            while let Ok(msg) = self.mcp_rx.try_recv() {
-                let event = match msg {
-                    McpMessage::Update(update) => Event::McpUpdate(update),
-                    McpMessage::Error(error) => Event::McpError(error),
-                };
-                if !self.handle_event(event).await? {
-                    break;
+            tokio::select! {
+                // Handle tick events for periodic updates
+                _ = tick_interval.tick() => {
+                    self.state.update()?;
+                    self.render()?;
                 }
-                needs_render = true;
-            }
-
-            // Handle terminal events
-            if let Some(event) = self.events.next().await? {
-                let should_continue = self.handle_event(event).await?;
-                needs_render = true;
                 
-                if !should_continue {
-                    break;
+                // Handle MCP updates
+                Some(msg) = self.mcp_rx.recv() => {
+                    let event = match msg {
+                        McpMessage::Update(update) => Event::McpUpdate(update),
+                        McpMessage::Error(error) => Event::McpError(error),
+                    };
+                    if !self.handle_event(event).await? {
+                        break;
+                    }
+                    self.render()?;
                 }
-            }
-
-            // Only render if something changed
-            if needs_render {
-                self.render()?;
+                
+                // Handle keyboard/terminal events (instant response)
+                event = Self::read_crossterm_event() => {
+                    if let Some(evt) = event? {
+                        if !self.handle_event(evt).await? {
+                            break;
+                        }
+                        self.render()?;
+                    }
+                }
             }
         }
 
@@ -113,6 +118,33 @@ impl TuiApp {
         self.cleanup_terminal()?;
 
         Ok(())
+    }
+
+    /// Read a crossterm event without blocking.
+    async fn read_crossterm_event() -> TuiResult<Option<Event>> {
+        tokio::task::spawn_blocking(|| {
+            if crossterm::event::poll(std::time::Duration::from_millis(0))? {
+                match crossterm::event::read()? {
+                    crossterm::event::Event::Key(key) => {
+                        if key.code == crossterm::event::KeyCode::Char('q')
+                            || (key.code == crossterm::event::KeyCode::Char('c')
+                                && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL))
+                        {
+                            Ok(Some(Event::Quit))
+                        } else {
+                            Ok(Some(Event::Key(key)))
+                        }
+                    }
+                    crossterm::event::Event::Mouse(mouse) => Ok(Some(Event::Mouse(mouse))),
+                    crossterm::event::Event::Resize(w, h) => Ok(Some(Event::Resize(w, h))),
+                    _ => Ok(None),
+                }
+            } else {
+                Ok(None)
+            }
+        })
+        .await
+        .map_err(|e| crate::TuiError::new(crate::TuiErrorKind::EventRead(format!("Join error: {}", e))))?
     }
 
     /// Setup terminal for TUI.
