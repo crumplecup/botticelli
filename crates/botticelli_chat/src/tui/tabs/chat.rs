@@ -1,7 +1,7 @@
 // Chat tab implementation
 
 use botticelli_core::{Input, Message, Role};
-use botticelli_error::ChatResult;
+use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 
@@ -118,11 +118,13 @@ impl ChatTab {
     }
 
     /// Sends a user message
+    #[tracing::instrument(skip(self))]
     pub fn send_message(&mut self, content: String) {
         if content.trim().is_empty() {
             return;
         }
 
+        tracing::info!(content_len = content.len(), "Sending user message");
         let message = DisplayMessage::new(Role::User, content.clone());
         self.add_message(message);
 
@@ -134,26 +136,70 @@ impl ChatTab {
             return;
         };
 
+        tracing::debug!("Spawning async LLM response handler");
         // Trigger async LLM response
         let messages_clone = self.messages.clone();
         tokio::spawn(async move {
+            tracing::info!("LLM response handler started");
             if let Err(e) = Self::handle_llm_response(content, messages_clone, services).await {
                 tracing::error!(error = %e, "Failed to get LLM response");
             }
+            tracing::info!("LLM response handler completed");
         });
     }
     
+    #[tracing::instrument(skip(_messages, services))]
     async fn handle_llm_response(
         user_content: String,
         _messages: Vec<DisplayMessage>,
-        _services: Arc<ServiceContainer>,
+        services: Arc<ServiceContainer>,
     ) -> ChatResult<()> {
-        // TODO: Implement full LLM integration with MCP tools
-        // This requires:
-        // 1. ServiceContainer to expose MCP host and LLM provider
-        // 2. Tool discovery from MCP host
-        // 3. Conversation loop with tool calling
-        tracing::warn!("LLM response handling not yet fully implemented: {}", user_content);
+        tracing::info!("Starting LLM response generation");
+        
+        // Build conversation message
+        let user_message = Message::builder()
+            .role(Role::User)
+            .content(vec![Input::Text(user_content.clone())])
+            .build()
+            .map_err(|e| {
+                tracing::error!(error = ?e, "Failed to build user message");
+                ChatError::new(ChatErrorKind::InvalidInput(format!("Failed to build message: {}", e)))
+            })?;
+        
+        // Build generate request
+        let request = botticelli_core::GenerateRequest::builder()
+            .messages(vec![user_message])
+            .build()
+            .map_err(|e| {
+                tracing::error!(error = ?e, "Failed to build generate request");
+                ChatError::new(ChatErrorKind::InvalidInput(format!("Failed to build request: {}", e)))
+            })?;
+        
+        tracing::debug!("Getting LLM provider with tools from services");
+        // Get LLM provider with tool calling support
+        let llm = services.llm_provider_with_tools().await?;
+        
+        tracing::debug!("Getting MCP client from services");
+        // Get MCP client for tool definitions
+        let mcp = services.mcp_client().await?;
+        let tools = mcp.list_all_tools();
+        
+        tracing::info!(tool_count = tools.len(), "Retrieved MCP tools");
+        
+        // Call LLM with tools
+        tracing::info!("Calling LLM generate_with_tools");
+        let response = llm.generate_with_tools(&request, &tools).await
+            .map_err(|e| {
+                tracing::error!(error = ?e, "LLM generate failed");
+                ChatError::new(ChatErrorKind::ExecutionFailed(format!("LLM error: {}", e)))
+            })?;
+        
+        tracing::info!(output_count = response.outputs().len(), "Received LLM response");
+        
+        // TODO: Send response back to UI
+        // This requires a channel or callback mechanism
+        tracing::warn!("Need to implement response callback to UI");
+        
         Ok(())
     }
 
