@@ -1,10 +1,19 @@
 use std::sync::Arc;
 
+use botticelli_interface::ChatHost;
 use derive_getters::Getters;
+use derive_setters::Setters;
 use uuid::Uuid;
 
+/// Conversation identifier.
+pub type ConversationId = Uuid;
+
+/// Narrative identifier.
+pub type NarrativeId = Uuid;
+
 /// Application state for the TUI - thin UI layer over ChatHost trait.
-#[derive(Clone, Getters)]
+#[derive(Clone, Getters, Setters)]
+#[setters(prefix = "with_")]
 pub struct AppState {
     /// Active view mode.
     mode: ViewMode,
@@ -19,7 +28,8 @@ pub struct AppState {
     /// Editor content buffer.
     editor_content: String,
     /// Chat host providing LLM and MCP integration.
-    chat_host: Option<Arc<dyn botticelli_interface::ChatHost>>,
+    #[setters(skip)]
+    chat_host: Option<Arc<dyn ChatHost>>,
     /// Channel to send MCP updates to UI thread.
     mcp_channel: Option<tokio::sync::mpsc::UnboundedSender<crate::McpMessage>>,
 }
@@ -28,90 +38,24 @@ impl std::fmt::Debug for AppState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AppState")
             .field("mode", &self.mode)
-            .field("current_conversation", &self.current_conversation)
-            .field("conversations_count", &self.conversations.len())
-            .field("has_mcp_client", &self.mcp_client.is_some())
-            .field("has_llm_backend", &self.llm_backend.is_some())
+            .field("has_chat_host", &self.chat_host.is_some())
             .finish()
     }
 }
 
 impl AppState {
-    /// Gets the current view mode.
-    pub fn mode(&self) -> ViewMode {
-        self.mode
-    }
-
-    /// Sets the view mode.
-    pub fn set_mode(&mut self, mode: ViewMode) {
-        self.mode = mode;
-    }
-
-    /// Gets the current conversation ID.
-    pub fn current_conversation(&self) -> Option<ConversationId> {
-        self.current_conversation
-    }
-
-    /// Sets the current conversation.
-    pub fn set_current_conversation(&mut self, id: Option<ConversationId>) {
-        self.current_conversation = id;
-    }
-
-    /// Gets the current narrative ID.
-    pub fn current_narrative(&self) -> Option<NarrativeId> {
-        self.current_narrative
-    }
-
-    /// Sets the current narrative.
-    pub fn set_current_narrative(&mut self, id: Option<NarrativeId>) {
-        self.current_narrative = id;
-    }
-
-    /// Gets messages for a conversation.
-    pub fn conversation_messages(&self, id: &ConversationId) -> Option<&Vec<ChatMessage>> {
-        self.conversations.get(id)
-    }
-
-    /// Updates messages for a conversation.
-    ///
-    /// Automatically saves the conversation to disk.
-    pub fn update_conversation(&mut self, id: ConversationId, messages: Vec<ChatMessage>) {
-        self.conversations.insert(id, messages.clone());
-
-        // Auto-save to disk
-        if let Err(e) = self.storage.save(&id, &messages) {
-            error!(conversation_id = %id, error = %e, "Failed to save conversation");
+    /// Creates a new AppState with the given chat host.
+    pub fn new(chat_host: Arc<dyn ChatHost>) -> Self {
+        Self {
+            mode: ViewMode::Chat,
+            input_buffer: String::new(),
+            narrative_list: Vec::new(),
+            selected_narrative: None,
+            selected_conversation_history: None,
+            editor_content: String::new(),
+            chat_host: Some(chat_host),
+            mcp_channel: None,
         }
-    }
-
-    /// Clears the current conversation.
-    ///
-    /// This removes the conversation from the conversations map and resets the current
-    /// conversation ID to None. The input buffer is also cleared. The conversation is also
-    /// deleted from disk.
-    pub fn clear_conversation(&mut self) {
-        if let Some(conv_id) = self.current_conversation {
-            self.conversations.remove(&conv_id);
-
-            // Delete from disk
-            if let Err(e) = self.storage.delete(&conv_id) {
-                error!(conversation_id = %conv_id, error = %e, "Failed to delete conversation from disk");
-            }
-
-            info!(conversation_id = %conv_id, "Cleared conversation");
-        }
-        self.current_conversation = None;
-        self.clear_input();
-    }
-
-    /// Gets the input buffer.
-    pub fn input_buffer(&self) -> &str {
-        &self.input_buffer
-    }
-
-    /// Sets the input buffer.
-    pub fn set_input_buffer(&mut self, buffer: String) {
-        self.input_buffer = buffer;
     }
 
     /// Appends to the input buffer.
@@ -127,26 +71,6 @@ impl AppState {
     /// Clears the input buffer.
     pub fn clear_input(&mut self) {
         self.input_buffer.clear();
-    }
-
-    /// Gets the list of narratives.
-    pub fn narrative_list(&self) -> &[String] {
-        &self.narrative_list
-    }
-
-    /// Sets the narrative list.
-    pub fn set_narrative_list(&mut self, list: Vec<String>) {
-        self.narrative_list = list;
-    }
-
-    /// Gets the selected narrative index.
-    pub fn selected_narrative(&self) -> Option<usize> {
-        self.selected_narrative
-    }
-
-    /// Sets the selected narrative index.
-    pub fn set_selected_narrative(&mut self, idx: Option<usize>) {
-        self.selected_narrative = idx;
     }
 
     /// Moves selection up in narrative browser.
@@ -171,512 +95,9 @@ impl AppState {
         }
     }
 
-    /// Gets a sorted list of conversation IDs.
-    pub fn conversation_ids(&self) -> Vec<ConversationId> {
-        let mut ids: Vec<_> = self.conversations.keys().copied().collect();
-        ids.sort();
-        ids
-    }
-
-    /// Gets the selected conversation index in history browser.
-    pub fn selected_conversation_history(&self) -> Option<usize> {
-        self.selected_conversation_history
-    }
-
-    /// Sets the selected conversation index in history browser.
-    pub fn set_selected_conversation_history(&mut self, idx: Option<usize>) {
-        self.selected_conversation_history = idx;
-    }
-
-    /// Moves selection up in conversation history browser.
-    pub fn select_previous_conversation_history(&mut self) {
-        if let Some(idx) = self.selected_conversation_history {
-            if idx > 0 {
-                self.selected_conversation_history = Some(idx - 1);
-            }
-        } else {
-            let count = self.conversations.len();
-            if count > 0 {
-                self.selected_conversation_history = Some(0);
-            }
-        }
-    }
-
-    /// Moves selection down in conversation history browser.
-    pub fn select_next_conversation_history(&mut self) {
-        let count = self.conversations.len();
-        if let Some(idx) = self.selected_conversation_history {
-            if idx < count.saturating_sub(1) {
-                self.selected_conversation_history = Some(idx + 1);
-            }
-        } else if count > 0 {
-            self.selected_conversation_history = Some(0);
-        }
-    }
-
-    /// Gets the editor content.
-    pub fn editor_content(&self) -> &str {
-        &self.editor_content
-    }
-
-    /// Sets the editor content.
-    pub fn set_editor_content(&mut self, content: String) {
-        self.editor_content = content;
-    }
-
     /// Clears the editor content.
     pub fn clear_editor_content(&mut self) {
         self.editor_content.clear();
-    }
-
-    /// Gets the current view based on mode.
-    pub fn current_view(&self) -> &dyn crate::View {
-        match self.mode {
-            ViewMode::Chat => &crate::ChatView,
-            ViewMode::ConversationHistory => &crate::ConversationHistoryView,
-            ViewMode::NarrativeBrowser => &crate::NarrativeBrowserView,
-            ViewMode::NarrativeEditor => &crate::NarrativeEditorView,
-            ViewMode::Settings => &crate::ChatView, // Placeholder
-        }
-    }
-
-    /// Handle key event.
-    pub async fn handle_key(&mut self, key: crossterm::event::KeyEvent) -> crate::TuiResult<()> {
-        use crossterm::event::{KeyCode, KeyModifiers};
-
-        match key.code {
-            KeyCode::Char(_c) if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                // Control key combinations are handled by EventHandler (Ctrl+C for quit)
-                Ok(())
-            }
-            KeyCode::Char(c) => {
-                // Regular character input
-                self.append_input(&c.to_string());
-                Ok(())
-            }
-            KeyCode::Backspace => {
-                // Delete last character
-                if !self.input_buffer.is_empty() {
-                    self.input_buffer.pop();
-                }
-                Ok(())
-            }
-            KeyCode::Enter => {
-                // Submit input based on current mode
-                match self.mode {
-                    ViewMode::Chat => {
-                        // Use the dedicated orchestration method
-                        let user_message = self.input_buffer.clone();
-                        self.send_message_with_orchestration(user_message)?;
-                    }
-                    ViewMode::ConversationHistory => {
-                        // In conversation history, Enter loads conversation
-                        // This is handled by SelectNarrative command
-                    }
-                    ViewMode::NarrativeEditor => {
-                        // In editor, Enter adds newline
-                        self.append_input("\n");
-                    }
-                    ViewMode::NarrativeBrowser => {
-                        // In browser, Enter selects narrative
-                        // This is handled by SelectNarrative command
-                    }
-                    ViewMode::Settings => {
-                        // TODO: Handle settings input
-                    }
-                }
-                Ok(())
-            }
-            KeyCode::Up => {
-                if self.mode == ViewMode::NarrativeBrowser {
-                    self.select_previous_narrative();
-                }
-                Ok(())
-            }
-            KeyCode::Down => {
-                if self.mode == ViewMode::NarrativeBrowser {
-                    self.select_next_narrative();
-                }
-                Ok(())
-            }
-            KeyCode::Esc => {
-                // Switch back to chat view
-                self.set_mode(ViewMode::Chat);
-                Ok(())
-            }
-            _ => Ok(()),
-        }
-    }
-
-    /// Handle mouse event.
-    pub fn handle_mouse(&mut self, _mouse: crossterm::event::MouseEvent) -> crate::TuiResult<()> {
-        // TODO: Implement mouse handling
-        Ok(())
-    }
-
-    /// Handle resize event.
-    pub fn handle_resize(&mut self, _width: u16, _height: u16) -> crate::TuiResult<()> {
-        // TODO: Implement resize handling
-        Ok(())
-    }
-
-    /// Update state on tick.
-    pub fn update(&mut self) -> crate::TuiResult<()> {
-        // TODO: Implement periodic updates
-        Ok(())
-    }
-}
-
-/// View mode for the TUI.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ViewMode {
-    /// Chat interface.
-    Chat,
-    /// Conversation history browser.
-    ConversationHistory,
-    /// Narrative browser.
-    NarrativeBrowser,
-    /// Narrative editor.
-    NarrativeEditor,
-    /// Settings.
-    Settings,
-}
-
-impl Default for AppState {
-    fn default() -> Self {
-        // Initialize storage and load conversations
-        let storage = crate::storage::ConversationStorage::new()
-            .expect("Failed to initialize conversation storage");
-
-        let conversations = storage.load_all().unwrap_or_else(|e| {
-            warn!(error = %e, "Failed to load conversations, starting fresh");
-            HashMap::new()
-        });
-
-        Self {
-            mode: ViewMode::Chat,
-            current_conversation: None,
-            current_narrative: None,
-            conversations,
-            input_buffer: String::new(),
-            narrative_list: Vec::new(),
-            selected_narrative: None,
-            selected_conversation_history: None,
-            editor_content: String::new(),
-            mcp_client: None,
-            llm_backend: None,
-            mcp_channel: None,
-            storage,
-            available_tools: Vec::new(),
-        }
-    }
-}
-
-impl AppState {
-    /// Create AppState with MCP integration enabled.
-    ///
-    /// Initializes:
-    /// - LLM backend with provided driver
-    /// - Tool registry from provided McpHost
-    /// - MCP client for orchestration
-    pub fn with_mcp_integration(
-        driver: Arc<dyn ToolCalling>,
-        mcp_host: botticelli_mcp_client::McpHost,
-    ) -> Self {
-        tracing::info!("Initializing AppState with MCP integration");
-
-        // Create LLM backend
-        let llm_backend = TuiLlmBackend::new(driver);
-
-        // Get tools from the provided MCP host
-        let tools = mcp_host.list_all_tools();
-        tracing::info!(
-            tool_count = tools.len(),
-            tools = ?tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
-            "Tools available from MCP host"
-        );
-
-        let mut state = Self::default();
-        state.set_llm_backend(llm_backend);
-        state.set_mcp_client(mcp_host);
-        state.set_available_tools(tools);
-
-        state
-    }
-
-    /// Set the MCP client for tool execution.
-    pub fn set_mcp_client(&mut self, client: McpHost) {
-        self.mcp_client = Some(Arc::new(tokio::sync::Mutex::new(client)));
-    }
-
-    /// Set the LLM backend for generation.
-    pub fn set_llm_backend(&mut self, backend: TuiLlmBackend) {
-        self.llm_backend = Some(Arc::new(backend));
-    }
-
-    /// Set the channel for sending MCP updates.
-    pub fn set_mcp_channel(&mut self, tx: tokio::sync::mpsc::UnboundedSender<crate::McpMessage>) {
-        self.mcp_channel = Some(tx);
-    }
-
-    /// Set available tools from MCP.
-    pub fn set_available_tools(&mut self, tools: Vec<botticelli_core::ToolDefinition>) {
-        tracing::info!(
-            tool_count = tools.len(),
-            tools = ?tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
-            "Setting available tools in AppState"
-        );
-        self.available_tools = tools;
-    }
-
-    /// Get available tools.
-    pub fn available_tools(&self) -> &[botticelli_core::ToolDefinition] {
-        &self.available_tools
-    }
-
-    /// Check if MCP integration is enabled.
-    pub fn has_mcp_integration(&self) -> bool {
-        self.mcp_client.is_some() && self.llm_backend.is_some()
-    }
-
-    /// Handle MCP execution update from async task.
-    pub fn handle_mcp_update(&mut self, update: crate::McpUpdate) -> crate::TuiResult<()> {
-        use crate::ChatMessage;
-
-        info!(
-            conversation_id = %update.conversation_id,
-            iterations = update.result.iterations,
-            tool_calls = update.result.tool_calls.len(),
-            "Received MCP update"
-        );
-
-        // Get or create conversation
-        let mut messages = self
-            .conversation_messages(&update.conversation_id)
-            .cloned()
-            .unwrap_or_default();
-
-        // Remove thinking indicator (last message should be "Thinking...")
-        if matches!(messages.last(), Some(ChatMessage::Thinking { .. })) {
-            messages.pop();
-            info!("Removed thinking indicator");
-        }
-
-        // User message should already be there (added by send_message_with_orchestration)
-        // If not (e.g., for error recovery), add it
-        if !messages.iter().any(
-            |msg| matches!(msg, ChatMessage::User { content } if content == &update.user_message),
-        ) {
-            messages.push(ChatMessage::user(update.user_message));
-        }
-
-        // Add tool calls and results
-        for tool_call in &update.result.tool_calls {
-            messages.push(ChatMessage::tool_call(
-                tool_call.tool_name.clone(),
-                tool_call.arguments.clone(),
-            ));
-            messages.push(ChatMessage::tool_result(
-                tool_call.tool_name.clone(),
-                tool_call.result.clone(),
-                tool_call.success,
-            ));
-        }
-
-        // Add final assistant response
-        messages.push(ChatMessage::assistant(update.result.final_response));
-
-        // Update conversation
-        self.update_conversation(update.conversation_id, messages);
-
-        Ok(())
-    }
-
-    /// Handle MCP execution error.
-    ///
-    /// Replaces thinking indicator with error message.
-    pub fn handle_mcp_error(&mut self, error: crate::McpConversationError) -> crate::TuiResult<()> {
-        use crate::ChatMessage;
-
-        error!(
-            conversation_id = %error.conversation_id,
-            error = %error.error,
-            "Received MCP error"
-        );
-
-        // Get or create conversation
-        let mut messages = self
-            .conversation_messages(&error.conversation_id)
-            .cloned()
-            .unwrap_or_default();
-
-        // Remove thinking indicator (last message should be "Thinking...")
-        if matches!(messages.last(), Some(ChatMessage::Thinking { .. })) {
-            messages.pop();
-            info!("Removed thinking indicator");
-        }
-
-        // User message should already be there (added by send_message_with_orchestration)
-        // If not (e.g., for error recovery), add it
-        if !messages.iter().any(
-            |msg| matches!(msg, ChatMessage::User { content } if content == &error.user_message),
-        ) {
-            messages.push(ChatMessage::user(error.user_message));
-        }
-
-        // Add error message as assistant response
-        messages.push(ChatMessage::assistant(format!(
-            "Error during execution: {}",
-            error.error
-        )));
-
-        // Update conversation
-        self.update_conversation(error.conversation_id, messages);
-
-        Ok(())
-    }
-
-    /// Send a message with orchestration (tool calling support).
-    ///
-    /// This method:
-    /// 1. Converts conversation history to core Messages
-    /// 2. Adds new user message to core Messages
-    /// 3. Executes with MCP orchestration (tool calling) in async task
-    /// 4. Sends result + user message to UI via mcp_channel
-    /// 5. handle_mcp_update adds all messages to conversation atomically
-    #[tracing::instrument(skip(self), fields(message_len = user_message.len()))]
-    pub fn send_message_with_orchestration(
-        &mut self,
-        user_message: String,
-    ) -> crate::TuiResult<()> {
-        if user_message.is_empty() {
-            return Ok(());
-        }
-
-        // Clear input buffer
-        self.clear_input();
-
-        // Get or create conversation
-        let conv_id = self.current_conversation.unwrap_or_else(|| {
-            let id = Uuid::new_v4();
-            self.current_conversation = Some(id);
-            id
-        });
-
-        // Get existing conversation history
-        let messages = self
-            .conversation_messages(&conv_id)
-            .cloned()
-            .unwrap_or_default();
-
-        // Execute with MCP if available
-        if self.has_mcp_integration() {
-            // Convert existing ChatMessages to core Messages, then add new user message
-            let mut core_messages: Vec<CoreMessage> = messages
-                .iter()
-                .filter_map(|msg| match msg {
-                    ChatMessage::User { content } => Some(
-                        CoreMessage::builder()
-                            .role(Role::User)
-                            .content(vec![CoreInput::Text(content.clone())])
-                            .build()
-                            .ok()?,
-                    ),
-                    ChatMessage::Assistant { content } => Some(
-                        CoreMessage::builder()
-                            .role(Role::Assistant)
-                            .content(vec![CoreInput::Text(content.clone())])
-                            .build()
-                            .ok()?,
-                    ),
-                    _ => None, // Skip tool calls/results/thinking for now
-                })
-                .collect();
-
-            // Add the new user message to core_messages
-            core_messages.push(
-                CoreMessage::builder()
-                    .role(Role::User)
-                    .content(vec![CoreInput::Text(user_message.clone())])
-                    .build()
-                    .expect("Valid user message"),
-            );
-
-            // Show user message + thinking indicator immediately for UI feedback
-            let mut updated_messages = messages.clone();
-            updated_messages.push(ChatMessage::user(user_message.clone()));
-            updated_messages.push(ChatMessage::thinking("Thinking...".to_string()));
-            self.update_conversation(conv_id, updated_messages);
-
-            // Execute with MCP client
-            if let (Some(mcp_client), Some(llm_backend), Some(tx)) =
-                (&self.mcp_client, &self.llm_backend, &self.mcp_channel)
-            {
-                let client = mcp_client.clone();
-                let backend = llm_backend.clone();
-                let tx = tx.clone();
-                let user_msg = user_message.clone();
-
-                // Spawn async task to execute
-                tokio::spawn(async move {
-                    let mut client_guard = client.lock().await;
-                    match client_guard
-                        .execute_with_tracking(backend.as_ref(), core_messages)
-                        .await
-                    {
-                        Ok(result) => {
-                            info!(
-                                iterations = result.iterations,
-                                tool_calls = result.tool_calls.len(),
-                                "MCP execution complete - sending to UI"
-                            );
-
-                            // Send result to UI thread (including user message)
-                            if let Err(e) = tx.send(crate::McpMessage::Update(crate::McpUpdate {
-                                conversation_id: conv_id,
-                                user_message: user_msg,
-                                result,
-                            })) {
-                                error!(error = %e, "Failed to send MCP update to UI");
-                            }
-                        }
-                        Err(e) => {
-                            error!(error = %e, "MCP execution failed");
-
-                            // Send error to UI thread
-                            if let Err(send_err) =
-                                tx.send(crate::McpMessage::Error(crate::McpConversationError {
-                                    conversation_id: conv_id,
-                                    user_message: user_msg,
-                                    error: format!("{}", e),
-                                }))
-                            {
-                                error!(error = %send_err, "Failed to send MCP error to UI");
-                            }
-                        }
-                    }
-                });
-            } else {
-                // Fallback: MCP not fully initialized
-                // In this case, we need to update conversation immediately
-                let mut updated_messages = messages;
-                updated_messages.push(ChatMessage::user(user_message));
-                updated_messages.push(ChatMessage::assistant(
-                    "MCP integration not fully initialized".to_string(),
-                ));
-                self.update_conversation(conv_id, updated_messages);
-            }
-        } else {
-            // No MCP - add placeholder response immediately
-            let mut updated_messages = messages;
-            updated_messages.push(ChatMessage::user(user_message));
-            updated_messages.push(ChatMessage::assistant(
-                "LLM integration not enabled. Set up Anthropic API key to use chat.".to_string(),
-            ));
-            self.update_conversation(conv_id, updated_messages);
-        }
-
-        Ok(())
     }
 }
 
@@ -785,8 +206,17 @@ impl ChatMessage {
     }
 }
 
-/// Conversation identifier.
-pub type ConversationId = Uuid;
-
-/// Narrative identifier.
-pub type NarrativeId = Uuid;
+/// View mode for the TUI.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ViewMode {
+    /// Chat interface.
+    Chat,
+    /// Conversation history browser.
+    ConversationHistory,
+    /// Narrative browser.
+    NarrativeBrowser,
+    /// Narrative editor.
+    NarrativeEditor,
+    /// Settings.
+    Settings,
+}

@@ -48,6 +48,10 @@ uuid = { workspace = true }
 # System utilities
 dirs = { workspace = true }
 
+# Derives
+derive-getters = { workspace = true }
+derive_setters = { workspace = true }
+
 [features]
 default = ["database"]
 database = ["dep:botticelli_database", "dep:diesel", "botticelli_error/database"]
