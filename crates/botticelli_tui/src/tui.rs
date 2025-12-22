@@ -2,7 +2,7 @@
 
 use crate::{AppState, Event, EventHandler, McpMessage, TuiResult};
 use ratatui::{Terminal, backend::CrosstermBackend};
-use std::io;
+use std::{io, sync::{Arc, Mutex}};
 use tokio::sync::mpsc;
 
 /// Main TUI coordinator.
@@ -61,7 +61,7 @@ impl Tui {
         let (mcp_tx, mcp_rx) = mpsc::unbounded_channel();
 
         // Initialize AppState with MCP integration
-        let mut state = AppState::with_mcp_integration(driver, mcp_host);
+        let mut state = AppState::with_mcp_integration(driver, Arc::new(Mutex::new(mcp_host)));
         state.with_mcp_channel(Some(mcp_tx));
 
         Ok(Self {
@@ -119,8 +119,22 @@ impl Tui {
 
     /// Render the current view.
     fn render(&mut self) -> TuiResult<()> {
+        let state = &self.state;
         self.terminal.draw(|frame| {
-            self.state.current_view().render(frame, &self.state).ok();
+            use crate::view::View;
+            use crate::state::ViewMode;
+            
+            let result = match state.mode() {
+                ViewMode::Chat => crate::view::ChatView.render(frame, state),
+                ViewMode::NarrativeBrowser => crate::view::NarrativeBrowserView.render(frame, state),
+                ViewMode::ConversationHistory => crate::view::ConversationHistoryView.render(frame, state),
+                ViewMode::NarrativeEditor => crate::view::NarrativeEditorView.render(frame, state),
+                ViewMode::Settings => crate::view::SettingsView.render(frame, state),
+            };
+            
+            if let Err(e) = result {
+                tracing::error!("Render error: {}", e);
+            }
         })?;
         Ok(())
     }

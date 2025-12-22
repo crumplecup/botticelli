@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use botticelli_interface::{ChatHost, ChatMessage};
 use derive_getters::Getters;
@@ -28,7 +28,7 @@ pub struct AppState {
     editor_content: String,
     /// Chat host providing LLM and MCP integration.
     #[setters(skip)]
-    chat_host: Option<Arc<dyn ChatHost>>,
+    chat_host: Option<Arc<Mutex<dyn ChatHost>>>,
     /// Channel to send MCP updates to UI thread.
     mcp_channel: Option<tokio::sync::mpsc::UnboundedSender<crate::McpMessage>>,
     /// Current conversation ID.
@@ -83,7 +83,7 @@ impl AppState {
     /// Creates AppState with MCP integration (compatibility wrapper).
     pub fn with_mcp_integration(
         _driver: impl botticelli_interface::BotticelliDriver,
-        mcp_host: Arc<dyn ChatHost>,
+        mcp_host: Arc<Mutex<dyn ChatHost>>,
     ) -> Self {
         Self::new(mcp_host)
     }
@@ -227,7 +227,15 @@ impl AppState {
                 tracing::info!("Processing message with MCP orchestration");
                 
                 // Use the chat host to send the message
-                match chat_host.send_message(user_msg.clone()) {
+                let response = match chat_host.lock() {
+                    Ok(mut host) => host.send_message(user_msg.clone()),
+                    Err(e) => {
+                        tracing::error!("Failed to lock chat host: {}", e);
+                        return;
+                    }
+                };
+                
+                match response {
                     Ok(response) => {
                         tracing::debug!(response = %response, "Received LLM response");
                         if let Err(e) = tx.send(crate::McpMessage::Update(crate::McpUpdate {

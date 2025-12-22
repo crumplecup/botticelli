@@ -70,7 +70,7 @@ impl View for ChatView {
         frame.render_widget(messages_widget, chunks[0]);
 
         // Input area
-        let input_widget = Paragraph::new(state.input_buffer())
+        let input_widget = Paragraph::new(state.input_buffer().as_str())
             .block(Block::default().title("Input").borders(Borders::ALL));
         frame.render_widget(input_widget, chunks[1]);
 
@@ -124,7 +124,7 @@ impl View for NarrativeBrowserView {
             .iter()
             .enumerate()
             .map(|(i, name)| {
-                let prefix = if Some(i) == state.selected_narrative() {
+                let prefix = if Some(i) == *state.selected_narrative() {
                     "> "
                 } else {
                     "  "
@@ -139,7 +139,7 @@ impl View for NarrativeBrowserView {
 
         // Preview area
         let preview_text = if let Some(idx) = state.selected_narrative() {
-            if let Some(name) = state.narrative_list().get(idx) {
+            if let Some(name) = state.narrative_list().get(*idx) {
                 format!("Preview of: {}\n\n(Full preview to be implemented)", name)
             } else {
                 String::from("No narrative selected")
@@ -194,7 +194,7 @@ impl View for NarrativeEditorView {
 
         // Title bar
         let title_text = if let Some(idx) = state.selected_narrative() {
-            if let Some(name) = state.narrative_list().get(idx) {
+            if let Some(name) = state.narrative_list().get(*idx) {
                 format!("Editing: {}", name)
             } else {
                 String::from("No narrative loaded")
@@ -212,7 +212,7 @@ impl View for NarrativeEditorView {
 
         // Editor content
         let content_text = state.editor_content();
-        let content_widget = Paragraph::new(content_text)
+        let content_widget = Paragraph::new(content_text.as_str())
             .block(Block::default().title("Content").borders(Borders::ALL));
         frame.render_widget(content_widget, chunks[1]);
 
@@ -272,7 +272,7 @@ impl View for ConversationHistoryView {
 
                 let content = format!("{} ({} messages)", id, message_count);
 
-                let style = if Some(idx) == state.selected_conversation_history() {
+                let style = if Some(idx) == *state.selected_conversation_history() {
                     Style::default()
                         .fg(Color::Yellow)
                         .add_modifier(Modifier::BOLD)
@@ -300,59 +300,38 @@ impl View for ConversationHistoryView {
 
         // Right panel: Preview of selected conversation
         let preview_text = if let Some(idx) = state.selected_conversation_history() {
-            if let Some(id) = conversation_ids.get(idx) {
+            if let Some(id) = conversation_ids.get(*idx) {
                 if let Some(messages) = state.conversation_messages(id) {
                     let mut lines = Vec::new();
                     for msg in messages.iter().take(10) {
-                        match msg {
-                            crate::ChatMessage::User { content } => {
-                                lines.push(Line::from(vec![
-                                    Span::styled(
-                                        "You: ",
-                                        Style::default()
-                                            .fg(Color::Green)
-                                            .add_modifier(Modifier::BOLD),
-                                    ),
-                                    Span::raw(content),
-                                ]));
-                            }
-                            crate::ChatMessage::Assistant { content } => {
-                                lines.push(Line::from(vec![
-                                    Span::styled(
-                                        "Bot: ",
-                                        Style::default()
-                                            .fg(Color::Blue)
-                                            .add_modifier(Modifier::BOLD),
-                                    ),
-                                    Span::raw(content),
-                                ]));
-                            }
-                            crate::ChatMessage::ToolCall { tool_name, .. } => {
-                                lines.push(Line::from(vec![Span::styled(
-                                    format!("🔧 {}", tool_name),
-                                    Style::default().fg(Color::Cyan),
-                                )]));
-                            }
-                            crate::ChatMessage::ToolResult {
-                                tool_name, success, ..
-                            } => {
-                                let icon = if *success { "✅" } else { "❌" };
-                                lines.push(Line::from(vec![Span::styled(
-                                    format!("{} {}", icon, tool_name),
-                                    Style::default().fg(if *success {
-                                        Color::Green
-                                    } else {
-                                        Color::Red
-                                    }),
-                                )]));
-                            }
-                            crate::ChatMessage::Thinking { content } => {
-                                lines.push(Line::from(vec![Span::styled(
-                                    format!("💭 {}", content),
-                                    Style::default().fg(Color::Gray),
-                                )]));
-                            }
-                        }
+                        let (prefix, style, content) = match msg.role.as_str() {
+                            "user" => (
+                                "You: ",
+                                Style::default()
+                                    .fg(Color::Green)
+                                    .add_modifier(Modifier::BOLD),
+                                &msg.content,
+                            ),
+                            "assistant" => (
+                                "Bot: ",
+                                Style::default()
+                                    .fg(Color::Blue)
+                                    .add_modifier(Modifier::BOLD),
+                                &msg.content,
+                            ),
+                            _ => (
+                                "System: ",
+                                Style::default()
+                                    .fg(Color::Yellow)
+                                    .add_modifier(Modifier::BOLD),
+                                &msg.content,
+                            ),
+                        };
+                        
+                        lines.push(Line::from(vec![
+                            Span::styled(prefix, style),
+                            Span::raw(content),
+                        ]));
                     }
 
                     if messages.len() > 10 {
@@ -407,6 +386,37 @@ impl View for ConversationHistoryView {
                 // Delete the selected conversation
                 Ok(Some(Command::ClearConversation)) // We'll handle this differently in the handler
             }
+            (KeyCode::Esc, KeyModifiers::NONE) => {
+                Ok(Some(Command::SwitchMode(crate::ViewMode::Chat)))
+            }
+            _ => Ok(None),
+        }
+    }
+}
+
+/// Settings view implementation.
+#[derive(Debug, Default)]
+pub struct SettingsView;
+
+impl View for SettingsView {
+    fn render(&self, frame: &mut Frame, _state: &AppState) -> TuiResult<()> {
+        use ratatui::style::{Color, Style};
+        use ratatui::widgets::{Block, Borders, Paragraph};
+        
+        let title = Paragraph::new("Settings\n\n(To be implemented)")
+            .block(Block::default()
+                .title("Settings")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Cyan)));
+        frame.render_widget(title, frame.area());
+        
+        Ok(())
+    }
+    
+    fn handle_input(&self, key: crossterm::event::KeyEvent, _state: &AppState) -> TuiResult<Option<Command>> {
+        use crossterm::event::{KeyCode, KeyModifiers};
+        
+        match (key.code, key.modifiers) {
             (KeyCode::Esc, KeyModifiers::NONE) => {
                 Ok(Some(Command::SwitchMode(crate::ViewMode::Chat)))
             }
