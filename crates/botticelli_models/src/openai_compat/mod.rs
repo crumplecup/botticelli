@@ -7,6 +7,7 @@ mod client;
 mod conversions;
 mod dto;
 mod provider_impl;
+mod tool_calling_impl;
 
 pub use client::OpenAICompatibleClient;
-pub use dto::{ChatMessage, ChatRequest, ChatResponse, OpenAICompatError};
+pub use dto::{ChatMessage, ChatRequest, ChatResponse, ChatTool, ChatFunctionDef, OpenAICompatError};

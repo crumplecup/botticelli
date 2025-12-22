@@ -11,6 +11,51 @@ pub struct ChatMessage {
     pub role: String,
     /// Message content
     pub content: String,
+    /// Tool calls made by the assistant
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_calls: Option<Vec<ChatToolCall>>,
+}
+
+/// Tool call in OpenAI format.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatToolCall {
+    /// Unique ID for this tool call
+    pub id: String,
+    /// Type (always "function" for now)
+    #[serde(rename = "type")]
+    pub call_type: String,
+    /// Function call details
+    pub function: ChatFunction,
+}
+
+/// Function call details.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatFunction {
+    /// Function name
+    pub name: String,
+    /// Function arguments as JSON string
+    pub arguments: String,
+}
+
+/// Tool definition in OpenAI format.
+#[derive(Debug, Clone, Serialize)]
+pub struct ChatTool {
+    /// Type (always "function")
+    #[serde(rename = "type")]
+    pub tool_type: String,
+    /// Function definition
+    pub function: ChatFunctionDef,
+}
+
+/// Function definition.
+#[derive(Debug, Clone, Serialize)]
+pub struct ChatFunctionDef {
+    /// Function name
+    pub name: String,
+    /// Function description
+    pub description: String,
+    /// Parameters schema
+    pub parameters: serde_json::Value,
 }
 
 /// OpenAI chat completion request.
@@ -33,6 +78,10 @@ pub struct ChatRequest {
     #[builder(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     stream: Option<bool>,
+    /// Available tools for the model to call
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Vec<ChatTool>>,
 }
 
 impl ChatRequest {

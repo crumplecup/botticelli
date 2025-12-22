@@ -50,7 +50,7 @@ impl McpChatHost {
 impl ChatHost for McpChatHost {
     #[tracing::instrument(skip(self), fields(message_len = user_message.len()))]
     fn send_message(&mut self, user_message: String) -> ChatResult<String> {
-        tracing::debug!("Sending user message");
+        tracing::info!(message = %user_message, "Received user message");
         
         // Add user message to conversation
         let user_msg = MessageBuilder::default()
@@ -60,20 +60,25 @@ impl ChatHost for McpChatHost {
             .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to build message: {}", e))))?;
         
         self.conversation.push(user_msg);
+        tracing::debug!(conversation_len = self.conversation.len(), "Added user message to conversation");
         
         // Get available tools
         let tools = self.available_tools()?;
-        tracing::debug!(tool_count = tools.len(), "Got available tools");
+        tracing::info!(tool_count = tools.len(), tool_names = ?tools.iter().map(|t| t.name()).collect::<Vec<_>>(), "Got available tools from MCP");
         
         // Run conversation loop with tools
+        tracing::info!("Creating tokio runtime for conversation loop");
         let rt = tokio::runtime::Runtime::new()
             .map_err(|e| ChatError::new(ChatErrorKind::ExecutionFailed(format!("Failed to create runtime: {}", e))))?;
         
+        tracing::info!("Starting conversation loop with LLM provider");
         let messages = rt.block_on(async {
             self.conversation_loop
                 .run_conversation(self.llm_provider.as_ref(), self.conversation.clone(), &tools)
                 .await
         })?;
+        
+        tracing::info!(final_message_count = messages.len(), "Conversation loop completed");
         
         // Update conversation with results
         self.conversation = messages;

@@ -10,7 +10,7 @@ use botticelli_mcp_client::McpHost;
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tracing::{info, warn, debug};
+use tracing::{info, warn};
 
 #[derive(Debug, Parser)]
 #[command(name = "botticelli-chat")]
@@ -378,40 +378,47 @@ fn load_config(args: &Args) -> Result<ChatAppConfig, Box<dyn std::error::Error>>
 /// Initialize LLM backend with fallback support.
 ///
 /// Tries to create providers in priority order based on available API keys.
-/// Priority: Gemini (default, has tool calling) -> Anthropic (fallback).
-/// Note: Groq doesn't support tool calling yet.
+/// Priority: Gemini (tool calling + generous free tier) -> Anthropic (tool calling, no free tier)
+/// Note: Groq doesn't support tool calling in our implementation yet.
 async fn initialize_llm_backend() -> Result<Arc<dyn ToolCalling>, Box<dyn std::error::Error>> {
-    tracing::debug!("Initializing LLM backend");
+    tracing::info!("=== Initializing LLM backend ===");
 
     // Try Gemini first (has tool calling support, generous free tier)
     if let Ok(api_key) = std::env::var("GEMINI_API_KEY") {
         if !api_key.is_empty() {
-            tracing::debug!("Found GEMINI_API_KEY, creating Gemini provider");
+            tracing::info!("Found GEMINI_API_KEY in environment");
             match botticelli_models::GeminiClient::new() {
                 Ok(client) => {
-                    tracing::info!("Using Gemini as LLM backend");
+                    tracing::info!("✓ Successfully created Gemini client - using as LLM backend");
                     return Ok(Arc::new(client) as Arc<dyn ToolCalling>);
                 }
                 Err(e) => {
-                    tracing::warn!(error = ?e, "Failed to create Gemini client");
+                    tracing::warn!(error = ?e, "✗ Failed to create Gemini client, trying next provider");
                 }
             }
         } else {
-            tracing::debug!("GEMINI_API_KEY is empty, skipping");
+            tracing::debug!("GEMINI_API_KEY is set but empty, skipping");
         }
+    } else {
+        tracing::debug!("GEMINI_API_KEY not found in environment");
     }
 
-    // Try Anthropic (has tool calling, no free tier)
+    // Try Anthropic second (has tool calling, no free tier)
     if let Ok(api_key) = std::env::var("ANTHROPIC_API_KEY") {
         if !api_key.is_empty() {
-            tracing::debug!("Found ANTHROPIC_API_KEY, creating Anthropic provider");
+            tracing::info!("Found ANTHROPIC_API_KEY in environment");
             let client = botticelli_models::AnthropicClient::new(&api_key, "claude-3-5-sonnet-20241022");
-            tracing::info!("Using Anthropic as LLM backend");
+            tracing::info!("✓ Successfully created Anthropic client - using as LLM backend");
             return Ok(Arc::new(client) as Arc<dyn ToolCalling>);
         } else {
-            tracing::debug!("ANTHROPIC_API_KEY is empty, skipping");
+            tracing::debug!("ANTHROPIC_API_KEY is set but empty, skipping");
         }
+    } else {
+        tracing::debug!("ANTHROPIC_API_KEY not found in environment");
     }
+    
+    // TODO: Add Groq support once ToolCalling trait is implemented for OpenAICompatibleClient
 
-    Err("No LLM provider API keys found in environment. Set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env file. Note: Groq doesn't support tool calling yet.".into())
+    tracing::error!("✗ No LLM provider API keys found in environment");
+    Err("No LLM provider API keys found. Set GEMINI_API_KEY or ANTHROPIC_API_KEY in .env file.".into())
 }

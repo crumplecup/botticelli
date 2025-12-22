@@ -1,6 +1,6 @@
 //! Generic client for OpenAI-compatible APIs.
 
-use crate::openai_compat::{ChatResponse, OpenAICompatError, conversions};
+use crate::openai_compat::{conversions, ChatRequest, ChatResponse, OpenAICompatError};
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_rate_limit::RateLimitConfig;
 use reqwest::Client;
@@ -67,7 +67,33 @@ impl OpenAICompatibleClient {
         req: &GenerateRequest,
     ) -> Result<GenerateResponse, OpenAICompatError> {
         let chat_request = conversions::to_chat_request(req, &self.model)?;
+        let chat_response = self.generate_internal(&chat_request).await?;
+        conversions::from_chat_response(&chat_response)
+    }
 
+    /// Returns the provider name.
+    pub fn provider_name(&self) -> &'static str {
+        self.provider_name
+    }
+
+    /// Returns the model name.
+    pub fn model_name(&self) -> &str {
+        &self.model
+    }
+
+    /// Returns the rate limits configuration.
+    pub fn rate_limits(&self) -> &RateLimitConfig {
+        &self.rate_limits
+    }
+
+    /// Internal method to send a ChatRequest and get ChatResponse.
+    ///
+    /// Used by both regular generation and tool calling implementations.
+    #[instrument(skip(self, chat_request), fields(provider = self.provider_name))]
+    pub(crate) async fn generate_internal(
+        &self,
+        chat_request: &ChatRequest,
+    ) -> Result<ChatResponse, OpenAICompatError> {
         debug!(
             provider = self.provider_name,
             model = %self.model,
@@ -114,21 +140,6 @@ impl OpenAICompatibleClient {
             "Received response"
         );
 
-        conversions::from_chat_response(&chat_response)
-    }
-
-    /// Returns the provider name.
-    pub fn provider_name(&self) -> &'static str {
-        self.provider_name
-    }
-
-    /// Returns the model name.
-    pub fn model_name(&self) -> &str {
-        &self.model
-    }
-
-    /// Returns the rate limits configuration.
-    pub fn rate_limits(&self) -> &RateLimitConfig {
-        &self.rate_limits
+        Ok(chat_response)
     }
 }

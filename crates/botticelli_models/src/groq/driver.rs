@@ -116,3 +116,19 @@ impl botticelli_interface::TokenCounting for GroqDriver {
         Ok(count)
     }
 }
+
+#[async_trait]
+impl botticelli_interface::ToolCalling for GroqDriver {
+    #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
+    async fn generate_with_tools(
+        &self,
+        request: &GenerateRequest,
+        tools: &[botticelli_core::ToolDefinition],
+    ) -> BotticelliResult<GenerateResponse> {
+        self.inner.generate_with_tools(request, tools).await
+    }
+
+    fn max_tools(&self) -> usize {
+        128 // Groq supports up to 128 tools
+    }
+}

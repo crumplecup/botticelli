@@ -23,6 +23,7 @@ pub fn to_chat_request(
                     messages.push(ChatMessage {
                         role: role.to_string(),
                         content: text.clone(),
+                        tool_calls: None,
                     });
                 }
                 _ => {
