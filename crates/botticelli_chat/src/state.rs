@@ -7,6 +7,9 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+#[cfg(feature = "cli")]
+use botticelli_interface::{ChatState, Message as InterfaceMessage};
+
 /// Conversation state tracking.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConversationState {
@@ -132,5 +135,40 @@ impl ConversationState {
         let state = toml::from_str(&content)
             .map_err(|e| ChatError::parse_error(format!("TOML parse error: {}", e)))?;
         Ok(state)
+    }
+}
+
+#[cfg(feature = "cli")]
+impl ChatState for ConversationState {
+    fn add_message(&mut self, message: InterfaceMessage) {
+        // Convert interface message to chat message based on role
+        let chat_message = match message.role.as_str() {
+            "user" => Message::user(message.content.iter().map(|c| format!("{:?}", c)).collect::<Vec<_>>().join("\n")),
+            "assistant" => Message::assistant(message.content.iter().map(|c| format!("{:?}", c)).collect::<Vec<_>>().join("\n")),
+            _ => Message::system(message.content.iter().map(|c| format!("{:?}", c)).collect::<Vec<_>>().join("\n")),
+        };
+        self.add_message(chat_message);
+    }
+
+    fn get_history(&self) -> Vec<InterfaceMessage> {
+        self.history
+            .iter()
+            .map(|msg| {
+                let (role, content_str) = match msg {
+                    Message::User { content, .. } => ("user", content),
+                    Message::Assistant { content, .. } => ("assistant", content),
+                    Message::System { content, .. } => ("system", content),
+                };
+                InterfaceMessage {
+                    role: role.to_string(),
+                    content: vec![botticelli_core::Input::Text(content_str.clone())],
+                }
+            })
+            .collect()
+    }
+
+    fn clear_history(&mut self) {
+        self.history.clear();
+        self.last_activity = Utc::now();
     }
 }
