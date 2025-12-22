@@ -41,3 +41,6 @@ narrations/*
 # Backup files
 *.bak
 *.tmp
+
+# Log files
+*.log
