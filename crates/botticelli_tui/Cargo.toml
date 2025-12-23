@@ -68,5 +68,5 @@ database = ["dep:botticelli_database", "dep:diesel", "botticelli_error/database"
 cli = ["dep:clap", "dep:dotenvy", "dep:reqwest", "dep:botticelli_chat", "database"]
 
 [[bin]]
-name = "botticelli-chat"
+name = "botticelli-tui"
 required-features = ["cli"]

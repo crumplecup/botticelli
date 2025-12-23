@@ -392,9 +392,28 @@ container-setup: obs-up container-build container-run
 
 # Run chat interface locally for development
 chat force="":
-    @echo "💬 Starting chat interface..."
-    {{ if force == "rebuild" { "cargo clean -p botticelli_tui" } else { "" } }}
-    cargo run --package botticelli_tui --bin botticelli-chat --features "cli"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "💬 Starting MCP HTTP server in background..."
+    pkill -f botticelli-mcp-pmcp-http || true
+    if [ "{{ force }}" = "rebuild" ]; then
+        cargo build --package botticelli_mcp --bin botticelli-mcp-pmcp-http --features streamable-http
+        cargo build --package botticelli_tui --bin botticelli-tui --features cli
+    fi
+    cargo run --package botticelli_mcp --bin botticelli-mcp-pmcp-http --features streamable-http > /tmp/mcp-server.log 2>&1 &
+    SERVER_PID=$!
+    echo "⏳ Waiting for server to be ready (PID: $SERVER_PID)..."
+    for i in {1..30}; do
+        if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+            echo "✅ Server ready!"
+            break
+        fi
+        sleep 0.5
+    done
+    echo "💬 Starting chat interface..."
+    RUST_LOG=debug cargo run --package botticelli_tui --bin botticelli-tui --features cli 2>&1 | tee -a botticelli-chat.log
+    echo "🛑 Stopping MCP server..."
+    kill $SERVER_PID 2>/dev/null || true
 
 # Build the chat interface container image
 chat-build:

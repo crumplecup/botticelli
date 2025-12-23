@@ -24,9 +24,9 @@ async fn main() -> TuiResult<()> {
     
     info!("Botticelli TUI starting");
     
-    // TODO: Load configuration and spawn HTTP client background task
-    // For now, just log that we would connect to MCP server
-    info!("TODO: Connect to MCP server in background task");
+    // TODO: Connect to MCP HTTP server
+    // For now, we need to implement proper HTTP client integration
+    info!("MCP client integration pending - running in standalone mode");
     
     // Setup terminal
     enable_raw_mode()?;

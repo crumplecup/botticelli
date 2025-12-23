@@ -43,7 +43,7 @@ pub async fn minimal_event_loop<B: Backend>(
     
     // Set up channels for background communication
     let (ui_tx, mut ui_rx) = mpsc::channel::<UiMessage>(100);
-    let (_bg_tx, mut bg_rx) = mpsc::channel::<BackgroundMessage>(100);
+    let (bg_tx, mut bg_rx) = mpsc::channel::<BackgroundMessage>(100);
     
     // Spawn background task for MCP HTTP client
     #[cfg(feature = "cli")]
@@ -54,7 +54,7 @@ pub async fn minimal_event_loop<B: Backend>(
     #[cfg(feature = "cli")]
     let http_client = reqwest::Client::new();
     #[cfg(feature = "cli")]
-    let mcp_url = "http://localhost:3000".to_string(); // TODO: Get from config
+    let mcp_url = "http://localhost:8080".to_string(); // TODO: Get from config
     
     tokio::spawn(async move {
         info!("MCP client task started");
@@ -69,10 +69,25 @@ pub async fn minimal_event_loop<B: Backend>(
                     {
                         info!(text = %text, "Sending chat to MCP server");
                         
+                        // Build MCP tool call request for sampling/createMessage
+                        let mcp_request = serde_json::json!({
+                            "method": "tools/call",
+                            "params": {
+                                "name": "sampling_createMessage",
+                                "arguments": {
+                                    "messages": [{
+                                        "role": "user",
+                                        "content": text
+                                    }],
+                                    "max_tokens": 1024
+                                }
+                            }
+                        });
+                        
                         // Send HTTP request to MCP server
                         match http_client
-                            .post(&format!("{}/chat", mcp_url))
-                            .json(&serde_json::json!({ "message": text }))
+                            .post(&format!("{}/message", mcp_url))
+                            .json(&mcp_request)
                             .send()
                             .await
                         {
@@ -81,15 +96,23 @@ pub async fn minimal_event_loop<B: Backend>(
                                 match response.text().await {
                                     Ok(body) => {
                                         info!(body = %body, "MCP response body");
-                                        // TODO: Parse and send to UI via bg_tx
+                                        if let Err(e) = bg_tx.send(BackgroundMessage::ChatResponse(body)).await {
+                                            warn!(error = ?e, "Failed to send response to UI");
+                                        }
                                     }
                                     Err(e) => {
                                         warn!(error = ?e, "Failed to read MCP response body");
+                                        if let Err(e) = bg_tx.send(BackgroundMessage::Error(e.to_string())).await {
+                                            warn!(error = ?e, "Failed to send error to UI");
+                                        }
                                     }
                                 }
                             }
                             Err(e) => {
                                 warn!(error = ?e, "Failed to send to MCP server");
+                                if let Err(e) = bg_tx.send(BackgroundMessage::Error(e.to_string())).await {
+                                    warn!(error = ?e, "Failed to send error to UI");
+                                }
                             }
                         }
                     }
@@ -111,7 +134,7 @@ pub async fn minimal_event_loop<B: Backend>(
                 match bg_msg {
                     BackgroundMessage::ChatResponse(response) => {
                         debug!(response = %response, "Received chat response");
-                        // TODO: Add to conversation
+                        state.add_chat_response(response);
                     }
                     BackgroundMessage::Error(err) => {
                         warn!(error = %err, "Background error");
@@ -248,6 +271,8 @@ pub async fn minimal_event_loop<B: Backend>(
                             }
                             crate::Command::SendMessage(msg) => {
                                 debug!(message = %msg, "Sending message");
+                                // Add user message to conversation FIRST
+                                state.add_user_message(msg.clone(), None);
                                 state.clear_input();
                                 // Send to background task (non-blocking)
                                 if let Err(e) = ui_tx.send(UiMessage::SendChat(msg)).await {

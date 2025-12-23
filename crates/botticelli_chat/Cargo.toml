@@ -96,9 +96,7 @@ database = [
     "botticelli_mcp_client/database",  # Enable database feature on mcp_client
 ]
 
-[[bin]]
-name = "demo"
-required-features = ["cli", "demo"]
+
 
 [dev-dependencies]
 # Testing

@@ -14,6 +14,14 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ### Core Architecture & Refactoring
 
+- **TUI_LAG_FIX_SUMMARY.md** - `current` (2025-12-23) **✅ FIXED**
+  - Documents keyboard input lag fix and minimal event loop architecture
+  - Problem: 1-3 second delays between keystrokes
+  - Root cause: Event loop doing too much (blocking UI thread)
+  - Solution: Minimal event loop - ONLY keyboard + rendering, everything else in background
+  - Current status: ✅ Keyboard responsive, ⏳ HTTP client integration pending
+  - Architecture: UI thread (hot loop) + Background tasks (async) + Channels (communication)
+
 - **TUI_LAG_FIX_IMPLEMENTATION.md** - `current` (2025-12-22) **✅ IMPLEMENTED**
   - Fixes severe keyboard input lag by decoupling rendering from input
   - Root cause: terminal.draw() synchronous I/O blocking event loop

@@ -152,6 +152,56 @@ impl AppState {
         self.dirty = true;
     }
 
+    /// Adds a chat response to the current conversation.
+    #[tracing::instrument(skip(self), fields(conversation_id = ?self.current_conversation))]
+    /// Adds a user message to the current conversation.
+    pub fn add_user_message(&mut self, content: String, conversation_id: Option<Uuid>) {
+        tracing::debug!(content = %content, "Adding user message");
+        
+        // Use provided or create new conversation
+        let conversation_id = conversation_id
+            .or_else(|| self.current_conversation)
+            .unwrap_or_else(Uuid::new_v4);
+        
+        self.current_conversation = Some(conversation_id);
+        
+        // Add user message to conversation
+        let message = ChatMessage {
+            role: "user".to_string(),
+            content,
+        };
+        
+        self.conversations
+            .entry(conversation_id)
+            .or_default()
+            .push(message);
+        
+        self.mark_dirty();
+        tracing::debug!("User message added successfully");
+    }
+
+    /// Adds an assistant response to the current conversation.
+    pub fn add_chat_response(&mut self, response: String) {
+        tracing::debug!(response = %response, "Adding chat response");
+        
+        // Create conversation if it doesn't exist
+        let conversation_id = self.current_conversation.get_or_insert_with(Uuid::new_v4);
+        
+        // Add assistant message to conversation
+        let message = ChatMessage {
+            role: "assistant".to_string(),
+            content: response,
+        };
+        
+        self.conversations
+            .entry(*conversation_id)
+            .or_default()
+            .push(message);
+        
+        self.mark_dirty();
+        tracing::debug!("Chat response added successfully");
+    }
+
     /// Creates AppState with MCP integration (compatibility wrapper).
     pub fn with_mcp_integration(
         _driver: impl botticelli_interface::BotticelliDriver,

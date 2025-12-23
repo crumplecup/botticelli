@@ -20,6 +20,7 @@ pub trait View {
 pub struct ChatView;
 
 impl View for ChatView {
+    #[tracing::instrument(skip(self, frame, state))]
     fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
         use ratatui::layout::{Constraint, Direction, Layout};
         use ratatui::style::{Color, Modifier, Style};
@@ -77,6 +78,7 @@ impl View for ChatView {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, state), fields(key_code = ?key.code))]
     fn handle_input(
         &self,
         key: crossterm::event::KeyEvent,
@@ -87,9 +89,12 @@ impl View for ChatView {
         match (key.code, key.modifiers) {
             (KeyCode::Enter, KeyModifiers::NONE) => {
                 let input = state.input_buffer().to_string();
+                tracing::debug!(input = %input, "Enter pressed");
                 if !input.is_empty() {
+                    tracing::info!(message = %input, "Sending message");
                     Ok(Some(Command::SendMessage(input)))
                 } else {
+                    tracing::debug!("Empty input, ignoring");
                     Ok(None)
                 }
             }
