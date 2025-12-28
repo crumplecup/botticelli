@@ -68,7 +68,9 @@ pub use tools::{
     SamplingHelper, SamplingResult, SaveNarrativeTool, ServerInfoTool, StartNarrativeInput,
     StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
-pub use transport::{HttpTransport, McpTransport, McpTransportError};
+pub use transport::{
+    HttpTransport, InProcServerHandle, InProcTransport, McpTransport, McpTransportError,
+};
 
 #[cfg(feature = "discord")]
 pub use tools::{
