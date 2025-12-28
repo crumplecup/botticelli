@@ -1,6 +1,6 @@
 //! Elicitation types and traits for narrative construction.
 
-mod dialog;
+pub mod dialog;
 mod elicitor;
 mod partial;
 

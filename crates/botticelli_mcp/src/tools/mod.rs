@@ -9,6 +9,7 @@ mod discord;
 mod discord_workflow;
 mod echo;
 mod elicitation;
+mod elicitation_primitives;
 mod execute_act;
 mod execute_narrative;
 mod export_metrics;
@@ -47,6 +48,9 @@ pub use elicitation::{
     ElicitActTool, ElicitCarouselTool, ElicitMetadataTool, ElicitationHelper,
     FinalizeNarrativeTool, GetNarrativeStateInput, GetNarrativeStateOutput, NarrativeRegistry,
     PartialNarrativeRegistry, ValidateNarrativeInput, ValidateNarrativeOutput,
+};
+pub use elicitation_primitives::{
+    ElicitBoolTool, ElicitNumberTool, ElicitSelectTool, ElicitTextTool,
 };
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;

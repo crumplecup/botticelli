@@ -33,6 +33,7 @@
 #![warn(missing_docs)]
 
 mod conversation;
+mod dialog_resource;
 mod elicitation;
 mod resources;
 mod server;
@@ -51,6 +52,7 @@ mod pmcp_http_server;
 pub mod http;
 
 pub use conversation::{Attachment, ConversationSession, ConversationTurn, SessionState};
+pub use dialog_resource::DialogResource;
 pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
@@ -58,12 +60,13 @@ pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegist
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{
     Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool,
-    ElicitMetadataInput, ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool,
-    ExecutionMetrics, ExportMetricsTool, FinalizeNarrativeInput, FinalizeNarrativeTool,
-    GenerateTool, LlmSampler, McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper,
-    NarrativeRegistry, PrometheusMetrics, QueryContentTool, SamplingCoordinator, SamplingError,
-    SamplingErrorKind, SamplingHelper, SamplingResult, SaveNarrativeTool, ServerInfoTool,
-    StartNarrativeInput, StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
+    ElicitBoolTool, ElicitMetadataInput, ElicitMetadataTool, ElicitNumberTool,
+    ElicitSelectTool, ElicitTextTool, ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics,
+    ExportMetricsTool, FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler,
+    McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper, NarrativeRegistry,
+    PrometheusMetrics, QueryContentTool, SamplingCoordinator, SamplingError, SamplingErrorKind,
+    SamplingHelper, SamplingResult, SaveNarrativeTool, ServerInfoTool, StartNarrativeInput,
+    StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
 pub use transport::{HttpTransport, McpTransport, McpTransportError};
 

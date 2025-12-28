@@ -3,6 +3,7 @@
 //! This is the new implementation using the pmcp SDK, which will eventually
 //! replace the custom mcp-server implementation.
 
+use crate::dialog_resource::DialogResource;
 use crate::pmcp_adapters::McpToolAdapter;
 use crate::tools::{
     CreateNarrativeTool, EchoTool, GenerateTool, ModifyNarrativeTool, SaveNarrativeTool,
@@ -14,17 +15,60 @@ use std::sync::Arc;
 use tracing::{info, instrument};
 
 /// Registers all tools with the server builder.
-/// 
+///
 /// This is the single source of truth for tool registration,
 /// used by both stdio and HTTP servers.
-#[instrument(skip(builder, db_ops))]
+///
+/// # Arguments
+///
+/// * `builder` - The PMCP server builder to register tools with
+/// * `dialog` - Optional dialog resource for primitive elicitation tools
+/// * `db_ops` - Optional database operations for database tools (feature-gated)
+#[instrument(skip(builder, dialog, db_ops))]
 pub fn register_all_tools(
     mut builder: pmcp::ServerBuilder,
+    dialog: Option<Arc<DialogResource>>,
     #[cfg(feature = "database")] db_ops: Option<
         std::sync::Arc<dyn botticelli_interface::DatabaseRegistryOperations>,
     >,
 ) -> pmcp::ServerBuilder {
     tracing::info!("Starting tool registration");
+
+    // Register primitive elicitation tools (if dialog provided)
+    if let Some(dialog_res) = dialog {
+        use crate::tools::{ElicitBoolTool, ElicitNumberTool, ElicitSelectTool, ElicitTextTool};
+
+        tracing::info!("=== REGISTERING PRIMITIVE ELICITATION TOOLS ===");
+        tracing::info!("Dialog resource provided, registering elicit_* tools");
+
+        tracing::info!("Registering tool: elicit_text");
+        builder = builder.tool(
+            "elicit_text",
+            McpToolAdapter::new(ElicitTextTool::new(dialog_res.clone())),
+        );
+
+        tracing::info!("Registering tool: elicit_select");
+        builder = builder.tool(
+            "elicit_select",
+            McpToolAdapter::new(ElicitSelectTool::new(dialog_res.clone())),
+        );
+
+        tracing::info!("Registering tool: elicit_number");
+        builder = builder.tool(
+            "elicit_number",
+            McpToolAdapter::new(ElicitNumberTool::new(dialog_res.clone())),
+        );
+
+        tracing::info!("Registering tool: elicit_bool");
+        builder = builder.tool(
+            "elicit_bool",
+            McpToolAdapter::new(ElicitBoolTool::new(dialog_res)),
+        );
+
+        tracing::info!("✓ Registered 4 primitive elicitation tools");
+    } else {
+        tracing::info!("No dialog resource provided, skipping primitive elicitation tools");
+    }
 
     // Register core tools
     tracing::info!("=== REGISTERING CORE TOOLS ===");
@@ -368,6 +412,7 @@ pub async fn run_pmcp_server(
     // Register all tools using shared registration function
     let builder = register_all_tools(
         builder,
+        None, // No dialog resource for stdio server
         #[cfg(feature = "database")]
         db_ops,
     );

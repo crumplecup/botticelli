@@ -33,6 +33,7 @@ fn build_server(
     // Use shared tool registration function
     let builder = register_all_tools(
         builder,
+        None, // No dialog resource for HTTP server
         #[cfg(feature = "database")]
         db_ops,
     );
@@ -79,10 +80,15 @@ pub async fn run_pmcp_http_server(
     // Create HTTP server
     let http_server = StreamableHttpServer::with_config(addr, server, config);
 
+    info!("Starting HTTP server on {}", addr);
+
     // Start server
     let (bound_addr, _handle) = http_server.start().await?;
 
-    info!("HTTP server successfully started on {}", bound_addr);
+    info!("✅ HTTP server SUCCESSFULLY BOUND to {}", bound_addr);
+    info!("📍 Server is listening and ready to accept connections");
+    info!("🔗 Endpoint: POST http://{}/sse", bound_addr);
+    info!("📝 Note: pmcp StreamableHttpServer uses /sse endpoint by default");
 
     // Print banner
     println!("╔════════════════════════════════════════════════════════════╗");
@@ -98,7 +104,7 @@ pub async fn run_pmcp_http_server(
     println!("║ • Full observability via tracing                          ║");
     println!("╠════════════════════════════════════════════════════════════╣");
     println!("║ Endpoints:                                                 ║");
-    println!("║ • POST /mcp - MCP JSON-RPC requests                       ║");
+    println!("║ • POST /sse - MCP Server-Sent Events endpoint             ║");
     println!("║ • GET  /health - Health check (future)                    ║");
     println!("║ • GET  /metrics - Prometheus metrics (future)             ║");
     println!("╚════════════════════════════════════════════════════════════╝");

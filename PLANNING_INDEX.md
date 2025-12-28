@@ -29,6 +29,13 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ### Core Architecture & Refactoring
 
+- **ELICITATION_MCP_INTEGRATION_PLAN.md** - `current` (2025-12-28) **🎯 INTEGRATION PLAN**
+  - Comprehensive plan for integrating elicitation crate with botticelli_mcp
+  - Add primitive elicitation tools (elicit_text, elicit_select, etc.) to MCP server
+  - DialogResource wrapper for sharing dialog across tools
+  - InProcTransport for in-process MCP server (planned)
+  - Status: ✅ Phase 1 complete - primitive tools implemented
+
 - **ELICITATION_PARADIGM_REFACTOR.md** - `current` (2025-12-28) **🎯 ARCHITECTURAL VISION**
   - Identifies fundamental design flaw in ElicitationDialog abstraction
   - Paradigm traits (Select/Affirm/Survey) ARE the interaction model
