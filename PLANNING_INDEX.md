@@ -36,6 +36,7 @@ This index tracks all planning documents in the workspace. When documents are co
   - InProcTransport for in-process MCP server
   - Status: ✅ Phase 1 complete - primitive tools implemented
   - Status: ✅ Phase 2 complete - InProcTransport implemented and tested
+  - Status: ✅ Phase 3 complete - integration tested, derive macros working
 
 - **ELICITATION_PARADIGM_REFACTOR.md** - `current` (2025-12-28) **🎯 ARCHITECTURAL VISION**
   - Identifies fundamental design flaw in ElicitationDialog abstraction

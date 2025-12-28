@@ -63,7 +63,9 @@ impl McpTool for ElicitTextTool {
             .await
             .map_err(|e| McpError::execution_failed(format!("Dialog error: {}", e)))?;
 
-        Ok(json!({ "value": text }))
+        // Return the text value directly (not wrapped in object)
+        // The elicitation crate expects: "my text" not {"value": "my text"}
+        Ok(json!(text))
     }
 }
 
@@ -144,7 +146,9 @@ impl McpTool for ElicitSelectTool {
             McpError::execution_failed(format!("Invalid index {} (max {})", index, options.len()))
         })?;
 
-        Ok(json!({ "value": selected }))
+        // Return the selected value directly (not wrapped in object)
+        // The elicitation crate expects: "OptionA" not {"value": "OptionA"}
+        Ok(json!(selected))
     }
 }
 
@@ -224,7 +228,9 @@ impl McpTool for ElicitNumberTool {
             .await
             .map_err(|e| McpError::execution_failed(format!("Dialog error: {}", e)))?;
 
-        Ok(json!({ "value": num }))
+        // Return the number value directly (not wrapped in object)
+        // The elicitation crate expects: 42 not {"value": 42}
+        Ok(json!(num))
     }
 }
 
@@ -288,6 +294,8 @@ impl McpTool for ElicitBoolTool {
             .await
             .map_err(|e| McpError::execution_failed(format!("Dialog error: {}", e)))?;
 
-        Ok(json!({ "value": confirmed }))
+        // Return the boolean value directly (not wrapped in object)
+        // The elicitation crate expects: true not {"value": true}
+        Ok(json!(confirmed))
     }
 }

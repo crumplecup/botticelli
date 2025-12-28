@@ -93,7 +93,7 @@ pub use tools::GenerateOllamaTool;
 pub use resources::ContentResource;
 
 // PMCP migration exports
-pub use pmcp_server::run_pmcp_server;
+pub use pmcp_server::{register_all_tools, run_pmcp_server};
 
 #[cfg(feature = "streamable-http")]
 pub use pmcp_http_server::run_pmcp_http_server;
