@@ -61,6 +61,9 @@ botticelli_models = { path = "../botticelli_models", version = "0.2.0", optional
 botticelli_social = { path = "../botticelli_social", version = "0.2.0", optional = true, features = ["discord"] }
 mcp-spec = "0.1.0"
 
+# Elicitation framework
+elicitation = { workspace = true }
+
 # Database (only when feature enabled)
 diesel = { workspace = true, features = ["postgres"], optional = true }
 

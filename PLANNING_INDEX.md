@@ -12,7 +12,36 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ## Active Planning Documents
 
+### MCP Server & Testing
+- **TUI_MCP_CLIENT_FIX.md** - `current` (2025-12-24) **✅ FIXED**
+  - Applied MCP server testing lessons to fix TUI client startup issues
+  - Problem: Hardcoded wrong port (3030 vs 8080), no server verification, poor observability
+  - Solution: Environment-based config, early verification, structured logging with emoji markers
+  - Key improvement: Logs show exact endpoint, helpful error messages guide user
+  - Status: ✅ Fixed and documented
+
+- **server_lifecycle_test.rs** - `current` (2025-12-24) **✅ IMPLEMENTED**
+  - Comprehensive MCP server lifecycle tests with full observability
+  - Tests: startup, initialization, tool listing, error handling, concurrent requests
+  - Discovered: Server uses `/sse` endpoint (SSE protocol), not plain JSON-RPC
+  - Added: Tracing throughout tests, server logs port/endpoint explicitly
+  - Status: ✅ 5/5 tests passing (startup test simplified to just spawn verification)
+
 ### Core Architecture & Refactoring
+
+- **ELICITATION_PARADIGM_REFACTOR.md** - `current` (2025-12-28) **🎯 ARCHITECTURAL VISION**
+  - Identifies fundamental design flaw in ElicitationDialog abstraction
+  - Paradigm traits (Select/Affirm/Survey) ARE the interaction model
+  - Current approach mixes type concerns (String, i64) with interaction patterns
+  - Refactor strategy: Use elicitation crate's paradigm system directly
+  - Status: 📋 Phase 1 complete - domain types defined
+
+- **ELICITATION_AUDIT.md** - `current` (2025-12-28) **📊 USAGE ANALYSIS**
+  - Comprehensive audit of 75 dialog method calls across codebase
+  - Categorization: 6 Select, 31 Affirm, 37 Survey-eligible calls
+  - High-impact refactors identified (80% code reduction potential)
+  - Domain types mapped to paradigms
+  - Status: ✅ Audit complete, types created
 
 - **TUI_LAG_FIX_SUMMARY.md** - `current` (2025-12-23) **✅ FIXED**
   - Documents keyboard input lag fix and minimal event loop architecture

@@ -9,6 +9,7 @@ mod carousel;
 mod inputs;
 mod metadata;
 mod session;
+mod types;
 mod validation;
 
 pub use acts::ActElicitor;
@@ -16,4 +17,8 @@ pub use carousel::CarouselElicitor;
 pub use inputs::InputElicitor;
 pub use metadata::MetadataElicitor;
 pub use session::ElicitationSession;
+pub use types::{
+    ActApproach, CarouselConfig, HistoryRetentionMode, InputType, MediaSource,
+    NarrativeMetadata, OutputFormat,
+};
 pub use validation::ValidationElicitor;

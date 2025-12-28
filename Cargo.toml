@@ -156,6 +156,9 @@ crossterm = "0.29"
 # Environment variables
 dotenvy = "0.15"
 
+# Elicitation framework
+elicitation = "0.1"
+
 # The profile that 'dist' will build with
 [profile.dist]
 inherits = "release"
