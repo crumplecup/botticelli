@@ -5,9 +5,9 @@
 
 use crate::dialog_resource::DialogResource;
 use crate::{
-    EchoParams, EchoResult, ElicitTextParams, ElicitTextResult, ExportMetricsParams,
-    ExportMetricsResult, MetricsFormat, PrometheusMetrics, QueryContentParams,
-    QueryContentResult, ServerInfoResult,
+    EchoParams, EchoResult, ElicitBoolParams, ElicitBoolResult, ElicitTextParams,
+    ElicitTextResult, ExportMetricsParams, ExportMetricsResult, MetricsFormat, PrometheusMetrics,
+    QueryContentParams, QueryContentResult, ServerInfoResult,
 };
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -390,6 +390,62 @@ impl BotticelliServer {
         debug!(response_len = text.len(), "Received text input");
 
         let result = ElicitTextResult::new(text);
+        Ok(Json(result))
+    }
+
+    /// Elicit a yes/no confirmation from the user.
+    ///
+    /// This tool provides the basic building block for boolean elicitation
+    /// that the elicitation crate's derive macros expect.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Parameters containing the prompt and optional default value
+    ///
+    /// # Returns
+    ///
+    /// The user's boolean confirmation.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Dialog resource is not configured
+    /// - Dialog interaction fails
+    #[tool(description = "Elicit a yes/no confirmation from the user")]
+    #[instrument(skip(self))]
+    pub async fn elicit_bool(
+        &self,
+        Parameters(ElicitBoolParams { prompt, default }): Parameters<ElicitBoolParams>,
+    ) -> Result<Json<ElicitBoolResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(?prompt, default, "Eliciting boolean confirmation");
+
+        // Check if dialog resource is available
+        let dialog = self.dialog.as_ref().ok_or_else(|| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Borrowed("Dialog resource not configured"),
+                None,
+            )
+        })?;
+
+        // Ask for confirmation
+        let confirmed = dialog
+            .ask_confirmation(&prompt, default)
+            .await
+            .map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Dialog error: {}", e)),
+                    None,
+                )
+            })?;
+
+        debug!(confirmed, "Received boolean confirmation");
+
+        let result = ElicitBoolResult::new(confirmed);
         Ok(Json(result))
     }
 }
