@@ -7,7 +7,12 @@ license.workspace = true
 description = "Model Context Protocol (MCP) server for Botticelli"
 
 [dependencies]
-# MCP SDK - migrating to pmcp (battle-tested SDK)
+# MCP SDK - using official rmcp
+rmcp = { version = "0.12.0", features = ["server"] }
+rmcp-macros = "0.12.0"
+schemars = "0.8"  # For JsonSchema derives
+
+# Keep pmcp temporarily during migration
 pmcp = { version = "1.8", features = ["streamable-http", "http"] }
 mcp-server = "0.1.0"  # Keep during migration
 
