@@ -33,6 +33,7 @@ mod conversation;
 mod dialog_resource;
 mod echo;
 mod elicitation;
+mod elicit_text;
 mod errors;
 mod export_metrics;
 mod query_content;
@@ -53,6 +54,7 @@ pub use echo::{EchoParams, EchoResult};
 pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
+pub use elicit_text::{ElicitTextParams, ElicitTextResult};
 pub use errors::ToolError;
 pub use export_metrics::{ExportMetricsParams, ExportMetricsResult, MetricsFormat};
 pub use query_content::{QueryContentParams, QueryContentResult};
@@ -63,7 +65,7 @@ pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
 pub use server_info::ServerInfoResult;
 pub use tools::{
     Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool, ElicitBoolTool,
-    ElicitMetadataInput, ElicitMetadataTool, ElicitNumberTool, ElicitSelectTool, ElicitTextTool,
+    ElicitMetadataInput, ElicitMetadataTool, ElicitNumberTool, ElicitSelectTool,
     ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics, FinalizeNarrativeInput,
     FinalizeNarrativeTool, GenerateTool, LlmSampler, McpTool, MetricsSummary,
     ModifyNarrativeTool, NarrativeHelper, NarrativeRegistry, PrometheusMetrics,

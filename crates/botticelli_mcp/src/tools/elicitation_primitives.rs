@@ -1,6 +1,6 @@
 //! Primitive elicitation tools for the elicitation crate paradigm system.
 //!
-//! These tools provide the basic building blocks (`elicit_text`, `elicit_select`,
+//! These tools provide the basic building blocks (`elicit_select`,
 //! `elicit_number`, `elicit_bool`) that the elicitation crate's derive macros
 //! expect when calling MCP tools.
 
@@ -8,66 +8,9 @@ use crate::dialog_resource::DialogResource;
 use crate::tools::{McpResult, McpTool};
 use async_trait::async_trait;
 use botticelli_error::McpError;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 use tracing::instrument;
-
-/// Tool for eliciting free-form text input.
-///
-/// This tool corresponds to the `elicit_text` MCP tool expected by
-/// the elicitation crate for String and text-based types.
-pub struct ElicitTextTool {
-    dialog: Arc<DialogResource>,
-}
-
-impl ElicitTextTool {
-    /// Create a new text elicitation tool.
-    pub fn new(dialog: Arc<DialogResource>) -> Self {
-        Self { dialog }
-    }
-}
-
-#[async_trait]
-impl McpTool for ElicitTextTool {
-    fn name(&self) -> &str {
-        "elicit_text"
-    }
-
-    fn description(&self) -> &str {
-        "Elicit free-form text input from the user"
-    }
-
-    fn input_schema(&self) -> Value {
-        json!({
-            "type": "object",
-            "properties": {
-                "prompt": {
-                    "type": "string",
-                    "description": "The prompt to display to the user"
-                }
-            },
-            "required": ["prompt"]
-        })
-    }
-
-    #[instrument(skip(self, input), fields(tool = "elicit_text"))]
-    async fn execute(&self, input: Value) -> McpResult<Value> {
-        let prompt = input
-            .get("prompt")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| McpError::invalid_input("Missing 'prompt' parameter"))?;
-
-        let text = self
-            .dialog
-            .ask_text(prompt)
-            .await
-            .map_err(|e| McpError::execution_failed(format!("Dialog error: {}", e)))?;
-
-        // Return the text value directly (not wrapped in object)
-        // The elicitation crate expects: "my text" not {"value": "my text"}
-        Ok(json!(text))
-    }
-}
 
 /// Tool for selecting one option from a finite list.
 ///

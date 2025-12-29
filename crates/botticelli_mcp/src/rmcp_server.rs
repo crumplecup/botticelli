@@ -5,8 +5,9 @@
 
 use crate::dialog_resource::DialogResource;
 use crate::{
-    EchoParams, EchoResult, ExportMetricsParams, ExportMetricsResult, MetricsFormat,
-    PrometheusMetrics, QueryContentParams, QueryContentResult, ServerInfoResult,
+    EchoParams, EchoResult, ElicitTextParams, ElicitTextResult, ExportMetricsParams,
+    ExportMetricsResult, MetricsFormat, PrometheusMetrics, QueryContentParams,
+    QueryContentResult, ServerInfoResult,
 };
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -337,6 +338,59 @@ impl BotticelliServer {
                 Ok(Json(result))
             }
         }
+    }
+
+    /// Elicit free-form text input from the user.
+    ///
+    /// This tool provides the basic building block for text elicitation
+    /// that the elicitation crate's derive macros expect.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Parameters containing the prompt to display
+    ///
+    /// # Returns
+    ///
+    /// The user's text input.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Dialog resource is not configured
+    /// - Dialog interaction fails
+    #[tool(description = "Elicit free-form text input from the user")]
+    #[instrument(skip(self))]
+    pub async fn elicit_text(
+        &self,
+        Parameters(ElicitTextParams { prompt }): Parameters<ElicitTextParams>,
+    ) -> Result<Json<ElicitTextResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(?prompt, "Eliciting text input");
+
+        // Check if dialog resource is available
+        let dialog = self.dialog.as_ref().ok_or_else(|| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Borrowed("Dialog resource not configured"),
+                None,
+            )
+        })?;
+
+        // Ask for text input
+        let text = dialog.ask_text(&prompt).await.map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Dialog error: {}", e)),
+                None,
+            )
+        })?;
+
+        debug!(response_len = text.len(), "Received text input");
+
+        let result = ElicitTextResult::new(text);
+        Ok(Json(result))
     }
 }
 

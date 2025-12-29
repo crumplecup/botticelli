@@ -47,7 +47,7 @@ pub use elicitation::{
     PartialNarrativeRegistry, ValidateNarrativeInput, ValidateNarrativeOutput,
 };
 pub use elicitation_primitives::{
-    ElicitBoolTool, ElicitNumberTool, ElicitSelectTool, ElicitTextTool,
+    ElicitBoolTool, ElicitNumberTool, ElicitSelectTool,
 };
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
