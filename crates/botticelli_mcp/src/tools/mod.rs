@@ -46,9 +46,7 @@ pub use elicitation::{
     FinalizeNarrativeTool, GetNarrativeStateInput, GetNarrativeStateOutput, NarrativeRegistry,
     PartialNarrativeRegistry, ValidateNarrativeInput, ValidateNarrativeOutput,
 };
-pub use elicitation_primitives::{
-    ElicitNumberTool, ElicitSelectTool,
-};
+pub use elicitation_primitives::ElicitSelectTool;
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;

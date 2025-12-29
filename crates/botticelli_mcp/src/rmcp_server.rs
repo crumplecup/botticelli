@@ -5,9 +5,10 @@
 
 use crate::dialog_resource::DialogResource;
 use crate::{
-    EchoParams, EchoResult, ElicitBoolParams, ElicitBoolResult, ElicitTextParams,
-    ElicitTextResult, ExportMetricsParams, ExportMetricsResult, MetricsFormat, PrometheusMetrics,
-    QueryContentParams, QueryContentResult, ServerInfoResult,
+    EchoParams, EchoResult, ElicitBoolParams, ElicitBoolResult, ElicitNumberParams,
+    ElicitNumberResult, ElicitTextParams, ElicitTextResult, ExportMetricsParams,
+    ExportMetricsResult, MetricsFormat, PrometheusMetrics, QueryContentParams, QueryContentResult,
+    ServerInfoResult,
 };
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -446,6 +447,69 @@ impl BotticelliServer {
         debug!(confirmed, "Received boolean confirmation");
 
         let result = ElicitBoolResult::new(confirmed);
+        Ok(Json(result))
+    }
+
+    /// Elicit a number within a specified range.
+    ///
+    /// This tool provides the basic building block for numeric elicitation
+    /// that the elicitation crate's derive macros expect.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Parameters containing the prompt, min, and max values
+    ///
+    /// # Returns
+    ///
+    /// The user's numeric input within the specified range.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Dialog resource is not configured
+    /// - Dialog interaction fails
+    /// - Invalid range (min > max)
+    #[tool(description = "Elicit a number within a specified range (min and max inclusive)")]
+    #[instrument(skip(self))]
+    pub async fn elicit_number(
+        &self,
+        Parameters(ElicitNumberParams { prompt, min, max }): Parameters<ElicitNumberParams>,
+    ) -> Result<Json<ElicitNumberResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(?prompt, min, max, "Eliciting numeric input");
+
+        // Validate range
+        if min > max {
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("Invalid range: min ({}) > max ({})", min, max)),
+                None,
+            ));
+        }
+
+        // Check if dialog resource is available
+        let dialog = self.dialog.as_ref().ok_or_else(|| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Borrowed("Dialog resource not configured"),
+                None,
+            )
+        })?;
+
+        // Ask for number input
+        let number = dialog.ask_number(&prompt, min, max).await.map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Dialog error: {}", e)),
+                None,
+            )
+        })?;
+
+        debug!(number, "Received numeric input");
+
+        let result = ElicitNumberResult::new(number);
         Ok(Json(result))
     }
 }
