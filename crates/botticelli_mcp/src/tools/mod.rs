@@ -80,10 +80,7 @@ pub use sampling::{
     SamplingResult,
 };
 pub use sampling_session_manager::SamplingSessionManager;
-pub use scene::{
-    CreateSceneTool, DeleteSceneTool, ListScenesTool, UpdateSceneTool, create_scene, delete_scene,
-    list_scenes, scene_tools, update_scene,
-};
+// scene module is now empty - all scene tools migrated to rmcp
 
 // Export LLM tools based on features
 #[cfg(feature = "anthropic")]
@@ -225,11 +222,7 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(ModifyNarrativeTool));
         registry.register(Arc::new(SaveNarrativeTool));
 
-        // Scene management tools
-        registry.register(Arc::new(CreateSceneTool));
-        registry.register(Arc::new(ListScenesTool));
-        registry.register(Arc::new(UpdateSceneTool));
-        registry.register(Arc::new(DeleteSceneTool));
+        // Scene management tools migrated to rmcp (create_scene, list_scenes, update_scene, delete_scene)
 
         // Execution tools (Phase 2 & 3)
         registry.register(Arc::new(GenerateTool));

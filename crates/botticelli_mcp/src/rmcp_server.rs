@@ -5,10 +5,12 @@
 
 use crate::dialog_resource::DialogResource;
 use crate::{
-    EchoParams, EchoResult, ElicitBoolParams, ElicitBoolResult, ElicitNumberParams,
-    ElicitNumberResult, ElicitSelectParams, ElicitSelectResult, ElicitTextParams,
-    ElicitTextResult, ExportMetricsParams, ExportMetricsResult, MetricsFormat, PrometheusMetrics,
-    QueryContentParams, QueryContentResult, ServerInfoResult,
+    CreateSceneParams, CreateSceneResult, DeleteSceneParams, DeleteSceneResult, EchoParams,
+    EchoResult, ElicitBoolParams, ElicitBoolResult, ElicitNumberParams, ElicitNumberResult,
+    ElicitSelectParams, ElicitSelectResult, ElicitTextParams, ElicitTextResult,
+    ExportMetricsParams, ExportMetricsResult, ListScenesParams, ListScenesResult, MetricsFormat,
+    PrometheusMetrics, QueryContentParams, QueryContentResult, ServerInfoResult,
+    UpdateSceneParams, UpdateSceneResult,
 };
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -589,6 +591,116 @@ impl BotticelliServer {
         debug!(selected = %selected, index, "Received selection");
 
         let result = ElicitSelectResult::new(selected.clone());
+        Ok(Json(result))
+    }
+
+    /// Create a new scene in a narrative.
+    ///
+    /// This tool creates a new scene with the given name and optional description.
+    /// Scene management is currently a placeholder for future narrative editing features.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Parameters containing narrative ID, scene name, and optional description
+    ///
+    /// # Returns
+    ///
+    /// The created scene with generated ID and metadata.
+    #[tool(description = "Create a new scene in a narrative")]
+    #[instrument(skip(self))]
+    pub async fn create_scene(
+        &self,
+        Parameters(CreateSceneParams {
+            narrative_id,
+            scene_name,
+            description,
+        }): Parameters<CreateSceneParams>,
+    ) -> Result<Json<CreateSceneResult>, rmcp::ErrorData> {
+        debug!(
+            narrative_id = %narrative_id,
+            scene_name = %scene_name,
+            has_description = description.is_some(),
+            "Creating scene in narrative"
+        );
+
+        // Generate a new scene ID
+        let scene_id = format!("scene_{}", uuid::Uuid::new_v4());
+
+        debug!(scene_id = %scene_id, "Generated scene ID");
+
+        let result = CreateSceneResult::new(scene_id, narrative_id, scene_name, description);
+        Ok(Json(result))
+    }
+
+    /// List all scenes in a narrative.
+    ///
+    /// This tool lists scenes in a narrative. Currently returns an empty list
+    /// as a placeholder for future implementation.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Parameters containing the narrative ID
+    ///
+    /// # Returns
+    ///
+    /// List of scenes in the narrative.
+    #[tool(description = "List all scenes in a narrative")]
+    #[instrument(skip(self))]
+    pub async fn list_scenes(
+        &self,
+        Parameters(ListScenesParams { narrative_id }): Parameters<ListScenesParams>,
+    ) -> Result<Json<ListScenesResult>, rmcp::ErrorData> {
+        debug!(narrative_id = %narrative_id, "Listing scenes");
+
+        let result = ListScenesResult::new(narrative_id, vec![]);
+        Ok(Json(result))
+    }
+
+    /// Update scene details.
+    ///
+    /// This tool updates a scene's properties with the provided updates object.
+    /// Currently a placeholder for future scene editing features.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Parameters containing scene ID and updates object
+    ///
+    /// # Returns
+    ///
+    /// Confirmation of the scene update.
+    #[tool(description = "Update scene details")]
+    #[instrument(skip(self))]
+    pub async fn update_scene(
+        &self,
+        Parameters(UpdateSceneParams { scene_id, updates }): Parameters<UpdateSceneParams>,
+    ) -> Result<Json<UpdateSceneResult>, rmcp::ErrorData> {
+        debug!(scene_id = %scene_id, "Updating scene");
+
+        let result = UpdateSceneResult::new(scene_id, updates);
+        Ok(Json(result))
+    }
+
+    /// Delete a scene from a narrative.
+    ///
+    /// This tool deletes a scene by ID. Currently a placeholder for future
+    /// scene management features.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Parameters containing the scene ID to delete
+    ///
+    /// # Returns
+    ///
+    /// Confirmation of the scene deletion.
+    #[tool(description = "Delete a scene from a narrative")]
+    #[instrument(skip(self))]
+    pub async fn delete_scene(
+        &self,
+        Parameters(DeleteSceneParams { scene_id }): Parameters<DeleteSceneParams>,
+    ) -> Result<Json<DeleteSceneResult>, rmcp::ErrorData> {
+        debug!(scene_id = %scene_id, "Deleting scene");
+
+        let result = DeleteSceneResult::new(scene_id);
         Ok(Json(result))
     }
 }

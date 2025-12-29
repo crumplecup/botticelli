@@ -42,6 +42,7 @@ mod export_metrics;
 mod query_content;
 mod resources;
 mod rmcp_server;
+mod scene;
 // Legacy modules - to be migrated or removed
 // mod server;
 mod server_info;
@@ -66,6 +67,10 @@ pub use export_metrics::{ExportMetricsParams, ExportMetricsResult, MetricsFormat
 pub use query_content::{QueryContentParams, QueryContentResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
+pub use scene::{
+    CreateSceneParams, CreateSceneResult, DeleteSceneParams, DeleteSceneResult, ListScenesParams,
+    ListScenesResult, UpdateSceneParams, UpdateSceneResult,
+};
 // Legacy exports - commented out during rmcp migration
 // pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use server_info::ServerInfoResult;
