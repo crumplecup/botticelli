@@ -135,10 +135,10 @@ impl BotticelliServer {
     /// This tool should not fail under normal circumstances.
     #[tool(description = "Echoes back the input message with a timestamp")]
     #[instrument(skip(self), fields(message))]
-    fn echo(
+    async fn echo(
         &self,
         Parameters(EchoParams { message }): Parameters<EchoParams>
-    ) -> Result<Json<EchoResult>, ToolError> {
+    ) -> Result<Json<EchoResult>, rmcp::ErrorData> {
         debug!(?message, "Processing echo request");
         
         let result = EchoResult::new(message);
