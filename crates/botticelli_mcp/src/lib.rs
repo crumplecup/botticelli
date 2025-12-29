@@ -34,6 +34,7 @@
 
 mod conversation;
 mod dialog_resource;
+mod echo;
 mod elicitation;
 mod errors;
 mod resources;
@@ -54,6 +55,7 @@ pub mod http;
 
 pub use conversation::{Attachment, ConversationSession, ConversationTurn, SessionState};
 pub use dialog_resource::DialogResource;
+pub use echo::{EchoParams, EchoResult};
 pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
