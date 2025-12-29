@@ -38,6 +38,7 @@ mod echo;
 mod elicitation;
 mod errors;
 mod resources;
+mod rmcp_server;
 mod server;
 pub mod tools;
 mod transport;
@@ -61,6 +62,7 @@ pub use elicitation::{
 };
 pub use errors::ToolError;
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
+pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{
     Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool,
