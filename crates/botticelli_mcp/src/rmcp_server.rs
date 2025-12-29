@@ -4,8 +4,13 @@
 //! needed for MCP operations.
 
 use crate::dialog_resource::DialogResource;
+use crate::{EchoParams, EchoResult, ToolError};
 use rmcp::handler::server::tool::ToolRouter;
+use rmcp::handler::server::wrapper::{Json, Parameters};
+use rmcp::model::{ServerCapabilities, ServerInfo};
+use rmcp::{tool, tool_handler, tool_router, ServerHandler};
 use std::sync::Arc;
+use tracing::{debug, instrument};
 
 #[cfg(feature = "database")]
 use botticelli_interface::DatabaseRegistryOperations;
@@ -106,6 +111,59 @@ impl BotticelliServerBuilder {
             #[cfg(feature = "database")]
             db_ops: self.db_ops,
             dialog: self.dialog,
+        }
+    }
+}
+
+#[tool_router]
+impl BotticelliServer {
+    /// Echo back a message with timestamp.
+    ///
+    /// This tool is useful for testing MCP connectivity and verifying
+    /// that the server is responding correctly.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Parameters containing the message to echo
+    ///
+    /// # Returns
+    ///
+    /// Returns the echoed message with a timestamp on success.
+    ///
+    /// # Errors
+    ///
+    /// This tool should not fail under normal circumstances.
+    #[tool(description = "Echoes back the input message with a timestamp")]
+    #[instrument(skip(self), fields(message))]
+    fn echo(
+        &self,
+        Parameters(EchoParams { message }): Parameters<EchoParams>
+    ) -> Result<Json<EchoResult>, ToolError> {
+        debug!(?message, "Processing echo request");
+        
+        let result = EchoResult::new(message);
+        
+        debug!(result = ?result, "Echo completed successfully");
+        Ok(Json(result))
+    }
+}
+
+#[tool_handler]
+impl ServerHandler for BotticelliServer {
+    fn get_info(&self) -> rmcp::model::InitializeResult {
+        rmcp::model::InitializeResult {
+            protocol_version: rmcp::model::ProtocolVersion::V_2024_11_05,
+            capabilities: ServerCapabilities::builder()
+                .enable_tools()
+                .build(),
+            server_info: rmcp::model::Implementation {
+                name: "botticelli".to_string(),
+                version: env!("CARGO_PKG_VERSION").to_string(),
+                title: Some("Botticelli".to_string()),
+                website_url: None,
+                icons: None,
+            },
+            instructions: Some("Botticelli MCP server - LLM orchestration tools".to_string()),
         }
     }
 }

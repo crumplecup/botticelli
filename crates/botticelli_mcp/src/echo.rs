@@ -6,31 +6,31 @@
 use chrono::Utc;
 use derive_getters::Getters;
 use derive_new::new;
-use schemars::JsonSchema;
+use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Parameters for the echo tool.
 ///
 /// This tool echoes back the provided message with a timestamp.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Getters, new)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct EchoParams {
     /// The message to echo back.
     ///
     /// This can be any UTF-8 string. The server will return it
     /// unchanged along with a timestamp.
-    message: String,
+    pub message: String,
 }
 
 /// Result from the echo tool.
 ///
 /// Contains the echoed message and the timestamp when it was processed.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
 pub struct EchoResult {
     /// The echoed message (same as input).
-    echo: String,
+    pub echo: String,
     
     /// ISO 8601 timestamp when the echo was processed.
-    timestamp: String,
+    pub timestamp: String,
 }
 
 impl EchoResult {

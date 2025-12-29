@@ -10,7 +10,7 @@ description = "Model Context Protocol (MCP) server for Botticelli"
 # MCP SDK - using official rmcp
 rmcp = { version = "0.12.0", features = ["server"] }
 rmcp-macros = "0.12.0"
-schemars = "0.8"  # For JsonSchema derives
+schemars = "1.0"  # For JsonSchema derives (matches rmcp)
 
 # Keep pmcp temporarily during migration
 pmcp = { version = "1.8", features = ["streamable-http", "http"] }
