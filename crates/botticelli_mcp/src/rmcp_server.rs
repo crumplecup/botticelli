@@ -4,7 +4,7 @@
 //! needed for MCP operations.
 
 use crate::dialog_resource::DialogResource;
-use crate::{EchoParams, EchoResult, ToolError};
+use crate::{EchoParams, EchoResult, ServerInfoResult, ToolError};
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::{ServerCapabilities, ServerInfo};
@@ -145,6 +145,32 @@ impl BotticelliServer {
         
         debug!(result = ?result, "Echo completed successfully");
         Ok(Json(result))
+    }
+    
+    /// Get server information and metadata.
+    ///
+    /// Returns server name, version, and available tool count.
+    ///
+    /// # Returns
+    ///
+    /// Server metadata including version and tool count.
+    ///
+    /// # Errors
+    ///
+    /// This tool should not fail under normal circumstances.
+    #[tool(description = "Returns server metadata and version information")]
+    #[instrument(skip(self))]
+    pub async fn server_info(&self) -> Result<Json<ServerInfoResult>, rmcp::ErrorData> {
+        debug!("Retrieving server information");
+        
+        let result = Json(ServerInfoResult::new(
+            "botticelli".to_string(),
+            env!("CARGO_PKG_VERSION").to_string(),
+            self.tool_router.list_all().len(),
+        ));
+        
+        debug!(tool_count = result.0.tool_count, "Server info retrieved");
+        Ok(result)
     }
 }
 
