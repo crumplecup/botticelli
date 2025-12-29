@@ -13,6 +13,28 @@ This index tracks all planning documents in the workspace. When documents are co
 ## Active Planning Documents
 
 ### MCP Server & Testing
+
+- **RMCP_MIGRATION_VISION.md** - `current` (2025-12-29) **🎯 STRATEGIC VISION**
+  - Comprehensive vision for migrating from pmcp to rmcp (official Rust MCP SDK)
+  - Macro-based tool generation replacing manual trait implementations
+  - Type-safe parameter extraction with automatic schema generation
+  - 50%+ code reduction, eliminates adapter layer (~200 lines boilerplate)
+  - 5-phase migration plan over 5-6 weeks
+  - Benefits: Better type safety, faster development, ecosystem alignment
+  - Unlocks: Prompts, resources, structured outputs, modular routers
+  - Status: 📋 Vision document - awaiting approval to proceed with Phase 1
+
+- **ELICITATION_RMCP_SYNERGY.md** - `current` (2025-12-29) **🔄 ARCHITECTURAL SYNERGY**
+  - Analysis of how elicitation derives complement rmcp tool macros
+  - **Verdict: Strongly Complementary** - different layers, natural composition
+  - Elicitation = user interaction layer (how to gather data)
+  - RMCP = protocol integration layer (how to expose tools)
+  - Pattern: Elicitation types → RMCP tool parameters
+  - Dual-derive strategy: `#[derive(Elicit, Serialize, Deserialize, JsonSchema)]`
+  - Benefits: Type safety across boundaries, reusable domain types, validation layering
+  - Enables: Tool orchestration, multi-stage wizards, progressive disclosure
+  - Status: 📚 Reference architecture - guides integration design
+
 - **TUI_MCP_CLIENT_FIX.md** - `current` (2025-12-24) **✅ FIXED**
   - Applied MCP server testing lessons to fix TUI client startup issues
   - Problem: Hardcoded wrong port (3030 vs 8080), no server verification, poor observability
