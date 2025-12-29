@@ -328,12 +328,161 @@ impl From<SamplingError> for rmcp::ErrorData {
 - Run `just check-all` before each commit
 - Maintain backward compatibility where possible
 
+## Migration Progress
+
+### Completed Tools (10/36)
+
+#### Core Tools (2)
+- ✅ **echo** - Basic echo with timestamp
+- ✅ **server_info** - Server metadata and version
+
+#### Database Tools (1)
+- ✅ **query_content** - Database query with feature gate, runtime validation
+
+#### Metrics Tools (1)
+- ✅ **export_metrics** - Prometheus/summary format export
+
+#### Elicitation Primitives (4/4) - COMPLETE ✅
+- ✅ **elicit_text** - Text input primitive
+- ✅ **elicit_bool** - Boolean confirmation primitive
+- ✅ **elicit_number** - Number input with range validation
+- ✅ **elicit_select** - Selection from options primitive
+
+#### Scene Management (4/4) - COMPLETE ✅
+- ✅ **create_scene** - Create scene with UUID generation
+- ✅ **list_scenes** - List scenes in narrative
+- ✅ **update_scene** - Update scene with flexible object
+- ✅ **delete_scene** - Delete scene by ID
+
+### Test Coverage
+- **Total Tests Written:** 50+ tests
+- **Test Files:** 8 (echo, server_info, query_content, export_metrics, elicit_text, elicit_bool, elicit_number, elicit_select, scene_tools)
+- **All Tests Passing:** ✅
+
+### Patterns Established
+
+#### 1. Type Module Pattern
+```rust
+// src/{tool_name}.rs - single module for related tools
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct CreateSceneParams { /* ... */ }
+
+#[derive(Debug, Clone, Serialize, JsonSchema)]
+pub struct CreateSceneResult { /* ... */ }
+
+impl CreateSceneResult {
+    pub fn new(...) -> Self { /* ... */ }
+}
+```
+
+#### 2. Feature-Gated Tools
+- Use runtime checks inside method body (not on `#[tool]` macro)
+- Return `ErrorCode::INTERNAL_ERROR` when feature not configured
+- Pattern: `Option<Arc<Dependency>>` in server state
+
+#### 3. MCP Schema Constraints
+- Root type must be `"object"` (not enum)
+- Use structs with optional fields instead of enums for results
+- Example: `ExportMetricsResult` with `Option<String>` fields
+
+#### 4. Validation Patterns
+- Parameter validation (non-empty arrays, range checks)
+- Runtime dependency checks (dialog, database, metrics)
+- Clear error messages with context
+
+#### 5. Testing Approach
+- Direct method calls (no JSON serialization needed)
+- Test params serialization separately
+- Test result serialization separately
+- Test error conditions (missing deps, invalid params)
+- Integration workflow tests (create→update→delete)
+
+### Lessons Learned
+
+1. **Unified Type Modules**: Better to group related tools in one module (e.g., `scene.rs` with all 4 scene tools) rather than separate files
+2. **Feature Gates**: Runtime checks more flexible than compile-time for optional dependencies
+3. **Schema Generation**: `JsonSchema` derive handles most cases, but watch for enum constraints
+4. **UUID Generation**: Added `uuid` crate for scene IDs - consistent ID generation pattern
+5. **Optional Fields**: Use `#[serde(skip_serializing_if = "Option::is_none")]` for clean JSON
+6. **Placeholder Implementation**: Some tools (scenes) are placeholders for future features - documented clearly
+7. **Deprecation Markers**: Mark old modules as deprecated with clear comments after migration
+
+### Remaining Tools (~26)
+
+#### Narrative Generation (3)
+- CreateNarrativeTool
+- ModifyNarrativeTool
+- SaveNarrativeTool
+
+#### Core Validation (1)
+- ValidateNarrativeTool
+
+#### Narrative Elicitation (Session-based) (8)
+- CreateNarrativeSessionTool
+- ElicitMetadataTool
+- ElicitActTool
+- FinalizeNarrativeTool
+- ElicitCarouselTool
+- GetNarrativeStateTool
+- ValidateNarrativeSessionTool
+- ApplyValidationFixesTool
+
+#### Execution (3)
+- GenerateTool
+- ExecuteActTool
+- ExecuteNarrativeTool
+
+#### LLM Integration (5)
+- GenerateGeminiTool
+- GenerateAnthropicTool
+- GenerateOllamaTool
+- GenerateHuggingFaceTool
+- GenerateGroqTool
+
+#### Discord (6 - feature-gated)
+- DiscordPostMessageTool
+- DiscordGetMessagesTool
+- DiscordGetGuildInfoTool
+- DiscordGetChannelsTool
+- DiscordBotCommandTool
+- DiscordPostTool
+
+### Next Session Recommendations
+
+**Priority Order:**
+1. **Narrative Generation** (3 tools) - Self-contained, good learning
+2. **Validation** (1 tool) - Quick win, important functionality
+3. **Execution** (3 tools) - More complex, may need LLM client patterns
+4. **LLM Integration** (5 tools) - Similar patterns, can do in batch
+5. **Narrative Elicitation** (8 tools) - Most complex, stateful registry
+6. **Discord** (6 tools) - Feature-gated, less critical
+
+**Key Files to Review:**
+- `src/rmcp_server.rs` - Current tool implementations
+- `src/tools/mod.rs` - Remaining McpTool registrations
+- Tests in `tests/` - Established testing patterns
+
+**Commands:**
+```bash
+# Check current state
+cargo check -p botticelli_mcp
+cargo test -p botticelli_mcp
+
+# Find remaining McpTool implementations
+grep -r "impl McpTool" crates/botticelli_mcp/src/tools/
+
+# Run full checks before commit
+just check-all botticelli_mcp
+```
+
 ## Current Status
 
 **Completed:**
 - ✅ Steps 1-8: Infrastructure and pmcp removal
-- ✅ Echo tool migrated
-- ✅ server_info tool migrated
-- ✅ 6/6 tests passing
+- ✅ 10/36 tools migrated to rmcp pattern
+- ✅ 50+ tests passing
+- ✅ All elicitation primitives migrated
+- ✅ All scene management tools migrated
+- ✅ Patterns and best practices established
 
-**Next:** Step 9 - Migrate query_content (database) tool
+**Next:** Narrative generation tools (create_narrative, modify_narrative, save_narrative)
