@@ -15,8 +15,8 @@ use {
     botticelli_database::PostgresNarrativeRepository,
     botticelli_mcp_client::McpHost,
     botticelli_storage::FileSystemStorage,
-    diesel::r2d2::{ConnectionManager, Pool},
     diesel::PgConnection,
+    diesel::r2d2::{ConnectionManager, Pool},
 };
 
 /// Container for lazily-initialized services.
@@ -203,7 +203,9 @@ impl ServiceContainer {
     ///
     /// The provider is created lazily on first access based on config.
     #[instrument(skip(self))]
-    pub async fn llm_provider(&self) -> ChatResult<&Arc<dyn botticelli_interface::BotticelliDriver>> {
+    pub async fn llm_provider(
+        &self,
+    ) -> ChatResult<&Arc<dyn botticelli_interface::BotticelliDriver>> {
         self.llm_provider
             .get_or_try_init(|| async {
                 info!("Initializing LLM provider");
@@ -218,10 +220,12 @@ impl ServiceContainer {
     /// Returns provider cast as ToolCalling trait for MCP integration.
     /// Since GeminiClient (our default) implements ToolCalling, this is safe.
     #[instrument(skip(self))]
-    pub async fn llm_provider_with_tools(&self) -> ChatResult<Arc<dyn botticelli_interface::ToolCalling>> {
+    pub async fn llm_provider_with_tools(
+        &self,
+    ) -> ChatResult<Arc<dyn botticelli_interface::ToolCalling>> {
         // Ensure base provider is initialized
         let _ = self.llm_provider().await?;
-        
+
         // Create new client instance that we can cast to ToolCalling
         // This is necessary because we can't downcast trait objects
         let model_id = *self.config.chat().initial_model();
@@ -232,13 +236,13 @@ impl ServiceContainer {
     #[instrument(skip(self))]
     fn init_llm_provider(&self) -> ChatResult<Arc<dyn botticelli_interface::BotticelliDriver>> {
         let initial_model = *self.config.chat().initial_model();
-        
+
         debug!(model = ?initial_model, "Initializing LLM provider");
 
         // Create initial client - fallback is handled at the executor level
         // using ChatSession and ModelSelector
         let client = self.create_client_for_model(initial_model)?;
-        
+
         Ok(client)
     }
 

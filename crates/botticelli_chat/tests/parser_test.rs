@@ -1,6 +1,6 @@
 //! Tests for intent parser.
 
-use botticelli_chat::{parse_intent, Command};
+use botticelli_chat::{Command, parse_intent};
 
 #[test]
 fn test_parse_exit() {

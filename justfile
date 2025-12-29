@@ -395,16 +395,16 @@ chat force="":
     #!/usr/bin/env bash
     set -euo pipefail
     echo "💬 Starting MCP HTTP server in background..."
-    pkill -f botticelli-mcp-pmcp-http || true
+    pkill -f botticelli-mcp-http || true
     if [ "{{ force }}" = "rebuild" ]; then
-        cargo build --package botticelli_mcp --bin botticelli-mcp-pmcp-http --features streamable-http
-        cargo build --package botticelli_tui --bin botticelli-tui --features cli
+        cargo clean -p botticelli_mcp
+        cargo clean -p botticelli_tui
     fi
-    cargo run --package botticelli_mcp --bin botticelli-mcp-pmcp-http --features streamable-http > /tmp/mcp-server.log 2>&1 &
+    cargo run --package botticelli_mcp --bin botticelli-mcp-http --features="http,database,llm" > /tmp/mcp-server.log 2>&1 &
     SERVER_PID=$!
     echo "⏳ Waiting for server to be ready (PID: $SERVER_PID)..."
     for i in {1..30}; do
-        if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+        if curl -sf http://localhost:3030/health > /dev/null 2>&1; then
             echo "✅ Server ready!"
             break
         fi

@@ -52,7 +52,9 @@ impl EnvironmentMode {
 }
 
 /// Environment configuration.
-#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters,
+)]
 #[setters(prefix = "with_", strip_option)]
 pub struct EnvironmentConfig {
     /// Deployment mode.

@@ -280,13 +280,6 @@ async fn test_query_content_tool() {
     // Arc<dyn DatabaseRegistryOperations> which needs proper setup.
     // Integration tests should be done at a higher level with full infrastructure.
 }
-                    || e.to_string().contains("not found"),
-                "Error should be database-related: {}",
-                e.to_string()
-            );
-        }
-    }
-}
 
 /// Test that all tools are registered correctly
 #[test]

@@ -3,7 +3,7 @@
 //! Runs the MCP server over HTTP instead of stdio for web access.
 
 use anyhow::Result;
-use botticelli_mcp::{BotticelliRouter, NarrativeResource, ResourceRegistry};
+use botticelli_mcp::{BotticelliRouter, NarrativeResource, ResourceRegistry, ToolRegistry};
 use std::sync::Arc;
 use tracing_subscriber::{self, EnvFilter};
 
@@ -34,10 +34,14 @@ async fn main() -> Result<()> {
 
     resources.register(Arc::new(NarrativeResource::new()));
 
-    // Create router with default tools and resources
+    // Create empty tool registry
+    let tools = ToolRegistry::new();
+
+    // Create router with tools and resources
     let router = BotticelliRouter::builder()
         .name("botticelli")
         .version(env!("CARGO_PKG_VERSION"))
+        .tools(tools)
         .resources(resources)
         .build();
 

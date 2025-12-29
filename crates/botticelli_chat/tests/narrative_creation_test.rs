@@ -9,9 +9,9 @@
 //! 4. Can save narrative to database
 //! 5. Can load narrative from database
 
+use botticelli_chat::ChatAppConfig;
 #[cfg(feature = "cli")]
 use botticelli_chat::startup_sequence;
-use botticelli_chat::ChatAppConfig;
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
 use std::sync::Once;
 

@@ -45,7 +45,9 @@ async fn setup_postgres(config: &crate::ChatAppConfig) -> ChatResult<()> {
     // Try to connect to postgres database first (always exists)
     let postgres_url = format!(
         "postgresql://{}@{}:{}/postgres",
-        config.postgres().user(), config.postgres().host(), config.postgres().port()
+        config.postgres().user(),
+        config.postgres().host(),
+        config.postgres().port()
     );
 
     debug!(url = %postgres_url, "Attempting connection to postgres database");
@@ -240,7 +242,7 @@ async fn setup_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
 async fn check_mcp_health(url: &str) -> ChatResult<()> {
     // Try to list tools as a health check since /health endpoint not yet implemented
     let client = reqwest::Client::new();
-    
+
     let request = serde_json::json!({
         "jsonrpc": "2.0",
         "id": 1,
@@ -249,7 +251,7 @@ async fn check_mcp_health(url: &str) -> ChatResult<()> {
     });
 
     match client
-        .post(url)  // PMCP server uses root path
+        .post(url) // PMCP server uses root path
         .header("Accept", "application/json")
         .json(&request)
         .timeout(std::time::Duration::from_secs(2))
@@ -297,7 +299,11 @@ async fn start_mcp_server(config: &crate::ChatAppConfig) -> ChatResult<()> {
     }
 
     // First, check if server is already running
-    let url = format!("http://{}:{}/health", config.mcp_server().host(), config.mcp_server().port());
+    let url = format!(
+        "http://{}:{}/health",
+        config.mcp_server().host(),
+        config.mcp_server().port()
+    );
     if let Ok(response) = reqwest::get(&url).await {
         if response.status().is_success() {
             info!("MCP server already running, connecting to existing instance");

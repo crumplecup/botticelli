@@ -62,9 +62,10 @@ impl ConversationLoop {
                     turn_count,
                     "Reached maximum conversation turns, stopping loop"
                 );
-                return Err(ChatError::new(ChatErrorKind::ExecutionFailed(
-                    format!("Conversation exceeded maximum turns ({})", MAX_CONVERSATION_TURNS),
-                )));
+                return Err(ChatError::new(ChatErrorKind::ExecutionFailed(format!(
+                    "Conversation exceeded maximum turns ({})",
+                    MAX_CONVERSATION_TURNS
+                ))));
             }
 
             debug!(turn_count, "Starting conversation turn");
@@ -97,7 +98,7 @@ impl ConversationLoop {
                         e
                     )))
                 })?;
-            
+
             info!("Received response from LLM");
 
             // Extract output from response
@@ -156,8 +157,7 @@ impl ConversationLoop {
 
             info!(
                 tool_call_count = tool_calls.len(),
-                turn_count,
-                "Executing tool calls"
+                turn_count, "Executing tool calls"
             );
 
             // Execute tool calls

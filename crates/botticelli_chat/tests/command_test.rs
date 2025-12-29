@@ -40,14 +40,18 @@ fn test_command_is_social() {
 
 #[test]
 fn test_narrative_command_is_mutating() {
-    assert!(NarrativeCommand::Create {
-        prompt: "test".to_string()
-    }
-    .is_mutating());
-    assert!(NarrativeCommand::UpdateModel {
-        model: "test".to_string()
-    }
-    .is_mutating());
+    assert!(
+        NarrativeCommand::Create {
+            prompt: "test".to_string()
+        }
+        .is_mutating()
+    );
+    assert!(
+        NarrativeCommand::UpdateModel {
+            model: "test".to_string()
+        }
+        .is_mutating()
+    );
     assert!(!NarrativeCommand::Show.is_mutating());
     assert!(!NarrativeCommand::Validate.is_mutating());
 }
@@ -56,8 +60,10 @@ fn test_narrative_command_is_mutating() {
 fn test_narrative_command_is_readonly() {
     assert!(NarrativeCommand::Show.is_readonly());
     assert!(NarrativeCommand::Validate.is_readonly());
-    assert!(!NarrativeCommand::Create {
-        prompt: "test".to_string()
-    }
-    .is_readonly());
+    assert!(
+        !NarrativeCommand::Create {
+            prompt: "test".to_string()
+        }
+        .is_readonly()
+    );
 }

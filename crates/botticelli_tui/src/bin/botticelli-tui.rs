@@ -24,9 +24,10 @@ async fn main() -> TuiResult<()> {
     
     info!("Botticelli TUI starting");
     
-    // TODO: Connect to MCP HTTP server
-    // For now, we need to implement proper HTTP client integration
-    info!("MCP client integration pending - running in standalone mode");
+    // Create HTTP client for MCP server communication
+    let mcp_client = reqwest::Client::new();
+    let mcp_url = "http://localhost:3030/mcp".to_string();
+    info!("MCP client configured for {}", mcp_url);
     
     // Setup terminal
     enable_raw_mode()?;

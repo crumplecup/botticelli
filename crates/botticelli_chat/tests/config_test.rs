@@ -120,7 +120,10 @@ fn test_observability_defaults() {
 
     assert_eq!(config.observability().rust_log(), "info");
     assert_eq!(config.observability().otel_exporter(), "stdout");
-    assert_eq!(config.observability().otel_endpoint(), "http://localhost:4318");
+    assert_eq!(
+        config.observability().otel_endpoint(),
+        "http://localhost:4318"
+    );
 }
 
 #[test]

@@ -21,7 +21,9 @@ fn test_actual_chat_keyboard_lag_with_logs() {
     if !mcp_running {
         eprintln!("⚠️  MCP server not running on http://localhost:8080");
         eprintln!("💡 Start in another terminal:");
-        eprintln!("   cargo run --bin botticelli-mcp-pmcp-http --features database,gemini,groq,streamable-http");
+        eprintln!(
+            "   cargo run --bin botticelli-mcp-pmcp-http --features database,gemini,groq,streamable-http"
+        );
         panic!("MCP server required for integration test");
     }
 
@@ -128,7 +130,9 @@ fn extract_milliseconds(log: &str) -> Option<f64> {
     // Examples: "elapsed=123ms", "took 45ms", "duration=67.8ms"
     for word in log.split_whitespace() {
         if word.ends_with("ms") {
-            let num_str = word.trim_end_matches("ms").trim_end_matches(|c: char| !c.is_numeric() && c != '.');
+            let num_str = word
+                .trim_end_matches("ms")
+                .trim_end_matches(|c: char| !c.is_numeric() && c != '.');
             if let Ok(val) = num_str.parse::<f64>() {
                 return Some(val);
             }

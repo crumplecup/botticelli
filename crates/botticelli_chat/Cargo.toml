@@ -67,6 +67,7 @@ botticelli_mcp_client = { path = "../botticelli_mcp_client" }
 
 # Elicitation framework
 elicitation.workspace = true
+pmcp = { version = "1.8", features = ["streamable-http"] }
 
 # HTTP client (for health checks)
 reqwest = { version = "0.12", features = ["json"], optional = true }

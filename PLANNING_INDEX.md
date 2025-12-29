@@ -37,6 +37,22 @@ This index tracks all planning documents in the workspace. When documents are co
   - Status: ✅ Phase 1 complete - primitive tools implemented
   - Status: ✅ Phase 2 complete - InProcTransport implemented and tested
   - Status: ✅ Phase 3 complete - integration tested, derive macros working
+  - Status: ✅ Phase 4 complete - MetadataElicitor refactored, 98.6% code reduction achieved
+  - Status: ✅ Infrastructure extracted - shared helper ready for all elicitors
+
+- **CODE_REDUCTION_ANALYSIS.md** - `current` (2025-12-28) **📊 METRICS & RESULTS**
+  - Detailed analysis of code reduction from MetadataElicitor refactor
+  - Original: 70 lines of manual dialog calls
+  - Refactored: 1 line using NarrativeMetadata::elicit()
+  - Reduction: 98.6% for core elicitation logic
+  - Documents pattern benefits: type safety, maintainability, testability
+
+- **ELICITOR_REFACTOR_GUIDE.md** - `current` (2025-12-28) **📚 IMPLEMENTATION GUIDE**
+  - Comprehensive guide for applying paradigm-based refactoring to all elicitors
+  - Step-by-step refactoring process with examples
+  - Pattern reference for Survey, Select, and Affirm paradigms
+  - Migration strategy for ActElicitor, InputElicitor, CarouselElicitor, ValidationElicitor
+  - Expected reductions: 60-70% code reduction per elicitor
 
 - **ELICITATION_PARADIGM_REFACTOR.md** - `current` (2025-12-28) **🎯 ARCHITECTURAL VISION**
   - Identifies fundamental design flaw in ElicitationDialog abstraction

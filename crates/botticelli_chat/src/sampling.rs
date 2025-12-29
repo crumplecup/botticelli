@@ -187,7 +187,9 @@ impl LlmSampler for ChatLlmSampler {
                 provider.generate(&request).await
             } else {
                 debug!(tool_count = available_tools.len(), "Generating with tools");
-                provider.generate_with_tools(&request, available_tools).await
+                provider
+                    .generate_with_tools(&request, available_tools)
+                    .await
             };
 
             match response {
@@ -236,10 +238,7 @@ impl LlmSampler for ChatLlmSampler {
                             }
                             Err(_) => {
                                 // Not a rate limit error or no fallback available
-                                warn!(
-                                    attempts,
-                                    "No fallback available or not a rate limit error"
-                                );
+                                warn!(attempts, "No fallback available or not a rate limit error");
                                 return Err(SamplingError::new(SamplingErrorKind::ProviderError(
                                     error_msg,
                                 )));

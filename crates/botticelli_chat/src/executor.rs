@@ -65,10 +65,10 @@ use crate::ServiceContainer;
 pub struct CommandExecutor {
     narrative_state: Arc<RwLock<NarrativeState>>,
     services: Arc<ServiceContainer>,
-    
+
     #[cfg(feature = "cli")]
     sampling: Arc<SamplingIntegration>,
-    
+
     current_narrative: Arc<RwLock<Option<PartialNarrative>>>,
 }
 
@@ -77,17 +77,17 @@ impl CommandExecutor {
     #[instrument]
     pub async fn new() -> ChatResult<Self> {
         let services = Arc::new(ServiceContainer::new(crate::ChatAppConfig::default()));
-        
+
         #[cfg(feature = "cli")]
         let sampling = Arc::new(SamplingIntegration::new(services.clone()).await?);
-        
+
         Ok(Self {
             narrative_state: Arc::new(RwLock::new(NarrativeState::new())),
             services,
-            
+
             #[cfg(feature = "cli")]
             sampling,
-            
+
             current_narrative: Arc::new(RwLock::new(None)),
         })
     }
@@ -97,14 +97,14 @@ impl CommandExecutor {
     pub async fn with_services(services: Arc<ServiceContainer>) -> ChatResult<Self> {
         #[cfg(feature = "cli")]
         let sampling = Arc::new(SamplingIntegration::new(services.clone()).await?);
-        
+
         Ok(Self {
             narrative_state: Arc::new(RwLock::new(NarrativeState::new())),
             services,
-            
+
             #[cfg(feature = "cli")]
             sampling,
-            
+
             current_narrative: Arc::new(RwLock::new(None)),
         })
     }
@@ -626,9 +626,7 @@ Other:
     #[cfg(feature = "cli")]
     #[instrument(skip(self))]
     async fn handle_save_narrative(&self, _path: String) -> ChatResult<Response> {
-        use botticelli_interface::{
-            ActExecutionBuilder, NarrativeExecution, NarrativeRepository,
-        };
+        use botticelli_interface::{ActExecutionBuilder, NarrativeExecution, NarrativeRepository};
         use tracing::info;
 
         // Check current state
@@ -668,13 +666,7 @@ Other:
                 )))
             })?;
 
-        let execution = NarrativeExecution::new(
-            prompt.clone(),
-            vec![act],
-            None,
-            None,
-            None,
-        );
+        let execution = NarrativeExecution::new(prompt.clone(), vec![act], None, None, None);
 
         // Save to database
         let repo = self.services.narrative_repository().await?;
