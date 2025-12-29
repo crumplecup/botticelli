@@ -35,8 +35,7 @@ mod sampling;
 mod sampling_integration;
 
 pub use botticelli_mcp::{
-    ConversationSession, ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative,
-    PartialNarrativeBuilder,
+    ConversationSession, ElicitationDialog, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
 pub use chat_config::ChatConfig;
 pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
@@ -45,8 +44,11 @@ pub use config::{
     McpServerConfig, ObservabilityConfig, PostgresConfig,
 };
 pub use elicitation::{
-    ActElicitor, CarouselElicitor, ElicitationSession, InputElicitor, MetadataElicitor,
-    ValidationElicitor,
+    ActApproach, ActDefinition, BotCommandConfig, CarouselConfig, DocumentInputConfig,
+    HistoryRetentionMode, InputType, MediaInputConfig, MediaSource, NarrativeMetadata,
+    NarrativeReferenceConfig, OutputFormat, TableQueryConfig, TextInputConfig,
+    create_mcp_client_for_dialog, elicit_acts, elicit_carousel, elicit_inputs, elicit_metadata,
+    elicit_validation,
 };
 
 pub use executor::{CommandExecutor, NarrativeState};
@@ -68,8 +70,8 @@ pub use services::ServiceContainer;
 pub use mcp_chat_host::McpChatHost;
 
 #[cfg(feature = "cli")]
+pub use conversation_loop::ConversationLoop;
+#[cfg(feature = "cli")]
 pub use startup::startup_sequence;
 pub use state::ConversationState;
-#[cfg(feature = "cli")]
-pub use conversation_loop::ConversationLoop;
 pub use tool_handler::ToolCallHandler;
