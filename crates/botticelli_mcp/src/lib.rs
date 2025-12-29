@@ -13,12 +13,12 @@
 //!
 //! ```no_run
 //! use botticelli_mcp::BotticelliServer;
-//! use rmcp::ServerHandler;
+//! use rmcp::{ServerHandler, ServiceExt};
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
 //!     let server = BotticelliServer::builder().build();
-//!     
+//!
 //!     // Use rmcp's serve method with stdio transport
 //!     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
 //!     server.serve((stdin, stdout)).await?;
@@ -34,6 +34,7 @@ mod dialog_resource;
 mod echo;
 mod elicitation;
 mod errors;
+mod query_content;
 mod resources;
 mod rmcp_server;
 // Legacy modules - to be migrated or removed
@@ -52,20 +53,21 @@ pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
 pub use errors::ToolError;
+pub use query_content::{QueryContentParams, QueryContentResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
 // Legacy exports - commented out during rmcp migration
 // pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use server_info::ServerInfoResult;
 pub use tools::{
-    Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool,
-    ElicitBoolTool, ElicitMetadataInput, ElicitMetadataTool, ElicitNumberTool,
-    ElicitSelectTool, ElicitTextTool, ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics,
-    ExportMetricsTool, FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler,
-    McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper, NarrativeRegistry,
-    PrometheusMetrics, QueryContentTool, SamplingCoordinator, SamplingError, SamplingErrorKind,
-    SamplingHelper, SamplingResult, SaveNarrativeTool, ServerInfoTool, StartNarrativeInput,
-    StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
+    Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool, ElicitBoolTool,
+    ElicitMetadataInput, ElicitMetadataTool, ElicitNumberTool, ElicitSelectTool, ElicitTextTool,
+    ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics, ExportMetricsTool,
+    FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler, McpTool,
+    MetricsSummary, ModifyNarrativeTool, NarrativeHelper, NarrativeRegistry, PrometheusMetrics,
+    SamplingCoordinator, SamplingError, SamplingErrorKind, SamplingHelper, SamplingResult,
+    SaveNarrativeTool, ServerInfoTool, StartNarrativeInput, StartNarrativeTool, ToolRegistry,
+    ValidateNarrativeTool,
 };
 // Legacy transport exports - commented out during rmcp migration
 // pub use transport::{

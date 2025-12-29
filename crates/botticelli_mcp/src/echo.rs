@@ -4,8 +4,6 @@
 //! the input message with a timestamp, useful for testing MCP connectivity.
 
 use chrono::Utc;
-use derive_getters::Getters;
-use derive_new::new;
 use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -28,7 +26,7 @@ pub struct EchoParams {
 pub struct EchoResult {
     /// The echoed message (same as input).
     pub echo: String,
-    
+
     /// ISO 8601 timestamp when the echo was processed.
     pub timestamp: String,
 }

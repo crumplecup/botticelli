@@ -4,11 +4,11 @@
 //! needed for MCP operations.
 
 use crate::dialog_resource::DialogResource;
-use crate::{EchoParams, EchoResult, ServerInfoResult, ToolError};
+use crate::{EchoParams, EchoResult, QueryContentParams, QueryContentResult, ServerInfoResult};
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use rmcp::model::{ServerCapabilities, ServerInfo};
-use rmcp::{tool, tool_handler, tool_router, ServerHandler};
+use rmcp::model::ServerCapabilities;
+use rmcp::{ServerHandler, tool, tool_handler, tool_router};
 use std::sync::Arc;
 use tracing::{debug, instrument};
 
@@ -31,10 +31,10 @@ use botticelli_interface::DatabaseRegistryOperations;
 #[derive(Clone)]
 pub struct BotticelliServer {
     tool_router: ToolRouter<Self>,
-    
+
     #[cfg(feature = "database")]
     db_ops: Option<Arc<dyn DatabaseRegistryOperations>>,
-    
+
     dialog: Option<Arc<DialogResource>>,
 }
 
@@ -66,7 +66,7 @@ impl BotticelliServer {
 pub struct BotticelliServerBuilder {
     #[cfg(feature = "database")]
     db_ops: Option<Arc<dyn DatabaseRegistryOperations>>,
-    
+
     dialog: Option<Arc<DialogResource>>,
 }
 
@@ -85,7 +85,7 @@ impl BotticelliServerBuilder {
         self.db_ops = Some(db);
         self
     }
-    
+
     /// Configure dialog resource for elicitation tools.
     ///
     /// # Arguments
@@ -99,7 +99,7 @@ impl BotticelliServerBuilder {
         self.dialog = Some(dialog);
         self
     }
-    
+
     /// Build the BotticelliServer instance.
     ///
     /// # Returns
@@ -137,16 +137,16 @@ impl BotticelliServer {
     #[instrument(skip(self), fields(message))]
     pub async fn echo(
         &self,
-        Parameters(EchoParams { message }): Parameters<EchoParams>
+        Parameters(EchoParams { message }): Parameters<EchoParams>,
     ) -> Result<Json<EchoResult>, rmcp::ErrorData> {
         debug!(?message, "Processing echo request");
-        
+
         let result = EchoResult::new(message);
-        
+
         debug!(result = ?result, "Echo completed successfully");
         Ok(Json(result))
     }
-    
+
     /// Get server information and metadata.
     ///
     /// Returns server name, version, and available tool count.
@@ -162,15 +162,88 @@ impl BotticelliServer {
     #[instrument(skip(self))]
     pub async fn server_info(&self) -> Result<Json<ServerInfoResult>, rmcp::ErrorData> {
         debug!("Retrieving server information");
-        
+
         let result = Json(ServerInfoResult::new(
             "botticelli".to_string(),
             env!("CARGO_PKG_VERSION").to_string(),
             self.tool_router.list_all().len(),
         ));
-        
+
         debug!(tool_count = result.0.tool_count, "Server info retrieved");
         Ok(result)
+    }
+
+    /// Query content from database tables.
+    ///
+    /// Returns a list of content items with their metadata from the specified table.
+    /// Requires database feature and configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Query parameters including table name and limit
+    ///
+    /// # Returns
+    ///
+    /// Query results with status, table name, count, limit, and rows.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Database feature is not enabled
+    /// - Database operations are not configured
+    /// - Query execution fails
+    /// - Invalid table name or limit
+    #[tool(description = "Query content from database tables")]
+    #[instrument(skip(self), fields(table, limit))]
+    pub async fn query_content(
+        &self,
+        Parameters(QueryContentParams { table, limit }): Parameters<QueryContentParams>,
+    ) -> Result<Json<QueryContentResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(?table, limit, "Processing query_content request");
+
+        #[cfg(not(feature = "database"))]
+        {
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Borrowed("Database feature not enabled"),
+                None,
+            ));
+        }
+
+        #[cfg(feature = "database")]
+        {
+            // Check if database operations are available
+            let db_ops = self.db_ops.as_ref().ok_or_else(|| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Borrowed("Database operations not configured"),
+                    None,
+                )
+            })?;
+
+            // Clamp limit to valid range
+            let limit = limit.clamp(1, 100);
+
+            debug!(table = %table, limit, "Querying content");
+
+            // Execute query
+            let query = format!("SELECT * FROM {} LIMIT {}", table, limit);
+            let rows = db_ops.execute_query(&query).await.map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Query failed: {}", e)),
+                    None,
+                )
+            })?;
+
+            debug!(count = rows.len(), "Retrieved rows from database");
+
+            let result = QueryContentResult::new(table, limit, rows);
+            Ok(Json(result))
+        }
     }
 }
 
@@ -179,9 +252,7 @@ impl ServerHandler for BotticelliServer {
     fn get_info(&self) -> rmcp::model::InitializeResult {
         rmcp::model::InitializeResult {
             protocol_version: rmcp::model::ProtocolVersion::V_2024_11_05,
-            capabilities: ServerCapabilities::builder()
-                .enable_tools()
-                .build(),
+            capabilities: ServerCapabilities::builder().enable_tools().build(),
             server_info: rmcp::model::Implementation {
                 name: "botticelli".to_string(),
                 version: env!("CARGO_PKG_VERSION").to_string(),

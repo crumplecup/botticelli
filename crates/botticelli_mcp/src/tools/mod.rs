@@ -2,7 +2,6 @@
 
 mod bot_commands;
 mod create_narrative;
-mod database;
 #[cfg(feature = "discord")]
 mod discord;
 #[cfg(feature = "discord")]
@@ -35,7 +34,6 @@ mod validate_narrative_session;
 
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 pub use create_narrative::CreateNarrativeTool;
-pub use database::QueryContentTool;
 #[cfg(feature = "discord")]
 pub use discord::{
     DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool, DiscordPostMessageTool,
@@ -87,8 +85,8 @@ pub use sampling::{
 };
 pub use sampling_session_manager::SamplingSessionManager;
 pub use scene::{
-    create_scene, delete_scene, list_scenes, scene_tools, update_scene, CreateSceneTool,
-    DeleteSceneTool, ListScenesTool, UpdateSceneTool,
+    CreateSceneTool, DeleteSceneTool, ListScenesTool, UpdateSceneTool, create_scene, delete_scene,
+    list_scenes, scene_tools, update_scene,
 };
 
 // Export LLM tools based on features
@@ -179,11 +177,13 @@ impl ToolRegistry {
     pub fn tool_definitions(&self) -> Vec<botticelli_core::ToolDefinition> {
         self.tools
             .values()
-            .map(|tool| botticelli_core::ToolDefinition::new(
-                tool.name().to_string(),
-                tool.description().to_string(),
-                tool.input_schema(),
-            ))
+            .map(|tool| {
+                botticelli_core::ToolDefinition::new(
+                    tool.name().to_string(),
+                    tool.description().to_string(),
+                    tool.input_schema(),
+                )
+            })
             .collect()
     }
 }
@@ -222,9 +222,7 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(ValidateNarrativeSessionTool::new(
             narrative_registry.clone(),
         )));
-        registry.register(Arc::new(ApplyValidationFixesTool::new(
-            narrative_registry,
-        )));
+        registry.register(Arc::new(ApplyValidationFixesTool::new(narrative_registry)));
 
         // Narrative generation tools (Phase 1)
         registry.register(Arc::new(CreateNarrativeTool));
