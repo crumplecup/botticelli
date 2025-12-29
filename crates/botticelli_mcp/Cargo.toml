@@ -12,10 +12,6 @@ rmcp = { version = "0.12.0", features = ["server"] }
 rmcp-macros = "0.12.0"
 schemars = "1.0"  # For JsonSchema derives (matches rmcp)
 
-# Keep pmcp temporarily during migration
-pmcp = { version = "1.8", features = ["streamable-http", "http"] }
-mcp-server = "0.1.0"  # Keep during migration
-
 # Async runtime
 tokio = { workspace = true, features = ["full"] }
 async-trait = { workspace = true }
@@ -80,8 +76,8 @@ futures = "0.3"
 [features]
 default = []
 
-# HTTP transport using pmcp
-streamable-http = ["pmcp/streamable-http"]
+# Legacy feature - kept for backward compatibility, no longer used
+streamable-http = []
 
 # Database integration
 database = ["dep:botticelli_database", "dep:diesel"]
@@ -89,7 +85,7 @@ database = ["dep:botticelli_database", "dep:diesel"]
 # Discord integration
 discord = ["dep:botticelli_social"]
 
-# HTTP server (old axum-based implementation)
+# HTTP server
 http = ["dep:axum", "dep:tower", "dep:tower-http"]
 
 # LLM backend features
@@ -112,16 +108,6 @@ required-features = ["http", "database", "llm"]
 name = "botticelli-mcp"
 path = "src/bin/botticelli-mcp.rs"
 required-features = ["database", "llm"]
-
-[[bin]]
-name = "botticelli-mcp-pmcp"
-path = "src/bin/botticelli-mcp-pmcp.rs"
-# No required features - works with any feature set
-
-[[bin]]
-name = "botticelli-mcp-pmcp-http"
-path = "src/bin/botticelli-mcp-pmcp-http.rs"
-# Placeholder for future HTTP support
 
 [package.metadata.docs.rs]
 all-features = true

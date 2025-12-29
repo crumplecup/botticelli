@@ -12,19 +12,16 @@
 //! # Usage
 //!
 //! ```no_run
-//! use botticelli_mcp::{BotticelliRouter, ByteTransport, Server, RouterService};
-//! use tokio::io::{stdin, stdout};
+//! use botticelli_mcp::BotticelliServer;
+//! use rmcp::ServerHandler;
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
-//!     let router = BotticelliRouter::builder()
-//!         .name("botticelli")
-//!         .version(env!("CARGO_PKG_VERSION"))
-//!         .build();
+//!     let server = BotticelliServer::builder().build();
 //!     
-//!     let server = Server::new(RouterService(router));
-//!     let transport = ByteTransport::new(stdin(), stdout());
-//!     server.run(transport).await?;
+//!     // Use rmcp's serve method with stdio transport
+//!     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
+//!     server.serve((stdin, stdout)).await?;
 //!     Ok(())
 //! }
 //! ```
@@ -39,18 +36,11 @@ mod elicitation;
 mod errors;
 mod resources;
 mod rmcp_server;
-mod server;
+// Legacy modules - to be migrated or removed
+// mod server;
 mod server_info;
 pub mod tools;
-mod transport;
-
-// PMCP migration - new implementation
-mod pmcp_adapters;
-mod pmcp_middleware;
-mod pmcp_server;
-
-#[cfg(feature = "streamable-http")]
-mod pmcp_http_server;
+// mod transport;
 
 #[cfg(feature = "http")]
 pub mod http;
@@ -64,7 +54,8 @@ pub use elicitation::{
 pub use errors::ToolError;
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
-pub use server::{BotticelliRouter, BotticelliRouterBuilder};
+// Legacy exports - commented out during rmcp migration
+// pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use server_info::ServerInfoResult;
 pub use tools::{
     Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool,
@@ -76,9 +67,10 @@ pub use tools::{
     SamplingHelper, SamplingResult, SaveNarrativeTool, ServerInfoTool, StartNarrativeInput,
     StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
-pub use transport::{
-    HttpTransport, InProcServerHandle, InProcTransport, McpTransport, McpTransportError,
-};
+// Legacy transport exports - commented out during rmcp migration
+// pub use transport::{
+//     HttpTransport, InProcServerHandle, InProcTransport, McpTransport, McpTransportError,
+// };
 
 #[cfg(feature = "discord")]
 pub use tools::{
@@ -99,13 +91,3 @@ pub use tools::GenerateOllamaTool;
 
 #[cfg(feature = "database")]
 pub use resources::ContentResource;
-
-// PMCP migration exports
-pub use pmcp_server::{register_all_tools, run_pmcp_server};
-
-#[cfg(feature = "streamable-http")]
-pub use pmcp_http_server::run_pmcp_http_server;
-
-// Re-export key mcp-server types for convenience
-pub use mcp_server::router::RouterService;
-pub use mcp_server::{ByteTransport, Router, Server};
