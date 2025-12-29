@@ -35,6 +35,7 @@
 mod conversation;
 mod dialog_resource;
 mod elicitation;
+mod errors;
 mod resources;
 mod server;
 pub mod tools;
@@ -56,6 +57,7 @@ pub use dialog_resource::DialogResource;
 pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
+pub use errors::ToolError;
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{
