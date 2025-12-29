@@ -11,7 +11,6 @@ mod elicitation;
 mod elicitation_primitives;
 mod execute_act;
 mod execute_narrative;
-mod export_metrics;
 mod generate;
 mod generate_llm;
 mod get_narrative_state;
@@ -52,7 +51,6 @@ pub use elicitation_primitives::{
 };
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
-pub use export_metrics::ExportMetricsTool;
 pub use generate::GenerateTool;
 pub use get_narrative_state::GetNarrativeStateTool;
 pub use metrics::{ActMetrics, ExecutionMetrics};
@@ -239,11 +237,6 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(GenerateTool));
         registry.register(Arc::new(ExecuteActTool::new()));
         registry.register(Arc::new(ExecuteNarrativeTool::new()));
-
-        // Metrics tool
-        if let Some(ref metrics) = registry.metrics {
-            registry.register(Arc::new(ExportMetricsTool::new(Arc::clone(metrics))));
-        }
 
         // Execution tools (Phase 4 - Multi-backend LLM integration)
         #[cfg(feature = "gemini")]

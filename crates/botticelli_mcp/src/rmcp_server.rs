@@ -4,11 +4,14 @@
 //! needed for MCP operations.
 
 use crate::dialog_resource::DialogResource;
-use crate::{EchoParams, EchoResult, QueryContentParams, QueryContentResult, ServerInfoResult};
+use crate::{
+    EchoParams, EchoResult, ExportMetricsParams, ExportMetricsResult, MetricsFormat,
+    PrometheusMetrics, QueryContentParams, QueryContentResult, ServerInfoResult,
+};
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ServerCapabilities;
-use rmcp::{ServerHandler, tool, tool_handler, tool_router};
+use rmcp::{tool, tool_handler, tool_router, ServerHandler};
 use std::sync::Arc;
 use tracing::{debug, instrument};
 
@@ -36,6 +39,8 @@ pub struct BotticelliServer {
     db_ops: Option<Arc<dyn DatabaseRegistryOperations>>,
 
     dialog: Option<Arc<DialogResource>>,
+
+    metrics: Option<Arc<PrometheusMetrics>>,
 }
 
 impl BotticelliServer {
@@ -68,6 +73,8 @@ pub struct BotticelliServerBuilder {
     db_ops: Option<Arc<dyn DatabaseRegistryOperations>>,
 
     dialog: Option<Arc<DialogResource>>,
+
+    metrics: Option<Arc<PrometheusMetrics>>,
 }
 
 impl BotticelliServerBuilder {
@@ -100,6 +107,20 @@ impl BotticelliServerBuilder {
         self
     }
 
+    /// Configure Prometheus metrics collector.
+    ///
+    /// # Arguments
+    ///
+    /// * `metrics` - Prometheus metrics collector
+    ///
+    /// # Returns
+    ///
+    /// The builder for method chaining.
+    pub fn metrics(mut self, metrics: Arc<PrometheusMetrics>) -> Self {
+        self.metrics = Some(metrics);
+        self
+    }
+
     /// Build the BotticelliServer instance.
     ///
     /// # Returns
@@ -111,6 +132,7 @@ impl BotticelliServerBuilder {
             #[cfg(feature = "database")]
             db_ops: self.db_ops,
             dialog: self.dialog,
+            metrics: self.metrics,
         }
     }
 }
@@ -243,6 +265,77 @@ impl BotticelliServer {
 
             let result = QueryContentResult::new(table, limit, rows);
             Ok(Json(result))
+        }
+    }
+
+    /// Export execution metrics in Prometheus or summary format.
+    ///
+    /// Returns metrics for monitoring dashboards. Can export in full Prometheus
+    /// text format or as a quick summary.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Export parameters including format selection
+    ///
+    /// # Returns
+    ///
+    /// Metrics in the requested format (prometheus or summary).
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Metrics collector is not configured
+    /// - Metrics export fails
+    #[tool(description = "Export execution metrics in Prometheus text format for monitoring dashboards")]
+    #[instrument(skip(self))]
+    pub async fn export_metrics(
+        &self,
+        Parameters(ExportMetricsParams { format }): Parameters<ExportMetricsParams>,
+    ) -> Result<Json<ExportMetricsResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(?format, "Exporting metrics");
+
+        // Check if metrics collector is available
+        let metrics = self.metrics.as_ref().ok_or_else(|| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Borrowed("Metrics collector not configured"),
+                None,
+            )
+        })?;
+
+        match format {
+            MetricsFormat::Prometheus => {
+                let metrics_text = metrics.export_prometheus().map_err(|e| {
+                    rmcp::ErrorData::new(
+                        ErrorCode::INTERNAL_ERROR,
+                        Cow::Owned(format!("Failed to export prometheus metrics: {}", e)),
+                        None,
+                    )
+                })?;
+
+                let result = ExportMetricsResult::prometheus(metrics_text);
+                Ok(Json(result))
+            }
+            MetricsFormat::Summary => {
+                let summary = metrics.summary().map_err(|e| {
+                    rmcp::ErrorData::new(
+                        ErrorCode::INTERNAL_ERROR,
+                        Cow::Owned(format!("Failed to get metrics summary: {}", e)),
+                        None,
+                    )
+                })?;
+
+                let result = ExportMetricsResult::summary(
+                    summary.total_executions,
+                    summary.total_tokens,
+                    summary.total_cost_usd,
+                    summary.avg_duration_ms,
+                );
+                Ok(Json(result))
+            }
         }
     }
 }

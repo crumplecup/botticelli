@@ -34,6 +34,7 @@ mod dialog_resource;
 mod echo;
 mod elicitation;
 mod errors;
+mod export_metrics;
 mod query_content;
 mod resources;
 mod rmcp_server;
@@ -53,6 +54,7 @@ pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
 pub use errors::ToolError;
+pub use export_metrics::{ExportMetricsParams, ExportMetricsResult, MetricsFormat};
 pub use query_content::{QueryContentParams, QueryContentResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
@@ -62,9 +64,9 @@ pub use server_info::ServerInfoResult;
 pub use tools::{
     Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool, ElicitBoolTool,
     ElicitMetadataInput, ElicitMetadataTool, ElicitNumberTool, ElicitSelectTool, ElicitTextTool,
-    ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics, ExportMetricsTool,
-    FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler, McpTool,
-    MetricsSummary, ModifyNarrativeTool, NarrativeHelper, NarrativeRegistry, PrometheusMetrics,
+    ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics, FinalizeNarrativeInput,
+    FinalizeNarrativeTool, GenerateTool, LlmSampler, McpTool, MetricsSummary,
+    ModifyNarrativeTool, NarrativeHelper, NarrativeRegistry, PrometheusMetrics,
     SamplingCoordinator, SamplingError, SamplingErrorKind, SamplingHelper, SamplingResult,
     SaveNarrativeTool, ServerInfoTool, StartNarrativeInput, StartNarrativeTool, ToolRegistry,
     ValidateNarrativeTool,
