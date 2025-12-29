@@ -199,31 +199,33 @@ Validation:
 //! the input message with a timestamp, useful for testing MCP connectivity.
 
 use chrono::Utc;
+use derive_getters::Getters;
+use derive_new::new;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Parameters for the echo tool.
 ///
 /// This tool echoes back the provided message with a timestamp.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Getters, new)]
 pub struct EchoParams {
     /// The message to echo back.
     ///
     /// This can be any UTF-8 string. The server will return it
     /// unchanged along with a timestamp.
-    pub message: String,
+    message: String,
 }
 
 /// Result from the echo tool.
 ///
 /// Contains the echoed message and the timestamp when it was processed.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Getters)]
 pub struct EchoResult {
     /// The echoed message (same as input).
-    pub echo: String,
+    echo: String,
     
     /// ISO 8601 timestamp when the echo was processed.
-    pub timestamp: String,
+    timestamp: String,
 }
 
 impl EchoResult {
@@ -271,10 +273,12 @@ Add strongly-typed parameters and results for echo tool:
 
 Standards compliance:
 - Full standard derives (Debug, Clone, PartialEq, Eq, Hash)
+- derive-getters for field access (private fields)
+- derive-new for EchoParams constructor
 - Complete documentation on types, fields, and methods
 - Crate-level exports in lib.rs (no module paths in imports)
 - One file per domain pattern
-- Helper method for construction
+- Helper method for EchoResult construction
 
 Validation:
 - cargo check passes
@@ -350,7 +354,7 @@ impl BotticelliServer {
 ///
 /// Provides a type-safe way to configure optional server components
 /// before construction.
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct BotticelliServerBuilder {
     #[cfg(feature = "database")]
     db_ops: Option<Arc<dyn DatabaseRegistryOperations>>,
@@ -569,8 +573,8 @@ async fn test_echo_basic_message() {
         .await
         .expect("Echo should succeed");
     
-    assert_eq!(result.0.echo, "Hello, MCP!");
-    assert!(!result.0.timestamp.is_empty());
+    assert_eq!(result.0.echo(), "Hello, MCP!");
+    assert!(!result.0.timestamp().is_empty());
 }
 
 #[tokio::test]
@@ -584,7 +588,7 @@ async fn test_echo_empty_message() {
         .await
         .expect("Echo should succeed even with empty message");
     
-    assert_eq!(result.0.echo, "");
+    assert_eq!(result.0.echo(), "");
 }
 
 #[tokio::test]
@@ -598,7 +602,7 @@ async fn test_echo_unicode_message() {
         .await
         .expect("Echo should handle unicode");
     
-    assert_eq!(result.0.echo, "Hello 世界 🌍");
+    assert_eq!(result.0.echo(), "Hello 世界 🌍");
 }
 ```
 
@@ -642,25 +646,27 @@ Validation:
 //!
 //! Provides server metadata and version information.
 
+use derive_getters::Getters;
+use derive_new::new;
 use schemars::JsonSchema;
 use serde::Serialize;
 
 /// Result from the server_info tool.
 ///
 /// Contains server metadata including name, version, and timestamp.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Getters, new)]
 pub struct ServerInfoResult {
     /// Server name.
-    pub name: String,
+    name: String,
     
     /// Server version.
-    pub version: String,
+    version: String,
     
     /// ISO 8601 timestamp when info was retrieved.
-    pub timestamp: String,
+    timestamp: String,
     
     /// Number of tools available.
-    pub tool_count: usize,
+    tool_count: usize,
 }
 ```
 
@@ -698,14 +704,14 @@ Add to `#[tool_router] impl BotticelliServer`:
     async fn server_info(&self) -> Result<Json<ServerInfoResult>, ToolError> {
         debug!("Retrieving server information");
         
-        let result = Json(ServerInfoResult {
-            name: "botticelli".to_string(),
-            version: env!("CARGO_PKG_VERSION").to_string(),
-            timestamp: Utc::now().to_rfc3339(),
-            tool_count: self.tool_router.list_all().len(),
-        });
+        let result = Json(ServerInfoResult::new(
+            "botticelli".to_string(),
+            env!("CARGO_PKG_VERSION").to_string(),
+            Utc::now().to_rfc3339(),
+            self.tool_router.list_all().len(),
+        ));
         
-        debug!(tool_count = result.0.tool_count, "Server info retrieved");
+        debug!(tool_count = result.0.tool_count(), "Server info retrieved");
         Ok(result)
     }
 ```
@@ -725,10 +731,10 @@ async fn test_server_info_basic() {
         .await
         .expect("Server info should succeed");
     
-    assert_eq!(result.0.name, "botticelli");
-    assert!(!result.0.version.is_empty());
-    assert!(!result.0.timestamp.is_empty());
-    assert!(result.0.tool_count >= 2); // At least echo and server_info
+    assert_eq!(result.0.name(), "botticelli");
+    assert!(!result.0.version().is_empty());
+    assert!(!result.0.timestamp().is_empty());
+    assert!(*result.0.tool_count() >= 2); // At least echo and server_info
 }
 ```
 
@@ -752,10 +758,13 @@ Add server_info tool with metadata:
 
 Standards compliance:
 - Complete documentation
-- Standard derives
+- Standard derives (Debug, Clone, PartialEq, Eq)
+- derive-getters for private fields
+- derive-new for constructor
 - Instrumentation with debug logging
 - Tests in tests/ directory
 - Crate-level exports
+- Getters used in tool implementation (result.0.tool_count())
 
 Validation:
 - cargo check passes
