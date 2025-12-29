@@ -6,9 +6,9 @@
 use crate::dialog_resource::DialogResource;
 use crate::{
     EchoParams, EchoResult, ElicitBoolParams, ElicitBoolResult, ElicitNumberParams,
-    ElicitNumberResult, ElicitTextParams, ElicitTextResult, ExportMetricsParams,
-    ExportMetricsResult, MetricsFormat, PrometheusMetrics, QueryContentParams, QueryContentResult,
-    ServerInfoResult,
+    ElicitNumberResult, ElicitSelectParams, ElicitSelectResult, ElicitTextParams,
+    ElicitTextResult, ExportMetricsParams, ExportMetricsResult, MetricsFormat, PrometheusMetrics,
+    QueryContentParams, QueryContentResult, ServerInfoResult,
 };
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -510,6 +510,85 @@ impl BotticelliServer {
         debug!(number, "Received numeric input");
 
         let result = ElicitNumberResult::new(number);
+        Ok(Json(result))
+    }
+
+    /// Select one option from a finite list of choices.
+    ///
+    /// This tool provides the basic building block for selection elicitation
+    /// that the elicitation crate's derive macros expect.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Parameters containing the prompt and options list
+    ///
+    /// # Returns
+    ///
+    /// The user's selected option from the provided list.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Dialog resource is not configured
+    /// - Dialog interaction fails
+    /// - Options array is empty
+    /// - Selected index is out of bounds
+    #[tool(description = "Select one option from a finite list of choices")]
+    #[instrument(skip(self))]
+    pub async fn elicit_select(
+        &self,
+        Parameters(ElicitSelectParams { prompt, options }): Parameters<ElicitSelectParams>,
+    ) -> Result<Json<ElicitSelectResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(?prompt, option_count = options.len(), "Eliciting selection");
+
+        // Validate options is not empty
+        if options.is_empty() {
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Borrowed("Options array cannot be empty"),
+                None,
+            ));
+        }
+
+        // Check if dialog resource is available
+        let dialog = self.dialog.as_ref().ok_or_else(|| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Borrowed("Dialog resource not configured"),
+                None,
+            )
+        })?;
+
+        // Convert to &str array for dialog API
+        let option_refs: Vec<&str> = options.iter().map(|s| s.as_str()).collect();
+
+        // Ask for selection
+        let index = dialog
+            .ask_choice(&prompt, &option_refs)
+            .await
+            .map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Dialog error: {}", e)),
+                    None,
+                )
+            })?;
+
+        // Get selected option
+        let selected = options.get(index).ok_or_else(|| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Invalid index {} (max {})", index, options.len())),
+                None,
+            )
+        })?;
+
+        debug!(selected = %selected, index, "Received selection");
+
+        let result = ElicitSelectResult::new(selected.clone());
         Ok(Json(result))
     }
 }

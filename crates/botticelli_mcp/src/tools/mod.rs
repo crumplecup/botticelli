@@ -46,7 +46,7 @@ pub use elicitation::{
     FinalizeNarrativeTool, GetNarrativeStateInput, GetNarrativeStateOutput, NarrativeRegistry,
     PartialNarrativeRegistry, ValidateNarrativeInput, ValidateNarrativeOutput,
 };
-pub use elicitation_primitives::ElicitSelectTool;
+// elicitation_primitives module is now empty - all primitives migrated to rmcp
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;
