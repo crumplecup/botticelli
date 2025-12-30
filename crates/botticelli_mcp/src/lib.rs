@@ -30,6 +30,7 @@
 #![warn(missing_docs)]
 
 mod conversation;
+mod create_narrative;
 mod dialog_resource;
 mod echo;
 mod elicitation;
@@ -39,9 +40,11 @@ mod elicit_select;
 mod elicit_text;
 mod errors;
 mod export_metrics;
+mod modify_narrative;
 mod query_content;
 mod resources;
 mod rmcp_server;
+mod save_narrative;
 mod scene;
 // Legacy modules - to be migrated or removed
 // mod server;
@@ -53,6 +56,7 @@ pub mod tools;
 pub mod http;
 
 pub use conversation::{Attachment, ConversationSession, ConversationTurn, SessionState};
+pub use create_narrative::{CreateNarrativeParams, CreateNarrativeResult};
 pub use dialog_resource::DialogResource;
 pub use echo::{EchoParams, EchoResult};
 pub use elicitation::{
@@ -64,8 +68,10 @@ pub use elicit_select::{ElicitSelectParams, ElicitSelectResult};
 pub use elicit_text::{ElicitTextParams, ElicitTextResult};
 pub use errors::ToolError;
 pub use export_metrics::{ExportMetricsParams, ExportMetricsResult, MetricsFormat};
+pub use modify_narrative::{ModifyNarrativeParams, ModifyNarrativeResult};
 pub use query_content::{QueryContentParams, QueryContentResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
+pub use save_narrative::{SaveNarrativeParams, SaveNarrativeResult};
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
 pub use scene::{
     CreateSceneParams, CreateSceneResult, DeleteSceneParams, DeleteSceneResult, ListScenesParams,
@@ -75,14 +81,18 @@ pub use scene::{
 // pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use server_info::ServerInfoResult;
 pub use tools::{
-    Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool,
+    Act, ActMetrics, EchoTool, ElicitActInput, ElicitActTool,
     ElicitMetadataInput, ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool,
     ExecutionMetrics, FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler,
-    McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper, NarrativeRegistry,
+    McpTool, MetricsSummary, NarrativeHelper, NarrativeRegistry,
     PrometheusMetrics, SamplingCoordinator, SamplingError, SamplingErrorKind, SamplingHelper,
-    SamplingResult, SaveNarrativeTool, ServerInfoTool, StartNarrativeInput, StartNarrativeTool,
+    SamplingResult, ServerInfoTool, StartNarrativeInput, StartNarrativeTool,
     ToolRegistry, ValidateNarrativeTool,
 };
+// Narrative generation tools migrated to rmcp:
+// - CreateNarrativeTool → see CreateNarrativeParams/Result and rmcp_server::create_narrative
+// - ModifyNarrativeTool → see ModifyNarrativeParams/Result and rmcp_server::modify_narrative
+// - SaveNarrativeTool → see SaveNarrativeParams/Result and rmcp_server::save_narrative
 // Legacy transport exports - commented out during rmcp migration
 // pub use transport::{
 //     HttpTransport, InProcServerHandle, InProcTransport, McpTransport, McpTransportError,

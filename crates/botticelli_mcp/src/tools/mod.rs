@@ -18,8 +18,8 @@ mod metrics;
 mod modify_narrative;
 mod narrative_creation;
 mod narrative_processor;
-mod narrative_utils;
-mod narrative_validation_helpers;
+pub mod narrative_utils;
+pub mod narrative_validation_helpers;
 mod prometheus;
 mod sampling;
 mod sampling_session_manager;
@@ -32,7 +32,7 @@ mod validate_narrative;
 mod validate_narrative_session;
 
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
-pub use create_narrative::CreateNarrativeTool;
+// CreateNarrativeTool migrated to rmcp (create_narrative method in rmcp_server)
 #[cfg(feature = "discord")]
 pub use discord::{
     DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool, DiscordPostMessageTool,
@@ -52,7 +52,7 @@ pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;
 pub use get_narrative_state::GetNarrativeStateTool;
 pub use metrics::{ActMetrics, ExecutionMetrics};
-pub use modify_narrative::ModifyNarrativeTool;
+// ModifyNarrativeTool migrated to rmcp (modify_narrative method in rmcp_server)
 pub use narrative_creation::{
     ElicitActInput, ElicitMetadataInput, FinalizeNarrativeInput, StartNarrativeInput,
     StartNarrativeTool,
@@ -66,7 +66,7 @@ pub use narrative_creation::{
 ))]
 pub use narrative_processor::McpProcessorCollector;
 pub use prometheus::{MetricsSummary, PrometheusMetrics};
-pub use save_narrative::SaveNarrativeTool;
+// SaveNarrativeTool migrated to rmcp (save_narrative method in rmcp_server)
 pub use server_info::ServerInfoTool;
 #[cfg(feature = "discord")]
 pub use social::{DiscordBotCommandTool, DiscordPostTool};
@@ -217,10 +217,7 @@ impl Default for ToolRegistry {
         )));
         registry.register(Arc::new(ApplyValidationFixesTool::new(narrative_registry)));
 
-        // Narrative generation tools (Phase 1)
-        registry.register(Arc::new(CreateNarrativeTool));
-        registry.register(Arc::new(ModifyNarrativeTool));
-        registry.register(Arc::new(SaveNarrativeTool));
+        // Narrative generation tools migrated to rmcp (create_narrative, modify_narrative, save_narrative)
 
         // Scene management tools migrated to rmcp (create_scene, list_scenes, update_scene, delete_scene)
 
