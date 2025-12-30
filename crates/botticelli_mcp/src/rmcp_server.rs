@@ -1382,9 +1382,6 @@ impl BotticelliServer {
             system_prompt,
         }): Parameters<GenerateParams>,
     ) -> Result<Json<GenerateResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         debug!(%model, max_tokens, temperature, "Generating text");
 
         #[cfg(any(
