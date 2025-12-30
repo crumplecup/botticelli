@@ -24,6 +24,17 @@ This index tracks all planning documents in the workspace. When documents are co
   - Unlocks: Prompts, resources, structured outputs, modular routers
   - Status: 📋 Vision document - awaiting approval to proceed with Phase 1
 
+- **ELICITATION_RMCP_IMPLEMENTATION_VISION.md** - `current` (2025-12-30) **🚀 COMPREHENSIVE VISION**
+  - Complete vision and implementation strategy for elicitation + rmcp integration
+  - **Core Thesis**: Type-safe bidirectional bridge (LLM ↔ JSON ↔ Rust ↔ Logic)
+  - Makes the argument for Rust in AI infrastructure development
+  - Benefits: Compile-time correctness, zero-cost abstractions, self-documenting APIs
+  - 5-phase implementation: RMCP foundation → Elicitation migration → Dual-derive → Advanced patterns
+  - Success metrics: 95%+ compilation success, <10% debug tokens, zero runtime type errors
+  - Design principles: Types as docs, trait sandwich, builder-everywhere, observable by default
+  - Comparison with Python/TypeScript: Trade learning curve for safety + performance
+  - Status: 📋 Strategic vision + concrete implementation roadmap
+
 - **ELICITATION_RMCP_SYNERGY.md** - `current` (2025-12-29) **🔄 ARCHITECTURAL SYNERGY**
   - Analysis of how elicitation derives complement rmcp tool macros
   - **Verdict: Strongly Complementary** - different layers, natural composition
@@ -33,7 +44,7 @@ This index tracks all planning documents in the workspace. When documents are co
   - Dual-derive strategy: `#[derive(Elicit, Serialize, Deserialize, JsonSchema)]`
   - Benefits: Type safety across boundaries, reusable domain types, validation layering
   - Enables: Tool orchestration, multi-stage wizards, progressive disclosure
-  - Status: 📚 Reference architecture - guides integration design
+  - Status: 📚 Reference architecture - complementary to vision document
 
 - **TUI_MCP_CLIENT_FIX.md** - `current` (2025-12-24) **✅ FIXED**
   - Applied MCP server testing lessons to fix TUI client startup issues

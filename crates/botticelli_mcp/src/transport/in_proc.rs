@@ -1,183 +1,74 @@
 //! In-process transport for MCP client/server communication.
 //!
-//! Provides channel-based communication between a pmcp::Client and pmcp::Server
-//! in the same process, avoiding stdio or HTTP overhead.
+//! ## Migration Status
+//!
+//! This module is deprecated during the rmcp migration. The rmcp library
+//! provides its own transport abstraction via `rmcp::service::Service` and
+//! doesn't require a custom in-process transport implementation.
+//!
+//! The old pmcp-based InProcTransport will be replaced with rmcp's native
+//! service model once the migration is complete.
+
+#![allow(dead_code)] // Temporarily allow during migration
 
 use async_trait::async_trait;
-use pmcp::types::TransportMessage;
-use pmcp::{Server, Transport};
-use std::sync::Arc;
-use tokio::sync::mpsc;
-use tokio::task::JoinHandle;
-use tracing::{debug, error, instrument};
+use super::{McpTransport, McpTransportError, McpTransportErrorKind};
+use botticelli_core::ToolDefinition;
+use serde_json::Value;
+use tracing::warn;
 
-/// In-process transport using channels.
+/// Deprecated in-process transport (pmcp-based).
 ///
-/// This transport connects a pmcp::Client to a pmcp::Server running
-/// in the same process via tokio channels, avoiding external I/O overhead.
-///
-/// # Example
-///
-/// ```no_run
-/// use botticelli_mcp::transport::InProcTransport;
-/// use pmcp::{Server, Client};
-///
-/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-/// // Build MCP server
-/// let server = Server::builder()
-///     .name("my-server")
-///     .version("0.1.0")
-///     .build()?;
-///
-/// // Create paired transports
-/// let (client_transport, server_transport) = InProcTransport::pair();
-///
-/// // Spawn server task
-/// tokio::spawn(async move {
-///     server.run(server_transport).await.unwrap();
-/// });
-///
-/// // Create client with transport
-/// let mut client = Client::new(client_transport);
-/// client.initialize().await?;
-///
-/// // Use client...
-/// # Ok(())
-/// # }
-/// ```
-#[derive(Debug)]
-pub struct InProcTransport {
-    /// Channel for sending messages
-    tx: mpsc::Sender<TransportMessage>,
-    /// Channel for receiving messages
-    rx: Arc<tokio::sync::Mutex<mpsc::Receiver<TransportMessage>>>,
-}
-
-/// Server handle that manages the server task lifecycle.
-pub struct InProcServerHandle {
-    /// The server task handle
-    task: JoinHandle<pmcp::Result<()>>,
-}
+/// This type is no longer functional and exists only for compilation
+/// during the rmcp migration. Use `rmcp::service::Service` instead.
+#[derive(Debug, Clone)]
+pub struct InProcTransport;
 
 impl InProcTransport {
-    /// Create a paired client and server transport.
+    /// Create a pair of connected in-process transports.
     ///
-    /// Returns (client_transport, server_transport) where:
-    /// - client_transport is used to create pmcp::Client
-    /// - server_transport is passed to server.run()
+    /// ## Deprecated
     ///
-    /// # Returns
-    ///
-    /// A tuple of (client transport, server transport)
-    #[instrument]
+    /// This function is deprecated. Use rmcp's native service model instead.
     pub fn pair() -> (Self, Self) {
-        debug!("Creating InProcTransport pair");
-
-        // Create bidirectional channels
-        let (client_tx, server_rx) = mpsc::channel(100);
-        let (server_tx, client_rx) = mpsc::channel(100);
-
-        let client_transport = Self {
-            tx: client_tx,
-            rx: Arc::new(tokio::sync::Mutex::new(client_rx)),
-        };
-
-        let server_transport = Self {
-            tx: server_tx,
-            rx: Arc::new(tokio::sync::Mutex::new(server_rx)),
-        };
-
-        debug!("InProcTransport pair created");
-        (client_transport, server_transport)
+        warn!("InProcTransport::pair() deprecated during rmcp migration");
+        (Self, Self)
     }
 
-    /// Spawn a server with this transport.
+    /// Spawn a server task.
     ///
-    /// Convenience method that spawns the server task and returns a handle
-    /// to manage its lifecycle.
+    /// ## Deprecated
     ///
-    /// # Arguments
-    ///
-    /// * `server` - The pmcp::Server instance to run
-    /// * `transport` - The server-side transport from `pair()`
-    ///
-    /// # Returns
-    ///
-    /// A handle to the running server task
-    #[instrument(skip(server, transport))]
-    pub fn spawn_server(server: Server, transport: Self) -> InProcServerHandle {
-        debug!("Spawning in-process server");
-
-        let task = tokio::spawn(async move {
-            debug!("Server task starting");
-            let result = server.run(transport).await;
-            if let Err(ref e) = result {
-                error!("Server error: {}", e);
-            } else {
-                debug!("Server task completed successfully");
-            }
-            result
-        });
-
-        InProcServerHandle { task }
+    /// This function is deprecated. Use `rmcp::service::ServiceExt::serve()` instead.
+    pub fn spawn_server<S>(_server: S, _transport: Self) -> InProcServerHandle {
+        warn!("InProcTransport::spawn_server() deprecated during rmcp migration");
+        InProcServerHandle
     }
 }
 
 #[async_trait]
-impl Transport for InProcTransport {
-    #[instrument(skip(self, message), fields(msg_type = %std::any::type_name_of_val(&message)))]
-    async fn send(&mut self, message: TransportMessage) -> pmcp::Result<()> {
-        debug!("Sending message");
-        self.tx
-            .send(message)
-            .await
-            .map_err(|e| pmcp::Error::internal(format!("Failed to send message: {}", e)))
+impl McpTransport for InProcTransport {
+    async fn initialize(&mut self) -> Result<(), McpTransportError> {
+        Err(McpTransportError::new(McpTransportErrorKind::NotInitialized))
     }
 
-    #[instrument(skip(self))]
-    async fn receive(&mut self) -> pmcp::Result<TransportMessage> {
-        debug!("Receiving message");
-        let mut rx = self.rx.lock().await;
-        rx.recv()
-            .await
-            .ok_or_else(|| pmcp::Error::internal("Channel closed".to_string()))
+    async fn list_tools(&self) -> Result<Vec<ToolDefinition>, McpTransportError> {
+        Err(McpTransportError::new(McpTransportErrorKind::NotInitialized))
     }
 
-    async fn close(&mut self) -> pmcp::Result<()> {
-        debug!("Closing in-process transport");
-        Ok(())
+    async fn call_tool(&self, _name: &str, _arguments: Value) -> Result<Value, McpTransportError> {
+        Err(McpTransportError::new(McpTransportErrorKind::NotInitialized))
+    }
+
+    fn is_connected(&self) -> bool {
+        false
     }
 }
 
-impl InProcServerHandle {
-    /// Wait for the server task to complete.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if:
-    /// - The server task panicked
-    /// - The server returned an error
-    #[instrument(skip(self))]
-    pub async fn wait(self) -> pmcp::Result<()> {
-        debug!("Waiting for server task to complete");
-        match self.task.await {
-            Ok(result) => {
-                debug!("Server task joined successfully");
-                result
-            }
-            Err(e) => {
-                error!("Server task panicked: {}", e);
-                Err(pmcp::Error::internal(format!("Server task panicked: {}", e)))
-            }
-        }
-    }
-
-    /// Abort the server task.
-    ///
-    /// This forcefully terminates the server without waiting for graceful shutdown.
-    #[instrument(skip(self))]
-    pub fn abort(self) {
-        debug!("Aborting server task");
-        self.task.abort();
-    }
-}
+/// Handle to a spawned in-process server.
+///
+/// ## Deprecated
+///
+/// This type is deprecated during the rmcp migration.
+#[derive(Debug)]
+pub struct InProcServerHandle;

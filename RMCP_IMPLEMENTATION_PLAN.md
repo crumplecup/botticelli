@@ -1,8 +1,51 @@
 # RMCP Migration Implementation Plan
 
 **Date:** 2024-12-29  
-**Status:** Implementation Roadmap (CLAUDE.md Compliant)  
+**Status:** Partially Implemented - Elicitation Integration Blocked  
 **Branch:** `feat/rmcp-migration`
+
+## Current Status (2024-12-30)
+
+**Completed:**
+- ✅ Step 1: Added rmcp dependencies
+- ✅ Step 2: Created rmcp-compatible error types
+- ✅ Step 3: Migrated echo tool to rmcp
+- ✅ Step 4: Created BotticelliServer infrastructure
+- ✅ Step 5: Implemented echo tool handler
+- ✅ Step 6: Added test infrastructure
+- ✅ Step 7: Migrated server_info tool
+
+**Blocked:**
+- ❌ Step 8: Remove pmcp dependencies (blocked by elicitation integration)
+
+**Issue:** The `elicitation` crate and `botticelli_chat` elicitation system are tightly coupled to pmcp's `Client<Transport>` model. The elicitation infrastructure expects:
+```rust
+Client<InProcTransport>  // pmcp-based client
+```
+
+But rmcp uses a fundamentally different pattern:
+```rust
+ServerHandler + Service  // rmcp-based server with stdio/http transport
+```
+
+**Decision Required:** How to bridge elicitation with rmcp?
+
+### Option A: Adapter Layer
+Create a pmcp-compatible Client wrapper around rmcp ServerHandler:
+- **Pros:** Minimal changes to elicitation crate
+- **Cons:** Maintains pmcp dependency, defeats migration purpose
+
+### Option B: Update Elicitation Crate  
+Modify `elicitation` crate to work directly with rmcp:
+- **Pros:** Clean break from pmcp, leverages rmcp's compile-time safety
+- **Cons:** Requires changes to external crate (but we control it)
+
+### Option C: Hybrid Approach
+Keep pmcp client for elicitation, use rmcp for everything else:
+- **Pros:** Unblocks other migrations
+- **Cons:** Two MCP implementations in same codebase
+
+**Recommendation:** Option B - Update elicitation crate to support both pmcp and rmcp via feature flags, then deprecate pmcp support after migration completes.
 
 ## Guiding Principles
 

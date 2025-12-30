@@ -51,7 +51,7 @@ mod scene;
 // mod server;
 mod server_info;
 pub mod tools;
-// mod transport;
+mod transport;
 mod validate_narrative;
 
 #[cfg(feature = "http")]
@@ -79,6 +79,7 @@ pub use query_content::{QueryContentParams, QueryContentResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use save_narrative::{SaveNarrativeParams, SaveNarrativeResult};
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
+pub use transport::InProcTransport;
 pub use validate_narrative::{
     ValidateNarrativeParams, ValidateNarrativeResult, ValidationError, ValidationLocation,
     ValidationWarning,
