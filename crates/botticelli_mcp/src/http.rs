@@ -4,14 +4,14 @@
 
 use crate::{BotticelliRouter, Router};
 use axum::{
+    Json, Router as AxumRouter,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, post},
-    Json, Router as AxumRouter,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 use tower_http::{
     cors::CorsLayer,

@@ -173,10 +173,12 @@ async fn test_generate_input_schema() {
     assert_eq!(schema["type"], "object");
     assert!(schema["properties"]["prompt"].is_object());
     assert!(schema["properties"]["model"].is_object());
-    assert!(schema["required"]
-        .as_array()
-        .unwrap()
-        .contains(&json!("prompt")));
+    assert!(
+        schema["required"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("prompt"))
+    );
 }
 
 #[tokio::test]
@@ -187,12 +189,16 @@ async fn test_execute_narrative_input_schema() {
     assert_eq!(schema["type"], "object");
     assert!(schema["properties"]["file_path"].is_object());
     assert!(schema["properties"]["prompt"].is_object());
-    assert!(schema["required"]
-        .as_array()
-        .unwrap()
-        .contains(&json!("file_path")));
-    assert!(schema["required"]
-        .as_array()
-        .unwrap()
-        .contains(&json!("prompt")));
+    assert!(
+        schema["required"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("file_path"))
+    );
+    assert!(
+        schema["required"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("prompt"))
+    );
 }

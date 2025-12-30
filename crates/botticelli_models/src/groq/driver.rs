@@ -94,8 +94,8 @@ impl BotticelliDriver for GroqDriver {
 
     fn capabilities(&self) -> Capabilities {
         Capabilities {
-            streaming: false,  // Groq doesn't have real streaming
-            tool_calling: true,  // Groq supports tool calling via OpenAI-compatible API
+            streaming: false,   // Groq doesn't have real streaming
+            tool_calling: true, // Groq supports tool calling via OpenAI-compatible API
             vision: false,
             audio: false,
             video: false,

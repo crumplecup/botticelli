@@ -1,7 +1,7 @@
 use botticelli_error::McpResult;
 use botticelli_interface::RegistryOperations;
 use botticelli_mcp::NarrativeRegistry;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Test wrapper for JSON values that implements RegistryOperations.
 #[derive(Debug, Clone)]
@@ -18,7 +18,8 @@ impl RegistryOperations for TestNarrativeState {
     }
 
     fn from_json_args(args: Value) -> McpResult<Self> {
-        let id = args.get("id")
+        let id = args
+            .get("id")
             .and_then(|v| v.as_str())
             .unwrap_or("test")
             .to_string();

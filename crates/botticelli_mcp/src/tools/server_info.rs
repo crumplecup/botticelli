@@ -3,7 +3,7 @@
 use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::McpResult;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::debug;
 
 /// Tool that returns information about the Botticelli server.

@@ -13,13 +13,13 @@ use serde::Serialize;
 pub struct ServerInfoResult {
     /// Server name.
     pub name: String,
-    
+
     /// Server version.
     pub version: String,
-    
+
     /// ISO 8601 timestamp when info was retrieved.
     pub timestamp: String,
-    
+
     /// Number of tools available.
     pub tool_count: usize,
 }

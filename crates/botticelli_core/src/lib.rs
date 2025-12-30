@@ -14,10 +14,10 @@ mod output;
 mod provider;
 mod request;
 mod role;
-mod tool_definition;
-mod tool_result;
 mod token_counting;
 mod token_usage;
+mod tool_definition;
+mod tool_result;
 
 pub use budget::{BudgetConfig, BudgetConfigBuilder};
 pub use input::{HistoryRetention, Input, TableFormat};
@@ -34,7 +34,7 @@ pub use request::{
     GenerateResponseBuilderError,
 };
 pub use role::Role;
-pub use tool_definition::ToolDefinition;
-pub use tool_result::ToolResult;
 pub use token_counting::{TokenUsage, get_tokenizer};
 pub use token_usage::{TokenUsageData, TokenUsageDataBuilder};
+pub use tool_definition::ToolDefinition;
+pub use tool_result::ToolResult;

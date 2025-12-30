@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "discord")]
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 #[cfg(feature = "discord")]
 use reqwest::Client;

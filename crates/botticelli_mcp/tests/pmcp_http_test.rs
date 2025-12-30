@@ -222,6 +222,8 @@ fn manual_http_test_instructions() {
     println!("\n3. Test echo tool:");
     println!("   curl -X POST http://localhost:8080/mcp \\");
     println!("     -H 'Content-Type: application/json' \\");
-    println!("     -d '{{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{{\"name\":\"echo\",\"arguments\":{{\"message\":\"Hello\"}}}}}}'");
+    println!(
+        "     -d '{{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{{\"name\":\"echo\",\"arguments\":{{\"message\":\"Hello\"}}}}}}'"
+    );
     println!("\n");
 }

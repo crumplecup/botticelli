@@ -51,11 +51,7 @@ impl DialogResource {
 
     /// Ask for a number within a range.
     pub async fn ask_number(&self, prompt: &str, min: i64, max: i64) -> BotticelliResult<i64> {
-        self.dialog
-            .lock()
-            .await
-            .ask_number(prompt, min, max)
-            .await
+        self.dialog.lock().await.ask_number(prompt, min, max).await
     }
 
     /// Ask for confirmation (yes/no).

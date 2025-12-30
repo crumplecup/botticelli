@@ -4,7 +4,7 @@ use botticelli_error::{McpError, McpResult};
 use botticelli_interface::ElicitationRegistryOperations;
 use botticelli_narrative::CarouselConfig;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

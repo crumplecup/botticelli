@@ -16,7 +16,8 @@ use crate::{
     ExportMetricsResult, ListScenesParams, ListScenesResult, MetricsFormat,
     ModifyNarrativeParams, ModifyNarrativeResult, PrometheusMetrics, QueryContentParams,
     QueryContentResult, SaveNarrativeParams, SaveNarrativeResult, ServerInfoResult,
-    UpdateSceneParams, UpdateSceneResult,
+    UpdateSceneParams, UpdateSceneResult, ValidateNarrativeParams, ValidateNarrativeResult,
+    ValidationError, ValidationLocation, ValidationWarning,
 };
 use botticelli_narrative::validator::validate_narrative_toml;
 use std::path::Path;
@@ -1006,6 +1007,120 @@ impl BotticelliServer {
 
         let result = SaveNarrativeResult::new(absolute_path, narrative_toml.len(), existed);
         Ok(Json(result))
+    }
+    
+    /// Validate a narrative TOML file or string.
+    ///
+    /// Checks syntax, structure, references, model names, and circular dependencies.
+    /// Returns detailed errors and suggestions for fixing issues.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Validation parameters including content or file path
+    ///
+    /// # Returns
+    ///
+    /// Validation result with errors, warnings, and suggestions.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if neither content nor file_path is provided,
+    /// or if file cannot be read.
+    #[tool(description = "Validate a narrative TOML file or string with detailed error messages")]
+    #[instrument(skip(self))]
+    pub async fn validate_narrative(
+        &self,
+        Parameters(ValidateNarrativeParams {
+            content,
+            file_path,
+            validate_files,
+            validate_models,
+            warn_unused,
+            strict,
+        }): Parameters<ValidateNarrativeParams>,
+    ) -> Result<Json<ValidateNarrativeResult>, rmcp::ErrorData> {
+        use botticelli_narrative::validator::{ValidationConfig, validate_narrative_toml_with_config};
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+        use std::path::PathBuf;
+
+        debug!(?file_path, has_content = content.is_some(), "Validating narrative");
+
+        // Get TOML content
+        let toml_content = if let Some(c) = content {
+            c
+        } else if let Some(ref path) = file_path {
+            tokio::fs::read_to_string(path).await.map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INVALID_PARAMS,
+                    Cow::Owned(format!("Failed to read file '{}': {}", path, e)),
+                    None,
+                )
+            })?
+        } else {
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Borrowed("Either 'content' or 'file_path' must be provided"),
+                None,
+            ));
+        };
+
+        // Configure validation
+        let config = ValidationConfig {
+            validate_nested_narratives: validate_files,
+            validate_media_files: validate_files,
+            warn_unknown_models: validate_models,
+            warn_unused_resources: warn_unused,
+            base_dir: file_path
+                .and_then(|p| PathBuf::from(p).parent().map(|parent| parent.to_path_buf())),
+        };
+
+        // Validate
+        let result = validate_narrative_toml_with_config(&toml_content, &config);
+
+        // Convert errors
+        let errors: Vec<ValidationError> = result
+            .errors
+            .iter()
+            .map(|e| ValidationError {
+                kind: format!("{:?}", e.kind),
+                message: e.message.clone(),
+                suggestion: e.suggestion.clone(),
+                location: e.location.as_ref().map(|loc| ValidationLocation {
+                    line: loc.line,
+                    column: loc.column,
+                    section: loc.section.clone(),
+                }),
+            })
+            .collect();
+
+        // Convert warnings
+        let warnings: Vec<ValidationWarning> = result
+            .warnings
+            .iter()
+            .map(|w| ValidationWarning {
+                kind: format!("{:?}", w.kind),
+                message: w.message.clone(),
+                location: w.location.as_ref().map(|loc| ValidationLocation {
+                    line: loc.line,
+                    column: loc.column,
+                    section: loc.section.clone(),
+                }),
+            })
+            .collect();
+
+        let is_valid = result.is_valid();
+        let has_warnings = !result.warnings.is_empty();
+        let valid = is_valid && (!strict || !has_warnings);
+
+        debug!(
+            valid,
+            errors = errors.len(),
+            warnings = warnings.len(),
+            "Validation complete"
+        );
+
+        Ok(Json(ValidateNarrativeResult::new(valid, errors, warnings)))
     }
 }
 

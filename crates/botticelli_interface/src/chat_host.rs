@@ -82,10 +82,17 @@ pub trait ChatHost: Send + Sync {
     /// # Errors
     ///
     /// Returns error if tool execution fails.
-    async fn execute_tool(&mut self, name: &str, arguments: serde_json::Value) -> ChatResult<serde_json::Value>;
+    async fn execute_tool(
+        &mut self,
+        name: &str,
+        arguments: serde_json::Value,
+    ) -> ChatResult<serde_json::Value>;
 
     /// Check if any MCP servers are connected.
     async fn has_tools(&self) -> bool {
-        self.available_tools().await.map(|tools| !tools.is_empty()).unwrap_or(false)
+        self.available_tools()
+            .await
+            .map(|tools| !tools.is_empty())
+            .unwrap_or(false)
     }
 }

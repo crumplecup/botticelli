@@ -65,36 +65,48 @@ fn test_discord_tool_schemas() {
     // Verify schemas have required fields
     let post_schema = post_tool.input_schema();
     assert!(post_schema.get("properties").is_some());
-    assert!(post_schema
-        .get("properties")
-        .and_then(|p| p.get("channel_id"))
-        .is_some());
-    assert!(post_schema
-        .get("properties")
-        .and_then(|p| p.get("content"))
-        .is_some());
+    assert!(
+        post_schema
+            .get("properties")
+            .and_then(|p| p.get("channel_id"))
+            .is_some()
+    );
+    assert!(
+        post_schema
+            .get("properties")
+            .and_then(|p| p.get("content"))
+            .is_some()
+    );
 
     let get_messages_schema = get_messages_tool.input_schema();
-    assert!(get_messages_schema
-        .get("properties")
-        .and_then(|p| p.get("channel_id"))
-        .is_some());
-    assert!(get_messages_schema
-        .get("properties")
-        .and_then(|p| p.get("limit"))
-        .is_some());
+    assert!(
+        get_messages_schema
+            .get("properties")
+            .and_then(|p| p.get("channel_id"))
+            .is_some()
+    );
+    assert!(
+        get_messages_schema
+            .get("properties")
+            .and_then(|p| p.get("limit"))
+            .is_some()
+    );
 
     let get_guild_schema = get_guild_tool.input_schema();
-    assert!(get_guild_schema
-        .get("properties")
-        .and_then(|p| p.get("guild_id"))
-        .is_some());
+    assert!(
+        get_guild_schema
+            .get("properties")
+            .and_then(|p| p.get("guild_id"))
+            .is_some()
+    );
 
     let get_channels_schema = get_channels_tool.input_schema();
-    assert!(get_channels_schema
-        .get("properties")
-        .and_then(|p| p.get("guild_id"))
-        .is_some());
+    assert!(
+        get_channels_schema
+            .get("properties")
+            .and_then(|p| p.get("guild_id"))
+            .is_some()
+    );
 
     // Clean up mock token
     std::env::remove_var("DISCORD_TOKEN");

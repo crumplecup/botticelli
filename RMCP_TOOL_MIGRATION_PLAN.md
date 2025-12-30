@@ -1,5 +1,38 @@
 # RMCP Tool Migration Plan
 
+## Quick Reference
+
+### Migration Status: 13/36 Tools (36%)
+
+**Jump To:**
+- [Current Progress](#migration-progress) - What's done and what's next
+- [Next Steps](#next-session-recommendations) - Where to continue
+- [Key Files](#key-files-to-review) - Important files to review
+- [Migration Pattern](#per-tool-migration-steps) - How to migrate a tool
+- [Testing Strategy](#testing-strategy) - How to test migrated tools
+
+### Quick Commands
+```bash
+# Check current state
+cargo check -p botticelli_mcp
+cargo test -p botticelli_mcp
+
+# Find remaining McpTool implementations
+grep -r "impl McpTool" crates/botticelli_mcp/src/tools/
+
+# Run full checks before commit
+just check-all botticelli_mcp
+```
+
+### Last Completed: Narrative Generation Tools (3 tools)
+- ✅ create_narrative - Generate complete narratives from natural language
+- ✅ modify_narrative - Update existing narratives
+- ✅ save_narrative - Persist narratives to files
+
+**Next Priority:** Core Validation (ValidateNarrativeTool) or Execution Tools (GenerateTool, ExecuteActTool, ExecuteNarrativeTool)
+
+---
+
 ## Overview
 
 We have successfully migrated the core infrastructure from pmcp to rmcp. Now we need to migrate the existing 36 tool files from the old `McpTool` trait pattern to the new rmcp `#[tool]` macro pattern.
@@ -330,16 +363,16 @@ impl From<SamplingError> for rmcp::ErrorData {
 
 ## Migration Progress
 
-### Completed Tools (10/36)
+### Completed Tools (13/36)
 
-#### Core Tools (2)
+#### Core Tools (2/2) - COMPLETE ✅
 - ✅ **echo** - Basic echo with timestamp
 - ✅ **server_info** - Server metadata and version
 
-#### Database Tools (1)
+#### Database Tools (1/1) - COMPLETE ✅
 - ✅ **query_content** - Database query with feature gate, runtime validation
 
-#### Metrics Tools (1)
+#### Metrics Tools (1/1) - COMPLETE ✅
 - ✅ **export_metrics** - Prometheus/summary format export
 
 #### Elicitation Primitives (4/4) - COMPLETE ✅
@@ -354,9 +387,14 @@ impl From<SamplingError> for rmcp::ErrorData {
 - ✅ **update_scene** - Update scene with flexible object
 - ✅ **delete_scene** - Delete scene by ID
 
+#### Narrative Generation (3/3) - COMPLETE ✅
+- ✅ **create_narrative** - Generate complete narrative from natural language
+- ✅ **modify_narrative** - Update existing narratives with NL instructions
+- ✅ **save_narrative** - Persist narratives to files with validation
+
 ### Test Coverage
-- **Total Tests Written:** 50+ tests
-- **Test Files:** 8 (echo, server_info, query_content, export_metrics, elicit_text, elicit_bool, elicit_number, elicit_select, scene_tools)
+- **Total Tests Written:** 75+ tests
+- **Test Files:** 11 (echo, server_info, query_content, export_metrics, elicit_*, scene_tools, create_narrative, modify_narrative, save_narrative)
 - **All Tests Passing:** ✅
 
 ### Patterns Established
@@ -406,13 +444,13 @@ impl CreateSceneResult {
 5. **Optional Fields**: Use `#[serde(skip_serializing_if = "Option::is_none")]` for clean JSON
 6. **Placeholder Implementation**: Some tools (scenes) are placeholders for future features - documented clearly
 7. **Deprecation Markers**: Mark old modules as deprecated with clear comments after migration
+8. **Helper Integration**: Narrative tools benefit from helper modules (NarrativeHelper, validation_helpers) - keep business logic modular
+9. **File I/O Patterns**: Standard pattern for file operations: directory creation, overwrite protection, atomic writes
+10. **TOML Formatting**: Use toml crate for serialization with pretty formatting - easier to read/debug than JSON
+11. **Complex Modifications**: When tools support multiple operation types (add/remove/change), use enum variants in params
+12. **Comprehensive Testing**: Complex tools benefit from workflow integration tests (create → modify → save chains)
 
-### Remaining Tools (~26)
-
-#### Narrative Generation (3)
-- CreateNarrativeTool
-- ModifyNarrativeTool
-- SaveNarrativeTool
+### Remaining Tools (23/36)
 
 #### Core Validation (1)
 - ValidateNarrativeTool
@@ -450,17 +488,20 @@ impl CreateSceneResult {
 ### Next Session Recommendations
 
 **Priority Order:**
-1. **Narrative Generation** (3 tools) - Self-contained, good learning
-2. **Validation** (1 tool) - Quick win, important functionality
-3. **Execution** (3 tools) - More complex, may need LLM client patterns
-4. **LLM Integration** (5 tools) - Similar patterns, can do in batch
-5. **Narrative Elicitation** (8 tools) - Most complex, stateful registry
-6. **Discord** (6 tools) - Feature-gated, less critical
+1. **Validation** (1 tool) - Quick win, important functionality, complements narrative generation
+2. **Execution** (3 tools) - Core functionality, may need LLM client patterns
+3. **LLM Integration** (5 tools) - Similar patterns, can do in batch
+4. **Narrative Elicitation** (8 tools) - Most complex, stateful registry, session management
+5. **Discord** (6 tools) - Feature-gated, less critical, external dependency
 
-**Key Files to Review:**
-- `src/rmcp_server.rs` - Current tool implementations
-- `src/tools/mod.rs` - Remaining McpTool registrations
-- Tests in `tests/` - Established testing patterns
+**Recommended Next:** ValidateNarrativeTool (1 tool) - Natural follow-up to narrative generation, validates the output of create_narrative/modify_narrative.
+
+### Key Files to Review
+- `src/rmcp_server.rs` - Current tool implementations (13 migrated tools)
+- `src/tools/mod.rs` - Remaining McpTool registrations (23 to migrate)
+- `src/tools/validate_narrative.rs` - Next tool to migrate
+- Tests in `tests/` - Established testing patterns (75+ tests)
+- Recent migrations: `src/create_narrative.rs`, `src/modify_narrative.rs`, `src/save_narrative.rs`
 
 **Commands:**
 ```bash
@@ -479,10 +520,21 @@ just check-all botticelli_mcp
 
 **Completed:**
 - ✅ Steps 1-8: Infrastructure and pmcp removal
-- ✅ 10/36 tools migrated to rmcp pattern
-- ✅ 50+ tests passing
-- ✅ All elicitation primitives migrated
-- ✅ All scene management tools migrated
+- ✅ 13/36 tools migrated to rmcp pattern (36% complete)
+- ✅ 75+ tests passing across 11 test files
+- ✅ All core tools migrated (echo, server_info)
+- ✅ All database tools migrated (query_content)
+- ✅ All metrics tools migrated (export_metrics)
+- ✅ All elicitation primitives migrated (4 tools)
+- ✅ All scene management tools migrated (4 tools)
+- ✅ All narrative generation tools migrated (3 tools)
 - ✅ Patterns and best practices established
 
-**Next:** Narrative generation tools (create_narrative, modify_narrative, save_narrative)
+**Next Priority:** Core validation (validate_narrative) or Execution tools (generate, execute_act, execute_narrative)
+
+**Progress Breakdown:**
+- Core foundation: 8/8 tools (100%)
+- Narrative features: 7/12 tools (58%) - generation done, validation/elicitation/execution remain
+- LLM integration: 0/5 tools (0%)
+- Discord: 0/6 tools (0%)
+- Other: 0/5 tools (0%)

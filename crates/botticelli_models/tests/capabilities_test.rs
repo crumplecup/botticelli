@@ -26,7 +26,10 @@ fn test_anthropic_capabilities() {
     assert!(!caps.video, "Anthropic should not support video");
     assert!(!caps.embeddings, "Anthropic should not support embeddings");
     assert!(caps.json_mode, "Anthropic should support JSON mode");
-    assert!(!caps.batch_generation, "Anthropic should not support batch generation");
+    assert!(
+        !caps.batch_generation,
+        "Anthropic should not support batch generation"
+    );
 }
 
 #[test]
@@ -48,7 +51,10 @@ fn test_gemini_capabilities() {
     assert!(caps.video, "Gemini should support video");
     assert!(caps.embeddings, "Gemini should support embeddings");
     assert!(caps.json_mode, "Gemini should support JSON mode");
-    assert!(!caps.batch_generation, "Gemini should not support batch generation");
+    assert!(
+        !caps.batch_generation,
+        "Gemini should not support batch generation"
+    );
 }
 
 #[test]
@@ -64,7 +70,10 @@ fn test_ollama_capabilities() {
     assert!(!caps.video, "Ollama should not support video");
     assert!(!caps.embeddings, "Ollama should not support embeddings");
     assert!(!caps.json_mode, "Ollama should not support JSON mode");
-    assert!(!caps.batch_generation, "Ollama should not support batch generation");
+    assert!(
+        !caps.batch_generation,
+        "Ollama should not support batch generation"
+    );
 }
 
 #[test]
@@ -81,23 +90,40 @@ fn test_groq_capabilities() {
     assert!(!caps.video, "Groq should not support video");
     assert!(!caps.embeddings, "Groq should not support embeddings");
     assert!(caps.json_mode, "Groq should support JSON mode");
-    assert!(!caps.batch_generation, "Groq should not support batch generation");
+    assert!(
+        !caps.batch_generation,
+        "Groq should not support batch generation"
+    );
 }
 
 #[test]
 #[cfg(feature = "huggingface")]
 fn test_huggingface_capabilities() {
-    let client =
-        HuggingFaceDriver::with_api_token("test-key".to_string(), "meta-llama/Llama-2-7b-chat-hf".to_string())
-            .expect("Failed to create HuggingFaceDriver");
+    let client = HuggingFaceDriver::with_api_token(
+        "test-key".to_string(),
+        "meta-llama/Llama-2-7b-chat-hf".to_string(),
+    )
+    .expect("Failed to create HuggingFaceDriver");
     let caps = client.capabilities();
 
-    assert!(!caps.streaming, "HuggingFace does not support real streaming");
-    assert!(!caps.tool_calling, "HuggingFace does not support tool calling");
+    assert!(
+        !caps.streaming,
+        "HuggingFace does not support real streaming"
+    );
+    assert!(
+        !caps.tool_calling,
+        "HuggingFace does not support tool calling"
+    );
     assert!(!caps.vision, "HuggingFace should not support vision");
     assert!(!caps.audio, "HuggingFace should not support audio");
     assert!(!caps.video, "HuggingFace should not support video");
-    assert!(!caps.embeddings, "HuggingFace should not support embeddings");
+    assert!(
+        !caps.embeddings,
+        "HuggingFace should not support embeddings"
+    );
     assert!(caps.json_mode, "HuggingFace should support JSON mode");
-    assert!(!caps.batch_generation, "HuggingFace should not support batch generation");
+    assert!(
+        !caps.batch_generation,
+        "HuggingFace should not support batch generation"
+    );
 }

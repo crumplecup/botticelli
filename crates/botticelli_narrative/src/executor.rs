@@ -1438,15 +1438,14 @@ fn resolve_template(
                 })?;
 
             // Try to parse response as JSON and navigate path
-            let json_value: JsonValue =
-                serde_json::from_str(act_exec.response()).map_err(|e| {
-                    botticelli_error::NarrativeError::new(
-                        botticelli_error::NarrativeErrorKind::TemplateError(format!(
-                            "Act '{}' response is not valid JSON: {}",
-                            act_name, e
-                        )),
-                    )
-                })?;
+            let json_value: JsonValue = serde_json::from_str(act_exec.response()).map_err(|e| {
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::TemplateError(format!(
+                        "Act '{}' response is not valid JSON: {}",
+                        act_name, e
+                    )),
+                )
+            })?;
 
             // Navigate JSON path
             let mut current = &json_value;

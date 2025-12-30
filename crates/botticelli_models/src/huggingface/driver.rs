@@ -96,7 +96,7 @@ impl BotticelliDriver for HuggingFaceDriver {
 
     fn capabilities(&self) -> Capabilities {
         Capabilities {
-            streaming: false,  // HuggingFace doesn't have real streaming
+            streaming: false, // HuggingFace doesn't have real streaming
             tool_calling: false,
             vision: false,
             audio: false,

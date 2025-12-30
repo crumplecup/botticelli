@@ -91,7 +91,7 @@ impl McpTransport for HttpTransport {
 
         let response = self
             .client
-            .post(&self.base_url)  // PMCP uses root path
+            .post(&self.base_url) // PMCP uses root path
             .header("Accept", "application/json")
             .json(&request_body)
             .send()
@@ -111,24 +111,24 @@ impl McpTransport for HttpTransport {
         })?;
 
         // Extract result from JSON-RPC response
-        response_json
-            .get("result")
-            .cloned()
-            .ok_or_else(|| {
-                McpClientError::new(McpClientErrorKind::SerializationError(
-                    "No result in response".to_string(),
-                ))
-            })
+        response_json.get("result").cloned().ok_or_else(|| {
+            McpClientError::new(McpClientErrorKind::SerializationError(
+                "No result in response".to_string(),
+            ))
+        })
     }
 
     async fn list_tools(&mut self) -> McpClientResult<Vec<ToolDefinition>> {
         let result = self.send_request("tools/list", Value::Null).await?;
 
-        let tools_array = result.get("tools").and_then(|t| t.as_array()).ok_or_else(|| {
-            McpClientError::new(McpClientErrorKind::SerializationError(
-                "Invalid tools list response".to_string(),
-            ))
-        })?;
+        let tools_array = result
+            .get("tools")
+            .and_then(|t| t.as_array())
+            .ok_or_else(|| {
+                McpClientError::new(McpClientErrorKind::SerializationError(
+                    "Invalid tools list response".to_string(),
+                ))
+            })?;
 
         let mut tools = Vec::new();
         for tool_value in tools_array {

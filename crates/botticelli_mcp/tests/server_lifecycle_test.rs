@@ -15,8 +15,7 @@ fn init_tracing() {
     TRACING.call_once(|| {
         tracing_subscriber::fmt()
             .with_env_filter(
-                EnvFilter::from_default_env()
-                    .add_directive(tracing::Level::DEBUG.into())
+                EnvFilter::from_default_env().add_directive(tracing::Level::DEBUG.into()),
             )
             .with_target(true)
             .with_thread_ids(true)
@@ -24,7 +23,7 @@ fn init_tracing() {
             .with_line_number(true)
             .with_test_writer()
             .init();
-        
+
         tracing::info!("🔍 Tracing initialized for lifecycle tests");
     });
 }
@@ -36,16 +35,16 @@ fn init_tracing() {
 async fn start_http_server() -> Result<u16, Box<dyn std::error::Error>> {
     use botticelli_mcp::run_pmcp_http_server;
     use std::sync::atomic::{AtomicU16, Ordering};
-    
+
     init_tracing();
-    
+
     // Use atomic counter to avoid port conflicts between parallel tests
     static PORT_COUNTER: AtomicU16 = AtomicU16::new(0);
     let offset = PORT_COUNTER.fetch_add(1, Ordering::SeqCst);
     let port = 18080 + offset;
-    
+
     tracing::info!("🚀 Starting HTTP server on port {}", port);
-    
+
     // Start server in background task
     let server_handle = tokio::spawn(async move {
         tracing::info!("🌐 HTTP server task starting on port {}", port);
@@ -54,22 +53,24 @@ async fn start_http_server() -> Result<u16, Box<dyn std::error::Error>> {
             port,
             #[cfg(feature = "database")]
             None,
-        ).await {
+        )
+        .await
+        {
             Ok(_) => tracing::info!("✅ HTTP server task completed"),
             Err(e) => tracing::error!("❌ HTTP server task failed: {}", e),
         }
     });
-    
+
     // Give spawn a moment to start and check it didn't panic
     sleep(Duration::from_millis(100)).await;
-    
+
     if server_handle.is_finished() {
         return Err("Server task completed immediately - likely failed to start".into());
     }
-    
+
     // Server spawned successfully - wait a bit for it to bind
     sleep(Duration::from_millis(500)).await;
-    
+
     tracing::info!("✅ Server task spawned on port {}", port);
     Ok(port)
 }
@@ -79,7 +80,7 @@ async fn start_http_server() -> Result<u16, Box<dyn std::error::Error>> {
 #[cfg(feature = "streamable-http")]
 async fn test_http_server_lifecycle() {
     init_tracing();
-    
+
     let port = match start_http_server().await {
         Ok(p) => p,
         Err(e) => {
@@ -147,10 +148,7 @@ async fn test_http_server_lifecycle() {
     assert!(tools.len() >= 6, "Should have at least 6 base tools");
 
     // Verify core tools are present
-    let tool_names: Vec<&str> = tools
-        .iter()
-        .filter_map(|t| t["name"].as_str())
-        .collect();
+    let tool_names: Vec<&str> = tools.iter().filter_map(|t| t["name"].as_str()).collect();
 
     println!("Available tools: {:?}", tool_names);
     assert!(tool_names.contains(&"echo"), "Should have echo tool");
@@ -202,7 +200,7 @@ async fn test_http_server_lifecycle() {
 #[cfg(feature = "streamable-http")]
 async fn test_http_server_error_handling() {
     init_tracing();
-    
+
     let port = match start_http_server().await {
         Ok(p) => p,
         Err(e) => {
@@ -277,7 +275,7 @@ async fn test_http_server_error_handling() {
 #[cfg(feature = "streamable-http")]
 async fn test_http_server_concurrent_requests() {
     init_tracing();
-    
+
     let port = match start_http_server().await {
         Ok(p) => p,
         Err(e) => {
@@ -321,7 +319,7 @@ async fn test_http_server_concurrent_requests() {
     for i in 1..=5 {
         let url = url.clone();
         let client = client.clone();
-        
+
         let handle = tokio::spawn(async move {
             let request = json!({
                 "jsonrpc": "2.0",
@@ -353,10 +351,10 @@ async fn test_http_server_concurrent_requests() {
         .iter()
         .filter(|r| r.is_ok() && r.as_ref().unwrap().is_ok())
         .count();
-    
+
     println!("Successful concurrent requests: {}/5", successful);
     assert_eq!(successful, 5, "All concurrent requests should succeed");
-    
+
     println!("✅ HTTP server concurrent requests test passed");
 }
 
@@ -368,24 +366,26 @@ async fn test_http_server_concurrent_requests() {
 #[cfg(feature = "streamable-http")]
 async fn test_http_server_startup() {
     init_tracing();
-    
+
     tracing::info!("🧪 Testing HTTP server startup...");
-    
+
     let result = start_http_server().await;
-    
+
     if let Err(ref e) = result {
         tracing::error!("Failed to start server: {}", e);
     }
-    
+
     assert!(
         result.is_ok(),
         "HTTP server should start successfully: {:?}",
         result.err()
     );
-    
+
     let port = result.unwrap();
     tracing::info!("✅ HTTP server started successfully on port {}", port);
-    tracing::info!("Note: Server logs show it bound and is listening - communication tests verify protocol");
+    tracing::info!(
+        "Note: Server logs show it bound and is listening - communication tests verify protocol"
+    );
 }
 
 /// Test HTTP server version information.
@@ -431,18 +431,15 @@ async fn test_http_server_version() {
 
     if let Some(server_info) = init_response["result"]["serverInfo"].as_object() {
         println!("Server info: {:?}", server_info);
-        assert!(
-            server_info.get("name").is_some(),
-            "Should have server name"
-        );
+        assert!(server_info.get("name").is_some(), "Should have server name");
         assert!(
             server_info.get("version").is_some(),
             "Should have server version"
         );
-        
+
         let name = server_info["name"].as_str().unwrap();
         assert_eq!(name, "botticelli-pmcp-http", "Server name should match");
-        
+
         println!("✅ HTTP server version test passed");
     }
 }

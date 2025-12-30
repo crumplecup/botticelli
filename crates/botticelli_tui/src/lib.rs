@@ -53,15 +53,10 @@ pub use minimal_loop::minimal_event_loop;
 pub use state::{AppState, ConversationId, NarrativeId, ViewMode};
 pub use tui::Tui;
 pub use view::{
-    BotsView, BotInfo, BotStatus, 
-    ChatView, 
-    ConversationHistoryView, 
-    DatabaseView, DatabaseViewMode, TableInfo, ColumnDisplay, ContentRow, ContentFilter,
-    NarrativeBrowserView, 
-    NarrativeEditorView, 
-    ScheduleView, TaskStatus, TaskSchedule, ScheduledTask,
-    SettingsView,
-    View,
+    BotInfo, BotStatus, BotsView, ChatView, ColumnDisplay, ContentFilter, ContentRow,
+    ConversationHistoryView, DatabaseView, DatabaseViewMode, NarrativeBrowserView,
+    NarrativeEditorView, ScheduleView, ScheduledTask, SettingsView, TableInfo, TaskSchedule,
+    TaskStatus, View,
 };
 
 // Re-export ChatMessage from botticelli_interface for convenience

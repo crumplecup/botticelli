@@ -1,7 +1,7 @@
 use crate::tools::{GetNarrativeStateInput, McpTool, PartialNarrativeRegistry};
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 
 /// Tool for getting the current state of a narrative elicitation session.

@@ -166,10 +166,7 @@ impl ExternalMcpClient {
         // Initialize MCP connection
         tracing::debug!("Preparing to initialize MCP connection");
         let capabilities = ClientCapabilities::minimal();
-        tracing::info!(
-            "Calling initialize on MCP server: {}",
-            config.name
-        );
+        tracing::info!("Calling initialize on MCP server: {}", config.name);
         let server_info = client.initialize(capabilities).await.map_err(|e| {
             tracing::error!(error = ?e, "Initialize failed");
             McpClientError::new(McpClientErrorKind::ExternalServerConnectionFailed(format!(
@@ -202,11 +199,7 @@ impl ExternalMcpClient {
         let tools: Vec<ToolDefinition> = tools_result
             .tools
             .into_iter()
-            .map(|t| ToolDefinition::new(
-                t.name,
-                t.description.unwrap_or_default(),
-                t.input_schema,
-            ))
+            .map(|t| ToolDefinition::new(t.name, t.description.unwrap_or_default(), t.input_schema))
             .collect();
 
         for tool in &tools {

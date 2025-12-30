@@ -26,13 +26,18 @@ async fn test_http_server_connection() {
     // Try to connect
     tracing::info!("Attempting to connect to http://localhost:3030");
     let client = reqwest::Client::new();
-    
+
     match timeout(
         Duration::from_secs(5),
-        client.get("http://localhost:3030/health").send()
-    ).await {
+        client.get("http://localhost:3030/health").send(),
+    )
+    .await
+    {
         Ok(Ok(response)) => {
-            tracing::info!("✓ HTTP server connected successfully: {}", response.status());
+            tracing::info!(
+                "✓ HTTP server connected successfully: {}",
+                response.status()
+            );
             assert!(response.status().is_success());
         }
         Ok(Err(e)) => {

@@ -1,9 +1,9 @@
 //! ToolCalling implementation for OpenAI-compatible clients.
 
-use crate::openai_compat::{conversions, ChatFunctionDef, ChatTool, OpenAICompatibleClient};
+use crate::openai_compat::{ChatFunctionDef, ChatTool, OpenAICompatibleClient, conversions};
 use async_trait::async_trait;
-use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
 use botticelli_core::{GenerateRequest, GenerateResponse, Output, ToolCall, ToolDefinition};
+use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
 use botticelli_interface::{BotticelliDriver, Capabilities, ToolCalling};
 
 #[async_trait]
@@ -54,7 +54,7 @@ impl ToolCalling for OpenAICompatibleClient {
             model = self.model_name(),
             "Starting generate_with_tools"
         );
-        
+
         tracing::debug!(
             tool_names = ?tools.iter().map(|t| t.name()).collect::<Vec<_>>(),
             "Tool definitions"
@@ -91,14 +91,11 @@ impl ToolCalling for OpenAICompatibleClient {
         tracing::info!("Sending HTTP request to provider with tools");
 
         // Send request (use existing client logic)
-        let response = self
-            .generate_internal(&chat_request)
-            .await
-            .map_err(|e| {
-                tracing::error!(error = %e, "HTTP request failed");
-                BotticelliError::from(BackendError::new(e.to_string()))
-            })?;
-        
+        let response = self.generate_internal(&chat_request).await.map_err(|e| {
+            tracing::error!(error = %e, "HTTP request failed");
+            BotticelliError::from(BackendError::new(e.to_string()))
+        })?;
+
         tracing::info!("Received response from provider");
 
         // Check if response contains tool calls
@@ -113,12 +110,15 @@ impl ToolCalling for OpenAICompatibleClient {
                     // Parse JSON string arguments
                     let args: serde_json::Value = serde_json::from_str(&call.function.arguments)
                         .unwrap_or_else(|_| serde_json::json!({}));
-                    
+
                     ToolCall::new(call.id.clone(), call.function.name.clone(), args)
                 })
                 .collect();
 
-            tracing::info!(tool_call_count = parsed_calls.len(), "Response contains tool calls");
+            tracing::info!(
+                tool_call_count = parsed_calls.len(),
+                "Response contains tool calls"
+            );
 
             Ok(GenerateResponse::builder()
                 .outputs(vec![Output::ToolCalls(parsed_calls)])

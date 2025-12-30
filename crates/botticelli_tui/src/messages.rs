@@ -7,13 +7,13 @@ use crate::{AppState, ViewMode};
 pub enum UserAction {
     /// Key press event
     KeyPress(KeyEvent),
-    
+
     /// Send current message
     SendMessage,
-    
+
     /// Change view mode
     ChangeView(ViewMode),
-    
+
     /// Quit application
     Quit,
 }
@@ -30,7 +30,7 @@ pub struct StateUpdate {
 pub enum TickEvent {
     /// Regular tick for animations
     Tick,
-    
+
     /// Refresh data from server
     Refresh,
 }

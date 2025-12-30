@@ -1,8 +1,8 @@
 //! Narrative execution command handler.
 
-use botticelli_error::BotticelliResult;
 #[cfg(feature = "gemini")]
 use botticelli_core::BudgetConfig;
+use botticelli_error::BotticelliResult;
 #[cfg(feature = "gemini")]
 use std::path::{Path, PathBuf};
 
@@ -182,9 +182,9 @@ pub async fn run_narrative(
         } else {
             // Load as single Narrative for backwards compatibility
             let content = std::fs::read_to_string(source.path()).map_err(|e| {
-                botticelli_error::NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(
-                    e.to_string(),
-                ))
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::FileRead(e.to_string()),
+                )
             })?;
             let mut narrative = botticelli_narrative::Narrative::from_toml_str(&content, None)?;
             narrative.set_source_path(Some(source.path().to_path_buf()));
@@ -202,13 +202,16 @@ pub async fn run_narrative(
     let narrative: Box<dyn botticelli_narrative::NarrativeProvider> = {
         if let Some(name) = source.name() {
             // Load as MultiNarrative for composition support
-            Box::new(botticelli_narrative::MultiNarrative::from_file(source.path(), name)?)
+            Box::new(botticelli_narrative::MultiNarrative::from_file(
+                source.path(),
+                name,
+            )?)
         } else {
             // Load as single Narrative for backwards compatibility
             let content = std::fs::read_to_string(source.path()).map_err(|e| {
-                botticelli_error::NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(
-                    e.to_string(),
-                ))
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::FileRead(e.to_string()),
+                )
             })?;
             let mut narrative = botticelli_narrative::Narrative::from_toml_str(&content, None)?;
             narrative.set_source_path(Some(source.path().to_path_buf()));
@@ -262,7 +265,9 @@ pub async fn run_narrative(
 
         // Validate the final budget
         budget.validate().map_err(|e| {
-            botticelli_error::NarrativeError::new(botticelli_error::NarrativeErrorKind::ConfigurationError(e))
+            botticelli_error::NarrativeError::new(
+                botticelli_error::NarrativeErrorKind::ConfigurationError(e),
+            )
         })?;
 
         // Log if throttling is active
@@ -336,10 +341,10 @@ pub async fn run_narrative(
     let executor = {
         #[cfg(feature = "database")]
         {
-            use botticelli_narrative::ProcessorRegistry;
             use botticelli_database::{
                 DatabaseTableQueryRegistry, TableQueryExecutor, create_pool,
             };
+            use botticelli_narrative::ProcessorRegistry;
             use botticelli_narrative::{ContentGenerationProcessor, StorageActor};
             use std::sync::{Arc, Mutex};
 

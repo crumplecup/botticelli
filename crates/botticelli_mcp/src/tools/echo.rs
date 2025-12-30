@@ -3,7 +3,7 @@
 use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::debug;
 
 /// Simple echo tool that returns its input.

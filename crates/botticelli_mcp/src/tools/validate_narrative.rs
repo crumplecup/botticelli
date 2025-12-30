@@ -3,8 +3,8 @@
 use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
-use botticelli_narrative::validator::{validate_narrative_toml_with_config, ValidationConfig};
-use serde_json::{json, Value};
+use botticelli_narrative::validator::{ValidationConfig, validate_narrative_toml_with_config};
+use serde_json::{Value, json};
 use std::path::PathBuf;
 
 /// Tool for validating narrative TOML files.

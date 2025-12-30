@@ -2,7 +2,7 @@
 
 use crate::ToolRegistry;
 use botticelli_error::{McpError, McpResult};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::path::PathBuf;
 use tracing::{debug, error, info, instrument};
 

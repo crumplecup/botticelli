@@ -10,4 +10,6 @@ mod provider_impl;
 mod tool_calling_impl;
 
 pub use client::OpenAICompatibleClient;
-pub use dto::{ChatMessage, ChatRequest, ChatResponse, ChatTool, ChatFunctionDef, OpenAICompatError};
+pub use dto::{
+    ChatFunctionDef, ChatMessage, ChatRequest, ChatResponse, ChatTool, OpenAICompatError,
+};

@@ -7,8 +7,8 @@ use botticelli_error::ChatResult;
 use botticelli_interface::{ChatHost, ChatMessage};
 use botticelli_tui::{AppState, ChatView, View};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::backend::TestBackend;
 use ratatui::Terminal;
+use ratatui::backend::TestBackend;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -20,16 +20,20 @@ impl ChatHost for MockChatHost {
     async fn send_message(&mut self, _message: String) -> ChatResult<String> {
         Ok("Mock response".to_string())
     }
-    
+
     async fn get_conversation(&self) -> ChatResult<Vec<ChatMessage>> {
         Ok(vec![])
     }
-    
+
     async fn available_tools(&self) -> ChatResult<Vec<ToolDefinition>> {
         Ok(vec![])
     }
-    
-    async fn execute_tool(&mut self, _name: &str, _arguments: serde_json::Value) -> ChatResult<serde_json::Value> {
+
+    async fn execute_tool(
+        &mut self,
+        _name: &str,
+        _arguments: serde_json::Value,
+    ) -> ChatResult<serde_json::Value> {
         Ok(serde_json::Value::Null)
     }
 }
@@ -45,11 +49,12 @@ fn test_keyboard_input_lag() {
     // Create TUI with TestBackend
     let backend = TestBackend::new(80, 24);
     let mut terminal = Terminal::new(backend).expect("create terminal");
-    
+
     // Create AppState with mock chat host
-    let chat_host: Arc<tokio::sync::Mutex<dyn ChatHost>> = Arc::new(tokio::sync::Mutex::new(MockChatHost));
+    let chat_host: Arc<tokio::sync::Mutex<dyn ChatHost>> =
+        Arc::new(tokio::sync::Mutex::new(MockChatHost));
     let mut state = AppState::new(chat_host);
-    
+
     // Create ChatView using default (implements View trait)
     let mut chat_view = ChatView::default();
 
@@ -64,21 +69,25 @@ fn test_keyboard_input_lag() {
 
     // Track timing for each keystroke
     let mut timings = Vec::new();
-    
+
     for (i, key_event) in keystrokes.iter().enumerate() {
         let start = Instant::now();
-        
+
         // Process key event through the view (returns Command)
-        let _command = chat_view.handle_input(*key_event, &state).expect("handle input");
-        
+        let _command = chat_view
+            .handle_input(*key_event, &state)
+            .expect("handle input");
+
         // Force render to simulate real usage
-        terminal.draw(|f| {
-            chat_view.render(f, &state).expect("render");
-        }).expect("draw");
-        
+        terminal
+            .draw(|f| {
+                chat_view.render(f, &state).expect("render");
+            })
+            .expect("draw");
+
         let elapsed = start.elapsed();
         timings.push(elapsed);
-        
+
         tracing::debug!(
             "Keystroke {} ('{}') processed in {:?}",
             i,
@@ -100,7 +109,10 @@ fn test_keyboard_input_lag() {
     tracing::info!("Min: {:?}, Max: {:?}", min_time, max_time);
 
     // Count slow keystrokes (> 50ms is noticeable lag)
-    let slow_count = timings.iter().filter(|&&t| t > Duration::from_millis(50)).count();
+    let slow_count = timings
+        .iter()
+        .filter(|&&t| t > Duration::from_millis(50))
+        .count();
     if slow_count > 0 {
         tracing::warn!("{} keystrokes took >50ms (noticeable lag)", slow_count);
     }
@@ -124,7 +136,7 @@ fn test_keyboard_input_lag() {
     let slow_threshold = Duration::from_millis(32);
     let slow_count = timings.iter().filter(|&&t| t > slow_threshold).count();
     let slow_percentage = (slow_count as f64 / timings.len() as f64) * 100.0;
-    
+
     assert!(
         slow_percentage < 10.0,
         "Too many slow keystrokes: {:.1}% > 32ms (expected <10%)",

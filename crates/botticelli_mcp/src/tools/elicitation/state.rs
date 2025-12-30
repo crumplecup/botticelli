@@ -90,7 +90,7 @@ pub async fn get_narrative_state<R: ElicitationRegistryOperations<crate::Partial
                 return Err(McpError::invalid_input(format!(
                     "Failed to convert to TOML: {}",
                     e
-                )))
+                )));
             }
         }
     } else {

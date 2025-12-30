@@ -864,7 +864,7 @@ impl GeminiClient {
 impl BotticelliDriver for GeminiClient {
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
         use botticelli_interface::ToolCalling;
-        
+
         // No tools in basic generate - delegate with empty array
         self.generate_with_tools(req, &[]).await
     }
@@ -913,7 +913,7 @@ impl botticelli_interface::ToolCalling for GeminiClient {
     ) -> BotticelliResult<GenerateResponse> {
         use gemini_rust::{FunctionDeclaration, Tool};
         use tracing::{debug, error};
-        
+
         if tools.is_empty() {
             // No tools - delegate to normal generate
             return self.generate_internal(request).await.map_err(Into::into);
@@ -956,7 +956,10 @@ impl botticelli_interface::ToolCalling for GeminiClient {
             .collect();
 
         let gemini_tool = Tool::with_functions(function_declarations);
-        debug!(function_count = tools.len(), "Converted tools to Gemini format");
+        debug!(
+            function_count = tools.len(),
+            "Converted tools to Gemini format"
+        );
 
         // Get or create rate-limited client for this model
         let rate_limited_client = {
@@ -968,8 +971,16 @@ impl botticelli_interface::ToolCalling for GeminiClient {
                     let client = Gemini::with_model(&self.api_key, model_enum)
                         .expect("Failed to create Gemini client");
                     let model_tier = self.base_tier.for_model(model_name);
-                    let tiered = TieredGemini { client, tier: model_tier };
-                    RateLimiter::new_with_retry(tiered, self.no_retry, self.max_retries, self.retry_backoff_ms)
+                    let tiered = TieredGemini {
+                        client,
+                        tier: model_tier,
+                    };
+                    RateLimiter::new_with_retry(
+                        tiered,
+                        self.no_retry,
+                        self.max_retries,
+                        self.retry_backoff_ms,
+                    )
                 })
                 .clone()
         };
@@ -1011,7 +1022,9 @@ impl botticelli_interface::ToolCalling for GeminiClient {
                                 }
                             }
                             if Self::has_media(msg.content()) {
-                                return Err(GeminiError::new(GeminiErrorKind::MultimodalNotSupported));
+                                return Err(GeminiError::new(
+                                    GeminiErrorKind::MultimodalNotSupported,
+                                ));
                             }
                         }
                         Role::Assistant => {
@@ -1048,21 +1061,20 @@ impl botticelli_interface::ToolCalling for GeminiClient {
 
                 // Convert response - check for function calls
                 let function_calls = resp.function_calls();
-                
+
                 let outputs = if !function_calls.is_empty() {
                     // Convert function calls to ToolCalls
-                    debug!(call_count = function_calls.is_empty(), "Response contains function calls");
+                    debug!(
+                        call_count = function_calls.is_empty(),
+                        "Response contains function calls"
+                    );
                     let tool_calls: Vec<botticelli_core::ToolCall> = function_calls
                         .iter()
                         .enumerate()
                         .map(|(idx, fc)| {
                             // Generate ID since Gemini doesn't provide one
                             let id = format!("call_{}", idx);
-                            botticelli_core::ToolCall::new(
-                                id,
-                                fc.name.clone(),
-                                fc.args.clone(),
-                            )
+                            botticelli_core::ToolCall::new(id, fc.name.clone(), fc.args.clone())
                         })
                         .collect();
                     vec![Output::ToolCalls(tool_calls)]
@@ -1081,9 +1093,7 @@ impl botticelli_interface::ToolCalling for GeminiClient {
                     .outputs(outputs)
                     .stop_reason(stop_reason)
                     .build()
-                    .map_err(|e| {
-                        GeminiError::new(GeminiErrorKind::BuilderError(e.to_string()))
-                    })?)
+                    .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))?)
             }
             Err(e) => {
                 let error_type = crate::classify_error(&e);

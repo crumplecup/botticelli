@@ -44,13 +44,11 @@ impl View for ChatView {
                         "system" => ("System: ", Color::Yellow),
                         _ => ("Unknown: ", Color::White),
                     };
-                    
+
                     lines.push(Line::from(vec![
                         Span::styled(
                             prefix,
-                            Style::default()
-                                .fg(color)
-                                .add_modifier(Modifier::BOLD),
+                            Style::default().fg(color).add_modifier(Modifier::BOLD),
                         ),
                         Span::raw(&msg.content),
                     ]));
@@ -332,7 +330,7 @@ impl View for ConversationHistoryView {
                                 &msg.content,
                             ),
                         };
-                        
+
                         lines.push(Line::from(vec![
                             Span::styled(prefix, style),
                             Span::raw(content),
@@ -407,20 +405,25 @@ impl View for SettingsView {
     fn render(&self, frame: &mut Frame, _state: &AppState) -> TuiResult<()> {
         use ratatui::style::{Color, Style};
         use ratatui::widgets::{Block, Borders, Paragraph};
-        
-        let title = Paragraph::new("Settings\n\n(To be implemented)")
-            .block(Block::default()
+
+        let title = Paragraph::new("Settings\n\n(To be implemented)").block(
+            Block::default()
                 .title("Settings")
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Cyan)));
+                .border_style(Style::default().fg(Color::Cyan)),
+        );
         frame.render_widget(title, frame.area());
-        
+
         Ok(())
     }
-    
-    fn handle_input(&self, key: crossterm::event::KeyEvent, _state: &AppState) -> TuiResult<Option<Command>> {
+
+    fn handle_input(
+        &self,
+        key: crossterm::event::KeyEvent,
+        _state: &AppState,
+    ) -> TuiResult<Option<Command>> {
         use crossterm::event::{KeyCode, KeyModifiers};
-        
+
         match (key.code, key.modifiers) {
             (KeyCode::Esc, KeyModifiers::NONE) => {
                 Ok(Some(Command::SwitchMode(crate::ViewMode::Chat)))
@@ -463,9 +466,9 @@ pub struct BotsView;
 impl View for BotsView {
     fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
         use ratatui::layout::{Constraint, Direction, Layout};
-        
+
         let area = frame.area();
-        
+
         // Split into list and details
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -492,9 +495,7 @@ impl View for BotsView {
         use crossterm::event::{KeyCode, KeyModifiers};
 
         match (key.code, key.modifiers) {
-            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => {
-                Ok(Some(Command::NavigateUp))
-            }
+            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => Ok(Some(Command::NavigateUp)),
             (KeyCode::Down | KeyCode::Char('j'), KeyModifiers::NONE) => {
                 Ok(Some(Command::NavigateDown))
             }
@@ -517,14 +518,19 @@ impl View for BotsView {
 
 impl BotsView {
     /// Renders the bot list.
-    fn render_bot_list(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+    fn render_bot_list(
+        &self,
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        state: &AppState,
+    ) -> TuiResult<()> {
         use ratatui::style::{Color, Style};
         use ratatui::text::{Line, Span};
         use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
-        
+
         // Get bots from state
         let bots = state.bots();
-        
+
         if bots.is_empty() {
             let empty = Paragraph::new(vec![
                 Line::from(""),
@@ -534,7 +540,7 @@ impl BotsView {
             ])
             .block(Block::default().title("Bots").borders(Borders::ALL))
             .style(Style::default().fg(Color::Gray));
-            
+
             frame.render_widget(empty, area);
             return Ok(());
         }
@@ -591,16 +597,19 @@ impl BotsView {
     }
 
     /// Renders bot details panel.
-    fn render_bot_details(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+    fn render_bot_details(
+        &self,
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        state: &AppState,
+    ) -> TuiResult<()> {
         use ratatui::style::{Color, Modifier, Style};
         use ratatui::text::{Line, Span};
         use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
-        
+
         let bots = state.bots();
-        
-        let bot = state
-            .selected_bot()
-            .and_then(|idx| bots.get(idx));
+
+        let bot = state.selected_bot().and_then(|idx| bots.get(idx));
 
         if let Some(bot) = bot {
             let mut lines = vec![];
@@ -631,9 +640,10 @@ impl BotsView {
             // Description
             if let Some(desc) = &bot.description {
                 lines.push(Line::from(""));
-                lines.push(Line::from(vec![
-                    Span::styled("Description:", Style::default().add_modifier(Modifier::BOLD)),
-                ]));
+                lines.push(Line::from(vec![Span::styled(
+                    "Description:",
+                    Style::default().add_modifier(Modifier::BOLD),
+                )]));
                 lines.push(Line::from(desc.clone()));
             }
 
@@ -754,13 +764,8 @@ pub struct DatabaseView;
 
 impl View for DatabaseView {
     fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
-        
-        
-        
-        
-
         let area = frame.area();
-        
+
         match state.database_view_mode() {
             DatabaseViewMode::Tables => self.render_tables(frame, area, state)?,
             DatabaseViewMode::Schema => self.render_schema(frame, area, state)?,
@@ -778,30 +783,16 @@ impl View for DatabaseView {
         use crossterm::event::{KeyCode, KeyModifiers};
 
         match (key.code, key.modifiers) {
-            (KeyCode::Char('t'), KeyModifiers::NONE) => {
-                Ok(Some(Command::DatabaseShowTables))
-            }
-            (KeyCode::Char('s'), KeyModifiers::NONE) => {
-                Ok(Some(Command::DatabaseShowSchema))
-            }
-            (KeyCode::Char('c'), KeyModifiers::NONE) => {
-                Ok(Some(Command::DatabaseShowContent))
-            }
-            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => {
-                Ok(Some(Command::NavigateUp))
-            }
+            (KeyCode::Char('t'), KeyModifiers::NONE) => Ok(Some(Command::DatabaseShowTables)),
+            (KeyCode::Char('s'), KeyModifiers::NONE) => Ok(Some(Command::DatabaseShowSchema)),
+            (KeyCode::Char('c'), KeyModifiers::NONE) => Ok(Some(Command::DatabaseShowContent)),
+            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => Ok(Some(Command::NavigateUp)),
             (KeyCode::Down | KeyCode::Char('j'), KeyModifiers::NONE) => {
                 Ok(Some(Command::NavigateDown))
             }
-            (KeyCode::Char('f'), KeyModifiers::NONE) => {
-                Ok(Some(Command::DatabaseCycleFilter))
-            }
-            (KeyCode::Char('l'), KeyModifiers::NONE) => {
-                Ok(Some(Command::DatabaseLoadTables))
-            }
-            (KeyCode::Enter, KeyModifiers::NONE) => {
-                Ok(Some(Command::DatabaseSelectTable))
-            }
+            (KeyCode::Char('f'), KeyModifiers::NONE) => Ok(Some(Command::DatabaseCycleFilter)),
+            (KeyCode::Char('l'), KeyModifiers::NONE) => Ok(Some(Command::DatabaseLoadTables)),
+            (KeyCode::Enter, KeyModifiers::NONE) => Ok(Some(Command::DatabaseSelectTable)),
             _ => Ok(None),
         }
     }
@@ -809,7 +800,12 @@ impl View for DatabaseView {
 
 impl DatabaseView {
     /// Renders the tables list view.
-    fn render_tables(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+    fn render_tables(
+        &self,
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        state: &AppState,
+    ) -> TuiResult<()> {
         use ratatui::layout::{Constraint, Direction, Layout};
         use ratatui::style::{Color, Style};
         use ratatui::text::{Line, Span};
@@ -818,14 +814,14 @@ impl DatabaseView {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Min(3),       // Table list
-                Constraint::Length(3),    // Status bar
+                Constraint::Min(3),    // Table list
+                Constraint::Length(3), // Status bar
             ])
             .split(area);
 
         // Render table list
         let tables = state.database_tables();
-        
+
         if tables.is_empty() {
             let empty = Paragraph::new(vec![
                 Line::from(""),
@@ -833,9 +829,13 @@ impl DatabaseView {
                 Line::from(""),
                 Line::from("Press 'l' to load tables from database"),
             ])
-            .block(Block::default().title("Database Tables").borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title("Database Tables")
+                    .borders(Borders::ALL),
+            )
             .style(Style::default().fg(Color::Gray));
-            
+
             frame.render_widget(empty, chunks[0]);
         } else {
             let items: Vec<ListItem> = tables
@@ -887,13 +887,11 @@ impl DatabaseView {
 
         // Status bar
         let status = if *state.database_connected() {
-            Paragraph::new("● Connected")
-                .style(Style::default().fg(Color::Green))
+            Paragraph::new("● Connected").style(Style::default().fg(Color::Green))
         } else {
-            Paragraph::new("○ Not connected")
-                .style(Style::default().fg(Color::Red))
+            Paragraph::new("○ Not connected").style(Style::default().fg(Color::Red))
         };
-        
+
         let status_block = Block::default().borders(Borders::ALL);
         frame.render_widget(status.block(status_block), chunks[1]);
 
@@ -901,7 +899,12 @@ impl DatabaseView {
     }
 
     /// Renders the schema view.
-    fn render_schema(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+    fn render_schema(
+        &self,
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        state: &AppState,
+    ) -> TuiResult<()> {
         use ratatui::layout::{Constraint, Direction, Layout};
         use ratatui::style::{Color, Modifier, Style};
         use ratatui::text::{Line, Span};
@@ -910,15 +913,16 @@ impl DatabaseView {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(3),    // Header
-                Constraint::Min(5),       // Schema
+                Constraint::Length(3), // Header
+                Constraint::Min(5),    // Schema
             ])
             .split(area);
 
         // Header
-        let selected_table = state.selected_database_table()
+        let selected_table = state
+            .selected_database_table()
             .and_then(|idx| state.database_tables().get(idx));
-        
+
         let table_name = selected_table
             .map(|t| t.name.clone())
             .unwrap_or_else(|| "No table selected".to_string());
@@ -926,17 +930,17 @@ impl DatabaseView {
         let header = Paragraph::new(format!("Table: {}", table_name))
             .block(Block::default().borders(Borders::ALL))
             .style(Style::default().add_modifier(Modifier::BOLD));
-        
+
         frame.render_widget(header, chunks[0]);
 
         // Schema display
         let schema = state.database_schema();
-        
+
         if schema.is_empty() {
             let empty = Paragraph::new("No schema loaded\n\nPress 't' to return to tables")
                 .block(Block::default().title("Schema").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Gray));
-            
+
             frame.render_widget(empty, chunks[1]);
         } else {
             let mut lines = vec![
@@ -963,7 +967,11 @@ impl DatabaseView {
             }
 
             let schema_text = Paragraph::new(lines)
-                .block(Block::default().title("Schema (t=tables)").borders(Borders::ALL))
+                .block(
+                    Block::default()
+                        .title("Schema (t=tables)")
+                        .borders(Borders::ALL),
+                )
                 .wrap(Wrap { trim: false });
 
             frame.render_widget(schema_text, chunks[1]);
@@ -973,7 +981,12 @@ impl DatabaseView {
     }
 
     /// Renders the content view.
-    fn render_content(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+    fn render_content(
+        &self,
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        state: &AppState,
+    ) -> TuiResult<()> {
         use ratatui::layout::{Constraint, Direction, Layout};
         use ratatui::style::{Color, Style};
         use ratatui::text::{Line, Span};
@@ -989,12 +1002,12 @@ impl DatabaseView {
 
         // Row list
         let content = state.database_content();
-        
+
         if content.is_empty() {
             let empty = Paragraph::new("No content loaded\n\nPress 't' to return to tables")
                 .block(Block::default().title("Content").borders(Borders::ALL))
                 .style(Style::default().fg(Color::Gray));
-            
+
             frame.render_widget(empty, chunks[0]);
         } else {
             let items: Vec<ListItem> = content
@@ -1014,10 +1027,7 @@ impl DatabaseView {
                         format!("Row {}", i + 1)
                     };
 
-                    let content = Line::from(vec![
-                        Span::raw(prefix),
-                        Span::raw(display),
-                    ]);
+                    let content = Line::from(vec![Span::raw(prefix), Span::raw(display)]);
 
                     ListItem::new(content)
                 })
@@ -1031,11 +1041,7 @@ impl DatabaseView {
             };
 
             let list = List::new(items)
-                .block(
-                    Block::default()
-                        .title(filter_text)
-                        .borders(Borders::ALL),
-                )
+                .block(Block::default().title(filter_text).borders(Borders::ALL))
                 .style(Style::default().fg(Color::White));
 
             frame.render_widget(list, chunks[0]);
@@ -1049,7 +1055,7 @@ impl DatabaseView {
                 let empty = Paragraph::new("No row selected")
                     .block(Block::default().title("Row Detail").borders(Borders::ALL))
                     .style(Style::default().fg(Color::Gray));
-                
+
                 frame.render_widget(empty, chunks[1]);
             }
         }
@@ -1058,7 +1064,12 @@ impl DatabaseView {
     }
 
     /// Renders detailed view of a single row.
-    fn render_row_detail(&self, data: &JsonValue, frame: &mut Frame, area: ratatui::layout::Rect) -> TuiResult<()> {
+    fn render_row_detail(
+        &self,
+        data: &JsonValue,
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+    ) -> TuiResult<()> {
         use ratatui::style::{Color, Style};
         use ratatui::text::Line;
         use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
@@ -1183,9 +1194,9 @@ pub struct ScheduleView;
 impl View for ScheduleView {
     fn render(&self, frame: &mut Frame, state: &AppState) -> TuiResult<()> {
         use ratatui::layout::{Constraint, Direction, Layout};
-        
+
         let area = frame.area();
-        
+
         // Split into task list and details
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -1218,9 +1229,7 @@ impl View for ScheduleView {
         use crossterm::event::{KeyCode, KeyModifiers};
 
         match (key.code, key.modifiers) {
-            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => {
-                Ok(Some(Command::NavigateUp))
-            }
+            (KeyCode::Up | KeyCode::Char('k'), KeyModifiers::NONE) => Ok(Some(Command::NavigateUp)),
             (KeyCode::Down | KeyCode::Char('j'), KeyModifiers::NONE) => {
                 Ok(Some(Command::NavigateDown))
             }
@@ -1230,12 +1239,8 @@ impl View for ScheduleView {
             (KeyCode::Char('r') | KeyCode::Enter, KeyModifiers::NONE) => {
                 Ok(Some(Command::ScheduleRunTask))
             }
-            (KeyCode::PageUp, KeyModifiers::NONE) => {
-                Ok(Some(Command::ScheduleScrollUp))
-            }
-            (KeyCode::PageDown, KeyModifiers::NONE) => {
-                Ok(Some(Command::ScheduleScrollDown))
-            }
+            (KeyCode::PageUp, KeyModifiers::NONE) => Ok(Some(Command::ScheduleScrollUp)),
+            (KeyCode::PageDown, KeyModifiers::NONE) => Ok(Some(Command::ScheduleScrollDown)),
             _ => Ok(None),
         }
     }
@@ -1243,13 +1248,18 @@ impl View for ScheduleView {
 
 impl ScheduleView {
     /// Renders the task list.
-    fn render_task_list(&self, frame: &mut Frame, area: ratatui::layout::Rect, state: &AppState) -> TuiResult<()> {
+    fn render_task_list(
+        &self,
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        state: &AppState,
+    ) -> TuiResult<()> {
         use ratatui::style::{Color, Style};
         use ratatui::text::{Line, Span};
         use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 
         let tasks = state.schedule_tasks();
-        
+
         if tasks.is_empty() {
             let empty = Paragraph::new(vec![
                 Line::from(""),
@@ -1257,9 +1267,13 @@ impl ScheduleView {
                 Line::from(""),
                 Line::from("Add tasks to begin scheduling"),
             ])
-            .block(Block::default().title("Scheduled Tasks").borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title("Scheduled Tasks")
+                    .borders(Borders::ALL),
+            )
             .style(Style::default().fg(Color::Gray));
-            
+
             frame.render_widget(empty, area);
             return Ok(());
         }
@@ -1329,7 +1343,12 @@ impl ScheduleView {
     }
 
     /// Renders task details.
-    fn render_task_details(&self, frame: &mut Frame, area: ratatui::layout::Rect, task: &ScheduledTask) -> TuiResult<()> {
+    fn render_task_details(
+        &self,
+        frame: &mut Frame,
+        area: ratatui::layout::Rect,
+        task: &ScheduledTask,
+    ) -> TuiResult<()> {
         use ratatui::style::{Color, Modifier, Style};
         use ratatui::text::{Line, Span};
         use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
@@ -1410,19 +1429,17 @@ impl ScheduleView {
         if task.failures > 0 {
             lines.push(Line::from(vec![
                 Span::styled("Failures: ", Style::default().add_modifier(Modifier::BOLD)),
-                Span::styled(
-                    task.failures.to_string(),
-                    Style::default().fg(Color::Red),
-                ),
+                Span::styled(task.failures.to_string(), Style::default().fg(Color::Red)),
             ]));
         }
 
         // Last error
         if let Some(error) = &task.last_error {
             lines.push(Line::from(""));
-            lines.push(Line::from(vec![
-                Span::styled("Last error:", Style::default().add_modifier(Modifier::BOLD).fg(Color::Red)),
-            ]));
+            lines.push(Line::from(vec![Span::styled(
+                "Last error:",
+                Style::default().add_modifier(Modifier::BOLD).fg(Color::Red),
+            )]));
             lines.push(Line::from(error.clone()));
         }
 

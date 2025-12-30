@@ -111,18 +111,17 @@ fn extract_tool_result(result: &pmcp::types::CallToolResult) -> serde_json::Valu
     // The response content is a JSON string containing our tool result
     let content_json = &result.content[0];
     // Convert Content to JSON to extract the text field
-    let content_str = serde_json::to_string(&content_json)
-        .expect("Failed to serialize content");
-    let content_val: serde_json::Value = serde_json::from_str(&content_str)
-        .expect("Failed to parse content");
+    let content_str = serde_json::to_string(&content_json).expect("Failed to serialize content");
+    let content_val: serde_json::Value =
+        serde_json::from_str(&content_str).expect("Failed to parse content");
 
     // Extract text field and parse our tool result
     // Note: After fixing elicitation primitive tools, the result is now the raw value
     // directly (e.g., "hello" or 42 or true) instead of {"value": ...}
-    let result_text = content_val["text"].as_str()
+    let result_text = content_val["text"]
+        .as_str()
         .expect("Expected text field in content");
-    serde_json::from_str(result_text)
-        .expect("Failed to parse tool result")
+    serde_json::from_str(result_text).expect("Failed to parse tool result")
 }
 
 /// Helper to create a server with primitive elicitation tools.
@@ -315,16 +314,9 @@ async fn test_all_primitive_tools_available() {
         .expect("Failed to initialize");
 
     // List tools
-    let tools_result = client
-        .list_tools(None)
-        .await
-        .expect("Failed to list tools");
+    let tools_result = client.list_tools(None).await.expect("Failed to list tools");
 
-    let tool_names: Vec<&str> = tools_result
-        .tools
-        .iter()
-        .map(|t| t.name.as_str())
-        .collect();
+    let tool_names: Vec<&str> = tools_result.tools.iter().map(|t| t.name.as_str()).collect();
 
     // Verify all primitive elicitation tools are present
     assert!(

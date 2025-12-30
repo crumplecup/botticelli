@@ -1,12 +1,12 @@
 //! MCP tools for session-based narrative elicitation.
 
-use crate::elicitation::{PartialAct, PartialNarrative};
-use crate::tools::elicitation::PartialNarrativeRegistry;
-use crate::tools::McpTool;
 use crate::NarrativeHelper;
+use crate::elicitation::{PartialAct, PartialNarrative};
+use crate::tools::McpTool;
+use crate::tools::elicitation::PartialNarrativeRegistry;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 use tracing::{debug, instrument};
 use uuid::Uuid;
