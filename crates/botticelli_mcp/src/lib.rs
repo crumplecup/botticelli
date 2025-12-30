@@ -39,6 +39,7 @@ mod elicit_number;
 mod elicit_select;
 mod elicit_text;
 mod errors;
+mod execution;
 mod export_metrics;
 mod modify_narrative;
 mod query_content;
@@ -68,6 +69,10 @@ pub use elicit_number::{ElicitNumberParams, ElicitNumberResult};
 pub use elicit_select::{ElicitSelectParams, ElicitSelectResult};
 pub use elicit_text::{ElicitTextParams, ElicitTextResult};
 pub use errors::ToolError;
+pub use execution::{
+    ExecuteActParams, ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult,
+    GenerateParams, GenerateResult,
+};
 pub use export_metrics::{ExportMetricsParams, ExportMetricsResult, MetricsFormat};
 pub use modify_narrative::{ModifyNarrativeParams, ModifyNarrativeResult};
 pub use query_content::{QueryContentParams, QueryContentResult};

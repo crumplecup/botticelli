@@ -12,8 +12,9 @@ use crate::{
     CreateNarrativeParams, CreateNarrativeResult, CreateSceneParams, CreateSceneResult,
     DeleteSceneParams, DeleteSceneResult, EchoParams, EchoResult, ElicitBoolParams,
     ElicitBoolResult, ElicitNumberParams, ElicitNumberResult, ElicitSelectParams,
-    ElicitSelectResult, ElicitTextParams, ElicitTextResult, ExportMetricsParams,
-    ExportMetricsResult, ListScenesParams, ListScenesResult, MetricsFormat,
+    ElicitSelectResult, ElicitTextParams, ElicitTextResult, ExecuteActParams, ExecuteActResult,
+    ExecuteNarrativeParams, ExecuteNarrativeResult, ExportMetricsParams, ExportMetricsResult,
+    GenerateParams, GenerateResult, ListScenesParams, ListScenesResult, MetricsFormat,
     ModifyNarrativeParams, ModifyNarrativeResult, PrometheusMetrics, QueryContentParams,
     QueryContentResult, SaveNarrativeParams, SaveNarrativeResult, ServerInfoResult,
     UpdateSceneParams, UpdateSceneResult, ValidateNarrativeParams, ValidateNarrativeResult,
@@ -1122,6 +1123,195 @@ impl BotticelliServer {
 
         Ok(Json(ValidateNarrativeResult::new(valid, errors, warnings)))
     }
+    
+    /// Generate text using an LLM.
+    ///
+    /// Simple text generation with configurable model, temperature, and tokens.
+    /// Currently returns a placeholder response - full implementation requires
+    /// LLM backend integration.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Generation parameters including prompt and model
+    ///
+    /// # Returns
+    ///
+    /// Generated text response from the LLM.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if LLM backend is not available or generation fails.
+    #[tool(description = "Generate text using an LLM with configurable parameters")]
+    #[instrument(skip(self))]
+    pub async fn generate(
+        &self,
+        Parameters(GenerateParams {
+            prompt,
+            model,
+            max_tokens,
+            temperature,
+            system_prompt,
+        }): Parameters<GenerateParams>,
+    ) -> Result<Json<GenerateResult>, rmcp::ErrorData> {
+        
+        
+
+        debug!(%model, max_tokens, temperature, "Generating text");
+
+        // Placeholder implementation
+        // Full implementation requires LLM driver integration based on model prefix
+        let response_text = format!(
+            "Placeholder response for prompt: {}\n\nConfiguration:\n- Model: {}\n- Max tokens: {}\n- Temperature: {}\n- System prompt: {}\n\nFull generation requires LLM backend integration.",
+            prompt,
+            model,
+            max_tokens,
+            temperature,
+            system_prompt.as_deref().unwrap_or("(none)")
+        );
+
+        debug!(response_len = response_text.len(), "Generated placeholder text");
+
+        Ok(Json(GenerateResult::new(
+            response_text,
+            model,
+            Some(max_tokens),
+        )))
+    }
+    
+    /// Execute a single narrative act with an LLM.
+    ///
+    /// Executes one act/step of a narrative with context from previous acts.
+    /// Currently returns a placeholder response - full implementation requires
+    /// LLM backend integration.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Act execution parameters including prompt and context
+    ///
+    /// # Returns
+    ///
+    /// Result from executing the act.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if LLM backend is not available or execution fails.
+    #[tool(description = "Execute a single narrative act with an LLM backend")]
+    #[instrument(skip(self))]
+    pub async fn execute_act(
+        &self,
+        Parameters(ExecuteActParams {
+            prompt,
+            model,
+            max_tokens,
+            temperature,
+            system_prompt,
+            context,
+        }): Parameters<ExecuteActParams>,
+    ) -> Result<Json<ExecuteActResult>, rmcp::ErrorData> {
+        
+        
+
+        debug!(%model, has_context = context.is_some(), "Executing act");
+
+        // Placeholder implementation
+        // Full implementation would:
+        // 1. Select driver based on model prefix
+        // 2. Build message with system prompt, context, and user prompt
+        // 3. Execute with driver
+        // 4. Return response with token usage
+        
+        let response = format!(
+            "Act execution placeholder\n\nPrompt: {}\nModel: {}\nContext: {}\n\nFull execution requires LLM backend integration.",
+            prompt,
+            model,
+            context.as_deref().unwrap_or("(none)")
+        );
+
+        debug!(response_len = response.len(), "Act execution complete");
+
+        Ok(Json(ExecuteActResult::new(
+            response,
+            model,
+            Some(max_tokens),
+            true,
+        )))
+    }
+    
+    /// Execute a complete narrative from a TOML file.
+    ///
+    /// Loads a narrative TOML, executes all acts in sequence with the given
+    /// prompt, and returns the final output. Currently returns a placeholder
+    /// response - full implementation requires LLM backend and narrative
+    /// executor integration.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Narrative execution parameters including file path and prompt
+    ///
+    /// # Returns
+    ///
+    /// Result from executing the narrative.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if narrative file cannot be loaded, LLM backend is not
+    /// available, or execution fails.
+    #[tool(description = "Execute a complete narrative from a TOML file")]
+    #[instrument(skip(self))]
+    pub async fn execute_narrative(
+        &self,
+        Parameters(ExecuteNarrativeParams {
+            narrative_path,
+            prompt,
+            model,
+            max_tokens,
+        }): Parameters<ExecuteNarrativeParams>,
+    ) -> Result<Json<ExecuteNarrativeResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(%narrative_path, model = ?model, "Executing narrative");
+
+        // Validate path exists
+        let path = std::path::Path::new(&narrative_path);
+        if !path.exists() {
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("Narrative file not found: {}", narrative_path)),
+                None,
+            ));
+        }
+
+        // Placeholder implementation
+        // Full implementation would:
+        // 1. Load and parse narrative TOML
+        // 2. Create NarrativeExecutor with appropriate driver
+        // 3. Execute all acts in sequence
+        // 4. Track tokens and outputs
+        // 5. Return final result
+        
+        let final_output = format!(
+            "Narrative execution placeholder\n\nPath: {}\nPrompt: {}\nModel: {:?}\n\nFull execution requires LLM backend and narrative executor integration.",
+            narrative_path,
+            prompt,
+            model
+        );
+
+        debug!("Narrative execution complete (placeholder)");
+
+        Ok(Json(ExecuteNarrativeResult::new(
+            final_output,
+            0,  // acts_executed
+            vec![model.unwrap_or_else(default_model)],
+            Some(max_tokens),
+            true,
+            None,
+        )))
+    }
+}
+
+fn default_model() -> String {
+    "gemini-2.0-flash-exp".to_string()
 }
 
 #[tool_handler]
