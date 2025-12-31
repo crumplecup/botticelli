@@ -343,3 +343,132 @@ pub struct ValidateNarrativeSessionResult {
     #[schemars(description = "Number of issues that can be automatically fixed")]
     pub auto_fixable_count: usize,
 }
+
+/// Parameters for applying automated validation fixes.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[schemars(description = "Parameters for applying automated fixes to validation issues")]
+pub struct ApplyValidationFixesParams {
+    /// Session UUID.
+    #[schemars(description = "UUID of the narrative session to fix")]
+    pub narrative_id: String,
+
+    /// Types of fixes to apply.
+    #[schemars(description = "Types of fixes to apply (e.g., 'missing_defaults', 'all')")]
+    pub fix_types: Vec<String>,
+
+    /// Confirm application.
+    #[serde(default)]
+    #[schemars(description = "Confirm application of fixes", default)]
+    pub confirm: bool,
+}
+
+/// Result from applying validation fixes.
+#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[schemars(description = "Result from applying automated validation fixes")]
+pub struct ApplyValidationFixesResult {
+    /// Whether fixes were successfully applied.
+    #[schemars(description = "True if fixes were successfully applied")]
+    pub success: bool,
+
+    /// List of fixes applied.
+    #[schemars(description = "List of fixes that were applied")]
+    pub fixes_applied: Vec<String>,
+
+    /// Number of errors remaining.
+    #[schemars(description = "Number of errors remaining after fixes")]
+    pub remaining_errors: usize,
+}
+
+/// Level at which carousel operates.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "lowercase")]
+#[schemars(description = "Level at which carousel configuration applies")]
+pub enum CarouselLevel {
+    /// Narrative-level carousel.
+    #[schemars(description = "Apply carousel to entire narrative")]
+    Narrative,
+    /// Act-level carousel.
+    #[schemars(description = "Apply carousel to specific act")]
+    Act,
+}
+
+/// Summary of carousel configuration.
+#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[schemars(description = "Summary of carousel configuration")]
+pub struct CarouselSummary {
+    /// Level (narrative or act).
+    #[schemars(description = "Level: 'narrative' or 'act'")]
+    pub level: String,
+
+    /// Act name (for act-level carousel).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(description = "Act name (for act-level carousel)")]
+    pub act_name: Option<String>,
+
+    /// Number of iterations.
+    #[schemars(description = "Number of carousel iterations")]
+    pub iterations: u32,
+
+    /// Estimated total tokens.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(description = "Estimated total tokens across all iterations")]
+    pub estimated_total_tokens: Option<u32>,
+
+    /// Budget warnings.
+    #[schemars(description = "List of budget-related warnings")]
+    pub budget_warnings: Vec<String>,
+}
+
+/// Parameters for creating carousel configuration.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[schemars(description = "Parameters for creating carousel configuration")]
+pub struct ElicitCarouselParams {
+    /// Session UUID.
+    #[schemars(description = "UUID of the narrative session")]
+    pub narrative_id: String,
+
+    /// Carousel level.
+    #[schemars(description = "Level at which carousel operates (narrative or act)")]
+    pub level: CarouselLevel,
+
+    /// Act name (required for act-level carousel).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(description = "Act name (required when level is 'act')")]
+    pub act_name: Option<String>,
+
+    /// Number of iterations.
+    #[schemars(description = "Number of carousel iterations")]
+    pub iterations: u32,
+
+    /// Continue on error flag.
+    #[serde(default)]
+    #[schemars(description = "Continue processing iterations on error", default)]
+    pub continue_on_error: bool,
+
+    /// Estimated tokens per iteration.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[schemars(description = "Estimated tokens per iteration for budget planning")]
+    pub estimated_tokens_per_iteration: Option<u32>,
+
+    /// Budget multiplier for warnings.
+    #[serde(default = "default_budget_multiplier")]
+    #[schemars(description = "Budget multiplier for warnings (default: 2.0)", default = "default_budget_multiplier")]
+    pub budget_multiplier: f64,
+}
+
+fn default_budget_multiplier() -> f64 {
+    2.0
+}
+
+/// Result from creating carousel configuration.
+#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[schemars(description = "Result from creating carousel configuration")]
+pub struct ElicitCarouselResult {
+    /// Whether carousel was successfully configured.
+    #[schemars(description = "True if carousel configuration succeeded")]
+    pub success: bool,
+
+    /// Carousel configuration summary.
+    #[schemars(description = "Summary of the configured carousel")]
+    pub carousel_config: CarouselSummary,
+}

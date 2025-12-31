@@ -9,19 +9,20 @@ use crate::tools::narrative_validation_helpers::{
 };
 use crate::tools::NarrativeHelper;
 use crate::{
+    ApplyValidationFixesParams, ApplyValidationFixesResult, CarouselLevel, CarouselSummary,
     CreateNarrativeParams, CreateNarrativeResult, CreateNarrativeSessionParams,
     CreateNarrativeSessionResult, CreateSceneParams, CreateSceneResult, DeleteSceneParams,
     DeleteSceneResult, EchoParams, EchoResult, ElicitActParams, ElicitActResult,
-    ElicitBoolParams, ElicitBoolResult, ElicitMetadataParams, ElicitMetadataResult,
-    ElicitNumberParams, ElicitNumberResult, ElicitSelectParams, ElicitSelectResult,
-    ElicitTextParams, ElicitTextResult, ExecuteActParams, ExecuteActResult,
-    ExecuteNarrativeParams, ExecuteNarrativeResult, ExportMetricsParams, ExportMetricsResult,
-    FinalizeNarrativeParams, FinalizeNarrativeResult, GenerateParams, GenerateResult,
-    GetNarrativeStateParams, GetNarrativeStateResult, ListScenesParams, ListScenesResult,
-    MetricsFormat, ModifyNarrativeParams, ModifyNarrativeResult, NarrativeAnalysis,
-    NarrativeStateSummary, PrometheusMetrics, QueryContentParams, QueryContentResult,
-    SaveNarrativeParams, SaveNarrativeResult, ServerInfoResult, StateFormat, UpdateSceneParams,
-    UpdateSceneResult, ValidateNarrativeParams, ValidateNarrativeResult,
+    ElicitBoolParams, ElicitBoolResult, ElicitCarouselParams, ElicitCarouselResult,
+    ElicitMetadataParams, ElicitMetadataResult, ElicitNumberParams, ElicitNumberResult,
+    ElicitSelectParams, ElicitSelectResult, ElicitTextParams, ElicitTextResult, ExecuteActParams,
+    ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult, ExportMetricsParams,
+    ExportMetricsResult, FinalizeNarrativeParams, FinalizeNarrativeResult, GenerateParams,
+    GenerateResult, GetNarrativeStateParams, GetNarrativeStateResult, ListScenesParams,
+    ListScenesResult, MetricsFormat, ModifyNarrativeParams, ModifyNarrativeResult,
+    NarrativeAnalysis, NarrativeStateSummary, PrometheusMetrics, QueryContentParams,
+    QueryContentResult, SaveNarrativeParams, SaveNarrativeResult, ServerInfoResult, StateFormat,
+    UpdateSceneParams, UpdateSceneResult, ValidateNarrativeParams, ValidateNarrativeResult,
     ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationError,
     ValidationIssue, ValidationLocation, ValidationSeverity, ValidationWarning,
 };
@@ -2140,6 +2141,244 @@ impl BotticelliServer {
             warnings,
             completeness: format!("{}%", completeness_score),
             auto_fixable_count,
+        }))
+    }
+
+    /// Apply automated fixes to validation issues.
+    ///
+    /// Automatically fixes common validation problems like missing defaults.
+    /// Returns the list of fixes applied and remaining error count.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Fix parameters with session ID and fix types
+    ///
+    /// # Returns
+    ///
+    /// Success status, list of applied fixes, and remaining error count.
+    #[tool(description = "Apply automated fixes to resolve validation issues")]
+    #[instrument(skip(self))]
+    pub async fn apply_validation_fixes(
+        &self,
+        Parameters(ApplyValidationFixesParams {
+            narrative_id,
+            fix_types,
+            confirm,
+        }): Parameters<ApplyValidationFixesParams>,
+    ) -> Result<Json<ApplyValidationFixesResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(narrative_id, ?fix_types, confirm, "Applying validation fixes");
+
+        if !confirm {
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Borrowed("Must set confirm=true to apply fixes"),
+                None,
+            ));
+        }
+
+        // Get narrative
+        let mut partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("Narrative not found: {}", e)),
+                None,
+            )
+        })?;
+
+        let mut fixes_applied = Vec::new();
+
+        // Apply fixes based on type
+        let fix_all = fix_types.contains(&"all".to_string());
+
+        if fix_all || fix_types.contains(&"missing_defaults".to_string()) {
+            if partial.model.is_none() {
+                partial.model = Some("gemini-2.0-flash-exp".to_string());
+                fixes_applied.push("Set default model to gemini-2.0-flash-exp".to_string());
+            }
+
+            if partial.temperature.is_none() {
+                partial.temperature = Some(0.7);
+                fixes_applied.push("Set default temperature to 0.7".to_string());
+            }
+
+            if partial.max_tokens.is_none() {
+                partial.max_tokens = Some(1000);
+                fixes_applied.push("Set default max_tokens to 1000".to_string());
+            }
+        }
+
+        // Update narrative in registry
+        self.narrative_registry.add(partial);
+
+        // Count remaining errors by validating
+        let remaining_errors = {
+            let partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Failed to retrieve updated narrative: {}", e)),
+                    None,
+                )
+            })?;
+
+            let mut errors = 0;
+
+            if partial.name.is_none() || partial.name.as_ref().is_some_and(|n| n.is_empty()) {
+                errors += 1;
+            }
+
+            if partial.description.is_none()
+                || partial.description.as_ref().is_some_and(|d| d.is_empty())
+            {
+                errors += 1;
+            }
+
+            if partial.acts.is_empty() {
+                errors += 1;
+            } else {
+                for act in partial.acts.values() {
+                    if act.prompt.is_empty() {
+                        errors += 1;
+                    }
+                }
+            }
+
+            errors
+        };
+
+        debug!(
+            narrative_id,
+            fixes_count = fixes_applied.len(),
+            remaining_errors,
+            "Validation fixes applied"
+        );
+
+        Ok(Json(ApplyValidationFixesResult {
+            success: true,
+            fixes_applied,
+            remaining_errors,
+        }))
+    }
+
+    /// Create carousel configuration for iterative refinement.
+    ///
+    /// Configures carousel settings for narrative or act-level iteration,
+    /// enabling multi-pass refinement with budget tracking.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Carousel parameters with level, iterations, and budget settings
+    ///
+    /// # Returns
+    ///
+    /// Success status and carousel configuration summary.
+    #[tool(description = "Create carousel configuration for iterative narrative refinement")]
+    #[instrument(skip(self))]
+    pub async fn elicit_carousel(
+        &self,
+        Parameters(ElicitCarouselParams {
+            narrative_id,
+            level,
+            act_name,
+            iterations,
+            continue_on_error,
+            estimated_tokens_per_iteration,
+            budget_multiplier,
+        }): Parameters<ElicitCarouselParams>,
+    ) -> Result<Json<ElicitCarouselResult>, rmcp::ErrorData> {
+        use botticelli_narrative::CarouselConfig;
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(narrative_id, ?level, iterations, "Creating carousel configuration");
+
+        // Get narrative
+        let mut partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("Narrative not found: {}", e)),
+                None,
+            )
+        })?;
+
+        // Create carousel config
+        let carousel_config = CarouselConfig::new(
+            iterations,
+            estimated_tokens_per_iteration.unwrap_or(1000) as u64,
+        )
+        .with_continue_on_error(continue_on_error);
+
+        // Calculate budget warnings
+        let mut budget_warnings = Vec::new();
+        if let Some(tokens_per_iter) = estimated_tokens_per_iteration {
+            let total_estimated = tokens_per_iter * iterations;
+            let budget_threshold = (total_estimated as f64 * budget_multiplier) as u32;
+
+            if total_estimated > 10_000 {
+                budget_warnings.push(format!(
+                    "High token estimate: {} tokens across {} iterations",
+                    total_estimated, iterations
+                ));
+            }
+
+            if budget_threshold > 50_000 {
+                budget_warnings.push(format!(
+                    "Budget threshold very high: {} tokens ({}x multiplier)",
+                    budget_threshold, budget_multiplier
+                ));
+            }
+        }
+
+        // Apply carousel based on level
+        match level {
+            CarouselLevel::Narrative => {
+                partial.carousel = Some(carousel_config);
+            }
+            CarouselLevel::Act => {
+                let act_name_ref = act_name.as_ref().ok_or_else(|| {
+                    rmcp::ErrorData::new(
+                        ErrorCode::INVALID_PARAMS,
+                        Cow::Borrowed("act_name required for Act level carousel"),
+                        None,
+                    )
+                })?;
+
+                if let Some(act) = partial.acts.get_mut(act_name_ref) {
+                    act.carousel = Some(carousel_config);
+                } else {
+                    return Err(rmcp::ErrorData::new(
+                        ErrorCode::INVALID_PARAMS,
+                        Cow::Owned(format!("Act '{}' not found", act_name_ref)),
+                        None,
+                    ));
+                }
+            }
+        }
+
+        // Update narrative in registry
+        self.narrative_registry.add(partial);
+
+        debug!(
+            narrative_id,
+            ?level,
+            iterations,
+            "Carousel configuration created"
+        );
+
+        Ok(Json(ElicitCarouselResult {
+            success: true,
+            carousel_config: CarouselSummary {
+                level: match level {
+                    CarouselLevel::Narrative => "narrative".to_string(),
+                    CarouselLevel::Act => "act".to_string(),
+                },
+                act_name,
+                iterations,
+                estimated_total_tokens: estimated_tokens_per_iteration.map(|t| t * iterations),
+                budget_warnings,
+            },
         }))
     }
 }

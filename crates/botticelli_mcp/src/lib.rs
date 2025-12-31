@@ -80,10 +80,12 @@ pub use query_content::{QueryContentParams, QueryContentResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use save_narrative::{SaveNarrativeParams, SaveNarrativeResult};
 pub use session_tools::{
+    ApplyValidationFixesParams, ApplyValidationFixesResult, CarouselLevel, CarouselSummary,
     CreateNarrativeSessionParams, CreateNarrativeSessionResult, ElicitActParams, ElicitActResult,
-    ElicitMetadataParams, ElicitMetadataResult, FinalizeNarrativeParams, FinalizeNarrativeResult,
-    GetNarrativeStateParams, GetNarrativeStateResult, NarrativeAnalysis, NarrativeStateSummary,
-    StateFormat, ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationIssue,
+    ElicitCarouselParams, ElicitCarouselResult, ElicitMetadataParams, ElicitMetadataResult,
+    FinalizeNarrativeParams, FinalizeNarrativeResult, GetNarrativeStateParams,
+    GetNarrativeStateResult, NarrativeAnalysis, NarrativeStateSummary, StateFormat,
+    ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationIssue,
     ValidationSeverity,
 };
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
