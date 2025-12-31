@@ -9,16 +9,21 @@ use crate::tools::narrative_validation_helpers::{
 };
 use crate::tools::NarrativeHelper;
 use crate::{
-    CreateNarrativeParams, CreateNarrativeResult, CreateSceneParams, CreateSceneResult,
-    DeleteSceneParams, DeleteSceneResult, EchoParams, EchoResult, ElicitBoolParams,
-    ElicitBoolResult, ElicitNumberParams, ElicitNumberResult, ElicitSelectParams,
-    ElicitSelectResult, ElicitTextParams, ElicitTextResult, ExecuteActParams, ExecuteActResult,
+    CreateNarrativeParams, CreateNarrativeResult, CreateNarrativeSessionParams,
+    CreateNarrativeSessionResult, CreateSceneParams, CreateSceneResult, DeleteSceneParams,
+    DeleteSceneResult, EchoParams, EchoResult, ElicitActParams, ElicitActResult,
+    ElicitBoolParams, ElicitBoolResult, ElicitMetadataParams, ElicitMetadataResult,
+    ElicitNumberParams, ElicitNumberResult, ElicitSelectParams, ElicitSelectResult,
+    ElicitTextParams, ElicitTextResult, ExecuteActParams, ExecuteActResult,
     ExecuteNarrativeParams, ExecuteNarrativeResult, ExportMetricsParams, ExportMetricsResult,
-    GenerateParams, GenerateResult, ListScenesParams, ListScenesResult, MetricsFormat,
-    ModifyNarrativeParams, ModifyNarrativeResult, PrometheusMetrics, QueryContentParams,
-    QueryContentResult, SaveNarrativeParams, SaveNarrativeResult, ServerInfoResult,
-    UpdateSceneParams, UpdateSceneResult, ValidateNarrativeParams, ValidateNarrativeResult,
-    ValidationError, ValidationLocation, ValidationWarning,
+    FinalizeNarrativeParams, FinalizeNarrativeResult, GenerateParams, GenerateResult,
+    GetNarrativeStateParams, GetNarrativeStateResult, ListScenesParams, ListScenesResult,
+    MetricsFormat, ModifyNarrativeParams, ModifyNarrativeResult, NarrativeAnalysis,
+    NarrativeStateSummary, PrometheusMetrics, QueryContentParams, QueryContentResult,
+    SaveNarrativeParams, SaveNarrativeResult, ServerInfoResult, StateFormat, UpdateSceneParams,
+    UpdateSceneResult, ValidateNarrativeParams, ValidateNarrativeResult,
+    ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationError,
+    ValidationIssue, ValidationLocation, ValidationSeverity, ValidationWarning,
 };
 use botticelli_narrative::validator::validate_narrative_toml;
 use std::path::Path;
@@ -55,6 +60,8 @@ pub struct BotticelliServer {
     dialog: Option<Arc<DialogResource>>,
 
     metrics: Option<Arc<PrometheusMetrics>>,
+
+    narrative_registry: Arc<crate::tools::PartialNarrativeRegistry>,
 
     #[cfg(feature = "gemini")]
     gemini_driver: Option<Arc<botticelli_models::GeminiClient>>,
@@ -104,6 +111,8 @@ pub struct BotticelliServerBuilder {
     dialog: Option<Arc<DialogResource>>,
 
     metrics: Option<Arc<PrometheusMetrics>>,
+
+    narrative_registry: Option<Arc<crate::tools::PartialNarrativeRegistry>>,
 
     #[cfg(feature = "gemini")]
     gemini_driver: Option<Arc<botticelli_models::GeminiClient>>,
@@ -252,6 +261,9 @@ impl BotticelliServerBuilder {
             db_ops: self.db_ops,
             dialog: self.dialog,
             metrics: self.metrics,
+            narrative_registry: self
+                .narrative_registry
+                .unwrap_or_else(|| Arc::new(crate::tools::PartialNarrativeRegistry::new())),
             #[cfg(feature = "gemini")]
             gemini_driver: self.gemini_driver,
             #[cfg(feature = "anthropic")]
@@ -1624,6 +1636,511 @@ impl BotticelliServer {
             true,
             None,
         )))
+    }
+
+    // Session-based narrative elicitation tools
+
+    /// Create a new narrative elicitation session.
+    ///
+    /// Analyzes the user's description to suggest a name and detect acts,
+    /// then initializes a session for iterative narrative construction.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Session creation parameters with user description
+    ///
+    /// # Returns
+    ///
+    /// Session ID, suggested name, and analysis of the description.
+    #[tool(description = "Initialize a new narrative creation session from a description")]
+    #[instrument(skip(self))]
+    pub async fn create_narrative_session(
+        &self,
+        Parameters(CreateNarrativeSessionParams { description }): Parameters<
+            CreateNarrativeSessionParams,
+        >,
+    ) -> Result<Json<CreateNarrativeSessionResult>, rmcp::ErrorData> {
+        use crate::tools::NarrativeHelper;
+
+        debug!(?description, "Creating narrative session");
+
+        // Analyze description
+        let acts = NarrativeHelper::extract_acts_from_description(&description);
+        let suggested_name = NarrativeHelper::suggest_name_from_description(&description);
+
+        let complexity = if acts.len() == 1 {
+            "simple"
+        } else if acts.len() <= 3 {
+            "moderate"
+        } else {
+            "complex"
+        };
+
+        // Initialize session state
+        let mut partial = crate::PartialNarrative::new();
+        partial.description = Some(description.clone());
+        partial.name = Some(suggested_name.clone());
+
+        // Add acts
+        for act in &acts {
+            partial.acts.insert(
+                act.name.clone(),
+                crate::PartialAct::new(act.prompt.clone(), None, None, vec![], None),
+            );
+            partial.act_order.push(act.name.clone());
+        }
+
+        // Store in registry (returns the narrative name as the key/ID)
+        let narrative_id = self.narrative_registry.add(partial);
+
+        debug!(narrative_id = %narrative_id, acts = acts.len(), "Session created");
+
+        Ok(Json(CreateNarrativeSessionResult {
+            narrative_id,
+            suggested_name,
+            analysis: NarrativeAnalysis {
+                detected_acts: acts.iter().map(|a| a.name.clone()).collect(),
+                complexity: complexity.to_string(),
+                act_count: acts.len(),
+            },
+        }))
+    }
+
+    /// Set or update narrative metadata.
+    ///
+    /// Updates name, description, and default model/temperature settings
+    /// for a narrative elicitation session.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Metadata parameters (all fields optional except narrative_id)
+    ///
+    /// # Returns
+    ///
+    /// Confirmation of update.
+    #[tool(description = "Set or update narrative metadata (name, description, defaults)")]
+    #[instrument(skip(self))]
+    pub async fn elicit_metadata(
+        &self,
+        Parameters(ElicitMetadataParams {
+            narrative_id,
+            name,
+            description,
+            default_model,
+            default_temperature,
+        }): Parameters<ElicitMetadataParams>,
+    ) -> Result<Json<ElicitMetadataResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(narrative_id, "Updating narrative metadata");
+
+        // Update fields if provided
+        self.narrative_registry
+            .update(
+                &narrative_id,
+                serde_json::json!({
+                    "name": name,
+                    "description": description,
+                    "model": default_model,
+                    "temperature": default_temperature,
+                }),
+            )
+            .map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INVALID_PARAMS,
+                    Cow::Owned(format!("Failed to update metadata: {}", e)),
+                    None,
+                )
+            })?;
+
+        debug!(narrative_id, "Metadata updated");
+
+        Ok(Json(ElicitMetadataResult {
+            narrative_id,
+            status: "updated".to_string(),
+        }))
+    }
+
+    /// Add or update an act in the narrative.
+    ///
+    /// Creates a new act or updates an existing one with the given
+    /// prompt and optional model/temperature overrides.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Act parameters including name and prompt
+    ///
+    /// # Returns
+    ///
+    /// Confirmation with act name and status.
+    #[tool(description = "Add or update an act in the narrative")]
+    #[instrument(skip(self))]
+    pub async fn elicit_act(
+        &self,
+        Parameters(ElicitActParams {
+            narrative_id,
+            act_name,
+            prompt,
+            model,
+            temperature,
+        }): Parameters<ElicitActParams>,
+    ) -> Result<Json<ElicitActResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(narrative_id, act_name, "Eliciting act");
+
+        // Get current narrative
+        let mut partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("Narrative not found: {}", e)),
+                None,
+            )
+        })?;
+
+        // Check if act exists
+        let status = if partial.acts.contains_key(&act_name) {
+            "updated"
+        } else {
+            partial.act_order.push(act_name.clone());
+            "created"
+        };
+
+        // Create or update act
+        partial.acts.insert(
+            act_name.clone(),
+            crate::PartialAct::new(prompt, model, temperature, vec![], None),
+        );
+
+        // Update registry
+        self.narrative_registry.add(partial);
+
+        debug!(narrative_id, act_name, status, "Act elicited");
+
+        Ok(Json(ElicitActResult {
+            narrative_id,
+            act_name,
+            status: status.to_string(),
+        }))
+    }
+
+    /// Finalize a narrative session and generate TOML.
+    ///
+    /// Completes the elicitation session, optionally validates the narrative,
+    /// and generates the final TOML representation.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Finalization parameters with session ID
+    ///
+    /// # Returns
+    ///
+    /// Success status, TOML output, and optional validation errors.
+    #[tool(description = "Finalize a narrative session and generate TOML")]
+    #[instrument(skip(self))]
+    pub async fn finalize_narrative(
+        &self,
+        Parameters(FinalizeNarrativeParams {
+            narrative_id,
+            validate,
+        }): Parameters<FinalizeNarrativeParams>,
+    ) -> Result<Json<FinalizeNarrativeResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(narrative_id, validate, "Finalizing narrative");
+
+        // Get narrative
+        let partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("Narrative not found: {}", e)),
+                None,
+            )
+        })?;
+
+        // Convert to TOML
+        let toml = toml::to_string_pretty(&partial).map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Failed to serialize to TOML: {}", e)),
+                None,
+            )
+        })?;
+
+        // Validate if requested
+        let validation_errors = if validate {
+            use botticelli_narrative::validator::{ValidationConfig, validate_narrative_toml_with_config};
+
+            let config = ValidationConfig::default();
+            let result = validate_narrative_toml_with_config(&toml, &config);
+
+            if !result.is_valid() {
+                Some(
+                    result
+                        .errors
+                        .iter()
+                        .map(|e| e.message.clone())
+                        .collect(),
+                )
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let success = validation_errors.is_none();
+
+        // Remove from registry (session complete)
+        self.narrative_registry.remove(&narrative_id);
+
+        debug!(narrative_id, success, "Narrative finalized");
+
+        Ok(Json(FinalizeNarrativeResult {
+            success,
+            toml,
+            validation_errors,
+        }))
+    }
+
+    /// Get the current state of a narrative session.
+    ///
+    /// Returns information about session completeness, acts, and optionally
+    /// the TOML representation.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - State query parameters with session ID and format
+    ///
+    /// # Returns
+    ///
+    /// Session state summary with optional TOML.
+    #[tool(description = "Get current state and completeness of a narrative session")]
+    #[instrument(skip(self))]
+    pub async fn get_narrative_state(
+        &self,
+        Parameters(GetNarrativeStateParams {
+            narrative_id,
+            format,
+        }): Parameters<GetNarrativeStateParams>,
+    ) -> Result<Json<GetNarrativeStateResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(narrative_id, ?format, "Getting narrative state");
+
+        // Get narrative
+        let partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("Narrative not found: {}", e)),
+                None,
+            )
+        })?;
+
+        // Calculate state
+        let acts_count = partial.acts.len();
+        let acts: Vec<String> = partial.act_order.clone();
+        let has_carousel =
+            partial.carousel.is_some() || partial.acts.values().any(|act| act.carousel.is_some());
+
+        let metadata_complete =
+            partial.name.is_some() && partial.description.is_some() && partial.model.is_some();
+        let acts_complete =
+            !partial.acts.is_empty() && partial.acts.values().all(|act| !act.prompt.is_empty());
+        let inputs_partial = partial.acts.values().any(|act| !act.inputs.is_empty());
+
+        let mut completeness_score = 0;
+        if metadata_complete {
+            completeness_score += 33;
+        }
+        if acts_complete {
+            completeness_score += 33;
+        }
+        if inputs_partial {
+            completeness_score += 34;
+        }
+
+        // Generate TOML if requested
+        let toml = if matches!(format, StateFormat::Toml) {
+            Some(toml::to_string_pretty(&partial).map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Failed to convert to TOML: {}", e)),
+                    None,
+                )
+            })?)
+        } else {
+            None
+        };
+
+        debug!(
+            narrative_id,
+            completeness = %completeness_score,
+            acts_count,
+            "Narrative state retrieved"
+        );
+
+        Ok(Json(GetNarrativeStateResult {
+            narrative_id,
+            state: NarrativeStateSummary {
+                name: partial.name.clone(),
+                acts_count,
+                acts,
+                completeness: format!("{}%", completeness_score),
+                has_carousel,
+            },
+            toml,
+        }))
+    }
+
+    /// Validate a narrative session.
+    ///
+    /// Checks the narrative for completeness, required fields, and structural
+    /// correctness. Returns detailed errors and warnings.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Validation parameters with session ID and strict flag
+    ///
+    /// # Returns
+    ///
+    /// Validation results with errors, warnings, and completeness.
+    #[tool(description = "Validate a narrative session for completeness and correctness")]
+    #[instrument(skip(self))]
+    pub async fn validate_narrative_session(
+        &self,
+        Parameters(ValidateNarrativeSessionParams {
+            narrative_id,
+            strict,
+        }): Parameters<ValidateNarrativeSessionParams>,
+    ) -> Result<Json<ValidateNarrativeSessionResult>, rmcp::ErrorData> {
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(narrative_id, strict, "Validating narrative session");
+
+        // Get narrative
+        let partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("Narrative not found: {}", e)),
+                None,
+            )
+        })?;
+
+        let mut errors = Vec::new();
+        let mut warnings = Vec::new();
+
+        // Validate name
+        if partial.name.is_none() || partial.name.as_ref().is_some_and(|n| n.is_empty()) {
+            errors.push(ValidationIssue {
+                severity: ValidationSeverity::Critical,
+                field: "name".to_string(),
+                message: "Narrative name is required".to_string(),
+                suggestion: "Provide a unique name for this narrative".to_string(),
+                auto_fixable: false,
+            });
+        }
+
+        // Validate description
+        if partial.description.is_none()
+            || partial.description.as_ref().is_some_and(|d| d.is_empty())
+        {
+            errors.push(ValidationIssue {
+                severity: ValidationSeverity::High,
+                field: "description".to_string(),
+                message: "Narrative description is missing".to_string(),
+                suggestion: "Add a description explaining what this narrative does".to_string(),
+                auto_fixable: false,
+            });
+        }
+
+        // Validate model
+        if partial.model.is_none() {
+            warnings.push(ValidationIssue {
+                severity: ValidationSeverity::Medium,
+                field: "model".to_string(),
+                message: "Default model not specified".to_string(),
+                suggestion: "Set a default model (e.g., 'gemini-2.0-flash-exp')".to_string(),
+                auto_fixable: true,
+            });
+        }
+
+        // Validate acts
+        if partial.acts.is_empty() {
+            errors.push(ValidationIssue {
+                severity: ValidationSeverity::Critical,
+                field: "acts".to_string(),
+                message: "Narrative has no acts".to_string(),
+                suggestion: "Add at least one act to the narrative".to_string(),
+                auto_fixable: false,
+            });
+        } else {
+            for (act_name, act) in &partial.acts {
+                if act.prompt.is_empty() {
+                    errors.push(ValidationIssue {
+                        severity: ValidationSeverity::High,
+                        field: format!("acts.{}.prompt", act_name),
+                        message: format!("Act '{}' has empty prompt", act_name),
+                        suggestion: "Provide a prompt for this act".to_string(),
+                        auto_fixable: false,
+                    });
+                }
+
+                if strict && act.model.is_none() && partial.model.is_none() {
+                    warnings.push(ValidationIssue {
+                        severity: ValidationSeverity::Low,
+                        field: format!("acts.{}.model", act_name),
+                        message: format!("Act '{}' has no model specified", act_name),
+                        suggestion: "Set model for act or narrative default".to_string(),
+                        auto_fixable: true,
+                    });
+                }
+            }
+        }
+
+        // Calculate completeness
+        let metadata_complete =
+            partial.name.is_some() && partial.description.is_some() && partial.model.is_some();
+        let acts_complete =
+            !partial.acts.is_empty() && partial.acts.values().all(|act| !act.prompt.is_empty());
+
+        let mut completeness_score = 0;
+        if metadata_complete {
+            completeness_score += 50;
+        }
+        if acts_complete {
+            completeness_score += 50;
+        }
+
+        let auto_fixable_count = errors
+            .iter()
+            .chain(warnings.iter())
+            .filter(|issue| issue.auto_fixable)
+            .count();
+
+        let is_valid = errors.is_empty();
+
+        debug!(
+            narrative_id,
+            is_valid,
+            errors = errors.len(),
+            warnings = warnings.len(),
+            "Validation complete"
+        );
+
+        Ok(Json(ValidateNarrativeSessionResult {
+            narrative_id,
+            is_valid,
+            errors,
+            warnings,
+            completeness: format!("{}%", completeness_score),
+            auto_fixable_count,
+        }))
     }
 }
 

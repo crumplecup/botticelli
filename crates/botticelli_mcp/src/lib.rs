@@ -47,6 +47,7 @@ mod resources;
 mod rmcp_server;
 mod save_narrative;
 mod scene;
+mod session_tools;
 // Legacy modules - to be migrated or removed
 // mod server;
 mod server_info;
@@ -78,6 +79,13 @@ pub use modify_narrative::{ModifyNarrativeParams, ModifyNarrativeResult};
 pub use query_content::{QueryContentParams, QueryContentResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use save_narrative::{SaveNarrativeParams, SaveNarrativeResult};
+pub use session_tools::{
+    CreateNarrativeSessionParams, CreateNarrativeSessionResult, ElicitActParams, ElicitActResult,
+    ElicitMetadataParams, ElicitMetadataResult, FinalizeNarrativeParams, FinalizeNarrativeResult,
+    GetNarrativeStateParams, GetNarrativeStateResult, NarrativeAnalysis, NarrativeStateSummary,
+    StateFormat, ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationIssue,
+    ValidationSeverity,
+};
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
 pub use transport::InProcTransport;
 pub use validate_narrative::{
