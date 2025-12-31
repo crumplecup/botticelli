@@ -1,5 +1,16 @@
 //! Multi-backend LLM generation tools.
 //!
+//! DEPRECATED: These backend-specific tools are redundant with the unified `generate` tool.
+//! The rmcp-based `BotticelliServer::generate` method automatically selects the correct
+//! backend based on the model name, making these separate tools unnecessary.
+//!
+//! Use `BotticelliServer::generate` with the appropriate model name instead:
+//! - For Gemini: model = "gemini-2.0-flash-exp"
+//! - For Anthropic: model = "claude-3-5-sonnet-20241022"
+//! - For Ollama: model = "llama3.2"
+//! - For HuggingFace: model = "meta-llama/Meta-Llama-3-8B-Instruct"
+//! - For Groq: model = "llama-3.3-70b-versatile"
+//!
 //! This module provides tools for text generation using multiple LLM backends.
 //! Each backend is feature-gated and implemented explicitly.
 
@@ -159,6 +170,12 @@ async fn execute_generation<D: BotticelliDriver>(
 use botticelli_models::GeminiClient;
 
 /// Tool for generating text with Google Gemini.
+///
+/// DEPRECATED: Use `BotticelliServer::generate` with model="gemini-2.0-flash-exp" instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use BotticelliServer::generate with appropriate model name instead"
+)]
 #[cfg(feature = "gemini")]
 pub struct GenerateGeminiTool {
     client: GeminiClient,
@@ -230,6 +247,12 @@ impl McpTool for GenerateGeminiTool {
 use botticelli_models::AnthropicClient;
 
 /// Tool for generating text with Anthropic Claude.
+///
+/// DEPRECATED: Use `BotticelliServer::generate` with model="claude-3-5-sonnet-20241022" instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use BotticelliServer::generate with appropriate model name instead"
+)]
 #[cfg(feature = "anthropic")]
 pub struct GenerateAnthropicTool {
     client: AnthropicClient,
@@ -308,6 +331,12 @@ impl McpTool for GenerateAnthropicTool {
 use botticelli_models::OllamaClient;
 
 /// Tool for generating text with local Ollama models.
+///
+/// DEPRECATED: Use `BotticelliServer::generate` with model="llama3.2" instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use BotticelliServer::generate with appropriate model name instead"
+)]
 #[cfg(feature = "ollama")]
 pub struct GenerateOllamaTool {
     client: OllamaClient,
@@ -380,6 +409,12 @@ impl McpTool for GenerateOllamaTool {
 use botticelli_models::HuggingFaceDriver;
 
 /// Tool for generating text with HuggingFace models.
+///
+/// DEPRECATED: Use `BotticelliServer::generate` with model="meta-llama/Meta-Llama-3-8B-Instruct" instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use BotticelliServer::generate with appropriate model name instead"
+)]
 #[cfg(feature = "huggingface")]
 pub struct GenerateHuggingFaceTool {
     client: HuggingFaceDriver,
@@ -452,6 +487,12 @@ impl McpTool for GenerateHuggingFaceTool {
 use botticelli_models::GroqDriver;
 
 /// Tool for generating text with Groq models.
+///
+/// DEPRECATED: Use `BotticelliServer::generate` with model="llama-3.3-70b-versatile" instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use BotticelliServer::generate with appropriate model name instead"
+)]
 #[cfg(feature = "groq")]
 pub struct GenerateGroqTool {
     client: GroqDriver,

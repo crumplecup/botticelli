@@ -1,4 +1,8 @@
 //! Narrative TOML validation tool for MCP.
+//!
+//! DEPRECATED: This module contains the legacy McpTool implementation.
+//! New code should use the rmcp-based implementation in `src/rmcp_server.rs`
+//! and the types in `src/validate_narrative.rs`.
 
 use crate::tools::McpTool;
 use async_trait::async_trait;
@@ -9,8 +13,15 @@ use std::path::PathBuf;
 
 /// Tool for validating narrative TOML files.
 ///
+/// DEPRECATED: Use the rmcp-based `BotticelliServer::validate_narrative` instead.
+/// See `src/rmcp_server.rs` for the new implementation.
+///
 /// Provides comprehensive validation with actionable error messages,
 /// catching common syntax errors and providing fix suggestions.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use rmcp-based BotticelliServer::validate_narrative instead"
+)]
 pub struct ValidateNarrativeTool;
 
 #[async_trait]

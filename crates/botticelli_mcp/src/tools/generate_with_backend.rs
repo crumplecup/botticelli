@@ -1,3 +1,9 @@
+//! Generate with backend tool.
+//!
+//! DEPRECATED: This tool is redundant with the unified `generate` tool.
+//! Use `BotticelliServer::generate` instead, which automatically selects
+//! the correct backend based on the model name.
+
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{McpError, McpErrorKind, McpResult};
 use botticelli_interface::BotticelliDriver;
@@ -50,6 +56,12 @@ pub trait BackendFactory: Send + Sync {
 }
 
 /// Tool for generating text using different LLM backends.
+///
+/// DEPRECATED: Use `BotticelliServer::generate` instead.
+#[deprecated(
+    since = "0.1.0",
+    note = "Use BotticelliServer::generate with appropriate model name instead"
+)]
 pub struct GenerateWithBackendTool {
     factory: Arc<dyn BackendFactory>,
 }
