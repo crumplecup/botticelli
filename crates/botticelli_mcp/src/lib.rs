@@ -32,6 +32,7 @@
 mod conversation;
 mod create_narrative;
 mod dialog_resource;
+mod discord_tools;
 mod echo;
 mod elicitation;
 mod elicit_bool;
@@ -97,6 +98,12 @@ pub use validate_narrative::{
 pub use scene::{
     CreateSceneParams, CreateSceneResult, DeleteSceneParams, DeleteSceneResult, ListScenesParams,
     ListScenesResult, UpdateSceneParams, UpdateSceneResult,
+};
+pub use discord_tools::{
+    DiscordAuthor, DiscordChannelInfo, DiscordGetChannelsParams, DiscordGetChannelsResult,
+    DiscordGetGuildInfoParams, DiscordGetGuildInfoResult, DiscordGetMessagesParams,
+    DiscordGetMessagesResult, DiscordMessageInfo, DiscordPostMessageParams,
+    DiscordPostMessageResult,
 };
 // Legacy exports - commented out during rmcp migration
 // pub use server::{BotticelliRouter, BotticelliRouterBuilder};

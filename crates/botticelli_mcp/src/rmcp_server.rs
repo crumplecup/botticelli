@@ -12,19 +12,23 @@ use crate::{
     ApplyValidationFixesParams, ApplyValidationFixesResult, CarouselLevel, CarouselSummary,
     CreateNarrativeParams, CreateNarrativeResult, CreateNarrativeSessionParams,
     CreateNarrativeSessionResult, CreateSceneParams, CreateSceneResult, DeleteSceneParams,
-    DeleteSceneResult, EchoParams, EchoResult, ElicitActParams, ElicitActResult,
-    ElicitBoolParams, ElicitBoolResult, ElicitCarouselParams, ElicitCarouselResult,
-    ElicitMetadataParams, ElicitMetadataResult, ElicitNumberParams, ElicitNumberResult,
-    ElicitSelectParams, ElicitSelectResult, ElicitTextParams, ElicitTextResult, ExecuteActParams,
-    ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult, ExportMetricsParams,
-    ExportMetricsResult, FinalizeNarrativeParams, FinalizeNarrativeResult, GenerateParams,
-    GenerateResult, GetNarrativeStateParams, GetNarrativeStateResult, ListScenesParams,
-    ListScenesResult, MetricsFormat, ModifyNarrativeParams, ModifyNarrativeResult,
-    NarrativeAnalysis, NarrativeStateSummary, PrometheusMetrics, QueryContentParams,
-    QueryContentResult, SaveNarrativeParams, SaveNarrativeResult, ServerInfoResult, StateFormat,
-    UpdateSceneParams, UpdateSceneResult, ValidateNarrativeParams, ValidateNarrativeResult,
-    ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationError,
-    ValidationIssue, ValidationLocation, ValidationSeverity, ValidationWarning,
+    DeleteSceneResult, DiscordAuthor, DiscordChannelInfo, DiscordGetChannelsParams,
+    DiscordGetChannelsResult, DiscordGetGuildInfoParams, DiscordGetGuildInfoResult,
+    DiscordGetMessagesParams, DiscordGetMessagesResult, DiscordMessageInfo,
+    DiscordPostMessageParams, DiscordPostMessageResult, EchoParams, EchoResult, ElicitActParams,
+    ElicitActResult, ElicitBoolParams, ElicitBoolResult, ElicitCarouselParams,
+    ElicitCarouselResult, ElicitMetadataParams, ElicitMetadataResult, ElicitNumberParams,
+    ElicitNumberResult, ElicitSelectParams, ElicitSelectResult, ElicitTextParams,
+    ElicitTextResult, ExecuteActParams, ExecuteActResult, ExecuteNarrativeParams,
+    ExecuteNarrativeResult, ExportMetricsParams, ExportMetricsResult, FinalizeNarrativeParams,
+    FinalizeNarrativeResult, GenerateParams, GenerateResult, GetNarrativeStateParams,
+    GetNarrativeStateResult, ListScenesParams, ListScenesResult, MetricsFormat,
+    ModifyNarrativeParams, ModifyNarrativeResult, NarrativeAnalysis, NarrativeStateSummary,
+    PrometheusMetrics, QueryContentParams, QueryContentResult, SaveNarrativeParams,
+    SaveNarrativeResult, ServerInfoResult, StateFormat, UpdateSceneParams, UpdateSceneResult,
+    ValidateNarrativeParams, ValidateNarrativeResult, ValidateNarrativeSessionParams,
+    ValidateNarrativeSessionResult, ValidationError, ValidationIssue, ValidationLocation,
+    ValidationSeverity, ValidationWarning,
 };
 use botticelli_narrative::validator::validate_narrative_toml;
 use std::path::Path;
@@ -2379,6 +2383,410 @@ impl BotticelliServer {
                 estimated_total_tokens: estimated_tokens_per_iteration.map(|t| t * iterations),
                 budget_warnings,
             },
+        }))
+    }
+
+    // ========================================================================
+    // Discord Integration Tools (feature-gated)
+    // ========================================================================
+
+    /// Post a message to a Discord channel.
+    ///
+    /// Sends a message to the specified Discord channel using the Discord API.
+    /// Requires DISCORD_TOKEN environment variable to be set.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Channel ID and message content
+    ///
+    /// # Returns
+    ///
+    /// Message ID, channel ID, and timestamp on success.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if DISCORD_TOKEN is not set, channel doesn't exist,
+    /// bot lacks permissions, or content exceeds 2000 characters.
+    #[tool(description = "Post a message to a Discord channel")]
+    #[instrument(skip(self))]
+    pub async fn discord_post_message(
+        &self,
+        Parameters(DiscordPostMessageParams {
+            channel_id,
+            content,
+        }): Parameters<DiscordPostMessageParams>,
+    ) -> Result<Json<DiscordPostMessageResult>, rmcp::ErrorData> {
+        use reqwest::Client;
+        use rmcp::model::ErrorCode;
+        use serde_json::json;
+        use std::borrow::Cow;
+
+        debug!(channel_id, content_len = content.len(), "Posting Discord message");
+
+        // Validate content length
+        if content.len() > 2000 {
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Borrowed("Content exceeds 2000 character limit"),
+                None,
+            ));
+        }
+
+        // Get Discord token
+        let token = std::env::var("DISCORD_TOKEN").map_err(|_| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Borrowed("DISCORD_TOKEN environment variable not set"),
+                None,
+            )
+        })?;
+
+        // Make Discord API request
+        let client = Client::new();
+        let url = format!(
+            "https://discord.com/api/v10/channels/{}/messages",
+            channel_id
+        );
+
+        let response = client
+            .post(&url)
+            .header("Authorization", format!("Bot {}", token))
+            .header("User-Agent", "Botticelli-MCP/0.2.0")
+            .header("Content-Type", "application/json")
+            .json(&json!({ "content": content }))
+            .send()
+            .await
+            .map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Discord API request failed: {}", e)),
+                    None,
+                )
+            })?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Discord API error {}: {}", status, body)),
+                None,
+            ));
+        }
+
+        let message: serde_json::Value = response.json().await.map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Failed to parse Discord response: {}", e)),
+                None,
+            )
+        })?;
+
+        let message_id = message["id"]
+            .as_str()
+            .unwrap_or("unknown")
+            .to_string();
+        let timestamp = message["timestamp"]
+            .as_str()
+            .unwrap_or("unknown")
+            .to_string();
+
+        debug!(message_id, "Discord message posted successfully");
+
+        Ok(Json(DiscordPostMessageResult {
+            status: "success".to_string(),
+            message_id,
+            channel_id,
+            timestamp,
+        }))
+    }
+
+    /// Get message history from a Discord channel.
+    ///
+    /// Fetches recent messages from the specified Discord channel.
+    /// Requires DISCORD_TOKEN environment variable to be set.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Channel ID and optional limit (1-100, default 50)
+    ///
+    /// # Returns
+    ///
+    /// List of messages with content, timestamps, and author info.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if DISCORD_TOKEN is not set, channel doesn't exist,
+    /// or bot lacks permissions.
+    #[tool(description = "Fetch message history from a Discord channel")]
+    #[instrument(skip(self))]
+    pub async fn discord_get_messages(
+        &self,
+        Parameters(DiscordGetMessagesParams {
+            channel_id,
+            limit,
+        }): Parameters<DiscordGetMessagesParams>,
+    ) -> Result<Json<DiscordGetMessagesResult>, rmcp::ErrorData> {
+        use reqwest::Client;
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        let limit = limit.clamp(1, 100);
+        debug!(channel_id, limit, "Getting Discord messages");
+
+        // Get Discord token
+        let token = std::env::var("DISCORD_TOKEN").map_err(|_| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Borrowed("DISCORD_TOKEN environment variable not set"),
+                None,
+            )
+        })?;
+
+        // Make Discord API request
+        let client = Client::new();
+        let url = format!(
+            "https://discord.com/api/v10/channels/{}/messages?limit={}",
+            channel_id, limit
+        );
+
+        let response = client
+            .get(&url)
+            .header("Authorization", format!("Bot {}", token))
+            .header("User-Agent", "Botticelli-MCP/0.2.0")
+            .send()
+            .await
+            .map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Discord API request failed: {}", e)),
+                    None,
+                )
+            })?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Discord API error {}: {}", status, body)),
+                None,
+            ));
+        }
+
+        let messages: Vec<serde_json::Value> = response.json().await.map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Failed to parse Discord response: {}", e)),
+                None,
+            )
+        })?;
+
+        let formatted_messages: Vec<DiscordMessageInfo> = messages
+            .into_iter()
+            .map(|m| DiscordMessageInfo {
+                id: m["id"].as_str().unwrap_or("").to_string(),
+                content: m["content"].as_str().unwrap_or("").to_string(),
+                timestamp: m["timestamp"].as_str().unwrap_or("").to_string(),
+                author: m["author"].as_object().map(|a| DiscordAuthor {
+                    id: a["id"].as_str().unwrap_or("").to_string(),
+                    username: a["username"].as_str().unwrap_or("").to_string(),
+                }),
+            })
+            .collect();
+
+        debug!(count = formatted_messages.len(), "Discord messages retrieved");
+
+        Ok(Json(DiscordGetMessagesResult {
+            status: "success".to_string(),
+            channel_id,
+            count: formatted_messages.len(),
+            messages: formatted_messages,
+        }))
+    }
+
+    /// Get information about a Discord guild (server).
+    ///
+    /// Fetches guild information including name and member count.
+    /// Requires DISCORD_TOKEN environment variable to be set.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Guild ID
+    ///
+    /// # Returns
+    ///
+    /// Guild ID, name, and member count.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if DISCORD_TOKEN is not set, guild doesn't exist,
+    /// or bot is not a member of the guild.
+    #[tool(description = "Get information about a Discord guild (server)")]
+    #[instrument(skip(self))]
+    pub async fn discord_get_guild_info(
+        &self,
+        Parameters(DiscordGetGuildInfoParams { guild_id }): Parameters<
+            DiscordGetGuildInfoParams,
+        >,
+    ) -> Result<Json<DiscordGetGuildInfoResult>, rmcp::ErrorData> {
+        use reqwest::Client;
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(guild_id, "Getting Discord guild info");
+
+        // Get Discord token
+        let token = std::env::var("DISCORD_TOKEN").map_err(|_| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Borrowed("DISCORD_TOKEN environment variable not set"),
+                None,
+            )
+        })?;
+
+        // Make Discord API request
+        let client = Client::new();
+        let url = format!(
+            "https://discord.com/api/v10/guilds/{}?with_counts=true",
+            guild_id
+        );
+
+        let response = client
+            .get(&url)
+            .header("Authorization", format!("Bot {}", token))
+            .header("User-Agent", "Botticelli-MCP/0.2.0")
+            .send()
+            .await
+            .map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Discord API request failed: {}", e)),
+                    None,
+                )
+            })?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Discord API error {}: {}", status, body)),
+                None,
+            ));
+        }
+
+        let guild: serde_json::Value = response.json().await.map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Failed to parse Discord response: {}", e)),
+                None,
+            )
+        })?;
+
+        let name = guild["name"].as_str().unwrap_or("Unknown").to_string();
+        let member_count = guild["approximate_member_count"].as_u64();
+
+        debug!(guild_id, name, "Discord guild info retrieved");
+
+        Ok(Json(DiscordGetGuildInfoResult {
+            status: "success".to_string(),
+            guild_id,
+            name,
+            member_count,
+        }))
+    }
+
+    /// List channels in a Discord guild.
+    ///
+    /// Fetches all channels in the specified guild.
+    /// Requires DISCORD_TOKEN environment variable to be set.
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - Guild ID
+    ///
+    /// # Returns
+    ///
+    /// List of channels with IDs, names, and types.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if DISCORD_TOKEN is not set, guild doesn't exist,
+    /// or bot is not a member of the guild.
+    #[tool(description = "List channels in a Discord guild")]
+    #[instrument(skip(self))]
+    pub async fn discord_get_channels(
+        &self,
+        Parameters(DiscordGetChannelsParams { guild_id }): Parameters<DiscordGetChannelsParams>,
+    ) -> Result<Json<DiscordGetChannelsResult>, rmcp::ErrorData> {
+        use reqwest::Client;
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        debug!(guild_id, "Getting Discord channels");
+
+        // Get Discord token
+        let token = std::env::var("DISCORD_TOKEN").map_err(|_| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Borrowed("DISCORD_TOKEN environment variable not set"),
+                None,
+            )
+        })?;
+
+        // Make Discord API request
+        let client = Client::new();
+        let url = format!("https://discord.com/api/v10/guilds/{}/channels", guild_id);
+
+        let response = client
+            .get(&url)
+            .header("Authorization", format!("Bot {}", token))
+            .header("User-Agent", "Botticelli-MCP/0.2.0")
+            .send()
+            .await
+            .map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Discord API request failed: {}", e)),
+                    None,
+                )
+            })?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Discord API error {}: {}", status, body)),
+                None,
+            ));
+        }
+
+        let channels: Vec<serde_json::Value> = response.json().await.map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Failed to parse Discord response: {}", e)),
+                None,
+            )
+        })?;
+
+        let formatted_channels: Vec<DiscordChannelInfo> = channels
+            .into_iter()
+            .map(|c| DiscordChannelInfo {
+                id: c["id"].as_str().unwrap_or("").to_string(),
+                name: c["name"].as_str().map(|s| s.to_string()),
+                channel_type: c["type"].as_u64().unwrap_or(0) as u8,
+            })
+            .collect();
+
+        debug!(count = formatted_channels.len(), "Discord channels retrieved");
+
+        Ok(Json(DiscordGetChannelsResult {
+            status: "success".to_string(),
+            guild_id,
+            count: formatted_channels.len(),
+            channels: formatted_channels,
         }))
     }
 }
