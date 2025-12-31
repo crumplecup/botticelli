@@ -46,6 +46,15 @@ This index tracks all planning documents in the workspace. When documents are co
   - Enables: Tool orchestration, multi-stage wizards, progressive disclosure
   - Status: 📚 Reference architecture - complementary to vision document
 
+- **RMCP_TOOL_MIGRATION_PLAN.md** - `current` (2025-12-30) **📊 MIGRATION TRACKER**
+  - Detailed tracking document for RMCP tool migration progress
+  - Status: 81% complete (29/36 tools - 23 migrated, 6 deprecated)
+  - Completed: Core, database, metrics, elicitation, scenes, narratives, validation, execution, LLM, Discord API
+  - Remaining: 7 tools (orchestration/session tools)
+  - Per-tool migration patterns, testing strategy, error handling
+  - Comprehensive progress tracking with commit history
+  - Status: 🚧 Active migration - Discord API tools completed
+
 - **TUI_MCP_CLIENT_FIX.md** - `current` (2025-12-24) **✅ FIXED**
   - Applied MCP server testing lessons to fix TUI client startup issues
   - Problem: Hardcoded wrong port (3030 vs 8080), no server verification, poor observability
@@ -191,6 +200,14 @@ This index tracks all planning documents in the workspace. When documents are co
 - **CHAT_MCP_HOST_IMPLEMENTATION_PLAN.md** - `f9dafd6` (2025-12-20)
 - **CHAT_MCP_INTEGRATION_FINDINGS.md** - `f9dafd6` (2025-12-20)
 - **CHAT_SYSTEM_COMPLETE.md** - `f9dafd6` (2025-12-20)
+- **CHAT_CODE_CLEANUP.md** - `9d02c34` (2025-12-20)
+- **CHAT_CONFIG_SYSTEM.md** - `473c051` (2025-12-13)
+- **CHAT_DEPLOYMENT_CONFIG.md** - `473c051` (2025-12-13)
+- **CHAT_MCP_IMPLEMENTATION_STRATEGY.md** - `70df57b` (2025-12-20)
+- **CHAT_MCP_TOOL_ROADMAP.md** - `e18b44d` (2025-12-21)
+- **CHAT_TOOL_CONNECTION_FIX.md** - `840dbe0` (2025-12-21)
+- **CHAT_TOOL_IMPLEMENTATION_ROADMAP.md** - `633d5d5` (2025-12-21)
+- **CHAT_TOOL_INTEGRATION_ANALYSIS.md** - `633d5d5` (2025-12-21)
 
 ### LLM Integration Plans (Completed - code in codebase)
 - **ANTHROPIC_REQWEST_PLAN.md** - `f9dafd6` (2025-12-20)
@@ -228,6 +245,15 @@ This index tracks all planning documents in the workspace. When documents are co
 - **PMCP_SELF_DRIVING_IMPLEMENTATION.md** - `f9dafd6` (2025-12-20)
 - **SELF_DRIVING_INTEGRATION_PLAN.md** - `f9dafd6` (2025-12-20)
 
+### RMCP & MCP Planning (Completed/Superseded)
+- **RMCP_IMPLEMENTATION_CRITIQUE.md** - `792ac73` (2025-12-29)
+- **RMCP_IMPLEMENTATION_PLAN.md** - `71659fc` (2025-12-29)
+- **RMCP_MIGRATION_STATUS.md** - `90d8b55` (2025-12-29)
+- **MCP_SERVER_TEST_GUIDE.md** - `9bf1ee7` (2025-12-29)
+- **MCP_TEST_FINDINGS.md** - `9bf1ee7` (2025-12-29)
+- **MCP_TOOL_IMPLEMENTATION_ROADMAP.md** - `633d5d5` (2025-12-21)
+- **ELICITATION_TRANSPORT_BRIDGE.md** - `9bf1ee7` (2025-12-29)
+
 ### TUI Implementation (Completed)
 - **TUI_ARCHITECTURE_ANALYSIS.md** - `f9dafd6` (2025-12-20)
 - **TUI_ASYNC_UI_UPDATES_COMPLETE.md** - `f9dafd6` (2025-12-20)
@@ -249,6 +275,18 @@ This index tracks all planning documents in the workspace. When documents are co
 - **TUI_PHASE_2_TASK_2_COMPLETE.md** - `f9dafd6` (2025-12-20)
 - **TUI_PHASE_2_TASK_3_COMPLETE.md** - `f9dafd6` (2025-12-20)
 - **TUI_REDESIGN_PLAN.md** - `f9dafd6` (2025-12-20)
+- **TUI_CONSOLIDATION_AUDIT.md** - `15c36bd` (2025-12-22)
+- **TUI_CONSOLIDATION_PLAN_OLD.md** - `15c36bd` (2025-12-22)
+- **TUI_CONSOLIDATION_STRATEGY.md** - `1fa7c56` (2025-12-21)
+- **TUI_ECOSYSTEM_RESEARCH.md** - `c3e44ae` (2025-12-14)
+- **TUI_EVENT_LOOP_REFACTOR_OLD.md** - `e729821` (2025-12-22)
+- **TUI_FEATURE_RESTORATION.md** - `ae26b4f` (2025-12-22)
+- **TUI_LAG_ANALYSIS.md** - `e729821` (2025-12-22)
+- **TUI_LAG_ROOT_CAUSE_SUMMARY.md** - `1f7d6e0` (2025-12-22)
+- **TUI_MIGRATION_COMPLETE.md** - `26d0d94` (2025-12-22)
+- **TUI_MIGRATION_PLAN.md** - `15c36bd` (2025-12-22)
+- **TUI_TODO_ELIMINATION.md** - `8d8b70a` (2025-12-21)
+- **TUI_TRAIT_REFACTOR_PLAN.md** - `af478db` (2025-12-21)
 
 ### Architecture & Refactoring (Superseded by TRAIT_INTERFACE_UNIFIED_DESIGN.md)
 - **ARCHITECTURAL_GAPS_RESOLUTION_PLAN.md** - `f9dafd6` (2025-12-20)
@@ -286,10 +324,10 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ## Summary
 
-- **Active Documents**: 15 (architecture, guides, setup, testing)
-- **Archived Documents**: 96 (completed work preserved in git history)
-- **Total Tracked**: 111 documents
+- **Active Documents**: 16 (architecture, guides, setup, testing, RMCP migration)
+- **Archived Documents**: 128 (completed work preserved in git history)
+- **Total Tracked**: 144 documents
 
-**Last Updated**: 2025-12-20
-**Major Cleanup**: Archived 96 completed planning documents
-**Active Focus**: Trait-based architecture refactor and Chat MCP host implementation
+**Last Updated**: 2025-12-30
+**Recent Cleanup**: Archived 32 planning documents (CHAT, TUI, RMCP, MCP, elicitation completed work)
+**Active Focus**: RMCP tool migration (81% complete), trait-based architecture, elicitation refactoring
