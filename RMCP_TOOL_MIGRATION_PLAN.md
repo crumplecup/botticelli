@@ -2,7 +2,7 @@
 
 ## Quick Reference
 
-### Migration Status: 19/36 Migrated + 6/36 Deprecated = 25/36 Complete (69%)
+### Migration Status: 23/36 Migrated + 6/36 Deprecated = 29/36 Complete (81%)
 
 **Jump To:**
 - [Current Progress](#migration-progress) - What's done and what's next
@@ -24,12 +24,13 @@ grep -r "impl McpTool" crates/botticelli_mcp/src/tools/
 just check-all botticelli_mcp
 ```
 
-### Last Completed: LLM Backend Tools (6 tools deprecated as redundant)
-- 🔄 generate_gemini, generate_anthropic, generate_ollama, generate_huggingface, generate_groq, generate_with_backend
-- These are redundant with the unified `generate` tool which handles all backends
-- Marked as deprecated rather than migrated
+### Last Completed: Discord API Tools (4 tools migrated)
+- ✅ discord_post_message, discord_get_messages, discord_get_guild_info, discord_get_channels
+- Direct Discord API v10 integration using DISCORD_TOKEN environment variable
+- Types always available (no feature gating), runtime validation ensures token is set
+- Remaining 3 Discord tools depend on legacy ToolRegistry pattern
 
-**Next Priority:** Narrative Elicitation Session Tools or Discord Tools
+**Next Priority:** Narrative Elicitation Session Tools (8 tools)
 
 ---
 
@@ -363,7 +364,7 @@ impl From<SamplingError> for rmcp::ErrorData {
 
 ## Migration Progress
 
-### Completed Tools (19/36 migrated + 6/36 deprecated = 25/36 total)
+### Completed Tools (23/36 migrated + 6/36 deprecated = 29/36 total)
 
 #### Core Tools (2/2) - COMPLETE ✅
 - ✅ **echo** - Basic echo with timestamp
@@ -408,6 +409,14 @@ These tools are redundant with the unified `generate` tool:
 - 🔄 **generate_huggingface** - Use `generate` with model="meta-llama/Meta-Llama-3-8B-Instruct"
 - 🔄 **generate_groq** - Use `generate` with model="llama-3.3-70b-versatile"
 - 🔄 **generate_with_backend** - Use `generate` instead
+
+#### Discord API Tools (4/4) - COMPLETE ✅
+- ✅ **discord_post_message** - Post messages to Discord channels via API v10
+- ✅ **discord_get_messages** - Fetch message history from channels
+- ✅ **discord_get_guild_info** - Get guild (server) metadata
+- ✅ **discord_get_channels** - List channels in a guild
+- Feature gating: Types always available, runtime validation via DISCORD_TOKEN
+- All tools use Discord API v10 (https://discord.com/api/v10)
 
 ### Test Coverage
 - **Total Tests Written:** 85+ tests
@@ -476,14 +485,17 @@ impl CreateSceneResult {
 - ApplyValidationFixesTool
 - (Note: ElicitMetadataTool, ElicitActTool, FinalizeNarrativeTool, ElicitCarouselTool may be part of session flow - need investigation)
 
-#### Discord Tools (7 - feature-gated, low priority)
-- DiscordPostMessageTool
-- DiscordGetMessagesTool
-- DiscordGetGuildInfoTool
-- DiscordGetChannelsTool
-- DiscordBotCommandTool
-- DiscordPostTool
-- DiscordContentWorkflowTool
+#### Discord Tools (4/7 migrated)
+**Migrated (Discord API v10 tools):**
+- ✅ DiscordPostMessageTool → discord_post_message
+- ✅ DiscordGetMessagesTool → discord_get_messages
+- ✅ DiscordGetGuildInfoTool → discord_get_guild_info
+- ✅ DiscordGetChannelsTool → discord_get_channels
+
+**Remaining (orchestration/registry-based - candidates for deprecation):**
+- DiscordBotCommandTool (uses BotCommandRegistry)
+- DiscordPostTool (redundant with discord_post_message)
+- DiscordContentWorkflowTool (orchestration tool, uses ToolRegistry)
 
 ### Next Session Recommendations
 
@@ -495,14 +507,15 @@ impl CreateSceneResult {
 - **Option A:** Narrative session tools - Core functionality for interactive narrative creation
 - **Option B:** Declare migration complete at 69% - Remaining tools are either session-based (complex) or Discord (feature-gated, low priority)
 
-**Achievement:** 69% complete (25/36 tools handled - 19 migrated, 6 deprecated as redundant)
+**Achievement:** 81% complete (29/36 tools handled - 23 migrated, 6 deprecated as redundant)
 
 ### Key Files to Review
-- `src/rmcp_server.rs` - Current tool implementations (19 migrated tools)
-- `src/tools/mod.rs` - Remaining McpTool registrations (11 to migrate, 6 deprecated)
+- `src/rmcp_server.rs` - Current tool implementations (23 migrated tools)
+- `src/tools/mod.rs` - Remaining McpTool registrations (7 to migrate, 6 deprecated)
 - `src/tools/generate_llm.rs` - Backend-specific tools (deprecated)
+- `src/discord_tools.rs` - Discord API type definitions (new, 197 lines)
 - Tests in `tests/` - Established testing patterns (85+ tests)
-- Recent work: LLM backend tools deprecated as redundant
+- Recent work: Discord API tools migrated (4 tools)
 
 **Commands:**
 ```bash
@@ -521,9 +534,9 @@ just check-all botticelli_mcp
 
 **Completed:**
 - ✅ Steps 1-8: Infrastructure and pmcp removal
-- ✅ 19/36 tools migrated to rmcp pattern (53% migrated)
+- ✅ 23/36 tools migrated to rmcp pattern (64% migrated)
 - ✅ 6/36 tools deprecated as redundant (17% deprecated)
-- ✅ **Total: 25/36 tools complete (69%)**
+- ✅ **Total: 29/36 tools complete (81%)**
 - ✅ 85+ tests passing across 14 test files
 - ✅ All core tools migrated (echo, server_info)
 - ✅ All database tools migrated (query_content)
@@ -534,13 +547,14 @@ just check-all botticelli_mcp
 - ✅ Core validation migrated (validate_narrative)
 - ✅ All execution tools migrated (generate, execute_act, execute_narrative)
 - ✅ All LLM backend tools deprecated (6 tools - redundant with unified generate)
+- ✅ Discord API tools migrated (4 tools - discord_post_message, discord_get_messages, discord_get_guild_info, discord_get_channels)
 - ✅ Patterns and best practices established
 
-**Next Priority:** Narrative elicitation session tools (5 tools) or declare migration substantially complete at 69%
+**Next Priority:** Narrative elicitation session tools (8 tools) or consider remaining Discord orchestration tools
 
 **Progress Breakdown:**
 - Core foundation: 8/8 tools (100%) ✅
 - Narrative features: 11/12 tools (92%) - only session tools remain
 - LLM integration: 3/9 tools migrated (33%), 6/9 deprecated (67%) = 9/9 complete (100%) ✅
-- Discord: 0/7 tools (0%) - feature-gated, low priority
+- Discord: 4/7 tools migrated (57%) - API tools complete, orchestration tools remain
 - Session/workflow: 0/0 tools - need investigation
