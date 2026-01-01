@@ -6,6 +6,7 @@
 mod adapter_bridge;
 mod approval;
 mod client;
+pub mod connection;
 mod context;
 mod error;
 mod external_client;
