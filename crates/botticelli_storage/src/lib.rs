@@ -13,18 +13,18 @@
 //! # Example
 //!
 //! ```rust
-//! use botticelli_storage::{FileSystemStorage, MediaStorage, MediaMetadata, MediaType};
+//! use botticelli_interface::MediaStorage;
+//! use botticelli_storage::{FileSystemStorage, MediaMetadataBuilder, MediaType};
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let storage = FileSystemStorage::new("/tmp/media")?;
-//! let metadata = MediaMetadata {
-//!     media_type: MediaType::Image,
-//!     mime_type: "image/png".to_string(),
-//!     filename: Some("test.png".to_string()),
-//!     width: Some(800),
-//!     height: Some(600),
-//!     duration_seconds: None,
-//! };
+//! let metadata = MediaMetadataBuilder::default()
+//!     .media_type(MediaType::Image)
+//!     .mime_type("image/png")
+//!     .filename(Some("test.png".to_string()))
+//!     .width(Some(800))
+//!     .height(Some(600))
+//!     .build()?;
 //!
 //! // Store media
 //! let data = vec![0u8; 1024]; // PNG data
@@ -41,10 +41,8 @@ mod filesystem;
 mod media_type;
 mod metadata;
 mod reference;
-mod storage;
 
 pub use filesystem::FileSystemStorage;
 pub use media_type::MediaType;
-pub use metadata::MediaMetadata;
-pub use reference::MediaReference;
-pub use storage::MediaStorage;
+pub use metadata::{MediaMetadata, MediaMetadataBuilder};
+pub use reference::{MediaReference, MediaReferenceBuilder};
