@@ -9,9 +9,10 @@ use crate::{ActExecutionRow, ActInputRow, NarrativeExecutionRow};
 
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
 use botticelli_interface::{
-    ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution, NarrativeRepository,
-    NarrativeStorageOperations,
+    ExecutionFilter, ExecutionStatus, ExecutionSummary, MediaStorage, NarrativeExecution,
+    NarrativeRepository, NarrativeStorageOperations,
 };
+use botticelli_storage::{MediaMetadata, MediaReference};
 
 use async_trait::async_trait;
 use chrono::Utc;
@@ -50,7 +51,9 @@ pub struct PostgresNarrativeRepository {
     /// a connection pool like r2d2 or deadpool.
     conn: Arc<Mutex<PgConnection>>,
     /// Media storage backend for binary content
-    storage: Arc<dyn botticelli_storage::MediaStorage>,
+    storage: Arc<
+        dyn MediaStorage<Error = BotticelliError, Metadata = MediaMetadata, Reference = MediaReference>,
+    >,
 }
 
 impl PostgresNarrativeRepository {
@@ -63,7 +66,12 @@ impl PostgresNarrativeRepository {
     /// # Note
     /// The connection is wrapped in Arc<Mutex> to allow async access.
     /// For better performance with concurrent access, consider using a connection pool.
-    pub fn new(conn: PgConnection, storage: Arc<dyn botticelli_storage::MediaStorage>) -> Self {
+    pub fn new(
+        conn: PgConnection,
+        storage: Arc<
+            dyn MediaStorage<Error = BotticelliError, Metadata = MediaMetadata, Reference = MediaReference>,
+        >,
+    ) -> Self {
         Self {
             conn: Arc::new(Mutex::new(conn)),
             storage,
@@ -73,7 +81,9 @@ impl PostgresNarrativeRepository {
     /// Create a repository from an Arc<Mutex<PgConnection>> (for sharing connections).
     pub fn from_arc(
         conn: Arc<Mutex<PgConnection>>,
-        storage: Arc<dyn botticelli_storage::MediaStorage>,
+        storage: Arc<
+            dyn MediaStorage<Error = BotticelliError, Metadata = MediaMetadata, Reference = MediaReference>,
+        >,
     ) -> Self {
         Self { conn, storage }
     }
@@ -332,16 +342,16 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         }
 
         let new_row = NewMediaReferenceRow {
-            id: reference.id,
-            media_type: reference.media_type.as_str().to_string(),
-            mime_type: reference.mime_type.clone(),
-            size_bytes: reference.size_bytes,
-            content_hash: reference.content_hash.clone(),
-            storage_backend: reference.storage_backend.clone(),
-            storage_path: reference.storage_path.clone(),
-            width: metadata.width.map(|w| w as i32),
-            height: metadata.height.map(|h| h as i32),
-            duration_seconds: metadata.duration_seconds,
+            id: *reference.id(),
+            media_type: reference.media_type().as_str().to_string(),
+            mime_type: reference.mime_type().clone(),
+            size_bytes: *reference.size_bytes(),
+            content_hash: reference.content_hash().clone(),
+            storage_backend: reference.storage_backend().clone(),
+            storage_path: reference.storage_path().clone(),
+            width: metadata.width().map(|w| w as i32),
+            height: metadata.height().map(|h| h as i32),
+            duration_seconds: *metadata.duration_seconds(),
         };
 
         diesel::insert_into(media_references::table)
@@ -355,10 +365,10 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             })?;
 
         tracing::info!(
-            id = %reference.id,
-            hash = %reference.content_hash,
-            media_type = %reference.media_type,
-            size_bytes = reference.size_bytes,
+            id = %reference.id(),
+            hash = %reference.content_hash(),
+            media_type = %reference.media_type(),
+            size_bytes = reference.size_bytes(),
             "Stored media in database"
         );
 
