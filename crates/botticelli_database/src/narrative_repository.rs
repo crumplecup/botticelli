@@ -7,10 +7,10 @@ use crate::narrative_conversions::{
 use crate::schema::{act_executions, act_inputs, narrative_executions};
 use crate::{ActExecutionRow, ActInputRow, NarrativeExecutionRow};
 
+use botticelli_core::{ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution};
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
 use botticelli_interface::{
-    ExecutionFilter, ExecutionStatus, ExecutionSummary, MediaStorage, NarrativeExecution,
-    NarrativeRepository, NarrativeStorageOperations,
+    MediaStorage, NarrativeRepository, NarrativeStorageOperations,
 };
 use botticelli_storage::{MediaMetadata, MediaReference};
 
@@ -91,7 +91,15 @@ impl PostgresNarrativeRepository {
 
 #[async_trait]
 impl NarrativeRepository for PostgresNarrativeRepository {
-    async fn save_execution(&self, execution: &NarrativeExecution) -> BotticelliResult<i32> {
+    type Error = BotticelliError;
+    type MediaMetadata = MediaMetadata;
+    type MediaReference = MediaReference;
+    type Execution = NarrativeExecution;
+    type Filter = ExecutionFilter;
+    type Summary = ExecutionSummary;
+    type Status = ExecutionStatus;
+
+    async fn save_execution(&self, execution: &Self::Execution) -> Result<i32, Self::Error> {
         let mut conn = self.conn.lock().await;
 
         // Use a transaction for atomicity
@@ -434,7 +442,13 @@ impl NarrativeRepository for PostgresNarrativeRepository {
 // Implement NarrativeRegistryOperations trait for MCP tool integration
 #[async_trait]
 impl botticelli_interface::NarrativeRegistryOperations for PostgresNarrativeRepository {
-    async fn save_execution(&self, execution: &NarrativeExecution) -> BotticelliResult<i32> {
+    type Error = BotticelliError;
+    type Execution = NarrativeExecution;
+    type Status = ExecutionStatus;
+    type Filter = ExecutionFilter;
+    type Summary = ExecutionSummary;
+
+    async fn save_execution(&self, execution: &Self::Execution) -> Result<i32, Self::Error> {
         NarrativeRepository::save_execution(self, execution).await
     }
 
@@ -460,6 +474,8 @@ impl botticelli_interface::NarrativeRegistryOperations for PostgresNarrativeRepo
 
 #[async_trait]
 impl NarrativeStorageOperations for PostgresNarrativeRepository {
+    type Error = BotticelliError;
+
     async fn list_narratives(&self, _pattern: Option<&str>) -> BotticelliResult<Vec<String>> {
         // For database implementation, we list narrative IDs from the database
         let mut conn = self.conn.lock().await;

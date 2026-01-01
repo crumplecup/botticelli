@@ -486,3 +486,47 @@ struct IdRow {
     #[diesel(sql_type = diesel::sql_types::BigInt)]
     id: i64,
 }
+
+/// Create a new content table with the specified schema.
+#[instrument(name = "content_management.create_content_table", skip(conn), fields(table = %table_name))]
+pub fn create_content_table(
+    conn: &mut PgConnection,
+    table_name: &str,
+    schema: &JsonValue,
+) -> BotticelliResult<String> {
+    tracing::info!(table = table_name, "Creating content table");
+    
+    // For now, return error saying this needs to be implemented properly
+    Err(DatabaseError::new(DatabaseErrorKind::Query(
+        "create_content_table not yet implemented".to_string()
+    )).into())
+}
+
+/// Insert generated content into a table.
+#[instrument(name = "content_management.insert_content", skip(conn, content), fields(table = %table_name))]
+pub fn insert_content(
+    conn: &mut PgConnection,
+    table_name: &str,
+    content: &JsonValue,
+) -> BotticelliResult<i32> {
+    tracing::info!(table = table_name, "Inserting content");
+    
+    // For now, return error saying this needs to be implemented properly
+    Err(DatabaseError::new(DatabaseErrorKind::Query(
+        "insert_content not yet implemented".to_string()
+    )).into())
+}
+
+/// Query content from a table with optional filtering.
+#[instrument(name = "content_management.query_content", skip(conn), fields(table = %table_name, limit = ?limit))]
+pub fn query_content(
+    conn: &mut PgConnection,
+    table_name: &str,
+    filter: Option<&str>,
+    limit: Option<i64>,
+) -> BotticelliResult<Vec<JsonValue>> {
+    tracing::info!(table = table_name, filter = ?filter, limit = ?limit, "Querying content");
+    
+    // Use list_content for now with default limit if none provided
+    list_content(conn, table_name, filter, limit.unwrap_or(100) as usize)
+}

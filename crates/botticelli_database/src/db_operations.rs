@@ -68,6 +68,8 @@ impl DbOperationsImpl {
 
 #[async_trait]
 impl DatabaseRegistryOperations for DbOperationsImpl {
+    type Error = botticelli_error::BotticelliError;
+
     async fn execute_query(&self, query: &str) -> BotticelliResult<Vec<Value>> {
         let mut conn = self.pool.get().map_err(|e| {
             botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(

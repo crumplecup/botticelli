@@ -19,21 +19,21 @@ impl DatabaseTableQueryRegistry {
 
 #[async_trait]
 impl TableQueryRegistry for DatabaseTableQueryRegistry {
+    type Error = Box<dyn std::error::Error + Send + Sync>;
+
     #[instrument(
         skip(self, query),
         fields(
             table_name = %query.table_name(),
-            columns_count = query.columns().as_ref().map(|c| c.len()),
             has_where = query.filter().is_some(),
-            limit = query.limit(),
-            offset = query.offset(),
-            format = %query.format()
+            limit = ?query.limit(),
+            offset = ?query.offset()
         )
     )]
     async fn query_table(
         &self,
-        query: &botticelli_interface::TableQueryView,
-    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        query: &dyn botticelli_interface::TableView,
+    ) -> Result<String, Self::Error> {
         debug!("Executing table query");
 
         // Execute query
@@ -44,16 +44,8 @@ impl TableQueryRegistry for DatabaseTableQueryRegistry {
 
         debug!(row_count = rows.len(), "Query executed successfully");
 
-        // Format results based on requested format
-        let formatted = match query.format().to_lowercase().as_str() {
-            "json" => format_as_json(&rows),
-            "markdown" | "md" => format_as_markdown(&rows),
-            "csv" => format_as_csv(&rows),
-            _ => {
-                error!(format = %query.format(), "Unknown format requested, defaulting to JSON");
-                format_as_json(&rows)
-            }
-        };
+        // Format results as JSON (default format)
+        let formatted = format_as_json(&rows);
 
         debug!(output_length = formatted.len(), "Results formatted");
         Ok(formatted)
@@ -63,17 +55,15 @@ impl TableQueryRegistry for DatabaseTableQueryRegistry {
         skip(self, query),
         fields(
             table_name = %query.table_name(),
-            columns_count = query.columns().as_ref().map(|c| c.len()),
             has_where = query.filter().is_some(),
-            limit = query.limit(),
-            offset = query.offset(),
-            format = %query.format()
+            limit = ?query.limit(),
+            offset = ?query.offset()
         )
     )]
     async fn query_and_delete_table(
         &self,
-        query: &botticelli_interface::TableQueryView,
-    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        query: &dyn botticelli_interface::TableView,
+    ) -> Result<String, Self::Error> {
         debug!("Executing destructive table query");
 
         // Execute query and delete
@@ -87,16 +77,8 @@ impl TableQueryRegistry for DatabaseTableQueryRegistry {
             "Query and delete executed successfully"
         );
 
-        // Format results based on requested format
-        let formatted = match query.format().to_lowercase().as_str() {
-            "json" => format_as_json(&rows),
-            "markdown" | "md" => format_as_markdown(&rows),
-            "csv" => format_as_csv(&rows),
-            _ => {
-                error!(format = %query.format(), "Unknown format requested, defaulting to JSON");
-                format_as_json(&rows)
-            }
-        };
+        // Format results as JSON (default format)
+        let formatted = format_as_json(&rows);
 
         debug!(output_length = formatted.len(), "Results formatted");
         Ok(formatted)

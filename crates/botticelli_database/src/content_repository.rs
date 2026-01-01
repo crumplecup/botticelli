@@ -25,14 +25,15 @@ impl DatabaseContentRepository {
 
 #[async_trait]
 impl ContentRepository for DatabaseContentRepository {
-    async fn list_content(
+    type Error = botticelli_error::BotticelliError;
+
+    async fn create_content_table(
         &self,
         table_name: &str,
-        status_filter: Option<&str>,
-        limit: usize,
-    ) -> BotticelliResult<Vec<JsonValue>> {
+        schema: &serde_json::Value,
+    ) -> Result<String, Self::Error> {
         let table_name = table_name.to_string();
-        let status_filter = status_filter.map(|s| s.to_string());
+        let schema = schema.clone();
         let pool = self.pool.clone();
 
         tokio::task::spawn_blocking(move || {
@@ -41,82 +42,63 @@ impl ContentRepository for DatabaseContentRepository {
                     botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
                 )
             })?;
-            crate::content_management::list_content(
+            crate::content_management::create_content_table(&mut conn, &table_name, &schema)
+        })
+        .await
+        .map_err(|e| {
+            botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Query(
+                e.to_string(),
+            ))
+        })?
+    }
+
+    async fn insert_content(
+        &self,
+        table_name: &str,
+        content: &serde_json::Value,
+    ) -> Result<i32, Self::Error> {
+        let table_name = table_name.to_string();
+        let content = content.clone();
+        let pool = self.pool.clone();
+
+        tokio::task::spawn_blocking(move || {
+            let mut conn = pool.get().map_err(|e| {
+                botticelli_error::DatabaseError::new(
+                    botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
+                )
+            })?;
+            crate::content_management::insert_content(&mut conn, &table_name, &content)
+        })
+        .await
+        .map_err(|e| {
+            botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Query(
+                e.to_string(),
+            ))
+        })?
+    }
+
+    async fn query_content(
+        &self,
+        table_name: &str,
+        filter: Option<&str>,
+        limit: Option<i64>,
+    ) -> Result<Vec<serde_json::Value>, Self::Error> {
+        let table_name = table_name.to_string();
+        let filter = filter.map(|s| s.to_string());
+        let pool = self.pool.clone();
+
+        tokio::task::spawn_blocking(move || {
+            let mut conn = pool.get().map_err(|e| {
+                botticelli_error::DatabaseError::new(
+                    botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
+                )
+            })?;
+            crate::content_management::query_content(
                 &mut conn,
                 &table_name,
-                status_filter.as_deref(),
+                filter.as_deref(),
                 limit,
             )
-        })
-        .await
-        .map_err(|e| {
-            botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Query(
-                e.to_string(),
-            ))
-        })?
-    }
-
-    async fn update_review_status(
-        &self,
-        table_name: &str,
-        id: i64,
-        new_status: &str,
-    ) -> BotticelliResult<()> {
-        let table_name = table_name.to_string();
-        let new_status = new_status.to_string();
-        let pool = self.pool.clone();
-
-        tokio::task::spawn_blocking(move || {
-            let mut conn = pool.get().map_err(|e| {
-                botticelli_error::DatabaseError::new(
-                    botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
-                )
-            })?;
-            crate::content_management::update_review_status(&mut conn, &table_name, id, &new_status)
-        })
-        .await
-        .map_err(|e| {
-            botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Query(
-                e.to_string(),
-            ))
-        })?
-    }
-
-    async fn delete_content(&self, table_name: &str, id: i64) -> BotticelliResult<()> {
-        let table_name = table_name.to_string();
-        let pool = self.pool.clone();
-
-        tokio::task::spawn_blocking(move || {
-            let mut conn = pool.get().map_err(|e| {
-                botticelli_error::DatabaseError::new(
-                    botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
-                )
-            })?;
-            crate::content_management::delete_content(&mut conn, &table_name, id)
-        })
-        .await
-        .map_err(|e| {
-            botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Query(
-                e.to_string(),
-            ))
-        })?
-    }
-
-    async fn pull_and_delete(
-        &self,
-        table_name: &str,
-        limit: usize,
-    ) -> BotticelliResult<Vec<JsonValue>> {
-        let table_name = table_name.to_string();
-        let pool = self.pool.clone();
-
-        tokio::task::spawn_blocking(move || {
-            let mut conn = pool.get().map_err(|e| {
-                botticelli_error::DatabaseError::new(
-                    botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
-                )
-            })?;
-            crate::content_management::pull_and_delete(&mut conn, &table_name, limit)
         })
         .await
         .map_err(|e| {

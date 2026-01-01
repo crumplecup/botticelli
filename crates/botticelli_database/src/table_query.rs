@@ -1,7 +1,7 @@
 //! Table query execution for narrative table references.
 
 use crate::{DatabaseError, DatabaseErrorKind, DatabaseResult};
-use botticelli_interface::{TableCountView, TableQueryView};
+use crate::{TableCountView, TableQueryView};
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Text};
 use serde_json::Value as JsonValue;

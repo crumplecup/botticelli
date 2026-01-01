@@ -25,6 +25,7 @@ impl ActorRow {
 }
 
 impl RegistryOperations for ActorRow {
+    type Error = botticelli_error::BotticelliError;
     type Key = Uuid;
 
     fn registry_key(&self) -> Self::Key {
@@ -99,6 +100,7 @@ impl ContentEntry {
 }
 
 impl RegistryOperations for ContentEntry {
+    type Error = botticelli_error::BotticelliError;
     type Key = Uuid;
 
     fn registry_key(&self) -> Self::Key {
