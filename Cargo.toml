@@ -156,6 +156,9 @@ crossterm = "0.29"
 # Environment variables
 dotenvy = "0.15"
 
+# Test and benchmark support
+tempfile = "3"
+
 # Elicitation framework
 elicitation = "0.1"
 

@@ -18,8 +18,8 @@ tokio = { workspace = true }
 async-trait = { workspace = true }
 
 # Hashing and UUID
-sha2 = "0.10"
-uuid = { version = "1", features = ["v4"] }
+sha2 = { workspace = true }
+uuid = { workspace = true }
 
 # Logging
 tracing = { workspace = true }
@@ -33,4 +33,4 @@ strum = { workspace = true }
 [dev-dependencies]
 botticelli_error = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-tempfile = "3"
+tempfile = { workspace = true }
