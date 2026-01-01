@@ -7,7 +7,7 @@ use crate::ModelsError;
 #[cfg(feature = "tui")]
 use crate::TuiError;
 use crate::{
-    BackendError, BuilderError, ChatError, ConfigError, GeminiError, HttpError, JsonError,
+    BackendError, BuilderError, ChatError, ConfigError, GeminiError, HttpError, IoError, JsonError,
     McpError, NarrativeError, NotImplementedError, ObservabilityError, ProviderError, ServerError,
     StorageError, TokenCountingError,
 };
@@ -29,6 +29,9 @@ pub enum BotticelliErrorKind {
     /// HTTP error
     #[from(HttpError)]
     Http(HttpError),
+    /// I/O error
+    #[from(IoError)]
+    Io(IoError),
     /// JSON serialization/deserialization error
     #[from(JsonError)]
     Json(JsonError),

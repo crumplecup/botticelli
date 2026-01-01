@@ -38,6 +38,7 @@ mod database;
 mod error;
 mod gemini;
 mod http;
+mod io;
 mod json;
 mod mcp;
 #[cfg(feature = "models")]
@@ -63,6 +64,7 @@ pub use database::SerdeJsonError;
 pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};
 pub use gemini::{GeminiError, GeminiErrorKind};
 pub use http::{HttpError, HttpErrorKind};
+pub use io::IoError;
 pub use json::{JsonError, JsonErrorKind};
 #[cfg(feature = "serde_json")]
 pub use json::SerdeJsonError as JsonSerdeJsonError;

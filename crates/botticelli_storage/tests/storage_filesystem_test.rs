@@ -1,6 +1,6 @@
 //! Tests for filesystem storage backend.
 
-use botticelli_error::BotticelliErrorKind;
+use botticelli_error::{BotticelliError, IoError};
 use botticelli_interface::MediaStorage;
 use botticelli_storage::{
     FileSystemStorage, MediaMetadataBuilder, MediaReferenceBuilder, MediaType,
@@ -8,12 +8,17 @@ use botticelli_storage::{
 use tempfile::TempDir;
 use uuid::Uuid;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
+type TestResult = Result<(), BotticelliError>;
+
+fn setup_temp_storage() -> Result<(TempDir, FileSystemStorage), BotticelliError> {
+    let temp_dir = TempDir::new().map_err(IoError::from)?;
+    let storage = FileSystemStorage::new(temp_dir.path())?;
+    Ok((temp_dir, storage))
+}
 
 #[tokio::test]
 async fn test_store_and_retrieve() -> TestResult {
-    let temp_dir = TempDir::new()?;
-    let storage = FileSystemStorage::new(temp_dir.path())?;
+    let (_temp_dir, storage) = setup_temp_storage()?;
 
     let data = b"Hello, world!";
     let metadata = MediaMetadataBuilder::default()
@@ -22,7 +27,7 @@ async fn test_store_and_retrieve() -> TestResult {
         .filename(Some("test.png".to_string()))
         .width(Some(800))
         .height(Some(600))
-        .build()?;
+        .build().map_err(|e| botticelli_error::BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     // Store the data
     let reference = storage.store(data, &metadata).await?;
@@ -42,15 +47,14 @@ async fn test_store_and_retrieve() -> TestResult {
 
 #[tokio::test]
 async fn test_deduplication() -> TestResult {
-    let temp_dir = TempDir::new()?;
-    let storage = FileSystemStorage::new(temp_dir.path())?;
+    let (_temp_dir, storage) = setup_temp_storage()?;
 
     let data = b"Duplicate content";
     let metadata = MediaMetadataBuilder::default()
         .media_type(MediaType::Audio)
         .mime_type("audio/mp3")
         .duration_seconds(Some(120.5))
-        .build()?;
+        .build().map_err(|e| botticelli_error::BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     // Store same data twice
     let ref1 = storage.store(data, &metadata).await?;
@@ -76,7 +80,7 @@ async fn test_hash_verification() -> TestResult {
     let metadata = MediaMetadataBuilder::default()
         .media_type(MediaType::Video)
         .mime_type("video/mp4")
-        .build()?;
+        .build().map_err(|e| botticelli_error::BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let reference = storage.store(data, &metadata).await?;
 
@@ -104,7 +108,7 @@ async fn test_delete() -> TestResult {
     let metadata = MediaMetadataBuilder::default()
         .media_type(MediaType::Image)
         .mime_type("image/jpeg")
-        .build()?;
+        .build().map_err(|e| botticelli_error::BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let reference = storage.store(data, &metadata).await?;
     assert!(storage.exists(&reference).await?);
@@ -128,7 +132,7 @@ async fn test_not_found() -> TestResult {
         .size_bytes(100)
         .media_type(MediaType::Image)
         .mime_type("image/png")
-        .build()?;
+        .build().map_err(|e| botticelli_error::BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let result = storage.retrieve(&fake_reference).await;
     assert!(result.is_err());
@@ -145,7 +149,7 @@ async fn test_content_addressable_structure() -> TestResult {
     let metadata = MediaMetadataBuilder::default()
         .media_type(MediaType::Image)
         .mime_type("image/png")
-        .build()?;
+        .build().map_err(|e| botticelli_error::BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let reference = storage.store(data, &metadata).await?;
     let path = std::path::Path::new(reference.storage_path());
@@ -176,7 +180,7 @@ async fn test_no_direct_urls() -> TestResult {
     let metadata = MediaMetadataBuilder::default()
         .media_type(MediaType::Image)
         .mime_type("image/png")
-        .build()?;
+        .build().map_err(|e| botticelli_error::BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let reference = storage.store(data, &metadata).await?;
     let url = storage
