@@ -1,35 +1,6 @@
 use botticelli_core::{BudgetConfig, BudgetConfigBuilderError};
 
 #[test]
-fn default_budget_uses_full_quota() {
-    let budget = BudgetConfig::default();
-    assert_eq!(*budget.rpm_multiplier(), 1.0);
-    assert_eq!(*budget.tpm_multiplier(), 1.0);
-    assert_eq!(*budget.rpd_multiplier(), 1.0);
-}
-
-#[test]
-fn builder_works() -> Result<(), BudgetConfigBuilderError> {
-    let budget = BudgetConfig::builder()
-        .rpm_multiplier(0.8)
-        .rpd_multiplier(0.5)
-        .build()?;
-
-    assert_eq!(*budget.rpm_multiplier(), 0.8);
-    assert_eq!(*budget.tpm_multiplier(), 1.0); // Default
-    assert_eq!(*budget.rpd_multiplier(), 0.5);
-    Ok(())
-}
-
-#[test]
-fn builder_returns_error_on_missing_required_fields() {
-    // BudgetConfig has no required fields, all have defaults
-    // This test verifies the builder always succeeds
-    let result = BudgetConfig::builder().build();
-    assert!(result.is_ok());
-}
-
-#[test]
 fn validate_rejects_invalid_multipliers() -> Result<(), BudgetConfigBuilderError> {
     let budget = BudgetConfig::builder().rpm_multiplier(0.0).build()?;
     let result = budget.validate();

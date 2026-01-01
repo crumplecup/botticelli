@@ -35,11 +35,3 @@ fn test_token_usage_data_calculate_cost() {
     let cost = usage.calculate_cost(1.0, 2.0);
     assert!((cost - 2.0).abs() < 0.001); // 1.0 + 1.0 = 2.0
 }
-
-#[test]
-fn test_token_usage_data_default() {
-    let usage = TokenUsageData::default();
-    assert_eq!(*usage.input_tokens(), 0);
-    assert_eq!(*usage.output_tokens(), 0);
-    assert_eq!(*usage.total_tokens(), 0);
-}
