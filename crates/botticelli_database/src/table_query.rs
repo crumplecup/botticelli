@@ -1,7 +1,7 @@
 //! Table query execution for narrative table references.
 
 use crate::{DatabaseError, DatabaseErrorKind, DatabaseResult};
-use crate::{TableCountView, TableQueryView};
+use crate::TableCountView;
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Text};
 use serde_json::Value as JsonValue;
@@ -21,8 +21,8 @@ impl TableQueryExecutor {
     }
 
     /// Queries a table and returns results as JSON values.
-    #[instrument(skip(self), fields(table_name = %view.table_name(), limit = ?view.limit(), offset = ?view.offset()))]
-    pub fn query_table(&self, view: &TableQueryView) -> DatabaseResult<Vec<JsonValue>> {
+    #[instrument(skip(self, view), fields(table_name = %view.table_name(), limit = ?view.limit(), offset = ?view.offset()))]
+    pub fn query_table(&self, view: &dyn botticelli_interface::TableView) -> DatabaseResult<Vec<JsonValue>> {
         debug!("Querying table");
 
         let mut conn = self
@@ -50,8 +50,8 @@ impl TableQueryExecutor {
     }
 
     /// Queries a table, returns results, and deletes those rows (destructive read).
-    #[instrument(skip(self), fields(table_name = %view.table_name(), limit = ?view.limit(), offset = ?view.offset()))]
-    pub fn query_and_delete_table(&self, view: &TableQueryView) -> DatabaseResult<Vec<JsonValue>> {
+    #[instrument(skip(self, view), fields(table_name = %view.table_name(), limit = ?view.limit(), offset = ?view.offset()))]
+    pub fn query_and_delete_table(&self, view: &dyn botticelli_interface::TableView) -> DatabaseResult<Vec<JsonValue>> {
         debug!("Querying and deleting from table");
 
         let mut conn = self
@@ -99,7 +99,7 @@ impl TableQueryExecutor {
     }
 
     /// Builds a SELECT query from the provided view.
-    fn build_query(&self, view: &TableQueryView) -> DatabaseResult<String> {
+    fn build_query(&self, view: &dyn botticelli_interface::TableView) -> DatabaseResult<String> {
         let table_name = view.table_name();
 
         // Sanitize table name (alphanumeric and underscores only)

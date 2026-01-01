@@ -4,11 +4,9 @@
 //! for managing generated content tables.
 
 use async_trait::async_trait;
-use botticelli_error::BotticelliResult;
 use botticelli_interface::ContentRepository;
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
-use serde_json::Value as JsonValue;
 
 /// Database-backed content repository.
 #[derive(Clone)]

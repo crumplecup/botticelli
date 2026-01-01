@@ -1,6 +1,6 @@
 //! RegistryOperations implementations for database types.
 
-use botticelli_error::{McpError, McpErrorKind, McpResult};
+use botticelli_error::{BotticelliResult, McpError, McpErrorKind};
 use botticelli_interface::RegistryOperations;
 use serde_json::Value;
 use uuid::Uuid;
@@ -32,7 +32,7 @@ impl RegistryOperations for ActorRow {
         self.id
     }
 
-    fn from_json_args(args: Value) -> McpResult<Self> {
+    fn from_json_args(args: Value) -> BotticelliResult<Self> {
         let id = args
             .get("id")
             .and_then(|v| v.as_str())
@@ -62,12 +62,12 @@ impl RegistryOperations for ActorRow {
         })
     }
 
-    fn to_json(&self) -> McpResult<Value> {
+    fn to_json(&self) -> BotticelliResult<Value> {
         serde_json::to_value(self)
-            .map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())))
+            .map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())).into())
     }
 
-    fn update_from_json(&mut self, args: Value) -> McpResult<()> {
+    fn update_from_json(&mut self, args: Value) -> BotticelliResult<()> {
         if let Some(name) = args.get("name").and_then(|v| v.as_str()) {
             self.name = name.to_string();
         }
@@ -107,7 +107,7 @@ impl RegistryOperations for ContentEntry {
         self.id
     }
 
-    fn from_json_args(args: Value) -> McpResult<Self> {
+    fn from_json_args(args: Value) -> BotticelliResult<Self> {
         let id = args
             .get("id")
             .and_then(|v| v.as_str())
@@ -149,12 +149,12 @@ impl RegistryOperations for ContentEntry {
         })
     }
 
-    fn to_json(&self) -> McpResult<Value> {
+    fn to_json(&self) -> BotticelliResult<Value> {
         serde_json::to_value(self)
-            .map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())))
+            .map_err(|e| McpError::new(McpErrorKind::ExecutionError(e.to_string())).into())
     }
 
-    fn update_from_json(&mut self, args: Value) -> McpResult<()> {
+    fn update_from_json(&mut self, args: Value) -> BotticelliResult<()> {
         if let Some(title) = args.get("title").and_then(|v| v.as_str()) {
             self.title = title.to_string();
         }

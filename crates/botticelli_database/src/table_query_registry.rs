@@ -1,9 +1,9 @@
 //! Implementation of TableQueryRegistry for narrative integration.
 
-use crate::{TableQueryExecutor, format_as_csv, format_as_json, format_as_markdown};
+use crate::{TableQueryExecutor, format_as_json};
 use async_trait::async_trait;
 use botticelli_interface::TableQueryRegistry;
-use tracing::{debug, error, instrument};
+use tracing::{debug, instrument};
 
 /// Implementation of TableQueryRegistry using TableQueryExecutor.
 pub struct DatabaseTableQueryRegistry {
@@ -19,7 +19,7 @@ impl DatabaseTableQueryRegistry {
 
 #[async_trait]
 impl TableQueryRegistry for DatabaseTableQueryRegistry {
-    type Error = Box<dyn std::error::Error + Send + Sync>;
+    type Error = botticelli_error::BotticelliError;
 
     #[instrument(
         skip(self, query),
@@ -37,10 +37,7 @@ impl TableQueryRegistry for DatabaseTableQueryRegistry {
         debug!("Executing table query");
 
         // Execute query
-        let rows = self.executor.query_table(query).map_err(|e| {
-            error!(error = %e, "Table query execution failed");
-            Box::new(e) as Box<dyn std::error::Error + Send + Sync>
-        })?;
+        let rows = self.executor.query_table(query)?;
 
         debug!(row_count = rows.len(), "Query executed successfully");
 
@@ -67,10 +64,7 @@ impl TableQueryRegistry for DatabaseTableQueryRegistry {
         debug!("Executing destructive table query");
 
         // Execute query and delete
-        let rows = self.executor.query_and_delete_table(query).map_err(|e| {
-            error!(error = %e, "Destructive table query execution failed");
-            Box::new(e) as Box<dyn std::error::Error + Send + Sync>
-        })?;
+        let rows = self.executor.query_and_delete_table(query)?;
 
         debug!(
             row_count = rows.len(),

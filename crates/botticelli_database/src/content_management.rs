@@ -488,11 +488,11 @@ struct IdRow {
 }
 
 /// Create a new content table with the specified schema.
-#[instrument(name = "content_management.create_content_table", skip(conn), fields(table = %table_name))]
+#[instrument(name = "content_management.create_content_table", skip(_conn), fields(table = %table_name))]
 pub fn create_content_table(
-    conn: &mut PgConnection,
+    _conn: &mut PgConnection,
     table_name: &str,
-    schema: &JsonValue,
+    _schema: &JsonValue,
 ) -> BotticelliResult<String> {
     tracing::info!(table = table_name, "Creating content table");
     
@@ -503,11 +503,11 @@ pub fn create_content_table(
 }
 
 /// Insert generated content into a table.
-#[instrument(name = "content_management.insert_content", skip(conn, content), fields(table = %table_name))]
+#[instrument(name = "content_management.insert_content", skip(_conn, _content), fields(table = %table_name))]
 pub fn insert_content(
-    conn: &mut PgConnection,
+    _conn: &mut PgConnection,
     table_name: &str,
-    content: &JsonValue,
+    _content: &JsonValue,
 ) -> BotticelliResult<i32> {
     tracing::info!(table = table_name, "Inserting content");
     

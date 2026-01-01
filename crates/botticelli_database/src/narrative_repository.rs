@@ -322,7 +322,7 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         if let Some(existing) = self.get_media_by_hash(&hash).await? {
             tracing::debug!(
                 hash = %hash,
-                id = %existing.id,
+                id = %existing.id(),
                 "Media already exists, returning existing reference"
             );
             return Ok(existing);
@@ -421,17 +421,18 @@ impl NarrativeRepository for PostgresNarrativeRepository {
 
         Ok(result.map(
             |(id, media_type_str, mime_type, size_bytes, hash, backend, path)| {
-                botticelli_storage::MediaReference {
-                    id,
-                    media_type: media_type_str
+                botticelli_storage::MediaReferenceBuilder::default()
+                    .id(id)
+                    .media_type(media_type_str
                         .parse()
-                        .unwrap_or(botticelli_storage::MediaType::Image),
-                    mime_type,
-                    size_bytes,
-                    content_hash: hash,
-                    storage_backend: backend,
-                    storage_path: path,
-                }
+                        .unwrap_or(botticelli_storage::MediaType::Image))
+                    .mime_type(mime_type)
+                    .size_bytes(size_bytes)
+                    .content_hash(hash)
+                    .storage_backend(backend)
+                    .storage_path(path)
+                    .build()
+                    .expect("Valid MediaReference")
             },
         ))
     }

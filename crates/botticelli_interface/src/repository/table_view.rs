@@ -8,6 +8,11 @@ pub trait TableView: Send + Sync {
     /// The name of the table being queried.
     fn table_name(&self) -> &str;
 
+    /// Optional column selection (defaults to "*" if None).
+    fn columns(&self) -> Option<&[String]> {
+        None
+    }
+
     /// Optional filter conditions for the query.
     fn filter(&self) -> Option<&str> {
         None
