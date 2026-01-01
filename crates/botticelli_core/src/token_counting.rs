@@ -1,6 +1,7 @@
 //! Token counting and cost calculation for LLM operations.
-use std::sync::Arc;
 
+use botticelli_error::{TokenCountingError, TokenCountingErrorKind, TokenCountingResult};
+use std::sync::Arc;
 use tiktoken_rs::CoreBPE;
 
 /// Helper function to get a tokenizer by model name.
@@ -10,7 +11,7 @@ use tiktoken_rs::CoreBPE;
 ///
 /// # Errors
 ///
-/// Returns an error if the tokenizer cannot be loaded for the specified model.
+/// Returns `TokenCountingError` if the tokenizer cannot be loaded for the specified model.
 ///
 /// # Examples
 ///
@@ -21,8 +22,13 @@ use tiktoken_rs::CoreBPE;
 /// let tokens = encoder.encode_with_special_tokens("Hello, world!");
 /// assert!(!tokens.is_empty());
 /// ```
-pub fn get_tokenizer(model: &str) -> Result<Arc<CoreBPE>, String> {
+pub fn get_tokenizer(model: &str) -> TokenCountingResult<Arc<CoreBPE>> {
     tiktoken_rs::get_bpe_from_model(model)
         .map(Arc::new)
-        .map_err(|e| format!("Failed to get tokenizer for {}: {}", model, e))
+        .map_err(|e| {
+            TokenCountingError::new(TokenCountingErrorKind::TokenizerNotFound {
+                model: model.to_string(),
+                message: e.to_string(),
+            })
+        })
 }

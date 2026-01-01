@@ -45,6 +45,7 @@ mod not_implemented;
 mod observability;
 mod server;
 mod storage;
+mod token_counting;
 #[cfg(feature = "tui")]
 mod tui;
 
@@ -75,5 +76,6 @@ pub use not_implemented::NotImplementedError;
 pub use observability::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};
 pub use server::{ServerError, ServerErrorKind};
 pub use storage::{StorageError, StorageErrorKind};
+pub use token_counting::{TokenCountingError, TokenCountingErrorKind, TokenCountingResult};
 #[cfg(feature = "tui")]
 pub use tui::{TuiError, TuiErrorKind, TuiResult};

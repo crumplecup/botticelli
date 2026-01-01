@@ -9,6 +9,7 @@ use crate::TuiError;
 use crate::{
     BackendError, BuilderError, ChatError, ConfigError, GeminiError, HttpError, JsonError,
     McpError, NarrativeError, NotImplementedError, ObservabilityError, ServerError, StorageError,
+    TokenCountingError,
 };
 
 /// This is the foundation error enum. Additional variants will be added
@@ -76,6 +77,9 @@ pub enum BotticelliErrorKind {
     /// Observability error
     #[from(ObservabilityError)]
     Observability(ObservabilityError),
+    /// Token counting error
+    #[from(TokenCountingError)]
+    TokenCounting(TokenCountingError),
 }
 
 /// Botticelli error with kind discrimination.

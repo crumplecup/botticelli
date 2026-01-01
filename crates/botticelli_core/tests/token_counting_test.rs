@@ -1,7 +1,9 @@
-use botticelli_core::{TokenUsageData, get_tokenizer};
+use botticelli_core::get_tokenizer;
+use botticelli_core::TokenUsageData;
+use botticelli_error::{TokenCountingError, TokenCountingErrorKind};
 
 #[test]
-fn test_get_tokenizer() -> Result<(), String> {
+fn test_get_tokenizer() -> Result<(), TokenCountingError> {
     let encoder = get_tokenizer("gpt-4")?;
     let tokens = encoder.encode_with_special_tokens("Hello, world!");
     assert!(!tokens.is_empty());
@@ -12,9 +14,17 @@ fn test_get_tokenizer() -> Result<(), String> {
 fn test_get_tokenizer_invalid_model() {
     let result = get_tokenizer("invalid-model-xyz-123");
     assert!(result.is_err());
+    
     if let Err(err) = result {
-        assert!(err.contains("Failed to get tokenizer"));
-        assert!(err.contains("invalid-model-xyz-123"));
+        let kind = err.kind();
+        
+        match kind {
+            TokenCountingErrorKind::TokenizerNotFound { model, message } => {
+                assert_eq!(model, "invalid-model-xyz-123");
+                assert!(!message.is_empty());
+            }
+            _ => panic!("Expected TokenizerNotFound error"),
+        }
     }
 }
 
