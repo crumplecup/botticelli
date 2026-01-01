@@ -67,5 +67,9 @@ impl From<std::io::Error> for TuiError {
     }
 }
 
+// Bridge std::io::Error to BotticelliErrorKind
+#[cfg(feature = "tui")]
+crate::bridge_error!(std::io::Error => TuiError => crate::BotticelliErrorKind);
+
 /// Result type for TUI operations.
 pub type TuiResult<T> = Result<T, TuiError>;

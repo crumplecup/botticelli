@@ -59,3 +59,7 @@ impl From<serde_json::Error> for JsonError {
     }
 }
 
+// Bridge serde_json::Error to BotticelliErrorKind
+#[cfg(feature = "serde_json")]
+crate::bridge_error!(serde_json::Error => JsonError => crate::BotticelliErrorKind);
+

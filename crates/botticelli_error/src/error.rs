@@ -119,8 +119,11 @@ impl<T> From<T> for BotticelliError
 where
     T: Into<BotticelliErrorKind>,
 {
+    #[track_caller]
     fn from(err: T) -> Self {
-        Self::new(err.into())
+        let kind = err.into();
+        tracing::error!(error_kind = %kind, "Error created");
+        Self::new(kind)
     }
 }
 

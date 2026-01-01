@@ -66,6 +66,7 @@ impl DatabaseError {
 // Diesel error conversions (only available with database feature)
 #[cfg(feature = "database")]
 impl From<diesel::result::Error> for DatabaseError {
+    #[track_caller]
     fn from(err: diesel::result::Error) -> Self {
         match err {
             diesel::result::Error::NotFound => DatabaseError::new(DatabaseErrorKind::NotFound),
@@ -76,6 +77,7 @@ impl From<diesel::result::Error> for DatabaseError {
 
 #[cfg(feature = "database")]
 impl From<diesel::ConnectionError> for DatabaseError {
+    #[track_caller]
     fn from(err: diesel::ConnectionError) -> Self {
         DatabaseError::new(DatabaseErrorKind::Connection(err.to_string()))
     }
@@ -83,7 +85,15 @@ impl From<diesel::ConnectionError> for DatabaseError {
 
 #[cfg(feature = "database")]
 impl From<serde_json::Error> for DatabaseError {
+    #[track_caller]
     fn from(err: serde_json::Error) -> Self {
         DatabaseError::new(DatabaseErrorKind::Serialization(err.to_string()))
     }
 }
+
+// Bridge external errors to BotticelliErrorKind
+#[cfg(feature = "database")]
+crate::bridge_error!(diesel::result::Error => DatabaseError => crate::BotticelliErrorKind);
+
+#[cfg(feature = "database")]
+crate::bridge_error!(diesel::ConnectionError => DatabaseError => crate::BotticelliErrorKind);
