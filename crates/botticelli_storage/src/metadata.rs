@@ -5,18 +5,38 @@ use crate::MediaType;
 /// Metadata about media being stored.
 ///
 /// Note: Does not derive `Eq` or `Hash` due to `f32` fields which don't support these traits.
-#[derive(Debug, Clone, PartialEq)]
+///
+/// # Example
+///
+/// ```rust
+/// use botticelli_storage::{MediaMetadata, MediaMetadataBuilder, MediaType};
+///
+/// let metadata = MediaMetadataBuilder::default()
+///     .media_type(MediaType::Image)
+///     .mime_type("image/png".to_string())
+///     .filename(Some("test.png".to_string()))
+///     .width(Some(800))
+///     .height(Some(600))
+///     .build()
+///     .expect("Valid metadata");
+/// ```
+#[derive(Debug, Clone, PartialEq, derive_getters::Getters, derive_builder::Builder)]
+#[builder(setter(into))]
 pub struct MediaMetadata {
     /// Type of media (image, audio, video)
-    pub media_type: MediaType,
+    media_type: MediaType,
     /// MIME type (e.g., "image/png", "video/mp4")
-    pub mime_type: String,
+    mime_type: String,
     /// Original filename (if available)
-    pub filename: Option<String>,
+    #[builder(default)]
+    filename: Option<String>,
     /// Image/video width in pixels
-    pub width: Option<u32>,
+    #[builder(default)]
+    width: Option<u32>,
     /// Image/video height in pixels
-    pub height: Option<u32>,
+    #[builder(default)]
+    height: Option<u32>,
     /// Audio/video duration in seconds
-    pub duration_seconds: Option<f32>,
+    #[builder(default)]
+    duration_seconds: Option<f32>,
 }
