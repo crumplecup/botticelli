@@ -1,10 +1,21 @@
 use botticelli_core::{TokenUsageData, get_tokenizer};
 
 #[test]
-fn test_get_tokenizer() {
-    let encoder = get_tokenizer("gpt-4").expect("Should get encoder");
+fn test_get_tokenizer() -> Result<(), String> {
+    let encoder = get_tokenizer("gpt-4")?;
     let tokens = encoder.encode_with_special_tokens("Hello, world!");
     assert!(!tokens.is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_get_tokenizer_invalid_model() {
+    let result = get_tokenizer("invalid-model-xyz-123");
+    assert!(result.is_err());
+    if let Err(err) = result {
+        assert!(err.contains("Failed to get tokenizer"));
+        assert!(err.contains("invalid-model-xyz-123"));
+    }
 }
 
 #[test]

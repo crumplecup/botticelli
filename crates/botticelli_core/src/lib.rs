@@ -18,7 +18,7 @@ mod token_usage;
 mod tool_definition;
 mod tool_result;
 
-pub use budget::{BudgetConfig, BudgetConfigBuilder};
+pub use budget::{BudgetConfig, BudgetConfigBuilder, BudgetConfigBuilderError};
 pub use input::{HistoryRetention, Input, TableFormat};
 pub use media::MediaSource;
 pub use message::{Message, MessageBuilder};
