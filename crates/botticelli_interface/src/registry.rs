@@ -1,6 +1,5 @@
 //! Registry operations trait for data types.
 
-use botticelli_error::McpResult;
 use serde_json::Value;
 
 /// Registry operations for data types.
@@ -9,6 +8,9 @@ use serde_json::Value;
 pub trait RegistryOperations: Sized + Send + Sync {
     /// The key type for registry lookups.
     type Key: Clone + Send + Sync;
+    
+    /// Error type for operations.
+    type Error: std::error::Error + Send + Sync + 'static;
 
     /// Get the registry key for this item.
     fn registry_key(&self) -> Self::Key;
@@ -18,15 +20,15 @@ pub trait RegistryOperations: Sized + Send + Sync {
     /// # Errors
     ///
     /// Returns error if JSON cannot be deserialized to this type.
-    fn from_json_args(args: Value) -> McpResult<Self>;
+    fn from_json_args(args: Value) -> Result<Self, Self::Error>;
 
     /// Convert to JSON for storage/retrieval.
-    fn to_json(&self) -> McpResult<Value>;
+    fn to_json(&self) -> Result<Value, Self::Error>;
 
     /// Update this instance from JSON arguments.
     ///
     /// # Errors
     ///
     /// Returns error if JSON fields are invalid for this type.
-    fn update_from_json(&mut self, args: Value) -> McpResult<()>;
+    fn update_from_json(&mut self, args: Value) -> Result<(), Self::Error>;
 }

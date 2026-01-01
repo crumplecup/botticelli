@@ -117,49 +117,7 @@ impl GeminiError {
     }
 }
 
-/// Trait for errors that support retry logic.
-///
-/// This trait allows error types to specify whether they should trigger a retry
-/// and what retry strategy parameters to use.
-///
-/// # Examples
-///
-/// ```
-/// use botticelli_error::{GeminiError, GeminiErrorKind, RetryableError};
-///
-/// let err = GeminiError::new(GeminiErrorKind::HttpError {
-///     status_code: 503,
-///     message: "Service unavailable".to_string(),
-/// });
-///
-/// assert!(err.is_retryable());
-/// let (backoff, retries, max_delay) = err.retry_strategy_params();
-/// assert_eq!(backoff, 2000);  // 2 second initial backoff
-/// assert_eq!(retries, 5);     // 5 retry attempts
-/// ```
-pub trait RetryableError {
-    /// Returns true if this error should trigger a retry.
-    ///
-    /// Transient errors like 503 (service unavailable), 429 (rate limit),
-    /// or network timeouts should return true. Permanent errors like 401
-    /// (unauthorized) or 400 (bad request) should return false.
-    fn is_retryable(&self) -> bool;
-
-    /// Get retry strategy parameters for this error.
-    ///
-    /// Returns `(initial_backoff_ms, max_retries, max_delay_secs)`.
-    /// Default implementation returns standard parameters.
-    ///
-    /// Override this to provide error-specific retry strategies:
-    /// - Rate limit errors (429): Longer delays, fewer retries
-    /// - Server overload (503): Standard delays, more patient
-    /// - Server errors (500): Quick retries, fail fast
-    fn retry_strategy_params(&self) -> (u64, usize, u64) {
-        (2000, 5, 60) // Default: 2s initial, 5 retries, 60s cap
-    }
-}
-
-impl RetryableError for GeminiError {
+impl botticelli_interface::RetryableError for GeminiError {
     fn is_retryable(&self) -> bool {
         self.kind.is_retryable()
     }

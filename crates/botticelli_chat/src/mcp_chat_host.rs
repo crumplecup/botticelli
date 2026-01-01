@@ -2,12 +2,12 @@
 
 use botticelli_core::{Input, Message, MessageBuilder, Role, ToolDefinition};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
-use botticelli_interface::{ChatHost, ChatMessage, ToolCalling};
+use botticelli_interface::{ChatHost, ToolCalling};
 use botticelli_mcp_client::McpHost;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::{ConversationLoop, ToolCallHandler};
+use crate::{ChatMessage, ConversationLoop, ToolCallHandler};
 
 /// Chat host that integrates LLM with MCP tools.
 #[derive(derive_getters::Getters)]
@@ -49,6 +49,9 @@ impl McpChatHost {
 
 #[async_trait::async_trait]
 impl ChatHost for McpChatHost {
+    type ChatMessage = ChatMessage;
+    type ToolDefinition = ToolDefinition;
+    type Error = ChatError;
     #[tracing::instrument(skip(self), fields(message_len = user_message.len()))]
     async fn send_message(&mut self, user_message: String) -> ChatResult<String> {
         tracing::info!(message = %user_message, "Received user message");

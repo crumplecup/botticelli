@@ -25,24 +25,24 @@ fn validate_rejects_invalid_multipliers() -> Result<(), BudgetConfigBuilderError
     let budget = BudgetConfig::builder().rpm_multiplier(0.0).build()?;
     let result = budget.validate();
     assert!(result.is_err());
-    let err_msg = result.unwrap_err();
-    assert!(err_msg.contains("RPM multiplier"));
+    let err = result.unwrap_err();
+    assert!(err.message().contains("RPM multiplier"));
     debug!("Correctly rejected multiplier = 0.0");
 
     debug!(multiplier = 1.5, "Testing RPM multiplier > 1.0");
     let budget = BudgetConfig::builder().rpm_multiplier(1.5).build()?;
     let result = budget.validate();
     assert!(result.is_err());
-    let err_msg = result.unwrap_err();
-    assert!(err_msg.contains("RPM multiplier"));
+    let err = result.unwrap_err();
+    assert!(err.message().contains("RPM multiplier"));
     debug!("Correctly rejected multiplier = 1.5");
 
     debug!(multiplier = -0.1, "Testing negative RPM multiplier");
     let budget = BudgetConfig::builder().rpm_multiplier(-0.1).build()?;
     let result = budget.validate();
     assert!(result.is_err());
-    let err_msg = result.unwrap_err();
-    assert!(err_msg.contains("RPM multiplier"));
+    let err = result.unwrap_err();
+    assert!(err.message().contains("RPM multiplier"));
     debug!("Correctly rejected multiplier = -0.1");
     
     info!("All invalid multiplier validations passed");

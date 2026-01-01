@@ -4,7 +4,8 @@ use botticelli_chat::ChatLlmSampler;
 use botticelli_core::{
     GenerateRequest, GenerateResponse, GenerateResponseBuilder, Output, StopReason, ToolCall,
 };
-use botticelli_interface::{LlmProvider, ProviderError};
+use botticelli_error::{ProviderError, ProviderErrorKind};
+use botticelli_interface::LlmProvider;
 use botticelli_mcp::{
     ConversationSession, ConversationTurn, LlmSampler, SamplingCoordinator, ToolRegistry,
 };
@@ -29,10 +30,14 @@ impl MultiTurnMockProvider {
 
 #[async_trait::async_trait]
 impl LlmProvider for MultiTurnMockProvider {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = ProviderError;
+
     async fn generate(
         &self,
-        _request: &GenerateRequest,
-    ) -> Result<GenerateResponse, ProviderError> {
+        _request: &Self::Request,
+    ) -> Result<Self::Response, Self::Error> {
         let mut count = self.call_count.lock().await;
         *count += 1;
 
@@ -171,10 +176,14 @@ struct SimpleTextProvider;
 
 #[async_trait::async_trait]
 impl LlmProvider for SimpleTextProvider {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = ProviderError;
+
     async fn generate(
         &self,
-        _request: &GenerateRequest,
-    ) -> Result<GenerateResponse, ProviderError> {
+        _request: &Self::Request,
+    ) -> Result<Self::Response, Self::Error> {
         Ok(GenerateResponseBuilder::default()
             .outputs(vec![Output::Text("Simple response".to_string())])
             .stop_reason(StopReason::EndTurn)
@@ -258,10 +267,14 @@ struct ErrorProvider;
 
 #[async_trait::async_trait]
 impl LlmProvider for ErrorProvider {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = ProviderError;
+
     async fn generate(
         &self,
-        _request: &GenerateRequest,
-    ) -> Result<GenerateResponse, ProviderError> {
+        _request: &Self::Request,
+    ) -> Result<Self::Response, Self::Error> {
         Err(ProviderError::new(
             "error-provider",
             ProviderErrorKind::ApiError("Simulated API error".to_string()),

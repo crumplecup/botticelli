@@ -4,7 +4,7 @@
 //! shared between the executor (in botticelli-narrative) and persistence layer
 //! (in botticelli-database).
 
-use botticelli_core::{Input, TokenUsageData};
+use crate::{Input, TokenUsageData};
 use serde::{Deserialize, Serialize};
 
 /// Execution result for a single act in a narrative.

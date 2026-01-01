@@ -1,6 +1,6 @@
 //! Concrete table view implementations with builder pattern.
 
-use crate::TableView;
+use botticelli_interface::TableView;
 use derive_builder::Builder;
 use derive_getters::Getters;
 

@@ -49,15 +49,15 @@ impl From<crate::ModelsError> for ServerErrorKind {
 }
 
 /// Error wrapper with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Server Error: {} at line {} in {}", kind, line, file)]
 pub struct ServerError {
     /// The error kind
-    pub kind: ServerErrorKind,
+    kind: ServerErrorKind,
     /// Line number where error occurred
-    pub line: u32,
+    line: u32,
     /// File where error occurred
-    pub file: &'static str,
+    file: &'static str,
 }
 
 impl ServerError {
@@ -72,3 +72,5 @@ impl ServerError {
         }
     }
 }
+
+crate::impl_error_from_kind!(ServerErrorKind => ServerError);

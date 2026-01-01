@@ -3,13 +3,18 @@
 use crate::AnthropicClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
-use botticelli_interface::{BotticelliDriver, LlmProvider, ProviderError, ProviderErrorKind};
+use botticelli_error::ProviderError;
+use botticelli_interface::{BotticelliDriver, LlmProvider};
 use tracing::{debug, error, instrument};
 
 #[async_trait]
 impl LlmProvider for AnthropicClient {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = ProviderError;
+
     #[instrument(skip(self, request))]
-    async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, ProviderError> {
+    async fn generate(&self, request: &Self::Request) -> Result<Self::Response, Self::Error> {
         debug!("Generating response via LlmProvider trait");
 
         // Delegate to BotticelliDriver::generate which handles the new architecture
@@ -17,7 +22,7 @@ impl LlmProvider for AnthropicClient {
             .await
             .map_err(|e| {
                 error!(error = %e, "Failed to generate response");
-                ProviderError::new("anthropic", ProviderErrorKind::ApiError(e.to_string()))
+                e.into()
             })
     }
 

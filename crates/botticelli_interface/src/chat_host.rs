@@ -1,43 +1,5 @@
 //! Chat host trait definition for MCP-based chat applications.
 
-use botticelli_core::ToolDefinition;
-use botticelli_error::ChatResult;
-
-/// A chat message that can be displayed in the UI.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ChatMessage {
-    /// Role: "user", "assistant", or "system"
-    pub role: String,
-    /// Message content
-    pub content: String,
-}
-
-impl ChatMessage {
-    /// Creates a user message.
-    pub fn user(content: String) -> Self {
-        Self {
-            role: "user".to_string(),
-            content,
-        }
-    }
-
-    /// Creates an assistant message.
-    pub fn assistant(content: String) -> Self {
-        Self {
-            role: "assistant".to_string(),
-            content,
-        }
-    }
-
-    /// Creates a system message.
-    pub fn system(content: String) -> Self {
-        Self {
-            role: "system".to_string(),
-            content,
-        }
-    }
-}
-
 /// Trait for managing chat conversations with MCP tool integration.
 ///
 /// This trait provides the complete interface needed for a chat UI:
@@ -48,6 +10,15 @@ impl ChatMessage {
 /// Implementors should provide full instrumentation for observability.
 #[async_trait::async_trait]
 pub trait ChatHost: Send + Sync {
+    /// Chat message type for conversation history.
+    type ChatMessage: Send + Sync + Clone;
+    
+    /// Tool definition type.
+    type ToolDefinition: Send + Sync;
+    
+    /// Error type for operations.
+    type Error: std::error::Error + Send + Sync + 'static;
+
     /// Send a user message and get the assistant's response.
     ///
     /// This method handles the complete conversation turn:
@@ -59,7 +30,7 @@ pub trait ChatHost: Send + Sync {
     /// # Errors
     ///
     /// Returns error if message cannot be processed or LLM call fails.
-    async fn send_message(&mut self, user_message: String) -> ChatResult<String>;
+    async fn send_message(&mut self, user_message: String) -> Result<String, Self::Error>;
 
     /// Get the full conversation history.
     ///
@@ -68,14 +39,14 @@ pub trait ChatHost: Send + Sync {
     /// # Errors
     ///
     /// Returns error if conversation cannot be retrieved.
-    async fn get_conversation(&self) -> ChatResult<Vec<ChatMessage>>;
+    async fn get_conversation(&self) -> Result<Vec<Self::ChatMessage>, Self::Error>;
 
     /// Get all available tools from connected MCP servers.
     ///
     /// # Errors
     ///
     /// Returns error if tools cannot be retrieved.
-    async fn available_tools(&self) -> ChatResult<Vec<ToolDefinition>>;
+    async fn available_tools(&self) -> Result<Vec<Self::ToolDefinition>, Self::Error>;
 
     /// Execute a tool by name with given arguments.
     ///
@@ -86,7 +57,7 @@ pub trait ChatHost: Send + Sync {
         &mut self,
         name: &str,
         arguments: serde_json::Value,
-    ) -> ChatResult<serde_json::Value>;
+    ) -> Result<serde_json::Value, Self::Error>;
 
     /// Check if any MCP servers are connected.
     async fn has_tools(&self) -> bool {

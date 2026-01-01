@@ -18,7 +18,7 @@ pub enum TokenCountingErrorKind {
 }
 
 /// Token counting error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Token Counting Error: {} at {}:{}", kind, file, line)]
 pub struct TokenCountingError {
     kind: TokenCountingErrorKind,
@@ -37,12 +37,9 @@ impl TokenCountingError {
             file: location.file(),
         }
     }
-
-    /// Get the error kind.
-    pub fn kind(&self) -> &TokenCountingErrorKind {
-        &self.kind
-    }
 }
+
+crate::impl_error_from_kind!(TokenCountingErrorKind => TokenCountingError);
 
 /// Result type for token counting operations.
 pub type TokenCountingResult<T> = Result<T, TokenCountingError>;

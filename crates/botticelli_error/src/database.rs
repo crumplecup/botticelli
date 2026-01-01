@@ -1,29 +1,158 @@
 //! Database error types.
 
+/// Diesel-specific error with source tracking.
+#[cfg(feature = "database")]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[display("Diesel error: {:?} at {}:{}", source, file, line)]
+pub struct DieselError {
+    /// The diesel error source
+    source: Box<diesel::result::Error>,
+    /// Line number where error was created
+    line: u32,
+    /// File where error was created
+    file: &'static str,
+}
+
+#[cfg(feature = "database")]
+impl DieselError {
+    /// Create a new DieselError with automatic location tracking.
+    #[track_caller]
+    pub fn new(err: diesel::result::Error) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            source: Box::new(err),
+            line: location.line(),
+            file: location.file(),
+        }
+    }
+}
+
+#[cfg(feature = "database")]
+impl Clone for DieselError {
+    fn clone(&self) -> Self {
+        Self {
+            source: Box::new(diesel::result::Error::DeserializationError(
+                format!("{:?}", self.source).into()
+            )),
+            line: self.line,
+            file: self.file,
+        }
+    }
+}
+
+/// Diesel connection error with source tracking.
+#[cfg(feature = "database")]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[display("Diesel connection error: {:?} at {}:{}", source, file, line)]
+pub struct DieselConnectionError {
+    /// The diesel connection error source
+    source: Box<diesel::ConnectionError>,
+    /// Line number where error was created
+    line: u32,
+    /// File where error was created
+    file: &'static str,
+}
+
+#[cfg(feature = "database")]
+impl DieselConnectionError {
+    /// Create a new DieselConnectionError with automatic location tracking.
+    #[track_caller]
+    pub fn new(err: diesel::ConnectionError) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            source: Box::new(err),
+            line: location.line(),
+            file: location.file(),
+        }
+    }
+}
+
+#[cfg(feature = "database")]
+impl Clone for DieselConnectionError {
+    fn clone(&self) -> Self {
+        Self {
+            source: Box::new(diesel::ConnectionError::BadConnection(
+                format!("{:?}", self.source)
+            )),
+            line: self.line,
+            file: self.file,
+        }
+    }
+}
+
+/// Serde JSON error with source tracking.
+#[cfg(feature = "serde_json")]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[display("Serde JSON error: {} at {}:{}", source, file, line)]
+pub struct SerdeJsonError {
+    /// The serde_json error source
+    source: Box<serde_json::Error>,
+    /// Line number where error was created
+    line: u32,
+    /// File where error was created
+    file: &'static str,
+}
+
+#[cfg(feature = "serde_json")]
+impl SerdeJsonError {
+    /// Create a new SerdeJsonError with automatic location tracking.
+    #[track_caller]
+    pub fn new(err: serde_json::Error) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            source: Box::new(err),
+            line: location.line(),
+            file: location.file(),
+        }
+    }
+}
+
 /// Database error conditions.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
+#[derive(Debug, Clone, derive_more::Display)]
 pub enum DatabaseErrorKind {
     /// Connection failed
     #[display("Database connection error: {}", _0)]
     Connection(String),
+    
+    /// Diesel connection error
+    #[cfg(feature = "database")]
+    #[display("{}", _0)]
+    DieselConnection(DieselConnectionError),
+    
     /// Query execution failed
     #[display("Database query error: {}", _0)]
     Query(String),
+    
+    /// Diesel query error
+    #[cfg(feature = "database")]
+    #[display("{}", _0)]
+    Diesel(DieselError),
+    
     /// Serialization/deserialization error
     #[display("Serialization error: {}", _0)]
     Serialization(String),
+    
+    /// Serde JSON error
+    #[cfg(feature = "serde_json")]
+    #[display("{}", _0)]
+    SerdeJson(SerdeJsonError),
+    
     /// Migration error
     #[display("Migration error: {}", _0)]
     Migration(String),
+    
     /// Record not found
     #[display("Record not found")]
     NotFound,
+    
     /// Table not found
     #[display("Table '{}' not found in database", _0)]
     TableNotFound(String),
+    
     /// Schema inference error
     #[display("Schema inference error: {}", _0)]
     SchemaInference(String),
+    
     /// Invalid query
     #[display("Invalid query: {}", _0)]
     InvalidQuery(String),
@@ -63,6 +192,8 @@ impl DatabaseError {
     }
 }
 
+crate::impl_error_from_kind!(DatabaseErrorKind => DatabaseError);
+
 // Diesel error conversions (only available with database feature)
 #[cfg(feature = "database")]
 impl From<diesel::result::Error> for DatabaseError {
@@ -70,7 +201,7 @@ impl From<diesel::result::Error> for DatabaseError {
     fn from(err: diesel::result::Error) -> Self {
         match err {
             diesel::result::Error::NotFound => DatabaseError::new(DatabaseErrorKind::NotFound),
-            _ => DatabaseError::new(DatabaseErrorKind::Query(err.to_string())),
+            _ => DatabaseError::new(DatabaseErrorKind::Diesel(DieselError::new(err))),
         }
     }
 }
@@ -79,15 +210,17 @@ impl From<diesel::result::Error> for DatabaseError {
 impl From<diesel::ConnectionError> for DatabaseError {
     #[track_caller]
     fn from(err: diesel::ConnectionError) -> Self {
-        DatabaseError::new(DatabaseErrorKind::Connection(err.to_string()))
+        DatabaseError::new(DatabaseErrorKind::DieselConnection(
+            DieselConnectionError::new(err),
+        ))
     }
 }
 
-#[cfg(feature = "database")]
+#[cfg(feature = "serde_json")]
 impl From<serde_json::Error> for DatabaseError {
     #[track_caller]
     fn from(err: serde_json::Error) -> Self {
-        DatabaseError::new(DatabaseErrorKind::Serialization(err.to_string()))
+        DatabaseError::new(DatabaseErrorKind::SerdeJson(SerdeJsonError::new(err)))
     }
 }
 

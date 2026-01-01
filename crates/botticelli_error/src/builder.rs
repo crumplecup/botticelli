@@ -63,3 +63,5 @@ impl From<&str> for BuilderError {
         Self::new(BuilderErrorKind::ValidationFailed(msg.to_string()))
     }
 }
+
+crate::impl_error_from_kind!(BuilderErrorKind => BuilderError);

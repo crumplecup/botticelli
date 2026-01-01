@@ -4,37 +4,33 @@
 //! the Botticelli interface.
 
 mod bot_server;
+mod capabilities;
 mod chat_host;
-mod narrative;
+mod chat_service;
+mod driver;
+mod health;
+mod metadata;
 mod provider;
 mod registry;
 mod registry_traits;
-mod table_query_view;
-mod table_view;
-mod traits;
-mod types;
+mod repository;
+mod retry;
 
-pub use bot_server::{BotActor, BotResult, BotServer, BotServerConfig, BotState, BotStats};
-pub use chat_host::{ChatHost, ChatMessage};
-pub use narrative::{
-    ActExecution, ActExecutionBuilder, ExecutionFilter, ExecutionStatus, ExecutionSummary,
-    NarrativeExecution, NarrativeRepository,
+pub use bot_server::{BotActor, BotServer};
+pub use capabilities::{
+    Audio, BatchGeneration, DocumentProcessing, Embeddings, JsonMode, Streaming, TokenCounting,
+    ToolCalling, Video, Vision,
 };
-pub use provider::{LlmProvider, ProviderError, ProviderErrorKind};
+pub use chat_host::ChatHost;
+pub use chat_service::ChatService;
+pub use driver::BotticelliDriver;
+pub use health::Health;
+pub use metadata::Metadata;
+pub use provider::LlmProvider;
 pub use registry::RegistryOperations;
 pub use registry_traits::{
     DatabaseRegistryOperations, ElicitationRegistryOperations, NarrativeRegistryOperations,
     NarrativeStorageOperations,
 };
-pub use table_query_view::{
-    TableCountView, TableCountViewBuilder, TableQueryView, TableQueryViewBuilder,
-};
-pub use table_view::{TableReference, TableView};
-pub use traits::{
-    Audio, BatchGeneration, BotticelliDriver, ContentRepository, DocumentProcessing, Embeddings,
-    Health, JsonMode, Metadata, Streaming, TableQueryRegistry, TokenCounting, ToolCalling, Video,
-    Vision,
-};
-pub use types::{
-    Capabilities, FinishReason, HealthStatus, ModelMetadata, ModelMetadataBuilder, StreamChunk,
-};
+pub use repository::{ContentRepository, NarrativeRepository, TableQueryRegistry, TableView};
+pub use retry::RetryableError;

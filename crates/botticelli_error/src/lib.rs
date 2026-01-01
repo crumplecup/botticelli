@@ -15,7 +15,7 @@
 //! use botticelli_error::{BotticelliResult, HttpError};
 //!
 //! fn fetch_data() -> BotticelliResult<String> {
-//!     Err(HttpError::new("Connection refused"))?
+//!     Err(HttpError::from("Connection refused"))?
 //! }
 //!
 //! match fetch_data() {
@@ -45,6 +45,7 @@ mod models;
 mod narrative;
 mod not_implemented;
 mod observability;
+mod provider;
 mod server;
 mod storage;
 mod token_counting;
@@ -56,11 +57,15 @@ pub use builder::{BuilderError, BuilderErrorKind};
 pub use chat::{ChatError, ChatErrorKind, ChatResult};
 pub use config::ConfigError;
 #[cfg(feature = "database")]
-pub use database::{DatabaseError, DatabaseErrorKind};
+pub use database::{DatabaseError, DatabaseErrorKind, DieselConnectionError, DieselError};
+#[cfg(feature = "serde_json")]
+pub use database::SerdeJsonError;
 pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};
-pub use gemini::{GeminiError, GeminiErrorKind, RetryableError};
-pub use http::HttpError;
-pub use json::JsonError;
+pub use gemini::{GeminiError, GeminiErrorKind};
+pub use http::{HttpError, HttpErrorKind};
+pub use json::{JsonError, JsonErrorKind};
+#[cfg(feature = "serde_json")]
+pub use json::SerdeJsonError as JsonSerdeJsonError;
 pub use mcp::{McpError, McpErrorKind, McpResult};
 #[cfg(feature = "anthropic")]
 pub use models::AnthropicErrorKind;
@@ -76,8 +81,13 @@ pub use models::{ModelsError, ModelsErrorKind, ModelsResult};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
 pub use not_implemented::NotImplementedError;
 pub use observability::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};
+pub use provider::{ProviderError, ProviderErrorKind, ProviderResult};
+#[cfg(feature = "reqwest")]
+pub use provider::ProviderReqwestError;
+#[cfg(feature = "serde_json")]
+pub use provider::ProviderSerdeJsonError;
 pub use server::{ServerError, ServerErrorKind};
 pub use storage::{StorageError, StorageErrorKind};
 pub use token_counting::{TokenCountingError, TokenCountingErrorKind, TokenCountingResult};
 #[cfg(feature = "tui")]
-pub use tui::{TuiError, TuiErrorKind, TuiResult};
+pub use tui::{TuiError, TuiErrorKind, TuiIoError, TuiResult};

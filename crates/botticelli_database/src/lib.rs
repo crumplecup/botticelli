@@ -41,6 +41,7 @@ mod schema_inference;
 mod schema_reflection;
 mod table_query;
 mod table_query_registry;
+mod table_views;
 
 // Schema module must be public for Diesel's #[diesel(table_name = ...)] attributes
 pub mod schema;
@@ -95,6 +96,9 @@ pub use schema_reflection::{
 // Re-export table query types
 pub use table_query::{TableQueryExecutor, format_as_csv, format_as_json, format_as_markdown};
 pub use table_query_registry::DatabaseTableQueryRegistry;
+pub use table_views::{
+    TableCountView, TableCountViewBuilder, TableQueryView, TableQueryViewBuilder,
+};
 
 // Re-export registry implementations
 pub use registry_impl::{ActorRow, ContentEntry};

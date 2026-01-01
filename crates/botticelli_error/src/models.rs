@@ -194,15 +194,15 @@ pub enum ModelsErrorKind {
 }
 
 /// Model provider error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Models Error: {} at {}:{}", kind, file, line)]
 pub struct ModelsError {
     /// The specific error kind
-    pub kind: ModelsErrorKind,
+    kind: ModelsErrorKind,
     /// Line number where error occurred
-    pub line: u32,
+    line: u32,
     /// Source file where error occurred
-    pub file: &'static str,
+    file: &'static str,
 }
 
 impl ModelsError {
@@ -217,6 +217,8 @@ impl ModelsError {
         }
     }
 }
+
+crate::impl_error_from_kind!(ModelsErrorKind => ModelsError);
 
 /// Result type for model operations.
 pub type ModelsResult<T> = Result<T, ModelsError>;

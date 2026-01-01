@@ -8,8 +8,8 @@ use crate::ModelsError;
 use crate::TuiError;
 use crate::{
     BackendError, BuilderError, ChatError, ConfigError, GeminiError, HttpError, JsonError,
-    McpError, NarrativeError, NotImplementedError, ObservabilityError, ServerError, StorageError,
-    TokenCountingError,
+    McpError, NarrativeError, NotImplementedError, ObservabilityError, ProviderError, ServerError,
+    StorageError, TokenCountingError,
 };
 
 /// This is the foundation error enum. Additional variants will be added
@@ -20,7 +20,7 @@ use crate::{
 /// ```
 /// use botticelli_error::{BotticelliError, HttpError};
 ///
-/// let http_err = HttpError::new("Connection failed");
+/// let http_err: HttpError = "Connection failed".into();
 /// let err: BotticelliError = http_err.into();
 /// assert!(format!("{}", err).contains("HTTP Error"));
 /// ```
@@ -80,6 +80,9 @@ pub enum BotticelliErrorKind {
     /// Token counting error
     #[from(TokenCountingError)]
     TokenCounting(TokenCountingError),
+    /// Provider error
+    #[from(ProviderError)]
+    Provider(ProviderError),
 }
 
 /// Botticelli error with kind discrimination.
@@ -135,7 +138,7 @@ where
 /// use botticelli_error::{BotticelliResult, HttpError};
 ///
 /// fn fetch_data() -> BotticelliResult<String> {
-///     Err(HttpError::new("404 Not Found"))?
+///     Err(HttpError::from("404 Not Found"))?
 /// }
 /// ```
 pub type BotticelliResult<T> = std::result::Result<T, BotticelliError>;

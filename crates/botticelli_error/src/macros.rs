@@ -69,3 +69,33 @@ macro_rules! error_from {
         }
     };
 }
+
+/// Creates a From implementation from ErrorKind to Error wrapper.
+///
+/// This macro generates the conversion from an ErrorKind enum to its
+/// corresponding Error wrapper struct with automatic location tracking.
+///
+/// # Examples
+///
+/// ```ignore
+/// impl_error_from_kind!(TuiErrorKind => TuiError);
+///
+/// // Generates:
+/// impl From<TuiErrorKind> for TuiError {
+///     #[track_caller]
+///     fn from(kind: TuiErrorKind) -> Self {
+///         Self::new(kind)
+///     }
+/// }
+/// ```
+#[macro_export]
+macro_rules! impl_error_from_kind {
+    ($kind:ty => $error:ty) => {
+        impl From<$kind> for $error {
+            #[track_caller]
+            fn from(kind: $kind) -> Self {
+                Self::new(kind)
+            }
+        }
+    };
+}

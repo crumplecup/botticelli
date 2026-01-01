@@ -1,5 +1,6 @@
 //! Budget configuration for rate limiting multipliers.
 
+use botticelli_error::ConfigError;
 use serde::{Deserialize, Serialize};
 
 /// Budget multipliers for throttling API usage.
@@ -75,24 +76,24 @@ impl BudgetConfig {
     /// # Errors
     ///
     /// Returns an error if any multiplier is <= 0.0 or > 1.0.
-    pub fn validate(&self) -> Result<(), String> {
+    pub fn validate(&self) -> Result<(), ConfigError> {
         if self.rpm_multiplier <= 0.0 || self.rpm_multiplier > 1.0 {
-            return Err(format!(
+            return Err(ConfigError::new(format!(
                 "RPM multiplier must be in (0.0, 1.0], got {}",
                 self.rpm_multiplier
-            ));
+            )));
         }
         if self.tpm_multiplier <= 0.0 || self.tpm_multiplier > 1.0 {
-            return Err(format!(
+            return Err(ConfigError::new(format!(
                 "TPM multiplier must be in (0.0, 1.0], got {}",
                 self.tpm_multiplier
-            ));
+            )));
         }
         if self.rpd_multiplier <= 0.0 || self.rpd_multiplier > 1.0 {
-            return Err(format!(
+            return Err(ConfigError::new(format!(
                 "RPD multiplier must be in (0.0, 1.0], got {}",
                 self.rpd_multiplier
-            ));
+            )));
         }
         Ok(())
     }

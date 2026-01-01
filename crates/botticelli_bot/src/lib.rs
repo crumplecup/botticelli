@@ -18,6 +18,7 @@ mod metrics;
 mod posting;
 mod server;
 mod tool_init;
+mod types;
 
 pub use api::{ApiState, create_router};
 pub use config::{BotConfig, BotSchedule, CurationConfig, GenerationConfig, PostingConfig};
@@ -29,3 +30,4 @@ pub use metrics::{BotMetricSnapshot, BotMetrics, MetricsSnapshot};
 pub use posting::{PostingBot, PostingMessage};
 pub use server::BotServer;
 pub use tool_init::initialize_tools;
+pub use types::{BotServerConfig, BotState, BotStats};

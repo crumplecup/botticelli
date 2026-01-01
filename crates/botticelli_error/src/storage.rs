@@ -39,15 +39,15 @@ pub enum StorageErrorKind {
 /// let err = StorageError::new(StorageErrorKind::NotFound("/path/to/file".to_string()));
 /// assert!(format!("{}", err).contains("not found"));
 /// ```
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Storage Error: {} at line {} in {}", kind, line, file)]
 pub struct StorageError {
     /// The kind of error that occurred
-    pub kind: StorageErrorKind,
+    kind: StorageErrorKind,
     /// Line number where error was created
-    pub line: u32,
+    line: u32,
     /// File where error was created
-    pub file: &'static str,
+    file: &'static str,
 }
 
 impl StorageError {
@@ -62,3 +62,5 @@ impl StorageError {
         }
     }
 }
+
+crate::impl_error_from_kind!(StorageErrorKind => StorageError);

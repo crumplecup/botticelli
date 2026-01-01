@@ -9,6 +9,8 @@
 //! social media scheduling.
 
 mod chat_config;
+#[cfg(feature = "cli")]
+mod chat_message;
 mod command;
 mod executor;
 mod input;
@@ -38,6 +40,8 @@ pub use botticelli_mcp::{
     ConversationSession, ElicitationDialog, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
 pub use chat_config::ChatConfig;
+#[cfg(feature = "cli")]
+pub use chat_message::ChatMessage;
 pub use command::{BotCommand, Command, NarrativeCommand, SocialCommand};
 pub use config::{
     ChatAppConfig, ConfigBuilder, EnvironmentConfig, EnvironmentMode, McpClientConfig,

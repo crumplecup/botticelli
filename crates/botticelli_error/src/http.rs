@@ -1,11 +1,24 @@
 //! HTTP error types.
 
+/// Specific HTTP error conditions.
+#[derive(Debug, Clone, derive_more::Display)]
+pub enum HttpErrorKind {
+    /// Generic HTTP error with message
+    #[display("HTTP error: {}", _0)]
+    Message(String),
+
+    /// Reqwest-specific error
+    #[cfg(feature = "reqwest")]
+    #[display("Reqwest error: {}", _0)]
+    Reqwest(String),
+}
+
 /// HTTP error wrapping reqwest errors with source location.
 #[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
-#[display("HTTP Error: {} at {}:{}", message, file, line)]
+#[display("HTTP Error: {} at {}:{}", kind, file, line)]
 pub struct HttpError {
-    /// The underlying error message
-    message: String,
+    /// The error kind
+    kind: HttpErrorKind,
     /// Line number where the error occurred
     line: u32,
     /// File where the error occurred
@@ -13,21 +26,12 @@ pub struct HttpError {
 }
 
 impl HttpError {
-    /// Create a new HttpError with the given message at the current location.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use botticelli_error::HttpError;
-    ///
-    /// let err = HttpError::new("Connection refused");
-    /// assert!(err.message().contains("Connection refused"));
-    /// ```
+    /// Create a new HttpError with the given kind at the current location.
     #[track_caller]
-    pub fn new(message: impl Into<String>) -> Self {
+    pub fn new(kind: HttpErrorKind) -> Self {
         let location = std::panic::Location::caller();
         Self {
-            message: message.into(),
+            kind,
             line: location.line(),
             file: location.file(),
         }
@@ -38,7 +42,7 @@ impl HttpError {
 impl From<String> for HttpError {
     #[track_caller]
     fn from(message: String) -> Self {
-        Self::new(message)
+        Self::new(HttpErrorKind::Message(message))
     }
 }
 
@@ -46,20 +50,20 @@ impl From<String> for HttpError {
 impl From<&str> for HttpError {
     #[track_caller]
     fn from(message: &str) -> Self {
-        Self::new(message)
+        Self::new(HttpErrorKind::Message(message.to_string()))
     }
 }
 
-// Add support for wrapping external errors when they're available
+crate::impl_error_from_kind!(HttpErrorKind => HttpError);
+
 #[cfg(feature = "reqwest")]
 impl From<reqwest::Error> for HttpError {
     #[track_caller]
     fn from(err: reqwest::Error) -> Self {
-        Self::new(err.to_string())
+        Self::new(HttpErrorKind::Reqwest(format!("{:?}", err)))
     }
 }
 
-// Bridge reqwest::Error to BotticelliErrorKind
 #[cfg(feature = "reqwest")]
 crate::bridge_error!(reqwest::Error => HttpError => crate::BotticelliErrorKind);
 

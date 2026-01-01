@@ -1,15 +1,15 @@
 //! Not implemented error types.
 
 /// Not implemented error with source location.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Not Implemented: {} at line {} in {}", message, line, file)]
 pub struct NotImplementedError {
     /// Description of what is not implemented
-    pub message: String,
+    message: String,
     /// Line number where the error occurred
-    pub line: u32,
+    line: u32,
     /// File where the error occurred
-    pub file: &'static str,
+    file: &'static str,
 }
 
 impl NotImplementedError {
@@ -21,7 +21,7 @@ impl NotImplementedError {
     /// use botticelli_error::NotImplementedError;
     ///
     /// let err = NotImplementedError::new("Feature X not yet supported");
-    /// assert!(err.message.contains("not yet supported"));
+    /// assert!(err.message().contains("not yet supported"));
     /// ```
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
@@ -31,5 +31,21 @@ impl NotImplementedError {
             line: location.line(),
             file: location.file(),
         }
+    }
+}
+
+/// Support converting from String for convenience.
+impl From<String> for NotImplementedError {
+    #[track_caller]
+    fn from(message: String) -> Self {
+        Self::new(message)
+    }
+}
+
+/// Support converting from &str for convenience.
+impl From<&str> for NotImplementedError {
+    #[track_caller]
+    fn from(message: &str) -> Self {
+        Self::new(message)
     }
 }

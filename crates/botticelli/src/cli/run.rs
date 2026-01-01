@@ -266,7 +266,7 @@ pub async fn run_narrative(
         // Validate the final budget
         budget.validate().map_err(|e| {
             botticelli_error::NarrativeError::new(
-                botticelli_error::NarrativeErrorKind::ConfigurationError(e),
+                botticelli_error::NarrativeErrorKind::ConfigurationError(e.to_string()),
             )
         })?;
 

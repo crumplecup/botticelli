@@ -25,6 +25,8 @@ derive-new = { workspace = true }
 derive_setters = { workspace = true }
 derive_builder = { workspace = true }
 async-trait = { workspace = true }
+strum = { workspace = true }
+chrono = { workspace = true }
 opentelemetry = "0.31"
 opentelemetry_sdk = "0.31"
 opentelemetry-stdout = "0.31"
@@ -33,6 +35,7 @@ tracing = { workspace = true }
 tracing-opentelemetry = "0.32"
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
 botticelli_error = { workspace = true }
+botticelli_interface = { workspace = true }
 futures = { version = "0.3", optional = true }
 reqwest = { workspace = true, features = ["json"], optional = true }
 tiktoken-rs = "0.9.1"

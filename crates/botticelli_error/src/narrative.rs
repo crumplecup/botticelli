@@ -81,15 +81,15 @@ pub enum NarrativeErrorKind {
 /// let err = NarrativeError::new(NarrativeErrorKind::EmptyToc);
 /// assert!(format!("{}", err).contains("empty"));
 /// ```
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Narrative Error: {} at line {} in {}", kind, line, file)]
 pub struct NarrativeError {
     /// The specific error condition
-    pub kind: NarrativeErrorKind,
+    kind: NarrativeErrorKind,
     /// Line number where the error occurred
-    pub line: u32,
+    line: u32,
     /// Source file where the error occurred
-    pub file: &'static str,
+    file: &'static str,
 }
 
 impl NarrativeError {
@@ -104,3 +104,5 @@ impl NarrativeError {
         }
     }
 }
+
+crate::impl_error_from_kind!(NarrativeErrorKind => NarrativeError);

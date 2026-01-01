@@ -25,7 +25,7 @@ pub enum ObservabilityErrorKind {
 }
 
 /// Observability error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Observability Error: {} at {}:{}", kind, file, line)]
 pub struct ObservabilityError {
     kind: ObservabilityErrorKind,
@@ -44,12 +44,9 @@ impl ObservabilityError {
             file: location.file(),
         }
     }
-
-    /// Get the error kind.
-    pub fn kind(&self) -> &ObservabilityErrorKind {
-        &self.kind
-    }
 }
+
+crate::impl_error_from_kind!(ObservabilityErrorKind => ObservabilityError);
 
 /// Convert from string error messages.
 impl From<String> for ObservabilityError {
