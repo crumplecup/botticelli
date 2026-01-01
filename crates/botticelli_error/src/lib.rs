@@ -27,6 +27,8 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod macros;
+
 mod backend;
 mod builder;
 mod chat;

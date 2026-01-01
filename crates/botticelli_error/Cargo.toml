@@ -11,6 +11,8 @@ categories.workspace = true
 
 [dependencies]
 derive_more = { workspace = true, features = ["from", "display", "error"] }
+derive-getters = { workspace = true }
+tracing = { workspace = true }
 
 # Optional database error conversions
 diesel = { workspace = true, optional = true }
@@ -19,9 +21,11 @@ serde_json = { workspace = true, optional = true }
 [features]
 default = []
 database = ["dep:diesel", "dep:serde_json"]
+serde_json = ["dep:serde_json"]
 tui = []
 models = []
 ollama = ["models"]
 anthropic = ["models"]
 huggingface = ["models"]
 groq = ["models"]
+reqwest = []
