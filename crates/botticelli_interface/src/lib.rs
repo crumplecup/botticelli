@@ -34,5 +34,8 @@ pub use registry_traits::{
     DatabaseRegistryOperations, ElicitationRegistryOperations, NarrativeRegistryOperations,
     NarrativeStorageOperations,
 };
-pub use repository::{ContentRepository, NarrativeRepository, TableQueryRegistry, TableView};
+pub use repository::{
+    ContentGenerationRepository, ContentRepository, NarrativeRepository, TableQueryRegistry,
+    TableView,
+};
 pub use retry::RetryableError;

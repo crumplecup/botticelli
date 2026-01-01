@@ -67,9 +67,7 @@ pub use content_repository::DatabaseContentRepository;
 pub use content_generation_models::{
     ContentGenerationRow, NewContentGenerationRow, UpdateContentGenerationRow,
 };
-pub use content_generation_repository::{
-    ContentGenerationRepository, PostgresContentGenerationRepository,
-};
+pub use content_generation_repository::PostgresContentGenerationRepository;
 
 // Re-export model types
 pub use models::{ModelResponse, NewModelResponse, SerializableModelResponse};

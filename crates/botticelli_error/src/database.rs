@@ -80,6 +80,46 @@ impl Clone for DieselConnectionError {
     }
 }
 
+/// r2d2 pool error with source tracking.
+#[cfg(feature = "database")]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[display("R2D2 pool error: {:?} at {}:{}", source, file, line)]
+pub struct R2d2Error {
+    /// The r2d2 error source
+    source: Box<diesel::r2d2::Error>,
+    /// Line number where error was created
+    line: u32,
+    /// File where error was created
+    file: &'static str,
+}
+
+#[cfg(feature = "database")]
+impl R2d2Error {
+    /// Create a new R2d2Error with automatic location tracking.
+    #[track_caller]
+    pub fn new(err: diesel::r2d2::Error) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            source: Box::new(err),
+            line: location.line(),
+            file: location.file(),
+        }
+    }
+}
+
+#[cfg(feature = "database")]
+impl Clone for R2d2Error {
+    fn clone(&self) -> Self {
+        Self {
+            source: Box::new(diesel::r2d2::Error::ConnectionError(
+                diesel::ConnectionError::BadConnection(format!("{:?}", self.source))
+            )),
+            line: self.line,
+            file: self.file,
+        }
+    }
+}
+
 /// Serde JSON error with source tracking.
 #[cfg(feature = "serde_json")]
 #[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
@@ -118,6 +158,11 @@ pub enum DatabaseErrorKind {
     #[cfg(feature = "database")]
     #[display("{}", _0)]
     DieselConnection(DieselConnectionError),
+    
+    /// R2D2 pool error
+    #[cfg(feature = "database")]
+    #[display("{}", _0)]
+    R2d2(R2d2Error),
     
     /// Query execution failed
     #[display("Database query error: {}", _0)]
@@ -213,6 +258,14 @@ impl From<diesel::ConnectionError> for DatabaseError {
         DatabaseError::new(DatabaseErrorKind::DieselConnection(
             DieselConnectionError::new(err),
         ))
+    }
+}
+
+#[cfg(feature = "database")]
+impl From<diesel::r2d2::Error> for DatabaseError {
+    #[track_caller]
+    fn from(err: diesel::r2d2::Error) -> Self {
+        DatabaseError::new(DatabaseErrorKind::R2d2(R2d2Error::new(err)))
     }
 }
 

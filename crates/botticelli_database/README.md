@@ -130,6 +130,35 @@ DATABASE_PASSWORD=secret
 DATABASE_NAME=botticelli
 ```
 
+## Testing
+
+### Unit Tests
+
+Standard unit tests run without database access:
+```bash
+cargo test --package botticelli_database
+```
+
+### Integration Tests
+
+Integration tests require a running PostgreSQL instance and are marked with `#[ignore]`:
+
+```bash
+# Set up test database
+export DATABASE_URL="postgres://botticelli:renaissance@localhost:5432/botticelli_test"
+
+# Run ignored tests (requires database)
+cargo test --package botticelli_database -- --ignored
+
+# Or run specific integration test
+cargo test --package botticelli_database --test integration_test -- --ignored
+```
+
+Tests verify:
+- Content repository query operations with limits
+- Database connection pooling
+- Error handling for missing tables
+
 ## Dependencies
 
 - `diesel` - ORM and query builder
