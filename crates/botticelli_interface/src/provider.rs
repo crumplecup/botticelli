@@ -12,8 +12,11 @@ use botticelli_core::{GenerateRequest, GenerateResponse};
 /// allowing them to be used interchangeably.
 #[async_trait]
 pub trait LlmProvider: Send + Sync {
+    /// Error type for this provider.
+    type Error: std::error::Error + Send + Sync + 'static;
+
     /// Generate a response from the provider.
-    async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, ProviderError>;
+    async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, Self::Error>;
 
     /// Get the provider name for logging/debugging.
     fn provider_name(&self) -> &str;

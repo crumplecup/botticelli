@@ -6,7 +6,6 @@
 use crate::narrative::execution::NarrativeExecution;
 use async_trait::async_trait;
 use botticelli_error::BotticelliResult;
-use botticelli_storage::{MediaMetadata, MediaReference};
 use serde::{Deserialize, Serialize};
 
 /// Repository for storing and retrieving narrative executions.
@@ -17,6 +16,11 @@ use serde::{Deserialize, Serialize};
 /// All methods are async to support async database drivers and network I/O.
 #[async_trait]
 pub trait NarrativeRepository: Send + Sync {
+    /// Media metadata type for this repository.
+    type MediaMetadata: Send + Sync;
+    /// Media reference type for this repository.
+    type MediaReference: Send + Sync;
+
     /// Save a complete narrative execution and return its unique ID.
     ///
     /// This should atomically persist the execution metadata, all act executions,
@@ -56,11 +60,11 @@ pub trait NarrativeRepository: Send + Sync {
     async fn store_media(
         &self,
         data: &[u8],
-        metadata: &MediaMetadata,
-    ) -> BotticelliResult<MediaReference>;
+        metadata: &Self::MediaMetadata,
+    ) -> BotticelliResult<Self::MediaReference>;
 
     /// Retrieve media by reference.
-    async fn load_media(&self, reference: &MediaReference) -> BotticelliResult<Vec<u8>>;
+    async fn load_media(&self, reference: &Self::MediaReference) -> BotticelliResult<Vec<u8>>;
 
     /// Get media reference by content hash for deduplication.
     ///
@@ -68,7 +72,7 @@ pub trait NarrativeRepository: Send + Sync {
     async fn get_media_by_hash(
         &self,
         content_hash: &str,
-    ) -> BotticelliResult<Option<MediaReference>>;
+    ) -> BotticelliResult<Option<Self::MediaReference>>;
 }
 
 /// Filter criteria for querying executions.

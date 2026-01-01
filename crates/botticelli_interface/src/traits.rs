@@ -13,6 +13,9 @@ use std::pin::Pin;
 /// Additional capabilities are exposed through optional traits.
 #[async_trait]
 pub trait BotticelliDriver: Send + Sync {
+    /// Rate limit configuration type.
+    type RateLimitConfig: Send + Sync;
+
     /// Generate model output given a multimodal request.
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse>;
 
@@ -25,7 +28,7 @@ pub trait BotticelliDriver: Send + Sync {
     /// Rate limits for this driver.
     ///
     /// Returns the rate limit configuration for carousel budget tracking.
-    fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig;
+    fn rate_limits(&self) -> &Self::RateLimitConfig;
 
     /// Query provider capabilities.
     ///
@@ -460,6 +463,8 @@ pub trait ContentRepository: Send + Sync {
 
 #[async_trait]
 impl<T: BotticelliDriver + ?Sized> BotticelliDriver for std::sync::Arc<T> {
+    type RateLimitConfig = T::RateLimitConfig;
+
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
         (**self).generate(req).await
     }
@@ -472,7 +477,7 @@ impl<T: BotticelliDriver + ?Sized> BotticelliDriver for std::sync::Arc<T> {
         (**self).model_name()
     }
 
-    fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig {
+    fn rate_limits(&self) -> &Self::RateLimitConfig {
         (**self).rate_limits()
     }
 }
