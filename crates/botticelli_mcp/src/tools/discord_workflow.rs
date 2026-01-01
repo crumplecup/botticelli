@@ -8,7 +8,39 @@ use tracing::{debug, error, info, instrument};
 
 /// Tool for end-to-end Discord content workflows.
 ///
-/// Orchestrates narrative execution and Discord posting in a single operation.
+/// **DEPRECATED**: Use LLM orchestration instead.
+///
+/// Modern MCP clients (like Claude) can orchestrate tool sequences directly.
+/// Instead of using this workflow tool, have the LLM:
+/// 1. Call `execute_narrative` with the narrative path and variables
+/// 2. Extract content from the result
+/// 3. Call `discord_post_message` with the channel_id and content
+///
+/// This approach is more flexible (LLMs can adapt the workflow, handle errors,
+/// add intermediate steps) and doesn't require maintaining workflow tools.
+///
+/// # Migration Example
+///
+/// **Old (workflow tool):**
+/// ```ignore
+/// discord_content_workflow({
+///     "narrative_path": "story.toml",
+///     "channel_id": "123456",
+///     "variables": {}
+/// })
+/// ```
+///
+/// **New (LLM orchestration):**
+/// ```ignore
+/// // LLM calls these tools in sequence:
+/// 1. result = execute_narrative({"narrative_path": "story.toml", "variables": {}})
+/// 2. content = extract_from(result.output)
+/// 3. discord_post_message({"channel_id": "123456", "content": content})
+/// ```
+#[deprecated(
+    since = "0.2.0",
+    note = "Use LLM orchestration: call execute_narrative then discord_post_message directly"
+)]
 #[derive(Clone)]
 pub struct DiscordContentWorkflowTool {
     registry: ToolRegistry,

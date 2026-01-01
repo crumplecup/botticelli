@@ -15,8 +15,19 @@ use tracing::{debug, instrument};
 
 /// Execute Discord bot command tool.
 ///
-/// This tool provides access to Discord bot commands, allowing LLMs to query
-/// Discord servers, channels, and messages through the bot command system.
+/// **DEPRECATED**: Use direct Discord API tools instead:
+/// - `discord_get_guild_info` - Get server statistics (replaces server.get_stats)
+/// - `discord_get_channels` - List channels (replaces channels.list)
+/// - `discord_get_messages` - Fetch message history (replaces messages.list)
+/// - `discord_post_message` - Post messages (replaces messages.send)
+///
+/// The BotCommandRegistry abstraction is deprecated in favor of direct API tools.
+/// For advanced features (roles, permissions, Serenity integration), use
+/// `botticelli_social` crate directly instead of going through MCP.
+#[deprecated(
+    since = "0.2.0",
+    note = "Use direct Discord API tools (discord_get_guild_info, discord_get_channels, etc.) instead"
+)]
 #[derive(Clone)]
 pub struct DiscordBotCommandTool {
     registry: Arc<BotCommandRegistryImpl>,
@@ -105,8 +116,15 @@ impl McpTool for DiscordBotCommandTool {
 
 /// Post to Discord tool.
 ///
-/// This tool posts messages to Discord channels, enabling LLMs to publish
-/// content generated through narratives or other means.
+/// **DEPRECATED**: Use `discord_post_message` tool instead.
+///
+/// This tool is redundant with the direct `discord_post_message` API tool,
+/// which provides the same functionality with better type safety and
+/// performance (no registry overhead).
+#[deprecated(
+    since = "0.2.0",
+    note = "Use discord_post_message tool instead - direct API access without registry overhead"
+)]
 #[derive(Clone)]
 pub struct DiscordPostTool {
     registry: Arc<BotCommandRegistryImpl>,
