@@ -13,7 +13,8 @@ fn builder_works() {
     let budget = BudgetConfig::builder()
         .rpm_multiplier(0.8)
         .rpd_multiplier(0.5)
-        .build();
+        .build()
+        .expect("Valid budget");
 
     assert_eq!(*budget.rpm_multiplier(), 0.8);
     assert_eq!(*budget.tpm_multiplier(), 1.0); // Default
@@ -22,13 +23,13 @@ fn builder_works() {
 
 #[test]
 fn validate_rejects_invalid_multipliers() {
-    let budget = BudgetConfig::builder().rpm_multiplier(0.0).build();
+    let budget = BudgetConfig::builder().rpm_multiplier(0.0).build().expect("Valid budget");
     assert!(budget.validate().is_err());
 
-    let budget = BudgetConfig::builder().rpm_multiplier(1.5).build();
+    let budget = BudgetConfig::builder().rpm_multiplier(1.5).build().expect("Valid budget");
     assert!(budget.validate().is_err());
 
-    let budget = BudgetConfig::builder().rpm_multiplier(-0.1).build();
+    let budget = BudgetConfig::builder().rpm_multiplier(-0.1).build().expect("Valid budget");
     assert!(budget.validate().is_err());
 }
 
@@ -38,7 +39,8 @@ fn validate_accepts_valid_multipliers() {
         .rpm_multiplier(0.8)
         .tpm_multiplier(0.5)
         .rpd_multiplier(1.0)
-        .build();
+        .build()
+        .expect("Valid budget");
 
     assert!(budget.validate().is_ok());
 }
@@ -49,7 +51,8 @@ fn apply_methods_scale_correctly() {
         .rpm_multiplier(0.8)
         .tpm_multiplier(0.5)
         .rpd_multiplier(0.2)
-        .build();
+        .build()
+        .expect("Valid budget");
 
     assert_eq!(budget.apply_rpm(10), 8);
     assert_eq!(budget.apply_tpm(1000), 500);
@@ -61,12 +64,14 @@ fn merge_takes_minimum() {
     let budget1 = BudgetConfig::builder()
         .rpm_multiplier(0.8)
         .tpm_multiplier(0.9)
-        .build();
+        .build()
+        .expect("Valid budget");
 
     let budget2 = BudgetConfig::builder()
         .rpm_multiplier(0.5)
         .rpd_multiplier(0.3)
-        .build();
+        .build()
+        .expect("Valid budget");
 
     let merged = budget1.merge(&budget2);
 

@@ -22,19 +22,31 @@ use serde::{Deserialize, Serialize};
 /// let full = BudgetConfig::default();
 /// assert_eq!(*full.rpm_multiplier(), 1.0);
 /// ```
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_getters::Getters)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    derive_getters::Getters,
+    derive_builder::Builder,
+)]
 #[serde(deny_unknown_fields)]
+#[builder(pattern = "owned", setter(into, strip_option))]
 pub struct BudgetConfig {
     /// Multiplier for requests per minute (0.0-1.0, default 1.0).
     #[serde(default = "default_multiplier")]
+    #[builder(default = "1.0")]
     rpm_multiplier: f64,
 
     /// Multiplier for tokens per minute (0.0-1.0, default 1.0).
     #[serde(default = "default_multiplier")]
+    #[builder(default = "1.0")]
     tpm_multiplier: f64,
 
     /// Multiplier for requests per day (0.0-1.0, default 1.0).
     #[serde(default = "default_multiplier")]
+    #[builder(default = "1.0")]
     rpd_multiplier: f64,
 }
 
@@ -108,43 +120,6 @@ impl BudgetConfig {
             rpm_multiplier: self.rpm_multiplier.min(other.rpm_multiplier),
             tpm_multiplier: self.tpm_multiplier.min(other.tpm_multiplier),
             rpd_multiplier: self.rpd_multiplier.min(other.rpd_multiplier),
-        }
-    }
-}
-
-/// Builder for `BudgetConfig`.
-#[derive(Debug, Default)]
-pub struct BudgetConfigBuilder {
-    rpm_multiplier: Option<f64>,
-    tpm_multiplier: Option<f64>,
-    rpd_multiplier: Option<f64>,
-}
-
-impl BudgetConfigBuilder {
-    /// Sets the RPM multiplier.
-    pub fn rpm_multiplier(mut self, value: f64) -> Self {
-        self.rpm_multiplier = Some(value);
-        self
-    }
-
-    /// Sets the TPM multiplier.
-    pub fn tpm_multiplier(mut self, value: f64) -> Self {
-        self.tpm_multiplier = Some(value);
-        self
-    }
-
-    /// Sets the RPD multiplier.
-    pub fn rpd_multiplier(mut self, value: f64) -> Self {
-        self.rpd_multiplier = Some(value);
-        self
-    }
-
-    /// Builds the `BudgetConfig`.
-    pub fn build(self) -> BudgetConfig {
-        BudgetConfig {
-            rpm_multiplier: self.rpm_multiplier.unwrap_or(1.0),
-            tpm_multiplier: self.tpm_multiplier.unwrap_or(1.0),
-            rpd_multiplier: self.rpd_multiplier.unwrap_or(1.0),
         }
     }
 }

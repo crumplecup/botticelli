@@ -13,7 +13,7 @@ categories.workspace = true
 default = []
 metrics = []
 otel-otlp = []
-models = ["dep:botticelli_error", "dep:futures"]
+models = ["dep:futures"]
 anthropic = ["models", "dep:reqwest"]
 
 [dependencies]
@@ -21,6 +21,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 derive_more = { workspace = true, features = ["display", "from", "error"] }
 derive-getters = { workspace = true }
+derive-new = { workspace = true }
 derive_setters = { workspace = true }
 derive_builder = { workspace = true }
 async-trait = { workspace = true }
@@ -31,7 +32,7 @@ opentelemetry-otlp = { version = "0.31", features = ["http-proto", "reqwest-clie
 tracing = { workspace = true }
 tracing-opentelemetry = "0.32"
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
-botticelli_error = { workspace = true, features = ["models"], optional = true }
+botticelli_error = { workspace = true }
 futures = { version = "0.3", optional = true }
 reqwest = { workspace = true, features = ["json"], optional = true }
 tiktoken-rs = "0.9.1"

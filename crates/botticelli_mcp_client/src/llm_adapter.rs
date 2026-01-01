@@ -101,7 +101,7 @@ pub struct GenerationResponse {
     /// Generated message
     message: Message,
     /// Usage statistics
-    usage: TokenUsage,
+    usage: botticelli_core::TokenUsageData,
     /// Finish reason
     finish_reason: FinishReason,
 }
@@ -109,34 +109,15 @@ pub struct GenerationResponse {
 impl GenerationResponse {
     /// Creates a new generation response.
     #[must_use]
-    pub fn new(message: Message, usage: TokenUsage, finish_reason: FinishReason) -> Self {
+    pub fn new(
+        message: Message,
+        usage: botticelli_core::TokenUsageData,
+        finish_reason: FinishReason,
+    ) -> Self {
         Self {
             message,
             usage,
             finish_reason,
-        }
-    }
-}
-
-/// Token usage statistics
-#[derive(Debug, Clone, Default, Getters)]
-pub struct TokenUsage {
-    /// Tokens in the prompt
-    prompt_tokens: u32,
-    /// Tokens in the completion
-    completion_tokens: u32,
-    /// Total tokens used
-    total_tokens: u32,
-}
-
-impl TokenUsage {
-    /// Creates a new token usage record.
-    #[must_use]
-    pub fn new(prompt_tokens: u32, completion_tokens: u32, total_tokens: u32) -> Self {
-        Self {
-            prompt_tokens,
-            completion_tokens,
-            total_tokens,
         }
     }
 }

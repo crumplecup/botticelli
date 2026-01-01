@@ -1,7 +1,9 @@
 //! Test LlmProvider trait implementation for OpenAI-compatible clients.
 
 #[cfg(feature = "groq")]
-use botticelli_core::{GenerateRequest, Input, LlmProvider, Message, Role};
+use botticelli_core::{GenerateRequest, Input, Message, Role};
+#[cfg(feature = "groq")]
+use botticelli_interface::LlmProvider;
 #[cfg(feature = "groq")]
 use botticelli_models::OpenAICompatibleClient;
 

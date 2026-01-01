@@ -6,6 +6,7 @@
 mod bot_server;
 mod chat_host;
 mod narrative;
+mod provider;
 mod registry;
 mod registry_traits;
 mod table_query_view;
@@ -19,6 +20,7 @@ pub use narrative::{
     ActExecution, ActExecutionBuilder, ExecutionFilter, ExecutionStatus, ExecutionSummary,
     NarrativeExecution, NarrativeRepository,
 };
+pub use provider::{LlmProvider, ProviderError, ProviderErrorKind};
 pub use registry::RegistryOperations;
 pub use registry_traits::{
     DatabaseRegistryOperations, ElicitationRegistryOperations, NarrativeRegistryOperations,

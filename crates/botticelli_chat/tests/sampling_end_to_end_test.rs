@@ -2,9 +2,9 @@
 
 use botticelli_chat::ChatLlmSampler;
 use botticelli_core::{
-    GenerateRequest, GenerateResponse, GenerateResponseBuilder, LlmProvider, Output, ProviderError,
-    StopReason, ToolCall,
+    GenerateRequest, GenerateResponse, GenerateResponseBuilder, Output, StopReason, ToolCall,
 };
+use botticelli_interface::{LlmProvider, ProviderError};
 use botticelli_mcp::{
     ConversationSession, ConversationTurn, LlmSampler, SamplingCoordinator, ToolRegistry,
 };
@@ -262,9 +262,9 @@ impl LlmProvider for ErrorProvider {
         &self,
         _request: &GenerateRequest,
     ) -> Result<GenerateResponse, ProviderError> {
-        Err(botticelli_core::ProviderError::new(
+        Err(ProviderError::new(
             "error-provider",
-            botticelli_core::ProviderErrorKind::ApiError("Simulated API error".to_string()),
+            ProviderErrorKind::ApiError("Simulated API error".to_string()),
         ))
     }
 

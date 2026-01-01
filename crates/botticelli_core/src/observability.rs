@@ -1,3 +1,4 @@
+use botticelli_error::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};
 use opentelemetry::{KeyValue, global, trace::TracerProvider};
 use opentelemetry_sdk::{Resource, metrics::SdkMeterProvider, trace::SdkTracerProvider};
 use opentelemetry_stdout::SpanExporter;
@@ -43,69 +44,53 @@ impl ExporterBackend {
 }
 
 /// Configuration for OpenTelemetry observability.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_builder::Builder)]
+#[builder(pattern = "owned", setter(into, strip_option))]
 pub struct ObservabilityConfig {
     /// Service name for telemetry attribution
-    pub service_name: String,
+    service_name: String,
     /// Service version
-    pub service_version: String,
+    #[builder(default = "env!(\"CARGO_PKG_VERSION\").to_string()")]
+    service_version: String,
     /// Log level filter (e.g., "info", "debug")
-    pub log_level: String,
+    #[builder(default = "default_log_level()")]
+    log_level: String,
     /// Enable JSON-formatted logs for structured logging
-    pub json_logs: bool,
+    #[builder(default)]
+    json_logs: bool,
     /// Exporter backend for traces
-    pub exporter: ExporterBackend,
+    #[builder(default = "ExporterBackend::from_env()")]
+    exporter: ExporterBackend,
     /// Enable metrics collection and export
-    pub enable_metrics: bool,
+    #[builder(default = "true")]
+    enable_metrics: bool,
+}
+
+fn default_log_level() -> String {
+    env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string())
 }
 
 impl ObservabilityConfig {
     /// Create a new configuration with the given service name.
     ///
-    /// Defaults:
-    /// - Exporter: Read from `OTEL_EXPORTER` env (default: stdout)
-    /// - Log level: Read from `RUST_LOG` env (default: info)
+    /// This is a convenience constructor that uses sensible defaults:
+    /// - Version: from CARGO_PKG_VERSION
+    /// - Log level: from RUST_LOG env (default: "info")
     /// - JSON logs: false
+    /// - Exporter: from OTEL_EXPORTER env (default: stdout)
     /// - Metrics: enabled
+    ///
+    /// For more control, use `ObservabilityConfig::builder()`.
     pub fn new(service_name: impl Into<String>) -> Self {
-        Self {
-            service_name: service_name.into(),
-            service_version: env!("CARGO_PKG_VERSION").to_string(),
-            log_level: env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string()),
-            json_logs: false,
-            exporter: ExporterBackend::from_env(),
-            enable_metrics: true,
-        }
+        Self::builder()
+            .service_name(service_name)
+            .build()
+            .expect("Default observability config should always build")
     }
 
-    /// Set the service version.
-    pub fn with_version(mut self, version: impl Into<String>) -> Self {
-        self.service_version = version.into();
-        self
-    }
-
-    /// Set the log level.
-    pub fn with_log_level(mut self, level: impl Into<String>) -> Self {
-        self.log_level = level.into();
-        self
-    }
-
-    /// Enable JSON-formatted logs.
-    pub fn with_json_logs(mut self, enabled: bool) -> Self {
-        self.json_logs = enabled;
-        self
-    }
-
-    /// Set the exporter backend.
-    pub fn with_exporter(mut self, exporter: ExporterBackend) -> Self {
-        self.exporter = exporter;
-        self
-    }
-
-    /// Enable or disable metrics collection.
-    pub fn with_metrics(mut self, enabled: bool) -> Self {
-        self.enable_metrics = enabled;
-        self
+    /// Creates a builder for ObservabilityConfig.
+    pub fn builder() -> ObservabilityConfigBuilder {
+        ObservabilityConfigBuilder::default()
     }
 }
 
@@ -124,7 +109,11 @@ impl Default for ObservabilityConfig {
 /// - Metrics collection via configured exporter
 ///
 /// For more control, use `init_observability_with_config()`.
-pub fn init_observability() -> Result<(), Box<dyn std::error::Error>> {
+///
+/// # Errors
+///
+/// Returns an error if initialization fails.
+pub fn init_observability() -> ObservabilityResult<()> {
     init_observability_with_config(ObservabilityConfig::default())
 }
 
@@ -140,20 +129,24 @@ pub fn init_observability() -> Result<(), Box<dyn std::error::Error>> {
 /// In v0.31+, metrics are exported via OTLP to an OpenTelemetry Collector,
 /// which then exposes them for Prometheus scraping. Direct Prometheus exporters
 /// have been deprecated.
+///
+/// # Errors
+///
+/// Returns an error if tracer provider, exporter, or filter initialization fails.
 pub fn init_observability_with_config(
     config: ObservabilityConfig,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> ObservabilityResult<()> {
     // Create resource with service metadata
     let resource = Resource::builder()
-        .with_service_name(config.service_name.clone())
+        .with_service_name(config.service_name().clone())
         .with_attributes(vec![KeyValue::new(
             "service.version",
-            config.service_version.clone(),
+            config.service_version().clone(),
         )])
         .build();
 
     // Create tracer provider based on exporter backend
-    let provider = match config.exporter {
+    let provider = match config.exporter() {
         ExporterBackend::Stdout => {
             let exporter = SpanExporter::default();
             SdkTracerProvider::builder()
@@ -170,7 +163,11 @@ pub fn init_observability_with_config(
                 .with_tonic()
                 .with_endpoint(endpoint.clone())
                 .build()
-                .map_err(|e| format!("Failed to build OTLP exporter: {}", e))?;
+                .map_err(|e| {
+                    ObservabilityError::new(ObservabilityErrorKind::ExporterBuildFailed(
+                        e.to_string(),
+                    ))
+                })?;
 
             SdkTracerProvider::builder()
                 .with_batch_exporter(exporter)
@@ -183,20 +180,23 @@ pub fn init_observability_with_config(
     global::set_tracer_provider(provider.clone());
 
     // Initialize metrics if enabled (before resource is moved)
-    if config.enable_metrics {
+    if *config.enable_metrics() {
         init_metrics(&resource, &config)?;
     }
 
     // Create OpenTelemetry tracing layer
-    let tracer = provider.tracer(config.service_name.clone());
+    let tracer = provider.tracer(config.service_name().clone());
     let otel_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
     // Setup environment filter
-    let env_filter =
-        EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new(&config.log_level))?;
+    let env_filter = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new(config.log_level()))
+        .map_err(|e| {
+            ObservabilityError::new(ObservabilityErrorKind::EnvFilterError(e.to_string()))
+        })?;
 
     // Create fmt layer based on configuration
-    let fmt_layer = if config.json_logs {
+    let fmt_layer = if *config.json_logs() {
         tracing_subscriber::fmt::layer()
             .json()
             .with_target(true)
@@ -223,17 +223,14 @@ pub fn init_observability_with_config(
 ///
 /// Note: In OpenTelemetry v0.31+, direct Prometheus exporters are deprecated.
 /// Use OTLP exporter → OpenTelemetry Collector → Prometheus scraping instead.
-fn init_metrics(
-    resource: &Resource,
-    config: &ObservabilityConfig,
-) -> Result<(), Box<dyn std::error::Error>> {
+fn init_metrics(resource: &Resource, config: &ObservabilityConfig) -> ObservabilityResult<()> {
     use tracing::{debug, info};
 
     info!("Initializing metrics provider");
-    debug!(exporter = ?config.exporter, "Metrics exporter configuration");
+    debug!(exporter = ?config.exporter(), "Metrics exporter configuration");
 
     // Use the configured exporter backend
-    match &config.exporter {
+    match config.exporter() {
         ExporterBackend::Stdout => {
             info!("Using stdout metrics exporter (development mode)");
             // Stdout exporter for metrics (development)
@@ -279,7 +276,9 @@ fn init_metrics(
                 .build()
                 .map_err(|e| {
                     tracing::error!(error = %e, "Failed to build OTLP metric exporter");
-                    format!("Failed to build OTLP metric exporter: {}", e)
+                    ObservabilityError::new(ObservabilityErrorKind::ExporterBuildFailed(
+                        e.to_string(),
+                    ))
                 })?;
             debug!("OTLP metric exporter built successfully");
 

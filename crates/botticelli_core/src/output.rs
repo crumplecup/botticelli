@@ -79,6 +79,7 @@ pub enum Output {
     Deserialize,
     derive_getters::Getters,
     derive_builder::Builder,
+    derive_new::new,
 )]
 pub struct ToolCall {
     /// Unique identifier for this tool call
@@ -87,17 +88,6 @@ pub struct ToolCall {
     name: String,
     /// Arguments to pass to the tool (as JSON)
     arguments: serde_json::Value,
-}
-
-impl ToolCall {
-    /// Creates a new tool call.
-    pub fn new(id: String, name: String, arguments: serde_json::Value) -> Self {
-        Self {
-            id,
-            name,
-            arguments,
-        }
-    }
 }
 
 /// Reason why generation stopped.

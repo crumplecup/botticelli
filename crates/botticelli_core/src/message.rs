@@ -23,6 +23,7 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     derive_getters::Getters,
     derive_builder::Builder,
+    derive_new::new,
 )]
 pub struct Message {
     /// The role of the message sender
@@ -32,11 +33,6 @@ pub struct Message {
 }
 
 impl Message {
-    /// Creates a new message with the given role and content.
-    pub fn new(role: Role, content: Vec<Input>) -> Self {
-        Self { role, content }
-    }
-
     /// Returns a builder for constructing a Message.
     pub fn builder() -> MessageBuilder {
         MessageBuilder::default()

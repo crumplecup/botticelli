@@ -40,6 +40,7 @@ use serde_json::Value;
     Deserialize,
     derive_getters::Getters,
     derive_setters::Setters,
+    derive_new::new,
 )]
 #[setters(prefix = "with_")]
 pub struct ToolDefinition {
@@ -49,39 +50,4 @@ pub struct ToolDefinition {
     description: String,
     /// JSON Schema for tool input parameters
     input_schema: Value,
-}
-
-impl ToolDefinition {
-    /// Create a new tool definition.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - Unique tool identifier
-    /// * `description` - Human-readable description of what the tool does
-    /// * `input_schema` - JSON Schema defining the tool's input parameters
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use botticelli_core::ToolDefinition;
-    /// use serde_json::json;
-    ///
-    /// let tool = ToolDefinition::new(
-    ///     "echo".to_string(),
-    ///     "Echoes back the input".to_string(),
-    ///     json!({
-    ///         "type": "object",
-    ///         "properties": {
-    ///             "message": { "type": "string" }
-    ///         }
-    ///     }),
-    /// );
-    /// ```
-    pub fn new(name: String, description: String, input_schema: Value) -> Self {
-        Self {
-            name,
-            description,
-            input_schema,
-        }
-    }
 }

@@ -3,8 +3,8 @@
 //! This module defines the [`LlmProvider`] trait that all provider clients
 //! (Anthropic, OpenAI, Gemini, etc.) implement for unified access.
 
-use crate::{GenerateRequest, GenerateResponse};
 use async_trait::async_trait;
+use botticelli_core::{GenerateRequest, GenerateResponse};
 
 /// Unified interface for LLM providers.
 ///

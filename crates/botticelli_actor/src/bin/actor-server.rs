@@ -70,9 +70,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize observability (tracing + metrics + optional OTLP export)
     #[cfg(feature = "observability")]
     {
-        let config = botticelli_core::ObservabilityConfig::new("botticelli-actor-server")
-            .with_version(env!("CARGO_PKG_VERSION"))
-            .with_metrics(false); // Disable metrics for now (traces only)
+        let config = botticelli_core::ObservabilityConfig::builder()
+            .service_name("botticelli-actor-server")
+            .service_version(env!("CARGO_PKG_VERSION"))
+            .enable_metrics(false) // Disable metrics for now (traces only)
+            .build()
+            .expect("Valid observability config");
         botticelli_core::init_observability_with_config(config)?;
         info!(
             "Observability initialized (OTEL_EXPORTER={:?})",

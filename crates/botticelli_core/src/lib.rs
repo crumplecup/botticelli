@@ -11,7 +11,6 @@ mod media;
 mod message;
 mod observability;
 mod output;
-mod provider;
 mod request;
 mod role;
 mod token_counting;
@@ -28,13 +27,12 @@ pub use observability::{
     shutdown_observability,
 };
 pub use output::{Output, StopReason, ToolCall, ToolCallBuilder};
-pub use provider::{LlmProvider, ProviderError, ProviderErrorKind};
 pub use request::{
-    GenerateRequest, GenerateRequestBuilder, GenerateResponse, GenerateResponseBuilder,
-    GenerateResponseBuilderError,
+    GenerateRequest, GenerateRequestBuilder, GenerateRequestBuilderError, GenerateResponse,
+    GenerateResponseBuilder, GenerateResponseBuilderError,
 };
 pub use role::Role;
-pub use token_counting::{TokenUsage, get_tokenizer};
+pub use token_counting::get_tokenizer;
 pub use token_usage::{TokenUsageData, TokenUsageDataBuilder};
 pub use tool_definition::ToolDefinition;
 pub use tool_result::ToolResult;

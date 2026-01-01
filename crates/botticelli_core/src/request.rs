@@ -11,7 +11,10 @@ use serde::{Deserialize, Serialize};
 /// use botticelli_core::{GenerateRequest, Message, Role, Input};
 ///
 /// let message = Message::new(Role::User, vec![Input::Text("Hello!".to_string())]);
-/// let request = GenerateRequest::new(vec![message]);
+/// let request = GenerateRequest::builder()
+///     .messages(vec![message])
+///     .build()
+///     .expect("Valid request");
 ///
 /// assert_eq!(request.messages().len(), 1);
 /// ```
@@ -24,78 +27,28 @@ use serde::{Deserialize, Serialize};
     Default,
     derive_getters::Getters,
     derive_setters::Setters,
+    derive_builder::Builder,
 )]
 #[setters(prefix = "with_")]
+#[builder(pattern = "owned", setter(into, strip_option))]
 pub struct GenerateRequest {
     /// The conversation messages to send
     messages: Vec<Message>,
     /// Maximum number of tokens to generate
+    #[builder(default, setter(strip_option))]
     max_tokens: Option<u32>,
     /// Sampling temperature (0.0 to 1.0)
+    #[builder(default, setter(strip_option))]
     temperature: Option<f32>,
     /// Model identifier to use
+    #[builder(default, setter(strip_option))]
     model: Option<String>,
 }
 
 impl GenerateRequest {
-    /// Creates a new GenerateRequest with the given messages.
-    pub fn new(messages: Vec<Message>) -> Self {
-        Self {
-            messages,
-            max_tokens: None,
-            temperature: None,
-            model: None,
-        }
-    }
-
-    /// Creates a new builder for GenerateRequest.
+    /// Creates a builder for GenerateRequest.
     pub fn builder() -> GenerateRequestBuilder {
         GenerateRequestBuilder::default()
-    }
-}
-
-/// Builder for GenerateRequest.
-#[derive(Debug, Clone, Default)]
-pub struct GenerateRequestBuilder {
-    messages: Option<Vec<Message>>,
-    max_tokens: Option<u32>,
-    temperature: Option<f32>,
-    model: Option<String>,
-}
-
-impl GenerateRequestBuilder {
-    /// Sets the messages.
-    pub fn messages(mut self, messages: Vec<Message>) -> Self {
-        self.messages = Some(messages);
-        self
-    }
-
-    /// Sets the max_tokens.
-    pub fn max_tokens(mut self, max_tokens: Option<u32>) -> Self {
-        self.max_tokens = max_tokens;
-        self
-    }
-
-    /// Sets the temperature.
-    pub fn temperature(mut self, temperature: Option<f32>) -> Self {
-        self.temperature = temperature;
-        self
-    }
-
-    /// Sets the model.
-    pub fn model(mut self, model: Option<String>) -> Self {
-        self.model = model;
-        self
-    }
-
-    /// Builds the GenerateRequest.
-    pub fn build(self) -> Result<GenerateRequest, String> {
-        Ok(GenerateRequest {
-            messages: self.messages.ok_or("messages is required")?,
-            max_tokens: self.max_tokens,
-            temperature: self.temperature,
-            model: self.model,
-        })
     }
 }
 
@@ -109,7 +62,8 @@ impl GenerateRequestBuilder {
 /// let response = GenerateResponse::builder()
 ///     .outputs(vec![Output::Text("Hello! How can I help?".to_string())])
 ///     .stop_reason(StopReason::EndTurn)
-///     .build();
+///     .build()
+///     .expect("Valid response");
 ///
 /// assert_eq!(response.outputs().len(), 1);
 /// ```

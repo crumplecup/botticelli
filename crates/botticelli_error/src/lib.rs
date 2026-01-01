@@ -42,6 +42,7 @@ mod mcp;
 mod models;
 mod narrative;
 mod not_implemented;
+mod observability;
 mod server;
 mod storage;
 #[cfg(feature = "tui")]
@@ -71,6 +72,7 @@ pub use models::OllamaErrorKind;
 pub use models::{ModelsError, ModelsErrorKind, ModelsResult};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
 pub use not_implemented::NotImplementedError;
+pub use observability::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};
 pub use server::{ServerError, ServerErrorKind};
 pub use storage::{StorageError, StorageErrorKind};
 #[cfg(feature = "tui")]

@@ -1,6 +1,6 @@
 use crate::llm_adapter::{
     FinishReason, GenerationConfig, GenerationResponse, LlmAdapter, Message, MessageRole,
-    TokenUsage, ToolSchema,
+    ToolSchema,
 };
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
 use async_trait::async_trait;
@@ -161,13 +161,13 @@ fn convert_response_from_core(
 
     // Extract usage if available
     let usage = if let Some(usage_data) = response.usage() {
-        TokenUsage::new(
-            *usage_data.input_tokens() as u32,
-            *usage_data.output_tokens() as u32,
-            *usage_data.total_tokens() as u32,
+        botticelli_core::TokenUsageData::new(
+            *usage_data.input_tokens(),
+            *usage_data.output_tokens(),
+            *usage_data.total_tokens(),
         )
     } else {
-        TokenUsage::default()
+        botticelli_core::TokenUsageData::default()
     };
 
     Ok(GenerationResponse::new(message, usage, finish_reason))

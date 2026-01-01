@@ -6,7 +6,7 @@ use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use botticelli_core::{GenerateRequest, GenerateResponse, Output};
+use botticelli_core::{GenerateRequest, GenerateResponse, Message, Output};
 
 use super::schema::model_responses;
 
@@ -103,12 +103,21 @@ pub struct SerializableModelResponse {
 impl ModelResponse {
     /// Convert to a serializable format.
     pub fn to_serializable(&self) -> Result<SerializableModelResponse, serde_json::Error> {
-        let request = GenerateRequest::builder()
-            .messages(serde_json::from_value(self.request_messages.clone())?)
-            .temperature(self.request_temperature)
-            .max_tokens(self.request_max_tokens.map(|t| t as u32))
-            .model(self.request_model.clone())
-            .build()
+        let messages: Vec<Message> = serde_json::from_value(self.request_messages.clone())?;
+        
+        let mut request_builder = GenerateRequest::builder().messages(messages);
+        
+        if let Some(temp) = self.request_temperature {
+            request_builder = request_builder.temperature(temp);
+        }
+        if let Some(tokens) = self.request_max_tokens {
+            request_builder = request_builder.max_tokens(tokens as u32);
+        }
+        if let Some(ref model) = self.request_model {
+            request_builder = request_builder.model(model.clone());
+        }
+        
+        let request = request_builder.build()
             .map_err(|e| serde_json::Error::custom(e.to_string()))?;
 
         let response = if self.error_message.is_none() {

@@ -1,7 +1,9 @@
 //! Test LlmProvider trait implementation for Anthropic.
 
 #[cfg(feature = "anthropic")]
-use botticelli_core::{GenerateRequest, Input, LlmProvider, Message, Role};
+use botticelli_core::{GenerateRequest, Input, Message, Role};
+#[cfg(feature = "anthropic")]
+use botticelli_interface::LlmProvider;
 #[cfg(feature = "anthropic")]
 use botticelli_models::AnthropicClient;
 

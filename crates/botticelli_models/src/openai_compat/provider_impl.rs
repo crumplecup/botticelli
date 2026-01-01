@@ -2,9 +2,8 @@
 
 use crate::openai_compat::OpenAICompatibleClient;
 use async_trait::async_trait;
-use botticelli_core::{
-    GenerateRequest, GenerateResponse, LlmProvider, ProviderError, ProviderErrorKind,
-};
+use botticelli_core::{GenerateRequest, GenerateResponse};
+use botticelli_interface::{LlmProvider, ProviderError, ProviderErrorKind};
 use tracing::{debug, error, instrument};
 
 #[async_trait]

@@ -4,9 +4,9 @@
 
 use botticelli_chat::ChatLlmSampler;
 use botticelli_core::{
-    GenerateRequest, GenerateResponse, GenerateResponseBuilder, LlmProvider, Output, ProviderError,
-    ToolCall, ToolDefinition,
+    GenerateRequest, GenerateResponse, GenerateResponseBuilder, Output, ToolCall, ToolDefinition,
 };
+use botticelli_interface::{LlmProvider, ProviderError};
 use botticelli_mcp::{ConversationSession, ConversationTurn, LlmSampler, ToolRegistry};
 use std::sync::Arc;
 
