@@ -1,10 +1,15 @@
 //! Integration tests for ContentGenerationRepository trait implementation.
 
-use botticelli_database::{PostgresContentGenerationRepository, DatabaseResult};
+use botticelli_database::{
+    NewContentGenerationRow, PostgresContentGenerationRepository, UpdateContentGenerationRow,
+};
+use botticelli_error::{DatabaseError, DatabaseErrorKind};
+use botticelli_interface::ContentGenerationRepository;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
-use serde_json::json;
 use std::env;
+
+type DatabaseResult<T> = Result<T, DatabaseError>;
 
 fn get_database_url() -> String {
     env::var("DATABASE_URL").unwrap_or_else(|_| {
@@ -16,168 +21,299 @@ fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgCo
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     Pool::builder()
         .build(manager)
-        .map_err(|e| botticelli_error::DatabaseErrorKind::Connection(e.to_string()).into())
+        .map_err(|e| DatabaseError::new(DatabaseErrorKind::Connection(e.to_string())))
 }
 
-#[tokio::test]
+#[test]
 #[cfg(feature = "postgres")]
-async fn test_create_and_get_generation() {
+fn test_start_and_get_generation() -> DatabaseResult<()> {
     let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = DatabaseContentGenerationRepository::new(pool);
+    let pool = create_pool(&database_url)?;
+    let mut conn = pool.get().map_err(|e| {
+        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+            "Failed to get connection: {}",
+            e
+        )))
+    })?;
 
-    // Create content generation record
-    let table_name = "test_content_table";
-    let content_id = 1;
-    let prompt = "Generate test content";
-    let parameters = json!({
-        "model": "test-model",
-        "temperature": 0.7
-    });
+    let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
-    let generation_id = repo
-        .create_generation(table_name, content_id, prompt, &parameters)
-        .await
-        .expect("Failed to create generation");
+    // Create new generation record
+    let table_name = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    let new_gen = NewContentGenerationRow {
+        table_name: table_name.clone(),
+        narrative_file: "test.toml".to_string(),
+        narrative_name: "test_narrative".to_string(),
+        status: "running".to_string(),
+        created_by: Some("test_user".to_string()),
+    };
 
-    assert!(generation_id > 0, "Expected positive generation ID");
+    // Start generation
+    let row = repo.start_generation(new_gen)?;
+    assert_eq!(row.table_name(), &table_name);
+    assert_eq!(row.status(), "running");
 
-    // Get generation by ID
-    let generation = repo
-        .get_generation(generation_id)
-        .await
-        .expect("Failed to get generation")
-        .expect("Generation not found");
+    // Get generation by table name
+    let retrieved = repo.get_by_table_name(&table_name)?;
+    assert!(retrieved.is_some(), "Expected to find generation");
 
-    assert_eq!(generation.table_name(), table_name);
-    assert_eq!(generation.content_id(), content_id);
-    assert_eq!(generation.prompt(), prompt);
-    assert_eq!(generation.parameters(), &parameters);
+    let retrieved = retrieved.unwrap();
+    assert_eq!(retrieved.table_name(), &table_name);
+    assert_eq!(retrieved.narrative_name(), "test_narrative");
 
     // Cleanup
-    repo.delete_generation(generation_id).await.ok();
+    repo.delete_generation(&table_name)?;
+
+    Ok(())
 }
 
-#[tokio::test]
+#[test]
 #[cfg(feature = "postgres")]
-async fn test_list_generations_by_table() {
+fn test_complete_generation() -> DatabaseResult<()> {
     let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = PostgresContentGenerationRepository::new(pool);
+    let pool = create_pool(&database_url)?;
+    let mut conn = pool.get().map_err(|e| {
+        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+            "Failed to get connection: {}",
+            e
+        )))
+    })?;
+
+    let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
     let table_name = format!("test_table_{}", uuid::Uuid::new_v4().simple());
-    let prompt = "Test prompt";
-    let params = json!({});
+    let new_gen = NewContentGenerationRow {
+        table_name: table_name.clone(),
+        narrative_file: "test.toml".to_string(),
+        narrative_name: "test_narrative".to_string(),
+        status: "running".to_string(),
+        created_by: None,
+    };
 
-    // Create multiple generations for same table
-    let id1 = repo
-        .create_generation(&table_name, 1, prompt, &params)
-        .await
-        .expect("Failed to create generation 1");
-    
-    let id2 = repo
-        .create_generation(&table_name, 2, prompt, &params)
-        .await
-        .expect("Failed to create generation 2");
+    // Start generation
+    repo.start_generation(new_gen)?;
 
-    // List generations for table
-    let generations = repo
-        .list_generations_by_table(&table_name)
-        .await
-        .expect("Failed to list generations");
+    // Complete generation
+    let update = UpdateContentGenerationRow {
+        completed_at: Some(chrono::Utc::now()),
+        row_count: Some(100),
+        generation_duration_ms: Some(5000),
+        status: Some("success".to_string()),
+        error_message: None,
+    };
 
-    assert!(generations.len() >= 2, "Expected at least 2 generations");
-    
-    let found1 = generations.iter().any(|g| g.content_id() == 1);
-    let found2 = generations.iter().any(|g| g.content_id() == 2);
-    
-    assert!(found1, "Expected to find generation for content_id 1");
-    assert!(found2, "Expected to find generation for content_id 2");
+    let updated = repo.complete_generation(&table_name, update)?;
+    assert_eq!(updated.status(), "success");
+    assert_eq!(updated.row_count(), &Some(100));
+    assert_eq!(updated.generation_duration_ms(), &Some(5000));
 
     // Cleanup
-    repo.delete_generation(id1).await.ok();
-    repo.delete_generation(id2).await.ok();
+    repo.delete_generation(&table_name)?;
+
+    Ok(())
 }
 
-#[tokio::test]
+#[test]
 #[cfg(feature = "postgres")]
-async fn test_generation_with_complex_parameters() {
+fn test_list_generations() -> DatabaseResult<()> {
     let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = PostgresContentGenerationRepository::new(pool);
+    let pool = create_pool(&database_url)?;
+    let mut conn = pool.get().map_err(|e| {
+        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+            "Failed to get connection: {}",
+            e
+        )))
+    })?;
 
-    let table_name = "test_table";
-    let content_id = 1;
-    let prompt = "Complex test";
-    let parameters = json!({
-        "model": "gpt-4",
-        "temperature": 0.8,
-        "max_tokens": 1000,
-        "stop_sequences": ["END", "STOP"],
-        "nested": {
-            "value": 42,
-            "array": [1, 2, 3]
-        }
-    });
+    let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
-    let generation_id = repo
-        .create_generation(table_name, content_id, prompt, &parameters)
-        .await
-        .expect("Failed to create generation");
+    // Create multiple generations
+    let table1 = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    let table2 = format!("test_table_{}", uuid::Uuid::new_v4().simple());
 
-    // Retrieve and verify
-    let generation = repo
-        .get_generation(generation_id)
-        .await
-        .expect("Failed to get generation")
-        .expect("Generation not found");
+    let new_gen1 = NewContentGenerationRow {
+        table_name: table1.clone(),
+        narrative_file: "test1.toml".to_string(),
+        narrative_name: "test1".to_string(),
+        status: "running".to_string(),
+        created_by: None,
+    };
 
-    assert_eq!(generation.parameters(), &parameters);
-    assert_eq!(generation.parameters()["nested"]["array"][1], 2);
+    let new_gen2 = NewContentGenerationRow {
+        table_name: table2.clone(),
+        narrative_file: "test2.toml".to_string(),
+        narrative_name: "test2".to_string(),
+        status: "success".to_string(),
+        created_by: None,
+    };
+
+    repo.start_generation(new_gen1)?;
+    repo.start_generation(new_gen2)?;
+
+    // List all generations
+    let all = repo.list_generations(None, 100)?;
+    assert!(
+        all.len() >= 2,
+        "Expected at least 2 generations, got {}",
+        all.len()
+    );
+
+    // List only successful
+    let successful = repo.list_generations(Some("success".to_string()), 100)?;
+    assert!(
+        successful.iter().any(|g| g.table_name() == &table2),
+        "Expected to find successful generation"
+    );
 
     // Cleanup
-    repo.delete_generation(generation_id).await.ok();
+    repo.delete_generation(&table1).ok();
+    repo.delete_generation(&table2).ok();
+
+    Ok(())
 }
 
-#[tokio::test]
+#[test]
 #[cfg(feature = "postgres")]
-async fn test_delete_generation() {
+fn test_get_last_successful() -> DatabaseResult<()> {
     let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = PostgresContentGenerationRepository::new(pool);
+    let pool = create_pool(&database_url)?;
+    let mut conn = pool.get().map_err(|e| {
+        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+            "Failed to get connection: {}",
+            e
+        )))
+    })?;
 
-    let generation_id = repo
-        .create_generation("test_table", 1, "Test prompt", &json!({}))
-        .await
-        .expect("Failed to create generation");
+    let mut repo = PostgresContentGenerationRepository::new(&mut conn);
+
+    let table_name = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    let new_gen = NewContentGenerationRow {
+        table_name: table_name.clone(),
+        narrative_file: "test.toml".to_string(),
+        narrative_name: "test_narrative".to_string(),
+        status: "running".to_string(),
+        created_by: None,
+    };
+
+    // Start and complete a successful generation
+    repo.start_generation(new_gen)?;
+
+    let update = UpdateContentGenerationRow {
+        completed_at: Some(chrono::Utc::now()),
+        row_count: Some(50),
+        generation_duration_ms: Some(3000),
+        status: Some("success".to_string()),
+        error_message: None,
+    };
+
+    repo.complete_generation(&table_name, update)?;
+
+    // Get last successful
+    let last = repo.get_last_successful()?;
+    assert!(last.is_some(), "Expected to find last successful generation");
+
+    let last = last.unwrap();
+    assert_eq!(last.status(), "success");
+
+    // Cleanup
+    repo.delete_generation(&table_name)?;
+
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "postgres")]
+fn test_delete_generation() -> DatabaseResult<()> {
+    let database_url = get_database_url();
+    let pool = create_pool(&database_url)?;
+    let mut conn = pool.get().map_err(|e| {
+        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+            "Failed to get connection: {}",
+            e
+        )))
+    })?;
+
+    let mut repo = PostgresContentGenerationRepository::new(&mut conn);
+
+    let table_name = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    let new_gen = NewContentGenerationRow {
+        table_name: table_name.clone(),
+        narrative_file: "test.toml".to_string(),
+        narrative_name: "test_narrative".to_string(),
+        status: "running".to_string(),
+        created_by: None,
+    };
+
+    // Start generation
+    repo.start_generation(new_gen)?;
 
     // Delete generation
-    repo.delete_generation(generation_id)
-        .await
-        .expect("Failed to delete generation");
+    repo.delete_generation(&table_name)?;
 
     // Verify deletion
-    let result = repo.get_generation(generation_id).await;
-    
-    assert!(
-        result.is_ok() && result.unwrap().is_none(),
-        "Expected generation to be deleted"
-    );
+    let result = repo.get_by_table_name(&table_name)?;
+    assert!(result.is_none(), "Expected generation to be deleted");
+
+    Ok(())
 }
 
-#[tokio::test]
+#[test]
 #[cfg(feature = "postgres")]
-async fn test_list_empty_table_generations() {
+fn test_get_nonexistent_generation() -> DatabaseResult<()> {
     let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = PostgresContentGenerationRepository::new(pool);
+    let pool = create_pool(&database_url)?;
+    let mut conn = pool.get().map_err(|e| {
+        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+            "Failed to get connection: {}",
+            e
+        )))
+    })?;
+
+    let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
     let nonexistent_table = format!("nonexistent_{}", uuid::Uuid::new_v4().simple());
-    
-    let generations = repo
-        .list_generations_by_table(&nonexistent_table)
-        .await
-        .expect("Failed to list generations");
+    let result = repo.get_by_table_name(&nonexistent_table)?;
 
-    assert!(generations.is_empty(), "Expected empty list for nonexistent table");
+    assert!(
+        result.is_none(),
+        "Expected None for nonexistent generation"
+    );
+
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "postgres")]
+fn test_start_generation_idempotent() -> DatabaseResult<()> {
+    let database_url = get_database_url();
+    let pool = create_pool(&database_url)?;
+    let mut conn = pool.get().map_err(|e| {
+        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+            "Failed to get connection: {}",
+            e
+        )))
+    })?;
+
+    let mut repo = PostgresContentGenerationRepository::new(&mut conn);
+
+    let table_name = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    let new_gen = NewContentGenerationRow {
+        table_name: table_name.clone(),
+        narrative_file: "test.toml".to_string(),
+        narrative_name: "test_narrative".to_string(),
+        status: "running".to_string(),
+        created_by: None,
+    };
+
+    // Start generation twice - should return existing record
+    let first = repo.start_generation(new_gen.clone())?;
+    let second = repo.start_generation(new_gen)?;
+
+    assert_eq!(first.table_name(), second.table_name());
+    assert_eq!(first.id(), second.id());
+
+    // Cleanup
+    repo.delete_generation(&table_name)?;
+
+    Ok(())
 }

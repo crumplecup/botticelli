@@ -1,169 +1,228 @@
 //! Integration tests for NarrativeRepository trait implementation.
 
-use botticelli_database::{PostgresNarrativeRepository, DatabaseResult};
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::PgConnection;
-use std::env;
+use botticelli_core::{ActExecutionBuilder, ExecutionFilter, ExecutionStatus, Input, NarrativeExecution};
+use botticelli_database::{establish_connection, PostgresNarrativeRepository};
+use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_interface::NarrativeRepository;
+use botticelli_storage::FileSystemStorage;
+use std::sync::Arc;
 
-fn get_database_url() -> String {
-    env::var("DATABASE_URL").unwrap_or_else(|_| {
-        "postgres://botticelli:renaissance@localhost:5432/botticelli_test".to_string()
-    })
+fn create_test_storage() -> BotticelliResult<Arc<FileSystemStorage>> {
+    let temp_dir = std::env::temp_dir().join(format!("botticelli_test_{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&temp_dir).map_err(|e| {
+        BotticelliError::from(BackendError::new(format!("Failed to create temp dir: {}", e)))
+    })?;
+    Ok(Arc::new(FileSystemStorage::new(temp_dir)?))
 }
 
-fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgConnection>>> {
-    let manager = ConnectionManager::<PgConnection>::new(database_url);
-    Pool::builder()
-        .build(manager)
-        .map_err(|e| botticelli_error::DatabaseErrorKind::Connection(e.to_string()).into())
+fn create_test_execution(name: &str) -> NarrativeExecution {
+    let act = ActExecutionBuilder::default()
+        .act_name("test_act".to_string())
+        .sequence_number(0_usize)
+        .inputs(vec![Input::Text("test input".to_string())])
+        .response("test response".to_string())
+        .build()
+        .expect("Valid act");
+
+    NarrativeExecution::new(
+        name.to_string(),
+        vec![act],
+        None,
+        None,
+        None,
+    )
 }
 
 #[tokio::test]
 #[cfg(feature = "postgres")]
-async fn test_create_and_get_narrative() {
-    let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = DatabaseNarrativeRepository::new(pool);
+async fn test_save_and_load_execution() -> BotticelliResult<()> {
+    let conn = establish_connection()?;
+    let storage = create_test_storage()?;
+    let repo = PostgresNarrativeRepository::new(conn, storage);
 
-    // Create narrative
+    // Create test execution
     let name = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
-    let description = "Test narrative description";
-    
-    let narrative_id = repo
-        .create_narrative(&name, description)
-        .await
-        .expect("Failed to create narrative");
+    let execution = create_test_execution(&name);
 
-    assert!(narrative_id > 0, "Expected positive narrative ID");
+    // Save execution
+    let id = repo.save_execution(&execution).await?;
+    assert!(id > 0, "Expected positive execution ID");
 
-    // Get narrative by ID
-    let narrative = repo
-        .get_narrative(narrative_id)
-        .await
-        .expect("Failed to get narrative")
-        .expect("Narrative not found");
-
-    assert_eq!(narrative.name(), &name);
-    assert_eq!(narrative.description(), Some(description));
+    // Load execution
+    let loaded = repo.load_execution(id).await?;
+    assert_eq!(loaded.narrative_name(), &name);
+    assert_eq!(loaded.act_executions().len(), 1);
 
     // Cleanup
-    repo.delete_narrative(narrative_id)
-        .await
-        .expect("Failed to delete narrative");
+    repo.delete_execution(id).await?;
+
+    Ok(())
 }
 
 #[tokio::test]
 #[cfg(feature = "postgres")]
-async fn test_list_narratives() {
-    let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = PostgresNarrativeRepository::new(pool);
+async fn test_list_executions() -> BotticelliResult<()> {
+    let conn = establish_connection()?;
+    let storage = create_test_storage()?;
+    let repo = PostgresNarrativeRepository::new(conn, storage);
 
-    // Create multiple narratives
+    // Create multiple executions
     let name1 = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
     let name2 = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
-    
-    let id1 = repo
-        .create_narrative(&name1, "Description 1")
-        .await
-        .expect("Failed to create narrative 1");
-    
-    let id2 = repo
-        .create_narrative(&name2, "Description 2")
-        .await
-        .expect("Failed to create narrative 2");
 
-    // List narratives
-    let narratives = repo
-        .list_narratives()
-        .await
-        .expect("Failed to list narratives");
+    let exec1 = create_test_execution(&name1);
+    let exec2 = create_test_execution(&name2);
 
-    assert!(narratives.len() >= 2, "Expected at least 2 narratives");
-    
-    let found1 = narratives.iter().any(|n| n.name() == &name1);
-    let found2 = narratives.iter().any(|n| n.name() == &name2);
-    
-    assert!(found1, "Expected to find narrative 1");
-    assert!(found2, "Expected to find narrative 2");
+    let id1 = repo.save_execution(&exec1).await?;
+    let id2 = repo.save_execution(&exec2).await?;
+
+    // List all executions
+    let filter = ExecutionFilter::new().with_limit(100);
+
+    let summaries = repo.list_executions(&filter).await?;
+    assert!(summaries.len() >= 2, "Expected at least 2 executions");
+
+    // Verify our executions are in the list
+    let found1 = summaries.iter().any(|s| s.narrative_name() == &name1);
+    let found2 = summaries.iter().any(|s| s.narrative_name() == &name2);
+
+    assert!(found1, "Expected to find execution 1");
+    assert!(found2, "Expected to find execution 2");
 
     // Cleanup
-    repo.delete_narrative(id1).await.ok();
-    repo.delete_narrative(id2).await.ok();
+    repo.delete_execution(id1).await.ok();
+    repo.delete_execution(id2).await.ok();
+
+    Ok(())
 }
 
 #[tokio::test]
 #[cfg(feature = "postgres")]
-async fn test_update_narrative() {
-    let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = DatabaseNarrativeRepository::new(pool);
+async fn test_update_execution_status() -> BotticelliResult<()> {
+    let conn = establish_connection()?;
+    let storage = create_test_storage()?;
+    let repo = PostgresNarrativeRepository::new(conn, storage);
 
-    // Create narrative
     let name = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
-    let narrative_id = repo
-        .create_narrative(&name, "Original description")
-        .await
-        .expect("Failed to create narrative");
+    let execution = create_test_execution(&name);
 
-    // Update narrative
-    let new_description = "Updated description";
-    repo.update_narrative(narrative_id, None, Some(new_description))
-        .await
-        .expect("Failed to update narrative");
+    // Save execution
+    let id = repo.save_execution(&execution).await?;
 
-    // Verify update
-    let narrative = repo
-        .get_narrative(narrative_id)
-        .await
-        .expect("Failed to get narrative")
-        .expect("Narrative not found");
+    // Update status to failed
+    repo.update_status(id, ExecutionStatus::Failed).await?;
 
-    assert_eq!(narrative.description(), Some(new_description));
+    // Load and verify
+    let loaded = repo.load_execution(id).await?;
+    assert_eq!(loaded.narrative_name(), &name);
 
     // Cleanup
-    repo.delete_narrative(narrative_id).await.ok();
+    repo.delete_execution(id).await?;
+
+    Ok(())
 }
 
 #[tokio::test]
 #[cfg(feature = "postgres")]
-async fn test_delete_narrative() {
-    let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = PostgresNarrativeRepository::new(pool);
+async fn test_delete_execution() -> BotticelliResult<()> {
+    let conn = establish_connection()?;
+    let storage = create_test_storage()?;
+    let repo = PostgresNarrativeRepository::new(conn, storage);
 
-    // Create narrative
     let name = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
-    let narrative_id = repo
-        .create_narrative(&name, "Test description")
-        .await
-        .expect("Failed to create narrative");
+    let execution = create_test_execution(&name);
 
-    // Delete narrative
-    repo.delete_narrative(narrative_id)
-        .await
-        .expect("Failed to delete narrative");
+    // Save execution
+    let id = repo.save_execution(&execution).await?;
 
-    // Verify deletion
-    let result = repo.get_narrative(narrative_id).await;
-    
-    assert!(
-        result.is_ok() && result.unwrap().is_none(),
-        "Expected narrative to be deleted"
-    );
+    // Delete execution
+    repo.delete_execution(id).await?;
+
+    // Verify deletion - should fail to load
+    let result = repo.load_execution(id).await;
+    assert!(result.is_err(), "Expected error when loading deleted execution");
+
+    Ok(())
 }
 
 #[tokio::test]
 #[cfg(feature = "postgres")]
-async fn test_get_nonexistent_narrative() {
-    let database_url = get_database_url();
-    let pool = create_pool(&database_url).expect("Failed to create database pool");
-    let repo = PostgresNarrativeRepository::new(pool);
+async fn test_list_executions_with_filter() -> BotticelliResult<()> {
+    let conn = establish_connection()?;
+    let storage = create_test_storage()?;
+    let repo = PostgresNarrativeRepository::new(conn, storage);
 
-    let result = repo.get_narrative(999999).await;
-    
-    assert!(
-        result.is_ok() && result.unwrap().is_none(),
-        "Expected None for nonexistent narrative"
+    let name = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
+    let execution = create_test_execution(&name);
+
+    // Save and update status to completed
+    let id = repo.save_execution(&execution).await?;
+    repo.update_status(id, ExecutionStatus::Completed).await?;
+
+    // Filter by completed status
+    let filter = ExecutionFilter::new()
+        .with_status(ExecutionStatus::Completed)
+        .with_limit(100);
+
+    let summaries = repo.list_executions(&filter).await?;
+    let found = summaries.iter().any(|s| s.narrative_name() == &name);
+
+    assert!(found, "Expected to find completed execution");
+
+    // Cleanup
+    repo.delete_execution(id).await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+#[cfg(feature = "postgres")]
+async fn test_execution_with_multiple_acts() -> BotticelliResult<()> {
+    let conn = establish_connection()?;
+    let storage = create_test_storage()?;
+    let repo = PostgresNarrativeRepository::new(conn, storage);
+
+    let name = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
+
+    // Create execution with multiple acts
+    let act1 = ActExecutionBuilder::default()
+        .act_name("act1".to_string())
+        .sequence_number(0_usize)
+        .inputs(vec![Input::Text("input1".to_string())])
+        .response("response1".to_string())
+        .build()
+        .expect("Valid act");
+
+    let act2 = ActExecutionBuilder::default()
+        .act_name("act2".to_string())
+        .sequence_number(1_usize)
+        .inputs(vec![
+            Input::Text("input2a".to_string()),
+            Input::Text("input2b".to_string()),
+        ])
+        .response("response2".to_string())
+        .build()
+        .expect("Valid act");
+
+    let execution = NarrativeExecution::new(
+        name.clone(),
+        vec![act1, act2],
+        None,
+        None,
+        None,
     );
+
+    // Save and load
+    let id = repo.save_execution(&execution).await?;
+    let loaded = repo.load_execution(id).await?;
+
+    assert_eq!(loaded.act_executions().len(), 2);
+    assert_eq!(loaded.act_executions()[0].act_name(), "act1");
+    assert_eq!(loaded.act_executions()[1].act_name(), "act2");
+    assert_eq!(loaded.act_executions()[1].inputs().len(), 2);
+
+    // Cleanup
+    repo.delete_execution(id).await?;
+
+    Ok(())
 }
