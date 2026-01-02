@@ -1,10 +1,12 @@
 use botticelli_database::{DatabaseContentRepository, DatabaseResult};
-use botticelli_error::BotticelliResult;
+use botticelli_error::{BotticelliResult, DatabaseError};
 use botticelli_interface::ContentRepository;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
 use std::env;
 use tracing::info;
+
+
 
 /// Initialize tracing for tests.
 ///
@@ -29,13 +31,7 @@ fn get_database_url() -> BotticelliResult<String> {
 
 fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgConnection>>> {
     let manager = ConnectionManager::<PgConnection>::new(database_url);
-    Pool::builder()
-        .build(manager)
-        .map_err(|e| {
-            botticelli_error::DatabaseError::from(botticelli_error::DatabaseErrorKind::Connection(
-                e.to_string(),
-            ))
-        })
+    Pool::builder().build(manager).map_err(DatabaseError::from)
 }
 
 #[tokio::test]

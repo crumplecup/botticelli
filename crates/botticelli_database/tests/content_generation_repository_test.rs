@@ -12,6 +12,8 @@ use tracing::info;
 
 type DatabaseResult<T> = Result<T, DatabaseError>;
 
+
+
 /// Initialize tracing for tests.
 ///
 /// Uses try_init() to avoid panicking if already initialized.
@@ -34,9 +36,7 @@ fn get_database_url() -> String {
 
 fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgConnection>>> {
     let manager = ConnectionManager::<PgConnection>::new(database_url);
-    Pool::builder()
-        .build(manager)
-        .map_err(|e| DatabaseError::from(DatabaseErrorKind::Connection(e.to_string())))
+    Pool::builder().build(manager).map_err(DatabaseError::from)
 }
 
 #[test]
@@ -47,12 +47,7 @@ fn test_start_and_get_generation() -> DatabaseResult<()> {
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(|e| {
-        DatabaseError::from(DatabaseErrorKind::Connection(format!(
-            "Failed to get connection: {}",
-            e
-        )))
-    })?;
+    let mut conn = pool.get().map_err(DatabaseError::from)?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
@@ -93,12 +88,7 @@ fn test_complete_generation() -> DatabaseResult<()> {
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(|e| {
-        DatabaseError::from(DatabaseErrorKind::Connection(format!(
-            "Failed to get connection: {}",
-            e
-        )))
-    })?;
+    let mut conn = pool.get().map_err(|e| DatabaseError::from(e))?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
@@ -142,12 +132,7 @@ fn test_list_generations() -> DatabaseResult<()> {
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(|e| {
-        DatabaseError::from(DatabaseErrorKind::Connection(format!(
-            "Failed to get connection: {}",
-            e
-        )))
-    })?;
+    let mut conn = pool.get().map_err(DatabaseError::from)?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
@@ -204,12 +189,7 @@ fn test_get_last_successful() -> DatabaseResult<()> {
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(|e| {
-        DatabaseError::from(DatabaseErrorKind::Connection(format!(
-            "Failed to get connection: {}",
-            e
-        )))
-    })?;
+    let mut conn = pool.get().map_err(DatabaseError::from)?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
@@ -256,12 +236,7 @@ fn test_delete_generation() -> DatabaseResult<()> {
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(|e| {
-        DatabaseError::from(DatabaseErrorKind::Connection(format!(
-            "Failed to get connection: {}",
-            e
-        )))
-    })?;
+    let mut conn = pool.get().map_err(DatabaseError::from)?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
@@ -295,12 +270,7 @@ fn test_get_nonexistent_generation() -> DatabaseResult<()> {
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(|e| {
-        DatabaseError::from(DatabaseErrorKind::Connection(format!(
-            "Failed to get connection: {}",
-            e
-        )))
-    })?;
+    let mut conn = pool.get().map_err(DatabaseError::from)?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
@@ -323,12 +293,7 @@ fn test_start_generation_idempotent() -> DatabaseResult<()> {
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(|e| {
-        DatabaseError::from(DatabaseErrorKind::Connection(format!(
-            "Failed to get connection: {}",
-            e
-        )))
-    })?;
+    let mut conn = pool.get().map_err(DatabaseError::from)?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
