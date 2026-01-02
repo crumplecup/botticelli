@@ -147,6 +147,7 @@ diesel = { version = "2", features = [
   "r2d2",
 ] }
 diesel_migrations = "2"
+r2d2 = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
 
 # TUI
