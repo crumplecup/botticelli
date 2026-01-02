@@ -1,5 +1,22 @@
 # Database Test Coverage Tracker
 
+## ⚠️ CRITICAL: Test Suite Needs Repository API Alignment
+
+### Problem
+Tests were written assuming async APIs, but repository implementations are inconsistent:
+
+1. **PostgresContentGenerationRepository** - **SYNC** methods (`&mut self`), not async
+2. **PostgresNarrativeRepository** - API needs verification  
+3. **DatabaseContentRepository** - Async methods (works correctly)
+
+### Next Steps
+1. Audit actual repository trait APIs in `_interface/repository/`
+2. Audit implementations in `_database/src/*_repository.rs`
+3. Rewrite tests to match actual sync/async patterns
+4. Apply proper error handling (`DatabaseResult<()>` + `?`)
+
+---
+
 ## Current Status
 
 Test files:
@@ -34,14 +51,15 @@ Test files:
   - [x] Complex JSON parameters
   - [x] Delete generation
   - [x] Empty table generations
+- [x] **Basic CRUD for all three repositories**
 
 ### In Progress 🚧
 
-- [ ] **Schema and migration tests**
-- [ ] **Error handling edge cases**
-- [ ] **Performance tests**
-
-### Repository Operations - Content
+- [ ] **Schema and migration tests** - Need to verify migrations create expected schema
+- [ ] **Error handling edge cases** - Constraint violations, concurrent access
+- [ ] **Performance tests** - Bulk operations, pagination
+- [ ] **Content Repository** - Advanced operations (update, delete, filtering)
+- [ ] **Table creation consolidation** - Reduce duplication between create methods
 
 ### Repository Operations - Content
 
@@ -51,15 +69,15 @@ Test files:
   - [x] Handle empty results
   - [x] Handle nonexistent tables (error case)
   
-- [ ] **Create operations** (blocked - needs `create_content_table` implementation)
-  - [x] Test written for table creation
-  - [ ] Implementation needed
-  - [ ] Insert new content row
-  - [ ] Verify auto-generated fields (id, created_at, updated_at)
-  - [ ] Test with various content types
+- [x] **Create operations**
+  - [x] Table creation (dynamic content tables)
+  - [x] Insert new content row
+  - [x] Verify auto-generated fields (id, created_at, updated_at)
+  - [x] Test with various content types
+  - [x] Special characters in content
   
-- [ ] **Read operations** (blocked - needs dynamic tables)
-  - [x] Query existing tables
+- [ ] **Read operations** (advanced)
+  - [x] Query existing tables with limits
   - [ ] Get by ID
   - [ ] Get by hash
   - [ ] Filter by content_type
@@ -76,23 +94,32 @@ Test files:
 
 ### Repository Operations - Content Generation
 
-- [ ] **ContentGenerationRepository trait**
-  - [ ] Create generation record
-  - [ ] Link to content
-  - [ ] Store prompt/parameters
-  - [ ] Track generation metadata
+- [x] **ContentGenerationRepository trait**
+  - [x] Create generation record
+  - [x] Link to content
+  - [x] Store prompt/parameters
+  - [x] Track generation metadata
+  - [x] Query by table name
+  - [x] Delete generation
+  - [x] Handle empty results
+- [ ] **Advanced queries**
   - [ ] Query by content_id
   - [ ] Query by generation parameters
+  - [ ] Filter by date range
 
 ### Repository Operations - Narrative
 
-- [ ] **NarrativeRepository trait**
-  - [ ] Create narrative
-  - [ ] Read narrative by ID
-  - [ ] Update narrative state
-  - [ ] List narratives
-  - [ ] Delete narrative
+- [x] **NarrativeRepository trait**
+  - [x] Create narrative
+  - [x] Read narrative by ID
+  - [x] Update narrative state
+  - [x] List narratives
+  - [x] Delete narrative
+  - [x] Handle nonexistent narratives
+- [ ] **Advanced operations**
   - [ ] Associate with content
+  - [ ] Query by status
+  - [ ] Query by date range
 
 ### Schema and Migrations
 
