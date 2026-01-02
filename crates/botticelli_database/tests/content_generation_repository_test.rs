@@ -36,7 +36,7 @@ fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgCo
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     Pool::builder()
         .build(manager)
-        .map_err(|e| DatabaseError::new(DatabaseErrorKind::Connection(e.to_string())))
+        .map_err(|e| DatabaseError::from(DatabaseErrorKind::Connection(e.to_string())))
 }
 
 #[test]
@@ -48,7 +48,7 @@ fn test_start_and_get_generation() -> DatabaseResult<()> {
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
-        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+        DatabaseError::from(DatabaseErrorKind::Connection(format!(
             "Failed to get connection: {}",
             e
         )))
@@ -94,7 +94,7 @@ fn test_complete_generation() -> DatabaseResult<()> {
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
-        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+        DatabaseError::from(DatabaseErrorKind::Connection(format!(
             "Failed to get connection: {}",
             e
         )))
@@ -143,7 +143,7 @@ fn test_list_generations() -> DatabaseResult<()> {
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
-        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+        DatabaseError::from(DatabaseErrorKind::Connection(format!(
             "Failed to get connection: {}",
             e
         )))
@@ -205,7 +205,7 @@ fn test_get_last_successful() -> DatabaseResult<()> {
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
-        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+        DatabaseError::from(DatabaseErrorKind::Connection(format!(
             "Failed to get connection: {}",
             e
         )))
@@ -257,7 +257,7 @@ fn test_delete_generation() -> DatabaseResult<()> {
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
-        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+        DatabaseError::from(DatabaseErrorKind::Connection(format!(
             "Failed to get connection: {}",
             e
         )))
@@ -296,7 +296,7 @@ fn test_get_nonexistent_generation() -> DatabaseResult<()> {
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
-        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+        DatabaseError::from(DatabaseErrorKind::Connection(format!(
             "Failed to get connection: {}",
             e
         )))
@@ -324,7 +324,7 @@ fn test_start_generation_idempotent() -> DatabaseResult<()> {
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
-        DatabaseError::new(DatabaseErrorKind::Connection(format!(
+        DatabaseError::from(DatabaseErrorKind::Connection(format!(
             "Failed to get connection: {}",
             e
         )))

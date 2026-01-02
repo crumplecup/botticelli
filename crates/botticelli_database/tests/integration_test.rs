@@ -31,7 +31,11 @@ fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgCo
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     Pool::builder()
         .build(manager)
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(e.to_string())))
+        .map_err(|e| {
+            botticelli_error::DatabaseError::from(botticelli_error::DatabaseErrorKind::Connection(
+                e.to_string(),
+            ))
+        })
 }
 
 #[tokio::test]

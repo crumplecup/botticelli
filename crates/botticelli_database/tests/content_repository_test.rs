@@ -34,7 +34,11 @@ fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgCo
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     Pool::builder()
         .build(manager)
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(e.to_string())))
+        .map_err(|e| {
+            botticelli_error::DatabaseError::from(botticelli_error::DatabaseErrorKind::Connection(
+                e.to_string(),
+            ))
+        })
 }
 
 #[tokio::test]
@@ -60,11 +64,15 @@ async fn test_create_content_table() -> BotticelliResult<()> {
     
     // Cleanup
     let pool = repo.pool();
-    let mut conn = pool.get()
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(e.to_string())))?;
+    let mut conn = pool
+        .get()
+        .map_err(|e| {
+            botticelli_error::DatabaseError::from(botticelli_error::DatabaseErrorKind::Connection(
+                e.to_string(),
+            ))
+        })?;
     diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Diesel(botticelli_error::DieselError::new(e))))?;
+        .execute(&mut conn)?;
     
     Ok(())
 }
@@ -115,11 +123,15 @@ async fn test_insert_and_query_content() -> BotticelliResult<()> {
 
     // Cleanup
     let pool = repo.pool();
-    let mut conn = pool.get()
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(e.to_string())))?;
+    let mut conn = pool
+        .get()
+        .map_err(|e| {
+            botticelli_error::DatabaseError::from(botticelli_error::DatabaseErrorKind::Connection(
+                e.to_string(),
+            ))
+        })?;
     diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Diesel(botticelli_error::DieselError::new(e))))?;
+        .execute(&mut conn)?;
     
     Ok(())
 }
@@ -158,11 +170,15 @@ async fn test_query_with_limit() -> BotticelliResult<()> {
 
     // Cleanup
     let pool = repo.pool();
-    let mut conn = pool.get()
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(e.to_string())))?;
+    let mut conn = pool
+        .get()
+        .map_err(|e| {
+            botticelli_error::DatabaseError::from(botticelli_error::DatabaseErrorKind::Connection(
+                e.to_string(),
+            ))
+        })?;
     diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Diesel(botticelli_error::DieselError::new(e))))?;
+        .execute(&mut conn)?;
     
     Ok(())
 }
@@ -195,11 +211,15 @@ async fn test_query_empty_table() -> BotticelliResult<()> {
 
     // Cleanup
     let pool = repo.pool();
-    let mut conn = pool.get()
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(e.to_string())))?;
+    let mut conn = pool
+        .get()
+        .map_err(|e| {
+            botticelli_error::DatabaseError::from(botticelli_error::DatabaseErrorKind::Connection(
+                e.to_string(),
+            ))
+        })?;
     diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Diesel(botticelli_error::DieselError::new(e))))?;
+        .execute(&mut conn)?;
     
     Ok(())
 }
@@ -241,11 +261,15 @@ async fn test_insert_special_characters() -> BotticelliResult<()> {
 
     // Cleanup
     let pool = repo.pool();
-    let mut conn = pool.get()
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(e.to_string())))?;
+    let mut conn = pool
+        .get()
+        .map_err(|e| {
+            botticelli_error::DatabaseError::from(botticelli_error::DatabaseErrorKind::Connection(
+                e.to_string(),
+            ))
+        })?;
     diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Diesel(botticelli_error::DieselError::new(e))))?;
+        .execute(&mut conn)?;
     
     Ok(())
 }
