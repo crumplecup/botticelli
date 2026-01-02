@@ -19,6 +19,11 @@ impl DatabaseContentRepository {
     pub fn new(pool: Pool<ConnectionManager<PgConnection>>) -> Self {
         Self { pool }
     }
+
+    /// Get a reference to the connection pool.
+    pub fn pool(&self) -> &Pool<ConnectionManager<PgConnection>> {
+        &self.pool
+    }
 }
 
 #[async_trait]
