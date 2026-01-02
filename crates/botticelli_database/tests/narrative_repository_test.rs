@@ -2,7 +2,7 @@
 
 use botticelli_core::{ActExecutionBuilder, ExecutionFilter, ExecutionStatus, Input, NarrativeExecution};
 use botticelli_database::{establish_connection, PostgresNarrativeRepository};
-use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_error::{BotticelliResult, IoError};
 use botticelli_interface::NarrativeRepository;
 use botticelli_storage::FileSystemStorage;
 use std::sync::Arc;
@@ -24,9 +24,7 @@ fn init_test_tracing() {
 
 fn create_test_storage() -> BotticelliResult<Arc<FileSystemStorage>> {
     let temp_dir = std::env::temp_dir().join(format!("botticelli_test_{}", uuid::Uuid::new_v4()));
-    std::fs::create_dir_all(&temp_dir).map_err(|e| {
-        BotticelliError::from(BackendError::new(format!("Failed to create temp dir: {}", e)))
-    })?;
+    std::fs::create_dir_all(&temp_dir).map_err(IoError::from)?;
     Ok(Arc::new(FileSystemStorage::new(temp_dir)?))
 }
 
