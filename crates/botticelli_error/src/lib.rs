@@ -37,6 +37,7 @@ mod config;
 mod database;
 mod error;
 mod gemini;
+mod env;
 mod http;
 mod io;
 mod json;
@@ -59,6 +60,7 @@ pub use chat::{ChatError, ChatErrorKind, ChatResult};
 pub use config::ConfigError;
 #[cfg(feature = "database")]
 pub use database::{DatabaseError, DatabaseErrorKind, DieselConnectionError, DieselError};
+pub use env::{EnvError, EnvErrorKind};
 #[cfg(feature = "serde_json")]
 pub use database::SerdeJsonError;
 pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};

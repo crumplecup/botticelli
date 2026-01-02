@@ -7,9 +7,9 @@ use crate::ModelsError;
 #[cfg(feature = "tui")]
 use crate::TuiError;
 use crate::{
-    BackendError, BuilderError, ChatError, ConfigError, GeminiError, HttpError, IoError, JsonError,
-    McpError, NarrativeError, NotImplementedError, ObservabilityError, ProviderError, ServerError,
-    StorageError, TokenCountingError,
+    BackendError, BuilderError, ChatError, ConfigError, EnvError, GeminiError, HttpError,
+    IoError, JsonError, McpError, NarrativeError, NotImplementedError, ObservabilityError,
+    ProviderError, ServerError, StorageError, TokenCountingError,
 };
 
 /// This is the foundation error enum. Additional variants will be added
@@ -41,6 +41,9 @@ pub enum BotticelliErrorKind {
     /// Configuration error
     #[from(ConfigError)]
     Config(ConfigError),
+    /// Environment variable error
+    #[from(EnvError)]
+    Env(EnvError),
     /// Builder error
     #[from(BuilderError)]
     Builder(BuilderError),
