@@ -2,7 +2,11 @@
 
 ## Current Status
 
-Test file: `tests/database_repository_test.rs`
+Test files:
+- `tests/content_repository_test.rs` - ContentRepository (comprehensive)
+- `tests/narrative_repository_test.rs` - NarrativeRepository (NEW)
+- `tests/content_generation_repository_test.rs` - ContentGenerationRepository (NEW)
+- `tests/integration_test.rs` - Basic integration
 
 ### Completed ✅
 
@@ -11,12 +15,31 @@ Test file: `tests/database_repository_test.rs`
 - [x] Test infrastructure with transaction isolation
 - [x] Query operations (existing tables)
 - [x] Error handling for nonexistent tables
+- [x] **Content Repository Tests** (comprehensive)
+  - [x] Dynamic table creation
+  - [x] Insert and query operations
+  - [x] Query with limits
+  - [x] Empty table handling
+  - [x] Special characters in content
+  - [x] Error handling for nonexistent tables
+- [x] **Narrative Repository Tests** (comprehensive)
+  - [x] Create and get narrative
+  - [x] List narratives
+  - [x] Update narrative
+  - [x] Delete narrative
+  - [x] Get nonexistent narrative
+- [x] **Content Generation Repository Tests** (comprehensive)
+  - [x] Create and get generation
+  - [x] List generations by table
+  - [x] Complex JSON parameters
+  - [x] Delete generation
+  - [x] Empty table generations
 
 ### In Progress 🚧
 
-- [ ] **Dynamic table creation** (blocked - needs implementation)
-  - Tests written but `create_content_table` not implemented
-  - Required for: insert tests, content CRUD tests
+- [ ] **Schema and migration tests**
+- [ ] **Error handling edge cases**
+- [ ] **Performance tests**
 
 ### Repository Operations - Content
 

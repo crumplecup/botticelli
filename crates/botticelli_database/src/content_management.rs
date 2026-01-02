@@ -487,21 +487,6 @@ struct IdRow {
     id: i64,
 }
 
-/// Create a new content table with the specified schema.
-#[instrument(name = "content_management.create_content_table", skip(_conn), fields(table = %table_name))]
-pub fn create_content_table(
-    _conn: &mut PgConnection,
-    table_name: &str,
-    _schema: &JsonValue,
-) -> BotticelliResult<String> {
-    tracing::info!(table = table_name, "Creating content table");
-    
-    // For now, return error saying this needs to be implemented properly
-    Err(DatabaseError::new(DatabaseErrorKind::Query(
-        "create_content_table not yet implemented".to_string()
-    )).into())
-}
-
 /// Insert generated content into a table.
 #[instrument(name = "content_management.insert_content", skip(_conn, _content), fields(table = %table_name))]
 pub fn insert_content(

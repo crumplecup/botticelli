@@ -45,7 +45,31 @@ impl ContentRepository for DatabaseContentRepository {
                     botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
                 )
             })?;
-            crate::content_management::create_content_table(&mut conn, &table_name, &schema)
+            
+            // Extract fields from schema
+            let template_source = schema
+                .get("template_source")
+                .and_then(|v| v.as_str())
+                .ok_or_else(|| {
+                    botticelli_error::DatabaseError::new(
+                        botticelli_error::DatabaseErrorKind::Query(
+                            "Schema must contain 'template_source' field".to_string()
+                        )
+                    )
+                })?;
+            
+            let narrative_file = schema.get("narrative_file").and_then(|v| v.as_str());
+            let description = schema.get("description").and_then(|v| v.as_str());
+            
+            crate::schema_reflection::create_content_table(
+                &mut conn,
+                &table_name,
+                template_source,
+                narrative_file,
+                description,
+            )?;
+            
+            Ok(format!("Table '{}' created successfully", table_name))
         })
         .await
         .map_err(|e| {
