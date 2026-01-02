@@ -6,6 +6,21 @@ use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
 use botticelli_interface::NarrativeRepository;
 use botticelli_storage::FileSystemStorage;
 use std::sync::Arc;
+use tracing::info;
+
+/// Initialize tracing for tests.
+///
+/// Uses try_init() to avoid panicking if already initialized.
+/// Logs are captured by test framework when tests fail.
+fn init_test_tracing() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("debug")),
+        )
+        .with_test_writer()
+        .try_init();
+}
 
 fn create_test_storage() -> BotticelliResult<Arc<FileSystemStorage>> {
     let temp_dir = std::env::temp_dir().join(format!("botticelli_test_{}", uuid::Uuid::new_v4()));
@@ -36,6 +51,9 @@ fn create_test_execution(name: &str) -> NarrativeExecution {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_save_and_load_execution() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_save_and_load_execution");
+
     let conn = establish_connection()?;
     let storage = create_test_storage()?;
     let repo = PostgresNarrativeRepository::new(conn, storage);
@@ -62,6 +80,9 @@ async fn test_save_and_load_execution() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_list_executions() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_list_executions");
+
     let conn = establish_connection()?;
     let storage = create_test_storage()?;
     let repo = PostgresNarrativeRepository::new(conn, storage);
@@ -99,6 +120,9 @@ async fn test_list_executions() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_update_execution_status() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_update_execution_status");
+
     let conn = establish_connection()?;
     let storage = create_test_storage()?;
     let repo = PostgresNarrativeRepository::new(conn, storage);
@@ -125,6 +149,9 @@ async fn test_update_execution_status() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_delete_execution() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_delete_execution");
+
     let conn = establish_connection()?;
     let storage = create_test_storage()?;
     let repo = PostgresNarrativeRepository::new(conn, storage);
@@ -148,6 +175,9 @@ async fn test_delete_execution() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_list_executions_with_filter() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_list_executions_with_filter");
+
     let conn = establish_connection()?;
     let storage = create_test_storage()?;
     let repo = PostgresNarrativeRepository::new(conn, storage);
@@ -178,6 +208,9 @@ async fn test_list_executions_with_filter() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_execution_with_multiple_acts() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_execution_with_multiple_acts");
+
     let conn = establish_connection()?;
     let storage = create_test_storage()?;
     let repo = PostgresNarrativeRepository::new(conn, storage);

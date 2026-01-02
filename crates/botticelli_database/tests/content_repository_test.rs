@@ -7,6 +7,21 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::{PgConnection, RunQueryDsl};
 use serde_json::json;
 use std::env;
+use tracing::info;
+
+/// Initialize tracing for tests.
+///
+/// Uses try_init() to avoid panicking if already initialized.
+/// Logs are captured by test framework when tests fail.
+fn init_test_tracing() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("debug")),
+        )
+        .with_test_writer()
+        .try_init();
+}
 
 fn get_database_url() -> BotticelliResult<String> {
     match env::var("DATABASE_URL") {
@@ -19,12 +34,15 @@ fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgCo
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     Pool::builder()
         .build(manager)
-        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(e.to_string())).into())
+        .map_err(|e| botticelli_error::DatabaseError::new(botticelli_error::DatabaseErrorKind::Connection(e.to_string())))
 }
 
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_create_content_table() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_create_content_table");
+
     let database_url = get_database_url()?;
     let pool = create_pool(&database_url)?;
     let repo = DatabaseContentRepository::new(pool);
@@ -54,6 +72,9 @@ async fn test_create_content_table() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_insert_and_query_content() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_insert_and_query_content");
+
     let database_url = get_database_url()?;
     let pool = create_pool(&database_url)?;
     let repo = DatabaseContentRepository::new(pool);
@@ -106,6 +127,9 @@ async fn test_insert_and_query_content() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_query_with_limit() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_query_with_limit");
+
     let database_url = get_database_url()?;
     let pool = create_pool(&database_url)?;
     let repo = DatabaseContentRepository::new(pool);
@@ -146,6 +170,9 @@ async fn test_query_with_limit() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_query_empty_table() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_query_empty_table");
+
     let database_url = get_database_url()?;
     let pool = create_pool(&database_url)?;
     let repo = DatabaseContentRepository::new(pool);
@@ -180,6 +207,9 @@ async fn test_query_empty_table() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_insert_special_characters() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_insert_special_characters");
+
     let database_url = get_database_url()?;
     let pool = create_pool(&database_url)?;
     let repo = DatabaseContentRepository::new(pool);
@@ -223,6 +253,9 @@ async fn test_insert_special_characters() -> BotticelliResult<()> {
 #[tokio::test]
 #[cfg(feature = "postgres")]
 async fn test_query_nonexistent_table() -> BotticelliResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_query_nonexistent_table");
+
     let database_url = get_database_url()?;
     let pool = create_pool(&database_url)?;
     let repo = DatabaseContentRepository::new(pool);

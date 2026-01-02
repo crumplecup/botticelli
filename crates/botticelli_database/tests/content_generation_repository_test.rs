@@ -8,8 +8,23 @@ use botticelli_interface::ContentGenerationRepository;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
 use std::env;
+use tracing::info;
 
 type DatabaseResult<T> = Result<T, DatabaseError>;
+
+/// Initialize tracing for tests.
+///
+/// Uses try_init() to avoid panicking if already initialized.
+/// Logs are captured by test framework when tests fail.
+fn init_test_tracing() {
+    let _ = tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("debug")),
+        )
+        .with_test_writer()
+        .try_init();
+}
 
 fn get_database_url() -> String {
     env::var("DATABASE_URL").unwrap_or_else(|_| {
@@ -27,6 +42,9 @@ fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgCo
 #[test]
 #[cfg(feature = "postgres")]
 fn test_start_and_get_generation() -> DatabaseResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_start_and_get_generation");
+
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
@@ -70,6 +88,9 @@ fn test_start_and_get_generation() -> DatabaseResult<()> {
 #[test]
 #[cfg(feature = "postgres")]
 fn test_complete_generation() -> DatabaseResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_complete_generation");
+
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
@@ -116,6 +137,9 @@ fn test_complete_generation() -> DatabaseResult<()> {
 #[test]
 #[cfg(feature = "postgres")]
 fn test_list_generations() -> DatabaseResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_list_generations");
+
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
@@ -175,6 +199,9 @@ fn test_list_generations() -> DatabaseResult<()> {
 #[test]
 #[cfg(feature = "postgres")]
 fn test_get_last_successful() -> DatabaseResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_get_last_successful");
+
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
@@ -224,6 +251,9 @@ fn test_get_last_successful() -> DatabaseResult<()> {
 #[test]
 #[cfg(feature = "postgres")]
 fn test_delete_generation() -> DatabaseResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_delete_generation");
+
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
@@ -260,6 +290,9 @@ fn test_delete_generation() -> DatabaseResult<()> {
 #[test]
 #[cfg(feature = "postgres")]
 fn test_get_nonexistent_generation() -> DatabaseResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_get_nonexistent_generation");
+
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
@@ -285,6 +318,9 @@ fn test_get_nonexistent_generation() -> DatabaseResult<()> {
 #[test]
 #[cfg(feature = "postgres")]
 fn test_start_generation_idempotent() -> DatabaseResult<()> {
+    init_test_tracing();
+    info!("Starting test: test_start_generation_idempotent");
+
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
     let mut conn = pool.get().map_err(|e| {
