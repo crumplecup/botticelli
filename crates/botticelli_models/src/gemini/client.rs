@@ -96,11 +96,12 @@ fn builder_error(e: impl std::fmt::Display) -> botticelli_error::GeminiError {
 /// };
 /// ```
 #[derive(Clone)]
+#[derive(derive_getters::Getters)]
 pub struct TieredGemini<T: Tier> {
     /// The Gemini API client
-    pub client: Gemini,
+    client: Gemini,
     /// The tier configuration for rate limiting
-    pub tier: T,
+    tier: T,
 }
 
 impl<T: Tier + std::fmt::Debug> std::fmt::Debug for TieredGemini<T> {
@@ -338,20 +339,23 @@ impl GeminiClient {
         let api_key = env::var("GEMINI_API_KEY")
             .map_err(|_| BotticelliError::from(GeminiError::new(GeminiErrorKind::MissingApiKey)))?;
 
-        let base_tier = tier_config.unwrap_or_else(|| {
-            // Default tier configuration (Free tier, gemini-2.5-flash for development)
-            TierConfigBuilder::default()
-                .name("Free")
-                .rpm(10u32)
-                .tpm(250_000u64)
-                .rpd(250u32)
-                .max_concurrent(1u32)
-                .cost_per_million_input_tokens(0.0)
-                .cost_per_million_output_tokens(0.0)
-                .models(HashMap::new())
-                .build()
-                .expect("Valid TierConfig")
-        });
+        let base_tier = match tier_config {
+            Some(config) => config,
+            None => {
+                // Default tier configuration (Free tier, gemini-2.5-flash for development)
+                TierConfigBuilder::default()
+                    .name("Free")
+                    .rpm(10u32)
+                    .tpm(250_000u64)
+                    .rpd(250u32)
+                    .max_concurrent(1u32)
+                    .cost_per_million_input_tokens(0.0)
+                    .cost_per_million_output_tokens(0.0)
+                    .models(HashMap::new())
+                    .build()
+                    .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))?
+            }
+        };
 
         // Create Live API client with rate limiting from tier config
         let live_client = {
@@ -407,7 +411,8 @@ impl GeminiClient {
                 builder.cost_per_million_output_tokens(output_cost);
             }
             builder.models(HashMap::new()); // Will be empty for non-TierConfig tiers
-            builder.build().expect("Valid TierConfig")
+            builder.build()
+                .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))?
         } else {
             // Default tier configuration (Free tier, gemini-2.5-flash for development)
             TierConfigBuilder::default()
@@ -420,7 +425,7 @@ impl GeminiClient {
                 .cost_per_million_output_tokens(0.0)
                 .models(HashMap::new())
                 .build()
-                .expect("Valid TierConfig")
+                .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))?
         };
 
         // Create Live API client with rate limiting from tier config
