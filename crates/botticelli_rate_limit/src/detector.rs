@@ -63,15 +63,21 @@ impl HeaderRateLimitDetector {
     /// # Example
     ///
     /// ```rust,ignore
-    /// let config = detector.detect_gemini(response.headers()).await;
+    /// let config = detector.detect_gemini(response.headers()).await?;
     /// ```
     #[cfg(feature = "gemini")]
     #[instrument(skip(self, headers))]
-    pub async fn detect_gemini(&self, headers: &HeaderMap) -> Option<TierConfig> {
+    pub async fn detect_gemini(
+        &self,
+        headers: &HeaderMap,
+    ) -> Result<Option<TierConfig>, crate::RateLimitError> {
         debug!("Detecting Gemini rate limits from headers");
 
         // Parse rate limit headers
-        let rpm = parse_header_u32(headers, "x-ratelimit-limit")?;
+        let rpm = match parse_header_u32(headers, "x-ratelimit-limit") {
+            Some(val) => val,
+            None => return Ok(None),
+        };
         debug!(rpm, "Detected RPM from x-ratelimit-limit header");
 
         // Gemini doesn't expose TPM/RPD in headers, so we infer from RPM
@@ -98,12 +104,14 @@ impl HeaderRateLimitDetector {
             builder.rpd(rpd_val);
         }
 
-        let config = builder.build().expect("Valid TierConfig");
+        let config = builder.build().map_err(|e| {
+            crate::RateLimitError::new(crate::RateLimitErrorKind::BuilderValidation(e.to_string()))
+        })?;
 
         // Cache for future use
         *self.detected_limits.write().await = Some(config.clone());
 
-        Some(config)
+        Ok(Some(config))
     }
 
     /// Detect rate limits from Anthropic response headers.
@@ -119,15 +127,24 @@ impl HeaderRateLimitDetector {
     /// # Example
     ///
     /// ```rust,ignore
-    /// let config = detector.detect_anthropic(response.headers()).await;
+    /// let config = detector.detect_anthropic(response.headers()).await?;
     /// ```
     #[cfg(feature = "anthropic")]
     #[instrument(skip(self, headers))]
-    pub async fn detect_anthropic(&self, headers: &HeaderMap) -> Option<TierConfig> {
+    pub async fn detect_anthropic(
+        &self,
+        headers: &HeaderMap,
+    ) -> Result<Option<TierConfig>, crate::RateLimitError> {
         debug!("Detecting Anthropic rate limits from headers");
 
-        let rpm = parse_header_u32(headers, "anthropic-ratelimit-requests-limit")?;
-        let tpm = parse_header_u64(headers, "anthropic-ratelimit-tokens-limit")?;
+        let rpm = match parse_header_u32(headers, "anthropic-ratelimit-requests-limit") {
+            Some(val) => val,
+            None => return Ok(None),
+        };
+        let tpm = match parse_header_u64(headers, "anthropic-ratelimit-tokens-limit") {
+            Some(val) => val,
+            None => return Ok(None),
+        };
         debug!(rpm, tpm, "Detected Anthropic rate limits");
 
         // Determine tier name from limits
@@ -147,11 +164,15 @@ impl HeaderRateLimitDetector {
             .cost_per_million_input_tokens(3.0) // Varies by model
             .cost_per_million_output_tokens(15.0)
             .build()
-            .expect("Valid TierConfig");
+            .map_err(|e| {
+                crate::RateLimitError::new(crate::RateLimitErrorKind::BuilderValidation(
+                    e.to_string(),
+                ))
+            })?;
 
         *self.detected_limits.write().await = Some(config.clone());
 
-        Some(config)
+        Ok(Some(config))
     }
 
     /// Detect rate limits from OpenAI response headers.
@@ -167,14 +188,23 @@ impl HeaderRateLimitDetector {
     /// # Example
     ///
     /// ```rust,ignore
-    /// let config = detector.detect_openai(response.headers()).await;
+    /// let config = detector.detect_openai(response.headers()).await?;
     /// ```
     #[instrument(skip(self, headers))]
-    pub async fn detect_openai(&self, headers: &HeaderMap) -> Option<TierConfig> {
+    pub async fn detect_openai(
+        &self,
+        headers: &HeaderMap,
+    ) -> Result<Option<TierConfig>, crate::RateLimitError> {
         debug!("Detecting OpenAI rate limits from headers");
 
-        let rpm = parse_header_u32(headers, "x-ratelimit-limit-requests")?;
-        let tpm = parse_header_u64(headers, "x-ratelimit-limit-tokens")?;
+        let rpm = match parse_header_u32(headers, "x-ratelimit-limit-requests") {
+            Some(val) => val,
+            None => return Ok(None),
+        };
+        let tpm = match parse_header_u64(headers, "x-ratelimit-limit-tokens") {
+            Some(val) => val,
+            None => return Ok(None),
+        };
         debug!(rpm, tpm, "Detected OpenAI rate limits");
 
         // Determine tier from limits
@@ -201,11 +231,13 @@ impl HeaderRateLimitDetector {
             builder.rpd(rpd_value);
         }
 
-        let config = builder.build().expect("Valid TierConfig");
+        let config = builder.build().map_err(|e| {
+            crate::RateLimitError::new(crate::RateLimitErrorKind::BuilderValidation(e.to_string()))
+        })?;
 
         *self.detected_limits.write().await = Some(config.clone());
 
-        Some(config)
+        Ok(Some(config))
     }
 
     /// Get last detected limits from cache.

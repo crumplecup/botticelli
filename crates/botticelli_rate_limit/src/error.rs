@@ -12,6 +12,9 @@ pub enum RateLimitErrorKind {
     /// Invalid tier specification.
     #[display("Invalid tier: {_0}")]
     InvalidTier(String),
+    /// Builder validation error.
+    #[display("Builder validation error: {_0}")]
+    BuilderValidation(String),
     /// Budget exceeded.
     #[display(
         "Budget exceeded: requested {requested_tokens} tokens, available: {available_tokens_minute} TPM, {available_tokens_day} TPD, {available_requests_minute} RPM, {available_requests_day} RPD"

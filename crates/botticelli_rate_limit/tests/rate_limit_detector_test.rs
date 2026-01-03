@@ -24,7 +24,11 @@ async fn test_detect_gemini_free_tier() {
         ("x-ratelimit-reset", "1705012345"),
     ]);
 
-    let config = detector.detect_gemini(&headers).await.unwrap();
+    let config = detector
+        .detect_gemini(&headers)
+        .await
+        .expect("Detection should succeed")
+        .expect("Should detect config");
     assert_eq!(config.name(), "Free");
     assert_eq!(config.rpm(), Some(10));
     assert_eq!(config.tpm(), Some(250_000));
@@ -41,7 +45,11 @@ async fn test_detect_gemini_payasyougo_tier() {
         ("x-ratelimit-remaining", "350"),
     ]);
 
-    let config = detector.detect_gemini(&headers).await.unwrap();
+    let config = detector
+        .detect_gemini(&headers)
+        .await
+        .expect("Detection should succeed")
+        .expect("Should detect config");
     assert_eq!(config.name(), "Pay-as-you-go");
     assert_eq!(config.rpm(), Some(360));
     assert_eq!(config.tpm(), Some(4_000_000));
@@ -59,7 +67,11 @@ async fn test_detect_anthropic_tier1() {
         ("anthropic-ratelimit-tokens-remaining", "18000"),
     ]);
 
-    let config = detector.detect_anthropic(&headers).await.unwrap();
+    let config = detector
+        .detect_anthropic(&headers)
+        .await
+        .expect("Detection should succeed")
+        .expect("Should detect config");
     assert_eq!(config.name(), "Tier 1");
     assert_eq!(config.rpm(), Some(5));
     assert_eq!(config.tpm(), Some(20_000));
@@ -75,7 +87,11 @@ async fn test_detect_anthropic_tier4() {
         ("anthropic-ratelimit-tokens-limit", "160000"),
     ]);
 
-    let config = detector.detect_anthropic(&headers).await.unwrap();
+    let config = detector
+        .detect_anthropic(&headers)
+        .await
+        .expect("Detection should succeed")
+        .expect("Should detect config");
     assert_eq!(config.name(), "Tier 4");
     assert_eq!(config.rpm(), Some(2000));
     assert_eq!(config.tpm(), Some(160_000));
@@ -91,7 +107,11 @@ async fn test_detect_openai_free_tier() {
         ("x-ratelimit-remaining-tokens", "35000"),
     ]);
 
-    let config = detector.detect_openai(&headers).await.unwrap();
+    let config = detector
+        .detect_openai(&headers)
+        .await
+        .expect("Detection should succeed")
+        .expect("Should detect config");
     assert_eq!(config.name(), "Free");
     assert_eq!(config.rpm(), Some(3));
     assert_eq!(config.tpm(), Some(40_000));
@@ -106,7 +126,11 @@ async fn test_detect_openai_tier5() {
         ("x-ratelimit-limit-tokens", "100000000"),
     ]);
 
-    let config = detector.detect_openai(&headers).await.unwrap();
+    let config = detector
+        .detect_openai(&headers)
+        .await
+        .expect("Detection should succeed")
+        .expect("Should detect config");
     assert_eq!(config.name(), "Tier 5");
     assert_eq!(config.rpm(), Some(10000));
     assert_eq!(config.tpm(), Some(100_000_000));
@@ -125,7 +149,10 @@ async fn test_cache_functionality() {
         ("x-ratelimit-limit-requests", "500"),
         ("x-ratelimit-limit-tokens", "200000"),
     ]);
-    detector.detect_openai(&headers).await;
+    detector
+        .detect_openai(&headers)
+        .await
+        .expect("Detection should succeed");
 
     // Should be cached
     let cached = detector.get_cached().await.unwrap();
@@ -141,5 +168,9 @@ async fn test_missing_headers_returns_none() {
     let detector = HeaderRateLimitDetector::new();
     let headers = HeaderMap::new();
 
-    assert!(detector.detect_openai(&headers).await.is_none());
+    assert!(detector
+        .detect_openai(&headers)
+        .await
+        .expect("Should not error")
+        .is_none());
 }
