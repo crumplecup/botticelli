@@ -9,7 +9,7 @@ use tracing::instrument;
 use gemini_rust::{Gemini, client::Model};
 
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
-use botticelli_error::{BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind};
+use botticelli_error::{BotticelliResult, GeminiError, GeminiErrorKind};
 use botticelli_interface::Tier;
 use botticelli_rate_limit::{BotticelliConfig, RateLimiter, TierConfig};
 
@@ -111,7 +111,7 @@ impl GeminiClient {
     /// Create a new Gemini client with a TierConfig (preserves model-specific overrides).
     fn new_with_tier_config(tier_config: Option<TierConfig>) -> BotticelliResult<Self> {
         let api_key = env::var("GEMINI_API_KEY")
-            .map_err(|_| BotticelliError::from(GeminiError::new(GeminiErrorKind::MissingApiKey)))?;
+            .map_err(|_| GeminiErrorKind::MissingApiKey)?;
 
         let base_tier = match tier_config {
             Some(config) => config,
@@ -245,7 +245,7 @@ impl GeminiClient {
     }
 
     /// Extract text content from an input
-    fn extract_text(input: &Input) -> Option<String> {
+    pub(crate) fn extract_text(input: &Input) -> Option<String> {
         match input {
             Input::Text(text) => Some(text.clone()),
             _ => None,
@@ -253,12 +253,12 @@ impl GeminiClient {
     }
 
     /// Check if input contains non-text media
-    fn has_media(inputs: &[Input]) -> bool {
+    pub(crate) fn has_media(inputs: &[Input]) -> bool {
         inputs.iter().any(|i| !matches!(i, Input::Text(_)))
     }
 
     /// Estimate token count from text (rough approximation: chars / 4).
-    fn estimate_tokens(text: &str) -> u64 {
+    pub(crate) fn estimate_tokens(text: &str) -> u64 {
         (text.len() / 4).max(1) as u64
     }
 
@@ -405,7 +405,7 @@ impl GeminiClient {
     }
 
     /// Get or create rate-limited client for a model.
-    fn get_or_create_client(
+    pub(crate) fn get_or_create_client(
         &self,
         model_name: &str,
     ) -> GeminiResult<RateLimiter<TieredGemini<TierConfig>>> {
@@ -610,7 +610,7 @@ impl GeminiClient {
     }
 
     /// Parse gemini-rust errors to extract HTTP status codes.
-    fn parse_gemini_error(err: impl std::fmt::Display) -> GeminiError {
+    pub(crate) fn parse_gemini_error(err: impl std::fmt::Display) -> GeminiError {
         let err_msg = err.to_string();
 
         if let Some(status_code) = Self::extract_status_code(&err_msg) {

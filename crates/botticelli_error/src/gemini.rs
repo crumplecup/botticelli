@@ -147,3 +147,14 @@ impl botticelli_interface::RetryableError for GeminiError {
         self.kind.retry_strategy_params()
     }
 }
+
+// Enable GeminiErrorKind -> GeminiError conversion
+crate::impl_error_from_kind!(GeminiErrorKind => GeminiError);
+
+// Enable GeminiErrorKind -> BotticelliErrorKind conversion (via GeminiError)
+impl From<GeminiErrorKind> for crate::BotticelliErrorKind {
+    #[track_caller]
+    fn from(kind: GeminiErrorKind) -> Self {
+        GeminiError::from(kind).into()
+    }
+}
