@@ -58,6 +58,7 @@ async fn test_acquire_releases_on_drop() -> BotticelliResult<()> {
 
 #[tokio::test]
 async fn test_rpm_limiting() -> BotticelliResult<()> {
+    common::init_tracing();
     // Very low RPM for testing
     let tier = create_test_tier(Some(2), None, None, Some(10))?;
     let limiter = RateLimiter::new(tier);
@@ -76,6 +77,7 @@ async fn test_rpm_limiting() -> BotticelliResult<()> {
 
 #[tokio::test]
 async fn test_unlimited_tier() -> BotticelliResult<()> {
+    common::init_tracing();
     // No limits
     let tier = create_test_tier(None, None, None, None)?;
     let limiter = RateLimiter::new(tier);
@@ -89,6 +91,7 @@ async fn test_unlimited_tier() -> BotticelliResult<()> {
 
 #[tokio::test]
 async fn test_tpm_limiting() -> BotticelliResult<()> {
+    common::init_tracing();
     // Very low TPM for testing
     let tier = create_test_tier(None, Some(10), None, Some(10))?;
     let limiter = RateLimiter::new(tier);

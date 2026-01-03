@@ -48,6 +48,7 @@ async fn test_detect_gemini_free_tier() -> BotticelliResult<()> {
 #[cfg(feature = "gemini")]
 #[tokio::test]
 async fn test_detect_gemini_payasyougo_tier() -> BotticelliResult<()> {
+    common::init_tracing();
     let detector = HeaderRateLimitDetector::new();
     let headers = create_headers(&[
         ("x-ratelimit-limit", "360"),
@@ -71,6 +72,7 @@ async fn test_detect_gemini_payasyougo_tier() -> BotticelliResult<()> {
 #[cfg(feature = "anthropic")]
 #[tokio::test]
 async fn test_detect_anthropic_tier1() -> BotticelliResult<()> {
+    common::init_tracing();
     let detector = HeaderRateLimitDetector::new();
     let headers = create_headers(&[
         ("anthropic-ratelimit-requests-limit", "5"),
@@ -96,6 +98,7 @@ async fn test_detect_anthropic_tier1() -> BotticelliResult<()> {
 #[cfg(feature = "anthropic")]
 #[tokio::test]
 async fn test_detect_anthropic_tier4() -> BotticelliResult<()> {
+    common::init_tracing();
     let detector = HeaderRateLimitDetector::new();
     let headers = create_headers(&[
         ("anthropic-ratelimit-requests-limit", "2000"),
@@ -117,6 +120,7 @@ async fn test_detect_anthropic_tier4() -> BotticelliResult<()> {
 
 #[tokio::test]
 async fn test_detect_openai_free_tier() -> BotticelliResult<()> {
+    common::init_tracing();
     let detector = HeaderRateLimitDetector::new();
     let headers = create_headers(&[
         ("x-ratelimit-limit-requests", "3"),
@@ -141,6 +145,7 @@ async fn test_detect_openai_free_tier() -> BotticelliResult<()> {
 
 #[tokio::test]
 async fn test_detect_openai_tier5() -> BotticelliResult<()> {
+    common::init_tracing();
     let detector = HeaderRateLimitDetector::new();
     let headers = create_headers(&[
         ("x-ratelimit-limit-requests", "10000"),
@@ -163,6 +168,7 @@ async fn test_detect_openai_tier5() -> BotticelliResult<()> {
 
 #[tokio::test]
 async fn test_cache_functionality() -> BotticelliResult<()> {
+    common::init_tracing();
     let detector = HeaderRateLimitDetector::new();
 
     // Initially empty
@@ -188,6 +194,7 @@ async fn test_cache_functionality() -> BotticelliResult<()> {
 
 #[tokio::test]
 async fn test_missing_headers_returns_none() -> BotticelliResult<()> {
+    common::init_tracing();
     let detector = HeaderRateLimitDetector::new();
     let headers = HeaderMap::new();
 

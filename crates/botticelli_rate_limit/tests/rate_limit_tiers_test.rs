@@ -1,5 +1,7 @@
 //! Tests for rate limit tiers.
 
+mod common;
+
 use botticelli_interface::Tier;
 
 #[cfg(feature = "gemini")]
@@ -13,6 +15,7 @@ use botticelli_rate_limit::OpenAITier;
 #[cfg(feature = "gemini")]
 #[test]
 fn test_gemini_free_tier() {
+    common::init_tracing();
     let tier = GeminiTier::Free;
     assert_eq!(tier.rpm(), Some(10));
     assert_eq!(tier.tpm(), Some(250_000));
@@ -27,6 +30,7 @@ fn test_gemini_free_tier() {
 #[cfg(feature = "gemini")]
 #[test]
 fn test_gemini_payasyougo_tier() {
+    common::init_tracing();
     let tier = GeminiTier::PayAsYouGo;
     assert_eq!(tier.rpm(), Some(360));
     assert_eq!(tier.tpm(), Some(4_000_000));
@@ -40,6 +44,7 @@ fn test_gemini_payasyougo_tier() {
 #[cfg(feature = "anthropic")]
 #[test]
 fn test_anthropic_tier1() {
+    common::init_tracing();
     let tier = AnthropicTier::Tier1;
     assert_eq!(tier.rpm(), Some(5));
     assert_eq!(tier.tpm(), Some(20_000));
@@ -53,6 +58,7 @@ fn test_anthropic_tier1() {
 #[cfg(feature = "anthropic")]
 #[test]
 fn test_anthropic_tier4() {
+    common::init_tracing();
     let tier = AnthropicTier::Tier4;
     assert_eq!(tier.rpm(), Some(2000));
     assert_eq!(tier.tpm(), Some(160_000));
@@ -62,6 +68,7 @@ fn test_anthropic_tier4() {
 
 #[test]
 fn test_openai_free_tier() {
+    common::init_tracing();
     let tier = OpenAITier::Free;
     assert_eq!(tier.rpm(), Some(3));
     assert_eq!(tier.tpm(), Some(40_000));
@@ -74,6 +81,7 @@ fn test_openai_free_tier() {
 
 #[test]
 fn test_openai_tier5() {
+    common::init_tracing();
     let tier = OpenAITier::Tier5;
     assert_eq!(tier.rpm(), Some(10_000));
     assert_eq!(tier.tpm(), Some(100_000_000));

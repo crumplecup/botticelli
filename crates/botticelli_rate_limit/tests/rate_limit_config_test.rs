@@ -55,6 +55,7 @@ fn test_tier_config_implements_tier_trait() -> Result<(), TierConfigBuilderError
 
 #[test]
 fn test_get_tier_with_default() -> Result<(), ConfigError> {
+    common::init_tracing();
     let config = BotticelliConfig::load()?;
 
     // Get default tier (should be "free" for Gemini)
@@ -68,6 +69,7 @@ fn test_get_tier_with_default() -> Result<(), ConfigError> {
 
 #[test]
 fn test_get_tier_with_specific_name() -> Result<(), ConfigError> {
+    common::init_tracing();
     let config = BotticelliConfig::load()?;
 
     // Get specific tier
@@ -81,6 +83,7 @@ fn test_get_tier_with_specific_name() -> Result<(), ConfigError> {
 
 #[test]
 fn test_config_from_file() -> BotticelliResult<()> {
+    common::init_tracing();
     use std::io::Write;
     use tempfile::Builder;
 
