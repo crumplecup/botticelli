@@ -210,7 +210,7 @@ pub enum ModelsErrorKind {
     /// Serialization error (JSON encoding/decoding failures)
     #[display("Serialization error: {}", _0)]
     #[from(ignore)]
-    Serialization(String),
+    Serialization(std::sync::Arc<serde_json::Error>),
 }
 
 /// Model provider error with location tracking.

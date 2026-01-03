@@ -978,7 +978,7 @@ impl botticelli_interface::ToolCalling for GeminiClient {
                     "parameters": t.input_schema(),
                 });
                 serde_json::from_value(decl_json)
-                    .map_err(|e| ModelsError::new(ModelsErrorKind::Serialization(e.to_string())))
+                    .map_err(|e| ModelsError::new(ModelsErrorKind::Serialization(std::sync::Arc::new(e))))
             })
             .collect();
         

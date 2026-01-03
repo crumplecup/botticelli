@@ -341,10 +341,7 @@ impl LiveSession {
         // Serialize to JSON
         let json = serde_json::to_string(&message).map_err(|e| {
             error!("Failed to serialize message: {}", e);
-            GeminiError::new(GeminiErrorKind::ApiRequest(format!(
-                "Serialization error: {}",
-                e
-            )))
+            GeminiError::new(GeminiErrorKind::ApiRequest(format!("Serialization error: {}", e)))
         })?;
 
         trace!("Message JSON: {}", json);
@@ -481,10 +478,7 @@ impl LiveSession {
         // Serialize to JSON
         let json = serde_json::to_string(&message).map_err(|e| {
             error!("Failed to serialize message: {}", e);
-            GeminiError::new(GeminiErrorKind::ApiRequest(format!(
-                "Serialization error: {}",
-                e
-            )))
+            GeminiError::new(GeminiErrorKind::ApiRequest(format!("Serialization error: {}", e)))
         })?;
 
         trace!("Message JSON: {}", json);
