@@ -1,14 +1,14 @@
 //! Gemini-specific error types and retry logic.
 
 /// Gemini-specific error conditions.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
+#[derive(Debug, Clone, derive_more::Display)]
 pub enum GeminiErrorKind {
     /// API key not found in environment
     #[display("GEMINI_API_KEY environment variable not set")]
     MissingApiKey,
-    /// Failed to create Gemini client
+    /// Failed to create Gemini client (captures gemini-rust error)
     #[display("Failed to create Gemini client: {}", _0)]
-    ClientCreation(String),
+    ClientCreation(std::sync::Arc<gemini_rust::ClientError>),
     /// API request failed
     #[display("Gemini API request failed: {}", _0)]
     ApiRequest(String),

@@ -163,7 +163,7 @@ pub enum ModelsErrorKind {
     /// Gemini client creation error
     #[display("Gemini client error: {}", _0)]
     #[from(ignore)]
-    GeminiClient(String),
+    GeminiClient(std::sync::Arc<Box<dyn std::error::Error + Send + Sync>>),
 
     /// Ollama-specific error (will be populated when ollama feature is enabled)
     #[cfg(feature = "ollama")]

@@ -22,6 +22,7 @@ diesel = { workspace = true, optional = true }
 r2d2 = { version = "0.8", optional = true }
 serde_json = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
+gemini-rust = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -29,7 +30,7 @@ database = ["dep:diesel", "dep:serde_json", "dep:r2d2"]
 serde_json = ["dep:serde_json"]
 reqwest = ["dep:reqwest"]
 tui = []
-models = ["dep:serde_json"]
+models = ["dep:serde_json", "dep:gemini-rust"]
 ollama = ["models"]
 anthropic = ["models"]
 huggingface = ["models"]

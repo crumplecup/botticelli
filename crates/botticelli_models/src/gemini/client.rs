@@ -709,7 +709,7 @@ impl GeminiClient {
 
                 // Create new Gemini client for this model
                 let client = Gemini::with_model(&self.api_key, model_enum)
-                    .map_err(|e| GeminiError::new(GeminiErrorKind::ClientCreation(e.to_string())))?;
+                    .map_err(|e| ModelsError::new(ModelsErrorKind::GeminiClient(Arc::new(e))))?;
 
                 // Get model-specific tier configuration
                 // This applies model-specific overrides if they exist in the config
@@ -999,7 +999,7 @@ impl botticelli_interface::ToolCalling for GeminiClient {
             if !clients.contains_key(model_name) {
                 let model_enum = Self::model_name_to_enum(model_name);
                 let client = Gemini::with_model(&self.api_key, model_enum)
-                    .map_err(|e| GeminiError::new(GeminiErrorKind::ClientCreation(e.to_string())))?;
+                    .map_err(|e| ModelsError::new(ModelsErrorKind::GeminiClient(Arc::new(e))))?;
                 let model_tier = self.base_tier.for_model(model_name);
                 let tiered = TieredGemini {
                     client,
@@ -1225,7 +1225,7 @@ impl Streaming for GeminiClient {
             if !clients.contains_key(model_name) {
                 let model_enum = Self::model_name_to_enum(model_name);
                 let client = Gemini::with_model(&self.api_key, model_enum)
-                    .map_err(|e| GeminiError::new(GeminiErrorKind::ClientCreation(e.to_string())))?;
+                    .map_err(|e| ModelsError::new(ModelsErrorKind::GeminiClient(Arc::new(e))))?;
                 let model_tier = self.base_tier.for_model(model_name);
                 let tiered = TieredGemini {
                     client,

@@ -27,6 +27,9 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+#[cfg(feature = "models")]
+extern crate gemini_rust;
+
 mod macros;
 
 mod backend;
