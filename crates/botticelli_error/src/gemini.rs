@@ -9,6 +9,9 @@ pub enum GeminiErrorKind {
     /// Failed to create Gemini client (captures gemini-rust error)
     #[display("Failed to create Gemini client: {}", _0)]
     ClientCreation(std::sync::Arc<gemini_rust::client::Error>),
+    /// Gemini-rust library error (runtime errors)
+    #[display("Gemini-rust error: {}", _0)]
+    GeminiRust(std::sync::Arc<gemini_rust::client::Error>),
     /// Live API client not available
     #[display("Live API client not available: {}", _0)]
     LiveClientUnavailable(String),

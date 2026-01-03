@@ -555,15 +555,58 @@ impl GeminiClient {
     /// Streaming support was removed in Phase 5. This method returns an error.
     pub(crate) async fn generate_stream_internal(
         &self,
-        _req: &GenerateRequest,
+        req: &GenerateRequest,
     ) -> GeminiResult<
         std::pin::Pin<
             Box<dyn futures_util::stream::Stream<Item = GeminiResult<botticelli_core::StreamChunk>> + Send>,
         >,
     > {
-        Err(GeminiError::new(GeminiErrorKind::ApiRequest(
-            "Streaming support not yet implemented for Gemini".to_string(),
-        )))
+        use futures_util::TryStreamExt;
+        use botticelli_core::{Output, StreamChunk};
+
+        let model_name = req.model()
+            .as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or(&self.model_name);
+        
+        // Get or create rate-limited client
+        let rate_limited_client = self.get_or_create_client(model_name)?;
+        let client = rate_limited_client.inner().client();
+        
+        // Build the request
+        let builder = self.build_gemini_request(req, client)?;
+        
+        // Execute streaming request
+        let stream = builder
+            .execute_stream()
+            .await
+            .map_err(|e| GeminiError::new(GeminiErrorKind::GeminiRust(Arc::new(e))))?;
+
+        // Convert gemini-rust stream to our StreamChunk format
+        let converted_stream = stream
+            .map_err(|e| GeminiError::new(GeminiErrorKind::GeminiRust(Arc::new(e))))
+            .and_then(|response| async move {
+                // Extract text from response candidates
+                let text = response
+                    .candidates
+                    .first()
+                    .map(|candidate| &candidate.content)
+                    .and_then(|content| content.parts.as_ref())
+                    .and_then(|parts| parts.first())
+                    .and_then(|part| match part {
+                        gemini_rust::Part::Text { text, .. } => Some(text.clone()),
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+
+                StreamChunk::builder()
+                    .content(Output::Text(text))
+                    .is_final(false)
+                    .build()
+                    .map_err(builder_error)
+            });
+
+        Ok(Box::pin(converted_stream))
     }
 
     /// Parse gemini-rust errors to extract HTTP status codes.
