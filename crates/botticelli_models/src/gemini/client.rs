@@ -702,35 +702,37 @@ impl GeminiClient {
         // Get or create rate-limited client for this model (REST API)
         let rate_limited_client = {
             let mut clients = self.clients.lock().unwrap();
-            clients
-                .entry(model_name.clone())
-                .or_insert_with(|| {
-                    // Convert model name string to Model enum
-                    let model_enum = Self::model_name_to_enum(model_name);
+            // Check if we already have a client for this model
+            if !clients.contains_key(model_name) {
+                // Convert model name string to Model enum
+                let model_enum = Self::model_name_to_enum(model_name);
 
-                    // Create new Gemini client for this model
-                    let client = Gemini::with_model(&self.api_key, model_enum)
-                        .expect("Failed to create Gemini client - invalid API key or model");
+                // Create new Gemini client for this model
+                let client = Gemini::with_model(&self.api_key, model_enum)
+                    .map_err(|e| GeminiError::new(GeminiErrorKind::ClientCreation(e.to_string())))?;
 
-                    // Get model-specific tier configuration
-                    // This applies model-specific overrides if they exist in the config
-                    let model_tier = self.base_tier.for_model(model_name);
+                // Get model-specific tier configuration
+                // This applies model-specific overrides if they exist in the config
+                let model_tier = self.base_tier.for_model(model_name);
 
-                    // Wrap client with model-specific tier
-                    let tiered = TieredGemini {
-                        client,
-                        tier: model_tier,
-                    };
+                // Wrap client with model-specific tier
+                let tiered = TieredGemini {
+                    client,
+                    tier: model_tier,
+                };
 
-                    // Wrap in rate limiter with retry configuration
-                    RateLimiter::new_with_retry(
-                        tiered,
-                        self.no_retry,
-                        self.max_retries,
-                        self.retry_backoff_ms,
-                    )
-                })
-                .clone()
+                // Wrap in rate limiter with retry configuration
+                let limiter = RateLimiter::new_with_retry(
+                    tiered,
+                    self.no_retry,
+                    self.max_retries,
+                    self.retry_backoff_ms,
+                );
+
+                clients.insert(model_name.clone(), limiter);
+            }
+
+            clients.get(model_name).unwrap().clone()
         };
 
         // Estimate tokens for rate limiting
@@ -993,25 +995,26 @@ impl botticelli_interface::ToolCalling for GeminiClient {
         // Get or create rate-limited client for this model
         let rate_limited_client = {
             let mut clients = self.clients.lock().unwrap();
-            clients
-                .entry(model_name.clone())
-                .or_insert_with(|| {
-                    let model_enum = Self::model_name_to_enum(model_name);
-                    let client = Gemini::with_model(&self.api_key, model_enum)
-                        .expect("Failed to create Gemini client");
-                    let model_tier = self.base_tier.for_model(model_name);
-                    let tiered = TieredGemini {
-                        client,
-                        tier: model_tier,
-                    };
-                    RateLimiter::new_with_retry(
-                        tiered,
-                        self.no_retry,
-                        self.max_retries,
-                        self.retry_backoff_ms,
-                    )
-                })
-                .clone()
+            
+            if !clients.contains_key(model_name) {
+                let model_enum = Self::model_name_to_enum(model_name);
+                let client = Gemini::with_model(&self.api_key, model_enum)
+                    .map_err(|e| GeminiError::new(GeminiErrorKind::ClientCreation(e.to_string())))?;
+                let model_tier = self.base_tier.for_model(model_name);
+                let tiered = TieredGemini {
+                    client,
+                    tier: model_tier,
+                };
+                let limiter = RateLimiter::new_with_retry(
+                    tiered,
+                    self.no_retry,
+                    self.max_retries,
+                    self.retry_backoff_ms,
+                );
+                clients.insert(model_name.clone(), limiter);
+            }
+            
+            clients.get(model_name).unwrap().clone()
         };
 
         // Estimate tokens
@@ -1218,20 +1221,21 @@ impl Streaming for GeminiClient {
         // Get or create rate-limited client for this model (REST API)
         let rate_limited_client = {
             let mut clients = self.clients.lock().unwrap();
-            clients
-                .entry(model_name.clone())
-                .or_insert_with(|| {
-                    let model_enum = Self::model_name_to_enum(model_name);
-                    let client = Gemini::with_model(&self.api_key, model_enum)
-                        .expect("Failed to create Gemini client for model");
-                    let model_tier = self.base_tier.for_model(model_name);
-                    let tiered = TieredGemini {
-                        client,
-                        tier: model_tier,
-                    };
-                    RateLimiter::new(tiered)
-                })
-                .clone()
+            
+            if !clients.contains_key(model_name) {
+                let model_enum = Self::model_name_to_enum(model_name);
+                let client = Gemini::with_model(&self.api_key, model_enum)
+                    .map_err(|e| GeminiError::new(GeminiErrorKind::ClientCreation(e.to_string())))?;
+                let model_tier = self.base_tier.for_model(model_name);
+                let tiered = TieredGemini {
+                    client,
+                    tier: model_tier,
+                };
+                let limiter = RateLimiter::new(tiered);
+                clients.insert(model_name.clone(), limiter);
+            }
+            
+            clients.get(model_name).unwrap().clone()
         };
 
         // Estimate tokens for rate limiting
@@ -1395,7 +1399,7 @@ impl Metadata for GeminiClient {
                 .supports_embeddings(true)
                 .supports_batch(false)
                 .build()
-                .expect("Valid ModelMetadata"),
+                .unwrap(), // Safe: all required fields provided
         ))
     }
 }

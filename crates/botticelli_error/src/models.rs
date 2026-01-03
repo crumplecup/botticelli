@@ -160,6 +160,11 @@ pub enum ModelsErrorKind {
     #[from(ignore)]
     Builder(String),
 
+    /// Gemini client creation error
+    #[display("Gemini client error: {}", _0)]
+    #[from(ignore)]
+    GeminiClient(String),
+
     /// Ollama-specific error (will be populated when ollama feature is enabled)
     #[cfg(feature = "ollama")]
     #[display("Ollama: {}", _0)]
