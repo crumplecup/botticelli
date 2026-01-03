@@ -1,6 +1,6 @@
-//! Error types for rate limiting operations.
+//! Rate limiting error types.
 
-/// Error kinds for rate limiting operations.
+/// Specific rate limiting error conditions.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display)]
 pub enum RateLimitErrorKind {
     /// Configuration file error.
@@ -34,12 +34,15 @@ pub enum RateLimitErrorKind {
 }
 
 /// Rate limiting error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, derive_more::Display, derive_more::Error)]
 #[display("Rate Limit Error: {} at line {} in {}", kind, line, file)]
 pub struct RateLimitError {
-    kind: RateLimitErrorKind,
-    line: u32,
-    file: &'static str,
+    /// The kind of error that occurred
+    pub kind: RateLimitErrorKind,
+    /// Line number where error was created
+    pub line: u32,
+    /// File where error was created
+    pub file: &'static str,
 }
 
 impl RateLimitError {
@@ -64,6 +67,7 @@ impl<T> From<T> for RateLimitError
 where
     T: Into<RateLimitErrorKind>,
 {
+    #[track_caller]
     fn from(err: T) -> Self {
         Self::new(err.into())
     }

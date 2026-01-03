@@ -48,6 +48,7 @@ mod narrative;
 mod not_implemented;
 mod observability;
 mod provider;
+mod rate_limit;
 mod server;
 mod storage;
 mod token_counting;
@@ -90,6 +91,7 @@ pub use provider::ProviderReqwestError;
 #[cfg(feature = "serde_json")]
 pub use provider::ProviderSerdeJsonError;
 pub use provider::{ProviderError, ProviderErrorKind, ProviderResult};
+pub use rate_limit::{RateLimitError, RateLimitErrorKind};
 pub use server::{ServerError, ServerErrorKind};
 pub use storage::{StorageError, StorageErrorKind};
 pub use token_counting::{TokenCountingError, TokenCountingErrorKind, TokenCountingResult};

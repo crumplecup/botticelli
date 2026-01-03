@@ -89,6 +89,9 @@ pub enum BotticelliErrorKind {
     /// Provider error
     #[from(ProviderError)]
     Provider(ProviderError),
+    /// Rate limiting error
+    #[from(crate::RateLimitError)]
+    RateLimit(crate::RateLimitError),
 }
 
 /// Botticelli error with kind discrimination.

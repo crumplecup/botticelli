@@ -19,7 +19,6 @@
 mod budget;
 mod config;
 mod detector;
-mod error;
 mod limiter;
 mod tier;
 mod tiers;
@@ -30,7 +29,8 @@ pub use config::{
     TierConfigBuilder,
 };
 pub use detector::HeaderRateLimitDetector;
-pub use error::{RateLimitError, RateLimitErrorKind};
+// Re-export error types from botticelli_error
+pub use botticelli_error::{RateLimitError, RateLimitErrorKind};
 pub use limiter::{RateLimiter, RateLimiterGuard};
 pub use tier::Tier;
 #[cfg(feature = "anthropic")]
