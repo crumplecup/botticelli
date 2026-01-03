@@ -204,15 +204,22 @@ impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
     /// * `estimated_tokens` - Estimated number of tokens for this request.
     ///   Used for TPM limiting. If unsure, use a conservative estimate.
     ///
+    /// # Errors
+    ///
+    /// Returns an error if the internal semaphore is unexpectedly closed.
+    ///
     /// # Example
     ///
     /// ```rust,ignore
-    /// let guard = limiter.acquire(1000).await;
+    /// let guard = limiter.acquire(1000).await?;
     /// let response = client.generate(&request).await?;
     /// drop(guard); // Release concurrent slot
     /// ```
     #[instrument(skip(self))]
-    pub async fn acquire(&self, estimated_tokens: u64) -> RateLimiterGuard {
+    pub async fn acquire(
+        &self,
+        estimated_tokens: u64,
+    ) -> Result<RateLimiterGuard, botticelli_error::RateLimitError> {
         debug!(estimated_tokens, "Acquiring rate limit permission");
 
         // Wait for RPM quota
@@ -243,9 +250,16 @@ impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
             .clone()
             .acquire_owned()
             .await
-            .expect("Semaphore should not be closed");
+            .map_err(|e| {
+                botticelli_error::RateLimitError::new(
+                    botticelli_error::RateLimitErrorKind::LimitExceeded(format!(
+                        "Semaphore closed unexpectedly: {}",
+                        e
+                    )),
+                )
+            })?;
 
-        RateLimiterGuard { _permit: permit }
+        Ok(RateLimiterGuard { _permit: permit })
     }
 
     /// Try to acquire without waiting.
