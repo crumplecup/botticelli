@@ -8,34 +8,27 @@ use std::time::{Duration, Instant};
 ///
 /// Tracks token and request consumption across rate limit windows
 /// to ensure carousel operations stay within configured limits.
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone)]
 pub struct Budget {
     /// Rate limit configuration
-    #[getter(skip)]
     config: RateLimitConfig,
 
     /// Tokens consumed in current minute
-    #[getter(skip)]
     tokens_per_minute: u64,
 
     /// Tokens consumed in current day
-    #[getter(skip)]
     tokens_per_day: u64,
 
     /// Requests consumed in current minute
-    #[getter(skip)]
     requests_per_minute: u64,
 
     /// Requests consumed in current day
-    #[getter(skip)]
     requests_per_day: u64,
 
     /// Start of current minute window
-    #[getter(skip)]
     minute_window_start: Instant,
 
     /// Start of current day window
-    #[getter(skip)]
     day_window_start: Instant,
 }
 
