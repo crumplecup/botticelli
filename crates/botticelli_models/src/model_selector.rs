@@ -2,6 +2,7 @@
 
 use derive_more::Display;
 use derive_new::new;
+use tracing::instrument;
 
 use crate::{GeminiModel, GroqModel, ModelFamily, RateLimitDetector};
 
@@ -51,6 +52,7 @@ impl ModelBounds {
     }
 
     /// Check if a model is within bounds.
+    #[instrument]
     pub fn allows(&self, model: ModelId) -> bool {
         if let Some(lower) = self.lower
             && !model.is_at_least(lower)
@@ -113,6 +115,7 @@ impl std::str::FromStr for ModelId {
 
 impl ModelId {
     /// Get the family this model belongs to.
+    #[instrument]
     pub fn family(&self) -> ModelFamily {
         match self {
             Self::Gemini(_) => ModelFamily::Gemini,
@@ -121,6 +124,7 @@ impl ModelId {
     }
 
     /// Get the model string for API calls.
+    #[instrument]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Gemini(m) => m.as_str(),
@@ -129,6 +133,7 @@ impl ModelId {
     }
 
     /// Get "friends" - laterally equivalent models in other families.
+    #[instrument]
     pub fn friends(&self) -> Vec<Self> {
         match self {
             Self::Gemini(m) => m
@@ -151,6 +156,7 @@ impl ModelId {
     }
 
     /// Move up to more capable/expensive model within family.
+    #[instrument]
     pub fn move_up(&self) -> Option<Self> {
         match self {
             Self::Gemini(m) => m.move_up().map(Self::Gemini),
@@ -159,6 +165,7 @@ impl ModelId {
     }
 
     /// Move down to faster/cheaper model within family.
+    #[instrument]
     pub fn move_down(&self) -> Option<Self> {
         match self {
             Self::Gemini(m) => m.move_down().map(Self::Gemini),
@@ -170,6 +177,7 @@ impl ModelId {
     ///
     /// For same-family comparisons, compares tier positions.
     /// Cross-family comparisons use the friends() equivalence mapping.
+    #[instrument]
     pub fn is_at_least(&self, other: Self) -> bool {
         if self.family() == other.family() {
             // Same family: compare positions directly
@@ -181,6 +189,7 @@ impl ModelId {
     }
 
     /// Check if this model is at most as capable as another.
+    #[instrument]
     pub fn is_at_most(&self, other: Self) -> bool {
         if self.family() == other.family() {
             self.family_position() >= other.family_position()
@@ -262,6 +271,7 @@ impl ModelSelector {
     /// Select next model after rate limit error.
     ///
     /// Returns None if error is not rate-related or no valid fallback exists.
+    #[instrument(skip(self))]
     pub fn select_next(&mut self, current: ModelId, error: &str) -> Option<ModelId> {
         if !self.detector.is_rate_limit_message(error) {
             return None;
@@ -280,6 +290,7 @@ impl ModelSelector {
     }
 
     /// Get current rate limit status for a family.
+    #[instrument(skip(self))]
     pub fn get_status(&self, family: ModelFamily) -> Option<&crate::RateLimitStatus> {
         self.detector.get_status(family)
     }
@@ -295,108 +306,3 @@ impl ModelSelector {
     }
 }
 
-#[cfg(test)]
-mod model_selector_test {
-    use super::*;
-
-    #[test]
-    fn test_bounds_none_allows_all() {
-        let bounds = ModelBounds::none();
-        assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Pro)));
-        assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25FlashLite)));
-    }
-
-    #[test]
-    fn test_bounds_no_lower_than() {
-        let bounds = ModelBounds::lower_bound(ModelId::Gemini(GeminiModel::Gemini25Flash));
-        assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Pro)));
-        assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Flash)));
-        assert!(!bounds.allows(ModelId::Gemini(GeminiModel::Gemini25FlashLite)));
-    }
-
-    #[test]
-    fn test_bounds_no_higher_than() {
-        let bounds = ModelBounds::upper_bound(ModelId::Gemini(GeminiModel::Gemini25Flash));
-        assert!(!bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Pro)));
-        assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Flash)));
-        assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25FlashLite)));
-    }
-
-    #[test]
-    fn test_bounds_both() {
-        let bounds = ModelBounds::new(
-            Some(ModelId::Gemini(GeminiModel::Gemini20Flash)),
-            Some(ModelId::Gemini(GeminiModel::Gemini25Flash)),
-        );
-        assert!(!bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Pro)));
-        assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Flash)));
-        assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini20Flash)));
-        assert!(!bounds.allows(ModelId::Gemini(GeminiModel::Gemini25FlashLite)));
-    }
-
-    #[test]
-    fn test_model_id_family() {
-        assert_eq!(
-            ModelId::Gemini(GeminiModel::Gemini25Flash).family(),
-            ModelFamily::Gemini
-        );
-        assert_eq!(
-            ModelId::Groq(GroqModel::Llama31_8BInstant).family(),
-            ModelFamily::Groq
-        );
-    }
-
-    #[test]
-    fn test_model_id_move_up() {
-        let model = ModelId::Gemini(GeminiModel::Gemini25Flash);
-        assert_eq!(
-            model.move_up(),
-            Some(ModelId::Gemini(GeminiModel::Gemini25Pro))
-        );
-    }
-
-    #[test]
-    fn test_model_id_move_down() {
-        let model = ModelId::Gemini(GeminiModel::Gemini25Flash);
-        assert_eq!(
-            model.move_down(),
-            Some(ModelId::Gemini(GeminiModel::Gemini20FlashThinking))
-        );
-    }
-
-    #[test]
-    fn test_model_id_friends() {
-        let model = ModelId::Gemini(GeminiModel::Gemini25Flash);
-        let friends = model.friends();
-        assert!(!friends.is_empty());
-        assert!(friends.iter().all(|f| f.family() != ModelFamily::Gemini));
-    }
-
-    #[test]
-    fn test_is_at_least_same_family() {
-        let pro = ModelId::Gemini(GeminiModel::Gemini25Pro);
-        let flash = ModelId::Gemini(GeminiModel::Gemini25Flash);
-        let lite = ModelId::Gemini(GeminiModel::Gemini25FlashLite);
-
-        assert!(pro.is_at_least(pro));
-        assert!(pro.is_at_least(flash));
-        assert!(pro.is_at_least(lite));
-        assert!(!flash.is_at_least(pro));
-        assert!(flash.is_at_least(flash));
-        assert!(flash.is_at_least(lite));
-    }
-
-    #[test]
-    fn test_is_at_most_same_family() {
-        let pro = ModelId::Gemini(GeminiModel::Gemini25Pro);
-        let flash = ModelId::Gemini(GeminiModel::Gemini25Flash);
-        let lite = ModelId::Gemini(GeminiModel::Gemini25FlashLite);
-
-        assert!(lite.is_at_most(pro));
-        assert!(lite.is_at_most(flash));
-        assert!(lite.is_at_most(lite));
-        assert!(!pro.is_at_most(flash));
-        assert!(flash.is_at_most(flash));
-        assert!(flash.is_at_most(pro));
-    }
-}

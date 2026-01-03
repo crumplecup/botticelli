@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/botticelli_chat",
+  "crates/botticelli_chat",
   "crates/botticelli_error",
   "crates/botticelli_core",
   "crates/botticelli_interface",
@@ -16,7 +16,9 @@ members = [
   "crates/botticelli_security",
   "crates/botticelli_cache",
   "crates/botticelli_actor",
-  "crates/botticelli_bot", "crates/botticelli_mcp", "crates/botticelli_mcp_client",
+  "crates/botticelli_bot",
+  "crates/botticelli_mcp",
+  "crates/botticelli_mcp_client",
 ]
 resolver = "2"
 
@@ -38,7 +40,12 @@ botticelli_interface = { path = "crates/botticelli_interface", version = "0.2.0"
 
 # Observability (OpenTelemetry)
 opentelemetry = "0.31"
-opentelemetry-otlp = { version = "0.31", features = ["tokio", "metrics", "http-proto", "reqwest-client"] }
+opentelemetry-otlp = { version = "0.31", features = [
+  "tokio",
+  "metrics",
+  "http-proto",
+  "reqwest-client",
+] }
 opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
 opentelemetry-stdout = { version = "0.31", features = ["trace", "metrics"] }
 tracing-opentelemetry = "0.32"
@@ -118,7 +125,7 @@ ractor = { version = "0.15", features = ["async-trait"] }
 
 # Configuration and HTTP
 config = { version = "0.15", features = ["toml"] }
-reqwest = { version = "0.12", features = [
+reqwest = { version = "0.13", features = [
   "json",
   "gzip",
   "stream",
@@ -136,7 +143,7 @@ ollama-rs = { version = "0.3", features = ["stream"] }
 claude-client = "0.3"
 hf-hub = "0.4.3"
 huggingface_inference_rs = { version = "0.5.0", default-features = false }
-tiktoken-rs = "0.5"
+tiktoken-rs = "0.9"
 base64 = "0.22"
 
 # WebSocket for live APIs
@@ -156,7 +163,7 @@ r2d2 = "0.8"
 chrono = { version = "0.4", features = ["serde"] }
 
 # TUI
-ratatui = "0.29"
+ratatui = "0.30"
 crossterm = "0.29"
 
 # Environment variables
@@ -166,7 +173,7 @@ dotenvy = "0.15"
 tempfile = "3"
 
 # Elicitation framework
-elicitation = "0.1"
+elicitation = "0.2"
 
 # The profile that 'dist' will build with
 [profile.dist]

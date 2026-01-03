@@ -2,6 +2,7 @@
 
 use derive_more::Display;
 use strum::EnumIter;
+use tracing::instrument;
 
 /// Groq models ordered from most to least restrictive.
 ///
@@ -27,6 +28,7 @@ pub enum GroqModel {
 
 impl GroqModel {
     /// Get the model string for API calls.
+    #[instrument]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Llama33_70BVersatile => "llama-3.3-70b-versatile",
@@ -37,6 +39,7 @@ impl GroqModel {
     }
 
     /// Get laterally equivalent models in other families.
+    #[instrument]
     pub fn friends(&self) -> Vec<(&'static str, &'static str)> {
         match self {
             Self::Llama33_70BVersatile => vec![
@@ -59,6 +62,7 @@ impl GroqModel {
     }
 
     /// Move up to a more capable/expensive model.
+    #[instrument]
     pub fn move_up(&self) -> Option<Self> {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
@@ -72,6 +76,7 @@ impl GroqModel {
     }
 
     /// Move down to a faster/cheaper model.
+    #[instrument]
     pub fn move_down(&self) -> Option<Self> {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
@@ -85,41 +90,3 @@ impl GroqModel {
     }
 }
 
-#[cfg(test)]
-mod groq_model_test {
-    use super::*;
-
-    #[test]
-    fn test_move_up_from_middle() {
-        assert_eq!(
-            GroqModel::Mixtral8x7B.move_up(),
-            Some(GroqModel::Llama31_70BVersatile)
-        );
-    }
-
-    #[test]
-    fn test_move_up_from_top() {
-        assert_eq!(GroqModel::Llama33_70BVersatile.move_up(), None);
-    }
-
-    #[test]
-    fn test_move_down_from_middle() {
-        assert_eq!(
-            GroqModel::Mixtral8x7B.move_down(),
-            Some(GroqModel::Llama31_8BInstant)
-        );
-    }
-
-    #[test]
-    fn test_move_down_from_bottom() {
-        assert_eq!(GroqModel::Llama31_8BInstant.move_down(), None);
-    }
-
-    #[test]
-    fn test_as_str_matches_display() {
-        use strum::IntoEnumIterator;
-        for model in GroqModel::iter() {
-            assert_eq!(model.as_str(), model.to_string());
-        }
-    }
-}

@@ -57,7 +57,7 @@ huggingface_inference_rs = { workspace = true, optional = true }
 tiktoken-rs = { workspace = true }
 
 [features]
-default = []
+default = ["local"]
 
 # Generic model support (Driver trait, common types)
 models = []
@@ -65,7 +65,13 @@ models = []
 # Provider-specific features (each implies models)
 gemini = ["dep:gemini-rust", "botticelli_rate_limit/gemini", "models"]
 ollama = ["dep:ollama-rs", "botticelli_error/ollama", "models"]
-anthropic = ["dep:claude-client", "dep:futures", "botticelli_rate_limit/anthropic", "botticelli_error/anthropic", "models"]
+anthropic = [
+  "dep:claude-client",
+  "dep:futures",
+  "botticelli_rate_limit/anthropic",
+  "botticelli_error/anthropic",
+  "models",
+]
 
 # OpenAI-compatible providers (use openai_compat module)
 huggingface = ["botticelli_error/huggingface", "models"]
@@ -73,7 +79,15 @@ groq = ["botticelli_error/groq", "models"]
 perplexity = []
 
 # Combined features
-local = ["gemini", "ollama", "anthropic", "huggingface", "groq", "perplexity"]
+local = [
+  "models",
+  "gemini",
+  "ollama",
+  "anthropic",
+  "huggingface",
+  "groq",
+  "perplexity",
+]
 
 # Marker feature for tests that make real API calls
 api = []

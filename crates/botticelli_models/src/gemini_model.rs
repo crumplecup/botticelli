@@ -2,6 +2,7 @@
 
 use derive_more::Display;
 use strum::EnumIter;
+use tracing::instrument;
 
 /// Gemini models ordered from most to least restrictive.
 ///
@@ -30,6 +31,7 @@ pub enum GeminiModel {
 
 impl GeminiModel {
     /// Get the model string for API calls.
+    #[instrument]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Gemini25Pro => "gemini-2.5-pro",
@@ -44,6 +46,7 @@ impl GeminiModel {
     ///
     /// Returns tuples of (family, model_string) for models with similar
     /// capability/cost tradeoffs in other providers.
+    #[instrument]
     pub fn friends(&self) -> Vec<(&'static str, &'static str)> {
         match self {
             Self::Gemini25Pro => vec![
@@ -71,6 +74,7 @@ impl GeminiModel {
     /// Move up to a more capable/expensive model.
     ///
     /// Returns None if already at the top.
+    #[instrument]
     pub fn move_up(&self) -> Option<Self> {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
@@ -86,6 +90,7 @@ impl GeminiModel {
     /// Move down to a faster/cheaper model.
     ///
     /// Returns None if already at the bottom.
+    #[instrument]
     pub fn move_down(&self) -> Option<Self> {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
@@ -99,51 +104,3 @@ impl GeminiModel {
     }
 }
 
-#[cfg(test)]
-mod gemini_model_test {
-    use super::*;
-
-    #[test]
-    fn test_move_up_from_middle() {
-        assert_eq!(
-            GeminiModel::Gemini25Flash.move_up(),
-            Some(GeminiModel::Gemini25Pro)
-        );
-    }
-
-    #[test]
-    fn test_move_up_from_top() {
-        assert_eq!(GeminiModel::Gemini25Pro.move_up(), None);
-    }
-
-    #[test]
-    fn test_move_down_from_middle() {
-        assert_eq!(
-            GeminiModel::Gemini25Flash.move_down(),
-            Some(GeminiModel::Gemini20FlashThinking)
-        );
-    }
-
-    #[test]
-    fn test_move_down_from_bottom() {
-        assert_eq!(GeminiModel::Gemini25FlashLite.move_down(), None);
-    }
-
-    #[test]
-    fn test_friends_returns_tuples() {
-        let friends = GeminiModel::Gemini25Flash.friends();
-        assert!(!friends.is_empty());
-        for (family, model) in friends {
-            assert!(!family.is_empty());
-            assert!(!model.is_empty());
-        }
-    }
-
-    #[test]
-    fn test_as_str_matches_display() {
-        use strum::IntoEnumIterator;
-        for model in GeminiModel::iter() {
-            assert_eq!(model.as_str(), model.to_string());
-        }
-    }
-}

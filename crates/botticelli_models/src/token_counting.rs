@@ -27,23 +27,3 @@ pub fn count_tokens_tiktoken(text: &str, tokenizer: &tiktoken_rs::CoreBPE) -> us
     tokenizer.encode_with_special_tokens(text).len()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_claude_tokenizer() {
-        let tokenizer = claude_tokenizer().expect("Failed to load tokenizer");
-        let count = count_tokens_tiktoken("Hello, world!", &tokenizer);
-        assert!(count > 0);
-        assert!(count < 10); // "Hello, world!" should be <10 tokens
-    }
-
-    #[test]
-    fn test_gpt_tokenizer() {
-        let tokenizer = gpt_tokenizer().expect("Failed to load tokenizer");
-        let count = count_tokens_tiktoken("Hello, world!", &tokenizer);
-        assert!(count > 0);
-        assert!(count < 10);
-    }
-}

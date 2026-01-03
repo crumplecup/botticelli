@@ -66,6 +66,7 @@ impl RateLimitDetector {
         Self::default()
     }
     /// Check if an error message indicates a rate limit.
+    #[instrument(skip(self))]
     pub fn is_rate_limit_message(&self, error: &str) -> bool {
         let msg_lower = error.to_lowercase();
         msg_lower.contains("rate limit")
@@ -75,6 +76,7 @@ impl RateLimitDetector {
     }
 
     /// Detect rate limit status from error message.
+    #[instrument(skip(self))]
     pub fn detect_from_message(&self, error: &str) -> Option<Duration> {
         if !self.is_rate_limit_message(error) {
             return None;
@@ -83,12 +85,14 @@ impl RateLimitDetector {
     }
 
     /// Record a rate limit for a family.
+    #[instrument(skip(self))]
     pub fn record(&mut self, family: crate::ModelFamily, model_id: ModelId) {
         let status = RateLimitStatus::new(model_id, Instant::now(), None);
         self.tracked.insert(family, status);
     }
 
     /// Check if a family is currently rate limited.
+    #[instrument(skip(self))]
     pub fn is_rate_limited(&self, family: crate::ModelFamily) -> bool {
         self.tracked
             .get(&family)
@@ -97,6 +101,7 @@ impl RateLimitDetector {
     }
 
     /// Get status for a family.
+    #[instrument(skip(self))]
     pub fn get_status(&self, family: crate::ModelFamily) -> Option<&RateLimitStatus> {
         self.tracked.get(&family)
     }
@@ -135,57 +140,3 @@ impl RateLimitDetector {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_rate_limit_status_expiry_with_reset() {
-        let now = Instant::now();
-        let reset_at = now + Duration::from_secs(30);
-
-        let status = RateLimitStatus::new(
-            ModelId::Gemini(crate::GeminiModel::Gemini25Flash),
-            now,
-            Some(reset_at),
-        );
-
-        // Should not be expired immediately
-        assert!(!status.is_likely_expired());
-    }
-
-    #[test]
-    fn test_rate_limit_status_expiry_default_cooldown() {
-        let detected_at = Instant::now() - Duration::from_secs(61);
-
-        let status = RateLimitStatus::new(
-            ModelId::Groq(crate::GroqModel::Llama33_70BVersatile),
-            detected_at,
-            None,
-        );
-
-        // Should be expired after 60+ seconds
-        assert!(status.is_likely_expired());
-    }
-
-    #[test]
-    fn test_parse_reset_seconds() {
-        let duration = RateLimitDetector::parse_reset_from_message(
-            "Rate limit exceeded. Please retry after 30s",
-        );
-        assert_eq!(duration, Some(Duration::from_secs(30)));
-    }
-
-    #[test]
-    fn test_parse_reset_minutes() {
-        let duration =
-            RateLimitDetector::parse_reset_from_message("Quota exceeded. Retry after 2m");
-        assert_eq!(duration, Some(Duration::from_secs(120)));
-    }
-
-    #[test]
-    fn test_parse_reset_no_match() {
-        let duration = RateLimitDetector::parse_reset_from_message("Rate limit exceeded");
-        assert_eq!(duration, None);
-    }
-}

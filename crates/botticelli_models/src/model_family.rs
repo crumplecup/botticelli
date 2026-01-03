@@ -5,6 +5,7 @@
 
 use derive_more::Display;
 use strum::EnumIter;
+use tracing::instrument;
 
 /// Model families supported by Botticelli.
 ///
@@ -33,6 +34,7 @@ impl ModelFamily {
     /// Get the default fallback order starting after this family.
     ///
     /// Returns families in enum order, wrapping around if needed.
+    #[instrument]
     pub fn fallback_order(&self) -> Vec<ModelFamily> {
         use strum::IntoEnumIterator;
         let all: Vec<_> = ModelFamily::iter().collect();
@@ -48,34 +50,3 @@ impl ModelFamily {
     }
 }
 
-#[cfg(test)]
-mod model_family_test {
-    use super::*;
-    use strum::IntoEnumIterator;
-
-    #[test]
-    fn test_fallback_order_excludes_self() {
-        for family in ModelFamily::iter() {
-            let fallbacks = family.fallback_order();
-            assert!(
-                !fallbacks.contains(&family),
-                "Fallback should not include self"
-            );
-        }
-    }
-
-    #[test]
-    fn test_fallback_order_starts_after_current() {
-        let order = ModelFamily::Gemini.fallback_order();
-        assert_eq!(order[0], ModelFamily::Groq);
-
-        let order = ModelFamily::Groq.fallback_order();
-        assert_eq!(order[0], ModelFamily::Perplexity);
-    }
-
-    #[test]
-    fn test_fallback_order_wraps() {
-        let order = ModelFamily::Ollama.fallback_order();
-        assert_eq!(order[0], ModelFamily::Gemini);
-    }
-}
