@@ -550,6 +550,22 @@ impl GeminiClient {
         result
     }
 
+    /// Streaming generation (currently not implemented).
+    ///
+    /// Streaming support was removed in Phase 5. This method returns an error.
+    pub(crate) async fn generate_stream_internal(
+        &self,
+        _req: &GenerateRequest,
+    ) -> GeminiResult<
+        std::pin::Pin<
+            Box<dyn futures_util::stream::Stream<Item = GeminiResult<botticelli_core::StreamChunk>> + Send>,
+        >,
+    > {
+        Err(GeminiError::new(GeminiErrorKind::ApiRequest(
+            "Streaming support not yet implemented for Gemini".to_string(),
+        )))
+    }
+
     /// Parse gemini-rust errors to extract HTTP status codes.
     fn parse_gemini_error(err: impl std::fmt::Display) -> GeminiError {
         let err_msg = err.to_string();
