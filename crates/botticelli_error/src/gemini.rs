@@ -50,6 +50,12 @@ pub enum GeminiErrorKind {
     /// Builder error (derive_builder failures)
     #[display("Builder error: {}", _0)]
     BuilderError(String),
+    /// Mutex was poisoned (panic occurred while holding lock)
+    #[display("Mutex poisoned: {}", _0)]
+    MutexPoisoned(String),
+    /// Invalid model name
+    #[display("Invalid model: {}", _0)]
+    InvalidModel(String),
 }
 
 impl GeminiErrorKind {

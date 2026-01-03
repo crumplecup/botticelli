@@ -1,0 +1,1 @@
+//! streaming trait implementation.

@@ -180,7 +180,9 @@ pub struct GeminiClient {
 
 impl std::fmt::Debug for GeminiClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let client_count = self.clients.lock().unwrap().len();
+        let client_count = self.clients.lock()
+            .map(|guard| guard.len())
+            .unwrap_or(0);
         f.debug_struct("GeminiClient")
             .field("model_name", &self.model_name)
             .field("base_tier", &self.base_tier.name())
@@ -547,10 +549,9 @@ impl GeminiClient {
         // Try connection once to get error-specific strategy
         let first_result = client.connect_with_config(&model, gen_config.clone()).await;
 
-        let (initial_ms, max_retries, max_delay_secs) = match &first_result {
-            Ok(_) => {
+        let (initial_ms, max_retries, max_delay_secs) = match first_result {
+            Ok(mut session) => {
                 // Success on first try
-                let mut session = first_result.unwrap();
                 let combined_text = self.combine_messages(req);
                 let response_text = session.send_text(&combined_text).await?;
                 let _ = session.close().await;
@@ -701,7 +702,8 @@ impl GeminiClient {
 
         // Get or create rate-limited client for this model (REST API)
         let rate_limited_client = {
-            let mut clients = self.clients.lock().unwrap();
+            let mut clients = self.clients.lock()
+                .map_err(|e| GeminiError::new(GeminiErrorKind::MutexPoisoned(e.to_string())))?;
             // Check if we already have a client for this model
             if !clients.contains_key(model_name) {
                 // Convert model name string to Model enum
@@ -732,7 +734,9 @@ impl GeminiClient {
                 clients.insert(model_name.clone(), limiter);
             }
 
-            clients.get(model_name).unwrap().clone()
+            clients.get(model_name)
+                .ok_or_else(|| GeminiError::new(GeminiErrorKind::InvalidModel(model_name.to_string())))?
+                .clone()
         };
 
         // Estimate tokens for rate limiting
@@ -994,7 +998,8 @@ impl botticelli_interface::ToolCalling for GeminiClient {
 
         // Get or create rate-limited client for this model
         let rate_limited_client = {
-            let mut clients = self.clients.lock().unwrap();
+            let mut clients = self.clients.lock()
+                .map_err(|e| GeminiError::new(GeminiErrorKind::MutexPoisoned(e.to_string())))?;
             
             if !clients.contains_key(model_name) {
                 let model_enum = Self::model_name_to_enum(model_name);
@@ -1014,7 +1019,9 @@ impl botticelli_interface::ToolCalling for GeminiClient {
                 clients.insert(model_name.clone(), limiter);
             }
             
-            clients.get(model_name).unwrap().clone()
+            clients.get(model_name)
+                .ok_or_else(|| GeminiError::new(GeminiErrorKind::InvalidModel(model_name.to_string())))?
+                .clone()
         };
 
         // Estimate tokens
@@ -1220,7 +1227,8 @@ impl Streaming for GeminiClient {
 
         // Get or create rate-limited client for this model (REST API)
         let rate_limited_client = {
-            let mut clients = self.clients.lock().unwrap();
+            let mut clients = self.clients.lock()
+                .map_err(|e| GeminiError::new(GeminiErrorKind::MutexPoisoned(e.to_string())))?;
             
             if !clients.contains_key(model_name) {
                 let model_enum = Self::model_name_to_enum(model_name);
@@ -1235,7 +1243,9 @@ impl Streaming for GeminiClient {
                 clients.insert(model_name.clone(), limiter);
             }
             
-            clients.get(model_name).unwrap().clone()
+            clients.get(model_name)
+                .ok_or_else(|| GeminiError::new(GeminiErrorKind::InvalidModel(model_name.to_string())))?
+                .clone()
         };
 
         // Estimate tokens for rate limiting
@@ -1399,7 +1409,7 @@ impl Metadata for GeminiClient {
                 .supports_embeddings(true)
                 .supports_batch(false)
                 .build()
-                .unwrap(), // Safe: all required fields provided
+                .expect("ModelMetadataBuilder: all required fields provided"),
         ))
     }
 }
