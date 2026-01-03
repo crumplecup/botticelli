@@ -1,7 +1,9 @@
 //! Tests for rate limiter implementation.
 
-use botticelli_error::{BotticelliResult, RateLimitError, RateLimitErrorKind};
-use botticelli_rate_limit::{RateLimiter, TierConfig, TierConfigBuilder, TierConfigBuilderError};
+mod common;
+
+use botticelli_error::BotticelliResult;
+use botticelli_rate_limit::{RateLimiter, TierConfig, TierConfigBuilder};
 use std::sync::Arc;
 
 fn create_test_tier(
@@ -9,7 +11,7 @@ fn create_test_tier(
     tpm: Option<u64>,
     rpd: Option<u32>,
     max_concurrent: Option<u32>,
-) -> Result<TierConfig, TierConfigBuilderError> {
+) -> BotticelliResult<TierConfig> {
     let mut builder = TierConfigBuilder::default();
     builder.name("Test");
 
@@ -26,13 +28,14 @@ fn create_test_tier(
         builder.max_concurrent(mc_val);
     }
 
-    builder.build()
+    builder.build().map_err(|e| e.to_string().into())
 }
 
 #[tokio::test]
 async fn test_acquire_releases_on_drop() -> BotticelliResult<()> {
-    let tier = create_test_tier(Some(100), Some(10000), None, Some(1))
-        .map_err(|e| RateLimitErrorKind::BuilderValidation(e.to_string()))?;
+    common::init_tracing();
+    
+    let tier = create_test_tier(Some(100), Some(10000), None, Some(1))?;
     let limiter = Arc::new(RateLimiter::new(tier));
 
     // First acquire should succeed
@@ -56,8 +59,7 @@ async fn test_acquire_releases_on_drop() -> BotticelliResult<()> {
 #[tokio::test]
 async fn test_rpm_limiting() -> BotticelliResult<()> {
     // Very low RPM for testing
-    let tier = create_test_tier(Some(2), None, None, Some(10))
-        .map_err(|e| RateLimitErrorKind::BuilderValidation(e.to_string()))?;
+    let tier = create_test_tier(Some(2), None, None, Some(10))?;
     let limiter = RateLimiter::new(tier);
 
     // First two requests should succeed immediately
@@ -75,8 +77,7 @@ async fn test_rpm_limiting() -> BotticelliResult<()> {
 #[tokio::test]
 async fn test_unlimited_tier() -> BotticelliResult<()> {
     // No limits
-    let tier = create_test_tier(None, None, None, None)
-        .map_err(|e| RateLimitErrorKind::BuilderValidation(e.to_string()))?;
+    let tier = create_test_tier(None, None, None, None)?;
     let limiter = RateLimiter::new(tier);
 
     // Should be able to make many requests
@@ -87,10 +88,9 @@ async fn test_unlimited_tier() -> BotticelliResult<()> {
 }
 
 #[tokio::test]
-async fn test_tpm_limiting() -> Result<(), RateLimitError> {
+async fn test_tpm_limiting() -> BotticelliResult<()> {
     // Very low TPM for testing
-    let tier = create_test_tier(None, Some(10), None, Some(10))
-        .map_err(|e| RateLimitErrorKind::BuilderValidation(e.to_string()))?;
+    let tier = create_test_tier(None, Some(10), None, Some(10))?;
     let limiter = RateLimiter::new(tier);
 
     // First request with 5 tokens should succeed

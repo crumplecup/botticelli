@@ -1,4 +1,4 @@
-//! Rate limiting error types.
+///! Rate limiting error types.
 
 /// Specific rate limiting error conditions.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display)]
@@ -15,6 +15,9 @@ pub enum RateLimitErrorKind {
     /// Builder validation error.
     #[display("Builder validation error: {_0}")]
     BuilderValidation(String),
+    /// Builder failed with source error.
+    #[display("Builder failed: {_0}")]
+    BuilderFailed(String),
     /// Budget exceeded.
     #[display(
         "Budget exceeded: requested {requested_tokens} tokens, available: {available_tokens_minute} TPM, {available_tokens_day} TPD, {available_requests_minute} RPM, {available_requests_day} RPD"
@@ -58,20 +61,41 @@ impl RateLimitError {
     }
 }
 
-// Conversion from derive_builder error (String-based)
+// Conversion from String (derive_builder errors are String-based)
 impl From<String> for RateLimitErrorKind {
     fn from(msg: String) -> Self {
-        Self::BuilderValidation(msg)
+        Self::BuilderFailed(msg)
     }
 }
 
 // ErrorKind → Error conversion
 crate::impl_error_from_kind!(RateLimitErrorKind => RateLimitError);
 
-// Bridge from RateLimitErrorKind to BotticelliErrorKind via RateLimitError
-impl From<RateLimitErrorKind> for crate::BotticelliErrorKind {
+// String → RateLimitError (via ErrorKind)
+impl From<String> for RateLimitError {
     #[track_caller]
-    fn from(kind: RateLimitErrorKind) -> Self {
-        RateLimitError::from(kind).into()
+    fn from(msg: String) -> Self {
+        Self::new(RateLimitErrorKind::from(msg))
     }
 }
+
+// TierConfigBuilderError → RateLimitErrorKind (for wrapping)
+impl From<derive_builder::UninitializedFieldError> for RateLimitErrorKind {
+    fn from(err: derive_builder::UninitializedFieldError) -> Self {
+        Self::BuilderFailed(err.to_string())
+    }
+}
+
+// TierConfigBuilderError → RateLimitError (via ErrorKind)
+impl From<derive_builder::UninitializedFieldError> for RateLimitError {
+    #[track_caller]
+    fn from(err: derive_builder::UninitializedFieldError) -> Self {
+        RateLimitErrorKind::from(err).into()
+    }
+}
+
+// Bridge to umbrella error (generates BotticelliErrorKind and BotticelliError conversions)
+crate::bridge_error!(derive_builder::UninitializedFieldError => RateLimitError => crate::BotticelliErrorKind);
+
+// Bridge String → RateLimitError → BotticelliErrorKind
+crate::bridge_error!(String => RateLimitError => crate::BotticelliErrorKind);

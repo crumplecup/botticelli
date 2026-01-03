@@ -7,6 +7,11 @@ pub enum HttpErrorKind {
     #[display("HTTP error: {}", _0)]
     Message(String),
 
+    /// Invalid header value
+    #[cfg(feature = "reqwest")]
+    #[display("Invalid header value: {}", _0)]
+    InvalidHeaderValue(String),
+
     /// Reqwest-specific error
     #[cfg(feature = "reqwest")]
     #[display("Reqwest error: {}", _0)]
@@ -65,4 +70,15 @@ impl From<reqwest::Error> for HttpError {
 }
 
 #[cfg(feature = "reqwest")]
+impl From<reqwest::header::InvalidHeaderValue> for HttpError {
+    #[track_caller]
+    fn from(err: reqwest::header::InvalidHeaderValue) -> Self {
+        Self::new(HttpErrorKind::InvalidHeaderValue(err.to_string()))
+    }
+}
+
+#[cfg(feature = "reqwest")]
 crate::bridge_error!(reqwest::Error => HttpError => crate::BotticelliErrorKind);
+
+#[cfg(feature = "reqwest")]
+crate::bridge_error!(reqwest::header::InvalidHeaderValue => HttpError => crate::BotticelliErrorKind);

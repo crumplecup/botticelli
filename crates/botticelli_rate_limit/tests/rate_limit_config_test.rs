@@ -1,11 +1,14 @@
 //! Tests for rate limit configuration system.
 
+mod common;
+
 use botticelli_error::{BotticelliResult, ConfigError};
 use botticelli_interface::Tier;
 use botticelli_rate_limit::{BotticelliConfig, TierConfigBuilder, TierConfigBuilderError};
 
 #[test]
 fn test_load_bundled_defaults() -> Result<(), ConfigError> {
+    common::init_tracing();
     let config = BotticelliConfig::load()?;
 
     // Should have at least Gemini provider
@@ -26,6 +29,7 @@ fn test_load_bundled_defaults() -> Result<(), ConfigError> {
 
 #[test]
 fn test_tier_config_implements_tier_trait() -> Result<(), TierConfigBuilderError> {
+    common::init_tracing();
     let tier_config = TierConfigBuilder::default()
         .name("Test Tier")
         .rpm(100u32)

@@ -27,21 +27,6 @@ impl ProviderReqwestError {
     }
 }
 
-#[cfg(feature = "reqwest")]
-impl Clone for ProviderReqwestError {
-    fn clone(&self) -> Self {
-        // reqwest::Error is not Clone, reconstruct with DeserializationError
-        Self {
-            source: Box::new(reqwest::Error::from(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("{:?}", self.source),
-            ))),
-            line: self.line,
-            file: self.file,
-        }
-    }
-}
-
 /// Serde JSON error with source tracking for provider operations.
 #[cfg(feature = "serde_json")]
 #[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
@@ -85,7 +70,7 @@ impl Clone for ProviderSerdeJsonError {
 }
 
 /// Errors from provider operations.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Provider {}: {} at {}:{}", provider, kind, file, line)]
 pub struct ProviderError {
     /// Provider name
@@ -99,7 +84,7 @@ pub struct ProviderError {
 }
 
 /// Types of provider errors.
-#[derive(Debug, Clone, derive_more::Display)]
+#[derive(Debug, derive_more::Display)]
 pub enum ProviderErrorKind {
     /// API error from the provider.
     #[display("API error: {}", _0)]

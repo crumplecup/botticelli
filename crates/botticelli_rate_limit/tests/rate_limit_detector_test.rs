@@ -1,5 +1,7 @@
 //! Tests for header-based rate limit detection.
 
+mod common;
+
 use botticelli_error::{HttpError, HttpErrorKind, BotticelliResult};
 use botticelli_interface::Tier;
 use botticelli_rate_limit::HeaderRateLimitDetector;
@@ -10,8 +12,7 @@ fn create_headers(entries: &[(&str, &str)]) -> Result<HeaderMap, HttpError> {
     for (key, value) in entries {
         let header_name = HeaderName::from_bytes(key.as_bytes())
             .map_err(|e| HttpError::new(HttpErrorKind::Message(e.to_string())))?;
-        let header_value = HeaderValue::from_str(value)
-            .map_err(|e| HttpError::new(HttpErrorKind::Message(e.to_string())))?;
+        let header_value = HeaderValue::from_str(value)?;
         headers.insert(header_name, header_value);
     }
     Ok(headers)
@@ -20,6 +21,8 @@ fn create_headers(entries: &[(&str, &str)]) -> Result<HeaderMap, HttpError> {
 #[cfg(feature = "gemini")]
 #[tokio::test]
 async fn test_detect_gemini_free_tier() -> BotticelliResult<()> {
+    common::init_tracing();
+    
     let detector = HeaderRateLimitDetector::new();
     let headers = create_headers(&[
         ("x-ratelimit-limit", "10"),
