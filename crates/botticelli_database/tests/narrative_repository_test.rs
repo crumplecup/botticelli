@@ -28,22 +28,21 @@ fn create_test_storage() -> BotticelliResult<Arc<FileSystemStorage>> {
     Ok(Arc::new(FileSystemStorage::new(temp_dir)?))
 }
 
-fn create_test_execution(name: &str) -> NarrativeExecution {
+fn create_test_execution(name: &str) -> BotticelliResult<NarrativeExecution> {
     let act = ActExecutionBuilder::default()
         .act_name("test_act".to_string())
         .sequence_number(0_usize)
         .inputs(vec![Input::Text("test input".to_string())])
         .response("test response".to_string())
-        .build()
-        .expect("Valid act");
+        .build()?;
 
-    NarrativeExecution::new(
+    Ok(NarrativeExecution::new(
         name.to_string(),
         vec![act],
         None,
         None,
         None,
-    )
+    ))
 }
 
 #[tokio::test]
@@ -58,7 +57,7 @@ async fn test_save_and_load_execution() -> BotticelliResult<()> {
 
     // Create test execution
     let name = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
-    let execution = create_test_execution(&name);
+    let execution = create_test_execution(&name)?;
 
     // Save execution
     let id = repo.save_execution(&execution).await?;
@@ -89,8 +88,8 @@ async fn test_list_executions() -> BotticelliResult<()> {
     let name1 = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
     let name2 = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
 
-    let exec1 = create_test_execution(&name1);
-    let exec2 = create_test_execution(&name2);
+    let exec1 = create_test_execution(&name1)?;
+    let exec2 = create_test_execution(&name2)?;
 
     let id1 = repo.save_execution(&exec1).await?;
     let id2 = repo.save_execution(&exec2).await?;
@@ -126,7 +125,7 @@ async fn test_update_execution_status() -> BotticelliResult<()> {
     let repo = PostgresNarrativeRepository::new(conn, storage);
 
     let name = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
-    let execution = create_test_execution(&name);
+    let execution = create_test_execution(&name)?;
 
     // Save execution
     let id = repo.save_execution(&execution).await?;
@@ -155,7 +154,7 @@ async fn test_delete_execution() -> BotticelliResult<()> {
     let repo = PostgresNarrativeRepository::new(conn, storage);
 
     let name = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
-    let execution = create_test_execution(&name);
+    let execution = create_test_execution(&name)?;
 
     // Save execution
     let id = repo.save_execution(&execution).await?;
@@ -181,7 +180,7 @@ async fn test_list_executions_with_filter() -> BotticelliResult<()> {
     let repo = PostgresNarrativeRepository::new(conn, storage);
 
     let name = format!("test_narrative_{}", uuid::Uuid::new_v4().simple());
-    let execution = create_test_execution(&name);
+    let execution = create_test_execution(&name)?;
 
     // Save and update status to completed
     let id = repo.save_execution(&execution).await?;
@@ -221,8 +220,7 @@ async fn test_execution_with_multiple_acts() -> BotticelliResult<()> {
         .sequence_number(0_usize)
         .inputs(vec![Input::Text("input1".to_string())])
         .response("response1".to_string())
-        .build()
-        .expect("Valid act");
+        .build()?;
 
     let act2 = ActExecutionBuilder::default()
         .act_name("act2".to_string())
@@ -232,8 +230,7 @@ async fn test_execution_with_multiple_acts() -> BotticelliResult<()> {
             Input::Text("input2b".to_string()),
         ])
         .response("response2".to_string())
-        .build()
-        .expect("Valid act");
+        .build()?;
 
     let execution = NarrativeExecution::new(
         name.clone(),
