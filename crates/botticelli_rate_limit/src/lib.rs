@@ -20,7 +20,6 @@ mod budget;
 mod config;
 mod detector;
 mod limiter;
-mod tier;
 mod tiers;
 
 pub use budget::{Budget, BudgetRemaining};
@@ -30,7 +29,8 @@ pub use config::{
 };
 pub use detector::HeaderRateLimitDetector;
 pub use limiter::{RateLimiter, RateLimiterGuard};
-pub use tier::Tier;
+// Re-export Tier from botticelli_interface
+pub use botticelli_interface::Tier;
 #[cfg(feature = "anthropic")]
 pub use tiers::AnthropicTier;
 #[cfg(feature = "gemini")]

@@ -6,7 +6,7 @@
 //! - User overrides (./botticelli.toml or ~/.config/botticelli/botticelli.toml)
 //! - Automatic merging with user values taking precedence
 
-use crate::Tier;
+use botticelli_interface::Tier;
 use botticelli_error::{BotticelliResult, ConfigError};
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};

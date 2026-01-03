@@ -4,7 +4,7 @@
 //! with their actual rate limits and pricing. These enums implement the `Tier` trait and
 //! provide type-safe tier selection for each provider.
 
-use crate::Tier;
+use botticelli_interface::Tier;
 
 /// Gemini API usage tiers.
 ///

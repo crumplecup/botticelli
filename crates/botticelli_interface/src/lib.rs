@@ -16,6 +16,7 @@ mod registry;
 mod registry_traits;
 mod repository;
 mod retry;
+mod tier;
 
 pub use bot_server::{BotActor, BotServer};
 pub use capabilities::{
@@ -39,3 +40,4 @@ pub use repository::{
     TableView,
 };
 pub use retry::RetryableError;
+pub use tier::Tier;

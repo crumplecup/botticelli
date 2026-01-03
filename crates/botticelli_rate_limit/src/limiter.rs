@@ -7,7 +7,7 @@
 //! The GCRA (Generic Cell Rate Algorithm) provides efficient, lock-free rate limiting
 //! that is ~10x faster than mutex-based token bucket approaches.
 
-use crate::Tier;
+use botticelli_interface::Tier;
 use governor::clock::DefaultClock;
 use governor::state::{InMemoryState, NotKeyed};
 use governor::{Quota, RateLimiter as GovernorRateLimiter};

@@ -11,7 +11,7 @@
 /// # Example
 ///
 /// ```
-/// use botticelli_rate_limit::Tier;
+/// use botticelli_interface::Tier;
 ///
 /// struct FreeTier;
 ///
