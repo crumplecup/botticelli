@@ -75,7 +75,7 @@ impl HeaderRateLimitDetector {
         debug!(rpm, "Detected RPM from x-ratelimit-limit header");
 
         // Gemini doesn't expose TPM/RPD in headers, so we infer from RPM
-        let (tpm, rpd, tier_name) = if rpm <= 10 {
+        let (tpm, rpd, tier_name): (Option<u64>, Option<u32>, &str) = if rpm <= 10 {
             (Some(250_000), Some(250), "Free")
         } else if rpm <= 360 {
             (Some(4_000_000), None, "Pay-as-you-go")
@@ -83,17 +83,22 @@ impl HeaderRateLimitDetector {
             (None, None, "Unknown")
         };
 
-        let config = TierConfig {
-            name: tier_name.to_string(),
-            rpm: Some(rpm),
-            tpm,
-            rpd,
-            max_concurrent: Some(1), // Gemini doesn't expose this in headers
-            daily_quota_usd: None,
-            cost_per_million_input_tokens: if rpm <= 10 { Some(0.0) } else { Some(0.075) },
-            cost_per_million_output_tokens: if rpm <= 10 { Some(0.0) } else { Some(0.30) },
-            models: HashMap::new(), // Header-detected configs don't have model-specific overrides
-        };
+        let mut builder = crate::TierConfigBuilder::default();
+        builder
+            .name(tier_name)
+            .rpm(rpm)
+            .max_concurrent(1u32) // Gemini doesn't expose this in headers
+            .cost_per_million_input_tokens(if rpm <= 10 { 0.0 } else { 0.075 })
+            .cost_per_million_output_tokens(if rpm <= 10 { 0.0 } else { 0.30 });
+
+        if let Some(tpm_val) = tpm {
+            builder.tpm(tpm_val);
+        }
+        if let Some(rpd_val) = rpd {
+            builder.rpd(rpd_val);
+        }
+
+        let config = builder.build().expect("Valid TierConfig");
 
         // Cache for future use
         *self.detected_limits.write().await = Some(config.clone());
@@ -134,17 +139,15 @@ impl HeaderRateLimitDetector {
             _ => "Custom",
         };
 
-        let config = TierConfig {
-            name: tier_name.to_string(),
-            rpm: Some(rpm),
-            tpm: Some(tpm),
-            rpd: None,               // Anthropic doesn't have daily limits
-            max_concurrent: Some(5), // Not exposed in headers
-            daily_quota_usd: None,
-            cost_per_million_input_tokens: Some(3.0), // Varies by model
-            cost_per_million_output_tokens: Some(15.0),
-            models: HashMap::new(), // Header-detected configs don't have model-specific overrides
-        };
+        let config = crate::TierConfigBuilder::default()
+            .name(tier_name)
+            .rpm(rpm)
+            .tpm(tpm)
+            .max_concurrent(5u32) // Not exposed in headers
+            .cost_per_million_input_tokens(3.0) // Varies by model
+            .cost_per_million_output_tokens(15.0)
+            .build()
+            .expect("Valid TierConfig");
 
         *self.detected_limits.write().await = Some(config.clone());
 
