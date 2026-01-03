@@ -7,7 +7,7 @@
 //! - Automatic merging with user values taking precedence
 
 use crate::Tier;
-use botticelli_error::{BotticelliError, BotticelliResult, ConfigError};
+use botticelli_error::{BotticelliResult, ConfigError};
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -325,23 +325,18 @@ impl BotticelliConfig {
     pub fn from_file(path: impl AsRef<std::path::Path>) -> BotticelliResult<Self> {
         debug!("Loading configuration from file");
 
-        Config::builder()
+        Ok(Config::builder()
             .add_source(File::from(path.as_ref()))
             .build()
             .map_err(|e| {
-                BotticelliError::from(ConfigError::new(format!(
+                ConfigError::new(format!(
                     "Failed to read configuration from {}: {}",
                     path.as_ref().display(),
                     e
-                )))
+                ))
             })?
-            .try_deserialize()
-            .map_err(|e| {
-                BotticelliError::from(ConfigError::new(format!(
-                    "Failed to parse configuration: {}",
-                    e
-                )))
-            })
+            .try_deserialize::<Self>()
+            .map_err(|e| ConfigError::new(format!("Failed to parse configuration: {}", e)))?)
     }
 
     /// Load configuration with precedence: user override > bundled default.
@@ -384,21 +379,11 @@ impl BotticelliConfig {
         builder = builder.add_source(File::with_name("botticelli").required(false));
 
         // Build and deserialize
-        builder
+        Ok(builder
             .build()
-            .map_err(|e| {
-                BotticelliError::from(ConfigError::new(format!(
-                    "Failed to build configuration: {}",
-                    e
-                )))
-            })?
-            .try_deserialize()
-            .map_err(|e| {
-                BotticelliError::from(ConfigError::new(format!(
-                    "Failed to parse configuration: {}",
-                    e
-                )))
-            })
+            .map_err(|e| ConfigError::new(format!("Failed to build configuration: {}", e)))?
+            .try_deserialize::<Self>()
+            .map_err(|e| ConfigError::new(format!("Failed to parse configuration: {}", e)))?)
     }
 
     /// Get tier configuration for a provider.
