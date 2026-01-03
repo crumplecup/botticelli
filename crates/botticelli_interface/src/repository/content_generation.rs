@@ -7,13 +7,13 @@
 pub trait ContentGenerationRepository {
     /// The row type representing a content generation record
     type Row;
-    
+
     /// The type for creating a new content generation record
     type NewRow;
-    
+
     /// The type for updating an existing content generation record
     type UpdateRow;
-    
+
     /// The error type for repository operations
     type Error;
 

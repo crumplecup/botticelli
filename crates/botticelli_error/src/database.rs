@@ -32,7 +32,7 @@ impl Clone for DieselError {
     fn clone(&self) -> Self {
         Self {
             source: Box::new(diesel::result::Error::DeserializationError(
-                format!("{:?}", self.source).into()
+                format!("{:?}", self.source).into(),
             )),
             line: self.line,
             file: self.file,
@@ -71,9 +71,10 @@ impl DieselConnectionError {
 impl Clone for DieselConnectionError {
     fn clone(&self) -> Self {
         Self {
-            source: Box::new(diesel::ConnectionError::BadConnection(
-                format!("{:?}", self.source)
-            )),
+            source: Box::new(diesel::ConnectionError::BadConnection(format!(
+                "{:?}",
+                self.source
+            ))),
             line: self.line,
             file: self.file,
         }
@@ -140,51 +141,51 @@ pub enum DatabaseErrorKind {
     /// Connection failed
     #[display("Database connection error: {}", _0)]
     Connection(String),
-    
+
     /// Diesel connection error
     #[cfg(feature = "database")]
     #[display("{}", _0)]
     DieselConnection(DieselConnectionError),
-    
+
     /// R2D2 pool error
     #[cfg(feature = "database")]
     #[display("{}", _0)]
     R2d2(R2d2Error),
-    
+
     /// Query execution failed
     #[display("Database query error: {}", _0)]
     Query(String),
-    
+
     /// Diesel query error
     #[cfg(feature = "database")]
     #[display("{}", _0)]
     Diesel(DieselError),
-    
+
     /// Serialization/deserialization error
     #[display("Serialization error: {}", _0)]
     Serialization(String),
-    
+
     /// Serde JSON error
     #[cfg(feature = "serde_json")]
     #[display("{}", _0)]
     SerdeJson(SerdeJsonError),
-    
+
     /// Migration error
     #[display("Migration error: {}", _0)]
     Migration(String),
-    
+
     /// Record not found
     #[display("Record not found")]
     NotFound,
-    
+
     /// Table not found
     #[display("Table '{}' not found in database", _0)]
     TableNotFound(String),
-    
+
     /// Schema inference error
     #[display("Schema inference error: {}", _0)]
     SchemaInference(String),
-    
+
     /// Invalid query
     #[display("Invalid query: {}", _0)]
     InvalidQuery(String),

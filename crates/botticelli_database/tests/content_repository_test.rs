@@ -9,8 +9,6 @@ use serde_json::json;
 use std::env;
 use tracing::info;
 
-
-
 /// Initialize tracing for tests.
 ///
 /// Uses try_init() to avoid panicking if already initialized.
@@ -28,7 +26,9 @@ fn init_test_tracing() {
 fn get_database_url() -> BotticelliResult<String> {
     match env::var("DATABASE_URL") {
         Ok(url) => Ok(url),
-        Err(_) => Ok("postgres://botticelli:renaissance@localhost:5432/botticelli_test".to_string()),
+        Err(_) => {
+            Ok("postgres://botticelli:renaissance@localhost:5432/botticelli_test".to_string())
+        }
     }
 }
 
@@ -55,15 +55,18 @@ async fn test_create_content_table() -> BotticelliResult<()> {
     });
 
     let result = repo.create_content_table(&table_name, &schema).await;
-    
-    assert!(result.is_ok(), "Failed to create content table: {:?}", result.err());
-    
+
+    assert!(
+        result.is_ok(),
+        "Failed to create content table: {:?}",
+        result.err()
+    );
+
     // Cleanup
     let pool = repo.pool();
     let mut conn = pool.get().map_err(botticelli_error::DatabaseError::from)?;
-    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)?;
-    
+    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name)).execute(&mut conn)?;
+
     Ok(())
 }
 
@@ -85,8 +88,7 @@ async fn test_insert_and_query_content() -> BotticelliResult<()> {
     });
 
     // Create table
-    repo.create_content_table(&table_name, &schema)
-        .await?;
+    repo.create_content_table(&table_name, &schema).await?;
 
     // Insert content
     let content = json!({
@@ -95,16 +97,12 @@ async fn test_insert_and_query_content() -> BotticelliResult<()> {
         "rating": 5
     });
 
-    let id = repo
-        .insert_content(&table_name, &content)
-        .await?;
+    let id = repo.insert_content(&table_name, &content).await?;
 
     assert!(id > 0, "Expected positive ID, got {}", id);
 
     // Query content
-    let results = repo
-        .query_content(&table_name, None, None)
-        .await?;
+    let results = repo.query_content(&table_name, None, None).await?;
 
     assert!(!results.is_empty(), "Expected at least one result");
     assert_eq!(results[0]["title"], "Test Title");
@@ -114,9 +112,8 @@ async fn test_insert_and_query_content() -> BotticelliResult<()> {
     // Cleanup
     let pool = repo.pool();
     let mut conn = pool.get().map_err(botticelli_error::DatabaseError::from)?;
-    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)?;
-    
+    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name)).execute(&mut conn)?;
+
     Ok(())
 }
 
@@ -136,28 +133,23 @@ async fn test_query_with_limit() -> BotticelliResult<()> {
     });
 
     // Create table and insert multiple rows
-    repo.create_content_table(&table_name, &schema)
-        .await?;
+    repo.create_content_table(&table_name, &schema).await?;
 
     for i in 0..10 {
         let content = json!({"value": i});
-        repo.insert_content(&table_name, &content)
-            .await?;
+        repo.insert_content(&table_name, &content).await?;
     }
 
     // Query with limit
-    let results = repo
-        .query_content(&table_name, None, Some(5))
-        .await?;
+    let results = repo.query_content(&table_name, None, Some(5)).await?;
 
     assert_eq!(results.len(), 5, "Expected exactly 5 results");
 
     // Cleanup
     let pool = repo.pool();
     let mut conn = pool.get().map_err(botticelli_error::DatabaseError::from)?;
-    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)?;
-    
+    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name)).execute(&mut conn)?;
+
     Ok(())
 }
 
@@ -177,22 +169,18 @@ async fn test_query_empty_table() -> BotticelliResult<()> {
     });
 
     // Create empty table
-    repo.create_content_table(&table_name, &schema)
-        .await?;
+    repo.create_content_table(&table_name, &schema).await?;
 
     // Query empty table
-    let results = repo
-        .query_content(&table_name, None, None)
-        .await?;
+    let results = repo.query_content(&table_name, None, None).await?;
 
     assert!(results.is_empty(), "Expected empty results");
 
     // Cleanup
     let pool = repo.pool();
     let mut conn = pool.get().map_err(botticelli_error::DatabaseError::from)?;
-    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)?;
-    
+    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name)).execute(&mut conn)?;
+
     Ok(())
 }
 
@@ -211,8 +199,7 @@ async fn test_insert_special_characters() -> BotticelliResult<()> {
         "text": "text"
     });
 
-    repo.create_content_table(&table_name, &schema)
-        .await?;
+    repo.create_content_table(&table_name, &schema).await?;
 
     // Insert content with special characters
     let special_text = "Test with 'quotes', \"double quotes\", and\nnewlines";
@@ -220,13 +207,10 @@ async fn test_insert_special_characters() -> BotticelliResult<()> {
         "text": special_text
     });
 
-    repo.insert_content(&table_name, &content)
-        .await?;
+    repo.insert_content(&table_name, &content).await?;
 
     // Query and verify
-    let results = repo
-        .query_content(&table_name, None, None)
-        .await?;
+    let results = repo.query_content(&table_name, None, None).await?;
 
     assert_eq!(results.len(), 1);
     assert_eq!(results[0]["text"], special_text);
@@ -234,9 +218,8 @@ async fn test_insert_special_characters() -> BotticelliResult<()> {
     // Cleanup
     let pool = repo.pool();
     let mut conn = pool.get().map_err(botticelli_error::DatabaseError::from)?;
-    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name))
-        .execute(&mut conn)?;
-    
+    diesel::sql_query(format!("DROP TABLE IF EXISTS {}", table_name)).execute(&mut conn)?;
+
     Ok(())
 }
 
@@ -251,12 +234,10 @@ async fn test_query_nonexistent_table() -> BotticelliResult<()> {
     let repo = DatabaseContentRepository::new(pool);
 
     let table_name = "nonexistent_table_12345";
-    
-    let result = repo
-        .query_content(table_name, None, None)
-        .await;
+
+    let result = repo.query_content(table_name, None, None).await;
 
     assert!(result.is_err(), "Expected error for nonexistent table");
-    
+
     Ok(())
 }

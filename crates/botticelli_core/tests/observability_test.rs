@@ -16,7 +16,7 @@ fn test_stdout_init() -> Result<(), ObservabilityError> {
         .enable_metrics(false)
         .build()
         .map_err(|e| ObservabilityError::from(e.to_string()))?;
-    
+
     init_observability_with_config(config)?;
     Ok(())
 }
@@ -30,7 +30,7 @@ fn test_json_logs() -> Result<(), ObservabilityError> {
         .enable_metrics(false)
         .build()
         .map_err(|e| ObservabilityError::from(e.to_string()))?;
-    
+
     init_observability_with_config(config)?;
     Ok(())
 }
@@ -44,7 +44,7 @@ fn test_custom_log_level() -> Result<(), ObservabilityError> {
         .enable_metrics(false)
         .build()
         .map_err(|e| ObservabilityError::from(e.to_string()))?;
-    
+
     init_observability_with_config(config)?;
     Ok(())
 }
@@ -53,15 +53,15 @@ fn test_custom_log_level() -> Result<(), ObservabilityError> {
 fn test_invalid_log_level() -> Result<(), ObservabilityError> {
     let config = ObservabilityConfig::builder()
         .service_name("test-invalid-service")
-        .log_level("invalid!!!log@@@level")  // Truly invalid syntax
+        .log_level("invalid!!!log@@@level") // Truly invalid syntax
         .exporter(ExporterBackend::Stdout)
         .enable_metrics(false)
         .build()
         .map_err(|e| ObservabilityError::from(e.to_string()))?;
-    
+
     let result = init_observability_with_config(config);
     assert!(result.is_err(), "Should reject invalid log level");
-    
+
     let err = result.unwrap_err();
     let display = format!("{}", err);
     assert!(
@@ -69,7 +69,7 @@ fn test_invalid_log_level() -> Result<(), ObservabilityError> {
         "Error should mention filter issue: {}",
         display
     );
-    
+
     Ok(())
 }
 
@@ -84,7 +84,7 @@ fn test_otlp_localhost() -> Result<(), ObservabilityError> {
         .enable_metrics(false)
         .build()
         .map_err(|e| ObservabilityError::from(e.to_string()))?;
-    
+
     // Accept either success or connection error, just don't panic
     match init_observability_with_config(config) {
         Ok(_) => Ok(()),
@@ -109,31 +109,28 @@ fn test_otlp_localhost() -> Result<(), ObservabilityError> {
 #[test]
 fn observability_initialization_scenarios() -> Result<(), ObservabilityError> {
     use tracing::{debug, error, info, warn};
-    
+
     // Test: First valid initialization (sets global state)
     test_stdout_init()?;
-    
+
     // Exercise the tracing infrastructure
     info!("Observability test suite started");
     debug!(test_phase = "initialization", "Testing stdout exporter");
     warn!("This is a test warning");
     error!(test_phase = "initialization", "This is a test error");
-    
-    info!(
-        scenarios_completed = 1,
-        "Stdout initialization succeeded"
-    );
-    
+
+    info!(scenarios_completed = 1, "Stdout initialization succeeded");
+
     // Subsequent initialization tests would fail with "already set" error
     // This is expected behavior - only one subscriber per process
     // In real usage, init is called once at app startup
-    
+
     // Test: Verify shutdown works
     shutdown_observability();
-    
+
     info!("All observability scenarios completed");
     info!(shutdown = true, "Shutdown completed");
-    
+
     Ok(())
 }
 
@@ -141,15 +138,15 @@ fn observability_initialization_scenarios() -> Result<(), ObservabilityError> {
 #[cfg(feature = "otel-otlp")]
 fn observability_otlp_initialization() -> Result<(), ObservabilityError> {
     use tracing::info;
-    
+
     // Run OTLP test in isolation (separate test process)
     test_otlp_localhost()?;
-    
+
     info!("OTLP initialization test starting");
     info!(endpoint = "http://localhost:4317", "Testing OTLP endpoint");
-    
+
     shutdown_observability();
-    
+
     info!("OTLP initialization test completed");
     Ok(())
 }

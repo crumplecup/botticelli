@@ -33,15 +33,14 @@ pub async fn create_mcp_client_for_dialog(
     _dialog: Box<dyn ElicitationDialog>,
 ) -> Result<InProcTransport, ChatError> {
     warn!("create_mcp_client_for_dialog temporarily disabled during rmcp migration");
-    
+
     // Temporary: Create a basic server without dialog integration
     // This allows compilation but elicitation won't work until properly implemented
     let server = BotticelliServer::builder().build();
-    
+
     // TODO: Wrap server in InProcTransport and return
     // For now, return error to make intent clear
     Err(ChatError::new(ChatErrorKind::InvalidState(
         "Elicitation infrastructure not yet migrated to rmcp".to_string(),
     )))
 }
-

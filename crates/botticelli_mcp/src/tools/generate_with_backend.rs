@@ -18,10 +18,10 @@ use tracing::{debug, error, instrument};
 pub struct GenerateWithBackendRequest {
     /// The backend provider to use (e.g., "groq", "gemini", "anthropic")
     backend: String,
-    
+
     /// The model to use (e.g., "llama-3.1-8b-instant")
     model: String,
-    
+
     /// The generation request parameters
     #[serde(flatten)]
     request: GenerateRequest,
@@ -32,10 +32,10 @@ pub struct GenerateWithBackendRequest {
 pub struct GenerateWithBackendResponse {
     /// The provider that handled the request
     provider: String,
-    
+
     /// The model that generated the response
     model: String,
-    
+
     /// The generation response
     #[serde(flatten)]
     response: GenerateResponse,
@@ -48,11 +48,7 @@ pub trait BackendFactory: Send + Sync {
     /// # Errors
     ///
     /// Returns error if backend is unsupported or configuration is invalid.
-    fn create_driver(
-        &self,
-        backend: &str,
-        model: &str,
-    ) -> McpResult<Arc<dyn BotticelliDriver>>;
+    fn create_driver(&self, backend: &str, model: &str) -> McpResult<Arc<dyn BotticelliDriver>>;
 }
 
 /// Tool for generating text using different LLM backends.
@@ -83,16 +79,18 @@ impl GenerateWithBackendTool {
         request: GenerateWithBackendRequest,
     ) -> McpResult<GenerateWithBackendResponse> {
         debug!("Creating driver for backend");
-        let driver = self.factory.create_driver(&request.backend, &request.model)?;
+        let driver = self
+            .factory
+            .create_driver(&request.backend, &request.model)?;
 
         debug!("Generating with backend");
-        let response: GenerateResponse = driver
-            .generate(&request.request)
-            .await
-            .map_err(|e| {
-                error!(error = ?e, "Generation failed");
-                McpError::new(McpErrorKind::ExecutionFailed(format!("Generation failed: {}", e)))
-            })?;
+        let response: GenerateResponse = driver.generate(&request.request).await.map_err(|e| {
+            error!(error = ?e, "Generation failed");
+            McpError::new(McpErrorKind::ExecutionFailed(format!(
+                "Generation failed: {}",
+                e
+            )))
+        })?;
 
         debug!("Generation successful");
         Ok(GenerateWithBackendResponse {

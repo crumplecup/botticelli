@@ -4,10 +4,10 @@
 //! needed for MCP operations.
 
 use crate::dialog_resource::DialogResource;
+use crate::tools::NarrativeHelper;
 use crate::tools::narrative_validation_helpers::{
     add_helpful_comments, auto_fix_common_issues, format_toml, format_validation_result,
 };
-use crate::tools::NarrativeHelper;
 use crate::{
     ApplyValidationFixesParams, ApplyValidationFixesResult, CarouselLevel, CarouselSummary,
     CreateNarrativeParams, CreateNarrativeResult, CreateNarrativeSessionParams,
@@ -18,24 +18,23 @@ use crate::{
     DiscordPostMessageParams, DiscordPostMessageResult, EchoParams, EchoResult, ElicitActParams,
     ElicitActResult, ElicitBoolParams, ElicitBoolResult, ElicitCarouselParams,
     ElicitCarouselResult, ElicitMetadataParams, ElicitMetadataResult, ElicitNumberParams,
-    ElicitNumberResult, ElicitSelectParams, ElicitSelectResult, ElicitTextParams,
-    ElicitTextResult, ExecuteActParams, ExecuteActResult, ExecuteNarrativeParams,
-    ExecuteNarrativeResult, ExportMetricsParams, ExportMetricsResult, FinalizeNarrativeParams,
-    FinalizeNarrativeResult, GenerateParams, GenerateResult, GetNarrativeStateParams,
-    GetNarrativeStateResult, ListScenesParams, ListScenesResult, MetricsFormat,
-    ModifyNarrativeParams, ModifyNarrativeResult, NarrativeAnalysis, NarrativeStateSummary,
-    PrometheusMetrics, QueryContentParams, QueryContentResult, SaveNarrativeParams,
-    SaveNarrativeResult, ServerInfoResult, StateFormat, UpdateSceneParams, UpdateSceneResult,
-    ValidateNarrativeParams, ValidateNarrativeResult, ValidateNarrativeSessionParams,
-    ValidateNarrativeSessionResult, ValidationError, ValidationIssue, ValidationLocation,
-    ValidationSeverity, ValidationWarning,
+    ElicitNumberResult, ElicitSelectParams, ElicitSelectResult, ElicitTextParams, ElicitTextResult,
+    ExecuteActParams, ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult,
+    ExportMetricsParams, ExportMetricsResult, FinalizeNarrativeParams, FinalizeNarrativeResult,
+    GenerateParams, GenerateResult, GetNarrativeStateParams, GetNarrativeStateResult,
+    ListScenesParams, ListScenesResult, MetricsFormat, ModifyNarrativeParams,
+    ModifyNarrativeResult, NarrativeAnalysis, NarrativeStateSummary, PrometheusMetrics,
+    QueryContentParams, QueryContentResult, SaveNarrativeParams, SaveNarrativeResult,
+    ServerInfoResult, StateFormat, UpdateSceneParams, UpdateSceneResult, ValidateNarrativeParams,
+    ValidateNarrativeResult, ValidateNarrativeSessionParams, ValidateNarrativeSessionResult,
+    ValidationError, ValidationIssue, ValidationLocation, ValidationSeverity, ValidationWarning,
 };
 use botticelli_narrative::validator::validate_narrative_toml;
-use std::path::Path;
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ServerCapabilities;
-use rmcp::{tool, tool_handler, tool_router, ServerHandler};
+use rmcp::{ServerHandler, tool, tool_handler, tool_router};
+use std::path::Path;
 use std::sync::Arc;
 use tracing::{debug, instrument};
 
@@ -304,7 +303,10 @@ impl BotticelliServer {
         feature = "huggingface",
         feature = "groq"
     ))]
-    fn select_driver(&self, model: &str) -> Result<Arc<dyn botticelli_interface::BotticelliDriver>, rmcp::ErrorData> {
+    fn select_driver(
+        &self,
+        model: &str,
+    ) -> Result<Arc<dyn botticelli_interface::BotticelliDriver>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
@@ -341,7 +343,10 @@ impl BotticelliServer {
         }
 
         #[cfg(feature = "ollama")]
-        if model.starts_with("llama") || model.starts_with("mistral") || model.starts_with("codellama") {
+        if model.starts_with("llama")
+            || model.starts_with("mistral")
+            || model.starts_with("codellama")
+        {
             return self
                 .ollama_driver
                 .as_ref()
@@ -395,7 +400,6 @@ impl BotticelliServer {
         ))
     }
 }
-
 
 #[tool_router]
 impl BotticelliServer {
@@ -546,7 +550,9 @@ impl BotticelliServer {
     /// Returns an error if:
     /// - Metrics collector is not configured
     /// - Metrics export fails
-    #[tool(description = "Export execution metrics in Prometheus text format for monitoring dashboards")]
+    #[tool(
+        description = "Export execution metrics in Prometheus text format for monitoring dashboards"
+    )]
     #[instrument(skip(self))]
     pub async fn export_metrics(
         &self,
@@ -981,9 +987,7 @@ impl BotticelliServer {
     /// - Name is invalid (must be alphanumeric with underscores)
     /// - Description is empty
     /// - TOML generation fails
-    #[tool(
-        description = "Generate a complete narrative TOML from a natural language description"
-    )]
+    #[tool(description = "Generate a complete narrative TOML from a natural language description")]
     #[instrument(skip(self))]
     pub async fn create_narrative(
         &self,
@@ -1113,8 +1117,7 @@ impl BotticelliServer {
         debug!(modification = %modification, has_save_path = save_to.is_some(), "Modifying narrative");
 
         // Apply modification
-        let (mut modified_toml, mut changes) =
-            apply_modification(&narrative_toml, &modification)?;
+        let (mut modified_toml, mut changes) = apply_modification(&narrative_toml, &modification)?;
 
         // Auto-fix common issues
         let (fixed_toml, fixes_applied) = auto_fix_common_issues(&modified_toml);
@@ -1139,17 +1142,18 @@ impl BotticelliServer {
         // Optionally save to file
         let mut saved_to = None;
         if let Some(path) = save_to {
-            tokio::fs::write(&path, &modified_toml)
-                .await
-                .map_err(|e| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Owned(format!("Failed to save file: {}", e)),
-                        None,
-                    )
-                })?;
+            tokio::fs::write(&path, &modified_toml).await.map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Failed to save file: {}", e)),
+                    None,
+                )
+            })?;
             saved_to = Some(path);
-            debug!(path = saved_to.as_ref().unwrap(), "Saved modified narrative to file");
+            debug!(
+                path = saved_to.as_ref().unwrap(),
+                "Saved modified narrative to file"
+            );
         }
 
         // Format validation results
@@ -1235,15 +1239,13 @@ impl BotticelliServer {
         }
 
         // Write file
-        tokio::fs::write(path, &narrative_toml)
-            .await
-            .map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Failed to write file: {}", e)),
-                    None,
-                )
-            })?;
+        tokio::fs::write(path, &narrative_toml).await.map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Failed to write file: {}", e)),
+                None,
+            )
+        })?;
 
         debug!(path = %file_path, "Narrative saved to file");
 
@@ -1255,7 +1257,7 @@ impl BotticelliServer {
         let result = SaveNarrativeResult::new(absolute_path, narrative_toml.len(), existed);
         Ok(Json(result))
     }
-    
+
     /// Validate a narrative TOML file or string.
     ///
     /// Checks syntax, structure, references, model names, and circular dependencies.
@@ -1286,12 +1288,18 @@ impl BotticelliServer {
             strict,
         }): Parameters<ValidateNarrativeParams>,
     ) -> Result<Json<ValidateNarrativeResult>, rmcp::ErrorData> {
-        use botticelli_narrative::validator::{ValidationConfig, validate_narrative_toml_with_config};
+        use botticelli_narrative::validator::{
+            ValidationConfig, validate_narrative_toml_with_config,
+        };
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
         use std::path::PathBuf;
 
-        debug!(?file_path, has_content = content.is_some(), "Validating narrative");
+        debug!(
+            ?file_path,
+            has_content = content.is_some(),
+            "Validating narrative"
+        );
 
         // Get TOML content
         let toml_content = if let Some(c) = content {
@@ -1369,7 +1377,7 @@ impl BotticelliServer {
 
         Ok(Json(ValidateNarrativeResult::new(valid, errors, warnings)))
     }
-    
+
     /// Generate text using an LLM.
     ///
     /// Simple text generation with configurable model, temperature, and tokens.
@@ -1502,7 +1510,10 @@ impl BotticelliServer {
                 prompt, model, max_tokens, temperature
             );
 
-            debug!(response_len = response_text.len(), "Generated placeholder text");
+            debug!(
+                response_len = response_text.len(),
+                "Generated placeholder text"
+            );
 
             Ok(Json(GenerateResult::new(
                 response_text,
@@ -1511,7 +1522,7 @@ impl BotticelliServer {
             )))
         }
     }
-    
+
     /// Execute a single narrative act with an LLM.
     ///
     /// Executes one act/step of a narrative with context from previous acts.
@@ -1542,9 +1553,6 @@ impl BotticelliServer {
             context,
         }): Parameters<ExecuteActParams>,
     ) -> Result<Json<ExecuteActResult>, rmcp::ErrorData> {
-        
-        
-
         debug!(%model, has_context = context.is_some(), "Executing act");
 
         // Placeholder implementation
@@ -1553,7 +1561,7 @@ impl BotticelliServer {
         // 2. Build message with system prompt, context, and user prompt
         // 3. Execute with driver
         // 4. Return response with token usage
-        
+
         let response = format!(
             "Act execution placeholder\n\nPrompt: {}\nModel: {}\nContext: {}\n\nFull execution requires LLM backend integration.",
             prompt,
@@ -1570,7 +1578,7 @@ impl BotticelliServer {
             true,
         )))
     }
-    
+
     /// Execute a complete narrative from a TOML file.
     ///
     /// Loads a narrative TOML, executes all acts in sequence with the given
@@ -1623,19 +1631,17 @@ impl BotticelliServer {
         // 3. Execute all acts in sequence
         // 4. Track tokens and outputs
         // 5. Return final result
-        
+
         let final_output = format!(
             "Narrative execution placeholder\n\nPath: {}\nPrompt: {}\nModel: {:?}\n\nFull execution requires LLM backend and narrative executor integration.",
-            narrative_path,
-            prompt,
-            model
+            narrative_path, prompt, model
         );
 
         debug!("Narrative execution complete (placeholder)");
 
         Ok(Json(ExecuteNarrativeResult::new(
             final_output,
-            0,  // acts_executed
+            0, // acts_executed
             vec![model.unwrap_or_else(default_model)],
             Some(max_tokens),
             true,
@@ -1877,19 +1883,15 @@ impl BotticelliServer {
 
         // Validate if requested
         let validation_errors = if validate {
-            use botticelli_narrative::validator::{ValidationConfig, validate_narrative_toml_with_config};
+            use botticelli_narrative::validator::{
+                ValidationConfig, validate_narrative_toml_with_config,
+            };
 
             let config = ValidationConfig::default();
             let result = validate_narrative_toml_with_config(&toml, &config);
 
             if !result.is_valid() {
-                Some(
-                    result
-                        .errors
-                        .iter()
-                        .map(|e| e.message.clone())
-                        .collect(),
-                )
+                Some(result.errors.iter().map(|e| e.message.clone()).collect())
             } else {
                 None
             }
@@ -2173,7 +2175,12 @@ impl BotticelliServer {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
-        debug!(narrative_id, ?fix_types, confirm, "Applying validation fixes");
+        debug!(
+            narrative_id,
+            ?fix_types,
+            confirm,
+            "Applying validation fixes"
+        );
 
         if !confirm {
             return Err(rmcp::ErrorData::new(
@@ -2296,7 +2303,12 @@ impl BotticelliServer {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
-        debug!(narrative_id, ?level, iterations, "Creating carousel configuration");
+        debug!(
+            narrative_id,
+            ?level,
+            iterations,
+            "Creating carousel configuration"
+        );
 
         // Get narrative
         let mut partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
@@ -2421,7 +2433,11 @@ impl BotticelliServer {
         use serde_json::json;
         use std::borrow::Cow;
 
-        debug!(channel_id, content_len = content.len(), "Posting Discord message");
+        debug!(
+            channel_id,
+            content_len = content.len(),
+            "Posting Discord message"
+        );
 
         // Validate content length
         if content.len() > 2000 {
@@ -2482,10 +2498,7 @@ impl BotticelliServer {
             )
         })?;
 
-        let message_id = message["id"]
-            .as_str()
-            .unwrap_or("unknown")
-            .to_string();
+        let message_id = message["id"].as_str().unwrap_or("unknown").to_string();
         let timestamp = message["timestamp"]
             .as_str()
             .unwrap_or("unknown")
@@ -2522,10 +2535,9 @@ impl BotticelliServer {
     #[instrument(skip(self))]
     pub async fn discord_get_messages(
         &self,
-        Parameters(DiscordGetMessagesParams {
-            channel_id,
-            limit,
-        }): Parameters<DiscordGetMessagesParams>,
+        Parameters(DiscordGetMessagesParams { channel_id, limit }): Parameters<
+            DiscordGetMessagesParams,
+        >,
     ) -> Result<Json<DiscordGetMessagesResult>, rmcp::ErrorData> {
         use reqwest::Client;
         use rmcp::model::ErrorCode;
@@ -2595,7 +2607,10 @@ impl BotticelliServer {
             })
             .collect();
 
-        debug!(count = formatted_messages.len(), "Discord messages retrieved");
+        debug!(
+            count = formatted_messages.len(),
+            "Discord messages retrieved"
+        );
 
         Ok(Json(DiscordGetMessagesResult {
             status: "success".to_string(),
@@ -2626,9 +2641,7 @@ impl BotticelliServer {
     #[instrument(skip(self))]
     pub async fn discord_get_guild_info(
         &self,
-        Parameters(DiscordGetGuildInfoParams { guild_id }): Parameters<
-            DiscordGetGuildInfoParams,
-        >,
+        Parameters(DiscordGetGuildInfoParams { guild_id }): Parameters<DiscordGetGuildInfoParams>,
     ) -> Result<Json<DiscordGetGuildInfoResult>, rmcp::ErrorData> {
         use reqwest::Client;
         use rmcp::model::ErrorCode;
@@ -2780,7 +2793,10 @@ impl BotticelliServer {
             })
             .collect();
 
-        debug!(count = formatted_channels.len(), "Discord channels retrieved");
+        debug!(
+            count = formatted_channels.len(),
+            "Discord channels retrieved"
+        );
 
         Ok(Json(DiscordGetChannelsResult {
             status: "success".to_string(),
@@ -3168,10 +3184,7 @@ fn add_bot_command(toml: &str) -> Result<(String, String), rmcp::ErrorData> {
     // Add bot section
     lines.insert(insert_idx, format!("\n[bots.{}]", bot_name));
     lines.insert(insert_idx + 1, format!("platform = \"{}\"", platform));
-    lines.insert(
-        insert_idx + 2,
-        "command = \"server.get_stats\"".to_string(),
-    );
+    lines.insert(insert_idx + 2, "command = \"server.get_stats\"".to_string());
     lines.insert(insert_idx + 3, String::new());
 
     let modified = lines.join("\n");

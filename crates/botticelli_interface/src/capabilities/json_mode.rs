@@ -8,7 +8,7 @@ use async_trait::async_trait;
 pub trait JsonMode: BotticelliDriver {
     /// Schema type for JSON output.
     type JsonSchema: Send + Sync;
-    
+
     /// Generate JSON output matching the provided schema.
     async fn generate_json(
         &self,

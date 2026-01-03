@@ -13,10 +13,10 @@ use async_trait::async_trait;
 pub trait LlmProvider: Send + Sync {
     /// Request type for generation.
     type Request: Send + Sync;
-    
+
     /// Response type from generation.
     type Response: Send + Sync;
-    
+
     /// Error type for this provider.
     type Error: std::error::Error + Send + Sync + 'static;
 

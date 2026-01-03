@@ -34,11 +34,11 @@ mod create_narrative;
 mod dialog_resource;
 mod discord_tools;
 mod echo;
-mod elicitation;
 mod elicit_bool;
 mod elicit_number;
 mod elicit_select;
 mod elicit_text;
+mod elicitation;
 mod errors;
 mod execution;
 mod export_metrics;
@@ -62,14 +62,20 @@ pub mod http;
 pub use conversation::{Attachment, ConversationSession, ConversationTurn, SessionState};
 pub use create_narrative::{CreateNarrativeParams, CreateNarrativeResult};
 pub use dialog_resource::DialogResource;
-pub use echo::{EchoParams, EchoResult};
-pub use elicitation::{
-    ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
+pub use discord_tools::{
+    DiscordAuthor, DiscordChannelInfo, DiscordGetChannelsParams, DiscordGetChannelsResult,
+    DiscordGetGuildInfoParams, DiscordGetGuildInfoResult, DiscordGetMessagesParams,
+    DiscordGetMessagesResult, DiscordMessageInfo, DiscordPostMessageParams,
+    DiscordPostMessageResult,
 };
+pub use echo::{EchoParams, EchoResult};
 pub use elicit_bool::{ElicitBoolParams, ElicitBoolResult};
 pub use elicit_number::{ElicitNumberParams, ElicitNumberResult};
 pub use elicit_select::{ElicitSelectParams, ElicitSelectResult};
 pub use elicit_text::{ElicitTextParams, ElicitTextResult};
+pub use elicitation::{
+    ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
+};
 pub use errors::ToolError;
 pub use execution::{
     ExecuteActParams, ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult,
@@ -79,7 +85,12 @@ pub use export_metrics::{ExportMetricsParams, ExportMetricsResult, MetricsFormat
 pub use modify_narrative::{ModifyNarrativeParams, ModifyNarrativeResult};
 pub use query_content::{QueryContentParams, QueryContentResult};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
+pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
 pub use save_narrative::{SaveNarrativeParams, SaveNarrativeResult};
+pub use scene::{
+    CreateSceneParams, CreateSceneResult, DeleteSceneParams, DeleteSceneResult, ListScenesParams,
+    ListScenesResult, UpdateSceneParams, UpdateSceneResult,
+};
 pub use session_tools::{
     ApplyValidationFixesParams, ApplyValidationFixesResult, CarouselLevel, CarouselSummary,
     CreateNarrativeSessionParams, CreateNarrativeSessionResult, ElicitActParams, ElicitActResult,
@@ -89,33 +100,21 @@ pub use session_tools::{
     ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationIssue,
     ValidationSeverity,
 };
-pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
 pub use transport::InProcTransport;
 pub use validate_narrative::{
     ValidateNarrativeParams, ValidateNarrativeResult, ValidationError, ValidationLocation,
     ValidationWarning,
 };
-pub use scene::{
-    CreateSceneParams, CreateSceneResult, DeleteSceneParams, DeleteSceneResult, ListScenesParams,
-    ListScenesResult, UpdateSceneParams, UpdateSceneResult,
-};
-pub use discord_tools::{
-    DiscordAuthor, DiscordChannelInfo, DiscordGetChannelsParams, DiscordGetChannelsResult,
-    DiscordGetGuildInfoParams, DiscordGetGuildInfoResult, DiscordGetMessagesParams,
-    DiscordGetMessagesResult, DiscordMessageInfo, DiscordPostMessageParams,
-    DiscordPostMessageResult,
-};
 // Legacy exports - commented out during rmcp migration
 // pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use server_info::ServerInfoResult;
 pub use tools::{
-    Act, ActMetrics, EchoTool, ElicitActInput, ElicitActTool,
-    ElicitMetadataInput, ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool,
-    ExecutionMetrics, FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler,
-    McpTool, MetricsSummary, NarrativeHelper, NarrativeRegistry,
-    PrometheusMetrics, SamplingCoordinator, SamplingError, SamplingErrorKind, SamplingHelper,
-    SamplingResult, ServerInfoTool, StartNarrativeInput, StartNarrativeTool,
-    ToolRegistry, ValidateNarrativeTool,
+    Act, ActMetrics, EchoTool, ElicitActInput, ElicitActTool, ElicitMetadataInput,
+    ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics,
+    FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler, McpTool,
+    MetricsSummary, NarrativeHelper, NarrativeRegistry, PrometheusMetrics, SamplingCoordinator,
+    SamplingError, SamplingErrorKind, SamplingHelper, SamplingResult, ServerInfoTool,
+    StartNarrativeInput, StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
 // Narrative generation tools migrated to rmcp:
 // - CreateNarrativeTool → see CreateNarrativeParams/Result and rmcp_server::create_narrative

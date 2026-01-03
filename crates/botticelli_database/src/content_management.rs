@@ -495,11 +495,12 @@ pub fn insert_content(
     _content: &JsonValue,
 ) -> BotticelliResult<i32> {
     tracing::info!(table = table_name, "Inserting content");
-    
+
     // For now, return error saying this needs to be implemented properly
     Err(DatabaseError::new(DatabaseErrorKind::Query(
-        "insert_content not yet implemented".to_string()
-    )).into())
+        "insert_content not yet implemented".to_string(),
+    ))
+    .into())
 }
 
 /// Query content from a table with optional filtering.
@@ -511,7 +512,7 @@ pub fn query_content(
     limit: Option<i64>,
 ) -> BotticelliResult<Vec<JsonValue>> {
     tracing::info!(table = table_name, filter = ?filter, limit = ?limit, "Querying content");
-    
+
     // Use list_content for now with default limit if none provided
     list_content(conn, table_name, filter, limit.unwrap_or(100) as usize)
 }

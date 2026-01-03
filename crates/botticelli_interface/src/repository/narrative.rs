@@ -15,7 +15,7 @@ use async_trait::async_trait;
 pub trait NarrativeRepository: Send + Sync {
     /// Error type for operations.
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     /// Media metadata type for this repository.
     type MediaMetadata: Send + Sync;
     /// Media reference type for this repository.

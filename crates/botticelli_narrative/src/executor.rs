@@ -555,9 +555,9 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     let temperature = config.temperature().or_else(|| *metadata.temperature());
                     let max_tokens = config.max_tokens().or_else(|| *metadata.max_tokens());
 
-                    let mut request_builder = GenerateRequest::builder()
-                        .messages(conversation_history.clone());
-                    
+                    let mut request_builder =
+                        GenerateRequest::builder().messages(conversation_history.clone());
+
                     if let Some(mt) = max_tokens {
                         request_builder = request_builder.max_tokens(mt);
                     }
@@ -567,15 +567,12 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     if let Some(ref m) = model {
                         request_builder = request_builder.model(m.clone());
                     }
-                    
+
                     let request = request_builder.build().map_err(|e| {
-                            BotticelliError::from(NarrativeError::new(
-                                NarrativeErrorKind::FileRead(format!(
-                                    "Failed to build request: {}",
-                                    e
-                                )),
-                            ))
-                        })?;
+                        BotticelliError::from(NarrativeError::new(NarrativeErrorKind::FileRead(
+                            format!("Failed to build request: {}", e),
+                        )))
+                    })?;
 
                     // Call the LLM
                     let llm_span = tracing::info_span!(

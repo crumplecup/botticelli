@@ -1,9 +1,9 @@
 //! Connection helpers for MCP servers using rmcp.
 
 use crate::{McpClientError, McpClientErrorKind, McpClientResult};
+use rmcp::ServiceExt;
 use rmcp::service::{RoleClient, RunningService};
 use rmcp::transport::{ConfigureCommandExt, TokioChildProcess};
-use rmcp::ServiceExt;
 use tokio::process::Command;
 use tracing::instrument;
 
@@ -25,15 +25,12 @@ pub async fn connect_stdio(
         )))
     })?;
 
-    let service = ()
-        .serve(child_process)
-        .await
-        .map_err(|e| {
-            McpClientError::new(McpClientErrorKind::ConnectionError(format!(
-                "Failed to connect via stdio: {}",
-                e
-            )))
-        })?;
+    let service = ().serve(child_process).await.map_err(|e| {
+        McpClientError::new(McpClientErrorKind::ConnectionError(format!(
+            "Failed to connect via stdio: {}",
+            e
+        )))
+    })?;
 
     tracing::info!(command, "Connected to MCP server via stdio");
     Ok(service)

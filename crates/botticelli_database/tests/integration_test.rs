@@ -1,12 +1,10 @@
 use botticelli_database::{DatabaseContentRepository, DatabaseResult};
 use botticelli_error::{BotticelliResult, DatabaseError};
 use botticelli_interface::ContentRepository;
-use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
+use diesel::r2d2::{ConnectionManager, Pool};
 use std::env;
 use tracing::info;
-
-
 
 /// Initialize tracing for tests.
 ///
@@ -25,7 +23,9 @@ fn init_test_tracing() {
 fn get_database_url() -> BotticelliResult<String> {
     match env::var("DATABASE_URL") {
         Ok(url) => Ok(url),
-        Err(_) => Ok("postgres://botticelli:renaissance@localhost:5432/botticelli_test".to_string()),
+        Err(_) => {
+            Ok("postgres://botticelli:renaissance@localhost:5432/botticelli_test".to_string())
+        }
     }
 }
 
@@ -45,9 +45,7 @@ async fn test_content_repository_query() -> BotticelliResult<()> {
     let repo = DatabaseContentRepository::new(pool);
 
     // Test querying with limit
-    let result = repo
-        .query_content("generated_images", None, Some(5))
-        .await;
+    let result = repo.query_content("generated_images", None, Some(5)).await;
 
     match result {
         Ok(rows) => {
@@ -65,8 +63,6 @@ async fn test_content_repository_query() -> BotticelliResult<()> {
 
     Ok(())
 }
-
-
 
 #[tokio::test]
 #[cfg(feature = "postgres")]

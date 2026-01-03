@@ -66,4 +66,3 @@ impl From<reqwest::Error> for HttpError {
 
 #[cfg(feature = "reqwest")]
 crate::bridge_error!(reqwest::Error => HttpError => crate::BotticelliErrorKind);
-

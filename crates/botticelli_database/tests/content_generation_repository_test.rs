@@ -5,14 +5,12 @@ use botticelli_database::{
 };
 use botticelli_error::{DatabaseError, DatabaseErrorKind};
 use botticelli_interface::ContentGenerationRepository;
-use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::PgConnection;
+use diesel::r2d2::{ConnectionManager, Pool};
 use std::env;
 use tracing::info;
 
 type DatabaseResult<T> = Result<T, DatabaseError>;
-
-
 
 /// Initialize tracing for tests.
 ///
@@ -217,7 +215,10 @@ fn test_get_last_successful() -> DatabaseResult<()> {
 
     // Get last successful
     let last = repo.get_last_successful()?;
-    assert!(last.is_some(), "Expected to find last successful generation");
+    assert!(
+        last.is_some(),
+        "Expected to find last successful generation"
+    );
 
     let last = last.unwrap();
     assert_eq!(last.status(), "success");
@@ -277,10 +278,7 @@ fn test_get_nonexistent_generation() -> DatabaseResult<()> {
     let nonexistent_table = format!("nonexistent_{}", uuid::Uuid::new_v4().simple());
     let result = repo.get_by_table_name(&nonexistent_table)?;
 
-    assert!(
-        result.is_none(),
-        "Expected None for nonexistent generation"
-    );
+    assert!(result.is_none(), "Expected None for nonexistent generation");
 
     Ok(())
 }

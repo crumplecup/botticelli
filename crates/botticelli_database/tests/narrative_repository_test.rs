@@ -1,7 +1,9 @@
 //! Integration tests for NarrativeRepository trait implementation.
 
-use botticelli_core::{ActExecutionBuilder, ExecutionFilter, ExecutionStatus, Input, NarrativeExecution};
-use botticelli_database::{establish_connection, PostgresNarrativeRepository};
+use botticelli_core::{
+    ActExecutionBuilder, ExecutionFilter, ExecutionStatus, Input, NarrativeExecution,
+};
+use botticelli_database::{PostgresNarrativeRepository, establish_connection};
 use botticelli_error::{BotticelliResult, IoError};
 use botticelli_interface::NarrativeRepository;
 use botticelli_storage::FileSystemStorage;
@@ -164,7 +166,10 @@ async fn test_delete_execution() -> BotticelliResult<()> {
 
     // Verify deletion - should fail to load
     let result = repo.load_execution(id).await;
-    assert!(result.is_err(), "Expected error when loading deleted execution");
+    assert!(
+        result.is_err(),
+        "Expected error when loading deleted execution"
+    );
 
     Ok(())
 }
@@ -232,13 +237,7 @@ async fn test_execution_with_multiple_acts() -> BotticelliResult<()> {
         .response("response2".to_string())
         .build()?;
 
-    let execution = NarrativeExecution::new(
-        name.clone(),
-        vec![act1, act2],
-        None,
-        None,
-        None,
-    );
+    let execution = NarrativeExecution::new(name.clone(), vec![act1, act2], None, None, None);
 
     // Save and load
     let id = repo.save_execution(&execution).await?;

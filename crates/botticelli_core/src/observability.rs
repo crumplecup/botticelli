@@ -133,9 +133,7 @@ pub fn init_observability() -> ObservabilityResult<()> {
 /// # Errors
 ///
 /// Returns an error if tracer provider, exporter, or filter initialization fails.
-pub fn init_observability_with_config(
-    config: ObservabilityConfig,
-) -> ObservabilityResult<()> {
+pub fn init_observability_with_config(config: ObservabilityConfig) -> ObservabilityResult<()> {
     // Create resource with service metadata
     let resource = Resource::builder()
         .with_service_name(config.service_name().clone())

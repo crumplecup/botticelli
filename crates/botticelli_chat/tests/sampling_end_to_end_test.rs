@@ -34,10 +34,7 @@ impl LlmProvider for MultiTurnMockProvider {
     type Response = GenerateResponse;
     type Error = ProviderError;
 
-    async fn generate(
-        &self,
-        _request: &Self::Request,
-    ) -> Result<Self::Response, Self::Error> {
+    async fn generate(&self, _request: &Self::Request) -> Result<Self::Response, Self::Error> {
         let mut count = self.call_count.lock().await;
         *count += 1;
 
@@ -180,10 +177,7 @@ impl LlmProvider for SimpleTextProvider {
     type Response = GenerateResponse;
     type Error = ProviderError;
 
-    async fn generate(
-        &self,
-        _request: &Self::Request,
-    ) -> Result<Self::Response, Self::Error> {
+    async fn generate(&self, _request: &Self::Request) -> Result<Self::Response, Self::Error> {
         Ok(GenerateResponseBuilder::default()
             .outputs(vec![Output::Text("Simple response".to_string())])
             .stop_reason(StopReason::EndTurn)
@@ -271,10 +265,7 @@ impl LlmProvider for ErrorProvider {
     type Response = GenerateResponse;
     type Error = ProviderError;
 
-    async fn generate(
-        &self,
-        _request: &Self::Request,
-    ) -> Result<Self::Response, Self::Error> {
+    async fn generate(&self, _request: &Self::Request) -> Result<Self::Response, Self::Error> {
         Err(ProviderError::new(
             "error-provider",
             ProviderErrorKind::ApiError("Simulated API error".to_string()),

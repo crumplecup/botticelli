@@ -14,14 +14,16 @@ use tracing::instrument;
 /// Generates a TOML narrative file from a description using an LLM backend.
 #[tool]
 #[instrument(skip(_params), fields(name = %_params.name))]
-pub async fn create_narrative(_params: CreateNarrativeParams) -> Result<CreateNarrativeResult, rmcp::ErrorData> {
+pub async fn create_narrative(
+    _params: CreateNarrativeParams,
+) -> Result<CreateNarrativeResult, rmcp::ErrorData> {
     // TODO: Implement narrative creation using LLM backend
     // This requires:
     // 1. LLM backend integration (trait-based)
     // 2. Narrative generation prompt
     // 3. TOML parsing and validation
     // 4. Comment insertion
-    
+
     tracing::warn!("create_narrative not yet implemented");
     Err(rmcp::ErrorData::new(
         rmcp::model::ErrorCode::METHOD_NOT_FOUND,
@@ -35,7 +37,9 @@ pub async fn create_narrative(_params: CreateNarrativeParams) -> Result<CreateNa
 /// Takes existing TOML and modification instructions, uses LLM to apply changes.
 #[tool]
 #[instrument(skip(_params), fields(has_save_path = _params.save_to.is_some()))]
-pub async fn modify_narrative(_params: ModifyNarrativeParams) -> Result<ModifyNarrativeResult, rmcp::ErrorData> {
+pub async fn modify_narrative(
+    _params: ModifyNarrativeParams,
+) -> Result<ModifyNarrativeResult, rmcp::ErrorData> {
     // TODO: Implement narrative modification using LLM backend
     // This requires:
     // 1. TOML parsing
@@ -43,7 +47,7 @@ pub async fn modify_narrative(_params: ModifyNarrativeParams) -> Result<ModifyNa
     // 3. TOML regeneration
     // 4. Validation
     // 5. Optional file save
-    
+
     tracing::warn!("modify_narrative not yet implemented");
     Err(rmcp::ErrorData::new(
         rmcp::model::ErrorCode::METHOD_NOT_FOUND,
@@ -57,11 +61,13 @@ pub async fn modify_narrative(_params: ModifyNarrativeParams) -> Result<ModifyNa
 /// Persists narrative content to the filesystem with optional overwrite protection.
 #[tool]
 #[instrument(skip(params), fields(path = %params.file_path, overwrite = params.overwrite))]
-pub async fn save_narrative(params: SaveNarrativeParams) -> Result<SaveNarrativeResult, rmcp::ErrorData> {
+pub async fn save_narrative(
+    params: SaveNarrativeParams,
+) -> Result<SaveNarrativeResult, rmcp::ErrorData> {
     tracing::debug!("Saving narrative to file");
-    
+
     let path = Path::new(&params.file_path);
-    
+
     // Check if file exists and overwrite is not allowed
     if path.exists() && !params.overwrite {
         tracing::warn!("File already exists and overwrite not allowed");
@@ -74,9 +80,9 @@ pub async fn save_narrative(params: SaveNarrativeParams) -> Result<SaveNarrative
             None,
         ));
     }
-    
+
     let overwritten = path.exists();
-    
+
     // Write the file
     fs::write(path, &params.narrative_toml).map_err(|e| {
         tracing::error!(error = ?e, "Failed to write file");
@@ -86,7 +92,7 @@ pub async fn save_narrative(params: SaveNarrativeParams) -> Result<SaveNarrative
             None,
         )
     })?;
-    
+
     // Get the absolute path
     let abs_path = path.canonicalize().map_err(|e| {
         tracing::error!(error = ?e, "Failed to canonicalize path");
@@ -96,16 +102,16 @@ pub async fn save_narrative(params: SaveNarrativeParams) -> Result<SaveNarrative
             None,
         )
     })?;
-    
+
     let size_bytes = params.narrative_toml.len();
-    
+
     tracing::info!(
         path = %abs_path.display(),
         size = size_bytes,
         overwritten = overwritten,
         "Successfully saved narrative"
     );
-    
+
     Ok(SaveNarrativeResult::new(
         abs_path.to_string_lossy().to_string(),
         size_bytes,

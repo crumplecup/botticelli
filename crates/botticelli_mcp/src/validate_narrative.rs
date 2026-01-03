@@ -11,23 +11,23 @@ pub struct ValidateNarrativeParams {
     /// TOML content to validate (either this or file_path must be provided).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<String>,
-    
+
     /// Path to TOML file to validate (either this or content must be provided).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_path: Option<String>,
-    
+
     /// Check that media and nested narrative files exist.
     #[serde(default)]
     pub validate_files: bool,
-    
+
     /// Warn on unknown model names.
     #[serde(default = "default_validate_models")]
     pub validate_models: bool,
-    
+
     /// Warn about unused resources (bots, tables, media).
     #[serde(default = "default_warn_unused")]
     pub warn_unused: bool,
-    
+
     /// Treat warnings as errors.
     #[serde(default)]
     pub strict: bool,
@@ -46,10 +46,10 @@ fn default_warn_unused() -> bool {
 pub struct ValidationLocation {
     /// Line number in the TOML file.
     pub line: usize,
-    
+
     /// Column number in the TOML file.
     pub column: usize,
-    
+
     /// Section where the issue occurred.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub section: Option<String>,
@@ -60,14 +60,14 @@ pub struct ValidationLocation {
 pub struct ValidationError {
     /// Kind of error (e.g., "SyntaxError", "ReferenceError").
     pub kind: String,
-    
+
     /// Error message.
     pub message: String,
-    
+
     /// Optional suggestion for fixing the error.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub suggestion: Option<String>,
-    
+
     /// Optional location information.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<ValidationLocation>,
@@ -78,10 +78,10 @@ pub struct ValidationError {
 pub struct ValidationWarning {
     /// Kind of warning (e.g., "UnknownModel", "UnusedResource").
     pub kind: String,
-    
+
     /// Warning message.
     pub message: String,
-    
+
     /// Optional location information.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<ValidationLocation>,
@@ -92,13 +92,13 @@ pub struct ValidationWarning {
 pub struct ValidateNarrativeResult {
     /// Whether the narrative is valid (no errors, or no warnings if strict).
     pub valid: bool,
-    
+
     /// List of validation errors.
     pub errors: Vec<ValidationError>,
-    
+
     /// List of validation warnings.
     pub warnings: Vec<ValidationWarning>,
-    
+
     /// Summary message.
     pub summary: String,
 }

@@ -10,16 +10,16 @@ use async_trait::async_trait;
 pub trait BotticelliDriver: Send + Sync {
     /// Request type for generation.
     type Request: Send + Sync;
-    
+
     /// Response type from generation.
     type Response: Send + Sync;
-    
+
     /// Error type for this driver.
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     /// Rate limit configuration type.
     type RateLimitConfig: Send + Sync;
-    
+
     /// Capabilities type for runtime feature discovery.
     type Capabilities: Send + Sync;
 
@@ -79,7 +79,7 @@ impl<T: BotticelliDriver + ?Sized> BotticelliDriver for std::sync::Arc<T> {
     fn rate_limits(&self) -> &Self::RateLimitConfig {
         (**self).rate_limits()
     }
-    
+
     fn capabilities(&self) -> Self::Capabilities {
         (**self).capabilities()
     }

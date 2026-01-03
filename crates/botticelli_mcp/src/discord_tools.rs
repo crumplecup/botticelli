@@ -51,7 +51,10 @@ pub struct DiscordGetMessagesParams {
 
     /// Number of messages to fetch (1-100).
     #[serde(default = "default_message_limit")]
-    #[schemars(description = "Number of messages to fetch (1-100, default: 50)", default = "default_message_limit")]
+    #[schemars(
+        description = "Number of messages to fetch (1-100, default: 50)",
+        default = "default_message_limit"
+    )]
     pub limit: i64,
 }
 

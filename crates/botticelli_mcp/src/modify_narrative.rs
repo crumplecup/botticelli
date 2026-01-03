@@ -37,7 +37,12 @@ pub struct ModifyNarrativeResult {
 
 impl ModifyNarrativeResult {
     /// Create a new modification result.
-    pub fn new(toml: String, validation: Value, changes: Vec<String>, saved_to: Option<String>) -> Self {
+    pub fn new(
+        toml: String,
+        validation: Value,
+        changes: Vec<String>,
+        saved_to: Option<String>,
+    ) -> Self {
         Self {
             toml,
             validation,

@@ -8,7 +8,7 @@ use serde_json::Value;
 pub trait RegistryOperations: Sized + Send + Sync {
     /// The key type for registry lookups.
     type Key: Clone + Send + Sync;
-    
+
     /// Error type for operations.
     type Error: std::error::Error + Send + Sync + 'static;
 

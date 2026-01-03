@@ -1,8 +1,6 @@
 //! Tests for export_metrics tool.
 
-use botticelli_mcp::{
-    BotticelliServer, ExportMetricsParams, MetricsFormat, PrometheusMetrics,
-};
+use botticelli_mcp::{BotticelliServer, ExportMetricsParams, MetricsFormat, PrometheusMetrics};
 use rmcp::handler::server::wrapper::Parameters;
 use std::sync::Arc;
 

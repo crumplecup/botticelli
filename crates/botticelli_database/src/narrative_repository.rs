@@ -9,9 +9,7 @@ use crate::{ActExecutionRow, ActInputRow, NarrativeExecutionRow};
 
 use botticelli_core::{ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution};
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
-use botticelli_interface::{
-    MediaStorage, NarrativeRepository, NarrativeStorageOperations,
-};
+use botticelli_interface::{MediaStorage, NarrativeRepository, NarrativeStorageOperations};
 use botticelli_storage::{MediaMetadata, MediaReference};
 
 use async_trait::async_trait;
@@ -52,7 +50,11 @@ pub struct PostgresNarrativeRepository {
     conn: Arc<Mutex<PgConnection>>,
     /// Media storage backend for binary content
     storage: Arc<
-        dyn MediaStorage<Error = BotticelliError, Metadata = MediaMetadata, Reference = MediaReference>,
+        dyn MediaStorage<
+                Error = BotticelliError,
+                Metadata = MediaMetadata,
+                Reference = MediaReference,
+            >,
     >,
 }
 
@@ -69,7 +71,11 @@ impl PostgresNarrativeRepository {
     pub fn new(
         conn: PgConnection,
         storage: Arc<
-            dyn MediaStorage<Error = BotticelliError, Metadata = MediaMetadata, Reference = MediaReference>,
+            dyn MediaStorage<
+                    Error = BotticelliError,
+                    Metadata = MediaMetadata,
+                    Reference = MediaReference,
+                >,
         >,
     ) -> Self {
         Self {
@@ -82,7 +88,11 @@ impl PostgresNarrativeRepository {
     pub fn from_arc(
         conn: Arc<Mutex<PgConnection>>,
         storage: Arc<
-            dyn MediaStorage<Error = BotticelliError, Metadata = MediaMetadata, Reference = MediaReference>,
+            dyn MediaStorage<
+                    Error = BotticelliError,
+                    Metadata = MediaMetadata,
+                    Reference = MediaReference,
+                >,
         >,
     ) -> Self {
         Self { conn, storage }
@@ -423,9 +433,11 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             |(id, media_type_str, mime_type, size_bytes, hash, backend, path)| {
                 botticelli_storage::MediaReferenceBuilder::default()
                     .id(id)
-                    .media_type(media_type_str
-                        .parse()
-                        .unwrap_or(botticelli_storage::MediaType::Image))
+                    .media_type(
+                        media_type_str
+                            .parse()
+                            .unwrap_or(botticelli_storage::MediaType::Image),
+                    )
                     .mime_type(mime_type)
                     .size_bytes(size_bytes)
                     .content_hash(hash)

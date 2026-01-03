@@ -1,8 +1,6 @@
 //! Tests for execution tools (generate, execute_act, execute_narrative).
 
-use botticelli_mcp::{
-    BotticelliServer, ExecuteActParams, ExecuteNarrativeParams, GenerateParams,
-};
+use botticelli_mcp::{BotticelliServer, ExecuteActParams, ExecuteNarrativeParams, GenerateParams};
 use rmcp::handler::server::wrapper::Parameters;
 use tempfile::TempDir;
 use tokio::fs;
@@ -56,8 +54,8 @@ async fn test_generate_default_values() {
     let params = GenerateParams {
         prompt: "Test prompt".to_string(),
         model: "gemini-2.0-flash-exp".to_string(), // default
-        max_tokens: 1024,                            // default
-        temperature: 1.0,                            // default
+        max_tokens: 1024,                          // default
+        temperature: 1.0,                          // default
         system_prompt: None,
     };
 

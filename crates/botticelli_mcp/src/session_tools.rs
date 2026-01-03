@@ -151,7 +151,10 @@ pub struct FinalizeNarrativeParams {
 
     /// Whether to validate before finalizing.
     #[serde(default = "default_true")]
-    #[schemars(description = "Whether to validate the narrative before finalizing", default = "default_true")]
+    #[schemars(
+        description = "Whether to validate the narrative before finalizing",
+        default = "default_true"
+    )]
     pub validate: bool,
 }
 
@@ -452,7 +455,10 @@ pub struct ElicitCarouselParams {
 
     /// Budget multiplier for warnings.
     #[serde(default = "default_budget_multiplier")]
-    #[schemars(description = "Budget multiplier for warnings (default: 2.0)", default = "default_budget_multiplier")]
+    #[schemars(
+        description = "Budget multiplier for warnings (default: 2.0)",
+        default = "default_budget_multiplier"
+    )]
     pub budget_multiplier: f64,
 }
 

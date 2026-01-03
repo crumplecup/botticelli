@@ -8,10 +8,10 @@ use async_trait::async_trait;
 pub trait ToolCalling: BotticelliDriver {
     /// Tool definition type.
     type ToolDefinition: Send + Sync;
-    
+
     /// Tool result type.
     type ToolResult: Send + Sync;
-    
+
     /// Generate with available tools.
     async fn generate_with_tools(
         &self,

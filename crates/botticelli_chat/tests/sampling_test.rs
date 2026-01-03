@@ -6,8 +6,8 @@ use botticelli_chat::ChatLlmSampler;
 use botticelli_core::{
     GenerateRequest, GenerateResponse, GenerateResponseBuilder, Output, ToolCall, ToolDefinition,
 };
-use botticelli_interface::LlmProvider;
 use botticelli_error::ProviderError;
+use botticelli_interface::LlmProvider;
 use botticelli_mcp::{ConversationSession, ConversationTurn, LlmSampler, ToolRegistry};
 use std::sync::Arc;
 
@@ -30,10 +30,7 @@ impl LlmProvider for MockTextProvider {
     type Response = GenerateResponse;
     type Error = ProviderError;
 
-    async fn generate(
-        &self,
-        _request: &Self::Request,
-    ) -> Result<Self::Response, Self::Error> {
+    async fn generate(&self, _request: &Self::Request) -> Result<Self::Response, Self::Error> {
         Ok(GenerateResponseBuilder::default()
             .outputs(vec![Output::Text(self.response_text.clone())])
             .stop_reason(botticelli_core::StopReason::EndTurn)
@@ -75,10 +72,7 @@ impl LlmProvider for MockToolProvider {
     type Response = GenerateResponse;
     type Error = ProviderError;
 
-    async fn generate(
-        &self,
-        _request: &Self::Request,
-    ) -> Result<Self::Response, Self::Error> {
+    async fn generate(&self, _request: &Self::Request) -> Result<Self::Response, Self::Error> {
         let tool_call = ToolCall::new(
             "call_123".to_string(),
             self.tool_name.clone(),

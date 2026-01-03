@@ -22,16 +22,16 @@ fn init_test_tracing() {
 fn test_get_tokenizer() -> Result<(), TokenCountingError> {
     init_test_tracing();
     use tracing::{debug, info};
-    
+
     info!("Testing tokenizer retrieval for gpt-4");
     debug!(model = "gpt-4", "Getting tokenizer");
-    
+
     let encoder = get_tokenizer("gpt-4")?;
     let tokens = encoder.encode_with_special_tokens("Hello, world!");
-    
+
     debug!(token_count = tokens.len(), "Tokens generated");
     assert!(!tokens.is_empty());
-    
+
     info!(
         model = "gpt-4",
         token_count = tokens.len(),
@@ -43,16 +43,19 @@ fn test_get_tokenizer() -> Result<(), TokenCountingError> {
 #[test]
 fn test_get_tokenizer_invalid_model() {
     use tracing::{debug, info, warn};
-    
+
     info!("Testing tokenizer with invalid model name");
-    debug!(model = "invalid-model-xyz-123", "Attempting to get tokenizer");
-    
+    debug!(
+        model = "invalid-model-xyz-123",
+        "Attempting to get tokenizer"
+    );
+
     let result = get_tokenizer("invalid-model-xyz-123");
     assert!(result.is_err());
-    
+
     if let Err(err) = result {
         let kind = err.kind();
-        
+
         match kind {
             TokenCountingErrorKind::TokenizerNotFound { model, message } => {
                 debug!(model = %model, error = %message, "Error details");
@@ -71,9 +74,9 @@ fn test_get_tokenizer_invalid_model() {
 #[test]
 fn test_token_usage_data_calculate_cost() {
     use tracing::{debug, info};
-    
+
     info!("Testing token usage cost calculation");
-    
+
     let usage = TokenUsageData::new(1_000_000, 500_000, 1_500_000);
     debug!(
         input_tokens = 1_000_000,
@@ -81,7 +84,7 @@ fn test_token_usage_data_calculate_cost() {
         total_tokens = 1_500_000,
         "Created token usage data"
     );
-    
+
     // $1 per million prompt, $2 per million completion
     let cost = usage.calculate_cost(1.0, 2.0);
     debug!(
@@ -90,7 +93,7 @@ fn test_token_usage_data_calculate_cost() {
         calculated_cost = cost,
         "Cost calculated"
     );
-    
+
     assert!((cost - 2.0).abs() < 0.001); // 1.0 + 1.0 = 2.0
     info!(cost = cost, "Cost calculation verified");
 }

@@ -11,8 +11,8 @@
 
 #![allow(dead_code)] // Temporarily allow during migration
 
-use async_trait::async_trait;
 use super::{McpTransport, McpTransportError, McpTransportErrorKind};
+use async_trait::async_trait;
 use botticelli_core::ToolDefinition;
 use serde_json::Value;
 use tracing::warn;
@@ -49,15 +49,21 @@ impl InProcTransport {
 #[async_trait]
 impl McpTransport for InProcTransport {
     async fn initialize(&mut self) -> Result<(), McpTransportError> {
-        Err(McpTransportError::new(McpTransportErrorKind::NotInitialized))
+        Err(McpTransportError::new(
+            McpTransportErrorKind::NotInitialized,
+        ))
     }
 
     async fn list_tools(&self) -> Result<Vec<ToolDefinition>, McpTransportError> {
-        Err(McpTransportError::new(McpTransportErrorKind::NotInitialized))
+        Err(McpTransportError::new(
+            McpTransportErrorKind::NotInitialized,
+        ))
     }
 
     async fn call_tool(&self, _name: &str, _arguments: Value) -> Result<Value, McpTransportError> {
-        Err(McpTransportError::new(McpTransportErrorKind::NotInitialized))
+        Err(McpTransportError::new(
+            McpTransportErrorKind::NotInitialized,
+        ))
     }
 
     fn is_connected(&self) -> bool {

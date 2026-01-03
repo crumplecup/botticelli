@@ -6,7 +6,7 @@ use crate::BotticelliDriver;
 pub trait Metadata: BotticelliDriver {
     /// Metadata type containing model information.
     type ModelMetadata: Send + Sync;
-    
+
     /// Get comprehensive metadata about this model.
     fn metadata(&self) -> &Self::ModelMetadata;
 }

@@ -26,8 +26,8 @@ pub use error::{McpClientError, McpClientErrorKind, McpClientResult};
 pub use external_client::{ExternalMcpClient, ExternalServerConfig};
 pub use llm_adapter::{
     AnthropicAdapter, FinishReason, GeminiAdapter, GenerationConfig, GenerationResponse,
-    GroqAdapter, LlmAdapter, Message, MessageRole, OllamaAdapter,
-    ToolCall as LlmToolCall, ToolSchema as LlmToolSchema,
+    GroqAdapter, LlmAdapter, Message, MessageRole, OllamaAdapter, ToolCall as LlmToolCall,
+    ToolSchema as LlmToolSchema,
 };
 
 // Re-export TokenUsageData from core as TokenUsage for backward compatibility

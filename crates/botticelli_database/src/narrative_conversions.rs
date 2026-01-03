@@ -1,7 +1,7 @@
 //! Conversions between domain types and database models for narrative executions.
 
 use botticelli_core::{
-    ActExecution, ActExecutionBuilder, ExecutionStatus, NarrativeExecution, Input,
+    ActExecution, ActExecutionBuilder, ExecutionStatus, Input, NarrativeExecution,
 };
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
 use tracing::instrument;

@@ -104,9 +104,9 @@ impl ModelResponse {
     /// Convert to a serializable format.
     pub fn to_serializable(&self) -> Result<SerializableModelResponse, serde_json::Error> {
         let messages: Vec<Message> = serde_json::from_value(self.request_messages.clone())?;
-        
+
         let mut request_builder = GenerateRequest::builder().messages(messages);
-        
+
         if let Some(temp) = self.request_temperature {
             request_builder = request_builder.temperature(temp);
         }
@@ -116,8 +116,9 @@ impl ModelResponse {
         if let Some(ref model) = self.request_model {
             request_builder = request_builder.model(model.clone());
         }
-        
-        let request = request_builder.build()
+
+        let request = request_builder
+            .build()
             .map_err(|e| serde_json::Error::custom(e.to_string()))?;
 
         let response = if self.error_message.is_none() {

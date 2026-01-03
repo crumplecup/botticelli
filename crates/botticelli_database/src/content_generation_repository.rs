@@ -42,10 +42,7 @@ impl<'a> ContentGenerationRepository for PostgresContentGenerationRepository<'a>
     type UpdateRow = UpdateContentGenerationRow;
     type Error = DatabaseError;
 
-    fn start_generation(
-        &mut self,
-        new_gen: Self::NewRow,
-    ) -> Result<Self::Row, Self::Error> {
+    fn start_generation(&mut self, new_gen: Self::NewRow) -> Result<Self::Row, Self::Error> {
         use crate::schema::content_generations;
 
         debug!(table = %new_gen.table_name, narrative = ?new_gen.narrative_file, "Starting content generation");

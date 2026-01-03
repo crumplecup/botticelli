@@ -12,10 +12,10 @@
 pub trait ChatHost: Send + Sync {
     /// Chat message type for conversation history.
     type ChatMessage: Send + Sync + Clone;
-    
+
     /// Tool definition type.
     type ToolDefinition: Send + Sync;
-    
+
     /// Error type for operations.
     type Error: std::error::Error + Send + Sync + 'static;
 

@@ -35,9 +35,9 @@ mod chat;
 mod config;
 #[cfg(feature = "database")]
 mod database;
+mod env;
 mod error;
 mod gemini;
-mod env;
 mod http;
 mod io;
 mod json;
@@ -58,18 +58,18 @@ pub use backend::BackendError;
 pub use builder::{BuilderError, BuilderErrorKind};
 pub use chat::{ChatError, ChatErrorKind, ChatResult};
 pub use config::ConfigError;
+#[cfg(feature = "serde_json")]
+pub use database::SerdeJsonError;
 #[cfg(feature = "database")]
 pub use database::{DatabaseError, DatabaseErrorKind, DieselConnectionError, DieselError};
 pub use env::{EnvError, EnvErrorKind};
-#[cfg(feature = "serde_json")]
-pub use database::SerdeJsonError;
 pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};
 pub use gemini::{GeminiError, GeminiErrorKind};
 pub use http::{HttpError, HttpErrorKind};
 pub use io::IoError;
-pub use json::{JsonError, JsonErrorKind};
 #[cfg(feature = "serde_json")]
 pub use json::SerdeJsonError as JsonSerdeJsonError;
+pub use json::{JsonError, JsonErrorKind};
 pub use mcp::{McpError, McpErrorKind, McpResult};
 #[cfg(feature = "anthropic")]
 pub use models::AnthropicErrorKind;
@@ -85,11 +85,11 @@ pub use models::{ModelsError, ModelsErrorKind, ModelsResult};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
 pub use not_implemented::NotImplementedError;
 pub use observability::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};
-pub use provider::{ProviderError, ProviderErrorKind, ProviderResult};
 #[cfg(feature = "reqwest")]
 pub use provider::ProviderReqwestError;
 #[cfg(feature = "serde_json")]
 pub use provider::ProviderSerdeJsonError;
+pub use provider::{ProviderError, ProviderErrorKind, ProviderResult};
 pub use server::{ServerError, ServerErrorKind};
 pub use storage::{StorageError, StorageErrorKind};
 pub use token_counting::{TokenCountingError, TokenCountingErrorKind, TokenCountingResult};

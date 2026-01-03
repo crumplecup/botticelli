@@ -25,7 +25,17 @@ use uuid::Uuid;
 ///     .build()
 ///     .expect("Valid reference");
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_getters::Getters, derive_builder::Builder)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    derive_getters::Getters,
+    derive_builder::Builder,
+)]
 #[builder(setter(into))]
 pub struct MediaReference {
     /// Unique identifier for this media reference

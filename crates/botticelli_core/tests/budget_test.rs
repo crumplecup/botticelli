@@ -1,6 +1,9 @@
 //! Budget configuration validation and calculation tests.
 
-use botticelli_core::{BudgetConfig, BudgetConfigBuilderError, ExporterBackend, ObservabilityConfig, init_observability_with_config};
+use botticelli_core::{
+    BudgetConfig, BudgetConfigBuilderError, ExporterBackend, ObservabilityConfig,
+    init_observability_with_config,
+};
 
 /// Initialize tracing for tests.
 fn init_test_tracing() {
@@ -18,9 +21,9 @@ fn init_test_tracing() {
 fn validate_rejects_invalid_multipliers() -> Result<(), BudgetConfigBuilderError> {
     init_test_tracing();
     use tracing::{debug, info};
-    
+
     info!("Testing budget validation with invalid multipliers");
-    
+
     debug!(multiplier = 0.0, "Testing RPM multiplier = 0.0");
     let budget = BudgetConfig::builder().rpm_multiplier(0.0).build()?;
     let result = budget.validate();
@@ -44,7 +47,7 @@ fn validate_rejects_invalid_multipliers() -> Result<(), BudgetConfigBuilderError
     let err = result.unwrap_err();
     assert!(err.message().contains("RPM multiplier"));
     debug!("Correctly rejected multiplier = -0.1");
-    
+
     info!("All invalid multiplier validations passed");
     Ok(())
 }
@@ -52,10 +55,10 @@ fn validate_rejects_invalid_multipliers() -> Result<(), BudgetConfigBuilderError
 #[test]
 fn validate_accepts_valid_multipliers() -> Result<(), BudgetConfigBuilderError> {
     use tracing::{debug, info};
-    
+
     info!("Testing budget validation with valid multipliers");
     debug!(rpm = 0.8, tpm = 0.5, rpd = 1.0, "Creating budget config");
-    
+
     let budget = BudgetConfig::builder()
         .rpm_multiplier(0.8)
         .tpm_multiplier(0.5)
@@ -70,9 +73,9 @@ fn validate_accepts_valid_multipliers() -> Result<(), BudgetConfigBuilderError> 
 #[test]
 fn apply_methods_scale_correctly() -> Result<(), BudgetConfigBuilderError> {
     use tracing::{debug, info};
-    
+
     info!("Testing budget scaling calculations");
-    
+
     let budget = BudgetConfig::builder()
         .rpm_multiplier(0.8)
         .tpm_multiplier(0.5)
@@ -81,13 +84,13 @@ fn apply_methods_scale_correctly() -> Result<(), BudgetConfigBuilderError> {
 
     debug!(input = 10, expected = 8, "Testing RPM scaling");
     assert_eq!(budget.apply_rpm(10), 8);
-    
+
     debug!(input = 1000, expected = 500, "Testing TPM scaling");
     assert_eq!(budget.apply_tpm(1000), 500);
-    
+
     debug!(input = 100, expected = 20, "Testing RPD scaling");
     assert_eq!(budget.apply_rpd(100), 20);
-    
+
     info!("All scaling calculations correct");
     Ok(())
 }
@@ -95,9 +98,9 @@ fn apply_methods_scale_correctly() -> Result<(), BudgetConfigBuilderError> {
 #[test]
 fn merge_takes_minimum() -> Result<(), BudgetConfigBuilderError> {
     use tracing::{debug, info};
-    
+
     info!("Testing budget merge operation");
-    
+
     debug!("Creating first budget config");
     let budget1 = BudgetConfig::builder()
         .rpm_multiplier(0.8)
@@ -115,13 +118,13 @@ fn merge_takes_minimum() -> Result<(), BudgetConfigBuilderError> {
 
     debug!(result = 0.5, expected = 0.5, "Checking RPM merge");
     assert_eq!(*merged.rpm_multiplier(), 0.5); // min(0.8, 0.5)
-    
+
     debug!(result = 0.9, expected = 0.9, "Checking TPM merge");
     assert_eq!(*merged.tpm_multiplier(), 0.9); // min(0.9, 1.0)
-    
+
     debug!(result = 0.3, expected = 0.3, "Checking RPD merge");
     assert_eq!(*merged.rpd_multiplier(), 0.3); // min(1.0, 0.3)
-    
+
     info!("Merge operation correctly takes minimum values");
     Ok(())
 }

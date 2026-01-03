@@ -1,8 +1,8 @@
 //! Elicitation tool implementations.
 
 use crate::{
-    ElicitBoolParams, ElicitBoolResult, ElicitNumberParams, ElicitNumberResult,
-    ElicitSelectParams, ElicitSelectResult, ElicitTextParams, ElicitTextResult,
+    ElicitBoolParams, ElicitBoolResult, ElicitNumberParams, ElicitNumberResult, ElicitSelectParams,
+    ElicitSelectResult, ElicitTextParams, ElicitTextResult,
 };
 use rmcp::tool;
 use tracing::instrument;
@@ -18,7 +18,7 @@ pub async fn elicit_bool(_params: ElicitBoolParams) -> Result<ElicitBoolResult, 
     // 1. Integration with elicitation session management
     // 2. Proper async handling
     // 3. Transport layer communication
-    
+
     tracing::warn!("elicit_bool not yet implemented");
     Err(rmcp::ErrorData::new(
         rmcp::model::ErrorCode::METHOD_NOT_FOUND,
@@ -34,7 +34,7 @@ pub async fn elicit_bool(_params: ElicitBoolParams) -> Result<ElicitBoolResult, 
 #[instrument(skip(_params), fields(prompt = %_params.prompt))]
 pub async fn elicit_text(_params: ElicitTextParams) -> Result<ElicitTextResult, rmcp::ErrorData> {
     // TODO: Implement elicitation using elicitation crate
-    
+
     tracing::warn!("elicit_text not yet implemented");
     Err(rmcp::ErrorData::new(
         rmcp::model::ErrorCode::METHOD_NOT_FOUND,
@@ -48,9 +48,11 @@ pub async fn elicit_text(_params: ElicitTextParams) -> Result<ElicitTextResult, 
 /// Presents a prompt with min/max constraints and returns the user's numeric input.
 #[tool]
 #[instrument(skip(_params), fields(prompt = %_params.prompt, min = _params.min, max = _params.max))]
-pub async fn elicit_number(_params: ElicitNumberParams) -> Result<ElicitNumberResult, rmcp::ErrorData> {
+pub async fn elicit_number(
+    _params: ElicitNumberParams,
+) -> Result<ElicitNumberResult, rmcp::ErrorData> {
     // TODO: Implement elicitation using elicitation crate
-    
+
     tracing::warn!("elicit_number not yet implemented");
     Err(rmcp::ErrorData::new(
         rmcp::model::ErrorCode::METHOD_NOT_FOUND,
@@ -64,9 +66,11 @@ pub async fn elicit_number(_params: ElicitNumberParams) -> Result<ElicitNumberRe
 /// Presents options to the user and returns their selected choice.
 #[tool]
 #[instrument(skip(_params), fields(prompt = %_params.prompt, option_count = _params.options.len()))]
-pub async fn elicit_select(_params: ElicitSelectParams) -> Result<ElicitSelectResult, rmcp::ErrorData> {
+pub async fn elicit_select(
+    _params: ElicitSelectParams,
+) -> Result<ElicitSelectResult, rmcp::ErrorData> {
     // TODO: Implement elicitation using elicitation crate
-    
+
     tracing::warn!("elicit_select not yet implemented");
     Err(rmcp::ErrorData::new(
         rmcp::model::ErrorCode::METHOD_NOT_FOUND,
