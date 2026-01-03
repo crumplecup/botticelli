@@ -1,6 +1,7 @@
 //! Tests for rate limit configuration system.
 
-use botticelli_rate_limit::{BotticelliConfig, Tier, TierConfigBuilder};
+use botticelli_interface::Tier;
+use botticelli_rate_limit::{BotticelliConfig, TierConfigBuilder};
 
 #[test]
 fn test_load_bundled_defaults() {

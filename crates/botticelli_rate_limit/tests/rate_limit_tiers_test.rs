@@ -1,6 +1,6 @@
 //! Tests for rate limit tiers.
 
-use botticelli_rate_limit::Tier;
+use botticelli_interface::Tier;
 
 #[cfg(feature = "gemini")]
 use botticelli_rate_limit::GeminiTier;

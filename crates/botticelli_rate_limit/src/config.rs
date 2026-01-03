@@ -181,7 +181,8 @@ impl TierConfig {
     /// # Example
     ///
     /// ```no_run
-    /// use botticelli_rate_limit::{BotticelliConfig, Tier};
+    /// use botticelli_interface::Tier;
+    /// use botticelli_rate_limit::BotticelliConfig;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// let config = BotticelliConfig::load()?;
@@ -280,7 +281,8 @@ pub struct ProviderConfig {
 /// # Example
 ///
 /// ```no_run
-/// use botticelli_rate_limit::{BotticelliConfig, Tier};
+/// use botticelli_interface::Tier;
+/// use botticelli_rate_limit::BotticelliConfig;
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Load configuration (bundled defaults + user overrides)

@@ -29,8 +29,6 @@ pub use config::{
 };
 pub use detector::HeaderRateLimitDetector;
 pub use limiter::{RateLimiter, RateLimiterGuard};
-// Re-export Tier from botticelli_interface
-pub use botticelli_interface::Tier;
 #[cfg(feature = "anthropic")]
 pub use tiers::AnthropicTier;
 #[cfg(feature = "gemini")]
