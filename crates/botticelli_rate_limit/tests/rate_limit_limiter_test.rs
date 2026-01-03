@@ -1,6 +1,6 @@
 //! Tests for rate limiter implementation.
 
-use botticelli_error::BotticelliResult;
+use botticelli_error::RateLimitError;
 use botticelli_rate_limit::{RateLimiter, TierConfig, TierConfigBuilder};
 use std::sync::Arc;
 
@@ -9,7 +9,7 @@ fn create_test_tier(
     tpm: Option<u64>,
     rpd: Option<u32>,
     max_concurrent: Option<u32>,
-) -> BotticelliResult<TierConfig> {
+) -> Result<TierConfig, RateLimitError> {
     let mut builder = TierConfigBuilder::default();
     builder.name("Test");
 
@@ -27,15 +27,14 @@ fn create_test_tier(
     }
 
     builder.build().map_err(|e| {
-        botticelli_error::RateLimitError::new(
-            botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()),
-        )
-        .into()
+        RateLimitError::new(botticelli_error::RateLimitErrorKind::BuilderValidation(
+            e.to_string(),
+        ))
     })
 }
 
 #[tokio::test]
-async fn test_acquire_releases_on_drop() -> BotticelliResult<()> {
+async fn test_acquire_releases_on_drop() -> Result<(), RateLimitError> {
     let tier = create_test_tier(Some(100), Some(10000), None, Some(1))?;
     let limiter = Arc::new(RateLimiter::new(tier));
 
@@ -58,7 +57,7 @@ async fn test_acquire_releases_on_drop() -> BotticelliResult<()> {
 }
 
 #[tokio::test]
-async fn test_rpm_limiting() -> BotticelliResult<()> {
+async fn test_rpm_limiting() -> Result<(), RateLimitError> {
     // Very low RPM for testing
     let tier = create_test_tier(Some(2), None, None, Some(10))?;
     let limiter = RateLimiter::new(tier);
@@ -76,7 +75,7 @@ async fn test_rpm_limiting() -> BotticelliResult<()> {
 }
 
 #[tokio::test]
-async fn test_unlimited_tier() -> BotticelliResult<()> {
+async fn test_unlimited_tier() -> Result<(), RateLimitError> {
     // No limits
     let tier = create_test_tier(None, None, None, None)?;
     let limiter = RateLimiter::new(tier);
@@ -89,7 +88,7 @@ async fn test_unlimited_tier() -> BotticelliResult<()> {
 }
 
 #[tokio::test]
-async fn test_tpm_limiting() -> BotticelliResult<()> {
+async fn test_tpm_limiting() -> Result<(), RateLimitError> {
     // Very low TPM for testing
     let tier = create_test_tier(None, Some(10), None, Some(10))?;
     let limiter = RateLimiter::new(tier);

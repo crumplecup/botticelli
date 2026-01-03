@@ -1,11 +1,11 @@
 //! Tests for rate limit configuration system.
 
-use botticelli_error::{BotticelliError, BotticelliResult};
+use botticelli_error::{BotticelliResult, ConfigError, RateLimitError};
 use botticelli_interface::Tier;
 use botticelli_rate_limit::{BotticelliConfig, TierConfigBuilder};
 
 #[test]
-fn test_load_bundled_defaults() -> BotticelliResult<()> {
+fn test_load_bundled_defaults() -> Result<(), ConfigError> {
     let config = BotticelliConfig::load()?;
 
     // Should have at least Gemini provider
@@ -25,7 +25,7 @@ fn test_load_bundled_defaults() -> BotticelliResult<()> {
 }
 
 #[test]
-fn test_tier_config_implements_tier_trait() -> BotticelliResult<()> {
+fn test_tier_config_implements_tier_trait() -> Result<(), RateLimitError> {
     let tier_config = TierConfigBuilder::default()
         .name("Test Tier")
         .rpm(100u32)
@@ -37,10 +37,9 @@ fn test_tier_config_implements_tier_trait() -> BotticelliResult<()> {
         .cost_per_million_output_tokens(2.0)
         .build()
         .map_err(|e| {
-            let rate_limit_err = botticelli_error::RateLimitError::new(
-                botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()),
-            );
-            BotticelliError::from(rate_limit_err)
+            RateLimitError::new(botticelli_error::RateLimitErrorKind::BuilderValidation(
+                e.to_string(),
+            ))
         })?;
 
     // Test Tier trait methods
@@ -56,7 +55,7 @@ fn test_tier_config_implements_tier_trait() -> BotticelliResult<()> {
 }
 
 #[test]
-fn test_get_tier_with_default() -> BotticelliResult<()> {
+fn test_get_tier_with_default() -> Result<(), ConfigError> {
     let config = BotticelliConfig::load()?;
 
     // Get default tier (should be "free" for Gemini)
@@ -69,7 +68,7 @@ fn test_get_tier_with_default() -> BotticelliResult<()> {
 }
 
 #[test]
-fn test_get_tier_with_specific_name() -> BotticelliResult<()> {
+fn test_get_tier_with_specific_name() -> Result<(), ConfigError> {
     let config = BotticelliConfig::load()?;
 
     // Get specific tier
@@ -90,7 +89,7 @@ fn test_config_from_file() -> BotticelliResult<()> {
     let mut temp_file = Builder::new()
         .suffix(".toml")
         .tempfile()
-        .map_err(|e| BotticelliError::from(botticelli_error::IoError::from(e)))?;
+        .map_err(botticelli_error::IoError::from)?;
     writeln!(
         temp_file,
         r#"
@@ -103,7 +102,7 @@ rpm = 42
 tpm = 999_000
 "#
     )
-    .map_err(|e| BotticelliError::from(botticelli_error::IoError::from(e)))?;
+    .map_err(botticelli_error::IoError::from)?;
 
     // Load config from the temporary file
     let config = BotticelliConfig::from_file(temp_file.path())?;
