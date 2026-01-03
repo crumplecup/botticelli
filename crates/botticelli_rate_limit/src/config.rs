@@ -238,6 +238,21 @@ pub struct RateLimitConfig {
 }
 
 impl RateLimitConfig {
+    /// Creates a new rate limit configuration.
+    pub const fn new(
+        requests_per_minute: u64,
+        tokens_per_minute: u64,
+        requests_per_day: u64,
+        tokens_per_day: u64,
+    ) -> Self {
+        Self {
+            requests_per_minute,
+            tokens_per_minute,
+            requests_per_day,
+            tokens_per_day,
+        }
+    }
+
     /// Creates a rate limit configuration from a tier config.
     pub fn from_tier(tier: &TierConfig) -> Self {
         Self {

@@ -4,7 +4,8 @@ use crate::openai_compat::{OpenAICompatError, OpenAICompatibleClient};
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliResult, GroqErrorKind, ModelsError, ModelsResult};
-use botticelli_interface::{BotticelliDriver, Capabilities};
+use botticelli_core::Capabilities;
+use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
 use tracing::{debug, instrument};
 
@@ -72,6 +73,12 @@ impl GroqDriver {
 
 #[async_trait]
 impl BotticelliDriver for GroqDriver {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = botticelli_error::BotticelliError;
+    type RateLimitConfig = botticelli_rate_limit::RateLimitConfig;
+    type Capabilities = Capabilities;
+
     #[instrument(skip(self, req), fields(provider = "groq", model = %self.inner.model_name()))]
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
         self.inner
@@ -93,16 +100,15 @@ impl BotticelliDriver for GroqDriver {
     }
 
     fn capabilities(&self) -> Capabilities {
-        Capabilities {
-            streaming: false,   // Groq doesn't have real streaming
-            tool_calling: true, // Groq supports tool calling via OpenAI-compatible API
-            vision: false,
-            audio: false,
-            video: false,
-            embeddings: false,
-            json_mode: true,
-            batch_generation: false,
-        }
+        Capabilities::default()
+            .with_streaming(false)   // Groq doesn't have real streaming
+            .with_tool_calling(true) // Groq supports tool calling via OpenAI-compatible API
+            .with_vision(false)
+            .with_audio(false)
+            .with_video(false)
+            .with_embeddings(false)
+            .with_json_mode(true)
+            .with_batch_generation(false)
     }
 }
 
@@ -115,10 +121,27 @@ impl botticelli_interface::TokenCounting for GroqDriver {
         debug!(token_count = count, "Counted tokens for Groq");
         Ok(count)
     }
+
+    #[instrument(skip(self, req))]
+    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, botticelli_error::BotticelliError> {
+        let tokenizer = crate::gpt_tokenizer()?;
+        let mut total = 0;
+        for msg in req.messages() {
+            for input in msg.content() {
+                if let botticelli_core::Input::Text(text) = input {
+                    total += crate::count_tokens_tiktoken(text, &tokenizer);
+                }
+            }
+        }
+        Ok(total)
+    }
 }
 
 #[async_trait]
 impl botticelli_interface::ToolCalling for GroqDriver {
+    type ToolDefinition = botticelli_core::ToolDefinition;
+    type ToolResult = botticelli_core::ToolResult;
+
     #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
     async fn generate_with_tools(
         &self,
@@ -126,9 +149,5 @@ impl botticelli_interface::ToolCalling for GroqDriver {
         tools: &[botticelli_core::ToolDefinition],
     ) -> BotticelliResult<GenerateResponse> {
         self.inner.generate_with_tools(request, tools).await
-    }
-
-    fn max_tools(&self) -> usize {
-        128 // Groq supports up to 128 tools
     }
 }

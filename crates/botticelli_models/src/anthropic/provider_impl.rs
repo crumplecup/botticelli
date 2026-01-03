@@ -22,7 +22,10 @@ impl LlmProvider for AnthropicClient {
             .await
             .map_err(|e| {
                 error!(error = %e, "Failed to generate response");
-                e.into()
+                ProviderError::new(
+                    "anthropic",
+                    botticelli_error::ProviderErrorKind::ApiError(e.to_string()),
+                )
             })
     }
 

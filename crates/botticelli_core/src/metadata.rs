@@ -53,6 +53,7 @@ pub struct ModelMetadata {
     PartialEq,
     Eq,
     Hash,
+    Default,
     Serialize,
     Deserialize,
     derive_getters::Getters,

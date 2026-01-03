@@ -3,7 +3,8 @@ use crate::{
 };
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{AnthropicErrorKind, ModelsError};
-use botticelli_interface::{BotticelliDriver, Capabilities, ToolCalling};
+use botticelli_core::Capabilities;
+use botticelli_interface::{BotticelliDriver, ToolCalling};
 use botticelli_rate_limit::RateLimitConfig;
 use reqwest::Client;
 use tracing::{debug, error, instrument};
@@ -135,6 +136,12 @@ impl AnthropicClient {
 
 #[async_trait::async_trait]
 impl BotticelliDriver for AnthropicClient {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = botticelli_error::BotticelliError;
+    type RateLimitConfig = botticelli_rate_limit::RateLimitConfig;
+    type Capabilities = Capabilities;
+
     fn provider_name(&self) -> &'static str {
         "anthropic"
     }
@@ -146,26 +153,21 @@ impl BotticelliDriver for AnthropicClient {
     fn rate_limits(&self) -> &RateLimitConfig {
         // Default conservative rate limits for Anthropic
         // TODO: Make this configurable
-        static DEFAULT_RATE_LIMITS: RateLimitConfig = RateLimitConfig {
-            requests_per_minute: 50,
-            tokens_per_minute: 40_000,
-            requests_per_day: 1_000,
-            tokens_per_day: 1_000_000,
-        };
+        static DEFAULT_RATE_LIMITS: RateLimitConfig =
+            RateLimitConfig::new(50, 40_000, 1_000, 1_000_000);
         &DEFAULT_RATE_LIMITS
     }
 
     fn capabilities(&self) -> Capabilities {
-        Capabilities {
-            streaming: true,
-            tool_calling: true,
-            vision: true,
-            audio: false,
-            video: false,
-            embeddings: false,
-            json_mode: true,
-            batch_generation: false,
-        }
+        Capabilities::default()
+            .with_streaming(true)
+            .with_tool_calling(true)
+            .with_vision(true)
+            .with_audio(false)
+            .with_video(false)
+            .with_embeddings(false)
+            .with_json_mode(true)
+            .with_batch_generation(false)
     }
 
     #[instrument(skip(self, request))]
@@ -186,6 +188,9 @@ impl BotticelliDriver for AnthropicClient {
 /// This makes the capability explicit and type-safe.
 #[async_trait::async_trait]
 impl botticelli_interface::ToolCalling for AnthropicClient {
+    type ToolDefinition = botticelli_core::ToolDefinition;
+    type ToolResult = botticelli_core::ToolResult;
+
     #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
     async fn generate_with_tools(
         &self,
@@ -278,14 +283,6 @@ impl botticelli_interface::ToolCalling for AnthropicClient {
 
         Ok(response)
     }
-
-    fn max_tools(&self) -> usize {
-        128
-    }
-
-    fn supports_parallel_tool_calls(&self) -> bool {
-        true
-    }
 }
 
 /// Implement Vision trait - Anthropic supports image inputs
@@ -311,5 +308,19 @@ impl botticelli_interface::TokenCounting for AnthropicClient {
         let count = crate::count_tokens_tiktoken(text, &tokenizer);
         debug!(token_count = count, "Counted tokens for Anthropic");
         Ok(count)
+    }
+
+    #[instrument(skip(self, req))]
+    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, botticelli_error::BotticelliError> {
+        let tokenizer = crate::claude_tokenizer()?;
+        let mut total = 0;
+        for msg in req.messages() {
+            for input in msg.content() {
+                if let botticelli_core::Input::Text(text) = input {
+                    total += crate::count_tokens_tiktoken(text, &tokenizer);
+                }
+            }
+        }
+        Ok(total)
     }
 }

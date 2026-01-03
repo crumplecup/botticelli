@@ -43,6 +43,7 @@
 //! ```
 
 use async_trait::async_trait;
+use botticelli_rate_limit::TierConfigBuilder;
 use std::collections::HashMap;
 use std::env;
 use std::sync::{Arc, Mutex};
@@ -52,11 +53,10 @@ use gemini_rust::{Gemini, client::Model};
 
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind};
-use botticelli_interface::{
-    BotticelliDriver, Capabilities, FinishReason, Metadata, ModelMetadata, ModelMetadataBuilder,
-    StreamChunk, Streaming, Vision,
-};
-use botticelli_rate_limit::{BotticelliConfig, RateLimiter, Tier, TierConfig};
+use botticelli_core::{Capabilities, FinishReason, ModelMetadata, ModelMetadataBuilder, StreamChunk};
+use botticelli_interface::{BotticelliDriver, Metadata, Streaming, Vision};
+use botticelli_interface::Tier;
+use botticelli_rate_limit::{BotticelliConfig, RateLimiter, TierConfig};
 
 use super::GeminiResult;
 
@@ -340,17 +340,17 @@ impl GeminiClient {
 
         let base_tier = tier_config.unwrap_or_else(|| {
             // Default tier configuration (Free tier, gemini-2.5-flash for development)
-            TierConfig {
-                name: "Free".to_string(),
-                rpm: Some(10),
-                tpm: Some(250_000),
-                rpd: Some(250),
-                max_concurrent: Some(1),
-                daily_quota_usd: None,
-                cost_per_million_input_tokens: Some(0.0),
-                cost_per_million_output_tokens: Some(0.0),
-                models: HashMap::new(),
-            }
+            TierConfigBuilder::default()
+                .name("Free")
+                .rpm(10u32)
+                .tpm(250_000u64)
+                .rpd(250u32)
+                .max_concurrent(1u32)
+                .cost_per_million_input_tokens(0.0)
+                .cost_per_million_output_tokens(0.0)
+                .models(HashMap::new())
+                .build()
+                .expect("Valid TierConfig")
         });
 
         // Create Live API client with rate limiting from tier config
@@ -383,30 +383,44 @@ impl GeminiClient {
         // be preserved. For other callers (passing GeminiTier or custom tiers),
         // we create a basic TierConfig without model-specific overrides.
         let base_tier = if let Some(tier) = tier {
-            TierConfig {
-                name: tier.name().to_string(),
-                rpm: tier.rpm(),
-                tpm: tier.tpm(),
-                rpd: tier.rpd(),
-                max_concurrent: tier.max_concurrent(),
-                daily_quota_usd: tier.daily_quota_usd(),
-                cost_per_million_input_tokens: tier.cost_per_million_input_tokens(),
-                cost_per_million_output_tokens: tier.cost_per_million_output_tokens(),
-                models: HashMap::new(), // Will be empty for non-TierConfig tiers
+            let mut builder = TierConfigBuilder::default();
+            builder.name(tier.name());
+            if let Some(rpm) = tier.rpm() {
+                builder.rpm(rpm);
             }
+            if let Some(tpm) = tier.tpm() {
+                builder.tpm(tpm);
+            }
+            if let Some(rpd) = tier.rpd() {
+                builder.rpd(rpd);
+            }
+            if let Some(max_concurrent) = tier.max_concurrent() {
+                builder.max_concurrent(max_concurrent);
+            }
+            if let Some(daily_quota) = tier.daily_quota_usd() {
+                builder.daily_quota_usd(daily_quota);
+            }
+            if let Some(input_cost) = tier.cost_per_million_input_tokens() {
+                builder.cost_per_million_input_tokens(input_cost);
+            }
+            if let Some(output_cost) = tier.cost_per_million_output_tokens() {
+                builder.cost_per_million_output_tokens(output_cost);
+            }
+            builder.models(HashMap::new()); // Will be empty for non-TierConfig tiers
+            builder.build().expect("Valid TierConfig")
         } else {
             // Default tier configuration (Free tier, gemini-2.5-flash for development)
-            TierConfig {
-                name: "Free".to_string(),
-                rpm: Some(10),
-                tpm: Some(250_000),
-                rpd: Some(250),
-                max_concurrent: Some(1),
-                daily_quota_usd: None,
-                cost_per_million_input_tokens: Some(0.0),
-                cost_per_million_output_tokens: Some(0.0),
-                models: HashMap::new(),
-            }
+            TierConfigBuilder::default()
+                .name("Free")
+                .rpm(10u32)
+                .tpm(250_000u64)
+                .rpd(250u32)
+                .max_concurrent(1u32)
+                .cost_per_million_input_tokens(0.0)
+                .cost_per_million_output_tokens(0.0)
+                .models(HashMap::new())
+                .build()
+                .expect("Valid TierConfig")
         };
 
         // Create Live API client with rate limiting from tier config
@@ -862,6 +876,12 @@ impl GeminiClient {
 
 #[async_trait]
 impl BotticelliDriver for GeminiClient {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = botticelli_error::BotticelliError;
+    type RateLimitConfig = botticelli_rate_limit::RateLimitConfig;
+    type Capabilities = Capabilities;
+
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
         use botticelli_interface::ToolCalling;
 
@@ -889,22 +909,24 @@ impl BotticelliDriver for GeminiClient {
     }
 
     fn capabilities(&self) -> Capabilities {
-        Capabilities {
-            streaming: true,
-            tool_calling: true,
-            vision: true,
-            audio: true,
-            video: true,
-            embeddings: true,
-            json_mode: true,
-            batch_generation: false,
-        }
+        Capabilities::default()
+            .with_streaming(true)
+            .with_tool_calling(true)
+            .with_vision(true)
+            .with_audio(true)
+            .with_video(true)
+            .with_embeddings(true)
+            .with_json_mode(true)
+            .with_batch_generation(false)
     }
 }
 
 /// Implement ToolCalling trait - new clean architecture
 #[async_trait]
 impl botticelli_interface::ToolCalling for GeminiClient {
+    type ToolDefinition = botticelli_core::ToolDefinition;
+    type ToolResult = botticelli_core::ToolResult;
+
     #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
     async fn generate_with_tools(
         &self,
@@ -1103,14 +1125,6 @@ impl botticelli_interface::ToolCalling for GeminiClient {
             }
         }
     }
-
-    fn max_tools(&self) -> usize {
-        64 // Gemini's typical limit
-    }
-
-    fn supports_parallel_tool_calls(&self) -> bool {
-        true
-    }
 }
 
 impl GeminiClient {
@@ -1174,6 +1188,8 @@ impl GeminiClient {
 
 #[async_trait]
 impl Streaming for GeminiClient {
+    type StreamChunk = StreamChunk;
+
     async fn generate_stream(
         &self,
         req: &GenerateRequest,
@@ -1344,6 +1360,8 @@ impl GeminiClient {
 }
 
 impl Metadata for GeminiClient {
+    type ModelMetadata = ModelMetadata;
+
     /// Returns metadata for the default model.
     ///
     /// Note: This returns capabilities for the default model configured at client creation.
@@ -1352,23 +1370,26 @@ impl Metadata for GeminiClient {
     /// model supports the features you need.
     ///
     /// Current metadata reflects Gemini 2.5 Flash capabilities.
-    fn metadata(&self) -> ModelMetadata {
-        ModelMetadataBuilder::default()
-            .provider("gemini")
-            .model(self.model_name.clone())
-            .max_input_tokens(1_048_576) // Gemini 2.5 Flash supports up to 1M tokens
-            .max_output_tokens(8192)
-            .supports_streaming(true)
-            .supports_vision(true)
-            .supports_audio(true)
-            .supports_video(true)
-            .supports_documents(true)
-            .supports_tool_use(true)
-            .supports_json_mode(true)
-            .supports_embeddings(true)
-            .supports_batch(false)
-            .build()
-            .expect("Valid ModelMetadata")
+    fn metadata(&self) -> &ModelMetadata {
+        // TODO: Consider caching in the struct to avoid repeated allocation
+        Box::leak(Box::new(
+            ModelMetadataBuilder::default()
+                .provider("gemini")
+                .model(self.model_name.clone())
+                .max_input_tokens(1_048_576) // Gemini 2.5 Flash supports up to 1M tokens
+                .max_output_tokens(8192)
+                .supports_streaming(true)
+                .supports_vision(true)
+                .supports_audio(true)
+                .supports_video(true)
+                .supports_documents(true)
+                .supports_tool_use(true)
+                .supports_json_mode(true)
+                .supports_embeddings(true)
+                .supports_batch(false)
+                .build()
+                .expect("Valid ModelMetadata"),
+        ))
     }
 }
 
@@ -1401,5 +1422,18 @@ impl botticelli_interface::TokenCounting for GeminiClient {
         let count = Self::estimate_tokens(text) as usize;
         debug!(token_count = count, "Estimated tokens for Gemini");
         Ok(count)
+    }
+
+    #[instrument(skip(self, req))]
+    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, botticelli_error::BotticelliError> {
+        let mut total = 0;
+        for msg in req.messages() {
+            for input in msg.content() {
+                if let botticelli_core::Input::Text(text) = input {
+                    total += Self::estimate_tokens(text) as usize;
+                }
+            }
+        }
+        Ok(total)
     }
 }

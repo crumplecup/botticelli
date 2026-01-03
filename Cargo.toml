@@ -129,7 +129,7 @@ reqwest = { version = "0.13", features = [
   "json",
   "gzip",
   "stream",
-  "rustls-tls",
+  "rustls",
 ] }
 dirs = "6"
 

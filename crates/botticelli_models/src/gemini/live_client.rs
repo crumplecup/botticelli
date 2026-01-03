@@ -39,7 +39,7 @@ use tracing::{debug, error, info, instrument, trace, warn};
 
 use botticelli_core::Output;
 use botticelli_error::{GeminiError, GeminiErrorKind};
-use botticelli_interface::{FinishReason, StreamChunk};
+use botticelli_core::{FinishReason, StreamChunk};
 
 use super::{GeminiResult, live_protocol::*, live_rate_limit::LiveRateLimiter};
 

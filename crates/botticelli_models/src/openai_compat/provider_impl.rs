@@ -19,7 +19,10 @@ impl LlmProvider for OpenAICompatibleClient {
 
         self.generate(request).await.map_err(|e| {
             error!(error = %e, "Failed to generate response");
-            e.into()
+            ProviderError::new(
+                self.provider_name(),
+                botticelli_error::ProviderErrorKind::ApiError(e.to_string()),
+            )
         })
     }
 

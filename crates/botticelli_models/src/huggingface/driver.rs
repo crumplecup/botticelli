@@ -4,7 +4,8 @@ use crate::openai_compat::{OpenAICompatError, OpenAICompatibleClient};
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliResult, HuggingFaceErrorKind, ModelsError, ModelsResult};
-use botticelli_interface::{BotticelliDriver, Capabilities};
+use botticelli_core::Capabilities;
+use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
 use tracing::{debug, instrument};
 
@@ -74,6 +75,12 @@ impl HuggingFaceDriver {
 
 #[async_trait]
 impl BotticelliDriver for HuggingFaceDriver {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = botticelli_error::BotticelliError;
+    type RateLimitConfig = botticelli_rate_limit::RateLimitConfig;
+    type Capabilities = Capabilities;
+
     #[instrument(skip(self, req), fields(provider = "huggingface", model = %self.inner.model_name()))]
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
         self.inner
@@ -95,16 +102,15 @@ impl BotticelliDriver for HuggingFaceDriver {
     }
 
     fn capabilities(&self) -> Capabilities {
-        Capabilities {
-            streaming: false, // HuggingFace doesn't have real streaming
-            tool_calling: false,
-            vision: false,
-            audio: false,
-            video: false,
-            embeddings: false,
-            json_mode: true,
-            batch_generation: false,
-        }
+        Capabilities::default()
+            .with_streaming(false) // HuggingFace doesn't have real streaming
+            .with_tool_calling(false)
+            .with_vision(false)
+            .with_audio(false)
+            .with_video(false)
+            .with_embeddings(false)
+            .with_json_mode(true)
+            .with_batch_generation(false)
     }
 }
 
@@ -116,5 +122,19 @@ impl botticelli_interface::TokenCounting for HuggingFaceDriver {
         let count = crate::count_tokens_tiktoken(text, &tokenizer);
         debug!(token_count = count, "Counted tokens for HuggingFace");
         Ok(count)
+    }
+
+    #[instrument(skip(self, req))]
+    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, botticelli_error::BotticelliError> {
+        let tokenizer = crate::gpt_tokenizer()?;
+        let mut total = 0;
+        for msg in req.messages() {
+            for input in msg.content() {
+                if let botticelli_core::Input::Text(text) = input {
+                    total += crate::count_tokens_tiktoken(text, &tokenizer);
+                }
+            }
+        }
+        Ok(total)
     }
 }

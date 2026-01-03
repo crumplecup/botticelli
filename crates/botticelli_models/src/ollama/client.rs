@@ -5,9 +5,9 @@ use ollama_rs::generation::completion::request::GenerationRequest as OllamaReque
 
 use super::conversion::{messages_to_prompt, response_to_output};
 use super::{OllamaError, OllamaErrorKind, OllamaResult};
-use botticelli_core::{GenerateRequest, GenerateResponse};
+use botticelli_core::{Capabilities, FinishReason, GenerateRequest, GenerateResponse, StreamChunk};
 use botticelli_error::BotticelliResult;
-use botticelli_interface::{BotticelliDriver, Capabilities};
+use botticelli_interface::BotticelliDriver;
 use tracing::{debug, info, instrument, warn};
 
 /// Ollama LLM client for local model execution.
@@ -120,6 +120,12 @@ impl OllamaClient {
 
 #[async_trait::async_trait]
 impl BotticelliDriver for OllamaClient {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = botticelli_error::BotticelliError;
+    type RateLimitConfig = botticelli_rate_limit::RateLimitConfig;
+    type Capabilities = Capabilities;
+
     #[instrument(skip(self, request))]
     async fn generate(&self, request: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
         debug!("Generating with Ollama");
@@ -173,21 +179,22 @@ impl BotticelliDriver for OllamaClient {
     }
 
     fn capabilities(&self) -> Capabilities {
-        Capabilities {
-            streaming: true,
-            tool_calling: false,
-            vision: false,
-            audio: false,
-            video: false,
-            embeddings: false,
-            json_mode: false,
-            batch_generation: false,
-        }
+        Capabilities::default()
+            .with_streaming(true)
+            .with_tool_calling(false)
+            .with_vision(false)
+            .with_audio(false)
+            .with_video(false)
+            .with_embeddings(false)
+            .with_json_mode(false)
+            .with_batch_generation(false)
     }
 }
 
 #[async_trait::async_trait]
 impl botticelli_interface::Streaming for OllamaClient {
+    type StreamChunk = StreamChunk;
+
     #[instrument(skip(self, request))]
     async fn generate_stream(
         &self,
@@ -195,7 +202,7 @@ impl botticelli_interface::Streaming for OllamaClient {
     ) -> BotticelliResult<
         std::pin::Pin<
             Box<
-                dyn futures_util::Stream<Item = BotticelliResult<botticelli_interface::StreamChunk>>
+                dyn futures_util::Stream<Item = BotticelliResult<StreamChunk>>
                     + Send,
             >,
         >,
@@ -227,13 +234,13 @@ impl botticelli_interface::Streaming for OllamaClient {
                             let is_final = response.done;
 
                             let chunk_result = if is_final {
-                                botticelli_interface::StreamChunk::builder()
+                                StreamChunk::builder()
                                     .content(botticelli_core::Output::Text(response.response.clone()))
                                     .is_final(is_final)
-                                    .finish_reason(Some(botticelli_interface::FinishReason::Stop))
+                                    .finish_reason(Some(FinishReason::Stop))
                                     .build()
                             } else {
-                                botticelli_interface::StreamChunk::builder()
+                                StreamChunk::builder()
                                     .content(botticelli_core::Output::Text(response.response.clone()))
                                     .is_final(is_final)
                                     .build()
@@ -273,5 +280,19 @@ impl botticelli_interface::TokenCounting for OllamaClient {
         let count = crate::count_tokens_tiktoken(text, &tokenizer);
         debug!(token_count = count, "Counted tokens for Ollama");
         Ok(count)
+    }
+
+    #[instrument(skip(self, req))]
+    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, botticelli_error::BotticelliError> {
+        let tokenizer = crate::gpt_tokenizer()?;
+        let mut total = 0;
+        for msg in req.messages() {
+            for input in msg.content() {
+                if let botticelli_core::Input::Text(text) = input {
+                    total += crate::count_tokens_tiktoken(text, &tokenizer);
+                }
+            }
+        }
+        Ok(total)
     }
 }

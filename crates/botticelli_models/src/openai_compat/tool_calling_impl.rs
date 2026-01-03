@@ -2,12 +2,18 @@
 
 use crate::openai_compat::{ChatFunctionDef, ChatTool, OpenAICompatibleClient, conversions};
 use async_trait::async_trait;
-use botticelli_core::{GenerateRequest, GenerateResponse, Output, ToolCall, ToolDefinition};
+use botticelli_core::{Capabilities, GenerateRequest, GenerateResponse, Output, ToolCall, ToolDefinition};
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
-use botticelli_interface::{BotticelliDriver, Capabilities, ToolCalling};
+use botticelli_interface::{BotticelliDriver, ToolCalling};
 
 #[async_trait]
 impl BotticelliDriver for OpenAICompatibleClient {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = botticelli_error::BotticelliError;
+    type RateLimitConfig = botticelli_rate_limit::RateLimitConfig;
+    type Capabilities = Capabilities;
+
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
         self.generate(req)
             .await
@@ -27,21 +33,23 @@ impl BotticelliDriver for OpenAICompatibleClient {
     }
 
     fn capabilities(&self) -> Capabilities {
-        Capabilities {
-            streaming: false,
-            tool_calling: true,
-            vision: false,
-            audio: false,
-            video: false,
-            embeddings: false,
-            json_mode: false,
-            batch_generation: false,
-        }
+        Capabilities::default()
+            .with_streaming(false)
+            .with_tool_calling(true)
+            .with_vision(false)
+            .with_audio(false)
+            .with_video(false)
+            .with_embeddings(false)
+            .with_json_mode(false)
+            .with_batch_generation(false)
     }
 }
 
 #[async_trait]
 impl ToolCalling for OpenAICompatibleClient {
+    type ToolDefinition = ToolDefinition;
+    type ToolResult = botticelli_core::ToolResult;
+
     #[tracing::instrument(skip(self, request), fields(provider = self.provider_name(), model = self.model_name()))]
     async fn generate_with_tools(
         &self,
