@@ -34,15 +34,15 @@ pub enum RateLimitErrorKind {
 }
 
 /// Rate limiting error with location tracking.
-#[derive(Debug, derive_more::Display, derive_more::Error)]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Rate Limit Error: {} at line {} in {}", kind, line, file)]
 pub struct RateLimitError {
     /// The kind of error that occurred
-    pub kind: RateLimitErrorKind,
+    kind: RateLimitErrorKind,
     /// Line number where error was created
-    pub line: u32,
+    line: u32,
     /// File where error was created
-    pub file: &'static str,
+    file: &'static str,
 }
 
 impl RateLimitError {
@@ -56,19 +56,22 @@ impl RateLimitError {
             file: location.file(),
         }
     }
+}
 
-    /// Get the error kind.
-    pub fn kind(&self) -> &RateLimitErrorKind {
-        &self.kind
+// Conversion from derive_builder error (String-based)
+impl From<String> for RateLimitErrorKind {
+    fn from(msg: String) -> Self {
+        Self::BuilderValidation(msg)
     }
 }
 
-impl<T> From<T> for RateLimitError
-where
-    T: Into<RateLimitErrorKind>,
-{
+// ErrorKind → Error conversion
+crate::impl_error_from_kind!(RateLimitErrorKind => RateLimitError);
+
+// Bridge from RateLimitErrorKind to BotticelliErrorKind via RateLimitError
+impl From<RateLimitErrorKind> for crate::BotticelliErrorKind {
     #[track_caller]
-    fn from(err: T) -> Self {
-        Self::new(err.into())
+    fn from(kind: RateLimitErrorKind) -> Self {
+        RateLimitError::from(kind).into()
     }
 }
