@@ -30,9 +30,9 @@ derive_builder.workspace = true
 
 [features]
 default = []
-gemini = []  # Marker feature for Gemini rate limiting
-anthropic = []  # Marker feature for Anthropic rate limiting
+gemini = []    # Marker feature for Gemini rate limiting
+anthropic = [] # Marker feature for Anthropic rate limiting
 
 [dev-dependencies]
-tempfile = "3"
+tempfile = { workspace = true }
 reqwest = { workspace = true }

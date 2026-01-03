@@ -6,8 +6,8 @@
 //! - User overrides (./botticelli.toml or ~/.config/botticelli/botticelli.toml)
 //! - Automatic merging with user values taking precedence
 
+use botticelli_error::ConfigError;
 use botticelli_interface::Tier;
-use botticelli_error::{BotticelliResult, ConfigError};
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -324,7 +324,7 @@ impl BotticelliConfig {
     ///
     /// Returns an error if the file cannot be read or parsed.
     #[instrument(skip(path), fields(path = %path.as_ref().display()))]
-    pub fn from_file(path: impl AsRef<std::path::Path>) -> BotticelliResult<Self> {
+    pub fn from_file(path: impl AsRef<std::path::Path>) -> Result<Self, ConfigError> {
         debug!("Loading configuration from file");
 
         Ok(Config::builder()
@@ -350,6 +350,10 @@ impl BotticelliConfig {
     ///
     /// User config files are optional and will be silently skipped if not found.
     ///
+    /// # Errors
+    ///
+    /// Returns `ConfigError` if configuration cannot be built or parsed.
+    ///
     /// # Example
     ///
     /// ```no_run
@@ -361,7 +365,7 @@ impl BotticelliConfig {
     /// # }
     /// ```
     #[instrument]
-    pub fn load() -> BotticelliResult<Self> {
+    pub fn load() -> Result<Self, ConfigError> {
         debug!("Loading configuration with precedence: current dir > home dir > bundled defaults");
 
         // Bundled default configuration

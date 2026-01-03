@@ -1,11 +1,12 @@
 //! Tests for rate limit configuration system.
 
+use botticelli_error::{BotticelliError, BotticelliResult};
 use botticelli_interface::Tier;
 use botticelli_rate_limit::{BotticelliConfig, TierConfigBuilder};
 
 #[test]
-fn test_load_bundled_defaults() {
-    let config = BotticelliConfig::load().unwrap();
+fn test_load_bundled_defaults() -> BotticelliResult<()> {
+    let config = BotticelliConfig::load()?;
 
     // Should have at least Gemini provider
     assert!(config.providers().contains_key("gemini"));
@@ -20,10 +21,11 @@ fn test_load_bundled_defaults() {
     assert_eq!(free_tier.rpm(), Some(10));
     assert_eq!(free_tier.tpm(), Some(250_000));
     assert_eq!(free_tier.rpd(), Some(250));
+    Ok(())
 }
 
 #[test]
-fn test_tier_config_implements_tier_trait() {
+fn test_tier_config_implements_tier_trait() -> BotticelliResult<()> {
     let tier_config = TierConfigBuilder::default()
         .name("Test Tier")
         .rpm(100u32)
@@ -34,7 +36,12 @@ fn test_tier_config_implements_tier_trait() {
         .cost_per_million_input_tokens(1.0)
         .cost_per_million_output_tokens(2.0)
         .build()
-        .unwrap();
+        .map_err(|e| {
+            let rate_limit_err = botticelli_error::RateLimitError::new(
+                botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()),
+            );
+            BotticelliError::from(rate_limit_err)
+        })?;
 
     // Test Tier trait methods
     assert_eq!(tier_config.rpm(), Some(100));
@@ -45,33 +52,45 @@ fn test_tier_config_implements_tier_trait() {
     assert_eq!(tier_config.cost_per_million_input_tokens(), Some(1.0));
     assert_eq!(tier_config.cost_per_million_output_tokens(), Some(2.0));
     assert_eq!(tier_config.name(), "Test Tier");
+    Ok(())
 }
 
 #[test]
-fn test_get_tier_with_default() {
-    let config = BotticelliConfig::load().unwrap();
+fn test_get_tier_with_default() -> BotticelliResult<()> {
+    let config = BotticelliConfig::load()?;
 
     // Get default tier (should be "free" for Gemini)
-    let tier = config.get_tier("gemini", None).unwrap();
+    let tier = config.get_tier("gemini", None);
+    assert!(tier.is_some(), "Failed to get default tier");
+    let tier = tier.unwrap();
+
     assert_eq!(tier.name(), "Free");
+    Ok(())
 }
 
 #[test]
-fn test_get_tier_with_specific_name() {
-    let config = BotticelliConfig::load().unwrap();
+fn test_get_tier_with_specific_name() -> BotticelliResult<()> {
+    let config = BotticelliConfig::load()?;
 
     // Get specific tier
-    let tier = config.get_tier("gemini", Some("payasyougo")).unwrap();
+    let tier = config.get_tier("gemini", Some("payasyougo"));
+    assert!(tier.is_some(), "Failed to get tier");
+    let tier = tier.unwrap();
+
     assert_eq!(tier.name(), "Pay-as-you-go");
+    Ok(())
 }
 
 #[test]
-fn test_config_from_file() {
+fn test_config_from_file() -> BotticelliResult<()> {
     use std::io::Write;
     use tempfile::Builder;
 
     // Create a temporary config file with .toml extension
-    let mut temp_file = Builder::new().suffix(".toml").tempfile().unwrap();
+    let mut temp_file = Builder::new()
+        .suffix(".toml")
+        .tempfile()
+        .map_err(|e| BotticelliError::from(botticelli_error::IoError::from(e)))?;
     writeln!(
         temp_file,
         r#"
@@ -84,10 +103,10 @@ rpm = 42
 tpm = 999_000
 "#
     )
-    .unwrap();
+    .map_err(|e| BotticelliError::from(botticelli_error::IoError::from(e)))?;
 
     // Load config from the temporary file
-    let config = BotticelliConfig::from_file(temp_file.path()).unwrap();
+    let config = BotticelliConfig::from_file(temp_file.path())?;
 
     // Verify the config was loaded correctly
     assert!(config.providers().contains_key("test"));
@@ -95,4 +114,5 @@ tpm = 999_000
     assert_eq!(tier.name(), "Custom Tier");
     assert_eq!(tier.rpm(), Some(42));
     assert_eq!(tier.tpm(), Some(999_000));
+    Ok(())
 }

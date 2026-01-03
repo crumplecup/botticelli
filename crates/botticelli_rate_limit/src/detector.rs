@@ -105,7 +105,9 @@ impl HeaderRateLimitDetector {
         }
 
         let config = builder.build().map_err(|e| {
-            botticelli_error::RateLimitError::new(botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()))
+            botticelli_error::RateLimitError::new(
+                botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()),
+            )
         })?;
 
         // Cache for future use
@@ -165,9 +167,9 @@ impl HeaderRateLimitDetector {
             .cost_per_million_output_tokens(15.0)
             .build()
             .map_err(|e| {
-                botticelli_error::RateLimitError::new(botticelli_error::RateLimitErrorKind::BuilderValidation(
-                    e.to_string(),
-                ))
+                botticelli_error::RateLimitError::new(
+                    botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()),
+                )
             })?;
 
         *self.detected_limits.write().await = Some(config.clone());
@@ -232,7 +234,9 @@ impl HeaderRateLimitDetector {
         }
 
         let config = builder.build().map_err(|e| {
-            botticelli_error::RateLimitError::new(botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()))
+            botticelli_error::RateLimitError::new(
+                botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()),
+            )
         })?;
 
         *self.detected_limits.write().await = Some(config.clone());
