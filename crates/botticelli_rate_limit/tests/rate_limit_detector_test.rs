@@ -1,6 +1,6 @@
 //! Tests for header-based rate limit detection.
 
-use botticelli_rate_limit::HeaderRateLimitDetector;
+use botticelli_rate_limit::{HeaderRateLimitDetector, Tier};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 fn create_headers(entries: &[(&str, &str)]) -> HeaderMap {
@@ -25,11 +25,11 @@ async fn test_detect_gemini_free_tier() {
     ]);
 
     let config = detector.detect_gemini(&headers).await.unwrap();
-    assert_eq!(config.name, "Free");
-    assert_eq!(config.rpm, Some(10));
-    assert_eq!(config.tpm, Some(250_000));
-    assert_eq!(config.rpd, Some(250));
-    assert_eq!(config.max_concurrent, Some(1));
+    assert_eq!(config.name(), "Free");
+    assert_eq!(config.rpm(), Some(10));
+    assert_eq!(config.tpm(), Some(250_000));
+    assert_eq!(config.rpd(), Some(250));
+    assert_eq!(config.max_concurrent(), Some(1));
 }
 
 #[cfg(feature = "gemini")]
@@ -42,10 +42,10 @@ async fn test_detect_gemini_payasyougo_tier() {
     ]);
 
     let config = detector.detect_gemini(&headers).await.unwrap();
-    assert_eq!(config.name, "Pay-as-you-go");
-    assert_eq!(config.rpm, Some(360));
-    assert_eq!(config.tpm, Some(4_000_000));
-    assert_eq!(config.rpd, None);
+    assert_eq!(config.name(), "Pay-as-you-go");
+    assert_eq!(config.rpm(), Some(360));
+    assert_eq!(config.tpm(), Some(4_000_000));
+    assert_eq!(config.rpd(), None);
 }
 
 #[cfg(feature = "anthropic")]
@@ -60,10 +60,10 @@ async fn test_detect_anthropic_tier1() {
     ]);
 
     let config = detector.detect_anthropic(&headers).await.unwrap();
-    assert_eq!(config.name, "Tier 1");
-    assert_eq!(config.rpm, Some(5));
-    assert_eq!(config.tpm, Some(20_000));
-    assert_eq!(config.max_concurrent, Some(5));
+    assert_eq!(config.name(), "Tier 1");
+    assert_eq!(config.rpm(), Some(5));
+    assert_eq!(config.tpm(), Some(20_000));
+    assert_eq!(config.max_concurrent(), Some(5));
 }
 
 #[cfg(feature = "anthropic")]
@@ -76,9 +76,9 @@ async fn test_detect_anthropic_tier4() {
     ]);
 
     let config = detector.detect_anthropic(&headers).await.unwrap();
-    assert_eq!(config.name, "Tier 4");
-    assert_eq!(config.rpm, Some(2000));
-    assert_eq!(config.tpm, Some(160_000));
+    assert_eq!(config.name(), "Tier 4");
+    assert_eq!(config.rpm(), Some(2000));
+    assert_eq!(config.tpm(), Some(160_000));
 }
 
 #[tokio::test]
@@ -92,10 +92,10 @@ async fn test_detect_openai_free_tier() {
     ]);
 
     let config = detector.detect_openai(&headers).await.unwrap();
-    assert_eq!(config.name, "Free");
-    assert_eq!(config.rpm, Some(3));
-    assert_eq!(config.tpm, Some(40_000));
-    assert_eq!(config.rpd, Some(200));
+    assert_eq!(config.name(), "Free");
+    assert_eq!(config.rpm(), Some(3));
+    assert_eq!(config.tpm(), Some(40_000));
+    assert_eq!(config.rpd(), Some(200));
 }
 
 #[tokio::test]
@@ -107,10 +107,10 @@ async fn test_detect_openai_tier5() {
     ]);
 
     let config = detector.detect_openai(&headers).await.unwrap();
-    assert_eq!(config.name, "Tier 5");
-    assert_eq!(config.rpm, Some(10000));
-    assert_eq!(config.tpm, Some(100_000_000));
-    assert_eq!(config.rpd, None);
+    assert_eq!(config.name(), "Tier 5");
+    assert_eq!(config.rpm(), Some(10000));
+    assert_eq!(config.tpm(), Some(100_000_000));
+    assert_eq!(config.rpd(), None);
 }
 
 #[tokio::test]
@@ -129,7 +129,7 @@ async fn test_cache_functionality() {
 
     // Should be cached
     let cached = detector.get_cached().await.unwrap();
-    assert_eq!(cached.name, "Tier 1");
+    assert_eq!(cached.name(), "Tier 1");
 
     // Clear cache
     detector.clear_cache().await;

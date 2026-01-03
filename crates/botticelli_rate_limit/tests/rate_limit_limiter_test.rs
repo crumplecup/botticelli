@@ -1,7 +1,6 @@
 //! Tests for rate limiter implementation.
 
-use botticelli_rate_limit::{RateLimiter, TierConfig};
-use std::collections::HashMap;
+use botticelli_rate_limit::{RateLimiter, TierConfig, TierConfigBuilder};
 use std::sync::Arc;
 
 fn create_test_tier(
@@ -10,17 +9,23 @@ fn create_test_tier(
     rpd: Option<u32>,
     max_concurrent: Option<u32>,
 ) -> TierConfig {
-    TierConfig {
-        name: "Test".to_string(),
-        rpm,
-        tpm,
-        rpd,
-        max_concurrent,
-        daily_quota_usd: None,
-        cost_per_million_input_tokens: None,
-        cost_per_million_output_tokens: None,
-        models: HashMap::new(),
+    let mut builder = TierConfigBuilder::default();
+    builder.name("Test");
+
+    if let Some(rpm_val) = rpm {
+        builder.rpm(rpm_val);
     }
+    if let Some(tpm_val) = tpm {
+        builder.tpm(tpm_val);
+    }
+    if let Some(rpd_val) = rpd {
+        builder.rpd(rpd_val);
+    }
+    if let Some(mc_val) = max_concurrent {
+        builder.max_concurrent(mc_val);
+    }
+
+    builder.build().unwrap()
 }
 
 #[tokio::test]

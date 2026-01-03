@@ -79,12 +79,12 @@ impl Budget {
         self.reset_windows();
 
         // Check minute limits
-        let tokens_ok_minute = self.tokens_per_minute + tokens <= self.config.tokens_per_minute;
-        let requests_ok_minute = self.requests_per_minute < self.config.requests_per_minute;
+        let tokens_ok_minute = self.tokens_per_minute + tokens <= *self.config.tokens_per_minute();
+        let requests_ok_minute = self.requests_per_minute < *self.config.requests_per_minute();
 
         // Check day limits
-        let tokens_ok_day = self.tokens_per_day + tokens <= self.config.tokens_per_day;
-        let requests_ok_day = self.requests_per_day < self.config.requests_per_day;
+        let tokens_ok_day = self.tokens_per_day + tokens <= *self.config.tokens_per_day();
+        let requests_ok_day = self.requests_per_day < *self.config.requests_per_day();
 
         tokens_ok_minute && requests_ok_minute && tokens_ok_day && requests_ok_day
     }
@@ -101,19 +101,19 @@ impl Budget {
                 requested_tokens: tokens,
                 available_tokens_minute: self
                     .config
-                    .tokens_per_minute
+                    .tokens_per_minute()
                     .saturating_sub(self.tokens_per_minute),
                 available_tokens_day: self
                     .config
-                    .tokens_per_day
+                    .tokens_per_day()
                     .saturating_sub(self.tokens_per_day),
                 available_requests_minute: self
                     .config
-                    .requests_per_minute
+                    .requests_per_minute()
                     .saturating_sub(self.requests_per_minute),
                 available_requests_day: self
                     .config
-                    .requests_per_day
+                    .requests_per_day()
                     .saturating_sub(self.requests_per_day),
             }));
         }
@@ -141,19 +141,19 @@ impl Budget {
         BudgetRemaining {
             tokens_per_minute: self
                 .config
-                .tokens_per_minute
+                .tokens_per_minute()
                 .saturating_sub(self.tokens_per_minute),
             tokens_per_day: self
                 .config
-                .tokens_per_day
+                .tokens_per_day()
                 .saturating_sub(self.tokens_per_day),
             requests_per_minute: self
                 .config
-                .requests_per_minute
+                .requests_per_minute()
                 .saturating_sub(self.requests_per_minute),
             requests_per_day: self
                 .config
-                .requests_per_day
+                .requests_per_day()
                 .saturating_sub(self.requests_per_day),
         }
     }

@@ -12,7 +12,6 @@
 
 use crate::TierConfig;
 use reqwest::header::HeaderMap;
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, instrument};
@@ -176,7 +175,7 @@ impl HeaderRateLimitDetector {
         debug!(rpm, tpm, "Detected OpenAI rate limits");
 
         // Determine tier from limits
-        let (tier_name, rpd) = match (rpm, tpm) {
+        let (tier_name, rpd): (&str, Option<u32>) = match (rpm, tpm) {
             (3, 40_000) => ("Free", Some(200)),
             (500, 200_000) => ("Tier 1", None),
             (5000, 2_000_000) => ("Tier 2", None),
@@ -186,17 +185,20 @@ impl HeaderRateLimitDetector {
             _ => ("Custom", None),
         };
 
-        let config = TierConfig {
-            name: tier_name.to_string(),
-            rpm: Some(rpm),
-            tpm: Some(tpm),
-            rpd,
-            max_concurrent: Some(50),
-            daily_quota_usd: None,
-            cost_per_million_input_tokens: Some(2.50), // Varies by model
-            cost_per_million_output_tokens: Some(10.0),
-            models: HashMap::new(), // Header-detected configs don't have model-specific overrides
-        };
+        let mut builder = crate::TierConfigBuilder::default();
+        builder
+            .name(tier_name)
+            .rpm(rpm)
+            .tpm(tpm)
+            .max_concurrent(50u32)
+            .cost_per_million_input_tokens(2.50) // Varies by model
+            .cost_per_million_output_tokens(10.0);
+
+        if let Some(rpd_value) = rpd {
+            builder.rpd(rpd_value);
+        }
+
+        let config = builder.build().expect("Valid TierConfig");
 
         *self.detected_limits.write().await = Some(config.clone());
 

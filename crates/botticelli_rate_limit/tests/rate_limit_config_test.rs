@@ -1,40 +1,39 @@
 //! Tests for rate limit configuration system.
 
-use botticelli_rate_limit::{BotticelliConfig, Tier, TierConfig};
-use std::collections::HashMap;
+use botticelli_rate_limit::{BotticelliConfig, Tier, TierConfigBuilder};
 
 #[test]
 fn test_load_bundled_defaults() {
     let config = BotticelliConfig::load().unwrap();
 
     // Should have at least Gemini provider
-    assert!(config.providers.contains_key("gemini"));
+    assert!(config.providers().contains_key("gemini"));
 
     // Gemini should have free tier
-    let gemini = &config.providers["gemini"];
-    assert!(gemini.tiers.contains_key("free"));
+    let gemini = &config.providers()["gemini"];
+    assert!(gemini.tiers().contains_key("free"));
 
     // Free tier should have expected limits
-    let free_tier = &gemini.tiers["free"];
-    assert_eq!(free_tier.name, "Free");
-    assert_eq!(free_tier.rpm, Some(10));
-    assert_eq!(free_tier.tpm, Some(250_000));
-    assert_eq!(free_tier.rpd, Some(250));
+    let free_tier = &gemini.tiers()["free"];
+    assert_eq!(free_tier.name(), "Free");
+    assert_eq!(free_tier.rpm(), Some(10));
+    assert_eq!(free_tier.tpm(), Some(250_000));
+    assert_eq!(free_tier.rpd(), Some(250));
 }
 
 #[test]
 fn test_tier_config_implements_tier_trait() {
-    let tier_config = TierConfig {
-        name: "Test Tier".to_string(),
-        rpm: Some(100),
-        tpm: Some(500_000),
-        rpd: Some(1000),
-        max_concurrent: Some(5),
-        daily_quota_usd: Some(10.0),
-        cost_per_million_input_tokens: Some(1.0),
-        cost_per_million_output_tokens: Some(2.0),
-        models: HashMap::new(),
-    };
+    let tier_config = TierConfigBuilder::default()
+        .name("Test Tier")
+        .rpm(100u32)
+        .tpm(500_000u64)
+        .rpd(1000u32)
+        .max_concurrent(5u32)
+        .daily_quota_usd(10.0)
+        .cost_per_million_input_tokens(1.0)
+        .cost_per_million_output_tokens(2.0)
+        .build()
+        .unwrap();
 
     // Test Tier trait methods
     assert_eq!(tier_config.rpm(), Some(100));
@@ -53,7 +52,7 @@ fn test_get_tier_with_default() {
 
     // Get default tier (should be "free" for Gemini)
     let tier = config.get_tier("gemini", None).unwrap();
-    assert_eq!(tier.name, "Free");
+    assert_eq!(tier.name(), "Free");
 }
 
 #[test]
@@ -62,7 +61,7 @@ fn test_get_tier_with_specific_name() {
 
     // Get specific tier
     let tier = config.get_tier("gemini", Some("payasyougo")).unwrap();
-    assert_eq!(tier.name, "Pay-as-you-go");
+    assert_eq!(tier.name(), "Pay-as-you-go");
 }
 
 #[test]
@@ -90,9 +89,9 @@ tpm = 999_000
     let config = BotticelliConfig::from_file(temp_file.path()).unwrap();
 
     // Verify the config was loaded correctly
-    assert!(config.providers.contains_key("test"));
+    assert!(config.providers().contains_key("test"));
     let tier = config.get_tier("test", Some("custom")).unwrap();
-    assert_eq!(tier.name, "Custom Tier");
-    assert_eq!(tier.rpm, Some(42));
-    assert_eq!(tier.tpm, Some(999_000));
+    assert_eq!(tier.name(), "Custom Tier");
+    assert_eq!(tier.rpm(), Some(42));
+    assert_eq!(tier.tpm(), Some(999_000));
 }

@@ -25,7 +25,10 @@ mod tier;
 mod tiers;
 
 pub use budget::{Budget, BudgetRemaining};
-pub use config::{BotticelliConfig, ModelTierConfig, ProviderConfig, RateLimitConfig, TierConfig};
+pub use config::{
+    BotticelliConfig, ModelTierConfig, ProviderConfig, RateLimitConfig, TierConfig,
+    TierConfigBuilder,
+};
 pub use detector::HeaderRateLimitDetector;
 pub use error::{RateLimitError, RateLimitErrorKind};
 pub use limiter::{RateLimiter, RateLimiterGuard};

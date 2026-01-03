@@ -26,6 +26,7 @@ strum = { workspace = true }
 derive_more = { workspace = true }
 derive-getters.workspace = true
 derive_setters.workspace = true
+derive_builder.workspace = true
 
 [features]
 default = []

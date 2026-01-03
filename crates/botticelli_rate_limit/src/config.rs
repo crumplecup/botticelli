@@ -26,35 +26,35 @@ use tracing::{debug, info, instrument, warn};
 /// tpm = 125_000
 /// rpd = 50
 /// ```
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default, derive_getters::Getters)]
 pub struct ModelTierConfig {
     /// Requests per minute limit (overrides tier default)
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rpm: Option<u32>,
+    rpm: Option<u32>,
 
     /// Tokens per minute limit (overrides tier default)
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tpm: Option<u64>,
+    tpm: Option<u64>,
 
     /// Requests per day limit (overrides tier default)
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rpd: Option<u32>,
+    rpd: Option<u32>,
 
     /// Maximum concurrent requests (overrides tier default)
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub max_concurrent: Option<u32>,
+    max_concurrent: Option<u32>,
 
     /// Daily quota in USD (overrides tier default)
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub daily_quota_usd: Option<f64>,
+    daily_quota_usd: Option<f64>,
 
     /// Cost per million input tokens in USD (overrides tier default)
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cost_per_million_input_tokens: Option<f64>,
+    cost_per_million_input_tokens: Option<f64>,
 
     /// Cost per million output tokens in USD (overrides tier default)
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cost_per_million_output_tokens: Option<f64>,
+    cost_per_million_output_tokens: Option<f64>,
 }
 
 /// Configuration for a specific API tier.
@@ -81,42 +81,51 @@ pub struct ModelTierConfig {
 /// tpm = 125_000      # Overrides tier default
 /// rpd = 50           # Overrides tier default
 /// ```
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_builder::Builder)]
+#[builder(setter(into, strip_option))]
 pub struct TierConfig {
     /// Name of the tier (e.g., "Free", "Pro", "Tier 1")
-    pub name: String,
+    name: String,
 
     /// Requests per minute limit (tier-level default)
+    #[builder(default)]
     #[serde(default)]
-    pub rpm: Option<u32>,
+    rpm: Option<u32>,
 
     /// Tokens per minute limit (tier-level default)
+    #[builder(default)]
     #[serde(default)]
-    pub tpm: Option<u64>,
+    tpm: Option<u64>,
 
     /// Requests per day limit (tier-level default)
+    #[builder(default)]
     #[serde(default)]
-    pub rpd: Option<u32>,
+    rpd: Option<u32>,
 
     /// Maximum concurrent requests (tier-level default)
+    #[builder(default)]
     #[serde(default)]
-    pub max_concurrent: Option<u32>,
+    max_concurrent: Option<u32>,
 
     /// Daily quota in USD (tier-level default)
+    #[builder(default)]
     #[serde(default)]
-    pub daily_quota_usd: Option<f64>,
+    daily_quota_usd: Option<f64>,
 
     /// Cost per million input tokens in USD (tier-level default)
+    #[builder(default)]
     #[serde(default)]
-    pub cost_per_million_input_tokens: Option<f64>,
+    cost_per_million_input_tokens: Option<f64>,
 
     /// Cost per million output tokens in USD (tier-level default)
+    #[builder(default)]
     #[serde(default)]
-    pub cost_per_million_output_tokens: Option<f64>,
+    cost_per_million_output_tokens: Option<f64>,
 
     /// Model-specific rate limit overrides
+    #[builder(default)]
     #[serde(default)]
-    pub models: HashMap<String, ModelTierConfig>,
+    models: HashMap<String, ModelTierConfig>,
 }
 
 impl Tier for TierConfig {
@@ -212,19 +221,19 @@ impl TierConfig {
 /// Rate limit configuration for budget tracking.
 ///
 /// Contains concrete rate limit values used by the Budget tracker.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, derive_getters::Getters)]
 pub struct RateLimitConfig {
     /// Requests per minute limit
-    pub requests_per_minute: u64,
+    requests_per_minute: u64,
 
     /// Tokens per minute limit
-    pub tokens_per_minute: u64,
+    tokens_per_minute: u64,
 
     /// Requests per day limit
-    pub requests_per_day: u64,
+    requests_per_day: u64,
 
     /// Tokens per day limit
-    pub tokens_per_day: u64,
+    tokens_per_day: u64,
 }
 
 impl RateLimitConfig {
@@ -253,13 +262,13 @@ impl RateLimitConfig {
 /// Configuration for a specific provider.
 ///
 /// Contains the default tier name and a map of tier configurations.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_getters::Getters)]
 pub struct ProviderConfig {
     /// Name of the default tier for this provider
-    pub default_tier: String,
+    default_tier: String,
 
     /// Map of tier name to tier configuration
-    pub tiers: HashMap<String, TierConfig>,
+    tiers: HashMap<String, TierConfig>,
 }
 
 /// Top-level Botticelli configuration.
@@ -271,7 +280,7 @@ pub struct ProviderConfig {
 /// # Example
 ///
 /// ```no_run
-/// use botticelli_rate_limit::BotticelliConfig;
+/// use botticelli_rate_limit::{BotticelliConfig, Tier};
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// // Load configuration (bundled defaults + user overrides)
@@ -279,31 +288,31 @@ pub struct ProviderConfig {
 ///
 /// // Get tier configuration for Gemini free tier
 /// let tier = config.get_tier("gemini", Some("free")).unwrap();
-/// println!("Gemini free tier RPM: {:?}", tier.rpm);
+/// println!("Gemini free tier RPM: {:?}", tier.rpm());
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default, derive_getters::Getters)]
 pub struct BotticelliConfig {
     /// Map of provider name to provider configuration
     #[serde(default)]
-    pub providers: HashMap<String, ProviderConfig>,
+    providers: HashMap<String, ProviderConfig>,
 
     /// Default budget multipliers for all providers
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub budget: Option<botticelli_core::BudgetConfig>,
+    budget: Option<botticelli_core::BudgetConfig>,
 
     /// Context path configuration for file references
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub context: Option<ContextConfig>,
+    context: Option<ContextConfig>,
 }
 
 /// Configuration for context file resolution.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_getters::Getters)]
 pub struct ContextConfig {
     /// Base directory for resolving file references in narrative TOML files.
     /// Defaults to workspace root if not specified.
-    pub path: Option<String>,
+    path: Option<String>,
 }
 
 impl BotticelliConfig {
