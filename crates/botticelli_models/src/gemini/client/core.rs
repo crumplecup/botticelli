@@ -1,11 +1,10 @@
 //! Core Gemini client implementation.
 
-use async_trait::async_trait;
 use botticelli_rate_limit::TierConfigBuilder;
 use std::collections::HashMap;
 use std::env;
 use std::sync::{Arc, Mutex};
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 use gemini_rust::{Gemini, client::Model};
 
@@ -15,7 +14,7 @@ use botticelli_interface::Tier;
 use botticelli_rate_limit::{BotticelliConfig, RateLimiter, TierConfig};
 
 use super::tiered::TieredGemini;
-use crate::GeminiResult;
+use crate::gemini::GeminiResult;
 
 /// Helper to convert builder errors to GeminiError
 pub(crate) fn builder_error(e: impl std::fmt::Display) -> botticelli_error::GeminiError {

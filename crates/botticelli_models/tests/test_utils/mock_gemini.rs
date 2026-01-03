@@ -1,14 +1,14 @@
 //! Mock Gemini client for testing.
 
 use async_trait::async_trait;
-use botticelli_core::{GenerateRequest, GenerateResponse, Output};
+use botticelli_core::{
+    Capabilities, FinishReason, GenerateRequest, GenerateResponse, ModelMetadata,
+    ModelMetadataBuilder, Output, StreamChunk,
+};
 use botticelli_error::{
     BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind, ModelsError, ModelsErrorKind,
 };
-use botticelli_interface::{
-    BotticelliDriver, FinishReason, Metadata, ModelMetadata, ModelMetadataBuilder, StreamChunk,
-    Streaming, Vision,
-};
+use botticelli_interface::{BotticelliDriver, Streaming, Vision};
 use botticelli_rate_limit::RateLimitConfig;
 use std::sync::{Arc, Mutex};
 
@@ -105,7 +105,7 @@ impl MockGeminiClient {
     fn default_rate_limits() -> RateLimitConfig {
         #[cfg(feature = "gemini")]
         {
-            use botticelli_rate_limit::Tier;
+            use botticelli_interface::Tier;
             let tier = GeminiTier::Free;
             RateLimitConfig {
                 requests_per_minute: tier.rpm().unwrap_or(15) as u64,

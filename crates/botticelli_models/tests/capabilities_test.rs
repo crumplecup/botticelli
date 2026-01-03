@@ -19,15 +19,15 @@ fn test_anthropic_capabilities() {
     let client = AnthropicClient::new("test-key", "claude-3-5-sonnet-20241022");
     let caps = client.capabilities();
 
-    assert!(caps.streaming, "Anthropic should support streaming");
-    assert!(caps.tool_calling, "Anthropic should support tool calling");
-    assert!(caps.vision, "Anthropic should support vision");
-    assert!(!caps.audio, "Anthropic should not support audio");
-    assert!(!caps.video, "Anthropic should not support video");
-    assert!(!caps.embeddings, "Anthropic should not support embeddings");
-    assert!(caps.json_mode, "Anthropic should support JSON mode");
+    assert!(caps.streaming(), "Anthropic should support streaming");
+    assert!(caps.tool_calling(), "Anthropic should support tool calling");
+    assert!(caps.vision(), "Anthropic should support vision");
+    assert!(!caps.audio(), "Anthropic should not support audio");
+    assert!(!caps.video(), "Anthropic should not support video");
+    assert!(!caps.embeddings(), "Anthropic should not support embeddings");
+    assert!(caps.json_mode(), "Anthropic should support JSON mode");
     assert!(
-        !caps.batch_generation,
+        !caps.batch_generation(),
         "Anthropic should not support batch generation"
     );
 }
@@ -44,15 +44,15 @@ fn test_gemini_capabilities() {
     let client = GeminiClient::new().expect("Failed to create GeminiClient");
     let caps = client.capabilities();
 
-    assert!(caps.streaming, "Gemini should support streaming");
-    assert!(caps.tool_calling, "Gemini should support tool calling");
-    assert!(caps.vision, "Gemini should support vision");
-    assert!(caps.audio, "Gemini should support audio");
-    assert!(caps.video, "Gemini should support video");
-    assert!(caps.embeddings, "Gemini should support embeddings");
-    assert!(caps.json_mode, "Gemini should support JSON mode");
+    assert!(caps.streaming(), "Gemini should support streaming");
+    assert!(caps.tool_calling(), "Gemini should support tool calling");
+    assert!(caps.vision(), "Gemini should support vision");
+    assert!(caps.audio(), "Gemini should support audio");
+    assert!(caps.video(), "Gemini should support video");
+    assert!(caps.embeddings(), "Gemini should support embeddings");
+    assert!(caps.json_mode(), "Gemini should support JSON mode");
     assert!(
-        !caps.batch_generation,
+        !caps.batch_generation(),
         "Gemini should not support batch generation"
     );
 }
@@ -63,15 +63,15 @@ fn test_ollama_capabilities() {
     let client = OllamaClient::new("llama2").expect("Failed to create OllamaClient");
     let caps = client.capabilities();
 
-    assert!(caps.streaming, "Ollama should support streaming");
-    assert!(!caps.tool_calling, "Ollama should not support tool calling");
-    assert!(!caps.vision, "Ollama should not support vision");
-    assert!(!caps.audio, "Ollama should not support audio");
-    assert!(!caps.video, "Ollama should not support video");
-    assert!(!caps.embeddings, "Ollama should not support embeddings");
-    assert!(!caps.json_mode, "Ollama should not support JSON mode");
+    assert!(caps.streaming(), "Ollama should support streaming");
+    assert!(!caps.tool_calling(), "Ollama should not support tool calling");
+    assert!(!caps.vision(), "Ollama should not support vision");
+    assert!(!caps.audio(), "Ollama should not support audio");
+    assert!(!caps.video(), "Ollama should not support video");
+    assert!(!caps.embeddings(), "Ollama should not support embeddings");
+    assert!(!caps.json_mode(), "Ollama should not support JSON mode");
     assert!(
-        !caps.batch_generation,
+        !caps.batch_generation(),
         "Ollama should not support batch generation"
     );
 }
@@ -83,15 +83,15 @@ fn test_groq_capabilities() {
         .expect("Failed to create GroqDriver");
     let caps = client.capabilities();
 
-    assert!(!caps.streaming, "Groq does not support real streaming");
-    assert!(!caps.tool_calling, "Groq does not support tool calling");
-    assert!(!caps.vision, "Groq should not support vision");
-    assert!(!caps.audio, "Groq should not support audio");
-    assert!(!caps.video, "Groq should not support video");
-    assert!(!caps.embeddings, "Groq should not support embeddings");
-    assert!(caps.json_mode, "Groq should support JSON mode");
+    assert!(!caps.streaming(), "Groq does not support real streaming");
+    assert!(!caps.tool_calling(), "Groq does not support tool calling");
+    assert!(!caps.vision(), "Groq should not support vision");
+    assert!(!caps.audio(), "Groq should not support audio");
+    assert!(!caps.video(), "Groq should not support video");
+    assert!(!caps.embeddings(), "Groq should not support embeddings");
+    assert!(caps.json_mode(), "Groq should support JSON mode");
     assert!(
-        !caps.batch_generation,
+        !caps.batch_generation(),
         "Groq should not support batch generation"
     );
 }
@@ -107,23 +107,23 @@ fn test_huggingface_capabilities() {
     let caps = client.capabilities();
 
     assert!(
-        !caps.streaming,
+        !caps.streaming(),
         "HuggingFace does not support real streaming"
     );
     assert!(
-        !caps.tool_calling,
+        !caps.tool_calling(),
         "HuggingFace does not support tool calling"
     );
-    assert!(!caps.vision, "HuggingFace should not support vision");
-    assert!(!caps.audio, "HuggingFace should not support audio");
-    assert!(!caps.video, "HuggingFace should not support video");
+    assert!(!caps.vision(), "HuggingFace should not support vision");
+    assert!(!caps.audio(), "HuggingFace should not support audio");
+    assert!(!caps.video(), "HuggingFace should not support video");
     assert!(
-        !caps.embeddings,
+        !caps.embeddings(),
         "HuggingFace should not support embeddings"
     );
-    assert!(caps.json_mode, "HuggingFace should support JSON mode");
+    assert!(caps.json_mode(), "HuggingFace should support JSON mode");
     assert!(
-        !caps.batch_generation,
+        !caps.batch_generation(),
         "HuggingFace should not support batch generation"
     );
 }
