@@ -49,12 +49,12 @@ tokio-tungstenite = { workspace = true }
 
 # Feature-gated provider SDKs
 gemini-rust = { workspace = true, optional = true }
-ollama-rs = { version = "0.3", optional = true, features = ["stream"] }
-claude-client = { version = "0.3", optional = true }
+ollama-rs = { workspace = true, optional = true }
+claude-client = { workspace = true, optional = true }
 futures = { workspace = true, optional = true }
-hf-hub = { version = "0.4.3", optional = true }
-huggingface_inference_rs = { version = "0.5.0", default-features = false, optional = true }
-tiktoken-rs = "0.5"
+hf-hub = { workspace = true, optional = true }
+huggingface_inference_rs = { workspace = true, optional = true }
+tiktoken-rs = { workspace = true }
 
 [features]
 default = []

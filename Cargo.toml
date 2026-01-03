@@ -132,6 +132,11 @@ uuid = { version = "1", features = ["v4", "serde"] }
 
 # LLM provider SDKs
 gemini-rust = "1.5"
+ollama-rs = { version = "0.3", features = ["stream"] }
+claude-client = "0.3"
+hf-hub = "0.4.3"
+huggingface_inference_rs = { version = "0.5.0", default-features = false }
+tiktoken-rs = "0.5"
 base64 = "0.22"
 
 # WebSocket for live APIs
