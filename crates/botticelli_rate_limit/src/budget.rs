@@ -1,6 +1,7 @@
 //! Budget tracking for carousel operations.
 
-use crate::{RateLimitConfig, RateLimitError, RateLimitErrorKind};
+use crate::RateLimitConfig;
+use botticelli_error::{RateLimitError, RateLimitErrorKind};
 use derive_getters::Getters;
 use std::time::{Duration, Instant};
 

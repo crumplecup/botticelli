@@ -29,8 +29,6 @@ pub use config::{
     TierConfigBuilder,
 };
 pub use detector::HeaderRateLimitDetector;
-// Re-export error types from botticelli_error
-pub use botticelli_error::{RateLimitError, RateLimitErrorKind};
 pub use limiter::{RateLimiter, RateLimiterGuard};
 pub use tier::Tier;
 #[cfg(feature = "anthropic")]

@@ -70,7 +70,7 @@ impl HeaderRateLimitDetector {
     pub async fn detect_gemini(
         &self,
         headers: &HeaderMap,
-    ) -> Result<Option<TierConfig>, crate::RateLimitError> {
+    ) -> Result<Option<TierConfig>, botticelli_error::RateLimitError> {
         debug!("Detecting Gemini rate limits from headers");
 
         // Parse rate limit headers
@@ -105,7 +105,7 @@ impl HeaderRateLimitDetector {
         }
 
         let config = builder.build().map_err(|e| {
-            crate::RateLimitError::new(crate::RateLimitErrorKind::BuilderValidation(e.to_string()))
+            botticelli_error::RateLimitError::new(botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()))
         })?;
 
         // Cache for future use
@@ -134,7 +134,7 @@ impl HeaderRateLimitDetector {
     pub async fn detect_anthropic(
         &self,
         headers: &HeaderMap,
-    ) -> Result<Option<TierConfig>, crate::RateLimitError> {
+    ) -> Result<Option<TierConfig>, botticelli_error::RateLimitError> {
         debug!("Detecting Anthropic rate limits from headers");
 
         let rpm = match parse_header_u32(headers, "anthropic-ratelimit-requests-limit") {
@@ -165,7 +165,7 @@ impl HeaderRateLimitDetector {
             .cost_per_million_output_tokens(15.0)
             .build()
             .map_err(|e| {
-                crate::RateLimitError::new(crate::RateLimitErrorKind::BuilderValidation(
+                botticelli_error::RateLimitError::new(botticelli_error::RateLimitErrorKind::BuilderValidation(
                     e.to_string(),
                 ))
             })?;
@@ -194,7 +194,7 @@ impl HeaderRateLimitDetector {
     pub async fn detect_openai(
         &self,
         headers: &HeaderMap,
-    ) -> Result<Option<TierConfig>, crate::RateLimitError> {
+    ) -> Result<Option<TierConfig>, botticelli_error::RateLimitError> {
         debug!("Detecting OpenAI rate limits from headers");
 
         let rpm = match parse_header_u32(headers, "x-ratelimit-limit-requests") {
@@ -232,7 +232,7 @@ impl HeaderRateLimitDetector {
         }
 
         let config = builder.build().map_err(|e| {
-            crate::RateLimitError::new(crate::RateLimitErrorKind::BuilderValidation(e.to_string()))
+            botticelli_error::RateLimitError::new(botticelli_error::RateLimitErrorKind::BuilderValidation(e.to_string()))
         })?;
 
         *self.detected_limits.write().await = Some(config.clone());
