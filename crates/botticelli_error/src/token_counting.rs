@@ -1,16 +1,11 @@
 //! Token counting errors.
 
 /// Specific token counting error conditions.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+#[derive(Debug, derive_more::Display)]
 pub enum TokenCountingErrorKind {
-    /// Failed to get tokenizer for model
-    #[display("Failed to get tokenizer for model '{}': {}", model, message)]
-    TokenizerNotFound {
-        /// Model name that was requested
-        model: String,
-        /// Error message from tiktoken_rs
-        message: String,
-    },
+    /// Failed to get tokenizer from tiktoken_rs
+    #[display("Tiktoken error: {}", _0)]
+    Tiktoken(Box<anyhow::Error>),
 
     /// Invalid model name
     #[display("Invalid model name: {}", _0)]
@@ -18,7 +13,7 @@ pub enum TokenCountingErrorKind {
 }
 
 /// Token counting error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Token Counting Error: {} at {}:{}", kind, file, line)]
 pub struct TokenCountingError {
     kind: TokenCountingErrorKind,

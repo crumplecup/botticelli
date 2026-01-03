@@ -5,20 +5,14 @@ use botticelli_error::{ModelsError, ModelsErrorKind, ModelsResult};
 /// Create a tiktoken tokenizer for Claude models (using cl100k_base encoding).
 pub fn claude_tokenizer() -> ModelsResult<tiktoken_rs::CoreBPE> {
     tiktoken_rs::cl100k_base().map_err(|e| {
-        ModelsError::new(ModelsErrorKind::TokenCountingFailed(format!(
-            "Failed to load tokenizer: {}",
-            e
-        )))
+        ModelsError::new(ModelsErrorKind::Tiktoken(std::sync::Arc::new(e)))
     })
 }
 
 /// Create a tiktoken tokenizer for GPT-based models (Groq, OpenAI).
 pub fn gpt_tokenizer() -> ModelsResult<tiktoken_rs::CoreBPE> {
     tiktoken_rs::cl100k_base().map_err(|e| {
-        ModelsError::new(ModelsErrorKind::TokenCountingFailed(format!(
-            "Failed to load tokenizer: {}",
-            e
-        )))
+        ModelsError::new(ModelsErrorKind::Tiktoken(std::sync::Arc::new(e)))
     })
 }
 

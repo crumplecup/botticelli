@@ -15,6 +15,7 @@ derive-getters = { workspace = true }
 derive_builder = { workspace = true }
 tracing = { workspace = true }
 botticelli_interface = { workspace = true }
+anyhow = { workspace = true }
 
 # Optional database error conversions
 diesel = { workspace = true, optional = true }

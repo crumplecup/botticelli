@@ -667,7 +667,7 @@ impl GeminiClient {
         let model_name = req.model().as_ref().unwrap_or(&self.model_name);
 
         // Record request
-        metrics.requests.add(
+        metrics.requests().add(
             1,
             &[
                 opentelemetry::KeyValue::new("provider", "gemini"),
@@ -951,7 +951,7 @@ impl botticelli_interface::ToolCalling for GeminiClient {
         let model_name = request.model().as_ref().unwrap_or(&self.model_name);
 
         // Record request
-        metrics.requests.add(
+        metrics.requests().add(
             1,
             &[
                 opentelemetry::KeyValue::new("provider", "gemini"),

@@ -1,7 +1,7 @@
 //! Error types for the local inference server.
 
 /// Error kinds for server operations.
-#[derive(Debug, Clone, derive_more::Display)]
+#[derive(Debug, derive_more::Display)]
 pub enum ServerErrorKind {
     /// HTTP request failed: {0}
     #[display("HTTP request failed: {}", _0)]
@@ -49,7 +49,7 @@ impl From<crate::ModelsError> for ServerErrorKind {
 }
 
 /// Error wrapper with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Server Error: {} at line {} in {}", kind, line, file)]
 pub struct ServerError {
     /// The error kind

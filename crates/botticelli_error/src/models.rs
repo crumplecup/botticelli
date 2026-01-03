@@ -149,7 +149,7 @@ pub enum GroqErrorKind {
 }
 
 /// Model provider-specific error conditions.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::From)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::From)]
 pub enum ModelsErrorKind {
     /// Gemini-specific error
     #[display("Gemini: {}", _0)]
@@ -191,10 +191,25 @@ pub enum ModelsErrorKind {
     #[display("Token counting failed: {}", _0)]
     #[from(ignore)]
     TokenCountingFailed(String),
+
+    /// Tiktoken decode error
+    #[display("Tiktoken decode error: {}", _0)]
+    #[from(ignore)]
+    TiktokenDecode(String),
+
+    /// Tiktoken decode key error (invalid token)
+    #[display("Tiktoken decode key error: token {}", _0)]
+    #[from(ignore)]
+    TiktokenDecodeKey(u32),
+
+    /// Tiktoken initialization failed
+    #[display("Tiktoken initialization failed: {}", _0)]
+    #[from(ignore)]
+    Tiktoken(std::sync::Arc<anyhow::Error>),
 }
 
 /// Model provider error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Models Error: {} at {}:{}", kind, file, line)]
 pub struct ModelsError {
     /// The specific error kind

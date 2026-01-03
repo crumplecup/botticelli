@@ -1,5 +1,6 @@
 //! Model selection with boundary constraints and fallback logic.
 
+use derive_getters::Getters;
 use derive_more::Display;
 use derive_new::new;
 use tracing::instrument;
@@ -10,7 +11,7 @@ use crate::{GeminiModel, GroqModel, ModelFamily, RateLimitDetector};
 ///
 /// Defines upper and lower bounds to prevent using models that are
 /// too expensive/slow (upper bound) or too cheap/fast (lower bound).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, new, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, new, Getters, serde::Serialize, serde::Deserialize)]
 pub struct ModelBounds {
     /// Minimum acceptable model (None = no lower bound)
     lower: Option<ModelId>,
@@ -65,16 +66,6 @@ impl ModelBounds {
             return false;
         }
         true
-    }
-
-    /// Get the lower bound.
-    pub fn lower(&self) -> Option<ModelId> {
-        self.lower
-    }
-
-    /// Get the upper bound.
-    pub fn upper(&self) -> Option<ModelId> {
-        self.upper
     }
 }
 

@@ -16,22 +16,22 @@ static METRICS: OnceLock<LlmMetrics> = OnceLock::new();
 ///
 /// Tracks requests, errors, latency, and token usage for all LLM providers.
 /// Metrics are labeled with provider (gemini, anthropic, etc.) and model name.
-#[derive(Clone)]
+#[derive(Clone, derive_getters::Getters)]
 pub struct LlmMetrics {
     /// Meter handle kept alive for metric instruments
     _meter: Meter,
     /// Total LLM API requests
-    pub requests: Counter<u64>,
+    requests: Counter<u64>,
     /// Failed LLM API requests
-    pub errors: Counter<u64>,
+    errors: Counter<u64>,
     /// LLM API call duration in seconds
-    pub duration: Histogram<f64>,
+    duration: Histogram<f64>,
     /// Total tokens used (prompt + completion)
-    pub tokens_used: Counter<u64>,
+    tokens_used: Counter<u64>,
     /// Prompt tokens used
-    pub prompt_tokens: Counter<u64>,
+    prompt_tokens: Counter<u64>,
     /// Completion tokens used
-    pub completion_tokens: Counter<u64>,
+    completion_tokens: Counter<u64>,
 }
 
 impl LlmMetrics {
