@@ -147,50 +147,60 @@ impl GeminiClient {
         })
     }
 
+    /// Build TierConfig from Tier trait.
+    fn build_tier_config_from_trait(tier: Box<dyn Tier>) -> GeminiResult<TierConfig> {
+        let mut builder = TierConfigBuilder::default();
+        builder.name(tier.name());
+        if let Some(rpm) = tier.rpm() {
+            builder.rpm(rpm);
+        }
+        if let Some(tpm) = tier.tpm() {
+            builder.tpm(tpm);
+        }
+        if let Some(rpd) = tier.rpd() {
+            builder.rpd(rpd);
+        }
+        if let Some(max_concurrent) = tier.max_concurrent() {
+            builder.max_concurrent(max_concurrent);
+        }
+        if let Some(daily_quota) = tier.daily_quota_usd() {
+            builder.daily_quota_usd(daily_quota);
+        }
+        if let Some(input_cost) = tier.cost_per_million_input_tokens() {
+            builder.cost_per_million_input_tokens(input_cost);
+        }
+        if let Some(output_cost) = tier.cost_per_million_output_tokens() {
+            builder.cost_per_million_output_tokens(output_cost);
+        }
+        builder.models(HashMap::new());
+        builder.build()
+            .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))
+    }
+
+    /// Build default free tier config.
+    fn build_default_tier_config() -> GeminiResult<TierConfig> {
+        TierConfigBuilder::default()
+            .name("Free")
+            .rpm(10u32)
+            .tpm(250_000u64)
+            .rpd(250u32)
+            .max_concurrent(1u32)
+            .cost_per_million_input_tokens(0.0)
+            .cost_per_million_output_tokens(0.0)
+            .models(HashMap::new())
+            .build()
+            .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))
+    }
+
     /// Internal constructor that returns Gemini-specific errors.
     fn new_internal(tier: Option<Box<dyn Tier>>) -> GeminiResult<Self> {
         let api_key = env::var("GEMINI_API_KEY")
             .map_err(|_| GeminiError::new(GeminiErrorKind::MissingApiKey))?;
 
         let base_tier = if let Some(tier) = tier {
-            let mut builder = TierConfigBuilder::default();
-            builder.name(tier.name());
-            if let Some(rpm) = tier.rpm() {
-                builder.rpm(rpm);
-            }
-            if let Some(tpm) = tier.tpm() {
-                builder.tpm(tpm);
-            }
-            if let Some(rpd) = tier.rpd() {
-                builder.rpd(rpd);
-            }
-            if let Some(max_concurrent) = tier.max_concurrent() {
-                builder.max_concurrent(max_concurrent);
-            }
-            if let Some(daily_quota) = tier.daily_quota_usd() {
-                builder.daily_quota_usd(daily_quota);
-            }
-            if let Some(input_cost) = tier.cost_per_million_input_tokens() {
-                builder.cost_per_million_input_tokens(input_cost);
-            }
-            if let Some(output_cost) = tier.cost_per_million_output_tokens() {
-                builder.cost_per_million_output_tokens(output_cost);
-            }
-            builder.models(HashMap::new());
-            builder.build()
-                .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))?
+            Self::build_tier_config_from_trait(tier)?
         } else {
-            TierConfigBuilder::default()
-                .name("Free")
-                .rpm(10u32)
-                .tpm(250_000u64)
-                .rpd(250u32)
-                .max_concurrent(1u32)
-                .cost_per_million_input_tokens(0.0)
-                .cost_per_million_output_tokens(0.0)
-                .models(HashMap::new())
-                .build()
-                .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))?
+            Self::build_default_tier_config()?
         };
 
         let live_client = {
@@ -394,67 +404,88 @@ impl GeminiClient {
         combined_text
     }
 
-    /// Internal generate method that returns Gemini-specific errors.
-    pub(crate) async fn generate_internal(&self, req: &GenerateRequest) -> GeminiResult<GenerateResponse> {
-        use crate::{LlmMetrics, classify_error};
-
-        let start = std::time::Instant::now();
-        let metrics = LlmMetrics::get();
-
-        let model_name = req.model().as_ref().unwrap_or(&self.model_name);
-
-        metrics.requests().add(
-            1,
-            &[
-                opentelemetry::KeyValue::new("provider", "gemini"),
-                opentelemetry::KeyValue::new("model", model_name.to_string()),
-            ],
-        );
-
-        if Self::is_live_model(model_name) {
-            let result = self.generate_via_live_api(req, model_name).await;
-
-            let duration = start.elapsed().as_secs_f64();
-            match &result {
-                Ok(_) => {
-                    metrics.record_request("gemini", model_name, duration);
-                }
-                Err(e) => {
-                    let error_type = classify_error(e);
-                    metrics.record_error("gemini", model_name, error_type);
-                }
-            }
-
-            return result;
+    /// Get or create rate-limited client for a model.
+    fn get_or_create_client(
+        &self,
+        model_name: &str,
+    ) -> GeminiResult<RateLimiter<TieredGemini<TierConfig>>> {
+        let mut clients = self.clients.lock()
+            .map_err(|e| GeminiError::new(GeminiErrorKind::MutexPoisoned(e.to_string())))?;
+        
+        if !clients.contains_key(model_name) {
+            let model_enum = Self::model_name_to_enum(model_name);
+            let client = Gemini::with_model(&self.api_key, model_enum)
+                .map_err(GeminiError::from)?;
+            let model_tier = self.base_tier.for_model(model_name);
+            let tiered = TieredGemini::new(client, model_tier);
+            let limiter = RateLimiter::new_with_retry(
+                tiered,
+                self.no_retry,
+                self.max_retries,
+                self.retry_backoff_ms,
+            );
+            clients.insert(model_name.to_string(), limiter);
         }
 
-        let rate_limited_client = {
-            let mut clients = self.clients.lock()
-                .map_err(|e| GeminiError::new(GeminiErrorKind::MutexPoisoned(e.to_string())))?;
-            if !clients.contains_key(model_name) {
-                let model_enum = Self::model_name_to_enum(model_name);
+        clients.get(model_name)
+            .ok_or_else(|| GeminiError::new(GeminiErrorKind::InvalidModel(model_name.to_string())))
+            .cloned()
+    }
 
-                let client = Gemini::with_model(&self.api_key, model_enum)
-                    .map_err(GeminiError::from)?;
+    /// Build request to gemini-rust from our GenerateRequest.
+    fn build_gemini_request(
+        &self,
+        req: &GenerateRequest,
+        client: &Gemini,
+    ) -> GeminiResult<gemini_rust::ContentBuilder> {
+        let mut builder = client.generate_content();
+        let mut system_prompt = None;
 
-                let model_tier = self.base_tier.for_model(model_name);
-
-                let tiered = TieredGemini::new(client, model_tier);
-
-                let limiter = RateLimiter::new_with_retry(
-                    tiered,
-                    self.no_retry,
-                    self.max_retries,
-                    self.retry_backoff_ms,
-                );
-
-                clients.insert(model_name.clone(), limiter);
+        for msg in req.messages() {
+            match msg.role() {
+                Role::System => {
+                    if let Some(text) = msg.content().iter().find_map(Self::extract_text) {
+                        system_prompt = Some(text);
+                    }
+                }
+                Role::User => {
+                    for input in msg.content() {
+                        if let Some(text) = Self::extract_text(input) {
+                            builder = builder.with_user_message(&text);
+                        }
+                    }
+                    if Self::has_media(msg.content()) {
+                        return Err(GeminiError::new(GeminiErrorKind::MultimodalNotSupported));
+                    }
+                }
+                Role::Assistant => {
+                    if let Some(text) = msg.content().iter().find_map(Self::extract_text) {
+                        builder = builder.with_model_message(&text);
+                    }
+                }
             }
+        }
 
-            clients.get(model_name)
-                .ok_or_else(|| GeminiError::new(GeminiErrorKind::InvalidModel(model_name.to_string())))?
-                .clone()
-        };
+        if let Some(prompt) = system_prompt {
+            builder = builder.with_system_prompt(&prompt);
+        }
+        if let Some(temp) = req.temperature() {
+            builder = builder.with_temperature(*temp);
+        }
+        if let Some(max_tok) = req.max_tokens() {
+            builder = builder.with_max_output_tokens(*max_tok as i32);
+        }
+
+        Ok(builder)
+    }
+
+    /// Execute REST API generation with rate limiting.
+    async fn generate_via_rest_api(
+        &self,
+        req: &GenerateRequest,
+        model_name: &str,
+    ) -> GeminiResult<GenerateResponse> {
+        let rate_limited_client = self.get_or_create_client(model_name)?;
 
         let estimated_tokens: u64 = req
             .messages()
@@ -466,82 +497,57 @@ impl GeminiClient {
 
         let total_estimate = estimated_tokens + req.max_tokens().unwrap_or(1000) as u64;
 
-        let messages = req.messages().clone();
-        let temperature = req.temperature();
-        let max_tokens = req.max_tokens();
-
         let response = rate_limited_client
             .execute(total_estimate, || async {
                 let client = &rate_limited_client.inner().client();
-
-                let mut builder = client.generate_content();
-
-                let mut system_prompt = None;
-
-                for msg in &messages {
-                    match msg.role() {
-                        Role::System => {
-                            if let Some(text) = msg.content().iter().find_map(Self::extract_text) {
-                                system_prompt = Some(text);
-                            }
-                        }
-                        Role::User => {
-                            for input in msg.content() {
-                                if let Some(text) = Self::extract_text(input) {
-                                    builder = builder.with_user_message(&text);
-                                }
-                            }
-
-                            if Self::has_media(msg.content()) {
-                                return Err(GeminiError::new(
-                                    GeminiErrorKind::MultimodalNotSupported,
-                                ));
-                            }
-                        }
-                        Role::Assistant => {
-                            if let Some(text) = msg.content().iter().find_map(Self::extract_text) {
-                                builder = builder.with_model_message(&text);
-                            }
-                        }
-                    }
-                }
-
-                if let Some(prompt) = system_prompt {
-                    builder = builder.with_system_prompt(&prompt);
-                }
-
-                if let Some(temp) = temperature {
-                    builder = builder.with_temperature(*temp);
-                }
-
-                if let Some(max_tok) = max_tokens {
-                    builder = builder.with_max_output_tokens(*max_tok as i32);
-                }
-
+                let builder = self.build_gemini_request(req, client)?;
                 builder.execute().await.map_err(Self::parse_gemini_error)
             })
-            .await;
+            .await?;
 
-        match response {
-            Ok(resp) => {
-                let text = resp.text();
+        let text = response.text();
+        GenerateResponse::builder()
+            .outputs(vec![Output::Text(text)])
+            .stop_reason(botticelli_core::StopReason::EndTurn)
+            .usage(None)
+            .build()
+            .map_err(builder_error)
+    }
 
-                let duration = start.elapsed().as_secs_f64();
+    /// Internal generate method that returns Gemini-specific errors.
+    pub(crate) async fn generate_internal(&self, req: &GenerateRequest) -> GeminiResult<GenerateResponse> {
+        use crate::{LlmMetrics, classify_error};
+
+        let start = std::time::Instant::now();
+        let metrics = LlmMetrics::get();
+        let model_name = req.model().as_ref().unwrap_or(&self.model_name);
+
+        metrics.requests().add(
+            1,
+            &[
+                opentelemetry::KeyValue::new("provider", "gemini"),
+                opentelemetry::KeyValue::new("model", model_name.to_string()),
+            ],
+        );
+
+        let result = if Self::is_live_model(model_name) {
+            self.generate_via_live_api(req, model_name).await
+        } else {
+            self.generate_via_rest_api(req, model_name).await
+        };
+
+        let duration = start.elapsed().as_secs_f64();
+        match &result {
+            Ok(_) => {
                 metrics.record_request("gemini", model_name, duration);
-
-                Ok(GenerateResponse::builder()
-                    .outputs(vec![Output::Text(text)])
-                    .stop_reason(botticelli_core::StopReason::EndTurn)
-                    .usage(None)
-                    .build()
-                    .map_err(builder_error)?)
             }
             Err(e) => {
-                let error_type = classify_error(&e);
+                let error_type = classify_error(e);
                 metrics.record_error("gemini", model_name, error_type);
-                Err(e)
             }
         }
+
+        result
     }
 
     /// Parse gemini-rust errors to extract HTTP status codes.
