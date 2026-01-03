@@ -1,8 +1,8 @@
 //! Tests for rate limit configuration system.
 
-use botticelli_error::{BotticelliResult, ConfigError, RateLimitError};
+use botticelli_error::{BotticelliResult, ConfigError};
 use botticelli_interface::Tier;
-use botticelli_rate_limit::{BotticelliConfig, TierConfigBuilder};
+use botticelli_rate_limit::{BotticelliConfig, TierConfigBuilder, TierConfigBuilderError};
 
 #[test]
 fn test_load_bundled_defaults() -> Result<(), ConfigError> {
@@ -25,7 +25,7 @@ fn test_load_bundled_defaults() -> Result<(), ConfigError> {
 }
 
 #[test]
-fn test_tier_config_implements_tier_trait() -> Result<(), RateLimitError> {
+fn test_tier_config_implements_tier_trait() -> Result<(), TierConfigBuilderError> {
     let tier_config = TierConfigBuilder::default()
         .name("Test Tier")
         .rpm(100u32)
@@ -35,12 +35,7 @@ fn test_tier_config_implements_tier_trait() -> Result<(), RateLimitError> {
         .daily_quota_usd(10.0)
         .cost_per_million_input_tokens(1.0)
         .cost_per_million_output_tokens(2.0)
-        .build()
-        .map_err(|e| {
-            RateLimitError::new(botticelli_error::RateLimitErrorKind::BuilderValidation(
-                e.to_string(),
-            ))
-        })?;
+        .build()?;
 
     // Test Tier trait methods
     assert_eq!(tier_config.rpm(), Some(100));
