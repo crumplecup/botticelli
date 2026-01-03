@@ -52,7 +52,7 @@ use tracing::{debug, instrument};
 use gemini_rust::{Gemini, client::Model};
 
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
-use botticelli_error::{BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind};
+use botticelli_error::{BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind, ModelsError, ModelsErrorKind};
 use botticelli_core::{Capabilities, FinishReason, ModelMetadata, ModelMetadataBuilder, StreamChunk};
 use botticelli_interface::{BotticelliDriver, Metadata, Streaming, Vision};
 use botticelli_interface::Tier;
@@ -965,7 +965,7 @@ impl botticelli_interface::ToolCalling for GeminiClient {
         );
 
         // Convert tools to Gemini FunctionDeclarations
-        let function_declarations: Vec<FunctionDeclaration> = tools
+        let function_declarations: Result<Vec<FunctionDeclaration>, _> = tools
             .iter()
             .map(|t| {
                 // Create FunctionDeclaration using builder pattern
@@ -978,9 +978,11 @@ impl botticelli_interface::ToolCalling for GeminiClient {
                     "parameters": t.input_schema(),
                 });
                 serde_json::from_value(decl_json)
-                    .expect("Failed to create FunctionDeclaration from JSON")
+                    .map_err(|e| ModelsError::new(ModelsErrorKind::Serialization(e.to_string())))
             })
             .collect();
+        
+        let function_declarations = function_declarations?;
 
         let gemini_tool = Tool::with_functions(function_declarations);
         debug!(

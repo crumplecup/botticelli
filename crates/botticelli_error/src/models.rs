@@ -206,6 +206,11 @@ pub enum ModelsErrorKind {
     #[display("Tiktoken initialization failed: {}", _0)]
     #[from(ignore)]
     Tiktoken(std::sync::Arc<anyhow::Error>),
+
+    /// Serialization error (JSON encoding/decoding failures)
+    #[display("Serialization error: {}", _0)]
+    #[from(ignore)]
+    Serialization(String),
 }
 
 /// Model provider error with location tracking.
