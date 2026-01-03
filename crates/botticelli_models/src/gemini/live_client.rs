@@ -191,7 +191,7 @@ impl LiveSession {
         // Connect to WebSocket
         let (ws_stream, _) = connect_async(&url).await.map_err(|e| {
             error!("WebSocket connection failed: {}", e);
-            GeminiError::new(GeminiErrorKind::WebSocketConnection(Arc::new(e)))
+            GeminiErrorKind::WebSocketConnection(Arc::new(e))
         })?;
 
         debug!("WebSocket connection established");
@@ -243,7 +243,7 @@ impl LiveSession {
             .await
             .map_err(|e| {
                 error!("Failed to send setup message: {}", e);
-                GeminiError::new(GeminiErrorKind::WebSocketConnection(Arc::new(e)))
+                GeminiErrorKind::WebSocketConnection(Arc::new(e))
             })?;
 
         debug!("Setup message sent, waiting for setupComplete");
@@ -252,7 +252,7 @@ impl LiveSession {
         while let Some(msg_result) = self.ws_stream.next().await {
             let msg = msg_result.map_err(|e| {
                 error!("Error receiving setup response: {}", e);
-                GeminiError::new(GeminiErrorKind::WebSocketConnection(Arc::new(e)))
+                GeminiErrorKind::WebSocketConnection(Arc::new(e))
             })?;
 
             if let Message::Text(text) = msg {
@@ -340,7 +340,7 @@ impl LiveSession {
             .await
             .map_err(|e| {
                 error!("Failed to send message: {}", e);
-                GeminiError::new(GeminiErrorKind::WebSocketConnection(std::sync::Arc::new(e)))
+                GeminiErrorKind::WebSocketConnection(Arc::new(e))
             })?;
 
         // Record message sent for rate limiting
@@ -474,7 +474,7 @@ impl LiveSession {
             .await
             .map_err(|e| {
                 error!("Failed to send message: {}", e);
-                GeminiError::new(GeminiErrorKind::WebSocketConnection(std::sync::Arc::new(e)))
+                GeminiErrorKind::WebSocketConnection(Arc::new(e))
             })?;
 
         // Record message sent for rate limiting
@@ -571,7 +571,7 @@ impl LiveSession {
 
         self.ws_stream.close(None).await.map_err(|e| {
             error!("Error closing WebSocket: {}", e);
-            GeminiError::new(GeminiErrorKind::WebSocketConnection(Arc::new(e)))
+            GeminiErrorKind::WebSocketConnection(Arc::new(e))
         })?;
 
         info!("WebSocket session closed");
