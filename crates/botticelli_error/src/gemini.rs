@@ -8,7 +8,10 @@ pub enum GeminiErrorKind {
     MissingApiKey,
     /// Failed to create Gemini client (captures gemini-rust error)
     #[display("Failed to create Gemini client: {}", _0)]
-    ClientCreation(std::sync::Arc<gemini_rust::ClientError>),
+    ClientCreation(std::sync::Arc<gemini_rust::client::Error>),
+    /// Live API client not available
+    #[display("Live API client not available: {}", _0)]
+    LiveClientUnavailable(String),
     /// API request failed
     #[display("Gemini API request failed: {}", _0)]
     ApiRequest(String),
@@ -114,6 +117,15 @@ impl GeminiError {
             line: location.line(),
             file: location.file(),
         }
+    }
+}
+
+/// Convert gemini-rust client errors to GeminiError
+#[cfg(feature = "models")]
+impl From<gemini_rust::client::Error> for GeminiError {
+    #[track_caller]
+    fn from(e: gemini_rust::client::Error) -> Self {
+        Self::new(GeminiErrorKind::ClientCreation(std::sync::Arc::new(e)))
     }
 }
 
