@@ -4,8 +4,8 @@ use std::sync::Arc;
 use crate::GeminiClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse, Output, Role, ToolCall};
-use botticelli_error::{GeminiError, GeminiErrorKind, ModelsError, ModelsErrorKind};
-use botticelli_interface::{BotticelliDriver, ToolCalling};
+use botticelli_error::{GeminiError, GeminiErrorKind};
+use botticelli_interface::ToolCalling;
 use tracing::{debug, instrument};
 
 use crate::gemini::GeminiResult;
@@ -56,7 +56,7 @@ impl ToolCalling for GeminiClient {
                 serde_json::from_value(decl_json)
             })
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|e| GeminiError::new(GeminiErrorKind::Serialization(Arc::new(e))))?;
+            .map_err(|e| GeminiErrorKind::Serialization(Arc::new(e)))?;
         let gemini_tool = Tool::with_functions(function_declarations);
         debug!(function_count = tools.len(), "Converted tools to Gemini format");
 

@@ -15,9 +15,6 @@ pub enum GeminiErrorKind {
     /// Live API client not available
     #[display("Live API client not available: {}", _0)]
     LiveClientUnavailable(String),
-    /// API request failed (captures anyhow error from gemini-rust)
-    #[display("Gemini API request failed: {}", _0)]
-    ApiRequest(std::sync::Arc<anyhow::Error>),
     /// HTTP error with status code and message
     #[display("HTTP {} error: {}", status_code, message)]
     HttpError {

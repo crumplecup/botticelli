@@ -1,7 +1,3 @@
-use botticelli_interface::{
-    Audio, BatchGeneration, DocumentProcessing, Embeddings, JsonMode, Streaming, TokenCounting,
-    ToolCalling, Video, Vision,
-};
 
 /// Gemini model capabilities configuration.
 ///

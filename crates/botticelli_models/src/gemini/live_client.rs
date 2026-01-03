@@ -232,10 +232,7 @@ impl LiveSession {
         // Serialize to JSON
         let json = serde_json::to_string(&setup).map_err(|e| {
             error!("Failed to serialize setup message: {}", e);
-            GeminiError::new(GeminiErrorKind::WebSocketHandshake(format!(
-                "Serialization error: {}",
-                e
-            )))
+            GeminiError::new(GeminiErrorKind::Serialization(Arc::new(e)))
         })?;
 
         trace!("Setup message JSON: {}", json);
@@ -246,10 +243,7 @@ impl LiveSession {
             .await
             .map_err(|e| {
                 error!("Failed to send setup message: {}", e);
-                GeminiError::new(GeminiErrorKind::WebSocketHandshake(format!(
-                    "Send error: {}",
-                    e
-                )))
+                GeminiError::new(GeminiErrorKind::WebSocketConnection(Arc::new(e)))
             })?;
 
         debug!("Setup message sent, waiting for setupComplete");
@@ -258,10 +252,7 @@ impl LiveSession {
         while let Some(msg_result) = self.ws_stream.next().await {
             let msg = msg_result.map_err(|e| {
                 error!("Error receiving setup response: {}", e);
-                GeminiError::new(GeminiErrorKind::WebSocketHandshake(format!(
-                    "Receive error: {}",
-                    e
-                )))
+                GeminiError::new(GeminiErrorKind::WebSocketConnection(Arc::new(e)))
             })?;
 
             if let Message::Text(text) = msg {
@@ -269,10 +260,7 @@ impl LiveSession {
 
                 let server_msg: ServerMessage = serde_json::from_str(&text).map_err(|e| {
                     error!("Failed to parse server message: {}", e);
-                    GeminiError::new(GeminiErrorKind::InvalidServerMessage(format!(
-                        "Parse error: {}",
-                        e
-                    )))
+                    GeminiError::new(GeminiErrorKind::Serialization(Arc::new(e)))
                 })?;
 
                 if server_msg.is_setup_complete() {
@@ -341,7 +329,7 @@ impl LiveSession {
         // Serialize to JSON
         let json = serde_json::to_string(&message).map_err(|e| {
             error!("Failed to serialize message: {}", e);
-            GeminiError::new(GeminiErrorKind::ApiRequest(format!("Serialization error: {}", e)))
+            GeminiError::new(GeminiErrorKind::Serialization(std::sync::Arc::new(e)))
         })?;
 
         trace!("Message JSON: {}", json);
@@ -352,7 +340,7 @@ impl LiveSession {
             .await
             .map_err(|e| {
                 error!("Failed to send message: {}", e);
-                GeminiError::new(GeminiErrorKind::ApiRequest(format!("Send error: {}", e)))
+                GeminiError::new(GeminiErrorKind::WebSocketConnection(std::sync::Arc::new(e)))
             })?;
 
         // Record message sent for rate limiting
@@ -376,10 +364,7 @@ impl LiveSession {
 
                 let server_msg: ServerMessage = serde_json::from_str(&text).map_err(|e| {
                     error!("Failed to parse server message: {}", e);
-                    GeminiError::new(GeminiErrorKind::InvalidServerMessage(format!(
-                        "Parse error: {}",
-                        e
-                    )))
+                    GeminiError::new(GeminiErrorKind::Serialization(Arc::new(e)))
                 })?;
 
                 // Check for disconnect
@@ -478,7 +463,7 @@ impl LiveSession {
         // Serialize to JSON
         let json = serde_json::to_string(&message).map_err(|e| {
             error!("Failed to serialize message: {}", e);
-            GeminiError::new(GeminiErrorKind::ApiRequest(format!("Serialization error: {}", e)))
+            GeminiError::new(GeminiErrorKind::Serialization(std::sync::Arc::new(e)))
         })?;
 
         trace!("Message JSON: {}", json);
@@ -489,7 +474,7 @@ impl LiveSession {
             .await
             .map_err(|e| {
                 error!("Failed to send message: {}", e);
-                GeminiError::new(GeminiErrorKind::ApiRequest(format!("Send error: {}", e)))
+                GeminiError::new(GeminiErrorKind::WebSocketConnection(std::sync::Arc::new(e)))
             })?;
 
         // Record message sent for rate limiting
@@ -517,10 +502,7 @@ impl LiveSession {
 
                     let server_msg: ServerMessage = serde_json::from_str(&text).map_err(|e| {
                         error!("Failed to parse server message: {}", e);
-                        GeminiError::new(GeminiErrorKind::InvalidServerMessage(format!(
-                            "Parse error: {}",
-                            e
-                        )))
+                        GeminiError::new(GeminiErrorKind::Serialization(Arc::new(e)))
                     })?;
 
                     // Check for disconnect

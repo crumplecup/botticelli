@@ -6,7 +6,7 @@ use botticelli_error::GeminiError;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::TierConfig;
 
-use crate::gemini::{GeminiResult, ModelCapabilities};
+use crate::gemini::ModelCapabilities;
 use super::core::GeminiClient;
 
 #[async_trait]

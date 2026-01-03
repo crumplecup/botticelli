@@ -20,7 +20,7 @@ impl TokenCounting for GeminiClient {
     fn count_request_tokens(&self, req: &Self::Request) -> Result<usize, Self::Error> {
         // Convert request to text representation for counting
         let text = serde_json::to_string(req)
-            .map_err(|e| GeminiError::new(GeminiErrorKind::Serialization(std::sync::Arc::new(e))))?;
+            .map_err(|e| GeminiErrorKind::Serialization(std::sync::Arc::new(e)))?;
         self.count_tokens(&text)
     }
 }

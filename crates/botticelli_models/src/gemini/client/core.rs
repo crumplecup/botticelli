@@ -1,5 +1,6 @@
 //! Core Gemini client implementation.
 
+
 use botticelli_rate_limit::TierConfigBuilder;
 use std::collections::HashMap;
 use std::env;
@@ -220,7 +221,7 @@ impl GeminiClient {
     /// Internal constructor that returns Gemini-specific errors.
     fn new_internal(tier: Option<Box<dyn Tier>>) -> GeminiResult<Self> {
         let api_key = env::var("GEMINI_API_KEY")
-            .map_err(|_| GeminiError::new(GeminiErrorKind::MissingApiKey))?;
+            .map_err(|_| GeminiErrorKind::MissingApiKey)?;
 
         let base_tier = if let Some(tier) = tier {
             Self::build_tier_config_from_trait(tier)?
@@ -605,11 +606,11 @@ impl GeminiClient {
         let stream = builder
             .execute_stream()
             .await
-            .map_err(|e| GeminiError::new(GeminiErrorKind::GeminiRust(Arc::new(e))))?;
+            .map_err(|e| GeminiErrorKind::GeminiRust(Arc::new(e)))?;
 
         // Convert gemini-rust stream to our StreamChunk format
         let converted_stream = stream
-            .map_err(|e| GeminiError::new(GeminiErrorKind::GeminiRust(Arc::new(e))))
+            .map_err(|e| GeminiError::from(GeminiErrorKind::GeminiRust(Arc::new(e))))
             .and_then(|response| async move {
                 // Extract text from response candidates
                 let text = response
@@ -635,7 +636,7 @@ impl GeminiClient {
     }
 
     /// Parse gemini-rust errors to extract HTTP status codes.
-    pub(crate) fn parse_gemini_error(err: impl std::fmt::Display) -> GeminiError {
+    pub(crate) fn parse_gemini_error(err: gemini_rust::client::Error) -> GeminiError {
         let err_msg = err.to_string();
 
         if let Some(status_code) = Self::extract_status_code(&err_msg) {
@@ -644,7 +645,7 @@ impl GeminiClient {
                 message: err_msg,
             })
         } else {
-            GeminiError::new(GeminiErrorKind::ApiRequest(err_msg))
+            GeminiError::new(GeminiErrorKind::GeminiRust(std::sync::Arc::new(err)))
         }
     }
 
