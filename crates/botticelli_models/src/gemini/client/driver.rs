@@ -6,6 +6,7 @@ use botticelli_error::GeminiError;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::TierConfig;
 
+use crate::gemini::{GeminiResult, ModelCapabilities};
 use super::core::GeminiClient;
 
 #[async_trait]
@@ -14,7 +15,7 @@ impl BotticelliDriver for GeminiClient {
     type Response = GenerateResponse;
     type Error = GeminiError;
     type RateLimitConfig = TierConfig;
-    type Capabilities = ();
+    type Capabilities = ModelCapabilities;
 
     async fn generate(&self, req: &Self::Request) -> Result<Self::Response, Self::Error> {
         self.generate_internal(req).await
@@ -25,15 +26,14 @@ impl BotticelliDriver for GeminiClient {
     }
 
     fn model_name(&self) -> &str {
-        "gemini-2.0-flash-exp"
+        self.model_name()
     }
 
     fn rate_limits(&self) -> &Self::RateLimitConfig {
-        // TODO: Return actual rate limits from client
-        unimplemented!("rate_limits not yet implemented")
+        self.base_tier()
     }
 
     fn capabilities(&self) -> Self::Capabilities {
-        ()
+        self.capabilities()
     }
 }

@@ -15,9 +15,9 @@ pub enum GeminiErrorKind {
     /// Live API client not available
     #[display("Live API client not available: {}", _0)]
     LiveClientUnavailable(String),
-    /// API request failed
+    /// API request failed (captures anyhow error from gemini-rust)
     #[display("Gemini API request failed: {}", _0)]
-    ApiRequest(String),
+    ApiRequest(std::sync::Arc<anyhow::Error>),
     /// HTTP error with status code and message
     #[display("HTTP {} error: {}", status_code, message)]
     HttpError {
@@ -35,9 +35,9 @@ pub enum GeminiErrorKind {
     /// Base64 decoding failed
     #[display("Base64 decode error: {}", _0)]
     Base64Decode(String),
-    /// WebSocket connection failed
+    /// WebSocket connection failed (captures tokio-tungstenite error)
     #[display("WebSocket connection failed: {}", _0)]
-    WebSocketConnection(String),
+    WebSocketConnection(std::sync::Arc<tokio_tungstenite::tungstenite::Error>),
     /// WebSocket handshake failed (setup phase)
     #[display("WebSocket handshake failed: {}", _0)]
     WebSocketHandshake(String),
@@ -59,6 +59,12 @@ pub enum GeminiErrorKind {
     /// Invalid model name
     #[display("Invalid model: {}", _0)]
     InvalidModel(String),
+    /// JSON serialization/deserialization failed
+    #[display("Serialization error: {}", _0)]
+    Serialization(std::sync::Arc<serde_json::Error>),
+    /// Tiktoken encoding failed
+    #[display("Tiktoken error: {}", _0)]
+    Tiktoken(String),
 }
 
 impl GeminiErrorKind {

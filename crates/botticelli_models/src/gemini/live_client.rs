@@ -102,7 +102,7 @@ impl GeminiLiveClient {
     #[instrument(name = "gemini_live_client_new_with_rate_limit")]
     pub fn new_with_rate_limit(max_messages_per_minute: Option<u32>) -> GeminiResult<Self> {
         let api_key = env::var("GEMINI_API_KEY")
-            .map_err(|_| GeminiError::new(GeminiErrorKind::MissingApiKey))?;
+            .map_err(|_| GeminiErrorKind::MissingApiKey)?;
 
         let rate_limiter = max_messages_per_minute.map(|rpm| Arc::new(LiveRateLimiter::new(rpm)));
 
@@ -191,7 +191,7 @@ impl LiveSession {
         // Connect to WebSocket
         let (ws_stream, _) = connect_async(&url).await.map_err(|e| {
             error!("WebSocket connection failed: {}", e);
-            GeminiError::new(GeminiErrorKind::WebSocketConnection(e.to_string()))
+            GeminiError::new(GeminiErrorKind::WebSocketConnection(Arc::new(e)))
         })?;
 
         debug!("WebSocket connection established");
@@ -589,10 +589,7 @@ impl LiveSession {
 
         self.ws_stream.close(None).await.map_err(|e| {
             error!("Error closing WebSocket: {}", e);
-            GeminiError::new(GeminiErrorKind::WebSocketConnection(format!(
-                "Close error: {}",
-                e
-            )))
+            GeminiError::new(GeminiErrorKind::WebSocketConnection(Arc::new(e)))
         })?;
 
         info!("WebSocket session closed");

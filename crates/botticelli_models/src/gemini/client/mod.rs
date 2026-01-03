@@ -6,14 +6,14 @@
 //! - Per-model rate limiting (each model has independent rate limits)
 //! - Thread-safe concurrent access
 
-mod tiered;
 mod core;
 mod driver;
-mod tool_calling;
-mod streaming;
 mod metadata;
-mod vision;
+mod streaming;
+mod tiered;
 mod token_counting;
+mod tool_calling;
+mod vision;
 
 pub use tiered::TieredGemini;
 pub use core::GeminiClient;

@@ -21,11 +21,13 @@
 //! - Text chat
 //! - Better rate limits on free tier
 
+mod capabilities;
 mod client;
 mod live_client;
 mod live_protocol;
 mod live_rate_limit;
 
+pub use capabilities::ModelCapabilities;
 pub use client::{GeminiClient, TieredGemini};
 pub use live_client::{GeminiLiveClient, LiveSession};
 pub use live_protocol::{

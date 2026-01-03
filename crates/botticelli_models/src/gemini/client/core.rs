@@ -57,6 +57,31 @@ impl std::fmt::Debug for GeminiClient {
 }
 
 impl GeminiClient {
+    /// Get the default model name.
+    pub fn model_name(&self) -> &str {
+        &self.model_name
+    }
+
+    /// Get the base tier configuration.
+    pub fn base_tier(&self) -> &TierConfig {
+        &self.base_tier
+    }
+
+    /// Get the capabilities of this Gemini model.
+    ///
+    /// Returns capabilities based on model name. All Gemini models support:
+    /// - Streaming
+    /// - Tool calling
+    /// - Token counting
+    /// - JSON mode
+    ///
+    /// Additional capabilities vary by model (vision, video, audio, etc.).
+    pub fn capabilities(&self) -> crate::gemini::ModelCapabilities {
+        // For now, return standard capabilities for all models
+        // In the future, this could be model-specific
+        crate::gemini::ModelCapabilities::standard()
+    }
+
     /// Convert a model name string to a gemini-rust Model enum variant.
     fn model_name_to_enum(name: &str) -> Model {
         match name {
