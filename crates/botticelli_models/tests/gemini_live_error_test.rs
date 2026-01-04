@@ -18,7 +18,7 @@ mod test_utils;
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
 use botticelli_interface::{BotticelliDriver, Streaming};
-use botticelli_models::{GeminiClient, GeminiLiveClient, GenerationConfig, GenerationConfigBuilder, LiveRateLimiter};
+use botticelli_models::{GeminiClient, GeminiLiveClient, GenerationConfigBuilder, LiveRateLimiter};
 use futures_util::StreamExt;
 use std::time::Instant;
 
