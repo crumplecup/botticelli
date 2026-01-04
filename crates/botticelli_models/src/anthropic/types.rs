@@ -28,15 +28,15 @@ impl AnthropicTool {
     ///
     /// ```
     /// use botticelli_core::ToolDefinition;
-    /// use botticelli_models::anthropic::AnthropicTool;
+    /// use botticelli_models::AnthropicTool;
     /// use serde_json::json;
     ///
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let mcp_tool = ToolDefinition::builder()
-    ///     .name("echo".to_string())
-    ///     .description("Echoes input".to_string())
-    ///     .input_schema(json!({"type": "object", "properties": {"message": {"type": "string"}}}))
-    ///     .build()?;
+    /// let mcp_tool = ToolDefinition::new(
+    ///     "echo".to_string(),
+    ///     "Echoes input".to_string(),
+    ///     json!({"type": "object", "properties": {"message": {"type": "string"}}}),
+    /// );
     ///
     /// let anthropic_tool = AnthropicTool::from_mcp(&mcp_tool);
     /// assert_eq!(anthropic_tool.name(), "echo");
