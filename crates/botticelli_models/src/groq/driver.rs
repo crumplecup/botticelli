@@ -25,11 +25,8 @@ impl GroqDriver {
     /// Returns error if API token is not set.
     #[instrument(skip_all, fields(model = %model))]
     pub fn new(model: String) -> ModelsResult<Self> {
-        let api_key = std::env::var("GROQ_API_KEY").map_err(|e| {
-            ModelsError::new(botticelli_error::ModelsErrorKind::Groq(
-                GroqErrorKind::InvalidRequest(format!("GROQ_API_KEY not set: {}", e)),
-            ))
-        })?;
+        let api_key = std::env::var("GROQ_API_KEY")
+            .map_err(|e| GroqErrorKind::EnvVar(e))?;
 
         Self::with_api_key(api_key, model)
     }

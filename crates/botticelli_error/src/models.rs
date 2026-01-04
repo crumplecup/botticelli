@@ -154,7 +154,7 @@ pub enum HuggingFaceErrorKind {
 
 /// Errors specific to Groq models.
 #[cfg(feature = "groq")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
 pub enum GroqErrorKind {
     /// API error from Groq
     #[display("API error: {}", _0)]
@@ -179,6 +179,37 @@ pub enum GroqErrorKind {
     /// Response conversion failed
     #[display("Response conversion failed: {}", _0)]
     ResponseConversion(String),
+
+    /// Environment variable error
+    #[display("Environment variable error: {}", _0)]
+    EnvVar(std::env::VarError),
+}
+
+/// Groq error with location tracking.
+#[cfg(feature = "groq")]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("Groq: {} at {}:{}", kind, file, line)]
+pub struct GroqError {
+    /// The specific error condition
+    pub kind: GroqErrorKind,
+    /// Line number where error occurred
+    pub line: u32,
+    /// Source file where error occurred
+    pub file: &'static str,
+}
+
+#[cfg(feature = "groq")]
+impl GroqError {
+    /// Create a new Groq error.
+    #[track_caller]
+    pub fn new(kind: GroqErrorKind) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind,
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
 }
 
 /// Model provider-specific error conditions.
@@ -288,6 +319,16 @@ impl From<AnthropicErrorKind> for ModelsError {
 }
 
 crate::impl_error_from_kind!(ModelsErrorKind => ModelsError);
+
+#[cfg(feature = "groq")]
+crate::impl_error_from_kind!(GroqErrorKind => GroqError);
+
+#[cfg(feature = "groq")]
+impl From<GroqErrorKind> for ModelsError {
+    fn from(kind: GroqErrorKind) -> Self {
+        ModelsError::new(ModelsErrorKind::Groq(kind))
+    }
+}
 
 /// Result type for model operations.
 pub type ModelsResult<T> = Result<T, ModelsError>;
