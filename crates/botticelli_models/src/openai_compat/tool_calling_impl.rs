@@ -20,12 +20,12 @@ impl BotticelliDriver for OpenAICompatibleClient {
             .map_err(|e| BotticelliError::from(BackendError::new(e.to_string())))
     }
 
-    fn provider_name(&self) -> &'static str {
+    fn provider_name(&self) -> &str {
         self.provider_name()
     }
 
     fn model_name(&self) -> &str {
-        self.model_name()
+        self.model()
     }
 
     fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig {

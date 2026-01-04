@@ -3,6 +3,7 @@
 use crate::openai_compat::{ChatRequest, ChatResponse, OpenAICompatError, conversions};
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_rate_limit::RateLimitConfig;
+use derive_getters::Getters;
 use reqwest::Client;
 use tracing::{debug, error, instrument};
 
@@ -10,47 +11,23 @@ use tracing::{debug, error, instrument};
 ///
 /// This client handles the common OpenAI chat completions format used by
 /// HuggingFace, Groq, and potentially other providers.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct OpenAICompatibleClient {
+    /// HTTP client
     client: Client,
+    /// API key
     api_key: String,
+    /// Model name
     model: String,
+    /// Base URL
     base_url: String,
-    provider_name: &'static str,
+    /// Provider name
+    provider_name: String,
+    /// Rate limits configuration
     rate_limits: RateLimitConfig,
 }
 
 impl OpenAICompatibleClient {
-    /// Returns the HTTP client.
-    pub fn client(&self) -> &Client {
-        &self.client
-    }
-
-    /// Returns the API key.
-    pub fn api_key(&self) -> &str {
-        &self.api_key
-    }
-
-    /// Returns the model name.
-    pub fn model(&self) -> &str {
-        &self.model
-    }
-
-    /// Returns the base URL.
-    pub fn base_url(&self) -> &str {
-        &self.base_url
-    }
-
-    /// Returns the provider name.
-    pub fn provider_name(&self) -> &'static str {
-        self.provider_name
-    }
-
-    /// Returns the rate limits configuration.
-    pub fn rate_limits(&self) -> &RateLimitConfig {
-        &self.rate_limits
-    }
-
     /// Creates a new OpenAI-compatible client.
     ///
     /// # Arguments
@@ -59,18 +36,18 @@ impl OpenAICompatibleClient {
     /// * `model` - Model identifier
     /// * `base_url` - Base URL for the API endpoint
     /// * `provider_name` - Name of the provider (for logging/tracing)
-    #[instrument(skip(api_key), fields(provider = provider_name, model = %model))]
+    #[instrument(skip(api_key), fields(provider = %provider_name, model = %model))]
     pub fn new(
         api_key: String,
         model: String,
         base_url: String,
-        provider_name: &'static str,
+        provider_name: String,
     ) -> Self {
         let client = Client::new();
-        let rate_limits = RateLimitConfig::unlimited(provider_name);
+        let rate_limits = RateLimitConfig::unlimited(&provider_name);
 
         debug!(
-            provider = provider_name,
+            provider = %provider_name,
             model = %model,
             url = %base_url,
             "Created OpenAI-compatible client"

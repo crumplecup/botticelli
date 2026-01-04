@@ -43,7 +43,7 @@ impl HuggingFaceDriver {
             api_token,
             model,
             "https://router.huggingface.co/v1/chat/completions".to_string(),
-            "huggingface",
+            "huggingface".to_string(),
         );
 
         Ok(Self { inner })
@@ -87,7 +87,7 @@ impl BotticelliDriver for HuggingFaceDriver {
             .map_err(|e| Self::convert_error(e).into())
     }
 
-    fn provider_name(&self) -> &'static str {
+    fn provider_name(&self) -> &str {
         self.inner.provider_name()
     }
 

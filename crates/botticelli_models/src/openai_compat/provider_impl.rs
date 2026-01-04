@@ -27,7 +27,7 @@ impl LlmProvider for OpenAICompatibleClient {
     }
 
     fn provider_name(&self) -> &str {
-        self.provider_name()
+        self.provider_name().as_str()
     }
 
     fn default_model(&self) -> &str {

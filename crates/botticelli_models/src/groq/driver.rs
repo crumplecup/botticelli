@@ -42,7 +42,7 @@ impl GroqDriver {
             api_key,
             model,
             "https://api.groq.com/openai/v1/chat/completions".to_string(),
-            "groq",
+            "groq".to_string(),
         );
 
         Ok(Self { inner })
@@ -85,7 +85,7 @@ impl BotticelliDriver for GroqDriver {
             })
     }
 
-    fn provider_name(&self) -> &'static str {
+    fn provider_name(&self) -> &str {
         self.inner.provider_name()
     }
 

@@ -27,7 +27,7 @@ pub trait BotticelliDriver: Send + Sync {
     async fn generate(&self, req: &Self::Request) -> Result<Self::Response, Self::Error>;
 
     /// Provider name (e.g., "anthropic", "openai", "gemini").
-    fn provider_name(&self) -> &'static str;
+    fn provider_name(&self) -> &str;
 
     /// Model identifier (e.g., "claude-3-5-sonnet-20241022").
     fn model_name(&self) -> &str;
@@ -68,7 +68,7 @@ impl<T: BotticelliDriver + ?Sized> BotticelliDriver for std::sync::Arc<T> {
         (**self).generate(req).await
     }
 
-    fn provider_name(&self) -> &'static str {
+    fn provider_name(&self) -> &str {
         (**self).provider_name()
     }
 
