@@ -247,35 +247,35 @@ pub struct MediaChunk {
 /// Tool response message.
 ///
 /// Reserved for future tool calling feature.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolResponseMessage {
     /// Tool response
-    pub tool_response: ToolResponse,
+    tool_response: ToolResponse,
 }
 
 /// Tool response data.
 ///
 /// Reserved for future tool calling feature.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolResponse {
     /// Function responses
-    pub function_responses: Vec<FunctionResponse>,
+    function_responses: Vec<FunctionResponse>,
 }
 
 /// Function call response.
 ///
 /// Reserved for future tool calling feature.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionResponse {
     /// Function call ID
-    pub id: String,
+    id: String,
     /// Function name
-    pub name: String,
+    name: String,
     /// Function response
-    pub response: serde_json::Value,
+    response: serde_json::Value,
 }
 
 //

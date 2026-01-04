@@ -1,5 +1,7 @@
 //! Model provider errors.
 
+use std::sync::Arc;
+
 use crate::GeminiErrorKind;
 
 /// Ollama-specific error conditions (re-exported when ollama feature is enabled).
@@ -37,11 +39,15 @@ pub enum OllamaErrorKind {
 
 /// Anthropic-specific error conditions (re-exported when anthropic feature is enabled).
 #[cfg(feature = "anthropic")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+#[derive(Debug, Clone, derive_more::Display)]
 pub enum AnthropicErrorKind {
     /// HTTP error (connection, timeout, etc.)
     #[display("HTTP error: {}", _0)]
     Http(String),
+
+    /// Reqwest error (network, connection, etc.)
+    #[display("Reqwest error: {}", _0)]
+    Reqwest(Arc<reqwest::Error>),
 
     /// Anthropic API returned an error
     #[display("API error (status {}): {message}", status)]
@@ -88,6 +94,33 @@ pub enum AnthropicErrorKind {
     /// Invalid role for message
     #[display("Invalid role: {}", _0)]
     InvalidRole(String),
+}
+
+/// Anthropic error with location tracking.
+#[cfg(feature = "anthropic")]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[display("Anthropic Error: {} at line {} in {}", kind, line, file)]
+pub struct AnthropicError {
+    /// The kind of error that occurred
+    kind: AnthropicErrorKind,
+    /// Line number where error was created
+    line: u32,
+    /// File where error was created
+    file: &'static str,
+}
+
+#[cfg(feature = "anthropic")]
+impl AnthropicError {
+    /// Creates a new Anthropic error with location tracking.
+    #[track_caller]
+    pub fn new(kind: AnthropicErrorKind) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind,
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
 }
 
 /// HuggingFace-specific error conditions.
@@ -241,6 +274,16 @@ impl ModelsError {
             line: loc.line(),
             file: loc.file(),
         }
+    }
+}
+
+#[cfg(feature = "anthropic")]
+crate::impl_error_from_kind!(AnthropicErrorKind => AnthropicError);
+
+#[cfg(feature = "anthropic")]
+impl From<AnthropicErrorKind> for ModelsError {
+    fn from(kind: AnthropicErrorKind) -> Self {
+        ModelsError::new(ModelsErrorKind::Anthropic(kind))
     }
 }
 

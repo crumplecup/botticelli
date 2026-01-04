@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     AnthropicContentBlock, AnthropicMessage, AnthropicRequest, AnthropicResponse, AnthropicTool,
 };
@@ -57,7 +59,7 @@ impl AnthropicClient {
             .await
             .map_err(|e| {
                 error!(error = ?e, "Failed to send request to Anthropic API");
-                ModelsError::new(AnthropicErrorKind::Http(format!("Request failed: {}", e)).into())
+                AnthropicErrorKind::Reqwest(Arc::new(e))
             })?;
 
         if !response.status().is_success() {
@@ -75,9 +77,7 @@ impl AnthropicClient {
 
         let anthropic_response: AnthropicResponse = response.json().await.map_err(|e| {
             error!(error = ?e, "Failed to parse Anthropic response");
-            ModelsError::new(
-                AnthropicErrorKind::Parse(format!("Failed to parse response: {}", e)).into(),
-            )
+            AnthropicErrorKind::Reqwest(Arc::new(e))
         })?;
 
         debug!(response_id = %anthropic_response.id(), "Received response from Anthropic");

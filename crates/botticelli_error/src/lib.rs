@@ -76,7 +76,7 @@ pub use json::SerdeJsonError as JsonSerdeJsonError;
 pub use json::{JsonError, JsonErrorKind};
 pub use mcp::{McpError, McpErrorKind, McpResult};
 #[cfg(feature = "anthropic")]
-pub use models::AnthropicErrorKind;
+pub use models::{AnthropicError, AnthropicErrorKind};
 #[cfg(feature = "huggingface")]
 pub use models::HuggingFaceErrorKind;
 
