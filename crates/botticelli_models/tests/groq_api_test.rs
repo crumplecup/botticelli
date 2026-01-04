@@ -20,7 +20,7 @@ async fn test_groq_basic_generation() -> Result<(), Box<dyn std::error::Error>> 
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()?;
 
     let response = driver.generate(&request).await?;
@@ -54,7 +54,7 @@ async fn test_groq_small_models() -> Result<(), Box<dyn std::error::Error>> {
 
         let request = GenerateRequest::builder()
             .messages(vec![message])
-            .max_tokens(5)
+            .max_tokens(5u32)
             .build()?;
 
         match driver.generate(&request).await {

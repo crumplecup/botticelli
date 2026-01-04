@@ -40,7 +40,7 @@ async fn test_mock_model_basic_generate() -> BotticelliResult<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
@@ -83,7 +83,7 @@ async fn test_default_model_usage() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .model(None) // No model override
         .build()
         .map_err(|e| anyhow::anyhow!(e))?;
@@ -111,7 +111,7 @@ async fn test_model_override_in_request() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .model("gemini-2.5-flash-lite".to_string()) // Override default
         .build()
         .map_err(|e| anyhow::anyhow!(e))?;
@@ -144,7 +144,7 @@ async fn test_gemini_2_5_model_override() -> BotticelliResult<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .model("gemini-2.5-flash".to_string())
         .build()
         .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
@@ -172,7 +172,7 @@ async fn test_multiple_model_requests() -> BotticelliResult<()> {
 
     let request1 = GenerateRequest::builder()
         .messages(vec![message1])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .model("gemini-2.5-flash-lite".to_string())
         .build()
         .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
@@ -189,7 +189,7 @@ async fn test_multiple_model_requests() -> BotticelliResult<()> {
 
     let request2 = GenerateRequest::builder()
         .messages(vec![message2])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .model("gemini-2.5-flash".to_string())
         .build()
         .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
@@ -206,7 +206,7 @@ async fn test_multiple_model_requests() -> BotticelliResult<()> {
 
     let request3 = GenerateRequest::builder()
         .messages(vec![message3])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .model("gemini-2.5-pro".to_string())
         .build()
         .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;

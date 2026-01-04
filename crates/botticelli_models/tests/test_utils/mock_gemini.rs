@@ -166,7 +166,7 @@ impl MockGeminiClient {
                 if current_count >= responses.len() {
                     // Past end of sequence, return error
                     Err(BotticelliError::from(GeminiError::new(
-                        GeminiErrorKind::ApiRequest(format!(
+                        GeminiErrorKind::InvalidServerMessage(format!(
                             "Mock sequence exhausted (call {} beyond {} responses)",
                             current_count + 1,
                             responses.len()
@@ -216,17 +216,7 @@ impl BotticelliDriver for MockGeminiClient {
     }
 
     fn capabilities(&self) -> Self::Capabilities {
-        botticelli_models::ModelCapabilities::builder()
-            .supports_streaming(true)
-            .supports_tool_calling(true)
-            .supports_vision(true)
-            .supports_audio(true)
-            .supports_video(true)
-            .supports_embeddings(true)
-            .supports_json_mode(true)
-            .supports_batch_generation(false)
-            .build()
-            .expect("Valid capabilities")
+        botticelli_models::ModelCapabilities::standard()
     }
 }
 

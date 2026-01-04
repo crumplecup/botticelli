@@ -23,7 +23,7 @@ async fn test_mock_basic_generate() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .unwrap();
 
@@ -45,7 +45,7 @@ async fn test_mock_multiple_requests() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .unwrap();
 
@@ -77,7 +77,7 @@ async fn test_mock_error_503() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .unwrap();
 
@@ -106,7 +106,7 @@ async fn test_mock_retry_behavior() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .unwrap();
 
@@ -135,7 +135,7 @@ async fn test_mock_rate_limit_error() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .unwrap();
 
@@ -162,7 +162,7 @@ async fn test_mock_sequence_mixed_responses() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .unwrap();
 
@@ -208,7 +208,7 @@ async fn test_mock_different_error_types() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .unwrap();
 

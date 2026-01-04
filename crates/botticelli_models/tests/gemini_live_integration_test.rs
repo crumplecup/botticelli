@@ -40,7 +40,7 @@ async fn test_gemini_client_routes_to_live_api() -> botticelli_error::Botticelli
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("models/gemini-2.0-flash-exp".to_string())
-        .max_tokens(20)
+        .max_tokens(20u32)
         .build()
         .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
 
@@ -72,7 +72,7 @@ async fn test_gemini_client_streaming_routes_to_live_api() -> botticelli_error::
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("models/gemini-2.0-flash-exp".to_string())
-        .max_tokens(50)
+        .max_tokens(50u32)
         .build()
         .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
 
@@ -121,7 +121,7 @@ async fn test_gemini_client_detects_live_models() -> botticelli_error::Botticell
     let request_exp = GenerateRequest::builder()
         .messages(vec![message_exp])
         .model("models/gemini-2.0-flash-exp".to_string())
-        .max_tokens(5)
+        .max_tokens(5u32)
         .build()
         .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
 
@@ -139,7 +139,7 @@ async fn test_gemini_client_detects_live_models() -> botticelli_error::Botticell
     let request_live = GenerateRequest::builder()
         .messages(vec![message_live])
         .model("models/gemini-2.0-flash-live".to_string())
-        .max_tokens(5)
+        .max_tokens(5u32)
         .build()
         .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
 

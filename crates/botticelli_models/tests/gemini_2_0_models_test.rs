@@ -29,7 +29,7 @@ async fn test_gemini_2_0_flash() -> BotticelliResult<()> {
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("gemini-2.0-flash".to_string())
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .map_err(|e| {
             botticelli_error::BotticelliError::from(botticelli_error::BotticelliErrorKind::Backend(
@@ -61,7 +61,7 @@ async fn test_gemini_2_0_flash_lite() -> BotticelliResult<()> {
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("gemini-2.0-flash-lite".to_string())
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .map_err(|e| {
             botticelli_error::BotticelliError::from(botticelli_error::BotticelliErrorKind::Backend(
@@ -94,7 +94,7 @@ async fn test_mixed_2_0_and_2_5_models() -> BotticelliResult<()> {
     let request1 = GenerateRequest::builder()
         .messages(vec![message1])
         .model("gemini-2.0-flash".to_string())
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .map_err(|e| {
             botticelli_error::BotticelliError::from(botticelli_error::BotticelliErrorKind::Backend(
@@ -119,7 +119,7 @@ async fn test_mixed_2_0_and_2_5_models() -> BotticelliResult<()> {
     let request2 = GenerateRequest::builder()
         .messages(vec![message2])
         .model("gemini-2.5-flash".to_string())
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .map_err(|e| {
             botticelli_error::BotticelliError::from(botticelli_error::BotticelliErrorKind::Backend(
@@ -144,7 +144,7 @@ async fn test_mixed_2_0_and_2_5_models() -> BotticelliResult<()> {
     let request3 = GenerateRequest::builder()
         .messages(vec![message3])
         .model("gemini-2.0-flash-lite".to_string())
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .map_err(|e| {
             botticelli_error::BotticelliError::from(botticelli_error::BotticelliErrorKind::Backend(
@@ -176,7 +176,7 @@ async fn test_explicit_models_prefix() -> BotticelliResult<()> {
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("models/gemini-2.0-flash".to_string())
-        .max_tokens(10)
+        .max_tokens(10u32)
         .build()
         .map_err(|e| {
             botticelli_error::BotticelliError::from(botticelli_error::BotticelliErrorKind::Backend(

@@ -35,7 +35,7 @@ fn test_gemini_error_kind_display() {
             "Failed to create Gemini client: test error",
         ),
         (
-            GeminiErrorKind::ApiRequest("request failed".to_string()),
+            GeminiErrorKind::InvalidServerMessage("request failed".to_string()),
             "Gemini API request failed: request failed",
         ),
         (
@@ -82,8 +82,8 @@ fn test_simple_text_request_structure() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(100)
-        .temperature(Some(0.7))
+        .max_tokens(100u32)
+        .temperature(0.7)
         .build()
         .expect("Valid request");
 
@@ -177,8 +177,8 @@ fn test_real_api_call() {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(10)
-        .temperature(Some(0.0))
+        .max_tokens(10u32)
+        .temperature(0.0)
         .build()
         .expect("Failed to build request");
 
