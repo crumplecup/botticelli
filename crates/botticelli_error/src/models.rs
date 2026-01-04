@@ -37,6 +37,38 @@ pub enum OllamaErrorKind {
     Builder(String),
 }
 
+/// Ollama error with location tracking.
+#[cfg(feature = "ollama")]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("Ollama Error: {} at {}:{}", kind, file, line)]
+pub struct OllamaError {
+    /// The specific error condition
+    kind: OllamaErrorKind,
+    /// Line number where error occurred
+    line: u32,
+    /// Source file where error occurred
+    file: &'static str,
+}
+
+#[cfg(feature = "ollama")]
+impl OllamaError {
+    /// Create a new Ollama error.
+    #[track_caller]
+    pub fn new(kind: OllamaErrorKind) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind,
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
+
+    /// Get the error kind.
+    pub fn kind(&self) -> &OllamaErrorKind {
+        &self.kind
+    }
+}
+
 /// Anthropic-specific error conditions (re-exported when anthropic feature is enabled).
 #[cfg(feature = "anthropic")]
 #[derive(Debug, Clone, derive_more::Display)]
@@ -212,6 +244,33 @@ impl ModelsError {
             line: loc.line(),
             file: loc.file(),
         }
+    }
+}
+
+#[cfg(feature = "ollama")]
+crate::impl_error_from_kind!(OllamaErrorKind => OllamaError);
+
+#[cfg(feature = "ollama")]
+impl From<OllamaErrorKind> for ModelsError {
+    #[track_caller]
+    fn from(kind: OllamaErrorKind) -> Self {
+        ModelsError::new(ModelsErrorKind::Ollama(kind))
+    }
+}
+
+#[cfg(feature = "ollama")]
+impl From<OllamaError> for ModelsError {
+    #[track_caller]
+    fn from(err: OllamaError) -> Self {
+        ModelsError::new(ModelsErrorKind::Ollama(err.kind().clone()))
+    }
+}
+
+#[cfg(feature = "ollama")]
+impl From<OllamaError> for crate::BotticelliErrorKind {
+    #[track_caller]
+    fn from(err: OllamaError) -> Self {
+        crate::BotticelliErrorKind::Models(ModelsError::from(err))
     }
 }
 

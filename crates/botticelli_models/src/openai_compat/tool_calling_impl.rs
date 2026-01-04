@@ -91,9 +91,7 @@ impl ToolCalling for OpenAICompatibleClient {
             .stream(*chat_request_base.stream())
             .tools(Some(chat_tools))
             .build()
-            .map_err(|e| botticelli_error::OpenAICompatError::new(
-                botticelli_error::OpenAICompatErrorKind::Builder(e.to_string())
-            ))?;
+            .map_err(|e| OpenAICompatErrorKind::Builder(e.to_string()))?;
 
         tracing::info!("Sending HTTP request to provider with tools");
 
@@ -127,11 +125,11 @@ impl ToolCalling for OpenAICompatibleClient {
                 "Response contains tool calls"
             );
 
-            GenerateResponse::builder()
+            Ok(GenerateResponse::builder()
                 .outputs(vec![Output::ToolCalls(parsed_calls)])
                 .stop_reason(botticelli_core::StopReason::ToolUse)
                 .build()
-                .map_err(|e| OpenAICompatErrorKind::Builder(e.to_string()).into())
+                .map_err(|e| OpenAICompatErrorKind::Builder(e.to_string()))?)
         } else {
             tracing::info!("Response contains text, no tool calls");
             // No tool calls, convert to text response

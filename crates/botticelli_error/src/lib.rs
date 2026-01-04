@@ -79,7 +79,7 @@ pub use mcp::{McpError, McpErrorKind, McpResult};
 #[cfg(feature = "anthropic")]
 pub use models::{AnthropicError, AnthropicErrorKind};
 #[cfg(feature = "ollama")]
-pub use models::OllamaErrorKind;
+pub use models::{OllamaError, OllamaErrorKind};
 #[cfg(feature = "models")]
 pub use models::{ModelsError, ModelsErrorKind, ModelsResult};
 pub use narrative::{NarrativeError, NarrativeErrorKind};

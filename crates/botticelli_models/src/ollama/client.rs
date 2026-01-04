@@ -4,7 +4,7 @@ use ollama_rs::Ollama;
 use ollama_rs::generation::completion::request::GenerationRequest as OllamaRequest;
 
 use super::conversion::{messages_to_prompt, response_to_output};
-use super::{OllamaError, OllamaErrorKind, OllamaResult};
+use super::{OllamaErrorKind, OllamaResult};
 use botticelli_core::{Capabilities, FinishReason, GenerateRequest, GenerateResponse, StreamChunk};
 use botticelli_error::BotticelliResult;
 use botticelli_interface::BotticelliDriver;
@@ -74,9 +74,9 @@ impl OllamaClient {
                         "Model not found locally"
                     );
 
-                    return Err(OllamaError::new(OllamaErrorKind::ModelNotFound(
+                    return Err(OllamaErrorKind::ModelNotFound(
                         self.model_name.clone(),
-                    )));
+                    ).into());
                 }
 
                 info!("Ollama server and model validated");
@@ -84,9 +84,9 @@ impl OllamaClient {
             }
             Err(e) => {
                 warn!(error = %e, "Failed to connect to Ollama server");
-                Err(OllamaError::new(OllamaErrorKind::ServerNotRunning(
+                Err(OllamaErrorKind::ServerNotRunning(
                     self.base_url.clone(),
-                )))
+                ).into())
             }
         }
     }
@@ -108,7 +108,7 @@ impl OllamaClient {
                     .pull_model(self.model_name.clone(), false)
                     .await
                     .map_err(|e| {
-                        OllamaError::new(OllamaErrorKind::ModelPullFailed(e.to_string()))
+                        botticelli_error::OllamaError::from(OllamaErrorKind::ModelPullFailed(e.to_string()))
                     })?;
 
                 info!("Model pulled successfully");
@@ -140,9 +140,7 @@ impl BotticelliDriver for OllamaClient {
 
         // Execute generation (no rate limiting needed for local)
         let response = self.client.generate(ollama_req).await.map_err(|e| {
-            botticelli_error::BotticelliError::from(OllamaError::new(OllamaErrorKind::ApiError(
-                e.to_string(),
-            )))
+            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(e.to_string()))
         })?;
 
         debug!(
@@ -219,9 +217,7 @@ impl botticelli_interface::Streaming for OllamaClient {
 
         // Execute streaming generation
         let mut stream = self.client.generate_stream(ollama_req).await.map_err(|e| {
-            botticelli_error::BotticelliError::from(OllamaError::new(OllamaErrorKind::ApiError(
-                e.to_string(),
-            )))
+            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(e.to_string()))
         })?;
 
         // Convert Ollama stream to Botticelli StreamChunk
@@ -250,7 +246,7 @@ impl botticelli_interface::Streaming for OllamaClient {
                                 Ok(chunk) => yield Ok(chunk),
                                 Err(e) => {
                                     yield Err(botticelli_error::BotticelliError::from(
-                                        OllamaError::new(OllamaErrorKind::ConversionError(e.to_string()))
+                                        botticelli_error::OllamaError::from(OllamaErrorKind::ConversionError(e.to_string()))
                                     ));
                                     return;
                                 }
@@ -259,7 +255,7 @@ impl botticelli_interface::Streaming for OllamaClient {
                     }
                     Err(e) => {
                         yield Err(botticelli_error::BotticelliError::from(
-                            OllamaError::new(OllamaErrorKind::ApiError(e.to_string()))
+                            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(e.to_string()))
                         ));
                         return;
                     }
