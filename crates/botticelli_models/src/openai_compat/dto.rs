@@ -2,10 +2,11 @@
 
 use derive_builder::Builder;
 use derive_getters::Getters;
+use derive_new::new;
 use serde::{Deserialize, Serialize};
 
 /// A message in the OpenAI chat format.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, new)]
 pub struct ChatMessage {
     /// Role: "system", "user", or "assistant"
     role: String,
@@ -14,17 +15,6 @@ pub struct ChatMessage {
     /// Tool calls made by the assistant
     #[serde(skip_serializing_if = "Option::is_none")]
     tool_calls: Option<Vec<ChatToolCall>>,
-}
-
-impl ChatMessage {
-    /// Creates a new ChatMessage.
-    pub fn new(role: String, content: String, tool_calls: Option<Vec<ChatToolCall>>) -> Self {
-        Self {
-            role,
-            content,
-            tool_calls,
-        }
-    }
 }
 
 /// Tool call in OpenAI format.
@@ -49,7 +39,7 @@ pub struct ChatFunction {
 }
 
 /// Tool definition in OpenAI format.
-#[derive(Debug, Clone, Serialize, Getters)]
+#[derive(Debug, Clone, Serialize, Getters, derive_new::new)]
 pub struct ChatTool {
     /// Type (always "function")
     #[serde(rename = "type")]
@@ -58,18 +48,8 @@ pub struct ChatTool {
     function: ChatFunctionDef,
 }
 
-impl ChatTool {
-    /// Creates a new ChatTool.
-    pub fn new(tool_type: String, function: ChatFunctionDef) -> Self {
-        Self {
-            tool_type,
-            function,
-        }
-    }
-}
-
 /// Function definition.
-#[derive(Debug, Clone, Serialize, Getters)]
+#[derive(Debug, Clone, Serialize, Getters, derive_new::new)]
 pub struct ChatFunctionDef {
     /// Function name
     name: String,
@@ -77,17 +57,6 @@ pub struct ChatFunctionDef {
     description: String,
     /// Parameters schema
     parameters: serde_json::Value,
-}
-
-impl ChatFunctionDef {
-    /// Creates a new ChatFunctionDef.
-    pub fn new(name: String, description: String, parameters: serde_json::Value) -> Self {
-        Self {
-            name,
-            description,
-            parameters,
-        }
-    }
 }
 
 /// OpenAI chat completion request.
@@ -130,7 +99,7 @@ impl ChatRequest {
 #[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
 pub struct ChatChoice {
     /// The message content returned by the model
-    pub message: ChatMessage,
+    message: ChatMessage,
 
     /// Reason the model stopped generating
     ///
@@ -138,14 +107,13 @@ pub struct ChatChoice {
     /// "content_filter" (filtered by safety systems).
     /// Deserialized from API response.
     #[serde(default)]
-    pub finish_reason: Option<String>,
+    finish_reason: Option<String>,
 }
 
 /// Token usage statistics for a completion request.
 ///
 /// Tracks token consumption for billing and rate limiting purposes.
 /// All providers return slightly different formats, so fields are optional.
-/// All fields are public as this is a DTO deserialized from API responses.
 #[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
 pub struct ChatUsage {
     /// Number of tokens in the input prompt
@@ -153,35 +121,34 @@ pub struct ChatUsage {
     /// Used to calculate input costs and track rate limits.
     /// Deserialized from API response.
     #[serde(default)]
-    pub prompt_tokens: Option<usize>,
+    prompt_tokens: Option<usize>,
 
     /// Number of tokens in the generated completion
     ///
     /// Used to calculate output costs (typically higher than input).
     /// Deserialized from API response.
     #[serde(default)]
-    pub completion_tokens: Option<usize>,
+    completion_tokens: Option<usize>,
 
     /// Total tokens used (prompt + completion)
     ///
     /// May differ slightly from sum due to provider-specific counting.
     /// Deserialized from API response.
     #[serde(default)]
-    pub total_tokens: Option<usize>,
+    total_tokens: Option<usize>,
 }
 
 /// OpenAI chat completion response.
 ///
 /// Returned by OpenAI-compatible APIs after a successful completion request.
 /// Contains the generated text and metadata about token usage.
-/// All fields are public as this is a DTO deserialized from API responses.
 #[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
 pub struct ChatResponse {
     /// One or more completion choices
     ///
     /// Non-streaming requests typically return a single choice.
     /// The `n` parameter in the request controls how many choices are returned.
-    pub choices: Vec<ChatChoice>,
+    choices: Vec<ChatChoice>,
 
     /// Token usage statistics for this request
     ///
@@ -189,6 +156,6 @@ pub struct ChatResponse {
     /// May be absent in streaming responses or error cases.
     /// Deserialized from API response.
     #[serde(default)]
-    pub usage: Option<ChatUsage>,
+    usage: Option<ChatUsage>,
 }
 

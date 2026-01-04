@@ -55,9 +55,9 @@ pub fn to_chat_request(
 /// Converts an OpenAI chat response to Botticelli GenerateResponse.
 pub fn from_chat_response(response: &ChatResponse) -> Result<GenerateResponse, OpenAICompatError> {
     let content = response
-        .choices
+        .choices()
         .first()
-        .map(|choice| choice.message.content().clone())
+        .map(|choice| choice.message().content().clone())
         .ok_or_else(|| OpenAICompatErrorKind::InvalidRequest(
             "No choices in response".to_string()
         ))?;
@@ -66,10 +66,10 @@ pub fn from_chat_response(response: &ChatResponse) -> Result<GenerateResponse, O
 
     // Extract token usage if available
     let usage =
-        response.usage.as_ref().and_then(|u| {
-            match (u.prompt_tokens, u.completion_tokens, u.total_tokens) {
+        response.usage().as_ref().and_then(|u| {
+            match (u.prompt_tokens(), u.completion_tokens(), u.total_tokens()) {
                 (Some(input), Some(output), Some(total)) => Some(
-                    botticelli_core::TokenUsageData::new(input as u64, output as u64, total as u64),
+                    botticelli_core::TokenUsageData::new(*input as u64, *output as u64, *total as u64),
                 ),
                 _ => None,
             }
@@ -77,9 +77,9 @@ pub fn from_chat_response(response: &ChatResponse) -> Result<GenerateResponse, O
 
     // Map finish_reason to StopReason
     let stop_reason = response
-        .choices
+        .choices()
         .first()
-        .and_then(|choice| choice.finish_reason.as_ref())
+        .and_then(|choice| choice.finish_reason().as_ref())
         .map(|reason| match reason.as_str() {
             "stop" => botticelli_core::StopReason::EndTurn,
             "length" => botticelli_core::StopReason::MaxTokens,

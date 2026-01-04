@@ -108,9 +108,9 @@ impl ToolCalling for OpenAICompatibleClient {
 
         // Check if response contains tool calls
         if let Some(tool_calls) = response
-            .choices
+            .choices()
             .first()
-            .and_then(|choice| choice.message.tool_calls().as_ref())
+            .and_then(|choice| choice.message().tool_calls().as_ref())
         {
             let parsed_calls: Vec<ToolCall> = tool_calls
                 .iter()

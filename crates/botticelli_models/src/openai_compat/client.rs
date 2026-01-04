@@ -131,7 +131,7 @@ impl OpenAICompatibleClient {
 
         debug!(
             provider = self.provider_name,
-            choices = chat_response.choices.len(),
+            choices = chat_response.choices().len(),
             "Received response"
         );
 
