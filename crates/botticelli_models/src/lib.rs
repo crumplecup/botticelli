@@ -95,3 +95,6 @@ pub use huggingface::HuggingFaceDriver;
 
 #[cfg(feature = "groq")]
 pub use groq::GroqDriver;
+
+#[cfg(test)]
+pub mod test_doubles;
