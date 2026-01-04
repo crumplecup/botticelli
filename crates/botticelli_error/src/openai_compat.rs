@@ -1,5 +1,6 @@
 //! OpenAI-compatible API errors.
 
+use crate::BotticelliErrorKind;
 use std::sync::Arc;
 
 /// Specific error conditions for OpenAI-compatible APIs.
@@ -84,5 +85,6 @@ impl From<&str> for OpenAICompatError {
 
 // Bridge macros for automatic conversion chain
 crate::impl_error_from_kind!(OpenAICompatErrorKind => OpenAICompatError);
+crate::bridge_error!(OpenAICompatErrorKind => OpenAICompatError => BotticelliErrorKind);
 // Note: reqwest::Error and serde_json::Error already have From impls via HttpError and JsonError
 

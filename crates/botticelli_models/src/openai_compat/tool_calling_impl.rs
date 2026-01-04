@@ -3,7 +3,7 @@
 use crate::openai_compat::{ChatFunctionDef, ChatTool, OpenAICompatibleClient, conversions};
 use async_trait::async_trait;
 use botticelli_core::{Capabilities, GenerateRequest, GenerateResponse, Output, ToolCall, ToolDefinition};
-use botticelli_error::{BotticelliError, BotticelliResult};
+use botticelli_error::{BotticelliError, BotticelliResult, OpenAICompatErrorKind};
 use botticelli_interface::{BotticelliDriver, ToolCalling};
 
 #[async_trait]
@@ -127,11 +127,11 @@ impl ToolCalling for OpenAICompatibleClient {
                 "Response contains tool calls"
             );
 
-            Ok(GenerateResponse::builder()
+            GenerateResponse::builder()
                 .outputs(vec![Output::ToolCalls(parsed_calls)])
                 .stop_reason(botticelli_core::StopReason::ToolUse)
                 .build()
-                .expect("Valid response"))
+                .map_err(|e| OpenAICompatErrorKind::Builder(e.to_string()).into())
         } else {
             tracing::info!("Response contains text, no tool calls");
             // No tool calls, convert to text response
