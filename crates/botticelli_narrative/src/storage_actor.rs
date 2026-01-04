@@ -5,8 +5,9 @@
 //! an asynchronous message-passing interface.
 
 use async_trait::async_trait;
+use botticelli_interface::ContentGenerationRepository;
 use botticelli_database::{
-    ContentGenerationRepository, NewContentGenerationRow, PostgresContentGenerationRepository,
+    NewContentGenerationRow, PostgresContentGenerationRepository,
     UpdateContentGenerationRow, create_content_table, create_inferred_table, infer_schema,
     reflect_table_schema,
 };

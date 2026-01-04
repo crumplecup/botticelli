@@ -11,8 +11,11 @@ use botticelli_core::{GenerateRequest, Input, Message, MessageBuilder, Output, R
 use botticelli_error::{
     BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
 };
+use botticelli_core::{
+    ActExecution, ActExecutionBuilder, NarrativeExecution,
+};
 use botticelli_interface::{
-    ActExecution, ActExecutionBuilder, BotticelliDriver, NarrativeExecution, TableQueryRegistry,
+    BotticelliDriver, TableQueryRegistry,
 };
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -1117,7 +1120,7 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     })?;
 
                     // Build query view
-                    let mut query_builder = botticelli_interface::TableQueryViewBuilder::default();
+                    let mut query_builder = botticelli_database::TableQueryViewBuilder::default();
                     query_builder.table_name(table_name.to_string());
 
                     if let Some(cols) = columns.as_ref() {

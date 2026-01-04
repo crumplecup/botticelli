@@ -41,7 +41,7 @@ derive_setters.workspace = true
 petgraph = "0.6"
 
 [features]
-default = []
+default = ["database"]
 database = ["dep:botticelli_database", "dep:diesel", "dep:chrono", "dep:ractor"]
 api = []  # Marker feature for tests that make real API calls
 gemini = []  # Marker feature for Gemini-specific tests

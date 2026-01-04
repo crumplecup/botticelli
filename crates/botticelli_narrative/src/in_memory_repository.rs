@@ -5,8 +5,11 @@
 
 use async_trait::async_trait;
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_core::{
+    ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution,
+};
 use botticelli_interface::{
-    ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution, NarrativeRepository,
+    NarrativeRepository,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -221,7 +224,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
 impl botticelli_interface::NarrativeRegistryOperations for InMemoryNarrativeRepository {
     async fn save_execution(
         &self,
-        execution: &botticelli_interface::NarrativeExecution,
+        execution: &NarrativeExecution,
     ) -> botticelli_error::BotticelliResult<i32> {
         botticelli_interface::NarrativeRepository::save_execution(self, execution).await
     }
@@ -229,22 +232,22 @@ impl botticelli_interface::NarrativeRegistryOperations for InMemoryNarrativeRepo
     async fn load_execution(
         &self,
         id: i32,
-    ) -> botticelli_error::BotticelliResult<botticelli_interface::NarrativeExecution> {
+    ) -> botticelli_error::BotticelliResult<NarrativeExecution> {
         botticelli_interface::NarrativeRepository::load_execution(self, id).await
     }
 
     async fn update_status(
         &self,
         id: i32,
-        status: botticelli_interface::ExecutionStatus,
+        status: ExecutionStatus,
     ) -> botticelli_error::BotticelliResult<()> {
         botticelli_interface::NarrativeRepository::update_status(self, id, status).await
     }
 
     async fn list_executions(
         &self,
-        filter: &botticelli_interface::ExecutionFilter,
-    ) -> botticelli_error::BotticelliResult<Vec<botticelli_interface::ExecutionSummary>> {
+        filter: &ExecutionFilter,
+    ) -> botticelli_error::BotticelliResult<Vec<ExecutionSummary>> {
         botticelli_interface::NarrativeRepository::list_executions(self, filter).await
     }
 

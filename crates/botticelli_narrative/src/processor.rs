@@ -6,7 +6,7 @@
 use crate::NarrativeMetadata;
 use async_trait::async_trait;
 use botticelli_error::BotticelliResult;
-use botticelli_interface::ActExecution;
+use botticelli_core::ActExecution;
 
 /// Context provided to processors for act processing.
 ///
