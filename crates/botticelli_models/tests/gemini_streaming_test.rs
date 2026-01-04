@@ -1,5 +1,5 @@
 #![cfg(feature = "gemini")]
-mod test_utils;
+mod helpers;
 
 // Tests for Gemini streaming support.
 //
@@ -11,7 +11,7 @@ use botticelli_core::Output;
 use botticelli_interface::{BotticelliDriver, Streaming};
 use botticelli_models::GeminiClient;
 use futures_util::StreamExt;
-use test_utils::create_test_request;
+use helpers::create_test_request;
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY

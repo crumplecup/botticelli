@@ -1,5 +1,5 @@
 #![cfg(feature = "gemini")]
-mod test_utils;
+mod helpers;
 
 // Tests for the Gemini client implementation.
 

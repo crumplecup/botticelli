@@ -61,3 +61,30 @@ impl BotticelliDriver for MockGeminiClient {
 pub fn create_error(kind: GeminiErrorKind) -> ModelsError {
     ModelsError::from(GeminiError::new(kind))
 }
+
+/// Helper to create a test request
+pub fn create_test_request(
+    prompt: &str,
+    model: Option<String>,
+    max_tokens: Option<u32>,
+) -> GenerateRequest {
+    use botticelli_core::{Input, Message, Role};
+    
+    let message = Message::builder()
+        .role(Role::User)
+        .content(vec![Input::Text(prompt.to_string())])
+        .build()
+        .expect("Valid message");
+    
+    let mut builder = GenerateRequest::builder().messages(vec![message]);
+    
+    if let Some(model) = model {
+        builder = builder.model(model);
+    }
+    
+    if let Some(max_tokens) = max_tokens {
+        builder = builder.max_tokens(max_tokens);
+    }
+    
+    builder.build().expect("Valid request")
+}

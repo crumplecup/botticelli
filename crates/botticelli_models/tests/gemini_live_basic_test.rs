@@ -11,7 +11,7 @@
 
 #![cfg(feature = "gemini")]
 
-mod test_utils;
+mod helpers;
 
 use botticelli_models::{GeminiLiveClient, GenerationConfig};
 use futures_util::StreamExt;

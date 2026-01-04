@@ -14,12 +14,12 @@
 // A small number of integration tests (marked with `#[cfg_attr(not(feature = "api"), ignore)]`)
 // hit the real Gemini API to validate end-to-end behavior.
 
-mod test_utils;
+mod helpers;
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
 use botticelli_interface::BotticelliDriver;
 use botticelli_models::GeminiClient;
-use test_utils::MockGeminiClient;
+use helpers::MockGeminiClient;
 
 use botticelli_error::{BotticelliResult, BuilderError, BuilderErrorKind};
 
