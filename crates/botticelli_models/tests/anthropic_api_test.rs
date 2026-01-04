@@ -5,12 +5,14 @@ use botticelli_interface::BotticelliDriver;
 #[cfg(feature = "anthropic")]
 use botticelli_models::AnthropicClient;
 #[cfg(feature = "anthropic")]
+use botticelli_error::BotticelliResult;
+#[cfg(feature = "anthropic")]
 use std::env;
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
 #[cfg(feature = "anthropic")]
-async fn test_anthropic_simple_generation() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_anthropic_simple_generation() -> BotticelliResult<()> {
     let api_key =
         env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set for API tests");
 
@@ -21,9 +23,10 @@ async fn test_anthropic_simple_generation() -> Result<(), Box<dyn std::error::Er
         .content(vec![Input::Text(
             "Say 'test' and nothing else.".to_string(),
         )])
-        .build()?;
+        .build()
+        .expect("Valid message");
 
-    let request = GenerateRequest::builder().messages(vec![message]).build()?;
+    let request = GenerateRequest::builder().messages(vec![message]).build().expect("Valid request");
 
     let response = client.generate(&request).await?;
 
@@ -36,7 +39,7 @@ async fn test_anthropic_simple_generation() -> Result<(), Box<dyn std::error::Er
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
 #[cfg(feature = "anthropic")]
-async fn test_anthropic_with_temperature() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_anthropic_with_temperature() -> BotticelliResult<()> {
     let api_key =
         env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set for API tests");
 
@@ -45,12 +48,14 @@ async fn test_anthropic_with_temperature() -> Result<(), Box<dyn std::error::Err
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Count to 3.".to_string())])
-        .build()?;
+        .build()
+        .expect("Valid message");
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .temperature(0.5)
-        .build()?;
+        .build()
+        .expect("Valid request");
 
     let response = client.generate(&request).await?;
 

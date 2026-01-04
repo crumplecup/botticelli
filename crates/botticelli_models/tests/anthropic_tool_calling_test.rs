@@ -6,13 +6,14 @@
 #![cfg(feature = "anthropic")]
 
 use botticelli_core::{GenerateRequest, Input, Message, Role, ToolDefinition};
+use botticelli_error::BotticelliResult;
 use botticelli_interface::ToolCalling;
 use botticelli_models::AnthropicClient;
 use serde_json::json;
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
-async fn test_anthropic_tool_calling() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_anthropic_tool_calling() -> BotticelliResult<()> {
     // Get API key from environment
     let api_key =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set for API tests");
@@ -45,13 +46,13 @@ async fn test_anthropic_tool_calling() -> Result<(), Box<dyn std::error::Error>>
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .max_tokens(100u32)
-        .build()?; // Minimal tokens to conserve rate limits
+        .build()
+        .expect("Valid request"); // Minimal tokens to conserve rate limits
 
     // Use ToolCalling trait - tools passed as explicit parameter
     let response = client
         .generate_with_tools(&request, &[tool])
-        .await
-        .expect("API call should succeed");
+        .await?;
 
     // Verify we got tool calls in the response
     let has_tool_call = response

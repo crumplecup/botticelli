@@ -52,7 +52,7 @@ fn test_gemini_capabilities() {
     assert!(caps.supports_embeddings(), "Gemini should support embeddings");
     assert!(caps.supports_json_mode(), "Gemini should support JSON mode");
     assert!(
-        !caps.supports_batch_generation(),
+        !caps.supports_batch(),
         "Gemini should not support batch generation"
     );
 }
@@ -84,7 +84,7 @@ fn test_groq_capabilities() {
     let caps = client.capabilities();
 
     assert!(!caps.streaming(), "Groq does not support real streaming");
-    assert!(!caps.tool_calling(), "Groq does not support tool calling");
+    assert!(caps.tool_calling(), "Groq supports tool calling via OpenAI-compatible API");
     assert!(!caps.vision(), "Groq should not support vision");
     assert!(!caps.audio(), "Groq should not support audio");
     assert!(!caps.video(), "Groq should not support video");
