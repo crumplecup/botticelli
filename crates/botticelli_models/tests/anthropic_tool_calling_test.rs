@@ -13,11 +13,11 @@ use serde_json::json;
 use std::sync::Arc;
 
 #[tokio::test]
-#[cfg_attr(not(feature = "api"), ignore)]
+#[cfg(feature = "api")]
 async fn test_anthropic_tool_calling() -> Result<(), ModelsError> {
     // Get API key from environment
-    let api_key = std::env::var("ANTHROPIC_API_KEY")
-        .map_err(|e| AnthropicErrorKind::EnvVar(Arc::new(e)))?;
+    let api_key =
+        std::env::var("ANTHROPIC_API_KEY").map_err(|e| AnthropicErrorKind::EnvVar(Arc::new(e)))?;
 
     // Create client with latest Sonnet model
     let client = AnthropicClient::new(api_key, "claude-3-5-sonnet-20241022");
@@ -51,9 +51,7 @@ async fn test_anthropic_tool_calling() -> Result<(), ModelsError> {
         .map_err(|e| botticelli_error::ModelsErrorKind::Builder(e.to_string()))?;
 
     // Use ToolCalling trait - tools passed as explicit parameter
-    let response = client
-        .generate_with_tools(&request, &[tool])
-        .await?;
+    let response = client.generate_with_tools(&request, &[tool]).await?;
 
     // Verify we got tool calls in the response
     let has_tool_call = response

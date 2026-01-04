@@ -44,11 +44,10 @@ async fn test_live_api_basic_generation() {
     let client = GeminiLiveClient::new().expect("Failed to create Live API client");
 
     // Configure for minimal token usage
-    let config = GenerationConfig {
-        max_output_tokens: Some(10),
-        temperature: Some(1.0),
-        ..Default::default()
-    };
+    let mut config = GenerationConfig::default();
+    config = config
+        .with_max_output_tokens(Some(10))
+        .with_temperature(Some(1.0));
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
@@ -77,11 +76,10 @@ async fn test_live_api_streaming() {
     let client = GeminiLiveClient::new().expect("Failed to create Live API client");
 
     // Configure for minimal token usage but allow multiple chunks
-    let config = GenerationConfig {
-        max_output_tokens: Some(50),
-        temperature: Some(1.0),
-        ..Default::default()
-    };
+    let mut config = GenerationConfig::default();
+    config = config
+        .with_max_output_tokens(Some(50))
+        .with_temperature(Some(1.0));
 
     let session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
@@ -133,10 +131,8 @@ async fn test_live_api_multiple_turns() {
 
     let client = GeminiLiveClient::new().expect("Failed to create Live API client");
 
-    let config = GenerationConfig {
-        max_output_tokens: Some(20),
-        ..Default::default()
-    };
+    let mut config = GenerationConfig::default();
+    config = config.with_max_output_tokens(Some(20));
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
