@@ -27,15 +27,15 @@ derive_builder = { workspace = true }
 async-trait = { workspace = true }
 strum = { workspace = true }
 chrono = { workspace = true }
-opentelemetry = "0.31"
-opentelemetry_sdk = "0.31"
-opentelemetry-stdout = "0.31"
-opentelemetry-otlp = { version = "0.31", features = ["http-proto", "reqwest-client"] }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+opentelemetry-stdout = { workspace = true }
+opentelemetry-otlp = { workspace = true }
 tracing = { workspace = true }
-tracing-opentelemetry = "0.32"
+tracing-opentelemetry = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
 botticelli_error = { workspace = true }
 botticelli_interface = { workspace = true }
-futures = { version = "0.3", optional = true }
+futures = { workspace = true, optional = true }
 reqwest = { workspace = true, features = ["json"], optional = true }
-tiktoken-rs = "0.9.1"
+tiktoken-rs = { workspace = true }
