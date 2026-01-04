@@ -12,7 +12,7 @@ description = "LLM provider integrations for Botticelli"
 [dependencies]
 botticelli_error = { workspace = true, features = ["models"] }
 botticelli_core = { workspace = true }
-botticelli_interface = { workspace = true }
+botticelli_interface = { workspace = true, features = ["mock"] }
 botticelli_rate_limit = { workspace = true, features = [] }
 
 # Async runtime
@@ -98,3 +98,4 @@ dotenvy = { workspace = true }
 anyhow = { workspace = true }
 toml.workspace = true
 mockall = { workspace = true }
+tracing-subscriber = { workspace = true }

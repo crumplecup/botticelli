@@ -5,7 +5,7 @@ use botticelli_interface::BotticelliDriver;
 #[cfg(feature = "anthropic")]
 use botticelli_models::AnthropicClient;
 #[cfg(feature = "anthropic")]
-use botticelli_error::{AnthropicErrorKind, BotticelliResult, ModelsError, ModelsErrorKind};
+use botticelli_error::{AnthropicErrorKind, BotticelliResult, ModelsErrorKind};
 #[cfg(feature = "anthropic")]
 use std::env;
 #[cfg(feature = "anthropic")]

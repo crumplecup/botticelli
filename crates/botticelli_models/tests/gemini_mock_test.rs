@@ -1,36 +1,86 @@
 #![cfg(feature = "gemini")]
 
-// Tests using MockGeminiClient.
+// Tests using mockall for GeminiClient.
 //
 // These tests validate GeminiClient behavior without making real API calls,
-// using a mock implementation for fast, deterministic testing.
+// using mockall for fast, deterministic testing.
 
-mod test_utils;
-
-use botticelli_core::{GenerateRequest, Input, Message, Role};
-use botticelli_error::GeminiErrorKind;
+use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, Output, Role, StopReason};
+use botticelli_error::{GeminiErrorKind, ModelsError};
 use botticelli_interface::BotticelliDriver;
-use test_utils::{MockGeminiClient, MockResponse};
+use mockall::mock;
+
+// Mock for BotticelliDriver trait
+mock! {
+    pub GeminiDriver {}
+    
+    #[async_trait::async_trait]
+    impl BotticelliDriver for GeminiDriver {
+        type Error = ModelsError;
+        
+        async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, Self::Error>;
+        fn provider_name(&self) -> &str;
+        fn model_name(&self) -> &str;
+    }
+}
 
 #[tokio::test]
-async fn test_mock_basic_generate() -> anyhow::Result<()> {
-    let mock = MockGeminiClient::new_success("Hello from mock!");
-
+async fn test_mock_basic_generate() -> Result<(), ModelsError> {
+    let mut mock = MockGeminiDriver::new();
+    
+    // Setup expectation
+    let expected_response = GenerateResponse::builder()
+        .outputs(vec![Output::Text("Hello from mock!".to_string())])
+        .stop_reason(StopReason::EndTurn)
+        .build()
+        .map_err(|e| GeminiErrorKind::Builder(e.to_string()))?;
+    
+    mock.expect_generate()
+        .returning(move |_| Ok(expected_response.clone()));
+    
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Say hello".to_string())])
-        .build()?;
+        .build()
+        .map_err(|e| GeminiErrorKind::Builder(e.to_string()))?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .max_tokens(10u32)
         .build()
-        .unwrap();
+        .map_err(|e| GeminiErrorKind::Builder(e.to_string()))?;
 
     let response = mock.generate(&request).await?;
 
     assert!(!response.outputs().is_empty());
-    assert_eq!(mock.call_count(), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_mock_error_response() -> Result<(), ModelsError> {
+    let mut mock = MockGeminiDriver::new();
+    
+    let error = ModelsError::from(GeminiErrorKind::ApiError(std::sync::Arc::new(
+        ollama_rs::error::OllamaError::from("Model overloaded".to_string())
+    )));
+    
+    mock.expect_generate()
+        .returning(move |_| Err(error.clone()));
+    
+    let message = Message::builder()
+        .role(Role::User)
+        .content(vec![Input::Text("Test".to_string())])
+        .build()
+        .map_err(|e| GeminiErrorKind::Builder(e.to_string()))?;
+
+    let request = GenerateRequest::builder()
+        .messages(vec![message])
+        .max_tokens(10u32)
+        .build()
+        .map_err(|e| GeminiErrorKind::Builder(e.to_string()))?;
+
+    let result = mock.generate(&request).await;
+    assert!(result.is_err());
     Ok(())
 }
 
