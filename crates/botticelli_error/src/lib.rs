@@ -48,9 +48,9 @@ mod mcp;
 #[cfg(feature = "models")]
 mod models;
 mod narrative;
-mod openai_compat;
 mod not_implemented;
 mod observability;
+mod openai_compat;
 mod provider;
 mod rate_limit;
 mod server;
@@ -78,10 +78,10 @@ pub use json::{JsonError, JsonErrorKind};
 pub use mcp::{McpError, McpErrorKind, McpResult};
 #[cfg(feature = "anthropic")]
 pub use models::{AnthropicError, AnthropicErrorKind};
-#[cfg(feature = "ollama")]
-pub use models::{OllamaError, OllamaErrorKind};
 #[cfg(feature = "models")]
 pub use models::{ModelsError, ModelsErrorKind, ModelsResult};
+#[cfg(feature = "ollama")]
+pub use models::{OllamaError, OllamaErrorKind, OllamaResult};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
 pub use not_implemented::NotImplementedError;
 pub use observability::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};

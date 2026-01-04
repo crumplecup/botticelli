@@ -6,9 +6,8 @@ use ollama_rs::Ollama;
 use ollama_rs::generation::completion::request::GenerationRequest as OllamaRequest;
 
 use super::conversion::{messages_to_prompt, response_to_output};
-use super::{OllamaErrorKind, OllamaResult};
 use botticelli_core::{Capabilities, FinishReason, GenerateRequest, GenerateResponse, StreamChunk};
-use botticelli_error::ModelsError;
+use botticelli_error::{ModelsError, OllamaErrorKind, OllamaResult};
 
 use botticelli_interface::BotticelliDriver;
 use tracing::{debug, info, instrument, warn};
@@ -77,9 +76,7 @@ impl OllamaClient {
                         "Model not found locally"
                     );
 
-                    return Err(OllamaErrorKind::ModelNotFound(
-                        self.model_name.clone(),
-                    ).into());
+                    return Err(OllamaErrorKind::ModelNotFound(self.model_name.clone()).into());
                 }
 
                 info!("Ollama server and model validated");
@@ -87,9 +84,7 @@ impl OllamaClient {
             }
             Err(e) => {
                 warn!(error = %e, "Failed to connect to Ollama server");
-                Err(OllamaErrorKind::ServerNotRunning(
-                    self.base_url.clone(),
-                ).into())
+                Err(OllamaErrorKind::ServerNotRunning(self.base_url.clone()).into())
             }
         }
     }
@@ -140,7 +135,10 @@ impl BotticelliDriver for OllamaClient {
         let ollama_req = OllamaRequest::new(self.model_name.clone(), prompt);
 
         // Execute generation (no rate limiting needed for local)
-        let response = self.client.generate(ollama_req).await
+        let response = self
+            .client
+            .generate(ollama_req)
+            .await
             .map_err(|e| OllamaErrorKind::ApiError(Arc::new(e)))?;
 
         debug!(
@@ -153,9 +151,7 @@ impl BotticelliDriver for OllamaClient {
             .outputs(vec![output])
             .stop_reason(botticelli_core::StopReason::EndTurn)
             .build()
-            .map_err(|e| {
-                ModelsError::from(botticelli_error::OllamaError::from(OllamaErrorKind::Builder(e.to_string())))
-            })
+            .map_err(|e| OllamaErrorKind::Builder(e.to_string()).into())
     }
 
     fn provider_name(&self) -> &'static str {
@@ -197,10 +193,7 @@ impl botticelli_interface::Streaming for OllamaClient {
         request: &GenerateRequest,
     ) -> Result<
         std::pin::Pin<
-            Box<
-                dyn futures_util::Stream<Item = Result<StreamChunk, ModelsError>>
-                    + Send,
-            >,
+            Box<dyn futures_util::Stream<Item = Result<StreamChunk, ModelsError>> + Send>,
         >,
         ModelsError,
     > {
@@ -215,9 +208,11 @@ impl botticelli_interface::Streaming for OllamaClient {
         let ollama_req = OllamaRequest::new(self.model_name.clone(), prompt);
 
         // Execute streaming generation
-        let mut stream = self.client.generate_stream(ollama_req).await.map_err(|e| {
-            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e)))
-        })?;
+        let mut stream = self
+            .client
+            .generate_stream(ollama_req)
+            .await
+            .map_err(|e| OllamaErrorKind::ApiError(Arc::new(e)))?;
 
         // Convert Ollama stream to Botticelli StreamChunk
         // ollama-rs returns a stream of Vec<GenerationResponse>
@@ -244,14 +239,14 @@ impl botticelli_interface::Streaming for OllamaClient {
                             match chunk_result {
                                 Ok(chunk) => yield Ok(chunk),
                                 Err(e) => {
-                                    yield Err(botticelli_error::ModelsError::from(botticelli_error::OllamaError::from(OllamaErrorKind::ConversionError(e.to_string()))));
+                                    yield Err(botticelli_error::ModelsError::from(OllamaErrorKind::ConversionError(e.to_string())));
                                     return;
                                 }
                             }
                         }
                     }
                     Err(e) => {
-                        yield Err(botticelli_error::ModelsError::from(botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e)))));
+                        yield Err(OllamaErrorKind::ApiError(Arc::new(e)).into());
                         return;
                     }
                 }

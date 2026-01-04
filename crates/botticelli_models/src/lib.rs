@@ -45,18 +45,6 @@ mod openai_compat;
 mod rate_limit_detection;
 mod token_counting;
 
-pub use gemini_model::GeminiModel;
-pub use groq_model::GroqModel;
-pub use metrics::{LlmMetrics, classify_error};
-pub use model_family::ModelFamily;
-pub use model_selector::{ModelBounds, ModelId, ModelSelector, SelectionStrategy};
-pub use openai_compat::{ChatMessage, ChatRequest, ChatResponse, OpenAICompatibleClient};
-pub use rate_limit_detection::{RateLimitDetector, RateLimitStatus};
-pub use token_counting::{claude_tokenizer, count_tokens_tiktoken, gpt_tokenizer};
-
-// Re-export OpenAICompatError from error crate
-pub use botticelli_error::OpenAICompatError;
-
 #[cfg(feature = "gemini")]
 mod gemini;
 
@@ -72,18 +60,28 @@ mod huggingface;
 #[cfg(feature = "groq")]
 mod groq;
 
+// Export types defined in this crate
+pub use gemini_model::GeminiModel;
+pub use groq_model::GroqModel;
+pub use metrics::{LlmMetrics, classify_error};
+pub use model_family::ModelFamily;
+pub use model_selector::{ModelBounds, ModelId, ModelSelector, SelectionStrategy};
+pub use openai_compat::{ChatMessage, ChatRequest, ChatResponse, OpenAICompatibleClient};
+pub use rate_limit_detection::{RateLimitDetector, RateLimitStatus};
+pub use token_counting::{claude_tokenizer, count_tokens_tiktoken, gpt_tokenizer};
+
 #[cfg(feature = "gemini")]
 pub use gemini::{
     ClientContent, ClientContentMessage, FunctionCall, FunctionResponse, GeminiClient,
     GeminiLiveClient, GenerationConfig, GoAway, InlineData, InlineDataPart, LiveRateLimiter,
-    LiveSession, LiveToolCall, LiveToolCallCancellation, MediaChunk, ModelTurn, Part,
+    LiveSession, LiveToolCall, LiveToolCallCancellation, MediaChunk, ModelCapabilities, ModelTurn, Part,
     RealtimeInput, RealtimeInputMessage, ServerContent, ServerMessage, SetupComplete, SetupConfig,
     SetupMessage, SystemInstruction, TextPart, TieredGemini, Tool, ToolResponse,
     ToolResponseMessage, Turn, UsageMetadata,
 };
 
 #[cfg(feature = "ollama")]
-pub use ollama::{OllamaClient, OllamaError, OllamaErrorKind, OllamaResult};
+pub use ollama::OllamaClient;
 
 #[cfg(feature = "anthropic")]
 pub use anthropic::{

@@ -69,6 +69,10 @@ impl OllamaError {
     }
 }
 
+/// Result type for Ollama operations.
+#[cfg(feature = "ollama")]
+pub type OllamaResult<T> = Result<T, OllamaError>;
+
 /// Anthropic-specific error conditions (re-exported when anthropic feature is enabled).
 #[cfg(feature = "anthropic")]
 #[derive(Debug, Clone, derive_more::Display)]
