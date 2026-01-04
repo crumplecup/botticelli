@@ -112,15 +112,14 @@ impl BotticelliDriver for MockDriver {
 
 /// Test that a mock driver can be configured and used.
 #[tokio::test]
-async fn test_mock_driver_basic() -> ModelsResult<()> {
+async fn test_mock_driver_basic() -> anyhow::Result<()> {
     let mock = MockDriver::new("mock_provider", "mock_model");
 
     // Configure response
     let response = GenerateResponse::builder()
         .outputs(vec![Output::Text("Mocked response".to_string())])
         .stop_reason(StopReason::EndTurn)
-        .build()
-        .map_err(|e| ModelsError::from(ModelsErrorKind::Builder(e.to_string())))?;
+        .build()?;
 
     mock.set_response(response).await;
 
@@ -131,13 +130,9 @@ async fn test_mock_driver_basic() -> ModelsResult<()> {
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("test".to_string())])
-        .build()
-        .map_err(|e| ModelsError::from(ModelsErrorKind::Builder(e.to_string())))?;
+        .build()?;
 
-    let request = GenerateRequest::builder()
-        .messages(vec![message])
-        .build()
-        .map_err(|e| ModelsError::from(ModelsErrorKind::Builder(e.to_string())))?;
+    let request = GenerateRequest::builder().messages(vec![message]).build()?;
 
     let response = mock.generate(&request).await?;
 
@@ -154,7 +149,7 @@ async fn test_mock_driver_basic() -> ModelsResult<()> {
 
 /// Test that mocks can simulate errors.
 #[tokio::test]
-async fn test_mock_driver_error() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_mock_driver_error() -> anyhow::Result<()> {
     let mock = MockDriver::new("mock_provider", "mock_model");
 
     // Configure error
@@ -166,13 +161,9 @@ async fn test_mock_driver_error() -> Result<(), Box<dyn std::error::Error>> {
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("test".to_string())])
-        .build()
-        .map_err(|e| ModelsError::from(ModelsErrorKind::Builder(e.to_string())))?;
+        .build()?;
 
-    let request = GenerateRequest::builder()
-        .messages(vec![message])
-        .build()
-        .map_err(|e| ModelsError::from(ModelsErrorKind::Builder(e.to_string())))?;
+    let request = GenerateRequest::builder().messages(vec![message]).build()?;
 
     let result = mock.generate(&request).await;
     assert!(result.is_err());
@@ -183,25 +174,20 @@ async fn test_mock_driver_error() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Test multiple calls to mock.
 #[tokio::test]
-async fn test_mock_driver_multiple_calls() -> ModelsResult<()> {
+async fn test_mock_driver_multiple_calls() -> anyhow::Result<()> {
     let mock = MockDriver::new("test", "test");
 
     let response = GenerateResponse::builder()
         .outputs(vec![Output::Text("response".to_string())])
         .stop_reason(StopReason::EndTurn)
-        .build()
-        .map_err(|e| ModelsError::from(ModelsErrorKind::Builder(e.to_string())))?;
+        .build()?;
 
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("test".to_string())])
-        .build()
-        .map_err(|e| ModelsError::from(ModelsErrorKind::Builder(e.to_string())))?;
+        .build()?;
 
-    let request = GenerateRequest::builder()
-        .messages(vec![message])
-        .build()
-        .map_err(|e| ModelsError::from(ModelsErrorKind::Builder(e.to_string())))?;
+    let request = GenerateRequest::builder().messages(vec![message]).build()?;
 
     // Call multiple times
     for i in 1..=3 {

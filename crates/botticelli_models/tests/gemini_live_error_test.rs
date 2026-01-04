@@ -24,24 +24,22 @@ use std::time::Instant;
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_live_api_invalid_model() {
+async fn test_live_api_invalid_model() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiClient::new().expect("Failed to create client");
+    let client = GeminiClient::new()?;
 
     // Try to use a non-existent model
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Test".to_string())])
-        .build()
-        .expect("Failed to build message");
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("models/nonexistent-live-model".to_string())
         .max_tokens(5u32)
-        .build()
-        .expect("Failed to build request");
+        .build()?;
 
     // Should fail gracefully
     let result = client.generate(&request).await;
@@ -53,28 +51,28 @@ async fn test_live_api_invalid_model() {
     if let Err(e) = result {
         println!("Expected error for invalid model: {}", e);
     }
+
+    Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_live_api_rate_limiting() {
+async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
     // Create client with very low rate limit (2 messages per minute)
-    let client = GeminiLiveClient::new_with_rate_limit(Some(2)).expect("Failed to create client");
+    let client = GeminiLiveClient::new_with_rate_limit(Some(2))?;
 
     let config = GenerationConfigBuilder::default()
         .max_output_tokens(5)
-        .build()
-        .expect("Valid config");
+        .build()?;
 
     let start = Instant::now();
 
     // First message - should succeed immediately
     let mut session1 = client
         .connect_with_config("models/gemini-2.0-flash-exp", config.clone())
-        .await
-        .expect("Failed to connect session 1");
+        .await?;
 
     let response1 = session1.send_text("Test 1").await;
     assert!(response1.is_ok(), "First message should succeed");
@@ -83,8 +81,7 @@ async fn test_live_api_rate_limiting() {
     // Second message - should succeed immediately
     let mut session2 = client
         .connect_with_config("models/gemini-2.0-flash-exp", config.clone())
-        .await
-        .expect("Failed to connect session 2");
+        .await?;
 
     let response2 = session2.send_text("Test 2").await;
     assert!(response2.is_ok(), "Second message should succeed");
@@ -96,8 +93,7 @@ async fn test_live_api_rate_limiting() {
     // Third message - should block and wait for window reset
     let mut session3 = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
-        .await
-        .expect("Failed to connect session 3");
+        .await?;
 
     let response3 = session3.send_text("Test 3").await;
     assert!(
@@ -116,24 +112,24 @@ async fn test_live_api_rate_limiting() {
         total_elapsed.as_secs() >= 1,
         "Rate limiting should have caused a delay"
     );
+
+    Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_live_api_empty_message() {
+async fn test_live_api_empty_message() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiLiveClient::new().expect("Failed to create client");
+    let client = GeminiLiveClient::new()?;
 
     let config = GenerationConfigBuilder::default()
         .max_output_tokens(10)
-        .build()
-        .expect("Valid config");
+        .build()?;
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
-        .await
-        .expect("Failed to connect");
+        .await?;
 
     // Send empty message
     let response = session.send_text("").await;
@@ -149,24 +145,24 @@ async fn test_live_api_empty_message() {
     }
 
     session.close().await.ok();
+
+    Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_live_api_very_long_message() {
+async fn test_live_api_very_long_message() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiLiveClient::new().expect("Failed to create client");
+    let client = GeminiLiveClient::new()?;
 
     let config = GenerationConfigBuilder::default()
         .max_output_tokens(10)
-        .build()
-        .expect("Valid config");
+        .build()?;
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
-        .await
-        .expect("Failed to connect");
+        .await?;
 
     // Send a very long message (but not exceeding model limits)
     let long_message = "Tell me about ".to_string() + &"artificial intelligence ".repeat(50);
@@ -181,28 +177,28 @@ async fn test_live_api_very_long_message() {
     }
 
     session.close().await.ok();
+
+    Ok(())
 }
 
 #[tokio::test]
-#[cfg_attr(not(feature = "api"), ignore)]
-async fn test_unified_client_handles_live_model_errors() {
+#[cfg(feature = "api")]
+async fn test_unified_client_handles_live_model_errors() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiClient::new().expect("Failed to create client");
+    let client = GeminiClient::new()?;
 
     // Test with invalid configuration (negative max_tokens isn't possible, but we can test zero)
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Test".to_string())])
-        .build()
-        .expect("Failed to build message");
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("models/gemini-2.0-flash-exp".to_string())
         .max_tokens(0u32) // Invalid
-        .build()
-        .expect("Failed to build request");
+        .build()?;
 
     // Should handle gracefully
     let result = client.generate(&request).await;
@@ -216,11 +212,13 @@ async fn test_unified_client_handles_live_model_errors() {
             println!("Zero max_tokens rejected: {}", e);
         }
     }
+
+    Ok(())
 }
 
 #[tokio::test]
-#[cfg_attr(not(feature = "api"), ignore)]
-async fn test_live_rate_limiter_concurrent_sessions() {
+#[cfg(feature = "api")]
+async fn test_live_rate_limiter_concurrent_sessions() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
     // Create shared rate limiter
@@ -251,32 +249,29 @@ async fn test_live_rate_limiter_concurrent_sessions() {
         total_elapsed.as_millis() >= 100,
         "Should have experienced rate limiting delay"
     );
+
+    Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_streaming_error_recovery() {
+async fn test_streaming_error_recovery() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiClient::new().expect("Failed to create client");
+    let client = GeminiClient::new()?;
 
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Count to 5".to_string())])
-        .build()
-        .expect("Failed to build message");
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("models/gemini-2.0-flash-exp".to_string())
         .max_tokens(50u32)
-        .build()
-        .expect("Failed to build request");
+        .build()?;
 
-    let mut stream = client
-        .generate_stream(&request)
-        .await
-        .expect("Failed to create stream");
+    let mut stream = client.generate_stream(&request).await?;
 
     let mut chunk_count = 0;
     let mut error_count = 0;
@@ -301,4 +296,6 @@ async fn test_streaming_error_recovery() {
 
     // Should have received at least one chunk
     assert!(chunk_count > 0, "Should receive at least one chunk");
+
+    Ok(())
 }

@@ -23,7 +23,7 @@ use futures_util::StreamExt;
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_gemini_client_routes_to_live_api() -> botticelli_error::BotticelliResult<()> {
+async fn test_gemini_client_routes_to_live_api() -> anyhow::Result<()> {
     // Load environment variables
     let _ = dotenvy::dotenv();
 
@@ -34,15 +34,13 @@ async fn test_gemini_client_routes_to_live_api() -> botticelli_error::Botticelli
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Say 'Hello from Live API'".to_string())])
-        .build()
-        .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("models/gemini-2.0-flash-exp".to_string())
         .max_tokens(20u32)
-        .build()
-        .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
+        .build()?;
 
     // Call generate - should route to Live API
     let response = client.generate(&request).await?;
@@ -56,8 +54,7 @@ async fn test_gemini_client_routes_to_live_api() -> botticelli_error::Botticelli
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_gemini_client_streaming_routes_to_live_api() -> botticelli_error::BotticelliResult<()>
-{
+async fn test_gemini_client_streaming_routes_to_live_api() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -66,15 +63,13 @@ async fn test_gemini_client_streaming_routes_to_live_api() -> botticelli_error::
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Count from 1 to 3".to_string())])
-        .build()
-        .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .model("models/gemini-2.0-flash-exp".to_string())
         .max_tokens(50u32)
-        .build()
-        .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
+        .build()?;
 
     // Call generate_stream - should route to Live API
     let mut stream = client.generate_stream(&request).await?;
@@ -106,7 +101,7 @@ async fn test_gemini_client_streaming_routes_to_live_api() -> botticelli_error::
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_gemini_client_detects_live_models() -> botticelli_error::BotticelliResult<()> {
+async fn test_gemini_client_detects_live_models() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -115,15 +110,13 @@ async fn test_gemini_client_detects_live_models() -> botticelli_error::Botticell
     let message_exp = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Test".to_string())])
-        .build()
-        .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
+        .build()?;
 
     let request_exp = GenerateRequest::builder()
         .messages(vec![message_exp])
         .model("models/gemini-2.0-flash-exp".to_string())
         .max_tokens(5u32)
-        .build()
-        .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
+        .build()?;
 
     let response_exp = client.generate(&request_exp).await?;
     assert!(!response_exp.outputs().is_empty());
@@ -133,15 +126,13 @@ async fn test_gemini_client_detects_live_models() -> botticelli_error::Botticell
     let message_live = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Test".to_string())])
-        .build()
-        .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
+        .build()?;
 
     let request_live = GenerateRequest::builder()
         .messages(vec![message_live])
         .model("models/gemini-2.0-flash-live".to_string())
         .max_tokens(5u32)
-        .build()
-        .map_err(|e| botticelli_error::BuilderError::from(e.to_string()))?;
+        .build()?;
 
     // This might fail if the model doesn't exist, so we just verify it attempts to use Live API
     let _ = client.generate(&request_live).await;

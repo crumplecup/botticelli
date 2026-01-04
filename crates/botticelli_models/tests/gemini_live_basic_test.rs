@@ -18,30 +18,25 @@ use futures_util::StreamExt;
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_live_api_connection() {
+async fn test_live_api_connection() -> anyhow::Result<()> {
     // Load environment variables
     let _ = dotenvy::dotenv();
 
     // Create Live API client
-    let client = GeminiLiveClient::new().expect("Failed to create Live API client");
+    let client = GeminiLiveClient::new()?;
 
     // Connect to Live API with minimal config
-    let session = client.connect("models/gemini-2.0-flash-exp").await;
+    let _session = client.connect("models/gemini-2.0-flash-exp").await?;
 
-    // Should successfully connect and complete setup handshake
-    assert!(
-        session.is_ok(),
-        "Failed to connect to Live API: {:?}",
-        session.err()
-    );
+    Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_live_api_basic_generation() {
+async fn test_live_api_basic_generation() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiLiveClient::new().expect("Failed to create Live API client");
+    let client = GeminiLiveClient::new()?;
 
     // Configure for minimal token usage
     let mut config = GenerationConfig::default();
@@ -51,29 +46,26 @@ async fn test_live_api_basic_generation() {
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
-        .await
-        .expect("Failed to connect");
+        .await?;
 
     // Send a simple message
-    let response = session
-        .send_text("Say 'Hello'")
-        .await
-        .expect("Failed to send message");
+    let response = session.send_text("Say 'Hello'").await?;
 
     // Should receive non-empty response
     assert!(!response.is_empty(), "Response should not be empty");
     println!("Live API response: {}", response);
 
     // Close session
-    session.close().await.expect("Failed to close session");
+    session.close().await?;
+    Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_live_api_streaming() {
+async fn test_live_api_streaming() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiLiveClient::new().expect("Failed to create Live API client");
+    let client = GeminiLiveClient::new()?;
 
     // Configure for minimal token usage but allow multiple chunks
     let mut config = GenerationConfig::default();
@@ -83,21 +75,17 @@ async fn test_live_api_streaming() {
 
     let session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
-        .await
-        .expect("Failed to connect");
+        .await?;
 
     // Send a message that should generate streaming response
     // Note: send_text_stream now consumes the session, so we can't close it afterward
-    let mut stream = session
-        .send_text_stream("Count from 1 to 5")
-        .await
-        .expect("Failed to create stream");
+    let mut stream = session.send_text_stream("Count from 1 to 5").await?;
 
     let mut chunks = Vec::new();
     let mut found_final = false;
 
     while let Some(chunk_result) = stream.next().await {
-        let chunk = chunk_result.expect("Failed to get chunk");
+        let chunk = chunk_result?;
         println!("Chunk: {:?}", chunk.content());
 
         chunks.push(chunk.clone());
@@ -122,38 +110,33 @@ async fn test_live_api_streaming() {
     );
 
     // Stream is dropped here, which closes the WebSocket session
+    Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
-async fn test_live_api_multiple_turns() {
+async fn test_live_api_multiple_turns() -> anyhow::Result<()> {
     let _ = dotenvy::dotenv();
 
-    let client = GeminiLiveClient::new().expect("Failed to create Live API client");
+    let client = GeminiLiveClient::new()?;
 
     let mut config = GenerationConfig::default();
     config = config.with_max_output_tokens(Some(20));
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
-        .await
-        .expect("Failed to connect");
+        .await?;
 
     // First turn
-    let response1 = session
-        .send_text("Say 'Hello'")
-        .await
-        .expect("Failed on first turn");
+    let response1 = session.send_text("Say 'Hello'").await?;
     assert!(!response1.is_empty());
     println!("Turn 1: {}", response1);
 
     // Second turn (same session)
-    let response2 = session
-        .send_text("Say 'Goodbye'")
-        .await
-        .expect("Failed on second turn");
+    let response2 = session.send_text("Say 'Goodbye'").await?;
     assert!(!response2.is_empty());
     println!("Turn 2: {}", response2);
 
-    session.close().await.expect("Failed to close session");
+    session.close().await?;
+    Ok(())
 }
