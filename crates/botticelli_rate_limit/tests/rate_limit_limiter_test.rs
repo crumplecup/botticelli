@@ -34,7 +34,7 @@ fn create_test_tier(
 #[tokio::test]
 async fn test_acquire_releases_on_drop() -> BotticelliResult<()> {
     common::init_tracing();
-    
+
     let tier = create_test_tier(Some(100), Some(10000), None, Some(1))?;
     let limiter = Arc::new(RateLimiter::new(tier));
 

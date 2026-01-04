@@ -25,7 +25,5 @@ use tiktoken_rs::CoreBPE;
 pub fn get_tokenizer(model: &str) -> TokenCountingResult<Arc<CoreBPE>> {
     tiktoken_rs::get_bpe_from_model(model)
         .map(Arc::new)
-        .map_err(|e| {
-            TokenCountingError::new(TokenCountingErrorKind::Tiktoken(Box::new(e)))
-        })
+        .map_err(|e| TokenCountingError::new(TokenCountingErrorKind::Tiktoken(Box::new(e))))
 }

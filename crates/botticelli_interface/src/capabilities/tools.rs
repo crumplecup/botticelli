@@ -8,7 +8,7 @@ use async_trait::async_trait;
 pub trait ToolCalling: BotticelliDriver {
     /// Error type for tool calling operations.
     type Error: std::error::Error + Send + Sync;
-    
+
     /// Tool definition type.
     type ToolDefinition: Send + Sync;
 

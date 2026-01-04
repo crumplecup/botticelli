@@ -24,10 +24,12 @@ impl FilesystemNarrativeStorage {
 
 #[async_trait]
 impl NarrativeStorageOperations for FilesystemNarrativeStorage {
+    type Error = NarrativeError;
+
     #[tracing::instrument(skip(self), fields(pattern))]
-    async fn list_narratives(&self, pattern: Option<&str>) -> BotticelliResult<Vec<String>> {
+    async fn list_narratives(&self, pattern: Option<&str>) -> Result<Vec<String>, Self::Error> {
         let mut entries = fs::read_dir(&self.narrative_dir).await.map_err(|e| {
-            BotticelliError::from(botticelli_error::BackendError::new(format!(
+            NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(format!(
                 "Failed to read narrative directory: {}",
                 e
             )))
@@ -56,11 +58,11 @@ impl NarrativeStorageOperations for FilesystemNarrativeStorage {
     }
 
     #[tracing::instrument(skip(self), fields(filename))]
-    async fn load_narrative(&self, filename: &str) -> BotticelliResult<Value> {
+    async fn load_narrative(&self, filename: &str) -> Result<Value, Self::Error> {
         let path = self.narrative_dir.join(filename);
 
         let toml_content = fs::read_to_string(&path).await.map_err(|e| {
-            BotticelliError::from(botticelli_error::BackendError::new(format!(
+            NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(format!(
                 "Failed to read narrative file: {}",
                 e
             )))
@@ -70,10 +72,10 @@ impl NarrativeStorageOperations for FilesystemNarrativeStorage {
     }
 
     #[tracing::instrument(skip(self, toml_content))]
-    async fn validate_narrative(&self, toml_content: &str) -> BotticelliResult<Value> {
+    async fn validate_narrative(&self, toml_content: &str) -> Result<Value, Self::Error> {
         // Parse as Narrative to validate structure
         let narrative: crate::Narrative = toml_content.parse().map_err(|e: NarrativeError| {
-            BotticelliError::from(botticelli_error::BackendError::new(format!(
+            NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(format!(
                 "Invalid narrative TOML: {}",
                 e
             )))
@@ -93,18 +95,18 @@ impl NarrativeStorageOperations for FilesystemNarrativeStorage {
         &self,
         toml_content: &str,
         name_override: Option<&str>,
-    ) -> BotticelliResult<Value> {
+    ) -> Result<Value, Self::Error> {
         // Parse using FromStr implementation
         let narrative: crate::Narrative = if let Some(name) = name_override {
             crate::Narrative::from_toml_str(toml_content, Some(name)).map_err(|e| {
-                BotticelliError::from(botticelli_error::BackendError::new(format!(
+                NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(format!(
                     "Failed to parse narrative TOML: {}",
                     e
                 )))
             })?
         } else {
             toml_content.parse().map_err(|e: NarrativeError| {
-                BotticelliError::from(botticelli_error::BackendError::new(format!(
+                NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(format!(
                     "Failed to parse narrative TOML: {}",
                     e
                 )))
@@ -113,7 +115,7 @@ impl NarrativeStorageOperations for FilesystemNarrativeStorage {
 
         // Convert to JSON for MCP response
         serde_json::to_value(&narrative).map_err(|e| {
-            BotticelliError::from(botticelli_error::BackendError::new(format!(
+            NarrativeError::new(botticelli_error::NarrativeErrorKind::FileRead(format!(
                 "Failed to serialize narrative: {}",
                 e
             )))

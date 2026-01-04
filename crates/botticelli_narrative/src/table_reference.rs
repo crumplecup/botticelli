@@ -1,6 +1,6 @@
 //! Table reference resolution for narrative inputs.
 
-use botticelli_error::BotticelliResult;
+use botticelli_error::{BotticelliError, BotticelliResult};
 use botticelli_interface::ContentRepository;
 use derive_builder::Builder;
 use derive_getters::Getters;
@@ -22,7 +22,7 @@ pub struct TableReference {
 
     /// Maximum number of rows to retrieve
     #[builder(default = "10")]
-    limit: usize,
+    limit: i64,
 }
 
 impl TableReference {
@@ -34,10 +34,15 @@ impl TableReference {
     /// Resolve this reference to actual content as JSON values.
     pub async fn resolve(
         &self,
-        repository: &dyn ContentRepository,
+        repository: &dyn ContentRepository<Error = botticelli_error::DatabaseError>,
     ) -> BotticelliResult<Vec<serde_json::Value>> {
         repository
-            .list_content(&self.table_name, self.status_filter.as_deref(), self.limit)
+            .query_content(
+                &self.table_name,
+                self.status_filter.as_deref(),
+                Some(self.limit),
+            )
             .await
+            .map_err(|e| BotticelliError::from(botticelli_error::DatabaseError::from(e)))
     }
 }

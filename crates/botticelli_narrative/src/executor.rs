@@ -7,16 +7,12 @@ use crate::{
     CarouselResult, CarouselState, MultiNarrative, NarrativeProvider, ProcessorContext,
     ProcessorRegistry, StateManager,
 };
+use botticelli_core::{ActExecution, ActExecutionBuilder, NarrativeExecution};
 use botticelli_core::{GenerateRequest, Input, Message, MessageBuilder, Output, Role};
 use botticelli_error::{
     BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
 };
-use botticelli_core::{
-    ActExecution, ActExecutionBuilder, NarrativeExecution,
-};
-use botticelli_interface::{
-    BotticelliDriver, TableQueryRegistry,
-};
+use botticelli_interface::{BotticelliDriver, TableQueryRegistry};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::future::Future;
@@ -60,15 +56,29 @@ pub trait BotCommandRegistry: Send + Sync {
 /// The response from each act is stored in the ActExecution history and can be
 /// referenced by name. For JSON responses (e.g., from bot commands), you can
 /// navigate JSON paths using dot notation.
-pub struct NarrativeExecutor<D: BotticelliDriver> {
+pub struct NarrativeExecutor<D>
+where
+    D: BotticelliDriver<
+            Request = GenerateRequest,
+            Response = botticelli_core::GenerateResponse,
+            RateLimitConfig = botticelli_core::RateLimitConfig,
+        >,
+{
     driver: D,
     processor_registry: Option<ProcessorRegistry>,
     bot_registry: Option<Box<dyn BotCommandRegistry>>,
-    table_registry: Option<Box<dyn TableQueryRegistry>>,
+    table_registry: Option<Box<dyn TableQueryRegistry<Error = botticelli_error::DatabaseError>>>,
     state_manager: Option<StateManager>,
 }
 
-impl<D: BotticelliDriver> NarrativeExecutor<D> {
+impl<D> NarrativeExecutor<D>
+where
+    D: BotticelliDriver<
+            Request = GenerateRequest,
+            Response = botticelli_core::GenerateResponse,
+            RateLimitConfig = botticelli_core::RateLimitConfig,
+        >,
+{
     /// Create a new narrative executor with the given LLM driver.
     pub fn new(driver: D) -> Self {
         Self {
@@ -141,7 +151,10 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
     /// let executor = NarrativeExecutor::new(driver)
     ///     .with_table_registry(Box::new(table_registry));
     /// ```
-    pub fn with_table_registry(mut self, registry: Box<dyn TableQueryRegistry>) -> Self {
+    pub fn with_table_registry(
+        mut self,
+        registry: Box<dyn TableQueryRegistry<Error = botticelli_error::DatabaseError>>,
+    ) -> Self {
         self.table_registry = Some(registry);
         self
     }
@@ -592,7 +605,11 @@ impl<D: BotticelliDriver> NarrativeExecutor<D> {
                     let response = {
                         let _enter = llm_span.enter();
                         tracing::info!("Calling LLM API");
-                        let result = self.driver.generate(&request).await?;
+                        let result = self.driver.generate(&request).await.map_err(|e| {
+                            BotticelliError::from(botticelli_error::BackendError::new(
+                                e.to_string(),
+                            ))
+                        })?;
                         let act_duration = act_start.elapsed();
 
                         tracing::info!(

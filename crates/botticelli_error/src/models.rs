@@ -159,8 +159,6 @@ impl AnthropicError {
     }
 }
 
-
-
 /// Model provider-specific error conditions.
 #[derive(Debug, Clone, derive_more::Display)]
 pub enum ModelsErrorKind {
@@ -170,12 +168,10 @@ pub enum ModelsErrorKind {
 
     /// Builder error (derive_builder failures)
     #[display("Builder error: {}", _0)]
-
     Builder(String),
 
     /// Gemini client creation error
     #[display("Gemini client error: {}", _0)]
-
     #[cfg(feature = "models")]
     GeminiClient(std::sync::Arc<gemini_rust::client::Error>),
 
@@ -187,42 +183,34 @@ pub enum ModelsErrorKind {
     /// Anthropic-specific error (will be populated when anthropic feature is enabled)
     #[cfg(feature = "anthropic")]
     #[display("Anthropic: {}", _0)]
-
     Anthropic(AnthropicErrorKind),
 
     /// OpenAI-compatible API error
     #[display("OpenAI Compatible: {}", _0)]
-
     OpenAI(crate::OpenAIErrorKind),
 
     /// Invalid role for message
     #[display("Invalid role: {}", _0)]
-
     InvalidRole(String),
 
     /// Token counting failed
     #[display("Token counting failed: {}", _0)]
-
     TokenCountingFailed(String),
 
     /// Tiktoken decode error
     #[display("Tiktoken decode error: {}", _0)]
-
     TiktokenDecode(String),
 
     /// Tiktoken decode key error (invalid token)
     #[display("Tiktoken decode key error: token {}", _0)]
-
     TiktokenDecodeKey(u32),
 
     /// Tiktoken initialization failed
     #[display("Tiktoken initialization failed: {}", _0)]
-
     Tiktoken(std::sync::Arc<anyhow::Error>),
 
     /// Serialization error (JSON encoding/decoding failures)
     #[display("Serialization error: {}", _0)]
-
     Serialization(std::sync::Arc<serde_json::Error>),
 }
 
@@ -295,6 +283,20 @@ impl From<OllamaError> for crate::BotticelliErrorKind {
 crate::impl_error_from_kind!(AnthropicErrorKind => AnthropicError);
 
 #[cfg(feature = "anthropic")]
+crate::impl_chained_error_bridge!(crate::AnthropicErrorKind => crate::AnthropicError => ModelsErrorKind => ModelsError);
+
+#[cfg(feature = "anthropic")]
+crate::chain_error_kind!(crate::AnthropicErrorKind => ModelsErrorKind, Anthropic);
+
+#[cfg(feature = "anthropic")]
+impl From<crate::AnthropicError> for ModelsError {
+    #[track_caller]
+    fn from(err: crate::AnthropicError) -> Self {
+        ModelsError::new(ModelsErrorKind::Anthropic(err.kind().clone()))
+    }
+}
+
+#[cfg(feature = "anthropic")]
 impl From<AnthropicErrorKind> for ModelsError {
     fn from(kind: AnthropicErrorKind) -> Self {
         ModelsError::new(ModelsErrorKind::Anthropic(kind))
@@ -310,8 +312,6 @@ impl From<crate::OpenAIErrorKind> for ModelsError {
 }
 
 crate::impl_error_from_kind!(ModelsErrorKind => ModelsError);
-
-
 
 /// Result type for model operations.
 pub type ModelsResult<T> = Result<T, ModelsError>;

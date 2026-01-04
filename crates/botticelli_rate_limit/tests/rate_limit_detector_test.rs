@@ -2,7 +2,7 @@
 
 mod common;
 
-use botticelli_error::{HttpError, HttpErrorKind, BotticelliResult};
+use botticelli_error::{BotticelliResult, HttpError, HttpErrorKind};
 use botticelli_interface::Tier;
 use botticelli_rate_limit::HeaderRateLimitDetector;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -22,7 +22,7 @@ fn create_headers(entries: &[(&str, &str)]) -> Result<HeaderMap, HttpError> {
 #[tokio::test]
 async fn test_detect_gemini_free_tier() -> BotticelliResult<()> {
     common::init_tracing();
-    
+
     let detector = HeaderRateLimitDetector::new();
     let headers = create_headers(&[
         ("x-ratelimit-limit", "10"),
@@ -30,12 +30,11 @@ async fn test_detect_gemini_free_tier() -> BotticelliResult<()> {
         ("x-ratelimit-reset", "1705012345"),
     ])?;
 
-    let config = detector
-        .detect_gemini(&headers)
-        .await?
-        .ok_or_else(|| botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
-            "Failed to detect config".to_string())
-        ))?;
+    let config = detector.detect_gemini(&headers).await?.ok_or_else(|| {
+        botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
+            "Failed to detect config".to_string(),
+        ))
+    })?;
 
     assert_eq!(config.name(), "Free");
     assert_eq!(config.rpm(), Some(10));
@@ -55,12 +54,11 @@ async fn test_detect_gemini_payasyougo_tier() -> BotticelliResult<()> {
         ("x-ratelimit-remaining", "350"),
     ])?;
 
-    let config = detector
-        .detect_gemini(&headers)
-        .await?
-        .ok_or_else(|| botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
-            "Failed to detect config".to_string())
-        ))?;
+    let config = detector.detect_gemini(&headers).await?.ok_or_else(|| {
+        botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
+            "Failed to detect config".to_string(),
+        ))
+    })?;
 
     assert_eq!(config.name(), "Pay-as-you-go");
     assert_eq!(config.rpm(), Some(360));
@@ -81,12 +79,11 @@ async fn test_detect_anthropic_tier1() -> BotticelliResult<()> {
         ("anthropic-ratelimit-tokens-remaining", "18000"),
     ])?;
 
-    let config = detector
-        .detect_anthropic(&headers)
-        .await?
-        .ok_or_else(|| botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
-            "Failed to detect config".to_string())
-        ))?;
+    let config = detector.detect_anthropic(&headers).await?.ok_or_else(|| {
+        botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
+            "Failed to detect config".to_string(),
+        ))
+    })?;
 
     assert_eq!(config.name(), "Tier 1");
     assert_eq!(config.rpm(), Some(5));
@@ -105,12 +102,11 @@ async fn test_detect_anthropic_tier4() -> BotticelliResult<()> {
         ("anthropic-ratelimit-tokens-limit", "160000"),
     ])?;
 
-    let config = detector
-        .detect_anthropic(&headers)
-        .await?
-        .ok_or_else(|| botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
-            "Failed to detect config".to_string())
-        ))?;
+    let config = detector.detect_anthropic(&headers).await?.ok_or_else(|| {
+        botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
+            "Failed to detect config".to_string(),
+        ))
+    })?;
 
     assert_eq!(config.name(), "Tier 4");
     assert_eq!(config.rpm(), Some(2000));
@@ -129,12 +125,11 @@ async fn test_detect_openai_free_tier() -> BotticelliResult<()> {
         ("x-ratelimit-remaining-tokens", "35000"),
     ])?;
 
-    let config = detector
-        .detect_openai(&headers)
-        .await?
-        .ok_or_else(|| botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
-            "Failed to detect config".to_string())
-        ))?;
+    let config = detector.detect_openai(&headers).await?.ok_or_else(|| {
+        botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
+            "Failed to detect config".to_string(),
+        ))
+    })?;
 
     assert_eq!(config.name(), "Free");
     assert_eq!(config.rpm(), Some(3));
@@ -152,12 +147,11 @@ async fn test_detect_openai_tier5() -> BotticelliResult<()> {
         ("x-ratelimit-limit-tokens", "100000000"),
     ])?;
 
-    let config = detector
-        .detect_openai(&headers)
-        .await?
-        .ok_or_else(|| botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
-            "Failed to detect config".to_string())
-        ))?;
+    let config = detector.detect_openai(&headers).await?.ok_or_else(|| {
+        botticelli_error::RateLimitError::from(botticelli_error::RateLimitErrorKind::Config(
+            "Failed to detect config".to_string(),
+        ))
+    })?;
 
     assert_eq!(config.name(), "Tier 5");
     assert_eq!(config.rpm(), Some(10000));
@@ -198,9 +192,6 @@ async fn test_missing_headers_returns_none() -> BotticelliResult<()> {
     let detector = HeaderRateLimitDetector::new();
     let headers = HeaderMap::new();
 
-    assert!(detector
-        .detect_openai(&headers)
-        .await?
-        .is_none());
+    assert!(detector.detect_openai(&headers).await?.is_none());
     Ok(())
 }

@@ -89,4 +89,3 @@ impl From<&str> for OpenAIError {
 crate::impl_error_from_kind!(OpenAIErrorKind => OpenAIError);
 crate::bridge_error!(OpenAIErrorKind => OpenAIError => BotticelliErrorKind);
 // Note: reqwest::Error and serde_json::Error already have From impls via HttpError and JsonError
-

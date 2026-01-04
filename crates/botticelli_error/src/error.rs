@@ -8,8 +8,8 @@ use crate::ModelsError;
 use crate::TuiError;
 use crate::{
     BackendError, BuilderError, ChatError, ConfigError, EnvError, GeminiError, HttpError, IoError,
-    JsonError, McpError, NarrativeError, NotImplementedError, ObservabilityError,
-    OpenAIError, ProviderError, ServerError, StorageError, TokenCountingError,
+    JsonError, McpError, NarrativeError, NotImplementedError, ObservabilityError, OpenAIError,
+    ProviderError, ServerError, StorageError, TokenCountingError,
 };
 
 /// This is the foundation error enum. Additional variants will be added

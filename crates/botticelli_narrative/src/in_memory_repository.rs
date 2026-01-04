@@ -4,13 +4,9 @@
 //! in memory. Useful for unit tests and demonstrating the trait interface.
 
 use async_trait::async_trait;
+use botticelli_core::{ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution};
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
-use botticelli_core::{
-    ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution,
-};
-use botticelli_interface::{
-    NarrativeRepository,
-};
+use botticelli_interface::NarrativeRepository;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -84,8 +80,16 @@ impl Default for InMemoryNarrativeRepository {
 
 #[async_trait]
 impl NarrativeRepository for InMemoryNarrativeRepository {
+    type Error = botticelli_error::NarrativeError;
+    type MediaMetadata = botticelli_storage::MediaMetadata;
+    type MediaReference = botticelli_storage::MediaReference;
+    type Execution = NarrativeExecution;
+    type Filter = ExecutionFilter;
+    type Summary = ExecutionSummary;
+    type Status = ExecutionStatus;
+
     #[tracing::instrument(skip(self, execution), fields(narrative = %execution.narrative_name()))]
-    async fn save_execution(&self, execution: &NarrativeExecution) -> BotticelliResult<i32> {
+    async fn save_execution(&self, execution: &Self::Execution) -> Result<i32, Self::Error> {
         let mut next_id_guard = self.next_id.write().await;
         let id = *next_id_guard;
         *next_id_guard += 1;
@@ -105,21 +109,26 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn load_execution(&self, id: i32) -> BotticelliResult<NarrativeExecution> {
+    async fn load_execution(&self, id: i32) -> Result<Self::Execution, Self::Error> {
         let executions = self.executions.read().await;
         executions
             .get(&id)
             .map(|stored| stored.execution.clone())
             .ok_or_else(|| {
-                BotticelliError::from(BackendError::new(format!("Execution {} not found", id)))
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::FileRead(format!(
+                        "Execution {} not found",
+                        id
+                    )),
+                )
             })
     }
 
     #[tracing::instrument(skip(self, filter), fields(narrative = ?filter.narrative_name(), status = ?filter.status()))]
     async fn list_executions(
         &self,
-        filter: &ExecutionFilter,
-    ) -> BotticelliResult<Vec<ExecutionSummary>> {
+        filter: &Self::Filter,
+    ) -> Result<Vec<Self::Summary>, Self::Error> {
         let executions = self.executions.read().await;
         let mut results: Vec<ExecutionSummary> = executions
             .values()
@@ -161,7 +170,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn update_status(&self, id: i32, status: ExecutionStatus) -> BotticelliResult<()> {
+    async fn update_status(&self, id: i32, status: Self::Status) -> Result<(), Self::Error> {
         let mut executions = self.executions.write().await;
         executions
             .get_mut(&id)
@@ -169,19 +178,29 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
                 stored.status = status;
             })
             .ok_or_else(|| {
-                BotticelliError::from(BackendError::new(format!("Execution {} not found", id)))
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::FileRead(format!(
+                        "Execution {} not found",
+                        id
+                    )),
+                )
             })
     }
 
     #[tracing::instrument(skip(self))]
-    async fn delete_execution(&self, id: i32) -> BotticelliResult<()> {
+    async fn delete_execution(&self, id: i32) -> Result<(), Self::Error> {
         self.executions
             .write()
             .await
             .remove(&id)
             .map(|_| ())
             .ok_or_else(|| {
-                BotticelliError::from(BackendError::new(format!("Execution {} not found", id)))
+                botticelli_error::NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::FileRead(format!(
+                        "Execution {} not found",
+                        id
+                    )),
+                )
             })
     }
 
@@ -189,8 +208,8 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
     async fn store_media(
         &self,
         _data: &[u8],
-        _metadata: &botticelli_storage::MediaMetadata,
-    ) -> BotticelliResult<botticelli_storage::MediaReference> {
+        _metadata: &Self::MediaMetadata,
+    ) -> Result<Self::MediaReference, Self::Error> {
         Err(botticelli_error::BotticelliError::from(
             botticelli_error::NotImplementedError::new(
                 "Media storage not yet implemented for in-memory repository",
@@ -198,10 +217,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         ))
     }
 
-    async fn load_media(
-        &self,
-        _reference: &botticelli_storage::MediaReference,
-    ) -> BotticelliResult<Vec<u8>> {
+    async fn load_media(&self, _reference: &Self::MediaReference) -> Result<Vec<u8>, Self::Error> {
         Err(botticelli_error::BotticelliError::from(
             botticelli_error::NotImplementedError::new(
                 "Media loading not yet implemented for in-memory repository",
@@ -212,7 +228,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
     async fn get_media_by_hash(
         &self,
         _content_hash: &str,
-    ) -> BotticelliResult<Option<botticelli_storage::MediaReference>> {
+    ) -> Result<Option<Self::MediaReference>, Self::Error> {
         Ok(None)
     }
 
@@ -222,36 +238,32 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
 // Implement NarrativeRegistryOperations trait for MCP tool integration
 #[async_trait]
 impl botticelli_interface::NarrativeRegistryOperations for InMemoryNarrativeRepository {
-    async fn save_execution(
-        &self,
-        execution: &NarrativeExecution,
-    ) -> botticelli_error::BotticelliResult<i32> {
+    type Error = botticelli_error::NarrativeError;
+    type Execution = NarrativeExecution;
+    type Status = ExecutionStatus;
+    type Filter = ExecutionFilter;
+    type Summary = ExecutionSummary;
+
+    async fn save_execution(&self, execution: &Self::Execution) -> Result<i32, Self::Error> {
         botticelli_interface::NarrativeRepository::save_execution(self, execution).await
     }
 
-    async fn load_execution(
-        &self,
-        id: i32,
-    ) -> botticelli_error::BotticelliResult<NarrativeExecution> {
+    async fn load_execution(&self, id: i32) -> Result<Self::Execution, Self::Error> {
         botticelli_interface::NarrativeRepository::load_execution(self, id).await
     }
 
-    async fn update_status(
-        &self,
-        id: i32,
-        status: ExecutionStatus,
-    ) -> botticelli_error::BotticelliResult<()> {
+    async fn update_status(&self, id: i32, status: Self::Status) -> Result<(), Self::Error> {
         botticelli_interface::NarrativeRepository::update_status(self, id, status).await
     }
 
     async fn list_executions(
         &self,
-        filter: &ExecutionFilter,
-    ) -> botticelli_error::BotticelliResult<Vec<ExecutionSummary>> {
+        filter: &Self::Filter,
+    ) -> Result<Vec<Self::Summary>, Self::Error> {
         botticelli_interface::NarrativeRepository::list_executions(self, filter).await
     }
 
-    async fn delete_execution(&self, id: i32) -> botticelli_error::BotticelliResult<()> {
+    async fn delete_execution(&self, id: i32) -> Result<(), Self::Error> {
         botticelli_interface::NarrativeRepository::delete_execution(self, id).await
     }
 }
