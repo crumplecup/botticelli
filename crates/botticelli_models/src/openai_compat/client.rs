@@ -21,6 +21,36 @@ pub struct OpenAICompatibleClient {
 }
 
 impl OpenAICompatibleClient {
+    /// Returns the HTTP client.
+    pub fn client(&self) -> &Client {
+        &self.client
+    }
+
+    /// Returns the API key.
+    pub fn api_key(&self) -> &str {
+        &self.api_key
+    }
+
+    /// Returns the model name.
+    pub fn model(&self) -> &str {
+        &self.model
+    }
+
+    /// Returns the base URL.
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
+    /// Returns the provider name.
+    pub fn provider_name(&self) -> &'static str {
+        self.provider_name
+    }
+
+    /// Returns the rate limits configuration.
+    pub fn rate_limits(&self) -> &RateLimitConfig {
+        &self.rate_limits
+    }
+
     /// Creates a new OpenAI-compatible client.
     ///
     /// # Arguments
@@ -71,20 +101,7 @@ impl OpenAICompatibleClient {
         conversions::from_chat_response(&chat_response)
     }
 
-    /// Returns the provider name.
-    pub fn provider_name(&self) -> &'static str {
-        self.provider_name
-    }
 
-    /// Returns the model name.
-    pub fn model_name(&self) -> &str {
-        &self.model
-    }
-
-    /// Returns the rate limits configuration.
-    pub fn rate_limits(&self) -> &RateLimitConfig {
-        &self.rate_limits
-    }
 
     /// Internal method to send a ChatRequest and get ChatResponse.
     ///

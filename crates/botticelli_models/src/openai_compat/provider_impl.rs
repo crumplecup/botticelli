@@ -31,7 +31,7 @@ impl LlmProvider for OpenAICompatibleClient {
     }
 
     fn default_model(&self) -> &str {
-        self.model_name()
+        self.model()
     }
 
     fn supports_tools(&self) -> bool {
