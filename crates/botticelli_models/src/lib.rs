@@ -28,8 +28,13 @@
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = GeminiClient::new()?;
-//! let message = Message::new(Role::User, vec![Input::Text("Hello".to_string())]);
-//! let request = GenerateRequest::new(vec![message]);
+//! let message = Message::builder()
+//!     .role(Role::User)
+//!     .content(vec![Input::Text("Hello".to_string())])
+//!     .build()?;
+//! let request = GenerateRequest::builder()
+//!     .messages(vec![message])
+//!     .build()?;
 //! let response = client.generate(&request).await?;
 //! # Ok(())
 //! # }

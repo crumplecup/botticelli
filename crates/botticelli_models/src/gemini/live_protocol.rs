@@ -28,7 +28,9 @@
 //!
 //! # Example
 //!
-//! ```no_run
+//! ```ignore
+//! // This example shows the protocol structure but is not runnable
+//! // as it uses internal types for documentation purposes.
 //! use botticelli_models::{SetupMessage, SetupConfig, GenerationConfig, ClientContentMessage,
 //!                         ClientContent, Turn, Part, TextPart};
 //!

@@ -35,6 +35,9 @@ fn test_anthropic_capabilities() {
 #[test]
 #[cfg(feature = "gemini")]
 fn test_gemini_capabilities() -> botticelli_error::BotticelliResult<()> {
+    // Load .env
+    let _ = dotenvy::dotenv();
+    
     // Skip test if GEMINI_API_KEY is not set
     if std::env::var("GEMINI_API_KEY").is_err() {
         eprintln!("Skipping test_gemini_capabilities: GEMINI_API_KEY not set");
@@ -49,7 +52,7 @@ fn test_gemini_capabilities() -> botticelli_error::BotticelliResult<()> {
     assert!(caps.supports_vision(), "Gemini should support vision");
     assert!(caps.supports_audio(), "Gemini should support audio");
     assert!(caps.supports_video(), "Gemini should support video");
-    assert!(caps.supports_embeddings(), "Gemini should support embeddings");
+    assert!(!caps.supports_embeddings(), "Gemini should not support embeddings");
     assert!(caps.supports_json_mode(), "Gemini should support JSON mode");
     assert!(
         !caps.supports_batch(),

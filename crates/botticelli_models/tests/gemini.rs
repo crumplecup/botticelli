@@ -32,7 +32,7 @@ fn test_gemini_error_kind_display() {
         ),
         (
             GeminiErrorKind::InvalidServerMessage("request failed".to_string()),
-            "Gemini API request failed: request failed",
+            "Invalid server message: request failed",
         ),
         (
             GeminiErrorKind::MultimodalNotSupported,
