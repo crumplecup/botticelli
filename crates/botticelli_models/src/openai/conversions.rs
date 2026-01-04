@@ -1,14 +1,11 @@
 //! Type conversions between Botticelli and OpenAI formats.
 
-use botticelli_error::{OpenAIError, OpenAIErrorKind};
 use crate::openai::{ChatMessage, ChatRequest, ChatResponse};
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output};
+use botticelli_error::{OpenAIError, OpenAIErrorKind};
 
 /// Converts a Botticelli GenerateRequest to OpenAI chat format.
-pub fn to_chat_request(
-    req: &GenerateRequest,
-    model: &str,
-) -> Result<ChatRequest, OpenAIError> {
+pub fn to_chat_request(req: &GenerateRequest, model: &str) -> Result<ChatRequest, OpenAIError> {
     let mut messages = Vec::new();
 
     for msg in req.messages() {
@@ -21,16 +18,13 @@ pub fn to_chat_request(
         for content in msg.content() {
             match content {
                 Input::Text(text) => {
-                    messages.push(ChatMessage::new(
-                        role.to_string(),
-                        text.clone(),
-                        None,
-                    ));
+                    messages.push(ChatMessage::new(role.to_string(), text.clone(), None));
                 }
                 _ => {
                     return Err(OpenAIErrorKind::InvalidRequest(
                         "Only text inputs supported in OpenAI format".to_string(),
-                    ).into());
+                    )
+                    .into());
                 }
             }
         }
@@ -58,22 +52,21 @@ pub fn from_chat_response(response: &ChatResponse) -> Result<GenerateResponse, O
         .choices()
         .first()
         .map(|choice| choice.message().content().clone())
-        .ok_or_else(|| OpenAIErrorKind::InvalidRequest(
-            "No choices in response".to_string()
-        ))?;
+        .ok_or_else(|| OpenAIErrorKind::InvalidRequest("No choices in response".to_string()))?;
 
     let output = Output::Text(content);
 
     // Extract token usage if available
-    let usage =
-        response.usage().as_ref().and_then(|u| {
-            match (u.prompt_tokens(), u.completion_tokens(), u.total_tokens()) {
-                (Some(input), Some(output), Some(total)) => Some(
-                    botticelli_core::TokenUsageData::new(*input as u64, *output as u64, *total as u64),
-                ),
-                _ => None,
-            }
-        });
+    let usage = response.usage().as_ref().and_then(|u| {
+        match (u.prompt_tokens(), u.completion_tokens(), u.total_tokens()) {
+            (Some(input), Some(output), Some(total)) => Some(botticelli_core::TokenUsageData::new(
+                *input as u64,
+                *output as u64,
+                *total as u64,
+            )),
+            _ => None,
+        }
+    });
 
     // Map finish_reason to StopReason
     let stop_reason = response

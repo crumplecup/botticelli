@@ -176,9 +176,15 @@ impl TokenCounting for TestDriver {
     }
 
     fn count_request_tokens(&self, req: &Self::Request) -> Result<usize, Self::Error> {
-        let total_chars: usize = req.messages()
+        let total_chars: usize = req
+            .messages()
             .iter()
-            .map(|m| m.content().iter().map(|i| format!("{:?}", i).len()).sum::<usize>())
+            .map(|m| {
+                m.content()
+                    .iter()
+                    .map(|i| format!("{:?}", i).len())
+                    .sum::<usize>()
+            })
             .sum();
         Ok(total_chars / 4)
     }

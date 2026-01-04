@@ -1,7 +1,7 @@
 //! Streaming trait implementation.
 
-use crate::gemini::GeminiResult;
 use crate::GeminiClient;
+use crate::gemini::GeminiResult;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, StreamChunk};
 use botticelli_interface::Streaming;
@@ -22,4 +22,3 @@ impl Streaming for GeminiClient {
         self.generate_stream_internal(req).await
     }
 }
-

@@ -1,4 +1,4 @@
-///! Rate limiting error types.
+//! Rate limiting error types.
 
 /// Specific rate limiting error conditions.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display)]

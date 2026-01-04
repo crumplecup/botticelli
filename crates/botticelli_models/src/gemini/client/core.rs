@@ -1,6 +1,5 @@
 //! Core Gemini client implementation.
 
-
 use botticelli_rate_limit::TierConfigBuilder;
 use std::collections::HashMap;
 use std::env;
@@ -47,9 +46,7 @@ pub struct GeminiClient {
 
 impl std::fmt::Debug for GeminiClient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let client_count = self.clients.lock()
-            .map(|guard| guard.len())
-            .unwrap_or(0);
+        let client_count = self.clients.lock().map(|guard| guard.len()).unwrap_or(0);
         f.debug_struct("GeminiClient")
             .field("model_name", &self.model_name)
             .field("base_tier", &self.base_tier.name())
@@ -127,24 +124,21 @@ impl GeminiClient {
 
     /// Create a new Gemini client with a TierConfig (preserves model-specific overrides).
     fn new_with_tier_config(tier_config: Option<TierConfig>) -> BotticelliResult<Self> {
-        let api_key = env::var("GEMINI_API_KEY")
-            .map_err(|_| GeminiErrorKind::MissingApiKey)?;
+        let api_key = env::var("GEMINI_API_KEY").map_err(|_| GeminiErrorKind::MissingApiKey)?;
 
         let base_tier = match tier_config {
             Some(config) => config,
-            None => {
-                TierConfigBuilder::default()
-                    .name("Free")
-                    .rpm(10u32)
-                    .tpm(250_000u64)
-                    .rpd(250u32)
-                    .max_concurrent(1u32)
-                    .cost_per_million_input_tokens(0.0)
-                    .cost_per_million_output_tokens(0.0)
-                    .models(HashMap::new())
-                    .build()
-                    .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))?
-            }
+            None => TierConfigBuilder::default()
+                .name("Free")
+                .rpm(10u32)
+                .tpm(250_000u64)
+                .rpd(250u32)
+                .max_concurrent(1u32)
+                .cost_per_million_input_tokens(0.0)
+                .cost_per_million_output_tokens(0.0)
+                .models(HashMap::new())
+                .build()
+                .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))?,
         };
 
         let live_client = {
@@ -190,7 +184,8 @@ impl GeminiClient {
             builder.cost_per_million_output_tokens(output_cost);
         }
         builder.models(HashMap::new());
-        builder.build()
+        builder
+            .build()
             .map_err(|e| GeminiError::new(GeminiErrorKind::BuilderError(e.to_string())))
     }
 
@@ -211,8 +206,7 @@ impl GeminiClient {
 
     /// Internal constructor that returns Gemini-specific errors.
     fn new_internal(tier: Option<Box<dyn Tier>>) -> GeminiResult<Self> {
-        let api_key = env::var("GEMINI_API_KEY")
-            .map_err(|_| GeminiErrorKind::MissingApiKey)?;
+        let api_key = env::var("GEMINI_API_KEY").map_err(|_| GeminiErrorKind::MissingApiKey)?;
 
         let base_tier = if let Some(tier) = tier {
             Self::build_tier_config_from_trait(tier)?
@@ -295,14 +289,14 @@ impl GeminiClient {
         })?;
 
         let mut config_builder = crate::gemini::live_protocol::GenerationConfigBuilder::default();
-        
+
         if let Some(max_tokens) = req.max_tokens() {
             config_builder.max_output_tokens(*max_tokens as i32);
         }
         if let Some(temp) = req.temperature() {
             config_builder.temperature(*temp as f64);
         }
-        
+
         let config = config_builder
             .build()
             .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
@@ -433,13 +427,15 @@ impl GeminiClient {
         &self,
         model_name: &str,
     ) -> GeminiResult<RateLimiter<TieredGemini<TierConfig>>> {
-        let mut clients = self.clients.lock()
+        let mut clients = self
+            .clients
+            .lock()
             .map_err(|e| GeminiError::new(GeminiErrorKind::MutexPoisoned(e.to_string())))?;
-        
+
         if !clients.contains_key(model_name) {
             let model_enum = Self::model_name_to_enum(model_name);
-            let client = Gemini::with_model(&self.api_key, model_enum)
-                .map_err(GeminiError::from)?;
+            let client =
+                Gemini::with_model(&self.api_key, model_enum).map_err(GeminiError::from)?;
             let model_tier = self.base_tier.for_model(model_name);
             let tiered = TieredGemini::new(client, model_tier);
             let limiter = RateLimiter::new_with_retry(
@@ -451,7 +447,8 @@ impl GeminiClient {
             clients.insert(model_name.to_string(), limiter);
         }
 
-        clients.get(model_name)
+        clients
+            .get(model_name)
             .ok_or_else(|| GeminiError::new(GeminiErrorKind::InvalidModel(model_name.to_string())))
             .cloned()
     }
@@ -539,7 +536,10 @@ impl GeminiClient {
     }
 
     /// Internal generate method that returns Gemini-specific errors.
-    pub(crate) async fn generate_internal(&self, req: &GenerateRequest) -> GeminiResult<GenerateResponse> {
+    pub(crate) async fn generate_internal(
+        &self,
+        req: &GenerateRequest,
+    ) -> GeminiResult<GenerateResponse> {
         use crate::{LlmMetrics, classify_error};
 
         let start = std::time::Instant::now();
@@ -582,24 +582,28 @@ impl GeminiClient {
         req: &GenerateRequest,
     ) -> GeminiResult<
         std::pin::Pin<
-            Box<dyn futures_util::stream::Stream<Item = GeminiResult<botticelli_core::StreamChunk>> + Send>,
+            Box<
+                dyn futures_util::stream::Stream<Item = GeminiResult<botticelli_core::StreamChunk>>
+                    + Send,
+            >,
         >,
     > {
-        use futures_util::TryStreamExt;
         use botticelli_core::{Output, StreamChunk};
+        use futures_util::TryStreamExt;
 
-        let model_name = req.model()
+        let model_name = req
+            .model()
             .as_ref()
             .map(|s| s.as_str())
             .unwrap_or(&self.model_name);
-        
+
         // Get or create rate-limited client
         let rate_limited_client = self.get_or_create_client(model_name)?;
         let client = rate_limited_client.inner().client();
-        
+
         // Build the request
         let builder = self.build_gemini_request(req, client)?;
-        
+
         // Execute streaming request
         let stream = builder
             .execute_stream()

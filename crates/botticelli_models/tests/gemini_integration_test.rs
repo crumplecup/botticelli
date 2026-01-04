@@ -19,9 +19,7 @@ mod helpers;
 use botticelli_core::{GenerateRequest, Input, Message, Role};
 use botticelli_interface::BotticelliDriver;
 use botticelli_models::GeminiClient;
-use helpers::MockGeminiClient;
-
-use botticelli_error::{BotticelliResult, BuilderError, BuilderErrorKind};
+use helpers::mock_gemini::MockGeminiClient;
 
 //
 // ─── MOCK TESTS (FAST, NO API CALLS) ───────────────────────────────────────────
@@ -29,20 +27,18 @@ use botticelli_error::{BotticelliResult, BuilderError, BuilderErrorKind};
 
 /// Test basic generate functionality using mock.
 #[tokio::test]
-async fn test_mock_model_basic_generate() -> BotticelliResult<()> {
+async fn test_mock_model_basic_generate() -> anyhow::Result<()> {
     let mock = MockGeminiClient::new_success("Mock response");
 
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Test".to_string())])
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .max_tokens(10u32)
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let response = mock.generate(&request).await?;
     assert!(!response.outputs().is_empty());
@@ -84,8 +80,7 @@ async fn test_default_model_usage() -> anyhow::Result<()> {
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .max_tokens(10u32)
-        .build()
-        .map_err(|e| anyhow::anyhow!(e))?;
+        .build()?;
 
     let response = client.generate(&request).await?;
 
@@ -112,8 +107,7 @@ async fn test_model_override_in_request() -> anyhow::Result<()> {
         .messages(vec![message])
         .max_tokens(10u32)
         .model("gemini-2.5-flash-lite".to_string()) // Override default
-        .build()
-        .map_err(|e| anyhow::anyhow!(e))?;
+        .build()?;
 
     let response = client.generate(&request).await?;
 
@@ -132,21 +126,19 @@ async fn test_model_override_in_request() -> anyhow::Result<()> {
 /// Test model override with different Gemini 2.5 model.
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
-async fn test_gemini_2_5_model_override() -> BotticelliResult<()> {
+async fn test_gemini_2_5_model_override() -> anyhow::Result<()> {
     let client = GeminiClient::new()?;
 
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Say 'ok'".to_string())])
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .max_tokens(10u32)
         .model("gemini-2.5-flash".to_string())
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let response = client.generate(&request).await?;
 
@@ -159,22 +151,20 @@ async fn test_gemini_2_5_model_override() -> BotticelliResult<()> {
 /// This simulates what happens in narrative execution with per-act model overrides.
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
-async fn test_multiple_model_requests() -> BotticelliResult<()> {
+async fn test_multiple_model_requests() -> anyhow::Result<()> {
     let client = GeminiClient::new()?;
 
     // Request 1: Use lite model
     let message1 = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Say 'one'".to_string())])
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let request1 = GenerateRequest::builder()
         .messages(vec![message1])
         .max_tokens(10u32)
         .model("gemini-2.5-flash-lite".to_string())
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let response1 = client.generate(&request1).await?;
     assert!(!response1.outputs().is_empty());
@@ -183,15 +173,13 @@ async fn test_multiple_model_requests() -> BotticelliResult<()> {
     let message2 = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Say 'two'".to_string())])
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let request2 = GenerateRequest::builder()
         .messages(vec![message2])
         .max_tokens(10u32)
         .model("gemini-2.5-flash".to_string())
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let response2 = client.generate(&request2).await?;
     assert!(!response2.outputs().is_empty());
@@ -200,15 +188,13 @@ async fn test_multiple_model_requests() -> BotticelliResult<()> {
     let message3 = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Say 'three'".to_string())])
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let request3 = GenerateRequest::builder()
         .messages(vec![message3])
         .max_tokens(10u32)
         .model("gemini-2.5-pro".to_string())
-        .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+        .build()?;
 
     let response3 = client.generate(&request3).await?;
     assert!(!response3.outputs().is_empty());

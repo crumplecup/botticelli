@@ -1,8 +1,8 @@
 //! Generic client for OpenAI-compatible APIs.
 
-use botticelli_error::{OpenAIError, OpenAIErrorKind};
 use crate::openai::{ChatRequest, ChatResponse, conversions};
 use botticelli_core::{GenerateRequest, GenerateResponse};
+use botticelli_error::{OpenAIError, OpenAIErrorKind};
 use botticelli_rate_limit::RateLimitConfig;
 use derive_getters::Getters;
 use reqwest::Client;
@@ -38,12 +38,7 @@ impl OpenAIibleClient {
     /// * `base_url` - Base URL for the API endpoint
     /// * `provider_name` - Name of the provider (for logging/tracing)
     #[instrument(skip(api_key), fields(provider = %provider_name, model = %model))]
-    pub fn new(
-        api_key: String,
-        model: String,
-        base_url: String,
-        provider_name: String,
-    ) -> Self {
+    pub fn new(api_key: String, model: String, base_url: String, provider_name: String) -> Self {
         let client = Client::new();
         let rate_limits = RateLimitConfig::unlimited(&provider_name);
 
@@ -70,16 +65,11 @@ impl OpenAIibleClient {
     ///
     /// Returns an error if the request fails or the response cannot be parsed.
     #[instrument(skip(self, req), fields(provider = self.provider_name, model = %self.model))]
-    pub async fn generate(
-        &self,
-        req: &GenerateRequest,
-    ) -> Result<GenerateResponse, OpenAIError> {
+    pub async fn generate(&self, req: &GenerateRequest) -> Result<GenerateResponse, OpenAIError> {
         let chat_request = conversions::to_chat_request(req, &self.model)?;
         let chat_response = self.generate_internal(&chat_request).await?;
         conversions::from_chat_response(&chat_response)
     }
-
-
 
     /// Internal method to send a ChatRequest and get ChatResponse.
     ///
@@ -121,7 +111,8 @@ impl OpenAIibleClient {
             return Err(OpenAIErrorKind::Api {
                 status: status.as_u16(),
                 message: error_text,
-            }.into());
+            }
+            .into());
         }
 
         let chat_response: ChatResponse = response.json().await.map_err(|e| {

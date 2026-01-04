@@ -24,7 +24,10 @@ fn test_anthropic_capabilities() {
     assert!(caps.vision(), "Anthropic should support vision");
     assert!(!caps.audio(), "Anthropic should not support audio");
     assert!(!caps.video(), "Anthropic should not support video");
-    assert!(!caps.embeddings(), "Anthropic should not support embeddings");
+    assert!(
+        !caps.embeddings(),
+        "Anthropic should not support embeddings"
+    );
     assert!(caps.json_mode(), "Anthropic should support JSON mode");
     assert!(
         !caps.batch_generation(),
@@ -34,25 +37,25 @@ fn test_anthropic_capabilities() {
 
 #[test]
 #[cfg(feature = "gemini")]
-fn test_gemini_capabilities() -> botticelli_error::BotticelliResult<()> {
+fn test_gemini_capabilities() -> anyhow::Result<()> {
     // Load .env
     let _ = dotenvy::dotenv();
-    
-    // Skip test if GEMINI_API_KEY is not set
-    if std::env::var("GEMINI_API_KEY").is_err() {
-        eprintln!("Skipping test_gemini_capabilities: GEMINI_API_KEY not set");
-        return Ok(());
-    }
 
     let client = GeminiClient::new()?;
     let caps = client.capabilities();
 
     assert!(caps.supports_streaming(), "Gemini should support streaming");
-    assert!(caps.supports_tool_calling(), "Gemini should support tool calling");
+    assert!(
+        caps.supports_tool_calling(),
+        "Gemini should support tool calling"
+    );
     assert!(caps.supports_vision(), "Gemini should support vision");
     assert!(caps.supports_audio(), "Gemini should support audio");
     assert!(caps.supports_video(), "Gemini should support video");
-    assert!(!caps.supports_embeddings(), "Gemini should not support embeddings");
+    assert!(
+        !caps.supports_embeddings(),
+        "Gemini should not support embeddings"
+    );
     assert!(caps.supports_json_mode(), "Gemini should support JSON mode");
     assert!(
         !caps.supports_batch(),
@@ -68,7 +71,10 @@ fn test_ollama_capabilities() -> Result<(), botticelli_error::ModelsError> {
     let caps = client.capabilities();
 
     assert!(caps.streaming(), "Ollama should support streaming");
-    assert!(!caps.tool_calling(), "Ollama should not support tool calling");
+    assert!(
+        !caps.tool_calling(),
+        "Ollama should not support tool calling"
+    );
     assert!(!caps.vision(), "Ollama should not support vision");
     assert!(!caps.audio(), "Ollama should not support audio");
     assert!(!caps.video(), "Ollama should not support video");
@@ -88,7 +94,10 @@ fn test_groq_capabilities() -> Result<(), botticelli_error::ModelsError> {
     let caps = client.capabilities();
 
     assert!(!caps.streaming(), "Groq does not support real streaming");
-    assert!(caps.tool_calling(), "Groq supports tool calling via OpenAI-compatible API");
+    assert!(
+        caps.tool_calling(),
+        "Groq supports tool calling via OpenAI-compatible API"
+    );
     assert!(!caps.vision(), "Groq should not support vision");
     assert!(!caps.audio(), "Groq should not support audio");
     assert!(!caps.video(), "Groq should not support video");

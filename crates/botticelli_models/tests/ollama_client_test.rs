@@ -9,8 +9,8 @@
 #![cfg(feature = "ollama")]
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
-use botticelli_interface::BotticelliDriver;
 use botticelli_error::OllamaErrorKind;
+use botticelli_interface::BotticelliDriver;
 use botticelli_models::OllamaClient;
 
 #[tokio::test]

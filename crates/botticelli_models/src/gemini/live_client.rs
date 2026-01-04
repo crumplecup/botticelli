@@ -38,8 +38,8 @@ use tokio_tungstenite::{MaybeTlsStream, WebSocketStream, connect_async, tungsten
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use botticelli_core::Output;
-use botticelli_error::{GeminiError, GeminiErrorKind};
 use botticelli_core::{FinishReason, StreamChunk};
+use botticelli_error::{GeminiError, GeminiErrorKind};
 
 use super::{GeminiResult, live_protocol::*, live_rate_limit::LiveRateLimiter};
 
@@ -101,8 +101,7 @@ impl GeminiLiveClient {
     /// ```
     #[instrument(name = "gemini_live_client_new_with_rate_limit")]
     pub fn new_with_rate_limit(max_messages_per_minute: Option<u32>) -> GeminiResult<Self> {
-        let api_key = env::var("GEMINI_API_KEY")
-            .map_err(|_| GeminiErrorKind::MissingApiKey)?;
+        let api_key = env::var("GEMINI_API_KEY").map_err(|_| GeminiErrorKind::MissingApiKey)?;
 
         let rate_limiter = max_messages_per_minute.map(|rpm| Arc::new(LiveRateLimiter::new(rpm)));
 

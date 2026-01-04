@@ -15,5 +15,5 @@ mod token_counting;
 mod tool_calling;
 mod vision;
 
-pub use tiered::TieredGemini;
 pub use core::GeminiClient;
+pub use tiered::TieredGemini;

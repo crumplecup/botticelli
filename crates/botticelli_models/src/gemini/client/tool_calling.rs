@@ -1,11 +1,11 @@
 //! ToolCalling trait implementation for Gemini.
 
-use std::sync::Arc;
 use crate::GeminiClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse, Output, Role, ToolCall};
 use botticelli_error::{BotticelliError, GeminiError, GeminiErrorKind};
 use botticelli_interface::ToolCalling;
+use std::sync::Arc;
 use tracing::{debug, instrument};
 
 #[async_trait]
@@ -29,10 +29,10 @@ impl ToolCalling for GeminiClient {
 
         let start = std::time::Instant::now();
         let metrics = crate::LlmMetrics::get();
-        let model_name = request.model().as_ref().map_or_else(
-            || self.model_name(),
-            |s| s
-        );
+        let model_name = request
+            .model()
+            .as_ref()
+            .unwrap_or_else(|| self.model_name());
 
         metrics.requests().add(
             1,
@@ -56,7 +56,10 @@ impl ToolCalling for GeminiClient {
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| GeminiErrorKind::Serialization(Arc::new(e)))?;
         let gemini_tool = Tool::with_functions(function_declarations);
-        debug!(function_count = tools.len(), "Converted tools to Gemini format");
+        debug!(
+            function_count = tools.len(),
+            "Converted tools to Gemini format"
+        );
 
         // Get rate-limited client
         let rate_limited_client = self.get_or_create_client(model_name)?;
@@ -98,7 +101,9 @@ impl ToolCalling for GeminiClient {
                                 }
                             }
                             if Self::has_media(msg.content()) {
-                                return Err(GeminiError::new(GeminiErrorKind::MultimodalNotSupported));
+                                return Err(GeminiError::new(
+                                    GeminiErrorKind::MultimodalNotSupported,
+                                ));
                             }
                         }
                         Role::Assistant => {
@@ -134,7 +139,10 @@ impl ToolCalling for GeminiClient {
                 let function_calls = resp.function_calls();
 
                 let outputs = if !function_calls.is_empty() {
-                    debug!(call_count = function_calls.len(), "Response contains function calls");
+                    debug!(
+                        call_count = function_calls.len(),
+                        "Response contains function calls"
+                    );
                     let tool_calls: Vec<ToolCall> = function_calls
                         .iter()
                         .enumerate()

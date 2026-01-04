@@ -3,9 +3,9 @@ use std::sync::Arc;
 use crate::{
     AnthropicContentBlock, AnthropicMessage, AnthropicRequest, AnthropicResponse, AnthropicTool,
 };
+use botticelli_core::Capabilities;
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
 use botticelli_error::{AnthropicErrorKind, BotticelliError, ModelsError};
-use botticelli_core::Capabilities;
 use botticelli_interface::{BotticelliDriver, ToolCalling};
 use botticelli_rate_limit::RateLimitConfig;
 use reqwest::Client;
@@ -311,7 +311,10 @@ impl botticelli_interface::TokenCounting for AnthropicClient {
     }
 
     #[instrument(skip(self, req))]
-    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, botticelli_error::BotticelliError> {
+    fn count_request_tokens(
+        &self,
+        req: &GenerateRequest,
+    ) -> Result<usize, botticelli_error::BotticelliError> {
         let tokenizer = crate::claude_tokenizer()?;
         let mut total = 0;
         for msg in req.messages() {

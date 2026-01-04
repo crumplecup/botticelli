@@ -342,7 +342,7 @@ impl BotticelliConfig {
     pub fn from_file(path: impl AsRef<std::path::Path>) -> Result<Self, ConfigError> {
         debug!("Loading configuration from file");
 
-        Ok(Config::builder()
+        Config::builder()
             .add_source(File::from(path.as_ref()))
             .build()
             .map_err(|e| {
@@ -353,7 +353,7 @@ impl BotticelliConfig {
                 ))
             })?
             .try_deserialize::<Self>()
-            .map_err(|e| ConfigError::new(format!("Failed to parse configuration: {}", e)))?)
+            .map_err(|e| ConfigError::new(format!("Failed to parse configuration: {}", e)))
     }
 
     /// Load configuration with precedence: user override > bundled default.
@@ -400,11 +400,11 @@ impl BotticelliConfig {
         builder = builder.add_source(File::with_name("botticelli").required(false));
 
         // Build and deserialize
-        Ok(builder
+        builder
             .build()
             .map_err(|e| ConfigError::new(format!("Failed to build configuration: {}", e)))?
             .try_deserialize::<Self>()
-            .map_err(|e| ConfigError::new(format!("Failed to parse configuration: {}", e)))?)
+            .map_err(|e| ConfigError::new(format!("Failed to parse configuration: {}", e)))
     }
 
     /// Get tier configuration for a provider.

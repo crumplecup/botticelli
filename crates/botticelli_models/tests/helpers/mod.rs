@@ -1,7 +1,7 @@
 /// Test helper utilities for botticelli_models
 pub mod mock_gemini;
 
-pub use mock_gemini::*;
+pub use mock_gemini::create_test_request;
 
 /// Initialize environment for tests (load .env)
 pub fn init_test_env() {

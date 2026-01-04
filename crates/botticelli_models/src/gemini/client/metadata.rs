@@ -1,8 +1,8 @@
 //! Metadata trait implementation for Gemini client.
 
-use botticelli_interface::Metadata;
-use crate::GeminiModel;
 use super::GeminiClient;
+use crate::GeminiModel;
+use botticelli_interface::Metadata;
 
 impl Metadata for GeminiClient {
     type ModelMetadata = GeminiModel;

@@ -73,15 +73,13 @@ fn test_simple_text_request_structure() -> anyhow::Result<()> {
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Hello, world!".to_string())])
-        .build()
-        .expect("Valid message");
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .max_tokens(100u32)
         .temperature(0.7)
-        .build()
-        .expect("Valid request");
+        .build()?;
 
     assert_eq!(request.messages().len(), 1);
     assert_eq!(*request.max_tokens(), Some(100));
@@ -91,29 +89,28 @@ fn test_simple_text_request_structure() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_multi_message_request_structure() {
+fn test_multi_message_request_structure() -> anyhow::Result<()> {
     let message1 = Message::builder()
         .role(Role::System)
         .content(vec![Input::Text(
             "You are a helpful assistant.".to_string(),
         )])
-        .build()
-        .expect("Failed to build message");
+        .build()?;
 
     let message2 = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("What is Rust?".to_string())])
-        .build()
-        .expect("Failed to build message");
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message1, message2])
-        .build()
-        .expect("Failed to build request");
+        .build()?;
 
     assert_eq!(request.messages().len(), 2);
     assert_eq!(request.messages()[0].role(), &Role::System);
     assert_eq!(request.messages()[1].role(), &Role::User);
+
+    Ok(())
 }
 
 //
@@ -135,7 +132,7 @@ fn test_error_kind_comparison() {
     // Test that errors can be compared
     let error1 = GeminiError::new(GeminiErrorKind::MissingApiKey);
     let error2 = GeminiError::new(GeminiErrorKind::MissingApiKey);
-    
+
     // Both should have same kind
     assert!(format!("{}", error1.kind).contains("GEMINI_API_KEY"));
     assert!(format!("{}", error2.kind).contains("GEMINI_API_KEY"));
@@ -152,47 +149,30 @@ fn test_error_kind_comparison() {
 /// Note: This test requires the GEMINI_API_KEY environment variable to be set
 /// with a valid API key before running.
 #[test]
-#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
-fn test_real_api_call() {
-    // This test relies on GEMINI_API_KEY being set before the test runs
-    // Do not manipulate environment variables in the test itself
-    let client = match GeminiClient::new() {
-        Ok(c) => c,
-        Err(e) => {
-            panic!(
-                "Failed to create client. Ensure GEMINI_API_KEY is set: {}",
-                e
-            );
-        }
-    };
+#[cfg(feature = "api")]
+fn test_real_api_call() -> anyhow::Result<()> {
+    let client = GeminiClient::new()?;
 
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Say 'ok'".to_string())])
-        .build()
-        .expect("Failed to build message");
+        .build()?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .max_tokens(10u32)
         .temperature(0.0)
-        .build()
-        .expect("Failed to build request");
+        .build()?;
 
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let result = rt.block_on(async { client.generate(&request).await });
+    let rt = tokio::runtime::Runtime::new()?;
+    let response = rt.block_on(async { client.generate(&request).await })?;
 
-    assert!(
-        result.is_ok(),
-        "API call should succeed: {:?}",
-        result.err()
-    );
-
-    let response = result.unwrap();
     assert!(
         !response.outputs().is_empty(),
         "Should have at least one output"
     );
+
+    Ok(())
 }
 
 /// Test that verifies client creation behavior and consumes tokens.
@@ -200,29 +180,22 @@ fn test_real_api_call() {
 /// This test checks that client creation succeeds when GEMINI_API_KEY is set.
 /// Run with: `cargo test --features gemini -- --ignored`
 #[test]
-#[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
-fn test_client_creation() {
-    // Assumes GEMINI_API_KEY is already set in environment
-    let result = GeminiClient::new();
+#[cfg(feature = "api")]
+fn test_client_creation() -> Result<(), botticelli_error::BotticelliError> {
+    dotenvy::dotenv().ok();
 
-    match result {
-        Ok(client) => {
-            assert_eq!(client.provider_name(), "gemini");
-            assert_eq!(client.model_name(), "gemini-2.5-flash");
+    let client = GeminiClient::new()?;
 
-            // Test metadata
-            let metadata = client.metadata();
-            // Just verify we can access metadata - it's an enum variant
-            assert!(!format!("{}", metadata).is_empty());
+    assert_eq!(client.provider_name(), "gemini");
+    assert_eq!(client.model_name(), "gemini-2.5-flash");
 
-            // Test vision trait
-            assert_eq!(client.max_images_per_request(), 16);
-        }
-        Err(e) => {
-            panic!(
-                "Failed to create client. Set GEMINI_API_KEY before running: {}",
-                e
-            );
-        }
-    }
+    // Test metadata
+    let metadata = client.metadata();
+    // Just verify we can access metadata - it's an enum variant
+    assert!(!format!("{}", metadata).is_empty());
+
+    // Test vision trait
+    assert_eq!(client.max_images_per_request(), 16);
+
+    Ok(())
 }

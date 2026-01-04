@@ -1,4 +1,3 @@
-
 /// Gemini model capabilities configuration.
 ///
 /// This struct describes what features a Gemini model supports.

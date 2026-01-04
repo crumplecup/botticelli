@@ -31,11 +31,11 @@ pub use capabilities::ModelCapabilities;
 pub use client::{GeminiClient, TieredGemini};
 pub use live_client::{GeminiLiveClient, LiveSession};
 pub use live_protocol::{
-    ClientContent, ClientContentMessage, FunctionCall, FunctionResponse, GenerationConfig, GenerationConfigBuilder, GoAway,
-    InlineData, InlineDataPart, LiveToolCall, LiveToolCallCancellation, MediaChunk, ModelTurn,
-    Part, RealtimeInput, RealtimeInputMessage, ServerContent, ServerMessage, SetupComplete,
-    SetupConfig, SetupMessage, SystemInstruction, TextPart, Tool, ToolResponse,
-    ToolResponseMessage, Turn, UsageMetadata,
+    ClientContent, ClientContentMessage, FunctionCall, FunctionResponse, GenerationConfig,
+    GenerationConfigBuilder, GoAway, InlineData, InlineDataPart, LiveToolCall,
+    LiveToolCallCancellation, MediaChunk, ModelTurn, Part, RealtimeInput, RealtimeInputMessage,
+    ServerContent, ServerMessage, SetupComplete, SetupConfig, SetupMessage, SystemInstruction,
+    TextPart, Tool, ToolResponse, ToolResponseMessage, Turn, UsageMetadata,
 };
 pub use live_rate_limit::LiveRateLimiter;
 

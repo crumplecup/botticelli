@@ -99,7 +99,9 @@ pub struct SetupConfig {
 }
 
 /// Generation configuration parameters.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters, Setters, derive_builder::Builder)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, Default, Getters, Setters, derive_builder::Builder,
+)]
 #[serde(rename_all = "camelCase")]
 #[builder(setter(into, strip_option), default)]
 #[setters(prefix = "with_")]

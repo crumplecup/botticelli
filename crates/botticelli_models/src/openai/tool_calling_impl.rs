@@ -2,7 +2,9 @@
 
 use crate::openai::{ChatFunctionDef, ChatTool, OpenAIibleClient, conversions};
 use async_trait::async_trait;
-use botticelli_core::{Capabilities, GenerateRequest, GenerateResponse, Output, ToolCall, ToolDefinition};
+use botticelli_core::{
+    Capabilities, GenerateRequest, GenerateResponse, Output, ToolCall, ToolDefinition,
+};
 use botticelli_error::{BotticelliError, BotticelliResult, OpenAIErrorKind};
 use botticelli_interface::{BotticelliDriver, ToolCalling};
 
@@ -69,14 +71,16 @@ impl ToolCalling for OpenAIibleClient {
         // Convert tools to OpenAI format
         let chat_tools: Vec<ChatTool> = tools
             .iter()
-            .map(|tool| ChatTool::new(
-                "function".to_string(),
-                ChatFunctionDef::new(
-                    tool.name().to_string(),
-                    tool.description().to_string(),
-                    tool.input_schema().clone(),
+            .map(|tool| {
+                ChatTool::new(
+                    "function".to_string(),
+                    ChatFunctionDef::new(
+                        tool.name().to_string(),
+                        tool.description().to_string(),
+                        tool.input_schema().clone(),
+                    ),
                 )
-            ))
+            })
             .collect();
 
         // Build request with tools

@@ -11,4 +11,3 @@ mod tool_calling_impl;
 
 pub use client::OpenAIibleClient;
 pub use dto::{ChatFunctionDef, ChatMessage, ChatRequest, ChatResponse, ChatTool};
-

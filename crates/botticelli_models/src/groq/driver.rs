@@ -2,9 +2,9 @@
 
 use crate::openai::OpenAIibleClient;
 use async_trait::async_trait;
+use botticelli_core::Capabilities;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliError, BotticelliResult, ModelsResult, OpenAIErrorKind};
-use botticelli_core::Capabilities;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
 use tracing::{debug, instrument};
@@ -47,8 +47,6 @@ impl GroqDriver {
 
         Ok(Self { inner })
     }
-
-
 }
 
 #[async_trait]
@@ -78,7 +76,7 @@ impl BotticelliDriver for GroqDriver {
 
     fn capabilities(&self) -> Capabilities {
         Capabilities::default()
-            .with_streaming(false)   // Groq doesn't have real streaming
+            .with_streaming(false) // Groq doesn't have real streaming
             .with_tool_calling(true) // Groq supports tool calling via OpenAI-compatible API
             .with_vision(false)
             .with_audio(false)
@@ -100,7 +98,10 @@ impl botticelli_interface::TokenCounting for GroqDriver {
     }
 
     #[instrument(skip(self, req))]
-    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, botticelli_error::BotticelliError> {
+    fn count_request_tokens(
+        &self,
+        req: &GenerateRequest,
+    ) -> Result<usize, botticelli_error::BotticelliError> {
         let tokenizer = crate::gpt_tokenizer()?;
         let mut total = 0;
         for msg in req.messages() {

@@ -158,4 +158,3 @@ pub struct ChatResponse {
     #[serde(default)]
     usage: Option<ChatUsage>,
 }
-

@@ -2,9 +2,9 @@
 
 use crate::openai::OpenAIibleClient;
 use async_trait::async_trait;
+use botticelli_core::Capabilities;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliResult, ModelsResult, OpenAIErrorKind};
-use botticelli_core::Capabilities;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
 use std::sync::Arc;
@@ -48,8 +48,6 @@ impl HuggingFaceDriver {
 
         Ok(Self { inner })
     }
-
-
 }
 
 #[async_trait]
@@ -101,7 +99,10 @@ impl botticelli_interface::TokenCounting for HuggingFaceDriver {
     }
 
     #[instrument(skip(self, req))]
-    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, botticelli_error::BotticelliError> {
+    fn count_request_tokens(
+        &self,
+        req: &GenerateRequest,
+    ) -> Result<usize, botticelli_error::BotticelliError> {
         let tokenizer = crate::gpt_tokenizer()?;
         let mut total = 0;
         for msg in req.messages() {

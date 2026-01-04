@@ -126,9 +126,9 @@ async fn test_live_api_empty_message() {
     let client = GeminiLiveClient::new().expect("Failed to create client");
 
     let config = GenerationConfigBuilder::default()
-            .max_output_tokens(10)
-            .build()
-            .expect("Valid config");
+        .max_output_tokens(10)
+        .build()
+        .expect("Valid config");
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
@@ -159,9 +159,9 @@ async fn test_live_api_very_long_message() {
     let client = GeminiLiveClient::new().expect("Failed to create client");
 
     let config = GenerationConfigBuilder::default()
-            .max_output_tokens(10)
-            .build()
-            .expect("Valid config");
+        .max_output_tokens(10)
+        .build()
+        .expect("Valid config");
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
