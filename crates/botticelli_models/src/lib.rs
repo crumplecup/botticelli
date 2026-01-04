@@ -73,7 +73,7 @@ pub use token_counting::{claude_tokenizer, count_tokens_tiktoken, gpt_tokenizer}
 #[cfg(feature = "gemini")]
 pub use gemini::{
     ClientContent, ClientContentMessage, FunctionCall, FunctionResponse, GeminiClient,
-    GeminiLiveClient, GenerationConfig, GoAway, InlineData, InlineDataPart, LiveRateLimiter,
+    GeminiLiveClient, GenerationConfig, GenerationConfigBuilder, GoAway, InlineData, InlineDataPart, LiveRateLimiter,
     LiveSession, LiveToolCall, LiveToolCallCancellation, MediaChunk, ModelCapabilities, ModelTurn, Part,
     RealtimeInput, RealtimeInputMessage, ServerContent, ServerMessage, SetupComplete, SetupConfig,
     SetupMessage, SystemInstruction, TextPart, TieredGemini, Tool, ToolResponse,

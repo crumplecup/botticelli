@@ -31,7 +31,7 @@ pub use capabilities::ModelCapabilities;
 pub use client::{GeminiClient, TieredGemini};
 pub use live_client::{GeminiLiveClient, LiveSession};
 pub use live_protocol::{
-    ClientContent, ClientContentMessage, FunctionCall, FunctionResponse, GenerationConfig, GoAway,
+    ClientContent, ClientContentMessage, FunctionCall, FunctionResponse, GenerationConfig, GenerationConfigBuilder, GoAway,
     InlineData, InlineDataPart, LiveToolCall, LiveToolCallCancellation, MediaChunk, ModelTurn,
     Part, RealtimeInput, RealtimeInputMessage, ServerContent, ServerMessage, SetupComplete,
     SetupConfig, SetupMessage, SystemInstruction, TextPart, Tool, ToolResponse,

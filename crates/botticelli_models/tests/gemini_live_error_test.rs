@@ -18,7 +18,7 @@ mod test_utils;
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
 use botticelli_interface::{BotticelliDriver, Streaming};
-use botticelli_models::{GeminiClient, GeminiLiveClient, GenerationConfig, LiveRateLimiter};
+use botticelli_models::{GeminiClient, GeminiLiveClient, GenerationConfig, GenerationConfigBuilder, LiveRateLimiter};
 use futures_util::StreamExt;
 use std::time::Instant;
 
@@ -64,7 +64,7 @@ async fn test_live_api_rate_limiting() {
     let client = GeminiLiveClient::new_with_rate_limit(Some(2)).expect("Failed to create client");
 
     let config = GenerationConfigBuilder::default()
-        .max_output_tokens(Some(5))
+        .max_output_tokens(5)
         .build()
         .expect("Valid config");
 
@@ -126,10 +126,9 @@ async fn test_live_api_empty_message() {
     let client = GeminiLiveClient::new().expect("Failed to create client");
 
     let config = GenerationConfigBuilder::default()
-            .max_output_tokens(Some(10))
+            .max_output_tokens(10)
             .build()
-    .expect("Valid config")
-    };
+            .expect("Valid config");
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
@@ -160,10 +159,9 @@ async fn test_live_api_very_long_message() {
     let client = GeminiLiveClient::new().expect("Failed to create client");
 
     let config = GenerationConfigBuilder::default()
-            .max_output_tokens(Some(10))
+            .max_output_tokens(10)
             .build()
-    .expect("Valid config")
-    };
+            .expect("Valid config");
 
     let mut session = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)

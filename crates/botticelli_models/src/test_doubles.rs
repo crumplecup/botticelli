@@ -3,14 +3,14 @@
 //! Provides configurable test implementations of model clients for unit testing.
 
 use async_trait::async_trait;
-use botticelli_core::{Capabilities, GenerateRequest, GenerateResponse, Message, Output, Role, StopReason};
-use botticelli_error::{BotticelliResult, ModelsError, ModelsErrorKind};
+use botticelli_core::{Capabilities, GenerateRequest, GenerateResponse, Output, StopReason};
+use botticelli_error::ModelsError;
 use botticelli_interface::{BotticelliDriver, Metadata, Streaming, TokenCounting};
 use futures::stream::{self, BoxStream};
 use std::sync::{Arc, Mutex};
 
 /// Test metadata implementation.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_getters::Getters)]
 pub struct TestMetadata {
     model_name: String,
     provider_name: String,
@@ -132,16 +132,10 @@ impl BotticelliDriver for TestDriver {
     }
 
     fn capabilities(&self) -> Self::Capabilities {
-        Capabilities::new(
-            true,  // streaming
-            true,  // tool_calling
-            true,  // vision
-            false, // audio
-            false, // video
-            false, // embeddings
-            false, // json_mode
-            false, // batch_generation
-        )
+        Capabilities::default()
+            .with_streaming(true)
+            .with_tool_calling(true)
+            .with_vision(true)
     }
 
     fn rate_limits(&self) -> &Self::RateLimitConfig {
@@ -187,7 +181,5 @@ impl TokenCounting for TestDriver {
             .map(|m| m.content().iter().map(|i| format!("{:?}", i).len()).sum::<usize>())
             .sum();
         Ok(total_chars / 4)
-    }
-}
     }
 }

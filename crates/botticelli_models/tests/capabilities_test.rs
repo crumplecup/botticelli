@@ -34,14 +34,14 @@ fn test_anthropic_capabilities() {
 
 #[test]
 #[cfg(feature = "gemini")]
-fn test_gemini_capabilities() {
+fn test_gemini_capabilities() -> botticelli_error::BotticelliResult<()> {
     // Skip test if GEMINI_API_KEY is not set
     if std::env::var("GEMINI_API_KEY").is_err() {
         eprintln!("Skipping test_gemini_capabilities: GEMINI_API_KEY not set");
-        return;
+        return Ok(());
     }
 
-    let client = GeminiClient::new().expect("Failed to create GeminiClient");
+    let client = GeminiClient::new()?;
     let caps = client.capabilities();
 
     assert!(caps.supports_streaming(), "Gemini should support streaming");
@@ -55,12 +55,13 @@ fn test_gemini_capabilities() {
         !caps.supports_batch(),
         "Gemini should not support batch generation"
     );
+    Ok(())
 }
 
 #[test]
 #[cfg(feature = "ollama")]
-fn test_ollama_capabilities() {
-    let client = OllamaClient::new("llama2").expect("Failed to create OllamaClient");
+fn test_ollama_capabilities() -> Result<(), botticelli_error::ModelsError> {
+    let client = OllamaClient::new("llama2")?;
     let caps = client.capabilities();
 
     assert!(caps.streaming(), "Ollama should support streaming");
@@ -74,13 +75,13 @@ fn test_ollama_capabilities() {
         !caps.batch_generation(),
         "Ollama should not support batch generation"
     );
+    Ok(())
 }
 
 #[test]
 #[cfg(feature = "groq")]
-fn test_groq_capabilities() {
-    let client = GroqDriver::with_api_key("test-key".to_string(), "llama3-8b-8192".to_string())
-        .expect("Failed to create GroqDriver");
+fn test_groq_capabilities() -> Result<(), botticelli_error::ModelsError> {
+    let client = GroqDriver::with_api_key("test-key".to_string(), "llama3-8b-8192".to_string())?;
     let caps = client.capabilities();
 
     assert!(!caps.streaming(), "Groq does not support real streaming");
@@ -94,16 +95,16 @@ fn test_groq_capabilities() {
         !caps.batch_generation(),
         "Groq should not support batch generation"
     );
+    Ok(())
 }
 
 #[test]
 #[cfg(feature = "huggingface")]
-fn test_huggingface_capabilities() {
+fn test_huggingface_capabilities() -> Result<(), botticelli_error::ModelsError> {
     let client = HuggingFaceDriver::with_api_token(
         "test-key".to_string(),
         "meta-llama/Llama-2-7b-chat-hf".to_string(),
-    )
-    .expect("Failed to create HuggingFaceDriver");
+    )?;
     let caps = client.capabilities();
 
     assert!(
@@ -126,4 +127,5 @@ fn test_huggingface_capabilities() {
         !caps.batch_generation(),
         "HuggingFace should not support batch generation"
     );
+    Ok(())
 }
