@@ -7,6 +7,7 @@ use botticelli_error::{BotticelliResult, HuggingFaceErrorKind, ModelsError, Mode
 use botticelli_core::Capabilities;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
+use std::sync::Arc;
 use tracing::{debug, instrument};
 
 /// HuggingFace Inference API driver.
@@ -25,11 +26,8 @@ impl HuggingFaceDriver {
     /// Returns error if API token is not set.
     #[instrument(skip_all, fields(model = %model))]
     pub fn new(model: String) -> ModelsResult<Self> {
-        let api_token = std::env::var("HUGGINGFACE_API_KEY").map_err(|e| {
-            ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(
-                HuggingFaceErrorKind::InvalidRequest(format!("HUGGINGFACE_API_KEY not set: {}", e)),
-            ))
-        })?;
+        let api_token = std::env::var("HUGGINGFACE_API_KEY")
+            .map_err(|e| HuggingFaceErrorKind::EnvVar(Arc::new(e)))?;
 
         Self::with_api_token(api_token, model)
     }

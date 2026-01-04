@@ -125,11 +125,15 @@ impl AnthropicError {
 
 /// HuggingFace-specific error conditions.
 #[cfg(feature = "huggingface")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+#[derive(Debug, Clone, derive_more::Display)]
 pub enum HuggingFaceErrorKind {
     /// API error from HuggingFace
     #[display("API error: {}", _0)]
     Api(String),
+
+    /// Environment variable error
+    #[display("Environment variable error: {}", _0)]
+    EnvVar(Arc<std::env::VarError>),
 
     /// Rate limit exceeded
     #[display("Rate limit exceeded")]
@@ -150,6 +154,33 @@ pub enum HuggingFaceErrorKind {
     /// Response conversion failed
     #[display("Response conversion failed: {}", _0)]
     ResponseConversion(String),
+}
+
+/// HuggingFace error with location tracking.
+#[cfg(feature = "huggingface")]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[display("HuggingFace: {} at {}:{}", kind, file, line)]
+pub struct HuggingFaceError {
+    /// The specific error condition
+    pub kind: HuggingFaceErrorKind,
+    /// Line number where error occurred
+    pub line: u32,
+    /// Source file where error occurred
+    pub file: &'static str,
+}
+
+#[cfg(feature = "huggingface")]
+impl HuggingFaceError {
+    /// Create a new HuggingFace error.
+    #[track_caller]
+    pub fn new(kind: HuggingFaceErrorKind) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind,
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
 }
 
 /// Errors specific to Groq models.
@@ -319,6 +350,16 @@ impl From<AnthropicErrorKind> for ModelsError {
 }
 
 crate::impl_error_from_kind!(ModelsErrorKind => ModelsError);
+
+#[cfg(feature = "huggingface")]
+crate::impl_error_from_kind!(HuggingFaceErrorKind => HuggingFaceError);
+
+#[cfg(feature = "huggingface")]
+impl From<HuggingFaceErrorKind> for ModelsError {
+    fn from(kind: HuggingFaceErrorKind) -> Self {
+        ModelsError::new(ModelsErrorKind::HuggingFace(kind))
+    }
+}
 
 #[cfg(feature = "groq")]
 crate::impl_error_from_kind!(GroqErrorKind => GroqError);

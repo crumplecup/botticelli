@@ -49,8 +49,8 @@ impl GroqDriver {
     }
 
     /// Converts OpenAICompatError to Groq-specific error.
-    fn convert_error(error: OpenAICompatError) -> ModelsError {
-        let kind = match error {
+    fn convert_error(error: OpenAICompatError) -> GroqErrorKind {
+        match error {
             OpenAICompatError::Http(msg) => GroqErrorKind::Api(msg),
             OpenAICompatError::Api { status, message } => {
                 GroqErrorKind::Api(format!("API error {}: {}", status, message))
@@ -62,9 +62,7 @@ impl GroqDriver {
             OpenAICompatError::Builder(msg) => {
                 GroqErrorKind::RequestConversion(format!("Builder error: {}", msg))
             }
-        };
-
-        ModelsError::new(botticelli_error::ModelsErrorKind::Groq(kind))
+        }
     }
 }
 
@@ -81,7 +79,10 @@ impl BotticelliDriver for GroqDriver {
         self.inner
             .generate(req)
             .await
-            .map_err(|e| Self::convert_error(e).into())
+            .map_err(|e| {
+                let kind = Self::convert_error(e);
+                ModelsError::from(kind).into()
+            })
     }
 
     fn provider_name(&self) -> &'static str {
