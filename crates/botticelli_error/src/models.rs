@@ -111,9 +111,9 @@ pub enum AnthropicErrorKind {
     #[display("Model not found: {}", _0)]
     ModelNotFound(String),
 
-    /// Invalid Anthropic client configuration
-    #[display("Invalid configuration: {}", _0)]
-    InvalidConfiguration(String),
+    /// Environment variable error
+    #[display("Environment variable error: {}", _0)]
+    EnvVar(Arc<std::env::VarError>),
 
     /// Error converting between Anthropic and Botticelli types
     #[display("Conversion error: {}", _0)]

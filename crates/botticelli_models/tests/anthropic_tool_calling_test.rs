@@ -6,17 +6,18 @@
 #![cfg(feature = "anthropic")]
 
 use botticelli_core::{GenerateRequest, Input, Message, Role, ToolDefinition};
-use botticelli_error::BotticelliResult;
+use botticelli_error::{AnthropicErrorKind, ModelsError};
 use botticelli_interface::ToolCalling;
 use botticelli_models::AnthropicClient;
 use serde_json::json;
+use std::sync::Arc;
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
-async fn test_anthropic_tool_calling() -> BotticelliResult<()> {
+async fn test_anthropic_tool_calling() -> Result<(), ModelsError> {
     // Get API key from environment
     let api_key = std::env::var("ANTHROPIC_API_KEY")
-        .map_err(|e| botticelli_error::AnthropicErrorKind::InvalidConfiguration(format!("ANTHROPIC_API_KEY not set: {}", e)))?;
+        .map_err(|e| AnthropicErrorKind::EnvVar(Arc::new(e)))?;
 
     // Create client with latest Sonnet model
     let client = AnthropicClient::new(api_key, "claude-3-5-sonnet-20241022");
