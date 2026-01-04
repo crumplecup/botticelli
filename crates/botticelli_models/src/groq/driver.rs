@@ -1,6 +1,7 @@
 //! Groq AI LPU Inference API driver using OpenAI-compatible client.
 
-use crate::openai_compat::{OpenAICompatError, OpenAICompatibleClient};
+use botticelli_error::OpenAICompatError;
+use crate::openai_compat::OpenAICompatibleClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliError, BotticelliResult, GroqErrorKind, ModelsError, ModelsResult};
@@ -50,16 +51,18 @@ impl GroqDriver {
 
     /// Converts OpenAICompatError to Groq-specific error.
     fn convert_error(error: OpenAICompatError) -> GroqErrorKind {
-        match error {
-            OpenAICompatError::Http(msg) => GroqErrorKind::Api(msg),
-            OpenAICompatError::Api { status, message } => {
+        use botticelli_error::OpenAICompatErrorKind;
+        
+        match error.kind {
+            OpenAICompatErrorKind::Http(_) => GroqErrorKind::Api("HTTP error".to_string()),
+            OpenAICompatErrorKind::Api { status, ref message } => {
                 GroqErrorKind::Api(format!("API error {}: {}", status, message))
             }
-            OpenAICompatError::RateLimit => GroqErrorKind::RateLimit,
-            OpenAICompatError::ModelNotFound(model) => GroqErrorKind::ModelNotFound(model),
-            OpenAICompatError::InvalidRequest(msg) => GroqErrorKind::InvalidRequest(msg),
-            OpenAICompatError::ResponseParsing(msg) => GroqErrorKind::ResponseConversion(msg),
-            OpenAICompatError::Builder(msg) => {
+            OpenAICompatErrorKind::RateLimit => GroqErrorKind::RateLimit,
+            OpenAICompatErrorKind::ModelNotFound(ref model) => GroqErrorKind::ModelNotFound(model.clone()),
+            OpenAICompatErrorKind::InvalidRequest(ref msg) => GroqErrorKind::InvalidRequest(msg.clone()),
+            OpenAICompatErrorKind::ResponseParsing(_) => GroqErrorKind::ResponseConversion("Response parsing failed".to_string()),
+            OpenAICompatErrorKind::Builder(ref msg) => {
                 GroqErrorKind::RequestConversion(format!("Builder error: {}", msg))
             }
         }

@@ -48,6 +48,7 @@ mod mcp;
 #[cfg(feature = "models")]
 mod models;
 mod narrative;
+mod openai_compat;
 mod not_implemented;
 mod observability;
 mod provider;
@@ -89,6 +90,7 @@ pub use models::{ModelsError, ModelsErrorKind, ModelsResult};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
 pub use not_implemented::NotImplementedError;
 pub use observability::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};
+pub use openai_compat::{OpenAICompatError, OpenAICompatErrorKind};
 #[cfg(feature = "reqwest")]
 pub use provider::ProviderReqwestError;
 #[cfg(feature = "serde_json")]

@@ -1,6 +1,7 @@
 //! Generic client for OpenAI-compatible APIs.
 
-use crate::openai_compat::{ChatRequest, ChatResponse, OpenAICompatError, conversions};
+use botticelli_error::{OpenAICompatError, OpenAICompatErrorKind};
+use crate::openai_compat::{ChatRequest, ChatResponse, conversions};
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_rate_limit::RateLimitConfig;
 use derive_getters::Getters;
@@ -104,7 +105,7 @@ impl OpenAICompatibleClient {
             .await
             .map_err(|e| {
                 error!(provider = self.provider_name, error = ?e, "HTTP request failed");
-                OpenAICompatError::Http(format!("Request failed: {}", e))
+                OpenAICompatError::new(OpenAICompatErrorKind::Http(std::sync::Arc::new(e)))
             })?;
 
         let status = response.status();
@@ -117,15 +118,15 @@ impl OpenAICompatibleClient {
                 "API error"
             );
 
-            return Err(OpenAICompatError::Api {
+            return Err(OpenAICompatError::new(OpenAICompatErrorKind::Api {
                 status: status.as_u16(),
                 message: error_text,
-            });
+            }));
         }
 
         let chat_response: ChatResponse = response.json().await.map_err(|e| {
             error!(provider = self.provider_name, error = ?e, "Failed to parse response");
-            OpenAICompatError::ResponseParsing(format!("Failed to parse JSON: {}", e))
+            OpenAICompatError::new(OpenAICompatErrorKind::Http(std::sync::Arc::new(e)))
         })?;
 
         debug!(

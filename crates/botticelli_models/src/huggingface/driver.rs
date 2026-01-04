@@ -1,6 +1,7 @@
 //! HuggingFace Inference API driver using OpenAI-compatible client.
 
-use crate::openai_compat::{OpenAICompatError, OpenAICompatibleClient};
+use botticelli_error::OpenAICompatError;
+use crate::openai_compat::OpenAICompatibleClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliResult, HuggingFaceErrorKind, ModelsError, ModelsResult};
@@ -51,18 +52,20 @@ impl HuggingFaceDriver {
 
     /// Converts OpenAICompatError to HuggingFace-specific error.
     fn convert_error(error: OpenAICompatError) -> ModelsError {
-        let kind = match error {
-            OpenAICompatError::Http(msg) => HuggingFaceErrorKind::Api(msg),
-            OpenAICompatError::Api { status, message } => {
+        use botticelli_error::OpenAICompatErrorKind;
+        
+        let kind = match error.kind {
+            OpenAICompatErrorKind::Http(_) => HuggingFaceErrorKind::Api("HTTP error".to_string()),
+            OpenAICompatErrorKind::Api { status, ref message } => {
                 HuggingFaceErrorKind::Api(format!("API error {}: {}", status, message))
             }
-            OpenAICompatError::RateLimit => HuggingFaceErrorKind::RateLimit,
-            OpenAICompatError::ModelNotFound(model) => HuggingFaceErrorKind::ModelNotFound(model),
-            OpenAICompatError::InvalidRequest(msg) => HuggingFaceErrorKind::InvalidRequest(msg),
-            OpenAICompatError::ResponseParsing(msg) => {
-                HuggingFaceErrorKind::ResponseConversion(msg)
+            OpenAICompatErrorKind::RateLimit => HuggingFaceErrorKind::RateLimit,
+            OpenAICompatErrorKind::ModelNotFound(ref model) => HuggingFaceErrorKind::ModelNotFound(model.clone()),
+            OpenAICompatErrorKind::InvalidRequest(ref msg) => HuggingFaceErrorKind::InvalidRequest(msg.clone()),
+            OpenAICompatErrorKind::ResponseParsing(_) => {
+                HuggingFaceErrorKind::ResponseConversion("Response parsing failed".to_string())
             }
-            OpenAICompatError::Builder(msg) => {
+            OpenAICompatErrorKind::Builder(ref msg) => {
                 HuggingFaceErrorKind::RequestConversion(format!("Builder error: {}", msg))
             }
         };

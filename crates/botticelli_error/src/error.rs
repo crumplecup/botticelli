@@ -8,8 +8,8 @@ use crate::ModelsError;
 use crate::TuiError;
 use crate::{
     BackendError, BuilderError, ChatError, ConfigError, EnvError, GeminiError, HttpError, IoError,
-    JsonError, McpError, NarrativeError, NotImplementedError, ObservabilityError, ProviderError,
-    ServerError, StorageError, TokenCountingError,
+    JsonError, McpError, NarrativeError, NotImplementedError, ObservabilityError,
+    OpenAICompatError, ProviderError, ServerError, StorageError, TokenCountingError,
 };
 
 /// This is the foundation error enum. Additional variants will be added
@@ -92,6 +92,9 @@ pub enum BotticelliErrorKind {
     /// Rate limiting error
     #[from(crate::RateLimitError)]
     RateLimit(crate::RateLimitError),
+    /// OpenAI-compatible API error
+    #[from(OpenAICompatError)]
+    OpenAICompat(OpenAICompatError),
 }
 
 /// Botticelli error with kind discrimination.

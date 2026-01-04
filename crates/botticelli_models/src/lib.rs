@@ -50,11 +50,12 @@ pub use groq_model::GroqModel;
 pub use metrics::{LlmMetrics, classify_error};
 pub use model_family::ModelFamily;
 pub use model_selector::{ModelBounds, ModelId, ModelSelector, SelectionStrategy};
-pub use openai_compat::{
-    ChatMessage, ChatRequest, ChatResponse, OpenAICompatError, OpenAICompatibleClient,
-};
+pub use openai_compat::{ChatMessage, ChatRequest, ChatResponse, OpenAICompatibleClient};
 pub use rate_limit_detection::{RateLimitDetector, RateLimitStatus};
 pub use token_counting::{claude_tokenizer, count_tokens_tiktoken, gpt_tokenizer};
+
+// Re-export OpenAICompatError from error crate
+pub use botticelli_error::OpenAICompatError;
 
 #[cfg(feature = "gemini")]
 mod gemini;

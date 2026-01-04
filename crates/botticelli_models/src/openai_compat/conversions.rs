@@ -1,6 +1,7 @@
 //! Type conversions between Botticelli and OpenAI formats.
 
-use crate::openai_compat::{ChatMessage, ChatRequest, ChatResponse, OpenAICompatError};
+use botticelli_error::{OpenAICompatError, OpenAICompatErrorKind};
+use crate::openai_compat::{ChatMessage, ChatRequest, ChatResponse};
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output};
 
 /// Converts a Botticelli GenerateRequest to OpenAI chat format.
@@ -27,9 +28,9 @@ pub fn to_chat_request(
                     });
                 }
                 _ => {
-                    return Err(OpenAICompatError::InvalidRequest(
+                    return Err(OpenAICompatErrorKind::InvalidRequest(
                         "Only text inputs supported in OpenAI format".to_string(),
-                    ));
+                    ).into());
                 }
             }
         }
@@ -48,7 +49,7 @@ pub fn to_chat_request(
 
     builder
         .build()
-        .map_err(|e| OpenAICompatError::Builder(format!("Failed to build request: {}", e)))
+        .map_err(|e| OpenAICompatErrorKind::Builder(format!("Failed to build request: {}", e)).into())
 }
 
 /// Converts an OpenAI chat response to Botticelli GenerateResponse.
@@ -57,7 +58,9 @@ pub fn from_chat_response(response: &ChatResponse) -> Result<GenerateResponse, O
         .choices
         .first()
         .map(|choice| choice.message.content.clone())
-        .ok_or_else(|| OpenAICompatError::ResponseParsing("No choices in response".to_string()))?;
+        .ok_or_else(|| OpenAICompatErrorKind::InvalidRequest(
+            "No choices in response".to_string()
+        ))?;
 
     let output = Output::Text(content);
 
@@ -91,5 +94,5 @@ pub fn from_chat_response(response: &ChatResponse) -> Result<GenerateResponse, O
         .stop_reason(stop_reason)
         .usage(usage)
         .build()
-        .map_err(|e| OpenAICompatError::Builder(format!("Failed to build response: {}", e)))
+        .map_err(|e| OpenAICompatErrorKind::Builder(format!("Failed to build response: {}", e)).into())
 }
