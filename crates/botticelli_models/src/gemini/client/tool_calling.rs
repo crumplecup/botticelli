@@ -4,23 +4,21 @@ use std::sync::Arc;
 use crate::GeminiClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse, Output, Role, ToolCall};
-use botticelli_error::{GeminiError, GeminiErrorKind};
+use botticelli_error::{BotticelliError, GeminiError, GeminiErrorKind};
 use botticelli_interface::ToolCalling;
 use tracing::{debug, instrument};
 
-use crate::gemini::GeminiResult;
-
 #[async_trait]
 impl ToolCalling for GeminiClient {
+    type Error = BotticelliError;
     type ToolDefinition = botticelli_core::ToolDefinition;
-    type ToolResult = botticelli_core::ToolResult;
 
     #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
     async fn generate_with_tools(
         &self,
         request: &GenerateRequest,
         tools: &[botticelli_core::ToolDefinition],
-    ) -> GeminiResult<GenerateResponse> {
+    ) -> Result<GenerateResponse, BotticelliError> {
         use gemini_rust::{FunctionDeclaration, Tool};
 
         if tools.is_empty() {

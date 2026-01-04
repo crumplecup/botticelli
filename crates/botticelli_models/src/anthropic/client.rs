@@ -4,7 +4,7 @@ use crate::{
     AnthropicContentBlock, AnthropicMessage, AnthropicRequest, AnthropicResponse, AnthropicTool,
 };
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role};
-use botticelli_error::{AnthropicErrorKind, ModelsError};
+use botticelli_error::{AnthropicErrorKind, BotticelliError, ModelsError};
 use botticelli_core::Capabilities;
 use botticelli_interface::{BotticelliDriver, ToolCalling};
 use botticelli_rate_limit::RateLimitConfig;
@@ -188,8 +188,8 @@ impl BotticelliDriver for AnthropicClient {
 /// This makes the capability explicit and type-safe.
 #[async_trait::async_trait]
 impl botticelli_interface::ToolCalling for AnthropicClient {
+    type Error = BotticelliError;
     type ToolDefinition = botticelli_core::ToolDefinition;
-    type ToolResult = botticelli_core::ToolResult;
 
     #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
     async fn generate_with_tools(

@@ -47,8 +47,8 @@ impl BotticelliDriver for OpenAICompatibleClient {
 
 #[async_trait]
 impl ToolCalling for OpenAICompatibleClient {
+    type Error = BotticelliError;
     type ToolDefinition = ToolDefinition;
-    type ToolResult = botticelli_core::ToolResult;
 
     #[tracing::instrument(skip(self, request), fields(provider = self.provider_name(), model = self.model_name()))]
     async fn generate_with_tools(

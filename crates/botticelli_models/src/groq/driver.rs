@@ -3,7 +3,7 @@
 use crate::openai_compat::{OpenAICompatError, OpenAICompatibleClient};
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
-use botticelli_error::{BotticelliResult, GroqErrorKind, ModelsError, ModelsResult};
+use botticelli_error::{BotticelliError, BotticelliResult, GroqErrorKind, ModelsError, ModelsResult};
 use botticelli_core::Capabilities;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
@@ -137,8 +137,8 @@ impl botticelli_interface::TokenCounting for GroqDriver {
 
 #[async_trait]
 impl botticelli_interface::ToolCalling for GroqDriver {
+    type Error = BotticelliError;
     type ToolDefinition = botticelli_core::ToolDefinition;
-    type ToolResult = botticelli_core::ToolResult;
 
     #[instrument(skip(self, request, tools), fields(tool_count = tools.len()))]
     async fn generate_with_tools(
