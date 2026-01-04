@@ -3,7 +3,7 @@
 //! Provides file system access to narrative TOML files for MCP tool integration.
 
 use async_trait::async_trait;
-use botticelli_error::{BotticelliError, BotticelliResult, NarrativeError};
+use botticelli_error::NarrativeError;
 use botticelli_interface::NarrativeStorageOperations;
 use serde_json::Value;
 use std::path::PathBuf;

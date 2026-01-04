@@ -144,11 +144,7 @@ impl StateManager {
 
         let state: NarrativeState = serde_json::from_str(&contents).map_err(|e| {
             error!(path = %path.display(), error = %e, "Failed to parse state JSON");
-            JsonError::new(format!(
-                "Failed to parse state file '{}': {}",
-                path.display(),
-                e
-            ))
+            JsonError::from(e)
         })?;
 
         info!(keys = state.data.len(), "Loaded state successfully");
@@ -163,7 +159,7 @@ impl StateManager {
 
         let contents = serde_json::to_string_pretty(state).map_err(|e| {
             error!(error = %e, "Failed to serialize state");
-            JsonError::new(format!("Failed to serialize state: {}", e))
+            JsonError::from(e)
         })?;
 
         std::fs::write(&path, contents).map_err(|e| {

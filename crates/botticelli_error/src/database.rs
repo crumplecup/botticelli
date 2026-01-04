@@ -1,5 +1,8 @@
 //! Database error types.
 
+#[cfg(feature = "serde_json")]
+use crate::json::SerdeJsonError;
+
 /// Diesel-specific error with source tracking.
 #[cfg(feature = "database")]
 #[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
@@ -99,33 +102,6 @@ impl R2d2Error {
     /// Create a new R2d2Error with automatic location tracking.
     #[track_caller]
     pub fn new(err: r2d2::Error) -> Self {
-        let location = std::panic::Location::caller();
-        Self {
-            source: Box::new(err),
-            line: location.line(),
-            file: location.file(),
-        }
-    }
-}
-
-/// Serde JSON error with source tracking.
-#[cfg(feature = "serde_json")]
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
-#[display("Serde JSON error: {} at {}:{}", source, file, line)]
-pub struct SerdeJsonError {
-    /// The serde_json error source
-    source: Box<serde_json::Error>,
-    /// Line number where error was created
-    line: u32,
-    /// File where error was created
-    file: &'static str,
-}
-
-#[cfg(feature = "serde_json")]
-impl SerdeJsonError {
-    /// Create a new SerdeJsonError with automatic location tracking.
-    #[track_caller]
-    pub fn new(err: serde_json::Error) -> Self {
         let location = std::panic::Location::caller();
         Self {
             source: Box::new(err),

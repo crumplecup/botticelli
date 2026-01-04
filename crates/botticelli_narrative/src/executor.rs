@@ -13,6 +13,7 @@ use botticelli_error::{
     BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
 };
 use botticelli_interface::{BotticelliDriver, TableQueryRegistry};
+use botticelli_rate_limit::TierConfig;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::future::Future;
@@ -61,7 +62,7 @@ where
     D: BotticelliDriver<
             Request = GenerateRequest,
             Response = botticelli_core::GenerateResponse,
-            RateLimitConfig = botticelli_core::RateLimitConfig,
+            RateLimitConfig = TierConfig,
         >,
 {
     driver: D,
@@ -76,7 +77,7 @@ where
     D: BotticelliDriver<
             Request = GenerateRequest,
             Response = botticelli_core::GenerateResponse,
-            RateLimitConfig = botticelli_core::RateLimitConfig,
+            RateLimitConfig = TierConfig,
         >,
 {
     /// Create a new narrative executor with the given LLM driver.
@@ -899,7 +900,8 @@ where
         );
 
         // Create carousel state with budget
-        let mut state = CarouselState::new(carousel_config.clone(), *self.driver.rate_limits());
+        let rate_limit_config = botticelli_rate_limit::RateLimitConfig::from_tier(self.driver.rate_limits());
+        let mut state = CarouselState::new(carousel_config.clone(), rate_limit_config);
 
         let mut executions = Vec::new();
 

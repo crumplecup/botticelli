@@ -5,7 +5,7 @@
 
 use async_trait::async_trait;
 use botticelli_core::{ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution};
-use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_error::NarrativeError;
 use botticelli_interface::NarrativeRepository;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -149,14 +149,14 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
 
                 true
             })
-            .map(|stored| ExecutionSummary {
-                id: stored.id,
-                narrative_name: stored.narrative_name.clone(),
-                narrative_description: stored.narrative_description.clone(),
-                status: stored.status,
-                act_count: stored.execution.act_executions().len(),
-                error_message: stored.error_message.clone(),
-            })
+            .map(|stored| ExecutionSummary::new(
+                stored.id,
+                stored.narrative_name.clone(),
+                stored.narrative_description.clone(),
+                stored.status,
+                stored.execution.act_executions().len(),
+                stored.error_message.clone(),
+            ))
             .collect();
 
         // Sort by ID for consistent ordering
@@ -210,17 +210,17 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         _data: &[u8],
         _metadata: &Self::MediaMetadata,
     ) -> Result<Self::MediaReference, Self::Error> {
-        Err(botticelli_error::BotticelliError::from(
-            botticelli_error::NotImplementedError::new(
-                "Media storage not yet implemented for in-memory repository",
+        Err(NarrativeError::new(
+            botticelli_error::NarrativeErrorKind::SerializationError(
+                "Media storage not yet implemented for in-memory repository".to_string(),
             ),
         ))
     }
 
     async fn load_media(&self, _reference: &Self::MediaReference) -> Result<Vec<u8>, Self::Error> {
-        Err(botticelli_error::BotticelliError::from(
-            botticelli_error::NotImplementedError::new(
-                "Media loading not yet implemented for in-memory repository",
+        Err(NarrativeError::new(
+            botticelli_error::NarrativeErrorKind::SerializationError(
+                "Media loading not yet implemented for in-memory repository".to_string(),
             ),
         ))
     }

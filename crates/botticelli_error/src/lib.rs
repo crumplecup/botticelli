@@ -63,8 +63,6 @@ pub use backend::BackendError;
 pub use builder::{BuilderError, BuilderErrorKind};
 pub use chat::{ChatError, ChatErrorKind, ChatResult};
 pub use config::ConfigError;
-#[cfg(feature = "serde_json")]
-pub use database::SerdeJsonError;
 #[cfg(feature = "database")]
 pub use database::{DatabaseError, DatabaseErrorKind, DieselConnectionError, DieselError};
 pub use env::{EnvError, EnvErrorKind};
