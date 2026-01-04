@@ -60,6 +60,7 @@
 //! ```
 
 use derive_getters::Getters;
+use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 //
@@ -96,9 +97,10 @@ pub struct SetupConfig {
 }
 
 /// Generation configuration parameters.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters, Setters, derive_builder::Builder)]
 #[serde(rename_all = "camelCase")]
 #[builder(setter(into, strip_option), default)]
+#[setters(prefix = "with_")]
 pub struct GenerationConfig {
     /// Number of candidates to generate
     #[serde(skip_serializing_if = "Option::is_none")]

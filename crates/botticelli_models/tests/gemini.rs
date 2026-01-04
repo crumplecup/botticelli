@@ -32,7 +32,10 @@ fn test_gemini_error_kind_display() {
         ),
         (
             GeminiErrorKind::ClientCreation(std::sync::Arc::new(
-                gemini_rust::client::Error::new(anyhow::anyhow!("test error"))
+                gemini_rust::client::Error::Reqwest(reqwest::Error::new(
+                    reqwest::StatusCode::BAD_REQUEST,
+                    anyhow::anyhow!("test error")
+                ))
             )),
             "Failed to create Gemini client:",
         ),
@@ -143,8 +146,8 @@ fn test_error_kind_comparison() {
     let error2 = GeminiError::new(GeminiErrorKind::MissingApiKey);
     
     // Both should have same kind
-    assert!(format!("{}", error1.kind()).contains("GEMINI_API_KEY"));
-    assert!(format!("{}", error2.kind()).contains("GEMINI_API_KEY"));
+    assert!(format!("{}", error1.kind).contains("GEMINI_API_KEY"));
+    assert!(format!("{}", error2.kind).contains("GEMINI_API_KEY"));
 }
 
 //
@@ -219,7 +222,7 @@ fn test_client_creation() {
             // Test metadata
             let metadata = client.metadata();
             // Just verify we can access metadata
-            assert!(!metadata.model_name().is_empty());
+            assert!(!metadata.model().is_empty());
 
             // Test vision trait
             assert_eq!(client.max_images_per_request(), 16);

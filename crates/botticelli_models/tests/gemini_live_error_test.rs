@@ -63,10 +63,10 @@ async fn test_live_api_rate_limiting() {
     // Create client with very low rate limit (2 messages per minute)
     let client = GeminiLiveClient::new_with_rate_limit(Some(2)).expect("Failed to create client");
 
-    let config = GenerationConfig {
-        max_output_tokens: Some(5),
-        ..Default::default()
-    };
+    let config = GenerationConfigBuilder::default()
+        .max_output_tokens(Some(5))
+        .build()
+        .expect("Valid config");
 
     let start = Instant::now();
 
@@ -125,9 +125,10 @@ async fn test_live_api_empty_message() {
 
     let client = GeminiLiveClient::new().expect("Failed to create client");
 
-    let config = GenerationConfig {
-        max_output_tokens: Some(10),
-        ..Default::default()
+    let config = GenerationConfigBuilder::default()
+            .max_output_tokens(Some(10))
+            .build()
+    .expect("Valid config")
     };
 
     let mut session = client
@@ -158,9 +159,10 @@ async fn test_live_api_very_long_message() {
 
     let client = GeminiLiveClient::new().expect("Failed to create client");
 
-    let config = GenerationConfig {
-        max_output_tokens: Some(10),
-        ..Default::default()
+    let config = GenerationConfigBuilder::default()
+            .max_output_tokens(Some(10))
+            .build()
+    .expect("Valid config")
     };
 
     let mut session = client

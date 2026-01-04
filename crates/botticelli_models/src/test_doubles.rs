@@ -95,8 +95,12 @@ impl Default for TestDriver {
 #[async_trait]
 impl BotticelliDriver for TestDriver {
     type Error = ModelsError;
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type RateLimitConfig = ();
+    type Capabilities = Capabilities;
 
-    async fn generate(&self, _req: &GenerateRequest) -> Result<GenerateResponse, Self::Error> {
+    async fn generate(&self, _req: &Self::Request) -> Result<Self::Response, Self::Error> {
         let mut count = self.call_count.lock().unwrap();
         *count += 1;
 
@@ -127,7 +131,7 @@ impl BotticelliDriver for TestDriver {
         "test-model"
     }
 
-    fn capabilities(&self) -> Capabilities {
+    fn capabilities(&self) -> Self::Capabilities {
         Capabilities::new(
             true,  // streaming
             true,  // tool_calling
@@ -138,6 +142,10 @@ impl BotticelliDriver for TestDriver {
             false, // json_mode
             false, // batch_generation
         )
+    }
+
+    fn rate_limits(&self) -> &Self::RateLimitConfig {
+        &()
     }
 }
 
@@ -151,12 +159,12 @@ impl Metadata for TestDriver {
 
 #[async_trait]
 impl Streaming for TestDriver {
-    type Error = ModelsError;
+    type StreamChunk = GenerateResponse;
 
     async fn generate_stream(
         &self,
-        _req: &GenerateRequest,
-    ) -> Result<BoxStream<'static, Result<GenerateResponse, Self::Error>>, Self::Error> {
+        _req: &Self::Request,
+    ) -> Result<BoxStream<'static, Result<Self::StreamChunk, Self::Error>>, Self::Error> {
         let response = GenerateResponse::builder()
             .outputs(vec![Output::Text("streaming test".to_string())])
             .stop_reason(StopReason::EndTurn)
@@ -167,16 +175,19 @@ impl Streaming for TestDriver {
     }
 }
 
-#[async_trait]
 impl TokenCounting for TestDriver {
-    type Error = ModelsError;
-
-    async fn count_tokens(&self, messages: &[Message]) -> Result<usize, Self::Error> {
+    fn count_tokens(&self, text: &str) -> Result<usize, Self::Error> {
         // Simple approximation: 4 chars per token
-        let total_chars: usize = messages
+        Ok(text.len() / 4)
+    }
+
+    fn count_request_tokens(&self, req: &Self::Request) -> Result<usize, Self::Error> {
+        let total_chars: usize = req.messages()
             .iter()
             .map(|m| m.content().iter().map(|i| format!("{:?}", i).len()).sum::<usize>())
             .sum();
         Ok(total_chars / 4)
+    }
+}
     }
 }
