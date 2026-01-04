@@ -251,12 +251,7 @@ impl ModelsError {
 crate::impl_error_from_kind!(OllamaErrorKind => OllamaError);
 
 #[cfg(feature = "ollama")]
-impl From<OllamaErrorKind> for ModelsError {
-    #[track_caller]
-    fn from(kind: OllamaErrorKind) -> Self {
-        ModelsError::new(ModelsErrorKind::Ollama(kind))
-    }
-}
+crate::chain_error_kind!(OllamaErrorKind => ModelsErrorKind, Ollama);
 
 #[cfg(feature = "ollama")]
 impl From<OllamaError> for ModelsError {

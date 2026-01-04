@@ -99,3 +99,32 @@ macro_rules! impl_error_from_kind {
         }
     };
 }
+
+/// Creates a chained conversion from specific ErrorKind to parent ErrorKind variant.
+///
+/// This macro wraps a specific ErrorKind in a parent ErrorKind variant directly.
+///
+/// # Examples
+///
+/// ```ignore
+/// chain_error_kind!(OllamaErrorKind => ModelsErrorKind, Ollama);
+///
+/// // Generates:
+/// impl From<OllamaErrorKind> for ModelsErrorKind {
+///     #[track_caller]
+///     fn from(kind: OllamaErrorKind) -> Self {
+///         ModelsErrorKind::Ollama(kind)
+///     }
+/// }
+/// ```
+#[macro_export]
+macro_rules! chain_error_kind {
+    ($kind:ty => $parent_kind:path, $variant:ident) => {
+        impl From<$kind> for $parent_kind {
+            #[track_caller]
+            fn from(kind: $kind) -> Self {
+                <$parent_kind>::$variant(kind)
+            }
+        }
+    };
+}
