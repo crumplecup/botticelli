@@ -128,3 +128,29 @@ macro_rules! chain_error_kind {
         }
     };
 }
+
+/// Creates a full error conversion chain from specific ErrorKind through Error types to parent Error.
+///
+/// This macro handles the complete conversion path:
+/// SpecificErrorKind -> SpecificError -> ParentErrorKind -> ParentError
+///
+/// # Examples
+///
+/// ```ignore
+/// impl_chained_error_bridge!(OllamaErrorKind => OllamaError => ModelsErrorKind => ModelsError);
+///
+/// // Generates From<OllamaErrorKind> for ModelsError
+/// // that goes through OllamaError and ModelsErrorKind
+/// ```
+#[macro_export]
+macro_rules! impl_chained_error_bridge {
+    ($kind:ty => $error:ty => $parent_kind:path => $parent_error:ty) => {
+        impl From<$kind> for $parent_error {
+            #[track_caller]
+            fn from(kind: $kind) -> Self {
+                let error: $error = kind.into();
+                error.into()
+            }
+        }
+    };
+}

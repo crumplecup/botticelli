@@ -251,6 +251,9 @@ impl ModelsError {
 crate::impl_error_from_kind!(OllamaErrorKind => OllamaError);
 
 #[cfg(feature = "ollama")]
+crate::impl_chained_error_bridge!(OllamaErrorKind => OllamaError => ModelsErrorKind => ModelsError);
+
+#[cfg(feature = "ollama")]
 crate::chain_error_kind!(OllamaErrorKind => ModelsErrorKind, Ollama);
 
 #[cfg(feature = "ollama")]

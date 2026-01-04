@@ -140,9 +140,8 @@ impl BotticelliDriver for OllamaClient {
         let ollama_req = OllamaRequest::new(self.model_name.clone(), prompt);
 
         // Execute generation (no rate limiting needed for local)
-        let response = self.client.generate(ollama_req).await.map_err(|e| {
-            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e)))
-        })?;
+        let response = self.client.generate(ollama_req).await
+            .map_err(|e| OllamaErrorKind::ApiError(Arc::new(e)))?;
 
         debug!(
             response_length = response.response.len(),
