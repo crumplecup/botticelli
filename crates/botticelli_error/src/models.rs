@@ -162,7 +162,7 @@ impl AnthropicError {
 
 
 /// Model provider-specific error conditions.
-#[derive(Debug, Clone, derive_more::Display, derive_more::From)]
+#[derive(Debug, Clone, derive_more::Display)]
 pub enum ModelsErrorKind {
     /// Gemini-specific error
     #[display("Gemini: {}", _0)]
@@ -170,12 +170,12 @@ pub enum ModelsErrorKind {
 
     /// Builder error (derive_builder failures)
     #[display("Builder error: {}", _0)]
-    #[from(ignore)]
+
     Builder(String),
 
     /// Gemini client creation error
     #[display("Gemini client error: {}", _0)]
-    #[from(ignore)]
+
     #[cfg(feature = "models")]
     GeminiClient(std::sync::Arc<gemini_rust::client::Error>),
 
@@ -187,42 +187,42 @@ pub enum ModelsErrorKind {
     /// Anthropic-specific error (will be populated when anthropic feature is enabled)
     #[cfg(feature = "anthropic")]
     #[display("Anthropic: {}", _0)]
-    #[from(AnthropicErrorKind)]
+
     Anthropic(AnthropicErrorKind),
 
     /// OpenAI-compatible API error
     #[display("OpenAI Compatible: {}", _0)]
-    #[from(ignore)]
+
     OpenAI(crate::OpenAIErrorKind),
 
     /// Invalid role for message
     #[display("Invalid role: {}", _0)]
-    #[from(ignore)]
+
     InvalidRole(String),
 
     /// Token counting failed
     #[display("Token counting failed: {}", _0)]
-    #[from(ignore)]
+
     TokenCountingFailed(String),
 
     /// Tiktoken decode error
     #[display("Tiktoken decode error: {}", _0)]
-    #[from(ignore)]
+
     TiktokenDecode(String),
 
     /// Tiktoken decode key error (invalid token)
     #[display("Tiktoken decode key error: token {}", _0)]
-    #[from(ignore)]
+
     TiktokenDecodeKey(u32),
 
     /// Tiktoken initialization failed
     #[display("Tiktoken initialization failed: {}", _0)]
-    #[from(ignore)]
+
     Tiktoken(std::sync::Arc<anyhow::Error>),
 
     /// Serialization error (JSON encoding/decoding failures)
     #[display("Serialization error: {}", _0)]
-    #[from(ignore)]
+
     Serialization(std::sync::Arc<serde_json::Error>),
 }
 

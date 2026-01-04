@@ -8,6 +8,7 @@ use std::sync::Arc;
 pub enum OpenAIErrorKind {
     /// HTTP/network error
     #[display("HTTP error")]
+    #[cfg(feature = "models")]
     Http(Arc<reqwest::Error>),
 
     /// API returned an error
@@ -33,6 +34,7 @@ pub enum OpenAIErrorKind {
 
     /// Failed to parse response
     #[display("Response parsing failed")]
+    #[cfg(feature = "models")]
     ResponseParsing(Arc<serde_json::Error>),
 
     /// Builder error

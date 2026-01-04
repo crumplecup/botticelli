@@ -8,9 +8,11 @@ pub enum GeminiErrorKind {
     MissingApiKey,
     /// Failed to create Gemini client (captures gemini-rust error)
     #[display("Failed to create Gemini client: {}", _0)]
+    #[cfg(feature = "models")]
     ClientCreation(std::sync::Arc<gemini_rust::client::Error>),
     /// Gemini-rust library error (runtime errors)
     #[display("Gemini-rust error: {}", _0)]
+    #[cfg(feature = "models")]
     GeminiRust(std::sync::Arc<gemini_rust::client::Error>),
     /// Live API client not available
     #[display("Live API client not available: {}", _0)]
@@ -34,6 +36,7 @@ pub enum GeminiErrorKind {
     Base64Decode(String),
     /// WebSocket connection failed (captures tokio-tungstenite error)
     #[display("WebSocket connection failed: {}", _0)]
+    #[cfg(feature = "models")]
     WebSocketConnection(std::sync::Arc<tokio_tungstenite::tungstenite::Error>),
     /// WebSocket handshake failed (setup phase)
     #[display("WebSocket handshake failed: {}", _0)]
@@ -49,6 +52,7 @@ pub enum GeminiErrorKind {
     StreamInterrupted(String),
     /// Tungstenite websocket error (runtime errors)
     #[display("Tungstenite error: {}", _0)]
+    #[cfg(feature = "models")]
     Tungstenite(std::sync::Arc<tokio_tungstenite::tungstenite::Error>),
     /// Builder error (derive_builder failures)
     #[display("Builder error: {}", _0)]
@@ -61,6 +65,7 @@ pub enum GeminiErrorKind {
     InvalidModel(String),
     /// JSON serialization/deserialization failed
     #[display("Serialization error: {}", _0)]
+    #[cfg(feature = "models")]
     Serialization(std::sync::Arc<serde_json::Error>),
     /// Tiktoken encoding failed
     #[display("Tiktoken error: {}", _0)]
@@ -74,6 +79,7 @@ impl GeminiErrorKind {
             GeminiErrorKind::HttpError { status_code, .. } => {
                 matches!(*status_code, 408 | 429 | 500 | 502 | 503 | 504)
             }
+            #[cfg(feature = "models")]
             GeminiErrorKind::WebSocketConnection(_) => true,
             GeminiErrorKind::WebSocketHandshake(_) => true,
             GeminiErrorKind::StreamInterrupted(_) => true,
@@ -93,6 +99,7 @@ impl GeminiErrorKind {
                 408 => (2000, 4, 30),
                 _ => (2000, 5, 60),
             },
+            #[cfg(feature = "models")]
             GeminiErrorKind::WebSocketConnection(_) => (2000, 5, 60),
             GeminiErrorKind::WebSocketHandshake(_) => (2000, 5, 60),
             GeminiErrorKind::StreamInterrupted(_) => (1000, 3, 10),
