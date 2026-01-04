@@ -1,13 +1,13 @@
 //! ToolCalling implementation for OpenAI-compatible clients.
 
-use crate::openai_compat::{ChatFunctionDef, ChatTool, OpenAICompatibleClient, conversions};
+use crate::openai::{ChatFunctionDef, ChatTool, OpenAIibleClient, conversions};
 use async_trait::async_trait;
 use botticelli_core::{Capabilities, GenerateRequest, GenerateResponse, Output, ToolCall, ToolDefinition};
-use botticelli_error::{BotticelliError, BotticelliResult, OpenAICompatErrorKind};
+use botticelli_error::{BotticelliError, BotticelliResult, OpenAIErrorKind};
 use botticelli_interface::{BotticelliDriver, ToolCalling};
 
 #[async_trait]
-impl BotticelliDriver for OpenAICompatibleClient {
+impl BotticelliDriver for OpenAIibleClient {
     type Request = GenerateRequest;
     type Response = GenerateResponse;
     type Error = botticelli_error::BotticelliError;
@@ -44,7 +44,7 @@ impl BotticelliDriver for OpenAICompatibleClient {
 }
 
 #[async_trait]
-impl ToolCalling for OpenAICompatibleClient {
+impl ToolCalling for OpenAIibleClient {
     type Error = BotticelliError;
     type ToolDefinition = ToolDefinition;
 
@@ -83,7 +83,7 @@ impl ToolCalling for OpenAICompatibleClient {
         let chat_request_base = conversions::to_chat_request(request, self.model_name())?;
 
         // Add tools to request
-        let chat_request = crate::openai_compat::ChatRequest::builder()
+        let chat_request = crate::openai::ChatRequest::builder()
             .model(chat_request_base.model().to_string())
             .messages(chat_request_base.messages().clone())
             .max_tokens(*chat_request_base.max_tokens())
@@ -91,7 +91,7 @@ impl ToolCalling for OpenAICompatibleClient {
             .stream(*chat_request_base.stream())
             .tools(Some(chat_tools))
             .build()
-            .map_err(|e| OpenAICompatErrorKind::Builder(e.to_string()))?;
+            .map_err(|e| OpenAIErrorKind::Builder(e.to_string()))?;
 
         tracing::info!("Sending HTTP request to provider with tools");
 
@@ -129,7 +129,7 @@ impl ToolCalling for OpenAICompatibleClient {
                 .outputs(vec![Output::ToolCalls(parsed_calls)])
                 .stop_reason(botticelli_core::StopReason::ToolUse)
                 .build()
-                .map_err(|e| OpenAICompatErrorKind::Builder(e.to_string()))?)
+                .map_err(|e| OpenAIErrorKind::Builder(e.to_string()))?)
         } else {
             tracing::info!("Response contains text, no tool calls");
             // No tool calls, convert to text response

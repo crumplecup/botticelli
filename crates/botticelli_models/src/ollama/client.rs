@@ -239,7 +239,7 @@ impl botticelli_interface::Streaming for OllamaClient {
                             match chunk_result {
                                 Ok(chunk) => yield Ok(chunk),
                                 Err(e) => {
-                                    yield Err(botticelli_error::ModelsError::from(OllamaErrorKind::ConversionError(e.to_string())));
+                                    yield Err(OllamaErrorKind::ConversionError(e.to_string()).into());
                                     return;
                                 }
                             }

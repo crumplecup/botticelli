@@ -1,6 +1,6 @@
 //! LlmProvider implementation for OpenAI-compatible clients.
 
-use crate::openai_compat::OpenAICompatibleClient;
+use crate::openai::OpenAIibleClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::ProviderError;
@@ -8,7 +8,7 @@ use botticelli_interface::LlmProvider;
 use tracing::{debug, error, instrument};
 
 #[async_trait]
-impl LlmProvider for OpenAICompatibleClient {
+impl LlmProvider for OpenAIibleClient {
     type Request = GenerateRequest;
     type Response = GenerateResponse;
     type Error = ProviderError;

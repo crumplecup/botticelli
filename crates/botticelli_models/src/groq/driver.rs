@@ -1,9 +1,9 @@
 //! Groq AI LPU Inference API driver using OpenAI-compatible client.
 
-use crate::openai_compat::OpenAICompatibleClient;
+use crate::openai::OpenAIibleClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
-use botticelli_error::{BotticelliError, BotticelliResult, ModelsResult, OpenAICompatErrorKind};
+use botticelli_error::{BotticelliError, BotticelliResult, ModelsResult, OpenAIErrorKind};
 use botticelli_core::Capabilities;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
@@ -12,7 +12,7 @@ use tracing::{debug, instrument};
 /// Groq AI LPU Inference API driver.
 #[derive(Debug, Clone)]
 pub struct GroqDriver {
-    inner: OpenAICompatibleClient,
+    inner: OpenAIibleClient,
 }
 
 impl GroqDriver {
@@ -26,7 +26,7 @@ impl GroqDriver {
     #[instrument(skip_all, fields(model = %model))]
     pub fn new(model: String) -> ModelsResult<Self> {
         let api_key = std::env::var("GROQ_API_KEY")
-            .map_err(|e| OpenAICompatErrorKind::EnvVar(std::sync::Arc::new(e)))?;
+            .map_err(|e| OpenAIErrorKind::EnvVar(std::sync::Arc::new(e)))?;
 
         Self::with_api_key(api_key, model)
     }
@@ -38,7 +38,7 @@ impl GroqDriver {
     /// Returns error if client cannot be initialized.
     #[instrument(skip(api_key), fields(model = %model))]
     pub fn with_api_key(api_key: String, model: String) -> ModelsResult<Self> {
-        let inner = OpenAICompatibleClient::new(
+        let inner = OpenAIibleClient::new(
             api_key,
             model,
             "https://api.groq.com/openai/v1/chat/completions".to_string(),

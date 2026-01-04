@@ -1,9 +1,9 @@
 //! HuggingFace Inference API driver using OpenAI-compatible client.
 
-use crate::openai_compat::OpenAICompatibleClient;
+use crate::openai::OpenAIibleClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
-use botticelli_error::{BotticelliResult, ModelsResult, OpenAICompatErrorKind};
+use botticelli_error::{BotticelliResult, ModelsResult, OpenAIErrorKind};
 use botticelli_core::Capabilities;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
@@ -13,7 +13,7 @@ use tracing::{debug, instrument};
 /// HuggingFace Inference API driver.
 #[derive(Debug, Clone)]
 pub struct HuggingFaceDriver {
-    inner: OpenAICompatibleClient,
+    inner: OpenAIibleClient,
 }
 
 impl HuggingFaceDriver {
@@ -27,7 +27,7 @@ impl HuggingFaceDriver {
     #[instrument(skip_all, fields(model = %model))]
     pub fn new(model: String) -> ModelsResult<Self> {
         let api_token = std::env::var("HUGGINGFACE_API_KEY")
-            .map_err(|e| OpenAICompatErrorKind::EnvVar(Arc::new(e)))?;
+            .map_err(|e| OpenAIErrorKind::EnvVar(Arc::new(e)))?;
 
         Self::with_api_token(api_token, model)
     }
@@ -39,7 +39,7 @@ impl HuggingFaceDriver {
     /// Returns error if client cannot be initialized.
     #[instrument(skip(api_token), fields(model = %model))]
     pub fn with_api_token(api_token: String, model: String) -> ModelsResult<Self> {
-        let inner = OpenAICompatibleClient::new(
+        let inner = OpenAIibleClient::new(
             api_token,
             model,
             "https://router.huggingface.co/v1/chat/completions".to_string(),

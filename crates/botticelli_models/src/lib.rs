@@ -41,7 +41,7 @@ mod groq_model;
 mod metrics;
 mod model_family;
 mod model_selector;
-mod openai_compat;
+mod openai;
 mod rate_limit_detection;
 mod token_counting;
 
@@ -66,7 +66,7 @@ pub use groq_model::GroqModel;
 pub use metrics::{LlmMetrics, classify_error};
 pub use model_family::ModelFamily;
 pub use model_selector::{ModelBounds, ModelId, ModelSelector, SelectionStrategy};
-pub use openai_compat::{ChatMessage, ChatRequest, ChatResponse, OpenAICompatibleClient};
+pub use openai::{ChatMessage, ChatRequest, ChatResponse, OpenAIibleClient};
 pub use rate_limit_detection::{RateLimitDetector, RateLimitStatus};
 pub use token_counting::{claude_tokenizer, count_tokens_tiktoken, gpt_tokenizer};
 

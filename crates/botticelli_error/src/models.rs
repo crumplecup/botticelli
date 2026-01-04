@@ -193,7 +193,7 @@ pub enum ModelsErrorKind {
     /// OpenAI-compatible API error
     #[display("OpenAI Compatible: {}", _0)]
     #[from(ignore)]
-    OpenAICompat(crate::OpenAICompatErrorKind),
+    OpenAI(crate::OpenAIErrorKind),
 
     /// Invalid role for message
     #[display("Invalid role: {}", _0)]
@@ -286,11 +286,11 @@ impl From<AnthropicErrorKind> for ModelsError {
     }
 }
 
-// OpenAICompat error bridge
-impl From<crate::OpenAICompatErrorKind> for ModelsError {
+// OpenAI error bridge
+impl From<crate::OpenAIErrorKind> for ModelsError {
     #[track_caller]
-    fn from(kind: crate::OpenAICompatErrorKind) -> Self {
-        ModelsError::new(ModelsErrorKind::OpenAICompat(kind))
+    fn from(kind: crate::OpenAIErrorKind) -> Self {
+        ModelsError::new(ModelsErrorKind::OpenAI(kind))
     }
 }
 

@@ -50,7 +50,7 @@ mod models;
 mod narrative;
 mod not_implemented;
 mod observability;
-mod openai_compat;
+mod openai;
 mod provider;
 mod rate_limit;
 mod server;
@@ -85,7 +85,7 @@ pub use models::{OllamaError, OllamaErrorKind, OllamaResult};
 pub use narrative::{NarrativeError, NarrativeErrorKind};
 pub use not_implemented::NotImplementedError;
 pub use observability::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};
-pub use openai_compat::{OpenAICompatError, OpenAICompatErrorKind};
+pub use openai::{OpenAIError, OpenAIErrorKind};
 #[cfg(feature = "reqwest")]
 pub use provider::ProviderReqwestError;
 #[cfg(feature = "serde_json")]

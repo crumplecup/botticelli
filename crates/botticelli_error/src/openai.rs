@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 /// Specific error conditions for OpenAI-compatible APIs.
 #[derive(Debug, Clone, derive_more::Display)]
-pub enum OpenAICompatErrorKind {
+pub enum OpenAIErrorKind {
     /// HTTP/network error
     #[display("HTTP error")]
     Http(Arc<reqwest::Error>),
@@ -47,19 +47,19 @@ pub enum OpenAICompatErrorKind {
 /// OpenAI-compatible API error with source location tracking.
 #[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
 #[display("OpenAI Compat: {} at {}:{}", kind, file, line)]
-pub struct OpenAICompatError {
+pub struct OpenAIError {
     /// The specific error condition
-    pub kind: OpenAICompatErrorKind,
+    pub kind: OpenAIErrorKind,
     /// Line number where error occurred
     pub line: u32,
     /// Source file where error occurred
     pub file: &'static str,
 }
 
-impl OpenAICompatError {
+impl OpenAIError {
     /// Creates a new OpenAI-compatible error with source location tracking.
     #[track_caller]
-    pub fn new(kind: OpenAICompatErrorKind) -> Self {
+    pub fn new(kind: OpenAIErrorKind) -> Self {
         let loc = std::panic::Location::caller();
         Self {
             kind,
@@ -69,22 +69,22 @@ impl OpenAICompatError {
     }
 }
 
-impl From<String> for OpenAICompatError {
+impl From<String> for OpenAIError {
     #[track_caller]
     fn from(message: String) -> Self {
-        Self::new(OpenAICompatErrorKind::InvalidRequest(message))
+        Self::new(OpenAIErrorKind::InvalidRequest(message))
     }
 }
 
-impl From<&str> for OpenAICompatError {
+impl From<&str> for OpenAIError {
     #[track_caller]
     fn from(message: &str) -> Self {
-        Self::new(OpenAICompatErrorKind::InvalidRequest(message.to_string()))
+        Self::new(OpenAIErrorKind::InvalidRequest(message.to_string()))
     }
 }
 
 // Bridge macros for automatic conversion chain
-crate::impl_error_from_kind!(OpenAICompatErrorKind => OpenAICompatError);
-crate::bridge_error!(OpenAICompatErrorKind => OpenAICompatError => BotticelliErrorKind);
+crate::impl_error_from_kind!(OpenAIErrorKind => OpenAIError);
+crate::bridge_error!(OpenAIErrorKind => OpenAIError => BotticelliErrorKind);
 // Note: reqwest::Error and serde_json::Error already have From impls via HttpError and JsonError
 
