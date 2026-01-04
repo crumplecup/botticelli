@@ -208,7 +208,7 @@ fn test_client_creation() {
     match result {
         Ok(client) => {
             assert_eq!(client.provider_name(), "gemini");
-            assert_eq!(client.model_name(), "gemini-2.0-flash-lite");
+            assert_eq!(client.model_name(), "gemini-2.5-flash");
 
             // Test metadata
             let metadata = client.metadata();
