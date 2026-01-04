@@ -8,7 +8,8 @@ use ollama_rs::generation::completion::request::GenerationRequest as OllamaReque
 use super::conversion::{messages_to_prompt, response_to_output};
 use super::{OllamaErrorKind, OllamaResult};
 use botticelli_core::{Capabilities, FinishReason, GenerateRequest, GenerateResponse, StreamChunk};
-use botticelli_error::BotticelliResult;
+use botticelli_error::ModelsError;
+
 use botticelli_interface::BotticelliDriver;
 use tracing::{debug, info, instrument, warn};
 
@@ -109,7 +110,7 @@ impl OllamaClient {
                 self.client
                     .pull_model(self.model_name.clone(), false)
                     .await
-                    .map_err(|e| botticelli_error::OllamaError::from(OllamaErrorKind::ModelPullFailed(Arc::new(e))))?;
+                    .map_err(|e| OllamaErrorKind::ModelPullFailed(Arc::new(e)))?;
 
                 info!("Model pulled successfully");
                 Ok(())
@@ -122,12 +123,12 @@ impl OllamaClient {
 impl BotticelliDriver for OllamaClient {
     type Request = GenerateRequest;
     type Response = GenerateResponse;
-    type Error = botticelli_error::BotticelliError;
+    type Error = ModelsError;
     type RateLimitConfig = botticelli_rate_limit::RateLimitConfig;
     type Capabilities = Capabilities;
 
     #[instrument(skip(self, request))]
-    async fn generate(&self, request: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
+    async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, Self::Error> {
         debug!("Generating with Ollama");
 
         // Convert messages to prompt
@@ -154,9 +155,7 @@ impl BotticelliDriver for OllamaClient {
             .stop_reason(botticelli_core::StopReason::EndTurn)
             .build()
             .map_err(|e| {
-                botticelli_error::BotticelliError::from(botticelli_error::ModelsError::new(
-                    botticelli_error::ModelsErrorKind::Builder(e.to_string()),
-                ))
+                ModelsError::from(botticelli_error::OllamaError::from(OllamaErrorKind::Builder(e.to_string())))
             })
     }
 
@@ -197,13 +196,14 @@ impl botticelli_interface::Streaming for OllamaClient {
     async fn generate_stream(
         &self,
         request: &GenerateRequest,
-    ) -> BotticelliResult<
+    ) -> Result<
         std::pin::Pin<
             Box<
-                dyn futures_util::Stream<Item = BotticelliResult<StreamChunk>>
+                dyn futures_util::Stream<Item = Result<StreamChunk, ModelsError>>
                     + Send,
             >,
         >,
+        ModelsError,
     > {
         debug!("Starting streaming generation with Ollama");
 
@@ -245,14 +245,14 @@ impl botticelli_interface::Streaming for OllamaClient {
                             match chunk_result {
                                 Ok(chunk) => yield Ok(chunk),
                                 Err(e) => {
-                                    yield Err(botticelli_error::OllamaError::from(OllamaErrorKind::ConversionError(e.to_string())).into());
+                                    yield Err(botticelli_error::ModelsError::from(botticelli_error::OllamaError::from(OllamaErrorKind::ConversionError(e.to_string()))));
                                     return;
                                 }
                             }
                         }
                     }
                     Err(e) => {
-                        yield Err(botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e))).into());
+                        yield Err(botticelli_error::ModelsError::from(botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e)))));
                         return;
                     }
                 }
@@ -265,7 +265,7 @@ impl botticelli_interface::Streaming for OllamaClient {
 
 impl botticelli_interface::TokenCounting for OllamaClient {
     #[instrument(skip(self, text), fields(text_len = text.len()))]
-    fn count_tokens(&self, text: &str) -> Result<usize, botticelli_error::BotticelliError> {
+    fn count_tokens(&self, text: &str) -> Result<usize, ModelsError> {
         // Use tiktoken approximation for Ollama
         // Different models have different tokenizers, but this is a reasonable default
         let tokenizer = crate::gpt_tokenizer()?;
@@ -275,7 +275,7 @@ impl botticelli_interface::TokenCounting for OllamaClient {
     }
 
     #[instrument(skip(self, req))]
-    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, botticelli_error::BotticelliError> {
+    fn count_request_tokens(&self, req: &GenerateRequest) -> Result<usize, ModelsError> {
         let tokenizer = crate::gpt_tokenizer()?;
         let mut total = 0;
         for msg in req.messages() {
