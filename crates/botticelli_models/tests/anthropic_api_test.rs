@@ -49,7 +49,7 @@ async fn test_anthropic_with_temperature() -> Result<(), Box<dyn std::error::Err
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .temperature(Some(0.5))
+        .temperature(0.5)
         .build()?;
 
     let response = client.generate(&request).await?;

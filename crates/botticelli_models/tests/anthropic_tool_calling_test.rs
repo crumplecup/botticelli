@@ -12,7 +12,7 @@ use serde_json::json;
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
-async fn test_anthropic_tool_calling() {
+async fn test_anthropic_tool_calling() -> Result<(), Box<dyn std::error::Error>> {
     // Get API key from environment
     let api_key =
         std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set for API tests");
@@ -42,7 +42,10 @@ async fn test_anthropic_tool_calling() {
         vec![Input::Text("Use echo to say 'Hi'".to_string())],
     );
 
-    let request = GenerateRequest::new(vec![message]).with_max_tokens(Some(100)); // Minimal tokens to conserve rate limits
+    let request = GenerateRequest::builder()
+        .messages(vec![message])
+        .max_tokens(100u32)
+        .build()?; // Minimal tokens to conserve rate limits
 
     // Use ToolCalling trait - tools passed as explicit parameter
     let response = client
@@ -80,4 +83,6 @@ async fn test_anthropic_tool_calling() {
             }
         }
     }
+
+    Ok(())
 }
