@@ -71,14 +71,14 @@ impl ToolCalling for OpenAICompatibleClient {
         // Convert tools to OpenAI format
         let chat_tools: Vec<ChatTool> = tools
             .iter()
-            .map(|tool| ChatTool {
-                tool_type: "function".to_string(),
-                function: ChatFunctionDef {
-                    name: tool.name().to_string(),
-                    description: tool.description().to_string(),
-                    parameters: tool.input_schema().clone(),
-                },
-            })
+            .map(|tool| ChatTool::new(
+                "function".to_string(),
+                ChatFunctionDef::new(
+                    tool.name().to_string(),
+                    tool.description().to_string(),
+                    tool.input_schema().clone(),
+                )
+            ))
             .collect();
 
         // Build request with tools
@@ -110,16 +110,16 @@ impl ToolCalling for OpenAICompatibleClient {
         if let Some(tool_calls) = response
             .choices
             .first()
-            .and_then(|choice| choice.message.tool_calls.as_ref())
+            .and_then(|choice| choice.message.tool_calls().as_ref())
         {
             let parsed_calls: Vec<ToolCall> = tool_calls
                 .iter()
                 .map(|call| {
                     // Parse JSON string arguments
-                    let args: serde_json::Value = serde_json::from_str(&call.function.arguments)
+                    let args: serde_json::Value = serde_json::from_str(call.function().arguments())
                         .unwrap_or_else(|_| serde_json::json!({}));
 
-                    ToolCall::new(call.id.clone(), call.function.name.clone(), args)
+                    ToolCall::new(call.id().clone(), call.function().name().clone(), args)
                 })
                 .collect();
 

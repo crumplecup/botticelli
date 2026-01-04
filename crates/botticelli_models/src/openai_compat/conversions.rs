@@ -21,11 +21,11 @@ pub fn to_chat_request(
         for content in msg.content() {
             match content {
                 Input::Text(text) => {
-                    messages.push(ChatMessage {
-                        role: role.to_string(),
-                        content: text.clone(),
-                        tool_calls: None,
-                    });
+                    messages.push(ChatMessage::new(
+                        role.to_string(),
+                        text.clone(),
+                        None,
+                    ));
                 }
                 _ => {
                     return Err(OpenAICompatErrorKind::InvalidRequest(
@@ -57,7 +57,7 @@ pub fn from_chat_response(response: &ChatResponse) -> Result<GenerateResponse, O
     let content = response
         .choices
         .first()
-        .map(|choice| choice.message.content.clone())
+        .map(|choice| choice.message.content().clone())
         .ok_or_else(|| OpenAICompatErrorKind::InvalidRequest(
             "No choices in response".to_string()
         ))?;

@@ -5,57 +5,89 @@ use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
 /// A message in the OpenAI chat format.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 pub struct ChatMessage {
     /// Role: "system", "user", or "assistant"
-    pub role: String,
+    role: String,
     /// Message content
-    pub content: String,
+    content: String,
     /// Tool calls made by the assistant
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_calls: Option<Vec<ChatToolCall>>,
+    tool_calls: Option<Vec<ChatToolCall>>,
+}
+
+impl ChatMessage {
+    /// Creates a new ChatMessage.
+    pub fn new(role: String, content: String, tool_calls: Option<Vec<ChatToolCall>>) -> Self {
+        Self {
+            role,
+            content,
+            tool_calls,
+        }
+    }
 }
 
 /// Tool call in OpenAI format.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 pub struct ChatToolCall {
     /// Unique ID for this tool call
-    pub id: String,
+    id: String,
     /// Type (always "function" for now)
     #[serde(rename = "type")]
-    pub call_type: String,
+    call_type: String,
     /// Function call details
-    pub function: ChatFunction,
+    function: ChatFunction,
 }
 
 /// Function call details.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 pub struct ChatFunction {
     /// Function name
-    pub name: String,
+    name: String,
     /// Function arguments as JSON string
-    pub arguments: String,
+    arguments: String,
 }
 
 /// Tool definition in OpenAI format.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Getters)]
 pub struct ChatTool {
     /// Type (always "function")
     #[serde(rename = "type")]
-    pub tool_type: String,
+    tool_type: String,
     /// Function definition
-    pub function: ChatFunctionDef,
+    function: ChatFunctionDef,
+}
+
+impl ChatTool {
+    /// Creates a new ChatTool.
+    pub fn new(tool_type: String, function: ChatFunctionDef) -> Self {
+        Self {
+            tool_type,
+            function,
+        }
+    }
 }
 
 /// Function definition.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Getters)]
 pub struct ChatFunctionDef {
     /// Function name
-    pub name: String,
+    name: String,
     /// Function description
-    pub description: String,
+    description: String,
     /// Parameters schema
-    pub parameters: serde_json::Value,
+    parameters: serde_json::Value,
+}
+
+impl ChatFunctionDef {
+    /// Creates a new ChatFunctionDef.
+    pub fn new(name: String, description: String, parameters: serde_json::Value) -> Self {
+        Self {
+            name,
+            description,
+            parameters,
+        }
+    }
 }
 
 /// OpenAI chat completion request.
