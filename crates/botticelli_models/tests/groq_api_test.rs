@@ -8,7 +8,7 @@ use botticelli_models::GroqDriver;
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
 #[cfg(feature = "groq")]
-async fn test_groq_basic_generation() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_groq_basic_generation() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
     let driver = GroqDriver::new("llama-3.1-8b-instant".to_string())?;
@@ -37,7 +37,7 @@ async fn test_groq_basic_generation() -> Result<(), Box<dyn std::error::Error>> 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
 #[cfg(feature = "groq")]
-async fn test_groq_small_models() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_groq_small_models() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
     let models = vec!["llama-3.1-8b-instant", "llama-3.3-70b-versatile"];

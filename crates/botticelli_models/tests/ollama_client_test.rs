@@ -15,7 +15,7 @@ use botticelli_models::OllamaClient;
 
 #[tokio::test]
 #[ignore] // Requires Ollama running locally
-async fn test_ollama_basic_generation() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_ollama_basic_generation() -> anyhow::Result<()> {
     let client = OllamaClient::new("llama2")?;
 
     // Validate server and model
@@ -39,7 +39,7 @@ async fn test_ollama_basic_generation() -> Result<(), Box<dyn std::error::Error>
 
 #[tokio::test]
 #[ignore]
-async fn test_ollama_model_validation() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_ollama_model_validation() -> anyhow::Result<()> {
     let client = OllamaClient::new("nonexistent_model")?;
 
     // Should fail - model doesn't exist
@@ -54,7 +54,7 @@ async fn test_ollama_model_validation() -> Result<(), Box<dyn std::error::Error>
 
 #[tokio::test]
 #[ignore]
-async fn test_ollama_server_not_running() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_ollama_server_not_running() -> anyhow::Result<()> {
     // Use non-standard port where Ollama is unlikely to be running
     let client = OllamaClient::new_with_url("llama2", "http://localhost:11435")?;
 
@@ -69,7 +69,7 @@ async fn test_ollama_server_not_running() -> Result<(), Box<dyn std::error::Erro
 
 #[tokio::test]
 #[ignore]
-async fn test_ollama_multi_message_conversation() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_ollama_multi_message_conversation() -> anyhow::Result<()> {
     let client = OllamaClient::new("llama2")?;
 
     client.validate().await?;

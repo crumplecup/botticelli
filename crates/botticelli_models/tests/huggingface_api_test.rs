@@ -8,7 +8,7 @@ use botticelli_models::HuggingFaceDriver;
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
 #[cfg(feature = "huggingface")]
-async fn test_huggingface_basic_generation() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_huggingface_basic_generation() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
     let driver = HuggingFaceDriver::new("meta-llama/Llama-3.2-1B-Instruct".to_string())?;
@@ -37,7 +37,7 @@ async fn test_huggingface_basic_generation() -> Result<(), Box<dyn std::error::E
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
 #[cfg(feature = "huggingface")]
-async fn test_huggingface_small_models() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_huggingface_small_models() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
     let models = vec![
