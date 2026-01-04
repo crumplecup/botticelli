@@ -109,9 +109,7 @@ impl OllamaClient {
                 self.client
                     .pull_model(self.model_name.clone(), false)
                     .await
-                    .map_err(|e| {
-                        botticelli_error::OllamaError::from(OllamaErrorKind::ModelPullFailed(Arc::new(e)))
-                    })?;
+                    .map_err(|e| botticelli_error::OllamaError::from(OllamaErrorKind::ModelPullFailed(Arc::new(e))))?;
 
                 info!("Model pulled successfully");
                 Ok(())
@@ -247,18 +245,14 @@ impl botticelli_interface::Streaming for OllamaClient {
                             match chunk_result {
                                 Ok(chunk) => yield Ok(chunk),
                                 Err(e) => {
-                                    yield Err(botticelli_error::BotticelliError::from(
-                                        botticelli_error::OllamaError::from(OllamaErrorKind::ConversionError(e.to_string()))
-                                    ));
+                                    yield Err(botticelli_error::OllamaError::from(OllamaErrorKind::ConversionError(e.to_string())).into());
                                     return;
                                 }
                             }
                         }
                     }
                     Err(e) => {
-                        yield Err(botticelli_error::BotticelliError::from(
-                            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e)))
-                        ));
+                        yield Err(botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e))).into());
                         return;
                     }
                 }
