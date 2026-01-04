@@ -133,7 +133,7 @@ impl MockGeminiClient {
     }
 
     /// Get the next response based on the configured behavior.
-    fn next_response(&self) -> BotticelliResult<GenerateResponse> {
+    fn next_response(&self) -> Result<GenerateResponse, ModelsError> {
         let mut count = self.call_count.lock().unwrap();
         let current_count = *count;
         *count += 1;
@@ -145,7 +145,7 @@ impl MockGeminiClient {
                 .build()
                 .expect("Valid response")),
             MockBehavior::Error(error_kind) => {
-                Err(BotticelliError::from(GeminiError::new(error_kind.clone())))
+                Err(ModelsError::from(GeminiError::new(error_kind.clone())))
             }
             MockBehavior::FailThenSucceed {
                 fail_count,
@@ -153,7 +153,7 @@ impl MockGeminiClient {
                 success_text,
             } => {
                 if current_count < *fail_count {
-                    Err(BotticelliError::from(GeminiError::new(error.clone())))
+                    Err(ModelsError::from(GeminiError::new(error.clone())))
                 } else {
                     Ok(GenerateResponse::builder()
                         .outputs(vec![Output::Text(success_text.clone())])
@@ -197,7 +197,7 @@ impl BotticelliDriver for MockGeminiClient {
     type RateLimitConfig = RateLimitConfig;
     type Capabilities = botticelli_models::ModelCapabilities;
 
-    async fn generate(&self, _req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
+    async fn generate(&self, _req: &GenerateRequest) -> Result<GenerateResponse, ModelsError> {
         // Small delay to simulate network latency (but keep it minimal for fast tests)
         tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
         self.next_response()
@@ -221,17 +221,10 @@ impl BotticelliDriver for MockGeminiClient {
 }
 
 impl Metadata for MockGeminiClient {
-    fn metadata(&self) -> ModelMetadata {
-        ModelMetadataBuilder::default()
-            .provider("mock-gemini")
-            .model(self.model_name.clone())
-            .max_input_tokens(1_048_576)
-            .max_output_tokens(8192)
-            .supports_streaming(true)
-            .supports_vision(true)
-            .supports_audio(true)
-            .supports_video(true)
-            .supports_documents(true)
+    type ModelMetadata = String;
+    fn metadata(&self) -> &String {
+        &self.model_name
+    }
             .supports_tool_use(true)
             .supports_json_mode(true)
             .supports_embeddings(false)
@@ -258,15 +251,15 @@ impl Vision for MockGeminiClient {
 #[async_trait]
 impl Streaming for MockGeminiClient {
     type StreamChunk = StreamChunk;
-    type Error = ModelsError;
 
     async fn generate_stream(
         &self,
         _req: &GenerateRequest,
-    ) -> BotticelliResult<
+    ) -> Result<
         std::pin::Pin<
-            Box<dyn futures_util::stream::Stream<Item = BotticelliResult<StreamChunk>> + Send>,
+            Box<dyn futures_util::stream::Stream<Item = Result<StreamChunk, ModelsError>> + Send>,
         >,
+        ModelsError,
     > {
         use futures_util::stream;
 

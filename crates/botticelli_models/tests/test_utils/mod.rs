@@ -31,7 +31,7 @@ pub fn create_test_request(
 
     GenerateRequest::builder()
         .messages(vec![message])
-        .model(model)
+        .model(model.unwrap_or_else(|| "gemini-1.5-flash".to_string()))
         .max_tokens(max_tokens)
         .build()
         .expect("Test request should be valid")
