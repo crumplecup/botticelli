@@ -27,6 +27,7 @@ pub(crate) fn builder_error(e: impl std::fmt::Display) -> botticelli_error::Gemi
 ///
 /// This client maintains a cache of model-specific Gemini clients, each with its own
 /// rate limiter. Clients are created lazily on first use for each model.
+#[derive(derive_getters::Getters)]
 pub struct GeminiClient {
     /// Cache of model-specific REST API clients with rate limiting
     clients: Arc<Mutex<HashMap<String, RateLimiter<TieredGemini<TierConfig>>>>>,
@@ -58,16 +59,6 @@ impl std::fmt::Debug for GeminiClient {
 }
 
 impl GeminiClient {
-    /// Get the default model name.
-    pub fn model_name(&self) -> &str {
-        &self.model_name
-    }
-
-    /// Get the base tier configuration.
-    pub fn base_tier(&self) -> &TierConfig {
-        &self.base_tier
-    }
-
     /// Get the capabilities of this Gemini model.
     ///
     /// Returns capabilities based on model name. All Gemini models support:
@@ -303,11 +294,18 @@ impl GeminiClient {
             ))
         })?;
 
-        let config = crate::gemini::live_protocol::GenerationConfig {
-            max_output_tokens: req.max_tokens().map(|t| t as i32),
-            temperature: req.temperature().map(|t| t as f64),
-            ..Default::default()
-        };
+        let mut config_builder = crate::gemini::live_protocol::GenerationConfigBuilder::default();
+        
+        if let Some(max_tokens) = req.max_tokens() {
+            config_builder.max_output_tokens(*max_tokens as i32);
+        }
+        if let Some(temp) = req.temperature() {
+            config_builder.temperature(*temp as f64);
+        }
+        
+        let config = config_builder
+            .build()
+            .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
 
         if self.no_retry {
             let mut session = live_client.connect_with_config(model_name, config).await?;

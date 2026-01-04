@@ -47,6 +47,9 @@ pub enum GeminiErrorKind {
     /// Stream was interrupted
     #[display("Stream interrupted: {}", _0)]
     StreamInterrupted(String),
+    /// Tungstenite websocket error (runtime errors)
+    #[display("Tungstenite error: {}", _0)]
+    Tungstenite(std::sync::Arc<tokio_tungstenite::tungstenite::Error>),
     /// Builder error (derive_builder failures)
     #[display("Builder error: {}", _0)]
     BuilderError(String),

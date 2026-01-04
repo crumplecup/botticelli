@@ -220,19 +220,21 @@ impl LiveSession {
         debug!("Sending setup message");
 
         // Build setup message
-        let setup = SetupMessage {
-            setup: SetupConfig {
-                model: model.to_string(),
-                generation_config,
-                system_instruction: None,
-                tools: None,
-            },
-        };
+        let setup_config = SetupConfigBuilder::default()
+            .model(model.to_string())
+            .generation_config(generation_config)
+            .build()
+            .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
+
+        let setup = SetupMessageBuilder::default()
+            .setup(setup_config)
+            .build()
+            .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
 
         // Serialize to JSON
         let json = serde_json::to_string(&setup).map_err(|e| {
             error!("Failed to serialize setup message: {}", e);
-            GeminiError::new(GeminiErrorKind::Serialization(Arc::new(e)))
+            GeminiErrorKind::Serialization(Arc::new(e))
         })?;
 
         trace!("Setup message JSON: {}", json);
@@ -260,7 +262,7 @@ impl LiveSession {
 
                 let server_msg: ServerMessage = serde_json::from_str(&text).map_err(|e| {
                     error!("Failed to parse server message: {}", e);
-                    GeminiError::new(GeminiErrorKind::Serialization(Arc::new(e)))
+                    GeminiErrorKind::Serialization(Arc::new(e))
                 })?;
 
                 if server_msg.is_setup_complete() {
@@ -268,8 +270,9 @@ impl LiveSession {
                     return Ok(());
                 } else if server_msg.is_go_away() {
                     let reason = server_msg
-                        .go_away
-                        .map(|ga| ga.reason)
+                        .go_away()
+                        .as_ref()
+                        .map(|ga| ga.reason().to_string())
                         .unwrap_or_else(|| "unknown".to_string());
                     error!("Server sent goAway during setup: {}", reason);
                     return Err(GeminiError::new(GeminiErrorKind::ServerDisconnect(reason)));
@@ -316,20 +319,27 @@ impl LiveSession {
         }
 
         // Build client content message
-        let message = ClientContentMessage {
-            client_content: ClientContent {
-                turns: vec![Turn {
-                    role: "user".to_string(),
-                    parts: vec![Part::text(text)],
-                }],
-                turn_complete: true,
-            },
-        };
+        let turn = TurnBuilder::default()
+            .role("user".to_string())
+            .parts(vec![Part::text(text)])
+            .build()
+            .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
+
+        let client_content = ClientContentBuilder::default()
+            .turns(vec![turn])
+            .turn_complete(true)
+            .build()
+            .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
+
+        let message = ClientContentMessageBuilder::default()
+            .client_content(client_content)
+            .build()
+            .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
 
         // Serialize to JSON
         let json = serde_json::to_string(&message).map_err(|e| {
             error!("Failed to serialize message: {}", e);
-            GeminiError::new(GeminiErrorKind::Serialization(std::sync::Arc::new(e)))
+            GeminiErrorKind::Serialization(std::sync::Arc::new(e))
         })?;
 
         trace!("Message JSON: {}", json);
@@ -356,7 +366,7 @@ impl LiveSession {
         while let Some(msg_result) = self.ws_stream.next().await {
             let msg = msg_result.map_err(|e| {
                 error!("Error receiving response: {}", e);
-                GeminiError::new(GeminiErrorKind::StreamInterrupted(e.to_string()))
+                GeminiErrorKind::Tungstenite(Arc::new(e))
             })?;
 
             if let Message::Text(text) = msg {
@@ -364,14 +374,15 @@ impl LiveSession {
 
                 let server_msg: ServerMessage = serde_json::from_str(&text).map_err(|e| {
                     error!("Failed to parse server message: {}", e);
-                    GeminiError::new(GeminiErrorKind::Serialization(Arc::new(e)))
+                    GeminiErrorKind::Serialization(Arc::new(e))
                 })?;
 
                 // Check for disconnect
                 if server_msg.is_go_away() {
                     let reason = server_msg
-                        .go_away
-                        .map(|ga| ga.reason)
+                        .go_away()
+                        .as_ref()
+                        .map(|ga| ga.reason().to_string())
                         .unwrap_or_else(|| "unknown".to_string());
                     error!("Server disconnecting: {}", reason);
                     return Err(GeminiError::new(GeminiErrorKind::ServerDisconnect(reason)));
@@ -450,20 +461,27 @@ impl LiveSession {
         }
 
         // Build client content message
-        let message = ClientContentMessage {
-            client_content: ClientContent {
-                turns: vec![Turn {
-                    role: "user".to_string(),
-                    parts: vec![Part::text(text)],
-                }],
-                turn_complete: true,
-            },
-        };
+        let turn = TurnBuilder::default()
+            .role("user".to_string())
+            .parts(vec![Part::text(text)])
+            .build()
+            .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
+
+        let client_content = ClientContentBuilder::default()
+            .turns(vec![turn])
+            .turn_complete(true)
+            .build()
+            .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
+
+        let message = ClientContentMessageBuilder::default()
+            .client_content(client_content)
+            .build()
+            .map_err(|e| GeminiErrorKind::BuilderError(e.to_string()))?;
 
         // Serialize to JSON
         let json = serde_json::to_string(&message).map_err(|e| {
             error!("Failed to serialize message: {}", e);
-            GeminiError::new(GeminiErrorKind::Serialization(std::sync::Arc::new(e)))
+            GeminiErrorKind::Serialization(std::sync::Arc::new(e))
         })?;
 
         trace!("Message JSON: {}", json);
@@ -494,7 +512,7 @@ impl LiveSession {
             while let Some(msg_result) = ws.next().await {
                 let msg = msg_result.map_err(|e| {
                     error!("Error receiving response: {}", e);
-                    GeminiError::new(GeminiErrorKind::StreamInterrupted(e.to_string()))
+                    GeminiErrorKind::Tungstenite(Arc::new(e))
                 })?;
 
                 if let Message::Text(text) = msg {
@@ -502,14 +520,15 @@ impl LiveSession {
 
                     let server_msg: ServerMessage = serde_json::from_str(&text).map_err(|e| {
                         error!("Failed to parse server message: {}", e);
-                        GeminiError::new(GeminiErrorKind::Serialization(Arc::new(e)))
+                        GeminiErrorKind::Serialization(Arc::new(e))
                     })?;
 
                     // Check for disconnect
                     if server_msg.is_go_away() {
                         let reason = server_msg
-                            .go_away
-                            .map(|ga| ga.reason)
+                            .go_away()
+                            .as_ref()
+                            .map(|ga| ga.reason().to_string())
                             .unwrap_or_else(|| "unknown".to_string());
                         error!("Server disconnecting: {}", reason);
                         return Err(GeminiError::new(GeminiErrorKind::ServerDisconnect(reason)));

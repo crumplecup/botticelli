@@ -59,6 +59,7 @@
 //! };
 //! ```
 
+use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
 //
@@ -66,112 +67,118 @@ use serde::{Deserialize, Serialize};
 //
 
 /// Initial setup message sent immediately after WebSocket connection.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
 #[serde(rename_all = "camelCase")]
+#[builder(setter(into))]
 pub struct SetupMessage {
-    pub setup: SetupConfig,
+    setup: SetupConfig,
 }
 
 /// Configuration for the Live API session.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters, derive_builder::Builder)]
 #[serde(rename_all = "camelCase")]
+#[builder(setter(into), default)]
 pub struct SetupConfig {
     /// Model to use (e.g., "models/gemini-2.0-flash-exp")
-    pub model: String,
+    model: String,
 
     /// Generation parameters
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub generation_config: Option<GenerationConfig>,
+    generation_config: Option<GenerationConfig>,
 
     /// System instruction for the model
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub system_instruction: Option<SystemInstruction>,
+    system_instruction: Option<SystemInstruction>,
 
     /// Tools/functions available to the model
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tools: Option<Vec<Tool>>,
+    tools: Option<Vec<Tool>>,
 }
 
 /// Generation configuration parameters.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters, derive_builder::Builder)]
 #[serde(rename_all = "camelCase")]
+#[builder(setter(into, strip_option), default)]
 pub struct GenerationConfig {
     /// Number of candidates to generate
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub candidate_count: Option<i32>,
+    candidate_count: Option<i32>,
 
     /// Maximum tokens to generate
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_output_tokens: Option<i32>,
+    max_output_tokens: Option<i32>,
 
     /// Temperature for sampling (0.0 - 2.0)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub temperature: Option<f64>,
+    temperature: Option<f64>,
 
     /// Top-p sampling parameter
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_p: Option<f64>,
+    top_p: Option<f64>,
 
     /// Top-k sampling parameter
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_k: Option<i32>,
+    top_k: Option<i32>,
 
     /// Presence penalty
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub presence_penalty: Option<f64>,
+    presence_penalty: Option<f64>,
 
     /// Frequency penalty
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub frequency_penalty: Option<f64>,
+    frequency_penalty: Option<f64>,
 
     /// Response modalities (e.g., ["TEXT"], ["AUDIO"])
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub response_modalities: Option<Vec<String>>,
+    response_modalities: Option<Vec<String>>,
 }
 
 /// System instruction for the model.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemInstruction {
-    pub parts: Vec<Part>,
+    parts: Vec<Part>,
 }
 
 /// Tool/function definition.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct Tool {
-    pub name: String,
-    pub description: String,
-    pub parameters: serde_json::Value,
+    name: String,
+    description: String,
+    parameters: serde_json::Value,
 }
 
 /// Client content message for conversation turns.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
 #[serde(rename_all = "camelCase")]
+#[builder(setter(into))]
 pub struct ClientContentMessage {
-    pub client_content: ClientContent,
+    client_content: ClientContent,
 }
 
 /// Client conversation content.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
 #[serde(rename_all = "camelCase")]
+#[builder(setter(into))]
 pub struct ClientContent {
     /// Conversation turns
-    pub turns: Vec<Turn>,
+    turns: Vec<Turn>,
 
     /// Whether this turn is complete
-    pub turn_complete: bool,
+    turn_complete: bool,
 }
 
 /// A single conversation turn.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
 #[serde(rename_all = "camelCase")]
+#[builder(setter(into))]
 pub struct Turn {
     /// Role ("user", "model")
-    pub role: String,
+    role: String,
 
     /// Content parts
-    pub parts: Vec<Part>,
+    parts: Vec<Part>,
 }
 
 /// Content part (text, inline data, etc.).
@@ -185,56 +192,56 @@ pub enum Part {
 }
 
 /// Text content part.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 pub struct TextPart {
-    pub text: String,
+    text: String,
 }
 
 /// Inline data content part.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct InlineDataPart {
-    pub inline_data: InlineData,
+    inline_data: InlineData,
 }
 
 /// Inline data with MIME type.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct InlineData {
-    pub mime_type: String,
-    pub data: String, // base64-encoded
+    mime_type: String,
+    data: String, // base64-encoded
 }
 
 /// Realtime input message for streaming audio/video.
 ///
 /// Reserved for future realtime input feature.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeInputMessage {
     /// Realtime input
-    pub realtime_input: RealtimeInput,
+    realtime_input: RealtimeInput,
 }
 
 /// Realtime input data.
 ///
 /// Reserved for future realtime input feature.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeInput {
     /// Media chunks
-    pub media_chunks: Vec<MediaChunk>,
+    media_chunks: Vec<MediaChunk>,
 }
 
 /// Media chunk for streaming.
 ///
 /// Reserved for future realtime input feature.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaChunk {
     /// MIME type
-    pub mime_type: String,
+    mime_type: String,
     /// Base64-encoded data
-    pub data: String,
+    data: String,
 }
 
 /// Tool response message.
@@ -278,32 +285,32 @@ pub struct FunctionResponse {
 /// Server message (received from WebSocket).
 ///
 /// Contains exactly one of the message type fields plus optional usage metadata.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerMessage {
     /// Setup confirmation
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub setup_complete: Option<SetupComplete>,
+    setup_complete: Option<SetupComplete>,
 
     /// Model-generated content
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub server_content: Option<ServerContent>,
+    server_content: Option<ServerContent>,
 
     /// Tool call request
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_call: Option<LiveToolCall>,
+    tool_call: Option<LiveToolCall>,
 
     /// Tool call cancellation
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tool_call_cancellation: Option<LiveToolCallCancellation>,
+    tool_call_cancellation: Option<LiveToolCallCancellation>,
 
     /// Disconnect warning
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub go_away: Option<GoAway>,
+    go_away: Option<GoAway>,
 
     /// Token usage metadata
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub usage_metadata: Option<UsageMetadata>,
+    usage_metadata: Option<UsageMetadata>,
 }
 
 /// Setup complete confirmation.
@@ -311,73 +318,73 @@ pub struct ServerMessage {
 pub struct SetupComplete {}
 
 /// Server content (model response).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct ServerContent {
     /// Model turn content
-    pub model_turn: ModelTurn,
+    model_turn: ModelTurn,
 
     /// Whether this turn is complete
-    pub turn_complete: bool,
+    turn_complete: bool,
 
     /// Whether this was interrupted
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub interrupted: Option<bool>,
+    interrupted: Option<bool>,
 }
 
 /// Model turn content.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelTurn {
     /// Content parts
-    pub parts: Vec<Part>,
+    parts: Vec<Part>,
 }
 
 /// Tool call request from model.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct LiveToolCall {
-    pub function_calls: Vec<FunctionCall>,
+    function_calls: Vec<FunctionCall>,
 }
 
 /// Function call from model.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionCall {
-    pub id: String,
-    pub name: String,
-    pub args: serde_json::Value,
+    id: String,
+    name: String,
+    args: serde_json::Value,
 }
 
 /// Tool call cancellation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct LiveToolCallCancellation {
-    pub ids: Vec<String>,
+    ids: Vec<String>,
 }
 
 /// Server disconnect warning.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct GoAway {
-    pub reason: String,
+    reason: String,
 }
 
 /// Token usage metadata.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct UsageMetadata {
     /// Tokens in the prompt
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub prompt_token_count: Option<u32>,
+    prompt_token_count: Option<u32>,
 
     /// Tokens in the candidates (responses)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub candidates_token_count: Option<u32>,
+    candidates_token_count: Option<u32>,
 
     /// Total tokens
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub total_token_count: Option<u32>,
+    total_token_count: Option<u32>,
 }
 
 //

@@ -33,7 +33,7 @@ impl ToolCalling for GeminiClient {
         let metrics = crate::LlmMetrics::get();
         let model_name = request.model().as_ref().map_or_else(
             || self.model_name(),
-            |s| s.as_str()
+            |s| s
         );
 
         metrics.requests().add(
