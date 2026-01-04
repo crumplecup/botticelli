@@ -6,7 +6,7 @@ use crate::GeminiErrorKind;
 
 /// Ollama-specific error conditions (re-exported when ollama feature is enabled).
 #[cfg(feature = "ollama")]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+#[derive(Debug, Clone, derive_more::Display)]
 pub enum OllamaErrorKind {
     /// Ollama server not running at the specified address
     #[display("Ollama server not running at {}", _0)]
@@ -18,11 +18,11 @@ pub enum OllamaErrorKind {
 
     /// Failed to pull model from Ollama registry
     #[display("Failed to pull model: {}", _0)]
-    ModelPullFailed(String),
+    ModelPullFailed(Arc<ollama_rs::error::OllamaError>),
 
     /// Ollama API returned an error
     #[display("API error: {}", _0)]
-    ApiError(String),
+    ApiError(Arc<ollama_rs::error::OllamaError>),
 
     /// Invalid Ollama client configuration
     #[display("Invalid configuration: {}", _0)]

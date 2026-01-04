@@ -25,6 +25,7 @@ reqwest = { workspace = true, optional = true }
 gemini-rust = { workspace = true, optional = true }
 tokio-tungstenite = { version = "0.28", optional = true }
 tiktoken-rs = { workspace = true, optional = true }
+ollama-rs = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -33,7 +34,7 @@ serde_json = ["dep:serde_json"]
 reqwest = ["dep:reqwest"]
 tui = []
 models = ["dep:serde_json", "dep:gemini-rust", "dep:tokio-tungstenite", "dep:tiktoken-rs"]
-ollama = ["models"]
+ollama = ["models", "dep:ollama-rs"]
 anthropic = ["models"]
 huggingface = ["models"]
 groq = ["models"]

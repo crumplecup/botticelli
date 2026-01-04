@@ -1,5 +1,7 @@
 //! Ollama LLM client implementation.
 
+use std::sync::Arc;
+
 use ollama_rs::Ollama;
 use ollama_rs::generation::completion::request::GenerationRequest as OllamaRequest;
 
@@ -108,7 +110,7 @@ impl OllamaClient {
                     .pull_model(self.model_name.clone(), false)
                     .await
                     .map_err(|e| {
-                        botticelli_error::OllamaError::from(OllamaErrorKind::ModelPullFailed(e.to_string()))
+                        botticelli_error::OllamaError::from(OllamaErrorKind::ModelPullFailed(Arc::new(e)))
                     })?;
 
                 info!("Model pulled successfully");
@@ -140,7 +142,7 @@ impl BotticelliDriver for OllamaClient {
 
         // Execute generation (no rate limiting needed for local)
         let response = self.client.generate(ollama_req).await.map_err(|e| {
-            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(e.to_string()))
+            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e)))
         })?;
 
         debug!(
@@ -217,7 +219,7 @@ impl botticelli_interface::Streaming for OllamaClient {
 
         // Execute streaming generation
         let mut stream = self.client.generate_stream(ollama_req).await.map_err(|e| {
-            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(e.to_string()))
+            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e)))
         })?;
 
         // Convert Ollama stream to Botticelli StreamChunk
@@ -255,7 +257,7 @@ impl botticelli_interface::Streaming for OllamaClient {
                     }
                     Err(e) => {
                         yield Err(botticelli_error::BotticelliError::from(
-                            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(e.to_string()))
+                            botticelli_error::OllamaError::from(OllamaErrorKind::ApiError(Arc::new(e)))
                         ));
                         return;
                     }
