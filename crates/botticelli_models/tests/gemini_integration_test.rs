@@ -36,7 +36,7 @@ async fn test_mock_model_basic_generate() -> BotticelliResult<()> {
         .role(Role::User)
         .content(vec![Input::Text("Test".to_string())])
         .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(format!("{:?}", e))))?;
+        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
@@ -84,7 +84,6 @@ async fn test_default_model_usage() -> anyhow::Result<()> {
     let request = GenerateRequest::builder()
         .messages(vec![message])
         .max_tokens(10u32)
-        .model(None) // No model override
         .build()
         .map_err(|e| anyhow::anyhow!(e))?;
 
@@ -140,7 +139,7 @@ async fn test_gemini_2_5_model_override() -> BotticelliResult<()> {
         .role(Role::User)
         .content(vec![Input::Text("Say 'ok'".to_string())])
         .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(format!("{:?}", e))))?;
+        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
@@ -168,7 +167,7 @@ async fn test_multiple_model_requests() -> BotticelliResult<()> {
         .role(Role::User)
         .content(vec![Input::Text("Say 'one'".to_string())])
         .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(format!("{:?}", e))))?;
+        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let request1 = GenerateRequest::builder()
         .messages(vec![message1])
@@ -185,7 +184,7 @@ async fn test_multiple_model_requests() -> BotticelliResult<()> {
         .role(Role::User)
         .content(vec![Input::Text("Say 'two'".to_string())])
         .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(format!("{:?}", e))))?;
+        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let request2 = GenerateRequest::builder()
         .messages(vec![message2])
@@ -202,7 +201,7 @@ async fn test_multiple_model_requests() -> BotticelliResult<()> {
         .role(Role::User)
         .content(vec![Input::Text("Say 'three'".to_string())])
         .build()
-        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(format!("{:?}", e))))?;
+        .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
 
     let request3 = GenerateRequest::builder()
         .messages(vec![message3])

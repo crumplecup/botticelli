@@ -251,6 +251,21 @@ impl ModelsError {
     }
 }
 
+// Gemini error conversions
+#[cfg(feature = "models")]
+crate::impl_chained_error_bridge!(crate::GeminiErrorKind => crate::GeminiError => ModelsErrorKind => ModelsError);
+
+#[cfg(feature = "models")]
+crate::chain_error_kind!(crate::GeminiErrorKind => ModelsErrorKind, Gemini);
+
+#[cfg(feature = "models")]
+impl From<crate::GeminiError> for ModelsError {
+    #[track_caller]
+    fn from(err: crate::GeminiError) -> Self {
+        ModelsError::new(ModelsErrorKind::Gemini(err.kind.clone()))
+    }
+}
+
 #[cfg(feature = "ollama")]
 crate::impl_error_from_kind!(OllamaErrorKind => OllamaError);
 
