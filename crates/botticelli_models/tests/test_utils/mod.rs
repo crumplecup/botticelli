@@ -8,7 +8,7 @@
 pub mod mock_gemini;
 
 #[allow(unused_imports)]
-pub use mock_gemini::{MockBehavior, MockGeminiClient, MockResponse};
+pub use mock_gemini::{MockGeminiClient, create_success_response, create_error};
 
 #[cfg(feature = "gemini")]
 use botticelli_core::{GenerateRequest, Input, Message, Role};

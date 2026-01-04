@@ -1,378 +1,61 @@
-//! Mock Gemini client for testing.
+//! Mock Gemini client for testing using mockall.
 
 use async_trait::async_trait;
-use botticelli_core::{
-    FinishReason, GenerateRequest, GenerateResponse, ModelMetadata,
-    ModelMetadataBuilder, Output, StreamChunk,
-};
-use botticelli_interface::Metadata;
-use botticelli_error::{
-    BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind, ModelsError, ModelsErrorKind,
-};
+use botticelli_core::{GenerateRequest, GenerateResponse, Output, StreamChunk};
+use botticelli_error::{GeminiError, GeminiErrorKind, ModelsError};
 use botticelli_interface::{BotticelliDriver, Streaming, Vision};
 use botticelli_rate_limit::RateLimitConfig;
-use std::sync::{Arc, Mutex};
+use mockall::mock;
+use std::pin::Pin;
+use futures_util::stream::Stream;
 
-#[cfg(feature = "gemini")]
-use botticelli_rate_limit::GeminiTier;
+// Define the mock using mockall
+mock! {
+    pub GeminiClient {}
 
-/// Behavior configuration for mock responses.
-#[derive(Debug, Clone)]
-pub enum MockBehavior {
-    /// Always return success with the given text
-    Success(String),
-    /// Always return the specified error
-    Error(GeminiErrorKind),
-    /// Fail N times with the error, then succeed with the text
-    FailThenSucceed {
-        fail_count: usize,
-        error: GeminiErrorKind,
-        success_text: String,
-    },
-    /// Return a sequence of responses (errors or success)
-    Sequence(Vec<MockResponse>),
-}
+    #[async_trait]
+    impl BotticelliDriver for GeminiClient {
+        type Request = GenerateRequest;
+        type Response = GenerateResponse;
+        type Error = ModelsError;
+        type RateLimitConfig = RateLimitConfig;
+        type Capabilities = botticelli_models::ModelCapabilities;
 
-/// A single mock response (success or error).
-#[derive(Debug, Clone)]
-pub enum MockResponse {
-    Success(String),
-    Error(GeminiErrorKind),
-}
-
-/// Mock Gemini client for testing.
-///
-/// This mock allows tests to control responses and verify behavior without
-/// making actual API calls.
-pub struct MockGeminiClient {
-    behavior: MockBehavior,
-    call_count: Arc<Mutex<usize>>,
-    model_name: String,
-    rate_limits: RateLimitConfig,
-}
-
-impl MockGeminiClient {
-    /// Create a mock client that always succeeds with the given text.
-    pub fn new_success(text: impl Into<String>) -> Self {
-        Self {
-            behavior: MockBehavior::Success(text.into()),
-            call_count: Arc::new(Mutex::new(0)),
-            model_name: "mock-gemini".to_string(),
-            rate_limits: Self::default_rate_limits(),
-        }
+        async fn generate(&self, req: &GenerateRequest) -> Result<GenerateResponse, ModelsError>;
+        fn provider_name(&self) -> &str;
+        fn model_name(&self) -> &str;
+        fn rate_limits(&self) -> &RateLimitConfig;
+        fn capabilities(&self) -> Self::Capabilities;
     }
 
-    /// Create a mock client that always fails with the given error.
-    pub fn new_error(error: GeminiErrorKind) -> Self {
-        Self {
-            behavior: MockBehavior::Error(error),
-            call_count: Arc::new(Mutex::new(0)),
-            model_name: "mock-gemini".to_string(),
-            rate_limits: Self::default_rate_limits(),
-        }
+    #[async_trait]
+    impl Streaming for GeminiClient {
+        type StreamChunk = StreamChunk;
+        type Error = ModelsError;
+        
+        async fn generate_stream(
+            &self,
+            req: &GenerateRequest,
+        ) -> Result<Pin<Box<dyn Stream<Item = Result<StreamChunk, ModelsError>> + Send>>, ModelsError>;
     }
 
-    /// Create a mock client that fails N times, then succeeds.
-    ///
-    /// Useful for testing retry behavior.
-    pub fn new_fail_then_succeed(
-        fail_count: usize,
-        error: GeminiErrorKind,
-        success_text: impl Into<String>,
-    ) -> Self {
-        Self {
-            behavior: MockBehavior::FailThenSucceed {
-                fail_count,
-                error,
-                success_text: success_text.into(),
-            },
-            call_count: Arc::new(Mutex::new(0)),
-            model_name: "mock-gemini".to_string(),
-            rate_limits: Self::default_rate_limits(),
-        }
-    }
-
-    /// Create a mock client with a sequence of responses.
-    pub fn new_sequence(responses: Vec<MockResponse>) -> Self {
-        Self {
-            behavior: MockBehavior::Sequence(responses),
-            call_count: Arc::new(Mutex::new(0)),
-            model_name: "mock-gemini".to_string(),
-            rate_limits: Self::default_rate_limits(),
-        }
-    }
-
-    /// Get default rate limits for mock client.
-    fn default_rate_limits() -> RateLimitConfig {
-        #[cfg(feature = "gemini")]
-        {
-            use botticelli_interface::Tier;
-            let tier = GeminiTier::Free;
-            RateLimitConfig {
-                requests_per_minute: tier.rpm().unwrap_or(15) as u64,
-                tokens_per_minute: tier.tpm().unwrap_or(1_000_000),
-                requests_per_day: tier.rpd().unwrap_or(1500) as u64,
-                tokens_per_day: tier.tpm().unwrap_or(1_000_000) * 1440,
-            }
-        }
-        #[cfg(not(feature = "gemini"))]
-        {
-            // Fallback to reasonable defaults if gemini feature not enabled
-            RateLimitConfig {
-                requests_per_minute: 15,
-                requests_per_day: 1500,
-                tokens_per_minute: 1_000_000,
-                tokens_per_day: 50_000_000,
-            }
-        }
-    }
-
-    /// Get the number of times generate() was called.
-    pub fn call_count(&self) -> usize {
-        *self.call_count.lock().unwrap()
-    }
-
-    /// Get the next response based on the configured behavior.
-    fn next_response(&self) -> Result<GenerateResponse, ModelsError> {
-        let mut count = self.call_count.lock().unwrap();
-        let current_count = *count;
-        *count += 1;
-
-        match &self.behavior {
-            MockBehavior::Success(text) => Ok(GenerateResponse::builder()
-                .outputs(vec![Output::Text(text.clone())])
-                .stop_reason(botticelli_core::StopReason::EndTurn)
-                .build()
-                .expect("Valid response")),
-            MockBehavior::Error(error_kind) => {
-                Err(ModelsError::from(GeminiError::new(error_kind.clone())))
-            }
-            MockBehavior::FailThenSucceed {
-                fail_count,
-                error,
-                success_text,
-            } => {
-                if current_count < *fail_count {
-                    Err(ModelsError::from(GeminiError::new(error.clone())))
-                } else {
-                    Ok(GenerateResponse::builder()
-                        .outputs(vec![Output::Text(success_text.clone())])
-                        .stop_reason(botticelli_core::StopReason::EndTurn)
-                        .build()
-                        .expect("Valid response"))
-                }
-            }
-            MockBehavior::Sequence(responses) => {
-                if current_count >= responses.len() {
-                    // Past end of sequence, return error
-                    Err(BotticelliError::from(GeminiError::new(
-                        GeminiErrorKind::InvalidServerMessage(format!(
-                            "Mock sequence exhausted (call {} beyond {} responses)",
-                            current_count + 1,
-                            responses.len()
-                        )),
-                    )))
-                } else {
-                    match &responses[current_count] {
-                        MockResponse::Success(text) => Ok(GenerateResponse::builder()
-                            .outputs(vec![Output::Text(text.clone())])
-                            .stop_reason(botticelli_core::StopReason::EndTurn)
-                            .build()
-                            .expect("Valid response")),
-                        MockResponse::Error(error_kind) => {
-                            Err(BotticelliError::from(GeminiError::new(error_kind.clone())))
-                        }
-                    }
-                }
-            }
-        }
+    impl Vision for GeminiClient {
+        fn max_images_per_request(&self) -> usize;
+        fn supported_image_formats(&self) -> &[&'static str];
+        fn max_image_size_bytes(&self) -> usize;
     }
 }
 
-#[async_trait]
-impl BotticelliDriver for MockGeminiClient {
-    type Request = GenerateRequest;
-    type Response = GenerateResponse;
-    type Error = ModelsError;
-    type RateLimitConfig = RateLimitConfig;
-    type Capabilities = botticelli_models::ModelCapabilities;
-
-    async fn generate(&self, _req: &GenerateRequest) -> Result<GenerateResponse, ModelsError> {
-        // Small delay to simulate network latency (but keep it minimal for fast tests)
-        tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
-        self.next_response()
-    }
-
-    fn provider_name(&self) -> &str {
-        "mock-gemini"
-    }
-
-    fn model_name(&self) -> &str {
-        &self.model_name
-    }
-
-    fn rate_limits(&self) -> &RateLimitConfig {
-        &self.rate_limits
-    }
-
-    fn capabilities(&self) -> Self::Capabilities {
-        botticelli_models::ModelCapabilities::standard()
-    }
+/// Helper to create a successful mock response
+pub fn create_success_response(text: impl Into<String>) -> GenerateResponse {
+    GenerateResponse::builder()
+        .outputs(vec![Output::Text(text.into())])
+        .stop_reason(botticelli_core::StopReason::EndTurn)
+        .build()
+        .expect("Valid response")
 }
 
-impl Metadata for MockGeminiClient {
-    type ModelMetadata = String;
-    fn metadata(&self) -> &String {
-        &self.model_name
-    }
-            .supports_tool_use(true)
-            .supports_json_mode(true)
-            .supports_embeddings(false)
-            .supports_batch(false)
-            .build()
-            .expect("Valid ModelMetadata")
-    }
-}
-
-impl Vision for MockGeminiClient {
-    fn max_images_per_request(&self) -> usize {
-        16
-    }
-
-    fn supported_image_formats(&self) -> &[&'static str] {
-        &["image/png", "image/jpeg", "image/webp"]
-    }
-
-    fn max_image_size_bytes(&self) -> usize {
-        20 * 1024 * 1024 // 20MB
-    }
-}
-
-#[async_trait]
-impl Streaming for MockGeminiClient {
-    type StreamChunk = StreamChunk;
-
-    async fn generate_stream(
-        &self,
-        _req: &GenerateRequest,
-    ) -> Result<
-        std::pin::Pin<
-            Box<dyn futures_util::stream::Stream<Item = Result<StreamChunk, ModelsError>> + Send>,
-        >,
-        ModelsError,
-    > {
-        use futures_util::stream;
-
-        // Get the response (reuse generate logic)
-        let response = self.next_response()?;
-
-        // Convert to a single-chunk stream
-        let chunks: Vec<_> = response
-            .outputs()
-            .iter()
-            .map(|output| {
-                StreamChunk::builder()
-                    .content(output.clone())
-                    .is_final(true)
-                    .finish_reason(Some(FinishReason::Stop))
-                    .build()
-                    .map_err(|e| ModelsError::new(ModelsErrorKind::Builder(e.to_string())))
-            })
-            .collect::<Result<_, _>>()?;
-
-        Ok(Box::pin(stream::iter(chunks.into_iter().map(Ok))))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_mock_success() {
-        let mock = MockGeminiClient::new_success("test response");
-        let request = GenerateRequest::default();
-
-        let response = mock.generate(&request).await.unwrap();
-        assert_eq!(mock.call_count(), 1);
-
-        match &response.outputs()[0] {
-            Output::Text(text) => assert_eq!(text, "test response"),
-            _ => panic!("Expected text output"),
-        }
-    }
-
-    #[tokio::test]
-    async fn test_mock_error() {
-        let mock = MockGeminiClient::new_error(GeminiErrorKind::HttpError {
-            status_code: 503,
-            message: "Service unavailable".to_string(),
-        });
-        let request = GenerateRequest::default();
-
-        let result = mock.generate(&request).await;
-        assert!(result.is_err());
-        assert_eq!(mock.call_count(), 1);
-    }
-
-    #[tokio::test]
-    async fn test_mock_fail_then_succeed() {
-        let mock = MockGeminiClient::new_fail_then_succeed(
-            2,
-            GeminiErrorKind::HttpError {
-                status_code: 503,
-                message: "Overloaded".to_string(),
-            },
-            "success",
-        );
-        let request = GenerateRequest::default();
-
-        // First two calls should fail
-        assert!(mock.generate(&request).await.is_err());
-        assert_eq!(mock.call_count(), 1);
-
-        assert!(mock.generate(&request).await.is_err());
-        assert_eq!(mock.call_count(), 2);
-
-        // Third call should succeed
-        let response = mock.generate(&request).await.unwrap();
-        assert_eq!(mock.call_count(), 3);
-
-        match &response.outputs()[0] {
-            Output::Text(text) => assert_eq!(text, "success"),
-            _ => panic!("Expected text output"),
-        }
-    }
-
-    #[tokio::test]
-    async fn test_mock_sequence() {
-        let mock = MockGeminiClient::new_sequence(vec![
-            MockResponse::Success("first".to_string()),
-            MockResponse::Error(GeminiErrorKind::HttpError {
-                status_code: 429,
-                message: "Rate limit".to_string(),
-            }),
-            MockResponse::Success("third".to_string()),
-        ]);
-        let request = GenerateRequest::default();
-
-        // First call succeeds
-        let response = mock.generate(&request).await.unwrap();
-        match &response.outputs()[0] {
-            Output::Text(text) => assert_eq!(text, "first"),
-            _ => panic!("Expected text output"),
-        }
-
-        // Second call fails
-        assert!(mock.generate(&request).await.is_err());
-
-        // Third call succeeds
-        let response = mock.generate(&request).await.unwrap();
-        match &response.outputs()[0] {
-            Output::Text(text) => assert_eq!(text, "third"),
-            _ => panic!("Expected text output"),
-        }
-
-        assert_eq!(mock.call_count(), 3);
-    }
+/// Helper to create an error
+pub fn create_error(kind: GeminiErrorKind) -> ModelsError {
+    ModelsError::from(GeminiError::new(kind))
 }
