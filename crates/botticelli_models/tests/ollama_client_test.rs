@@ -10,7 +10,8 @@
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
 use botticelli_interface::BotticelliDriver;
-use botticelli_models::{OllamaClient, OllamaErrorKind};
+use botticelli_error::OllamaErrorKind;
+use botticelli_models::OllamaClient;
 
 #[tokio::test]
 #[ignore] // Requires Ollama running locally
@@ -46,7 +47,7 @@ async fn test_ollama_model_validation() -> Result<(), Box<dyn std::error::Error>
     assert!(result.is_err());
 
     if let Err(e) = result {
-        assert!(matches!(e.kind, OllamaErrorKind::ModelNotFound(_)));
+        assert!(matches!(e.kind(), OllamaErrorKind::ModelNotFound(_)));
     }
     Ok(())
 }
@@ -61,7 +62,7 @@ async fn test_ollama_server_not_running() -> Result<(), Box<dyn std::error::Erro
     assert!(result.is_err());
 
     if let Err(e) = result {
-        assert!(matches!(e.kind, OllamaErrorKind::ServerNotRunning(_)));
+        assert!(matches!(e.kind(), OllamaErrorKind::ServerNotRunning(_)));
     }
     Ok(())
 }

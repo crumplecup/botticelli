@@ -2,9 +2,10 @@
 
 use async_trait::async_trait;
 use botticelli_core::{
-    Capabilities, FinishReason, GenerateRequest, GenerateResponse, ModelMetadata,
+    FinishReason, GenerateRequest, GenerateResponse, ModelMetadata,
     ModelMetadataBuilder, Output, StreamChunk,
 };
+use botticelli_interface::Metadata;
 use botticelli_error::{
     BotticelliError, BotticelliResult, GeminiError, GeminiErrorKind, ModelsError, ModelsErrorKind,
 };
@@ -190,13 +191,19 @@ impl MockGeminiClient {
 
 #[async_trait]
 impl BotticelliDriver for MockGeminiClient {
+    type Request = GenerateRequest;
+    type Response = GenerateResponse;
+    type Error = ModelsError;
+    type RateLimitConfig = RateLimitConfig;
+    type Capabilities = botticelli_models::ModelCapabilities;
+
     async fn generate(&self, _req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
         // Small delay to simulate network latency (but keep it minimal for fast tests)
         tokio::time::sleep(tokio::time::Duration::from_millis(1)).await;
         self.next_response()
     }
 
-    fn provider_name(&self) -> &'static str {
+    fn provider_name(&self) -> &str {
         "mock-gemini"
     }
 
@@ -206,6 +213,20 @@ impl BotticelliDriver for MockGeminiClient {
 
     fn rate_limits(&self) -> &RateLimitConfig {
         &self.rate_limits
+    }
+
+    fn capabilities(&self) -> Self::Capabilities {
+        botticelli_models::ModelCapabilities::builder()
+            .supports_streaming(true)
+            .supports_tool_calling(true)
+            .supports_vision(true)
+            .supports_audio(true)
+            .supports_video(true)
+            .supports_embeddings(true)
+            .supports_json_mode(true)
+            .supports_batch_generation(false)
+            .build()
+            .expect("Valid capabilities")
     }
 }
 
@@ -246,6 +267,9 @@ impl Vision for MockGeminiClient {
 
 #[async_trait]
 impl Streaming for MockGeminiClient {
+    type StreamChunk = StreamChunk;
+    type Error = ModelsError;
+
     async fn generate_stream(
         &self,
         _req: &GenerateRequest,

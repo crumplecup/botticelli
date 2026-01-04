@@ -38,8 +38,8 @@ async fn test_live_api_invalid_model() {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .model(Some("models/nonexistent-live-model".to_string()))
-        .max_tokens(Some(5))
+        .model("models/nonexistent-live-model".to_string())
+        .max_tokens(5)
         .build()
         .expect("Failed to build request");
 
@@ -199,8 +199,8 @@ async fn test_unified_client_handles_live_model_errors() {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .model(Some("models/gemini-2.0-flash-exp".to_string()))
-        .max_tokens(Some(0)) // Invalid
+        .model("models/gemini-2.0-flash-exp".to_string())
+        .max_tokens(0) // Invalid
         .build()
         .expect("Failed to build request");
 
@@ -268,8 +268,8 @@ async fn test_streaming_error_recovery() {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .model(Some("models/gemini-2.0-flash-exp".to_string()))
-        .max_tokens(Some(50))
+        .model("models/gemini-2.0-flash-exp".to_string())
+        .max_tokens(50)
         .build()
         .expect("Failed to build request");
 

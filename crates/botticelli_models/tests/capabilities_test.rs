@@ -44,15 +44,15 @@ fn test_gemini_capabilities() {
     let client = GeminiClient::new().expect("Failed to create GeminiClient");
     let caps = client.capabilities();
 
-    assert!(caps.streaming(), "Gemini should support streaming");
-    assert!(caps.tool_calling(), "Gemini should support tool calling");
-    assert!(caps.vision(), "Gemini should support vision");
-    assert!(caps.audio(), "Gemini should support audio");
-    assert!(caps.video(), "Gemini should support video");
-    assert!(caps.embeddings(), "Gemini should support embeddings");
-    assert!(caps.json_mode(), "Gemini should support JSON mode");
+    assert!(caps.supports_streaming(), "Gemini should support streaming");
+    assert!(caps.supports_tool_calling(), "Gemini should support tool calling");
+    assert!(caps.supports_vision(), "Gemini should support vision");
+    assert!(caps.supports_audio(), "Gemini should support audio");
+    assert!(caps.supports_video(), "Gemini should support video");
+    assert!(caps.supports_embeddings(), "Gemini should support embeddings");
+    assert!(caps.supports_json_mode(), "Gemini should support JSON mode");
     assert!(
-        !caps.batch_generation(),
+        !caps.supports_batch_generation(),
         "Gemini should not support batch generation"
     );
 }

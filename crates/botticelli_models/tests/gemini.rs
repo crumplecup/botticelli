@@ -82,7 +82,7 @@ fn test_simple_text_request_structure() -> anyhow::Result<()> {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(Some(100))
+        .max_tokens(100)
         .temperature(Some(0.7))
         .build()
         .expect("Valid request");
@@ -177,7 +177,7 @@ fn test_real_api_call() {
 
     let request = GenerateRequest::builder()
         .messages(vec![message])
-        .max_tokens(Some(10))
+        .max_tokens(10)
         .temperature(Some(0.0))
         .build()
         .expect("Failed to build request");
