@@ -15,8 +15,8 @@ use serde_json::json;
 #[cfg_attr(not(feature = "api"), ignore)]
 async fn test_anthropic_tool_calling() -> BotticelliResult<()> {
     // Get API key from environment
-    let api_key =
-        std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set for API tests");
+    let api_key = std::env::var("ANTHROPIC_API_KEY")
+        .map_err(|e| botticelli_error::AnthropicErrorKind::InvalidConfiguration(format!("ANTHROPIC_API_KEY not set: {}", e)))?;
 
     // Create client with latest Sonnet model
     let client = AnthropicClient::new(api_key, "claude-3-5-sonnet-20241022");
@@ -47,7 +47,7 @@ async fn test_anthropic_tool_calling() -> BotticelliResult<()> {
         .messages(vec![message])
         .max_tokens(100u32)
         .build()
-        .expect("Valid request"); // Minimal tokens to conserve rate limits
+        .map_err(|e| botticelli_error::ModelsErrorKind::Builder(e.to_string()))?;
 
     // Use ToolCalling trait - tools passed as explicit parameter
     let response = client

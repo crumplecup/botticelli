@@ -171,6 +171,7 @@ dotenvy = "0.15"
 
 # Test and benchmark support
 tempfile = "3"
+mockall = "0.14"
 
 # Elicitation framework
 elicitation = "0.2"

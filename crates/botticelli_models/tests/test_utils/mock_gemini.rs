@@ -5,9 +5,9 @@ use botticelli_core::{GenerateRequest, GenerateResponse, Output, StreamChunk};
 use botticelli_error::{GeminiError, GeminiErrorKind, ModelsError};
 use botticelli_interface::{BotticelliDriver, Streaming, Vision};
 use botticelli_rate_limit::RateLimitConfig;
+use futures_util::stream::Stream;
 use mockall::mock;
 use std::pin::Pin;
-use futures_util::stream::Stream;
 
 // Define the mock using mockall
 mock! {
@@ -31,8 +31,7 @@ mock! {
     #[async_trait]
     impl Streaming for GeminiClient {
         type StreamChunk = StreamChunk;
-        type Error = ModelsError;
-        
+
         async fn generate_stream(
             &self,
             req: &GenerateRequest,
@@ -47,12 +46,13 @@ mock! {
 }
 
 /// Helper to create a successful mock response
-pub fn create_success_response(text: impl Into<String>) -> GenerateResponse {
+pub fn create_success_response(
+    text: impl Into<String>,
+) -> Result<GenerateResponse, String> {
     GenerateResponse::builder()
         .outputs(vec![Output::Text(text.into())])
         .stop_reason(botticelli_core::StopReason::EndTurn)
         .build()
-        .expect("Valid response")
 }
 
 /// Helper to create an error

@@ -97,4 +97,4 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 dotenvy = { workspace = true }
 anyhow = { workspace = true }
 toml.workspace = true
-mockall = "0.13"
+mockall = { workspace = true }
