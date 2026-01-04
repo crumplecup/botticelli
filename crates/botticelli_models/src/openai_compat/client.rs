@@ -105,7 +105,7 @@ impl OpenAICompatibleClient {
             .await
             .map_err(|e| {
                 error!(provider = self.provider_name, error = ?e, "HTTP request failed");
-                OpenAICompatError::new(OpenAICompatErrorKind::Http(std::sync::Arc::new(e)))
+                OpenAICompatErrorKind::Http(std::sync::Arc::new(e))
             })?;
 
         let status = response.status();
@@ -118,15 +118,15 @@ impl OpenAICompatibleClient {
                 "API error"
             );
 
-            return Err(OpenAICompatError::new(OpenAICompatErrorKind::Api {
+            return Err(OpenAICompatErrorKind::Api {
                 status: status.as_u16(),
                 message: error_text,
-            }));
+            }.into());
         }
 
         let chat_response: ChatResponse = response.json().await.map_err(|e| {
             error!(provider = self.provider_name, error = ?e, "Failed to parse response");
-            OpenAICompatError::new(OpenAICompatErrorKind::Http(std::sync::Arc::new(e)))
+            OpenAICompatErrorKind::Http(std::sync::Arc::new(e))
         })?;
 
         debug!(

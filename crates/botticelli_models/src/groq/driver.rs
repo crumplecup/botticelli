@@ -1,10 +1,9 @@
 //! Groq AI LPU Inference API driver using OpenAI-compatible client.
 
-use botticelli_error::OpenAICompatError;
 use crate::openai_compat::OpenAICompatibleClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
-use botticelli_error::{BotticelliError, BotticelliResult, GroqErrorKind, ModelsError, ModelsResult};
+use botticelli_error::{BotticelliError, BotticelliResult, ModelsResult, OpenAICompatErrorKind};
 use botticelli_core::Capabilities;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
@@ -27,7 +26,7 @@ impl GroqDriver {
     #[instrument(skip_all, fields(model = %model))]
     pub fn new(model: String) -> ModelsResult<Self> {
         let api_key = std::env::var("GROQ_API_KEY")
-            .map_err(|e| GroqErrorKind::EnvVar(e))?;
+            .map_err(|e| OpenAICompatErrorKind::EnvVar(std::sync::Arc::new(e)))?;
 
         Self::with_api_key(api_key, model)
     }
@@ -49,24 +48,7 @@ impl GroqDriver {
         Ok(Self { inner })
     }
 
-    /// Converts OpenAICompatError to Groq-specific error.
-    fn convert_error(error: OpenAICompatError) -> GroqErrorKind {
-        use botticelli_error::OpenAICompatErrorKind;
-        
-        match error.kind {
-            OpenAICompatErrorKind::Http(_) => GroqErrorKind::Api("HTTP error".to_string()),
-            OpenAICompatErrorKind::Api { status, ref message } => {
-                GroqErrorKind::Api(format!("API error {}: {}", status, message))
-            }
-            OpenAICompatErrorKind::RateLimit => GroqErrorKind::RateLimit,
-            OpenAICompatErrorKind::ModelNotFound(ref model) => GroqErrorKind::ModelNotFound(model.clone()),
-            OpenAICompatErrorKind::InvalidRequest(ref msg) => GroqErrorKind::InvalidRequest(msg.clone()),
-            OpenAICompatErrorKind::ResponseParsing(_) => GroqErrorKind::ResponseConversion("Response parsing failed".to_string()),
-            OpenAICompatErrorKind::Builder(ref msg) => {
-                GroqErrorKind::RequestConversion(format!("Builder error: {}", msg))
-            }
-        }
-    }
+
 }
 
 #[async_trait]
@@ -79,13 +61,7 @@ impl BotticelliDriver for GroqDriver {
 
     #[instrument(skip(self, req), fields(provider = "groq", model = %self.inner.model_name()))]
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
-        self.inner
-            .generate(req)
-            .await
-            .map_err(|e| {
-                let kind = Self::convert_error(e);
-                ModelsError::from(kind).into()
-            })
+        Ok(self.inner.generate(req).await?)
     }
 
     fn provider_name(&self) -> &str {

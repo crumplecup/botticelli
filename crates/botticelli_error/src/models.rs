@@ -123,125 +123,7 @@ impl AnthropicError {
     }
 }
 
-/// HuggingFace-specific error conditions.
-#[cfg(feature = "huggingface")]
-#[derive(Debug, Clone, derive_more::Display)]
-pub enum HuggingFaceErrorKind {
-    /// API error from HuggingFace
-    #[display("API error: {}", _0)]
-    Api(String),
 
-    /// Environment variable error
-    #[display("Environment variable error: {}", _0)]
-    EnvVar(Arc<std::env::VarError>),
-
-    /// Rate limit exceeded
-    #[display("Rate limit exceeded")]
-    RateLimit,
-
-    /// Model not found
-    #[display("Model not found: {}", _0)]
-    ModelNotFound(String),
-
-    /// Invalid request
-    #[display("Invalid request: {}", _0)]
-    InvalidRequest(String),
-
-    /// Request conversion failed
-    #[display("Request conversion failed: {}", _0)]
-    RequestConversion(String),
-
-    /// Response conversion failed
-    #[display("Response conversion failed: {}", _0)]
-    ResponseConversion(String),
-}
-
-/// HuggingFace error with location tracking.
-#[cfg(feature = "huggingface")]
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
-#[display("HuggingFace: {} at {}:{}", kind, file, line)]
-pub struct HuggingFaceError {
-    /// The specific error condition
-    pub kind: HuggingFaceErrorKind,
-    /// Line number where error occurred
-    pub line: u32,
-    /// Source file where error occurred
-    pub file: &'static str,
-}
-
-#[cfg(feature = "huggingface")]
-impl HuggingFaceError {
-    /// Create a new HuggingFace error.
-    #[track_caller]
-    pub fn new(kind: HuggingFaceErrorKind) -> Self {
-        let loc = std::panic::Location::caller();
-        Self {
-            kind,
-            line: loc.line(),
-            file: loc.file(),
-        }
-    }
-}
-
-/// Errors specific to Groq models.
-#[cfg(feature = "groq")]
-#[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
-pub enum GroqErrorKind {
-    /// API error from Groq
-    #[display("API error: {}", _0)]
-    Api(String),
-
-    /// Rate limit exceeded
-    #[display("Rate limit exceeded")]
-    RateLimit,
-
-    /// Model not found
-    #[display("Model not found: {}", _0)]
-    ModelNotFound(String),
-
-    /// Invalid request
-    #[display("Invalid request: {}", _0)]
-    InvalidRequest(String),
-
-    /// Request conversion failed
-    #[display("Request conversion failed: {}", _0)]
-    RequestConversion(String),
-
-    /// Response conversion failed
-    #[display("Response conversion failed: {}", _0)]
-    ResponseConversion(String),
-
-    /// Environment variable error
-    #[display("Environment variable error: {}", _0)]
-    EnvVar(std::env::VarError),
-}
-
-/// Groq error with location tracking.
-#[cfg(feature = "groq")]
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
-#[display("Groq: {} at {}:{}", kind, file, line)]
-pub struct GroqError {
-    /// The specific error condition
-    pub kind: GroqErrorKind,
-    /// Line number where error occurred
-    pub line: u32,
-    /// Source file where error occurred
-    pub file: &'static str,
-}
-
-#[cfg(feature = "groq")]
-impl GroqError {
-    /// Create a new Groq error.
-    #[track_caller]
-    pub fn new(kind: GroqErrorKind) -> Self {
-        let loc = std::panic::Location::caller();
-        Self {
-            kind,
-            line: loc.line(),
-            file: loc.file(),
-        }
-    }
-}
 
 /// Model provider-specific error conditions.
 #[derive(Debug, Clone, derive_more::Display, derive_more::From)]
@@ -272,16 +154,10 @@ pub enum ModelsErrorKind {
     #[from(AnthropicErrorKind)]
     Anthropic(AnthropicErrorKind),
 
-    /// HuggingFace-specific error
-    #[cfg(feature = "huggingface")]
-    #[display("HuggingFace: {}", _0)]
-    #[from(HuggingFaceErrorKind)]
-    HuggingFace(HuggingFaceErrorKind),
-
-    /// Groq-specific error
-    #[cfg(feature = "groq")]
-    #[from(GroqErrorKind)]
-    Groq(GroqErrorKind),
+    /// OpenAI-compatible API error
+    #[display("OpenAI Compatible: {}", _0)]
+    #[from(ignore)]
+    OpenAICompat(crate::OpenAICompatErrorKind),
 
     /// Invalid role for message
     #[display("Invalid role: {}", _0)]
@@ -349,27 +225,17 @@ impl From<AnthropicErrorKind> for ModelsError {
     }
 }
 
+// OpenAICompat error bridge
+impl From<crate::OpenAICompatErrorKind> for ModelsError {
+    #[track_caller]
+    fn from(kind: crate::OpenAICompatErrorKind) -> Self {
+        ModelsError::new(ModelsErrorKind::OpenAICompat(kind))
+    }
+}
+
 crate::impl_error_from_kind!(ModelsErrorKind => ModelsError);
 
-#[cfg(feature = "huggingface")]
-crate::impl_error_from_kind!(HuggingFaceErrorKind => HuggingFaceError);
 
-#[cfg(feature = "huggingface")]
-impl From<HuggingFaceErrorKind> for ModelsError {
-    fn from(kind: HuggingFaceErrorKind) -> Self {
-        ModelsError::new(ModelsErrorKind::HuggingFace(kind))
-    }
-}
-
-#[cfg(feature = "groq")]
-crate::impl_error_from_kind!(GroqErrorKind => GroqError);
-
-#[cfg(feature = "groq")]
-impl From<GroqErrorKind> for ModelsError {
-    fn from(kind: GroqErrorKind) -> Self {
-        ModelsError::new(ModelsErrorKind::Groq(kind))
-    }
-}
 
 /// Result type for model operations.
 pub type ModelsResult<T> = Result<T, ModelsError>;

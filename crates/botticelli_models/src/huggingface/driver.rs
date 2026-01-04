@@ -1,10 +1,9 @@
 //! HuggingFace Inference API driver using OpenAI-compatible client.
 
-use botticelli_error::OpenAICompatError;
 use crate::openai_compat::OpenAICompatibleClient;
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse};
-use botticelli_error::{BotticelliResult, HuggingFaceErrorKind, ModelsError, ModelsResult};
+use botticelli_error::{BotticelliResult, ModelsResult, OpenAICompatErrorKind};
 use botticelli_core::Capabilities;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
@@ -28,7 +27,7 @@ impl HuggingFaceDriver {
     #[instrument(skip_all, fields(model = %model))]
     pub fn new(model: String) -> ModelsResult<Self> {
         let api_token = std::env::var("HUGGINGFACE_API_KEY")
-            .map_err(|e| HuggingFaceErrorKind::EnvVar(Arc::new(e)))?;
+            .map_err(|e| OpenAICompatErrorKind::EnvVar(Arc::new(e)))?;
 
         Self::with_api_token(api_token, model)
     }
@@ -50,28 +49,7 @@ impl HuggingFaceDriver {
         Ok(Self { inner })
     }
 
-    /// Converts OpenAICompatError to HuggingFace-specific error.
-    fn convert_error(error: OpenAICompatError) -> ModelsError {
-        use botticelli_error::OpenAICompatErrorKind;
-        
-        let kind = match error.kind {
-            OpenAICompatErrorKind::Http(_) => HuggingFaceErrorKind::Api("HTTP error".to_string()),
-            OpenAICompatErrorKind::Api { status, ref message } => {
-                HuggingFaceErrorKind::Api(format!("API error {}: {}", status, message))
-            }
-            OpenAICompatErrorKind::RateLimit => HuggingFaceErrorKind::RateLimit,
-            OpenAICompatErrorKind::ModelNotFound(ref model) => HuggingFaceErrorKind::ModelNotFound(model.clone()),
-            OpenAICompatErrorKind::InvalidRequest(ref msg) => HuggingFaceErrorKind::InvalidRequest(msg.clone()),
-            OpenAICompatErrorKind::ResponseParsing(_) => {
-                HuggingFaceErrorKind::ResponseConversion("Response parsing failed".to_string())
-            }
-            OpenAICompatErrorKind::Builder(ref msg) => {
-                HuggingFaceErrorKind::RequestConversion(format!("Builder error: {}", msg))
-            }
-        };
 
-        ModelsError::new(botticelli_error::ModelsErrorKind::HuggingFace(kind))
-    }
 }
 
 #[async_trait]
@@ -84,10 +62,7 @@ impl BotticelliDriver for HuggingFaceDriver {
 
     #[instrument(skip(self, req), fields(provider = "huggingface", model = %self.inner.model_name()))]
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
-        self.inner
-            .generate(req)
-            .await
-            .map_err(|e| Self::convert_error(e).into())
+        Ok(self.inner.generate(req).await?)
     }
 
     fn provider_name(&self) -> &str {

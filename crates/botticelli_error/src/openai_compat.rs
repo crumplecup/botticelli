@@ -37,6 +37,10 @@ pub enum OpenAICompatErrorKind {
     /// Builder error
     #[display("Builder error: {}", _0)]
     Builder(String),
+
+    /// Environment variable error
+    #[display("Environment variable error")]
+    EnvVar(Arc<std::env::VarError>),
 }
 
 /// OpenAI-compatible API error with source location tracking.

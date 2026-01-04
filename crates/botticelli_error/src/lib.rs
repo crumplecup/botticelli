@@ -78,11 +78,6 @@ pub use json::{JsonError, JsonErrorKind};
 pub use mcp::{McpError, McpErrorKind, McpResult};
 #[cfg(feature = "anthropic")]
 pub use models::{AnthropicError, AnthropicErrorKind};
-#[cfg(feature = "huggingface")]
-pub use models::HuggingFaceErrorKind;
-
-#[cfg(feature = "groq")]
-pub use models::GroqErrorKind;
 #[cfg(feature = "ollama")]
 pub use models::OllamaErrorKind;
 #[cfg(feature = "models")]
