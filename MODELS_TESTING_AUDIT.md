@@ -1,5 +1,27 @@
 # Models Testing Audit
 
+## Current Test Status (2026-01-04)
+
+### ✅ Fixed and Working
+- `anthropic_api_test.rs` - Uses proper BotticelliResult
+- `anthropic_tool_calling_test.rs` - Uses proper BotticelliResult
+- `capabilities_test.rs` - All 5 provider tests pass
+
+### 🔧 Needs Fixing
+- `gemini_mock_test.rs` - Uses anyhow::Result, MockGeminiClient needs trait updates
+- `gemini_2_0_models_test.rs` - Needs review
+- `gemini_integration_test.rs` - Needs review
+- `gemini_live_*.rs` (3 files) - Needs review
+- `gemini_streaming_test.rs` - Needs review
+- `ollama_*.rs` - Needs review
+- Other provider tests - Needs review
+
+### 🚧 Blockers
+- MockGeminiClient in `tests/test_utils/mock_gemini.rs` needs updating:
+  - Streaming trait now has Error associated type
+  - Metadata trait requires ModelMetadata associated type
+  - Method signatures incompatible with current traits
+
 ## Executive Summary
 
 **Current State:** Integration tests at workspace level (groq_backend_integration_test.rs works)
