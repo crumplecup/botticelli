@@ -3,7 +3,7 @@
 use crate::openai_compat::{ChatFunctionDef, ChatTool, OpenAICompatibleClient, conversions};
 use async_trait::async_trait;
 use botticelli_core::{Capabilities, GenerateRequest, GenerateResponse, Output, ToolCall, ToolDefinition};
-use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use botticelli_error::{BotticelliError, BotticelliResult};
 use botticelli_interface::{BotticelliDriver, ToolCalling};
 
 #[async_trait]
@@ -15,9 +15,7 @@ impl BotticelliDriver for OpenAICompatibleClient {
     type Capabilities = Capabilities;
 
     async fn generate(&self, req: &GenerateRequest) -> BotticelliResult<GenerateResponse> {
-        self.generate(req)
-            .await
-            .map_err(|e| BotticelliError::from(BackendError::new(e.to_string())))
+        self.generate(req).await.map_err(BotticelliError::from)
     }
 
     fn provider_name(&self) -> &str {
@@ -82,8 +80,7 @@ impl ToolCalling for OpenAICompatibleClient {
             .collect();
 
         // Build request with tools
-        let chat_request_base = conversions::to_chat_request(request, self.model_name())
-            .map_err(|e| BotticelliError::from(BackendError::new(e.to_string())))?;
+        let chat_request_base = conversions::to_chat_request(request, self.model_name())?;
 
         // Add tools to request
         let chat_request = crate::openai_compat::ChatRequest::builder()
@@ -94,14 +91,16 @@ impl ToolCalling for OpenAICompatibleClient {
             .stream(*chat_request_base.stream())
             .tools(Some(chat_tools))
             .build()
-            .map_err(|e| BotticelliError::from(BackendError::new(e.to_string())))?;
+            .map_err(|e| botticelli_error::OpenAICompatError::new(
+                botticelli_error::OpenAICompatErrorKind::Builder(e.to_string())
+            ))?;
 
         tracing::info!("Sending HTTP request to provider with tools");
 
         // Send request (use existing client logic)
         let response = self.generate_internal(&chat_request).await.map_err(|e| {
             tracing::error!(error = %e, "HTTP request failed");
-            BotticelliError::from(BackendError::new(e.to_string()))
+            BotticelliError::from(e)
         })?;
 
         tracing::info!("Received response from provider");
@@ -136,8 +135,7 @@ impl ToolCalling for OpenAICompatibleClient {
         } else {
             tracing::info!("Response contains text, no tool calls");
             // No tool calls, convert to text response
-            conversions::from_chat_response(&response)
-                .map_err(|e| BotticelliError::from(BackendError::new(e.to_string())))
+            conversions::from_chat_response(&response).map_err(BotticelliError::from)
         }
     }
 }
