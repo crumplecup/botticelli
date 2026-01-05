@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Instant;
+use tracing::instrument;
 
 /// Trait for executing bot commands (platform-agnostic).
 ///
@@ -290,6 +291,7 @@ where
     /// Returns an error if:
     /// - Any LLM API call fails
     /// - The response format is unexpected
+    #[instrument(skip(self, narrative))]
     pub fn execute<'a, N>(
         &'a self,
         narrative: &'a N,
@@ -309,6 +311,7 @@ where
     /// # Errors
     ///
     /// Returns an error if execution fails.
+    #[instrument(skip(self, source))]
     pub async fn execute_from_source(
         &self,
         source: &crate::NarrativeSource,
@@ -347,6 +350,7 @@ where
     /// - The file cannot be loaded
     /// - The narrative name is not found
     /// - Execution fails
+    #[instrument(skip(self), fields(path, narrative_name))]
     pub async fn execute_narrative_by_name(
         &self,
         path: &str,
