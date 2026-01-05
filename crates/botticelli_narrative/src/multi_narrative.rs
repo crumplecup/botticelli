@@ -88,7 +88,7 @@ impl MultiNarrative {
             TomlNarrativeData::Single { narrative, .. } => {
                 // Single narrative - get its name
                 if let Some(n) = narrative.as_ref() {
-                    vec![n.name.clone()]
+                    vec![n.name().clone()]
                 } else {
                     vec![]
                 }
@@ -140,7 +140,7 @@ impl MultiNarrative {
             TomlNarrativeData::Multi { narrative } => narrative.keys().cloned().collect(),
             TomlNarrativeData::Single { narrative, .. } => {
                 if let Some(n) = narrative.as_ref() {
-                    vec![n.name.clone()]
+                    vec![n.name().clone()]
                 } else {
                     vec![]
                 }

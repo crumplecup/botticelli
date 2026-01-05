@@ -320,16 +320,16 @@ impl Narrative {
 
         // Convert to domain types
         let metadata = NarrativeMetadata {
-            name: narrative_meta.name.clone(),
-            description: Some(narrative_meta.description.clone()),
-            template: narrative_meta.template.clone(),
-            target: narrative_meta.target.clone(),
-            skip_content_generation: narrative_meta.skip_content_generation,
-            carousel: narrative_meta.carousel.clone(),
-            model: narrative_meta.model.clone(),
-            temperature: narrative_meta.temperature,
-            max_tokens: narrative_meta.max_tokens,
-            budget: narrative_meta.budget.clone(),
+            name: narrative_meta.name().clone(),
+            description: Some(narrative_meta.description().clone()),
+            template: narrative_meta.template().clone(),
+            target: narrative_meta.target().clone(),
+            skip_content_generation: *narrative_meta.skip_content_generation(),
+            carousel: narrative_meta.carousel().clone(),
+            model: narrative_meta.model().clone(),
+            temperature: *narrative_meta.temperature(),
+            max_tokens: *narrative_meta.max_tokens(),
+            budget: narrative_meta.budget().clone(),
         };
 
         let toc = NarrativeToc {
