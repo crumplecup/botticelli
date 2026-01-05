@@ -82,6 +82,7 @@ where
         >,
 {
     /// Create a new narrative executor with the given LLM driver.
+    #[instrument(skip(driver))]
     pub fn new(driver: D) -> Self {
         Self {
             driver,
