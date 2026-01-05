@@ -419,14 +419,17 @@ where
             );
             let _enter = span.enter();
             // Get the configuration for this act
-            let config = narrative
-                .get_act_config(act_name)
-                .ok_or_else(|| NarrativeError::new(NarrativeErrorKind::MissingAct(act_name.to_string())))?;
+            let config = narrative.get_act_config(act_name).ok_or_else(|| {
+                NarrativeError::new(NarrativeErrorKind::MissingAct(act_name.to_string()))
+            })?;
 
             // Check if this act is a narrative reference
             if config.is_narrative_ref() {
-                let narrative_ref_name = config.narrative_ref().as_ref()
-                    .ok_or_else(|| NarrativeError::new(NarrativeErrorKind::ConfigurationError("Missing narrative_ref field".to_string())))?;
+                let narrative_ref_name = config.narrative_ref().as_ref().ok_or_else(|| {
+                    NarrativeError::new(NarrativeErrorKind::ConfigurationError(
+                        "Missing narrative_ref field".to_string(),
+                    ))
+                })?;
                 tracing::info!(
                     act = %act_name,
                     referenced_narrative = %narrative_ref_name,
@@ -904,7 +907,8 @@ where
         );
 
         // Create carousel state with budget
-        let rate_limit_config = botticelli_rate_limit::RateLimitConfig::from_tier(self.driver.rate_limits());
+        let rate_limit_config =
+            botticelli_rate_limit::RateLimitConfig::from_tier(self.driver.rate_limits());
         let mut state = CarouselState::new(carousel_config.clone(), rate_limit_config);
 
         let mut executions = Vec::new();
@@ -1384,13 +1388,14 @@ fn resolve_template(
 
         let replacement = if reference.starts_with("state:") {
             // State reference like "${state:channel_id}" or "${state:discord.channels.create.channel_id}"
-            let state_key = reference.strip_prefix("state:")
-                .ok_or_else(|| botticelli_error::NarrativeError::new(
+            let state_key = reference.strip_prefix("state:").ok_or_else(|| {
+                botticelli_error::NarrativeError::new(
                     botticelli_error::NarrativeErrorKind::TemplateError(format!(
                         "Invalid state reference: {}",
                         reference
-                    ))
-                ))?;
+                    )),
+                )
+            })?;
 
             let state_mgr = state_manager.ok_or_else(|| {
                 botticelli_error::NarrativeError::new(
@@ -1433,13 +1438,14 @@ fn resolve_template(
                 .to_string()
         } else if reference.starts_with("env:") {
             // Environment variable reference like "${env:TEST_GUILD_ID}"
-            let env_var = reference.strip_prefix("env:")
-                .ok_or_else(|| botticelli_error::NarrativeError::new(
+            let env_var = reference.strip_prefix("env:").ok_or_else(|| {
+                botticelli_error::NarrativeError::new(
                     botticelli_error::NarrativeErrorKind::TemplateError(format!(
                         "Invalid env reference: {}",
                         reference
-                    ))
-                ))?;
+                    )),
+                )
+            })?;
 
             std::env::var(env_var).map_err(|e| {
                 botticelli_error::NarrativeError::new(

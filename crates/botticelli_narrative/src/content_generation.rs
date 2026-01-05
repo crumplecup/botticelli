@@ -129,8 +129,13 @@ impl ActProcessor for ContentGenerationProcessor {
             let parsed_json: JsonValue = parse_json(&json_str)?;
 
             let items: Vec<JsonValue> = if parsed_json.is_array() {
-                parsed_json.as_array()
-                    .ok_or_else(|| NarrativeError::new(NarrativeErrorKind::SerializationError("Expected array".to_string())))?
+                parsed_json
+                    .as_array()
+                    .ok_or_else(|| {
+                        NarrativeError::new(NarrativeErrorKind::SerializationError(
+                            "Expected array".to_string(),
+                        ))
+                    })?
                     .to_vec()
             } else {
                 vec![parsed_json.clone()]

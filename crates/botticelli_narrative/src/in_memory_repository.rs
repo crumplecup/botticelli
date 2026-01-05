@@ -149,14 +149,16 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
 
                 true
             })
-            .map(|stored| ExecutionSummary::new(
-                stored.id,
-                stored.narrative_name.clone(),
-                stored.narrative_description.clone(),
-                stored.status,
-                stored.execution.act_executions().len(),
-                stored.error_message.clone(),
-            ))
+            .map(|stored| {
+                ExecutionSummary::new(
+                    stored.id,
+                    stored.narrative_name.clone(),
+                    stored.narrative_description.clone(),
+                    stored.status,
+                    stored.execution.act_executions().len(),
+                    stored.error_message.clone(),
+                )
+            })
             .collect();
 
         // Sort by ID for consistent ordering

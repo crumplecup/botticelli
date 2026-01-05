@@ -155,8 +155,7 @@ fn extract_from_code_block(response: &str, language: &str) -> Option<String> {
         // Skip to next newline (in case there's a language specifier)
         let skip_to = response[content_start..]
             .find('\n')
-            .map(|n| content_start + n + 1)
-            .unwrap_or(content_start);
+            .map_or(content_start, |n| content_start + n + 1);
 
         if let Some(end) = response[skip_to..].find("```") {
             let content = &response[skip_to..skip_to + end];

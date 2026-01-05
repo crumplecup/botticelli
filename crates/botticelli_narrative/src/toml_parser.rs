@@ -135,32 +135,32 @@ fn expand_env_vars(
 }
 
 /// Intermediate structure for deserializing the [narrative] section (single narrative).
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
 pub struct TomlNarrative {
-    pub name: String,
-    pub description: String,
+    name: String,
+    description: String,
     /// Optional template table to use as schema source for content generation
-    pub template: Option<String>,
+    template: Option<String>,
     /// Optional target table name for content generation (overrides narrative name)
-    pub target: Option<String>,
+    target: Option<String>,
     /// Optional flag to skip content generation (both template and inference modes)
     #[serde(default)]
-    pub skip_content_generation: bool,
+    skip_content_generation: bool,
     /// Optional carousel configuration
     #[serde(default)]
-    pub carousel: Option<crate::CarouselConfig>,
+    carousel: Option<crate::CarouselConfig>,
     /// Optional default model for all acts
     #[serde(default)]
-    pub model: Option<String>,
+    model: Option<String>,
     /// Optional default temperature for all acts
     #[serde(default)]
-    pub temperature: Option<f32>,
+    temperature: Option<f32>,
     /// Optional default max_tokens for all acts
     #[serde(default)]
-    pub max_tokens: Option<u32>,
+    max_tokens: Option<u32>,
     /// Optional budget multipliers
     #[serde(default)]
-    pub budget: Option<botticelli_core::BudgetConfig>,
+    budget: Option<botticelli_core::BudgetConfig>,
 }
 
 /// Intermediate structure for deserializing individual [narratives.name] sections.

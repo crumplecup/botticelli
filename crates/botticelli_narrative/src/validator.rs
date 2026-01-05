@@ -9,12 +9,12 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 /// Result of validating a narrative TOML file.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_getters::Getters)]
 pub struct ValidationResult {
     /// Validation errors (must be fixed)
-    pub errors: Vec<ValidationError>,
+    errors: Vec<ValidationError>,
     /// Validation warnings (should be reviewed)
-    pub warnings: Vec<ValidationWarning>,
+    warnings: Vec<ValidationWarning>,
 }
 
 impl ValidationResult {
@@ -81,38 +81,38 @@ impl Default for ValidationResult {
 }
 
 /// A validation error with location and fix suggestion.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_getters::Getters)]
 pub struct ValidationError {
     /// Type of validation error
-    pub kind: ValidationErrorKind,
+    kind: ValidationErrorKind,
     /// Location in the TOML file (if available)
-    pub location: Option<ValidationLocation>,
+    location: Option<ValidationLocation>,
     /// Human-readable error message
-    pub message: String,
+    message: String,
     /// Suggestion on how to fix the error
-    pub suggestion: Option<String>,
+    suggestion: Option<String>,
 }
 
 /// A validation warning that should be reviewed.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_getters::Getters)]
 pub struct ValidationWarning {
     /// Type of validation warning
-    pub kind: ValidationWarningKind,
+    kind: ValidationWarningKind,
     /// Location in the TOML file (if available)
-    pub location: Option<ValidationLocation>,
+    location: Option<ValidationLocation>,
     /// Human-readable warning message
-    pub message: String,
+    message: String,
 }
 
 /// Location information for validation messages.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_getters::Getters)]
 pub struct ValidationLocation {
     /// Line number (1-indexed)
-    pub line: usize,
+    line: usize,
     /// Column number (1-indexed)
-    pub column: usize,
+    column: usize,
     /// Section name (e.g., "acts.fetch_data")
-    pub section: Option<String>,
+    section: Option<String>,
 }
 
 /// Types of validation errors.
@@ -150,18 +150,19 @@ pub enum ValidationWarningKind {
 }
 
 /// Configuration for validation behavior.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_setters::Setters)]
+#[setters(prefix = "with_")]
 pub struct ValidationConfig {
     /// Check that nested narrative files exist
-    pub validate_nested_narratives: bool,
+    validate_nested_narratives: bool,
     /// Check that media files exist
-    pub validate_media_files: bool,
+    validate_media_files: bool,
     /// Warn on unknown model names
-    pub warn_unknown_models: bool,
+    warn_unknown_models: bool,
     /// Warn on unused resources
-    pub warn_unused_resources: bool,
+    warn_unused_resources: bool,
     /// Base directory for relative path resolution
-    pub base_dir: Option<PathBuf>,
+    base_dir: Option<PathBuf>,
 }
 
 impl Default for ValidationConfig {
