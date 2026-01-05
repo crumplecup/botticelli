@@ -193,15 +193,15 @@ impl NarrativeProvider for MultiNarrative {
     fn metadata(&self) -> &NarrativeMetadata {
         self.narratives
             .get(&self.active_narrative)
-            .expect("Active narrative must exist")
-            .metadata()
+            .map(|n| n.metadata())
+            .unwrap_or_else(|| panic!("Active narrative {} must exist", self.active_narrative))
     }
 
     fn act_names(&self) -> &[String] {
         self.narratives
             .get(&self.active_narrative)
-            .expect("Active narrative must exist")
-            .act_names()
+            .map(|n| n.act_names())
+            .unwrap_or_else(|| panic!("Active narrative {} must exist", self.active_narrative))
     }
 
     fn get_act_config(&self, act_name: &str) -> Option<ActConfig> {

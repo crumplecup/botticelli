@@ -838,12 +838,15 @@ where
                 |acc: Option<botticelli_core::TokenUsageData>, usage| {
                     Some(match acc {
                         None => *usage,
-                        Some(acc) => botticelli_core::TokenUsageData::builder()
-                            .input_tokens(acc.input_tokens() + usage.input_tokens())
-                            .output_tokens(acc.output_tokens() + usage.output_tokens())
-                            .total_tokens(acc.total_tokens() + usage.total_tokens())
-                            .build()
-                            .expect("Valid token usage"),
+                        Some(acc) => {
+                            // Builder errors should be rare; if it fails, use the existing accumulator
+                            botticelli_core::TokenUsageData::builder()
+                                .input_tokens(acc.input_tokens() + usage.input_tokens())
+                                .output_tokens(acc.output_tokens() + usage.output_tokens())
+                                .total_tokens(acc.total_tokens() + usage.total_tokens())
+                                .build()
+                                .unwrap_or(acc)
+                        }
                     })
                 },
             );

@@ -9,7 +9,7 @@ use crate::{
     extraction::parse_json,
 };
 use async_trait::async_trait;
-use botticelli_error::BotticelliResult;
+use botticelli_error::{BotticelliResult, NarrativeError, NarrativeErrorKind};
 use ractor::{ActorRef, MessagingErr, rpc::CallResult};
 use serde_json::Value as JsonValue;
 
@@ -129,7 +129,9 @@ impl ActProcessor for ContentGenerationProcessor {
             let parsed_json: JsonValue = parse_json(&json_str)?;
 
             let items: Vec<JsonValue> = if parsed_json.is_array() {
-                parsed_json.as_array().unwrap().to_vec()
+                parsed_json.as_array()
+                    .ok_or_else(|| NarrativeError::new(NarrativeErrorKind::SerializationError("Expected array".to_string())))?
+                    .to_vec()
             } else {
                 vec![parsed_json.clone()]
             };

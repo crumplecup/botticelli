@@ -489,7 +489,9 @@ fn to_snake_case(s: &str) -> String {
         if ch.is_uppercase() && i > 0 {
             result.push('_');
         }
-        result.push(ch.to_lowercase().next().unwrap());
+        if let Some(lowercase) = ch.to_lowercase().next() {
+            result.push(lowercase);
+        }
     }
     result
 }
@@ -502,7 +504,9 @@ fn to_camel_case(s: &str) -> String {
         if ch == '_' {
             capitalize_next = true;
         } else if capitalize_next {
-            result.push(ch.to_uppercase().next().unwrap());
+            if let Some(uppercase) = ch.to_uppercase().next() {
+                result.push(uppercase);
+            }
             capitalize_next = false;
         } else {
             result.push(ch);
@@ -525,14 +529,9 @@ fn find_column_match<'a>(
                     "Fuzzy matched field name"
                 );
             }
-            return Some((
-                column_types
-                    .iter()
-                    .find(|(k, _)| **k == variant)
-                    .map(|(k, _)| *k)
-                    .unwrap(),
-                col_type,
-            ));
+            if let Some((k, _)) = column_types.iter().find(|(k, _)| **k == variant) {
+                return Some((*k, col_type));
+            }
         }
     }
     None
