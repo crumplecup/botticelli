@@ -7,6 +7,7 @@ use petgraph::algo::kosaraju_scc;
 use petgraph::graph::{DiGraph, NodeIndex};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use tracing::instrument;
 
 /// Result of validating a narrative TOML file.
 #[derive(Debug, Clone, derive_getters::Getters)]
@@ -242,11 +243,13 @@ const KNOWN_MODELS: &[&str] = &[
 /// let result = validate_narrative_toml(toml);
 /// assert!(result.is_valid());
 /// ```
+#[instrument(skip(toml), fields(toml_len = toml.len()))]
 pub fn validate_narrative_toml(toml: &str) -> ValidationResult {
     validate_narrative_toml_with_config(toml, &ValidationConfig::default())
 }
 
 /// Validates a narrative TOML string with custom configuration.
+#[instrument(skip(toml, config), fields(toml_len = toml.len()))]
 pub fn validate_narrative_toml_with_config(
     toml: &str,
     config: &ValidationConfig,
@@ -285,6 +288,7 @@ pub fn validate_narrative_toml_with_config(
 /// # Returns
 ///
 /// A `ValidationResult` containing any errors or warnings found.
+#[instrument(skip(path), fields(path = %path.as_ref().display()))]
 pub fn validate_narrative_file(path: impl AsRef<Path>) -> ValidationResult {
     let config = ValidationConfig {
         base_dir: path.as_ref().parent().map(|p| p.to_path_buf()),
@@ -295,6 +299,7 @@ pub fn validate_narrative_file(path: impl AsRef<Path>) -> ValidationResult {
 }
 
 /// Validates a narrative file with custom configuration.
+#[instrument(skip(path, config), fields(path = %path.as_ref().display()))]
 pub fn validate_narrative_file_with_config(
     path: impl AsRef<Path>,
     config: &ValidationConfig,

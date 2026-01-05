@@ -5,6 +5,7 @@
 //! utilities that handle common LLM response patterns.
 
 use botticelli_error::BotticelliResult;
+use tracing::instrument;
 
 /// Extract JSON from a response that may contain markdown or extra text.
 ///
@@ -31,6 +32,7 @@ use botticelli_error::BotticelliResult;
 /// let json = extract_json(response).unwrap();
 /// assert!(json.contains("123"));
 /// ```
+#[instrument(skip(response), fields(response_len = response.len()))]
 pub fn extract_json(response: &str) -> BotticelliResult<String> {
     // Strategy 1: Extract from markdown code blocks
     if let Some(json) = extract_from_code_block(response, "json") {
@@ -108,6 +110,7 @@ pub fn extract_json(response: &str) -> BotticelliResult<String> {
 /// let toml = extract_toml(response).unwrap();
 /// assert!(toml.contains("[server]"));
 /// ```
+#[instrument(skip(response), fields(response_len = response.len()))]
 pub fn extract_toml(response: &str) -> BotticelliResult<String> {
     // Strategy 1: Extract from markdown code blocks
     if let Some(toml_str) = extract_from_code_block(response, "toml") {
@@ -224,6 +227,7 @@ fn extract_balanced(response: &str, open: char, close: char) -> Option<String> {
 /// let user: User = parse_json(json).unwrap();
 /// assert_eq!(user.id, 123);
 /// ```
+#[instrument(skip(json_str), fields(json_len = json_str.len()))]
 pub fn parse_json<T>(json_str: &str) -> BotticelliResult<T>
 where
     T: serde::de::DeserializeOwned,
@@ -349,6 +353,7 @@ where
 /// let config: Config = parse_toml(toml).unwrap();
 /// assert_eq!(config.server_name, "Test Server");
 /// ```
+#[instrument(skip(toml_str), fields(toml_len = toml_str.len()))]
 pub fn parse_toml<T>(toml_str: &str) -> BotticelliResult<T>
 where
     T: serde::de::DeserializeOwned,
