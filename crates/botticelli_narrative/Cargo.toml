@@ -14,7 +14,7 @@ botticelli_error = { workspace = true, features = ["serde_json"] }
 botticelli_core = { workspace = true }
 botticelli_interface = { workspace = true }
 botticelli_storage = { workspace = true }
-shellexpand = "3"
+shellexpand = { workspace = true }
 
 # Optional database support
 botticelli_database = { workspace = true, optional = true }
@@ -35,10 +35,10 @@ toml = { workspace = true }
 tracing = { workspace = true }
 derive_builder.workspace = true
 derive-getters.workspace = true
-botticelli_rate_limit = { version = "0.2.0", path = "../botticelli_rate_limit" }
+botticelli_rate_limit = { workspace = true }
 regex = { workspace = true }
 derive_setters.workspace = true
-petgraph = "0.6"
+petgraph = { workspace = true }
 
 [features]
 default = ["database"]
@@ -50,4 +50,4 @@ gemini = []  # Marker feature for Gemini-specific tests
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 botticelli_models = { workspace = true, features = ["gemini"] }
 dotenvy = { workspace = true }
-tempfile = "3.23.0"
+tempfile = { workspace = true }

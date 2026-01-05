@@ -4,6 +4,7 @@ use botticelli_core::BudgetConfig;
 use botticelli_error::{NarrativeError, NarrativeErrorKind};
 use botticelli_rate_limit::{Budget, RateLimitConfig};
 use derive_getters::Getters;
+use derive_setters::Setters;
 use serde::{Deserialize, Serialize};
 
 /// Carousel configuration for iterative execution with budget constraints.
@@ -11,7 +12,8 @@ use serde::{Deserialize, Serialize};
 /// A carousel allows an act or entire narrative to execute multiple times
 /// while respecting rate limit budgets. The carousel will execute as many
 /// iterations as the budget allows, stopping when limits are approached.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Getters)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Getters, Setters)]
+#[setters(prefix = "with_")]
 pub struct CarouselConfig {
     /// Maximum number of iterations to attempt
     iterations: u32,
@@ -45,18 +47,6 @@ impl CarouselConfig {
             continue_on_error: false,
             budget: None,
         }
-    }
-
-    /// Sets whether to continue on errors.
-    pub fn with_continue_on_error(mut self, continue_on_error: bool) -> Self {
-        self.continue_on_error = continue_on_error;
-        self
-    }
-
-    /// Sets budget multipliers for throttling.
-    pub fn with_budget(mut self, budget: BudgetConfig) -> Self {
-        self.budget = Some(budget);
-        self
     }
 }
 
