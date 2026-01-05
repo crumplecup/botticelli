@@ -13,6 +13,7 @@ use crate::{
 use chrono::Utc;
 
 /// Convert ExecutionStatus to database string.
+#[instrument]
 pub fn status_to_string(status: ExecutionStatus) -> String {
     match status {
         ExecutionStatus::Running => "running".to_string(),
@@ -22,6 +23,7 @@ pub fn status_to_string(status: ExecutionStatus) -> String {
 }
 
 /// Convert database string to ExecutionStatus.
+#[instrument]
 pub fn string_to_status(s: &str) -> BotticelliResult<ExecutionStatus> {
     s.parse().map_err(|e| {
         BotticelliError::from(BackendError::new(format!(
@@ -32,6 +34,7 @@ pub fn string_to_status(s: &str) -> BotticelliResult<ExecutionStatus> {
 }
 
 /// Convert NarrativeExecution to NewNarrativeExecutionRow.
+#[instrument(skip(execution))]
 pub fn execution_to_new_row(
     execution: &NarrativeExecution,
     status: ExecutionStatus,
@@ -50,6 +53,7 @@ pub fn execution_to_new_row(
 }
 
 /// Convert ActExecution to NewActExecutionRow.
+#[instrument(skip(act), fields(execution_id))]
 pub fn act_execution_to_new_row(act: &ActExecution, execution_id: i32) -> NewActExecutionRow {
     NewActExecutionRow {
         execution_id,
@@ -63,6 +67,7 @@ pub fn act_execution_to_new_row(act: &ActExecution, execution_id: i32) -> NewAct
 }
 
 /// Convert Input to NewActInputRow.
+#[instrument(skip(input), fields(execution_id))]
 pub fn input_to_new_row(
     input: &Input,
     act_execution_id: i32,

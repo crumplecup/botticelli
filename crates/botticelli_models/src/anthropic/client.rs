@@ -29,10 +29,11 @@ impl AnthropicClient {
     ///
     /// * `api_key` - Anthropic API key
     /// * `model` - Model identifier (e.g., "claude-3-5-sonnet-20241022")
+    #[instrument(skip(api_key, model))]
     pub fn new(api_key: impl Into<String>, model: impl Into<String>) -> Self {
         let api_key = api_key.into();
         let model = model.into();
-        debug!("Creating new Anthropic client");
+        debug!(model = %model, "Creating new Anthropic client");
         Self {
             client: Client::new(),
             api_key,

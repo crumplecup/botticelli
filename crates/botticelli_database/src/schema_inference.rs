@@ -114,6 +114,7 @@ impl Default for InferredSchema {
 /// Infer PostgreSQL column type from JSON value
 ///
 /// Returns (type_name, is_null) tuple
+#[instrument(skip(value))]
 pub fn infer_column_type(value: &JsonValue) -> (&'static str, bool) {
     match value {
         JsonValue::String(_) => ("TEXT", false),
@@ -140,6 +141,7 @@ pub fn infer_column_type(value: &JsonValue) -> (&'static str, bool) {
 }
 
 /// Resolve conflicts when same field has different types across rows
+#[instrument]
 pub fn resolve_type_conflict(type1: &str, type2: &str) -> DatabaseResult<String> {
     // Same type - no conflict
     if type1 == type2 {
@@ -178,6 +180,7 @@ pub fn resolve_type_conflict(type1: &str, type2: &str) -> DatabaseResult<String>
 
 /// Infer schema from JSON (single object or array)
 #[instrument(name = "schema_inference.infer_schema", skip(json))]
+#[instrument(skip(json))]
 pub fn infer_schema(json: &JsonValue) -> DatabaseResult<InferredSchema> {
     let items: Vec<&JsonValue> = match json {
         JsonValue::Object(_) => {

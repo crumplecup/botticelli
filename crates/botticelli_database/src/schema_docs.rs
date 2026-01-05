@@ -118,6 +118,7 @@ fn format_data_type(pg_type: &str, max_length: Option<i32>) -> String {
 
 /// Generate LLM-friendly schema documentation from a table structure
 #[instrument(name = "schema_docs.generate_schema_prompt", skip(schema), fields(table = %schema.table_name, column_count = schema.columns.len()))]
+#[instrument(skip(schema))]
 pub fn generate_schema_prompt(schema: &TableSchema) -> String {
     let mut prompt = String::new();
 
@@ -208,6 +209,7 @@ pub fn assemble_prompt(
 /// Heuristics:
 /// - Prompts containing schema keywords are explicit (checked first)
 /// - Short prompts without keywords are likely content focus
+#[instrument]
 pub fn is_content_focus(prompt: &str) -> bool {
     let trimmed = prompt.trim();
     let lowercase = trimmed.to_lowercase();

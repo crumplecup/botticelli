@@ -255,11 +255,13 @@ impl TableQueryExecutor {
 }
 
 /// Formats table results as JSON.
+#[instrument(skip(rows))]
 pub fn format_as_json(rows: &[JsonValue]) -> String {
     serde_json::to_string_pretty(rows).unwrap_or_else(|_| "[]".to_string())
 }
 
 /// Formats table results as Markdown table.
+#[instrument(skip(rows))]
 pub fn format_as_markdown(rows: &[JsonValue]) -> String {
     if rows.is_empty() {
         return "No data".to_string();
@@ -318,6 +320,7 @@ pub fn format_as_markdown(rows: &[JsonValue]) -> String {
 }
 
 /// Formats table results as CSV.
+#[instrument(skip(rows))]
 pub fn format_as_csv(rows: &[JsonValue]) -> String {
     if rows.is_empty() {
         return String::new();

@@ -46,6 +46,7 @@ pub struct TableSchema {
 
 /// Query information_schema to get column information for a table
 #[instrument(name = "schema_reflection.reflect_table_schema", skip(conn), fields(table = %table_name))]
+#[instrument(skip(conn))]
 pub fn reflect_table_schema(
     conn: &mut PgConnection,
     table_name: &str,
@@ -89,6 +90,7 @@ pub fn reflect_table_schema(
 }
 
 /// Generate CREATE TABLE SQL from a table schema
+#[instrument(skip(source_schema), fields(target_table_name))]
 pub fn generate_create_table_sql(target_table_name: &str, source_schema: &TableSchema) -> String {
     let mut sql = format!("CREATE TABLE {} (\n", target_table_name);
 
@@ -172,6 +174,7 @@ struct TableExistsResult {
 
 /// Check if a table exists in the database
 #[instrument(name = "schema_reflection.table_exists", skip(conn), fields(table = %table_name))]
+#[instrument(skip(conn), fields(table_name))]
 pub fn table_exists(conn: &mut PgConnection, table_name: &str) -> DatabaseResult<bool> {
     let query = format!(
         r#"
