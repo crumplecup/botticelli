@@ -288,7 +288,20 @@ crate::impl_chained_error_bridge!(crate::AnthropicErrorKind => crate::AnthropicE
 #[cfg(feature = "anthropic")]
 crate::chain_error_kind!(crate::AnthropicErrorKind => ModelsErrorKind, Anthropic);
 
+#[cfg(feature = "anthropic")]
+impl From<AnthropicError> for ModelsError {
+    #[track_caller]
+    fn from(err: AnthropicError) -> Self {
+        ModelsError::new(ModelsErrorKind::Anthropic(err.kind().clone()))
+    }
+}
 
+#[cfg(feature = "anthropic")]
+impl From<AnthropicError> for crate::BotticelliErrorKind {
+    fn from(err: AnthropicError) -> Self {
+        crate::BotticelliErrorKind::Models(err.into())
+    }
+}
 
 // OpenAI error bridge
 impl From<crate::OpenAIErrorKind> for ModelsError {
