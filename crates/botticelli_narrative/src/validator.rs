@@ -325,12 +325,15 @@ pub fn validate_narrative_file_with_config(
 }
 
 /// Detects common TOML syntax patterns that indicate mistakes.
+/// Detects common TOML syntax patterns that cause errors.
+#[instrument(skip(parsed, result))]
 fn detect_syntax_patterns(parsed: &toml::Value, result: &mut ValidationResult) {
     if let Some(table) = parsed.as_table() {
         // Check for [[acts]] (array of tables instead of table of tables)
         if let Some(acts_value) = table.get("acts")
             && acts_value.is_array()
         {
+            tracing::debug!("Found invalid [[acts]] array syntax");
             result.add_error(ValidationError::new(
                 ValidationErrorKind::InvalidSyntax,
                 None,
@@ -354,6 +357,7 @@ fn detect_syntax_patterns(parsed: &toml::Value, result: &mut ValidationResult) {
         if let Some(narrative_value) = table.get("narrative")
             && narrative_value.is_array()
         {
+            tracing::debug!("Found invalid [[narrative]] array syntax");
             result.add_error(ValidationError::new(
                 ValidationErrorKind::InvalidSyntax,
                 None,
@@ -365,6 +369,11 @@ fn detect_syntax_patterns(parsed: &toml::Value, result: &mut ValidationResult) {
 }
 
 /// Validates narrative structure (sections, references, etc.).
+#[instrument(skip(parsed, config, result), fields(
+    has_narrative = tracing::field::Empty,
+    has_narratives = tracing::field::Empty,
+    resource_count = tracing::field::Empty
+))]
 fn validate_structure(
     parsed: &toml::Value,
     config: &ValidationConfig,
@@ -373,6 +382,7 @@ fn validate_structure(
     let table = match parsed.as_table() {
         Some(t) => t,
         None => {
+            tracing::error!("TOML root is not a table");
             result.add_error(ValidationError::new(
                 ValidationErrorKind::InvalidSyntax,
                 None,
@@ -386,8 +396,13 @@ fn validate_structure(
     // Check for [narrative] section
     let has_narrative = table.contains_key("narrative");
     let has_narratives = table.contains_key("narratives");
+    
+    tracing::Span::current().record("has_narrative", has_narrative);
+    tracing::Span::current().record("has_narratives", has_narratives);
+    tracing::debug!(has_narrative, has_narratives, "Detected narrative sections");
 
     if !has_narrative && !has_narratives {
+        tracing::error!("No narrative section found");
         result.add_error(ValidationError::new(
             ValidationErrorKind::MissingSection,
             None,
@@ -424,6 +439,14 @@ fn validate_structure(
 
     // Collect resources for reference validation and unused detection
     let resources = collect_resources(table);
+    let resource_count = resources.bots.len() + resources.tables.len() + resources.media.len();
+    tracing::Span::current().record("resource_count", resource_count);
+    tracing::debug!(
+        bots = resources.bots.len(),
+        tables = resources.tables.len(),
+        media = resources.media.len(),
+        "Collected resources"
+    );
 
     // For single narrative files, validate toc and acts
     if has_narrative {
@@ -445,6 +468,10 @@ fn validate_structure(
 }
 
 /// Validates a single narrative structure.
+#[instrument(skip(table, resources, result), fields(
+    toc_length = tracing::field::Empty,
+    act_count = tracing::field::Empty
+))]
 fn validate_single_narrative(
     table: &toml::map::Map<String, toml::Value>,
     resources: &ResourceRegistry,
@@ -452,6 +479,7 @@ fn validate_single_narrative(
 ) {
     // Check for toc
     if !table.contains_key("toc") {
+        tracing::error!("Missing [toc] section");
         result.add_error(ValidationError::new(
             ValidationErrorKind::MissingSection,
             None,
@@ -465,7 +493,10 @@ fn validate_single_narrative(
 
     // Get toc.order
     let toc_order = extract_toc_order(table.get("toc"));
+    tracing::Span::current().record("toc_length", toc_order.len());
+    
     if toc_order.is_empty() {
+        tracing::error!("Empty table of contents");
         result.add_error(ValidationError::new(
             ValidationErrorKind::EmptyToc,
             None,
@@ -479,10 +510,13 @@ fn validate_single_narrative(
 
     // Get acts
     let acts = extract_acts(table.get("acts"));
+    tracing::Span::current().record("act_count", acts.len());
+    tracing::debug!(toc_length = toc_order.len(), act_count = acts.len(), "Validating single narrative");
 
     // Validate each act in toc.order exists and has valid references
     for act_name in &toc_order {
         if !acts.contains_key(act_name.as_str()) {
+            tracing::error!(act = %act_name, "Act in toc not found in [acts]");
             result.add_error(ValidationError::new(
                 ValidationErrorKind::MissingAct,
                 None,
@@ -502,6 +536,9 @@ fn validate_single_narrative(
 }
 
 /// Validates multi-narrative structure.
+#[instrument(skip(table, resources, result), fields(
+    narrative_count = tracing::field::Empty
+))]
 fn validate_multi_narratives(
     table: &toml::map::Map<String, toml::Value>,
     resources: &ResourceRegistry,
@@ -509,8 +546,14 @@ fn validate_multi_narratives(
 ) {
     let narratives = match table.get("narratives").and_then(|v| v.as_table()) {
         Some(n) => n,
-        None => return,
+        None => {
+            tracing::debug!("No [narratives] table found");
+            return;
+        }
     };
+    
+    tracing::Span::current().record("narrative_count", narratives.len());
+    tracing::debug!(count = narratives.len(), "Validating multi-narrative file");
 
     let shared_acts = extract_acts(table.get("acts"));
 
@@ -573,47 +616,69 @@ fn validate_multi_narratives(
 }
 
 /// Extracts toc.order from a toc value.
+#[instrument(skip(toc_value), fields(order_len = tracing::field::Empty))]
 fn extract_toc_order(toc_value: Option<&toml::Value>) -> Vec<String> {
     let toc_value = match toc_value {
         Some(v) => v,
-        None => return Vec::new(),
+        None => {
+            tracing::debug!("No toc value provided");
+            return Vec::new();
+        }
     };
 
     // Handle array format: toc = ["act1", "act2"]
     if let Some(arr) = toc_value.as_array() {
-        return arr
+        let order: Vec<String> = arr
             .iter()
             .filter_map(|v| v.as_str().map(|s| s.to_string()))
             .collect();
+        tracing::Span::current().record("order_len", order.len());
+        tracing::debug!(len = order.len(), "Extracted toc order from array");
+        return order;
     }
 
     // Handle table format: [toc] with order field
     if let Some(table) = toc_value.as_table()
         && let Some(order) = table.get("order").and_then(|v| v.as_array())
     {
-        return order
+        let order: Vec<String> = order
             .iter()
             .filter_map(|v| v.as_str().map(|s| s.to_string()))
             .collect();
+        tracing::Span::current().record("order_len", order.len());
+        tracing::debug!(len = order.len(), "Extracted toc order from table");
+        return order;
     }
 
     Vec::new()
 }
 
 /// Extracts acts map from an acts value.
+#[instrument(skip(acts_value), fields(act_count = tracing::field::Empty))]
 fn extract_acts(acts_value: Option<&toml::Value>) -> HashMap<String, toml::Value> {
     let acts_table = match acts_value.and_then(|v| v.as_table()) {
         Some(t) => t,
-        None => return HashMap::new(),
+        None => {
+            tracing::debug!("No acts table found");
+            return HashMap::new();
+        }
     };
 
-    acts_table
+    let acts: HashMap<String, toml::Value> = acts_table
         .iter()
         .map(|(k, v)| (k.clone(), v.clone()))
-        .collect()
+        .collect();
+    tracing::Span::current().record("act_count", acts.len());
+    tracing::debug!(count = acts.len(), "Extracted acts");
+    acts
 }
 
 /// Collects all defined resources (bots, tables, media) for reference validation.
+#[instrument(skip(table), fields(
+    bots = tracing::field::Empty,
+    tables = tracing::field::Empty,
+    media = tracing::field::Empty
+))]
 fn collect_resources(table: &toml::map::Map<String, toml::Value>) -> ResourceRegistry {
     let mut registry = ResourceRegistry::default();
 
@@ -631,6 +696,16 @@ fn collect_resources(table: &toml::map::Map<String, toml::Value>) -> ResourceReg
     if let Some(media) = table.get("media").and_then(|v| v.as_table()) {
         registry.media = media.keys().cloned().collect();
     }
+
+    tracing::Span::current().record("bots", registry.bots.len());
+    tracing::Span::current().record("tables", registry.tables.len());
+    tracing::Span::current().record("media", registry.media.len());
+    tracing::debug!(
+        bots = registry.bots.len(),
+        tables = registry.tables.len(),
+        media = registry.media.len(),
+        "Resources collected"
+    );
 
     registry
 }
@@ -656,6 +731,7 @@ impl Clone for ResourceRegistry {
 }
 
 /// Validates references in an act value.
+#[instrument(skip(act_value, resources, result), fields(act = %act_name))]
 fn validate_act_references(
     act_name: &str,
     act_value: &toml::Value,
@@ -664,12 +740,14 @@ fn validate_act_references(
 ) {
     // Check if act is a string reference
     if let Some(reference) = act_value.as_str() {
+        tracing::debug!(reference = %reference, "Validating string reference");
         validate_reference(act_name, reference, resources, result);
         return;
     }
 
     // Check if act is an array of references
     if let Some(arr) = act_value.as_array() {
+        tracing::debug!(count = arr.len(), "Validating array of references");
         for item in arr {
             if let Some(reference) = item.as_str() {
                 validate_reference(act_name, reference, resources, result);
@@ -679,6 +757,7 @@ fn validate_act_references(
 }
 
 /// Validates a single resource reference.
+#[instrument(skip(resources, result), fields(act = %act_name, reference = %reference))]
 fn validate_reference(
     act_name: &str,
     reference: &str,
@@ -692,16 +771,21 @@ fn validate_reference(
             "tables" => resources.tables.contains(&resource_name.to_string()),
             "media" => resources.media.contains(&resource_name.to_string()),
             "narrative" => true, // Narrative references validated separately
-            _ => return,         // Unknown prefix, might be valid
+            _ => {
+                tracing::debug!(resource_type, "Unknown resource type, skipping");
+                return;
+            }
         };
 
         if exists {
+            tracing::debug!(resource_type, resource_name, "Valid reference");
             // Track usage
             resources
                 .used_resources
                 .borrow_mut()
                 .insert(reference.to_string());
         } else {
+            tracing::error!(resource_type, resource_name, "Undefined reference");
             let available = match resource_type {
                 "bots" => &resources.bots,
                 "tables" => &resources.tables,
@@ -742,6 +826,7 @@ fn validate_reference(
 }
 
 /// Validates a model name against known models.
+#[instrument(skip(section, result), fields(section = %section_name))]
 fn validate_model_name(
     section: &toml::map::Map<String, toml::Value>,
     section_name: &str,
@@ -750,6 +835,7 @@ fn validate_model_name(
     if let Some(model) = section.get("model").and_then(|v| v.as_str())
         && !KNOWN_MODELS.contains(&model)
     {
+        tracing::debug!(model = %model, "Unknown model found");
         // Try to find a close match for suggestions
         let suggestion = find_closest_model(model);
 
@@ -773,6 +859,7 @@ fn validate_model_name(
 }
 
 /// Finds the closest matching model name using simple string distance.
+#[instrument(fields(model = %model, match_found = tracing::field::Empty))]
 fn find_closest_model(model: &str) -> Option<&'static str> {
     let model_lower = model.to_lowercase();
 
@@ -781,6 +868,8 @@ fn find_closest_model(model: &str) -> Option<&'static str> {
         if known.to_lowercase().contains(&model_lower)
             || model_lower.contains(&known.to_lowercase())
         {
+            tracing::Span::current().record("match_found", true);
+            tracing::debug!(closest = %known, "Found substring match");
             return Some(known);
         }
     }
@@ -799,6 +888,14 @@ fn find_closest_model(model: &str) -> Option<&'static str> {
                 best_match = Some((known, distance));
             }
         }
+    }
+
+    if let Some((model, dist)) = best_match {
+        tracing::Span::current().record("match_found", true);
+        tracing::debug!(closest = %model, distance = dist, "Found Levenshtein match");
+    } else {
+        tracing::Span::current().record("match_found", false);
+        tracing::debug!("No close match found");
     }
 
     best_match.map(|(model, _)| model)
@@ -830,12 +927,18 @@ fn levenshtein_distance(s1: &str, s2: &str) -> usize {
 }
 
 /// Checks for unused resources and adds warnings.
+#[instrument(skip(resources, result), fields(
+    unused_count = tracing::field::Empty
+))]
 fn check_unused_resources(resources: &ResourceRegistry, result: &mut ValidationResult) {
     let used = resources.used_resources.borrow();
+    let mut unused_count = 0;
 
     for bot in &resources.bots {
         let reference = format!("bots.{}", bot);
         if !used.contains(&reference) {
+            unused_count += 1;
+            tracing::debug!(bot = %bot, "Unused bot resource");
             result.add_warning(ValidationWarning::new(
                 ValidationWarningKind::UnusedResource,
                 Some(ValidationLocation::new(
@@ -851,6 +954,8 @@ fn check_unused_resources(resources: &ResourceRegistry, result: &mut ValidationR
     for table in &resources.tables {
         let reference = format!("tables.{}", table);
         if !used.contains(&reference) {
+            unused_count += 1;
+            tracing::debug!(table = %table, "Unused table resource");
             result.add_warning(ValidationWarning::new(
                 ValidationWarningKind::UnusedResource,
                 Some(ValidationLocation::new(
@@ -866,6 +971,8 @@ fn check_unused_resources(resources: &ResourceRegistry, result: &mut ValidationR
     for media in &resources.media {
         let reference = format!("media.{}", media);
         if !used.contains(&reference) {
+            unused_count += 1;
+            tracing::debug!(media = %media, "Unused media resource");
             result.add_warning(ValidationWarning::new(
                 ValidationWarningKind::UnusedResource,
                 Some(ValidationLocation::new(
@@ -877,9 +984,17 @@ fn check_unused_resources(resources: &ResourceRegistry, result: &mut ValidationR
             ));
         }
     }
+    
+    tracing::Span::current().record("unused_count", unused_count);
+    tracing::debug!(unused_count, "Completed unused resource check");
 }
 
 /// Checks for circular dependencies in nested narrative references.
+#[instrument(skip(table, result), fields(
+    narrative_count = tracing::field::Empty,
+    edge_count = tracing::field::Empty,
+    cycle_count = tracing::field::Empty
+))]
 fn check_circular_dependencies(
     table: &toml::map::Map<String, toml::Value>,
     result: &mut ValidationResult,
@@ -954,13 +1069,24 @@ fn check_circular_dependencies(
         }
     }
 
+    tracing::Span::current().record("narrative_count", node_map.len());
+    tracing::Span::current().record("edge_count", graph.edge_count());
+    tracing::debug!(
+        narratives = node_map.len(),
+        edges = graph.edge_count(),
+        "Built dependency graph"
+    );
+
     // Find strongly connected components (cycles)
     let sccs = kosaraju_scc(&graph);
+    let mut cycle_count = 0;
 
     for scc in sccs {
         if scc.len() > 1 {
             // This is a cycle involving multiple nodes
             let cycle_names: Vec<String> = scc.iter().map(|&idx| graph[idx].clone()).collect();
+            cycle_count += 1;
+            tracing::error!(cycle = ?cycle_names, "Circular dependency detected");
 
             result.add_error(ValidationError::new(
                 ValidationErrorKind::CircularDependency,
@@ -977,6 +1103,8 @@ fn check_circular_dependencies(
             // Check for self-reference
             let node = scc[0];
             if graph.neighbors(node).any(|n| n == node) {
+                cycle_count += 1;
+                tracing::error!(narrative = %graph[node], "Self-referencing circular dependency");
                 result.add_error(ValidationError::new(
                     ValidationErrorKind::CircularDependency,
                     None,
@@ -986,9 +1114,13 @@ fn check_circular_dependencies(
             }
         }
     }
+    
+    tracing::Span::current().record("cycle_count", cycle_count);
+    tracing::debug!(cycle_count, "Completed circular dependency check");
 }
 
 /// Extracts narrative references from an act value.
+#[instrument(skip(act_value), fields(ref_count = tracing::field::Empty))]
 fn extract_narrative_refs(act_value: &toml::Value) -> Vec<String> {
     let mut refs = Vec::new();
 
@@ -996,6 +1128,7 @@ fn extract_narrative_refs(act_value: &toml::Value) -> Vec<String> {
     if let Some(s) = act_value.as_str()
         && let Some(name) = s.strip_prefix("narrative.")
     {
+        tracing::debug!(narrative = %name, "Found string narrative reference");
         refs.push(name.to_string());
     }
 
@@ -1005,6 +1138,7 @@ fn extract_narrative_refs(act_value: &toml::Value) -> Vec<String> {
             if let Some(s) = item.as_str()
                 && let Some(name) = s.strip_prefix("narrative.")
             {
+                tracing::debug!(narrative = %name, "Found array narrative reference");
                 refs.push(name.to_string());
             }
         }
@@ -1021,11 +1155,13 @@ fn extract_narrative_refs(act_value: &toml::Value) -> Vec<String> {
                 if let Some(s) = input.as_str()
                     && let Some(name) = s.strip_prefix("narrative.")
                 {
+                    tracing::debug!(narrative = %name, "Found input narrative reference");
                     refs.push(name.to_string());
                 }
             }
         }
     }
 
+    tracing::Span::current().record("ref_count", refs.len());
     refs
 }
