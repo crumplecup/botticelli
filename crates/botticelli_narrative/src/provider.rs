@@ -1,9 +1,10 @@
-//! Trait abstraction for narrative configuration providers.
+//! Configuration types for narrative acts.
 //!
-//! This module defines the `NarrativeProvider` trait, which decouples the
-//! narrative executor from specific configuration formats (TOML, YAML, JSON, etc.).
+//! This module defines `ActConfig` which configures individual acts in a narrative.
+//! The `NarrativeProvider` trait is defined in `botticelli_interface` and should be
+//! imported from there.
 
-use crate::{CarouselConfig, NarrativeMetadata};
+use crate::CarouselConfig;
 use botticelli_core::Input;
 use serde::{Deserialize, Serialize};
 
@@ -71,6 +72,14 @@ pub struct ActConfig {
 
 impl ActConfig {
     /// Create a new act configuration with all fields.
+    #[tracing::instrument(skip(inputs), fields(
+        input_count = inputs.len(),
+        has_model = model.is_some(),
+        has_temperature = temperature.is_some(),
+        has_max_tokens = max_tokens.is_some(),
+        has_carousel = carousel.is_some(),
+        has_extract_output = extract_output.is_some()
+    ))]
     pub fn new(
         inputs: Vec<Input>,
         model: Option<String>,
@@ -79,6 +88,7 @@ impl ActConfig {
         carousel: Option<CarouselConfig>,
         extract_output: Option<bool>,
     ) -> Self {
+        tracing::debug!("Creating ActConfig");
         Self {
             inputs,
             narrative_ref: None,
@@ -91,15 +101,23 @@ impl ActConfig {
     }
 
     /// Create an act that references another narrative.
+    #[tracing::instrument(fields(
+        narrative_name,
+        has_model = model.is_some(),
+        has_temperature = temperature.is_some(),
+        has_max_tokens = max_tokens.is_some()
+    ))]
     pub fn from_narrative_ref<S: Into<String>>(
         narrative_name: S,
         model: Option<String>,
         temperature: Option<f32>,
         max_tokens: Option<u32>,
     ) -> Self {
+        let name = narrative_name.into();
+        tracing::debug!(narrative_name = %name, "Creating narrative reference ActConfig");
         Self {
             inputs: Vec::new(),
-            narrative_ref: Some(narrative_name.into()),
+            narrative_ref: Some(name),
             model,
             temperature,
             max_tokens,
@@ -112,9 +130,13 @@ impl ActConfig {
     ///
     /// Convenience constructor for the common case of a single text prompt
     /// with no model or parameter overrides.
+    #[tracing::instrument(skip(text), fields(text_len))]
     pub fn from_text<S: Into<String>>(text: S) -> Self {
+        let text_string = text.into();
+        tracing::Span::current().record("text_len", text_string.len());
+        tracing::debug!("Creating text-only ActConfig");
         Self {
-            inputs: vec![Input::Text(text.into())],
+            inputs: vec![Input::Text(text_string)],
             narrative_ref: None,
             model: None,
             temperature: None,
@@ -130,7 +152,9 @@ impl ActConfig {
     }
 
     /// Create an act configuration with multimodal inputs.
+    #[tracing::instrument(skip(inputs), fields(input_count = inputs.len()))]
     pub fn from_inputs(inputs: Vec<Input>) -> Self {
+        tracing::debug!("Creating multimodal ActConfig");
         Self {
             inputs,
             narrative_ref: None,
@@ -143,98 +167,44 @@ impl ActConfig {
     }
 
     /// Builder method to set the model override.
+    #[tracing::instrument(skip(self, model), fields(model_name))]
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
-        self.model = Some(model.into());
+        let model_string = model.into();
+        tracing::Span::current().record("model_name", &model_string);
+        tracing::debug!("Setting model override");
+        self.model = Some(model_string);
         self
     }
 
     /// Builder method to set the temperature override.
+    #[tracing::instrument(skip(self), fields(temperature))]
     pub fn with_temperature(mut self, temperature: f32) -> Self {
+        tracing::debug!("Setting temperature override");
         self.temperature = Some(temperature);
         self
     }
 
     /// Builder method to set the max_tokens override.
+    #[tracing::instrument(skip(self), fields(max_tokens))]
     pub fn with_max_tokens(mut self, max_tokens: u32) -> Self {
+        tracing::debug!("Setting max_tokens override");
         self.max_tokens = Some(max_tokens);
         self
     }
 
     /// Builder method to set the carousel configuration.
+    #[tracing::instrument(skip(self, carousel), fields(has_carousel = true))]
     pub fn with_carousel(mut self, carousel: CarouselConfig) -> Self {
+        tracing::debug!("Setting carousel configuration");
         self.carousel = Some(carousel);
         self
     }
 
     /// Builder method to set the inputs.
+    #[tracing::instrument(skip(self, inputs), fields(input_count = inputs.len()))]
     pub fn with_inputs(mut self, inputs: Vec<Input>) -> Self {
+        tracing::debug!("Setting inputs");
         self.inputs = inputs;
         self
-    }
-}
-
-/// Provides access to narrative configuration data.
-///
-/// This trait abstracts over different configuration sources (TOML files,
-/// YAML, JSON, databases, etc.), allowing the executor to work with any
-/// implementation.
-///
-/// By programming to this interface rather than concrete types, we achieve:
-/// - Format flexibility (easy to add new config formats)
-/// - Better testability (simple mock implementations)
-/// - Reduced coupling (config changes don't ripple through executor)
-/// - Multimodal support (acts can use text, images, audio, video, documents)
-/// - Per-act model selection (different acts can use different LLMs)
-pub trait NarrativeProvider: Send + Sync {
-    /// Name of the narrative for tracking and identification.
-    fn name(&self) -> &str;
-
-    /// Narrative metadata including name, description, and template.
-    fn metadata(&self) -> &NarrativeMetadata;
-
-    /// Ordered list of act names to execute in sequence.
-    ///
-    /// The executor will process acts in this exact order.
-    fn act_names(&self) -> &[String];
-
-    /// Get the configuration for a specific act.
-    ///
-    /// Returns `None` if the act doesn't exist.
-    ///
-    /// The configuration includes:
-    /// - Multimodal inputs (text, images, audio, etc.)
-    /// - Optional model override
-    /// - Optional temperature/max_tokens overrides
-    fn get_act_config(&self, act_name: &str) -> Option<ActConfig>;
-
-    /// Resolve a referenced narrative by name for narrative composition.
-    ///
-    /// For multi-narrative files, this returns the referenced narrative.
-    /// For single-narrative files, this returns `None`.
-    ///
-    /// # Arguments
-    ///
-    /// * `narrative_name` - Name of the narrative to resolve
-    ///
-    /// # Returns
-    ///
-    /// Returns the referenced narrative if it exists, `None` otherwise.
-    fn resolve_narrative(&self, _narrative_name: &str) -> Option<&dyn NarrativeProvider> {
-        None // Default implementation for single narratives
-    }
-
-    /// Get the carousel configuration if present.
-    ///
-    /// Returns `None` if this narrative doesn't have carousel configuration.
-    fn carousel_config(&self) -> Option<&crate::CarouselConfig> {
-        None
-    }
-
-    /// Get the source file path for this narrative.
-    ///
-    /// Used to resolve relative paths in nested narratives.
-    /// Returns `None` if the narrative wasn't loaded from a file.
-    fn source_path(&self) -> Option<&std::path::Path> {
-        None
     }
 }

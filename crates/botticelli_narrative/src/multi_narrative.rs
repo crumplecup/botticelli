@@ -3,8 +3,9 @@
 //! This module provides `MultiNarrative`, which loads all narratives from a TOML file
 //! and enables narrative composition (narratives referencing other narratives).
 
-use crate::{ActConfig, CarouselConfig, Narrative, NarrativeMetadata, NarrativeProvider};
+use crate::{ActConfig, CarouselConfig, Narrative, NarrativeMetadata};
 use botticelli_error::{NarrativeError, NarrativeErrorKind};
+use botticelli_interface::NarrativeProvider;
 use std::collections::HashMap;
 use std::path::Path;
 use tracing::{debug, instrument};
@@ -37,10 +38,13 @@ impl MultiNarrative {
         path: P,
         narrative_name: &str,
     ) -> Result<Self, NarrativeError> {
-        let path = path.as_ref();
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| NarrativeError::new(NarrativeErrorKind::FileRead(e.to_string())))?;
+        use tracing::debug;
 
+        let path = path.as_ref();
+        debug!("Reading multi-narrative file");
+        let content = std::fs::read_to_string(path)?;
+
+        debug!(content_len = content.len(), "File read successfully");
         Self::from_toml_str(&content, path, narrative_name)
     }
 
@@ -62,10 +66,13 @@ impl MultiNarrative {
         narrative_name: &str,
         conn: &mut PgConnection,
     ) -> Result<Self, NarrativeError> {
-        let path = path.as_ref();
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| NarrativeError::new(NarrativeErrorKind::FileRead(e.to_string())))?;
+        use tracing::debug;
 
+        let path = path.as_ref();
+        debug!("Reading multi-narrative file with database support");
+        let content = std::fs::read_to_string(path)?;
+
+        debug!(content_len = content.len(), "File read successfully");
         Self::from_toml_str_with_db(&content, path, narrative_name, conn)
     }
 
@@ -78,12 +85,13 @@ impl MultiNarrative {
     ) -> Result<Self, NarrativeError> {
         use crate::toml_parser::{TomlNarrativeData, TomlNarrativeFile};
 
+        debug!("Parsing TOML content");
         // Parse the TOML file
-        let toml_file: TomlNarrativeFile = toml::from_str(s)
-            .map_err(|e| NarrativeError::new(NarrativeErrorKind::TomlParse(e.to_string())))?;
+        let toml_file: TomlNarrativeFile = toml::from_str(s)?;
 
+        debug!("TOML parsed successfully");
         // Extract all narrative names from [narrative.name] or [narratives.name]
-        let narrative_names: Vec<String> = match &toml_file.narrative_data {
+        let narrative_names: Vec<String> = match toml_file.narrative_data() {
             TomlNarrativeData::Multi { narrative } => narrative.keys().cloned().collect(),
             TomlNarrativeData::Single { narrative, .. } => {
                 // Single narrative - get its name
@@ -100,13 +108,21 @@ impl MultiNarrative {
         // Load each narrative
         let mut narratives = HashMap::new();
         for name in &narrative_names {
+            debug!(narrative = %name, "Loading narrative");
             let mut narrative = Narrative::from_toml_str(s, Some(name))?;
             narrative.set_source_path(Some(source_path.to_path_buf()));
             narratives.insert(name.clone(), narrative);
         }
 
+        debug!(loaded_count = narratives.len(), "All narratives loaded");
+
         // Verify the requested narrative exists
         if !narratives.contains_key(narrative_name) {
+            tracing::error!(
+                requested = %narrative_name,
+                available = ?narrative_names,
+                "Requested narrative not found"
+            );
             return Err(NarrativeError::new(NarrativeErrorKind::TomlParse(format!(
                 "Narrative '{}' not found. Available: {}",
                 narrative_name,
@@ -114,6 +130,7 @@ impl MultiNarrative {
             ))));
         }
 
+        debug!("Multi-narrative created successfully");
         Ok(Self {
             narratives,
             active_narrative: narrative_name.to_string(),
@@ -131,12 +148,13 @@ impl MultiNarrative {
     ) -> Result<Self, NarrativeError> {
         use crate::toml_parser::{TomlNarrativeData, TomlNarrativeFile};
 
+        debug!("Parsing TOML content with database support");
         // Parse the TOML file
-        let toml_file: TomlNarrativeFile = toml::from_str(s)
-            .map_err(|e| NarrativeError::new(NarrativeErrorKind::TomlParse(e.to_string())))?;
+        let toml_file: TomlNarrativeFile = toml::from_str(s)?;
 
+        debug!("TOML parsed successfully");
         // Extract all narrative names from [narrative.name] or [narratives.name]
-        let narrative_names: Vec<String> = match &toml_file.narrative_data {
+        let narrative_names: Vec<String> = match toml_file.narrative_data() {
             TomlNarrativeData::Multi { narrative } => narrative.keys().cloned().collect(),
             TomlNarrativeData::Single { narrative, .. } => {
                 if let Some(n) = narrative.as_ref() {
@@ -152,20 +170,29 @@ impl MultiNarrative {
         // Load each narrative with database support
         let mut narratives = HashMap::new();
         for name in &narrative_names {
+            debug!(narrative = %name, "Loading narrative with database support");
             // Parse narrative from TOML
             let mut narrative = Narrative::from_toml_str(s, Some(name))?;
             narrative.set_source_path(Some(source_path.to_path_buf()));
 
             // Assemble prompts if template specified
             if narrative.metadata().template().is_some() {
+                debug!(narrative = %name, "Assembling prompts from database template");
                 narrative.assemble_act_prompts(conn)?;
             }
 
             narratives.insert(name.clone(), narrative);
         }
 
+        debug!(loaded_count = narratives.len(), "All narratives loaded with database support");
+
         // Verify the requested narrative exists
         if !narratives.contains_key(narrative_name) {
+            tracing::error!(
+                requested = %narrative_name,
+                available = ?narrative_names,
+                "Requested narrative not found"
+            );
             return Err(NarrativeError::new(NarrativeErrorKind::TomlParse(format!(
                 "Narrative '{}' not found. Available: {}",
                 narrative_name,
@@ -173,6 +200,7 @@ impl MultiNarrative {
             ))));
         }
 
+        debug!("Multi-narrative created successfully with database support");
         Ok(Self {
             narratives,
             active_narrative: narrative_name.to_string(),
@@ -180,23 +208,33 @@ impl MultiNarrative {
     }
 
     /// Get a narrative by name for composition.
+    #[instrument(skip(self), fields(name))]
     pub fn get_narrative(&self, name: &str) -> Option<&Narrative> {
-        self.narratives.get(name)
+        let result = self.narratives.get(name);
+        debug!(found = result.is_some(), "Narrative lookup");
+        result
     }
 }
 
 impl NarrativeProvider for MultiNarrative {
+    type Metadata = NarrativeMetadata;
+    type ActConfig = ActConfig;
+    type CarouselConfig = CarouselConfig;
+
+    #[instrument(skip(self))]
     fn name(&self) -> &str {
         &self.active_narrative
     }
 
-    fn metadata(&self) -> &NarrativeMetadata {
+    #[instrument(skip(self))]
+    fn metadata(&self) -> &Self::Metadata {
         self.narratives
             .get(&self.active_narrative)
             .map(|n| n.metadata())
             .unwrap_or_else(|| panic!("Active narrative {} must exist", self.active_narrative))
     }
 
+    #[instrument(skip(self))]
     fn act_names(&self) -> &[String] {
         self.narratives
             .get(&self.active_narrative)
@@ -204,27 +242,43 @@ impl NarrativeProvider for MultiNarrative {
             .unwrap_or_else(|| panic!("Active narrative {} must exist", self.active_narrative))
     }
 
-    fn get_act_config(&self, act_name: &str) -> Option<ActConfig> {
-        self.narratives
+    #[instrument(skip(self), fields(act_name))]
+    fn get_act_config(&self, act_name: &str) -> Option<Self::ActConfig> {
+        let result = self.narratives
             .get(&self.active_narrative)
-            .and_then(|n| n.get_act_config(act_name))
+            .and_then(|n| n.get_act_config(act_name));
+        debug!(found = result.is_some(), "Act config lookup");
+        result
     }
 
-    fn carousel_config(&self) -> Option<&CarouselConfig> {
+    #[instrument(skip(self))]
+    fn carousel_config(&self) -> Option<&Self::CarouselConfig> {
         self.narratives
             .get(&self.active_narrative)
             .and_then(|n| n.carousel_config())
     }
 
+    #[instrument(skip(self))]
     fn source_path(&self) -> Option<&Path> {
         self.narratives
             .get(&self.active_narrative)
             .and_then(|n| NarrativeProvider::source_path(n))
     }
 
-    fn resolve_narrative(&self, narrative_name: &str) -> Option<&dyn NarrativeProvider> {
-        self.narratives
+    #[instrument(skip(self), fields(narrative_name))]
+    fn resolve_narrative(&self, narrative_name: &str) -> Option<&dyn NarrativeProvider<
+        Metadata = Self::Metadata,
+        ActConfig = Self::ActConfig,
+        CarouselConfig = Self::CarouselConfig,
+    >> {
+        let result = self.narratives
             .get(narrative_name)
-            .map(|n| n as &dyn NarrativeProvider)
+            .map(|n| n as &dyn NarrativeProvider<
+                Metadata = NarrativeMetadata,
+                ActConfig = ActConfig,
+                CarouselConfig = CarouselConfig,
+            >);
+        debug!(found = result.is_some(), "Narrative resolution");
+        result
     }
 }

@@ -43,6 +43,6 @@ impl TableReference {
                 Some(self.limit),
             )
             .await
-            .map_err(|e| BotticelliError::from(botticelli_error::DatabaseError::from(e)))
+            .map_err(BotticelliError::from)
     }
 }

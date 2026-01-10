@@ -40,7 +40,13 @@ fn default_estimated_tokens() -> u64 {
 
 impl CarouselConfig {
     /// Creates a new carousel configuration.
+    #[tracing::instrument(fields(iterations, estimated_tokens_per_iteration))]
     pub fn new(iterations: u32, estimated_tokens_per_iteration: u64) -> Self {
+        tracing::debug!(
+            iterations,
+            estimated_tokens_per_iteration,
+            "Creating carousel configuration"
+        );
         Self {
             iterations,
             estimated_tokens_per_iteration,
@@ -56,11 +62,9 @@ impl CarouselConfig {
 #[derive(Debug, Getters)]
 pub struct CarouselState {
     /// Carousel configuration
-    #[getter(skip)]
     config: CarouselConfig,
 
     /// Budget tracker
-    #[getter(skip)]
     budget: Budget,
 
     /// Current iteration number (1-indexed)
@@ -81,7 +85,14 @@ pub struct CarouselState {
 
 impl CarouselState {
     /// Creates a new carousel state with the given configuration and budget.
+    #[tracing::instrument(skip(rate_limits), fields(iterations = config.iterations, estimated_tokens = config.estimated_tokens_per_iteration))]
     pub fn new(config: CarouselConfig, rate_limits: RateLimitConfig) -> Self {
+        tracing::debug!(
+            iterations = config.iterations,
+            estimated_tokens = config.estimated_tokens_per_iteration,
+            continue_on_error = config.continue_on_error,
+            "Creating carousel state"
+        );
         Self {
             config,
             budget: Budget::new(rate_limits),
@@ -91,11 +102,6 @@ impl CarouselState {
             completed: false,
             budget_exhausted: false,
         }
-    }
-
-    /// Gets the carousel configuration.
-    pub fn config(&self) -> &CarouselConfig {
-        &self.config
     }
 
     /// Gets mutable access to the budget.
@@ -154,6 +160,7 @@ impl CarouselState {
     }
 
     /// Records a successful iteration.
+    #[tracing::instrument(skip(self), fields(iteration = self.current_iteration))]
     pub fn record_success(&mut self) {
         self.successful_iterations += 1;
         tracing::debug!(
@@ -164,6 +171,7 @@ impl CarouselState {
     }
 
     /// Records a failed iteration.
+    #[tracing::instrument(skip(self), fields(iteration = self.current_iteration))]
     pub fn record_failure(&mut self) {
         self.failed_iterations += 1;
         tracing::warn!(
@@ -174,6 +182,7 @@ impl CarouselState {
     }
 
     /// Marks the carousel as completed.
+    #[tracing::instrument(skip(self), fields(successful = self.successful_iterations, failed = self.failed_iterations))]
     pub fn finish(&mut self) {
         self.completed = true;
         tracing::info!(
@@ -204,15 +213,29 @@ pub struct CarouselResult {
     budget_exhausted: bool,
 }
 
-impl CarouselResult {
-    /// Creates a carousel result from final state.
-    pub fn from_state(state: &CarouselState) -> Self {
+impl From<&CarouselState> for CarouselResult {
+    #[tracing::instrument(skip(state), fields(
+        iterations_attempted = state.current_iteration(),
+        successful = state.successful_iterations(),
+        failed = state.failed_iterations(),
+        completed = state.completed(),
+        budget_exhausted = state.budget_exhausted()
+    ))]
+    fn from(state: &CarouselState) -> Self {
+        tracing::debug!(
+            iterations_attempted = state.current_iteration(),
+            successful = state.successful_iterations(),
+            failed = state.failed_iterations(),
+            completed = state.completed(),
+            budget_exhausted = state.budget_exhausted(),
+            "Creating carousel result from state"
+        );
         Self {
-            iterations_attempted: state.current_iteration,
-            successful_iterations: state.successful_iterations,
-            failed_iterations: state.failed_iterations,
-            completed: state.completed,
-            budget_exhausted: state.budget_exhausted,
+            iterations_attempted: *state.current_iteration(),
+            successful_iterations: *state.successful_iterations(),
+            failed_iterations: *state.failed_iterations(),
+            completed: *state.completed(),
+            budget_exhausted: *state.budget_exhausted(),
         }
     }
 }

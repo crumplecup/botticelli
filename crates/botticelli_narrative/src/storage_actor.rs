@@ -18,6 +18,210 @@ use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 
+/// Request to start tracking a content generation.
+#[derive(Debug, derive_getters::Getters)]
+pub struct StartGeneration {
+    /// Target table name for content storage.
+    table_name: String,
+    /// Path to the narrative file.
+    narrative_file: String,
+    /// Name of the narrative being executed.
+    narrative_name: String,
+    /// Reply port for RPC response.
+    #[getter(skip)]
+    reply: RpcReplyPort<BotticelliResult<()>>,
+}
+
+impl StartGeneration {
+    /// Create a new StartGeneration request.
+    pub fn new(
+        table_name: String,
+        narrative_file: String,
+        narrative_name: String,
+        reply: RpcReplyPort<BotticelliResult<()>>,
+    ) -> Self {
+        Self {
+            table_name,
+            narrative_file,
+            narrative_name,
+            reply,
+        }
+    }
+
+    /// Consume the message and extract the reply port.
+    pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
+        self.reply
+    }
+}
+
+/// Request to create a table from a template.
+#[derive(Debug, derive_getters::Getters)]
+pub struct CreateTableFromTemplate {
+    /// Target table name to create.
+    table_name: String,
+    /// Template table name to copy schema from.
+    template: String,
+    /// Optional narrative name for metadata.
+    narrative_name: Option<String>,
+    /// Optional description for the table.
+    description: Option<String>,
+    /// Reply port for RPC response.
+    #[getter(skip)]
+    reply: RpcReplyPort<BotticelliResult<()>>,
+}
+
+impl CreateTableFromTemplate {
+    /// Create a new CreateTableFromTemplate request.
+    pub fn new(
+        table_name: String,
+        template: String,
+        narrative_name: Option<String>,
+        description: Option<String>,
+        reply: RpcReplyPort<BotticelliResult<()>>,
+    ) -> Self {
+        Self {
+            table_name,
+            template,
+            narrative_name,
+            description,
+            reply,
+        }
+    }
+
+    /// Consume the message and extract the reply port.
+    pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
+        self.reply
+    }
+}
+
+/// Request to create a table with inferred schema.
+#[derive(Debug, derive_getters::Getters)]
+pub struct CreateTableFromInference {
+    /// Target table name to create.
+    table_name: String,
+    /// Sample JSON data for schema inference.
+    json_sample: JsonValue,
+    /// Optional narrative name for metadata.
+    narrative_name: Option<String>,
+    /// Optional description for the table.
+    description: Option<String>,
+    /// Reply port for RPC response.
+    #[getter(skip)]
+    reply: RpcReplyPort<BotticelliResult<()>>,
+}
+
+impl CreateTableFromInference {
+    /// Create a new CreateTableFromInference request.
+    pub fn new(
+        table_name: String,
+        json_sample: JsonValue,
+        narrative_name: Option<String>,
+        description: Option<String>,
+        reply: RpcReplyPort<BotticelliResult<()>>,
+    ) -> Self {
+        Self {
+            table_name,
+            json_sample,
+            narrative_name,
+            description,
+            reply,
+        }
+    }
+
+    /// Consume the message and extract the reply port.
+    pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
+        self.reply
+    }
+}
+
+/// Request to insert content into a table.
+#[derive(Debug, derive_getters::Getters)]
+pub struct InsertContent {
+    /// Target table name for insertion.
+    table_name: String,
+    /// JSON data to insert.
+    json_data: JsonValue,
+    /// Name of the narrative generating content.
+    narrative_name: String,
+    /// Name of the act generating content.
+    act_name: String,
+    /// Optional model name used for generation.
+    model: Option<String>,
+    /// Reply port for RPC response.
+    #[getter(skip)]
+    reply: RpcReplyPort<BotticelliResult<()>>,
+}
+
+impl InsertContent {
+    /// Create a new InsertContent request.
+    pub fn new(
+        table_name: String,
+        json_data: JsonValue,
+        narrative_name: String,
+        act_name: String,
+        model: Option<String>,
+        reply: RpcReplyPort<BotticelliResult<()>>,
+    ) -> Self {
+        Self {
+            table_name,
+            json_data,
+            narrative_name,
+            act_name,
+            model,
+            reply,
+        }
+    }
+
+    /// Consume the message and extract the reply port.
+    pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
+        self.reply
+    }
+}
+
+/// Request to complete a content generation.
+#[derive(Debug, derive_getters::Getters)]
+pub struct CompleteGeneration {
+    /// Target table name.
+    table_name: String,
+    /// Number of rows generated.
+    row_count: Option<i32>,
+    /// Duration in milliseconds.
+    duration_ms: i32,
+    /// Final status (success/failed).
+    status: String,
+    /// Optional error message if failed.
+    error_message: Option<String>,
+    /// Reply port for RPC response.
+    #[getter(skip)]
+    reply: RpcReplyPort<BotticelliResult<()>>,
+}
+
+impl CompleteGeneration {
+    /// Create a new CompleteGeneration request.
+    pub fn new(
+        table_name: String,
+        row_count: Option<i32>,
+        duration_ms: i32,
+        status: String,
+        error_message: Option<String>,
+        reply: RpcReplyPort<BotticelliResult<()>>,
+    ) -> Self {
+        Self {
+            table_name,
+            row_count,
+            duration_ms,
+            status,
+            error_message,
+            reply,
+        }
+    }
+
+    /// Consume the message and extract the reply port.
+    pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
+        self.reply
+    }
+}
+
 /// Storage actor handling all database operations for content generation.
 pub struct StorageActor {
     pool: Pool<ConnectionManager<PgConnection>>,
@@ -25,20 +229,19 @@ pub struct StorageActor {
 
 impl StorageActor {
     /// Create a new storage actor with a connection pool.
+    #[tracing::instrument(skip(pool))]
     pub fn new(pool: Pool<ConnectionManager<PgConnection>>) -> Self {
+        tracing::debug!("Creating new StorageActor");
         Self { pool }
     }
 
     /// Get a connection from the pool.
+    #[tracing::instrument(skip(self))]
     fn get_conn(
         &self,
     ) -> BotticelliResult<diesel::r2d2::PooledConnection<ConnectionManager<PgConnection>>> {
-        Ok(self.pool.get().map_err(|e| {
-            botticelli_error::BackendError::new(format!(
-                "Failed to get connection from pool: {}",
-                e
-            ))
-        })?)
+        tracing::debug!("Getting connection from pool");
+        Ok(self.pool.get().map_err(botticelli_error::DatabaseError::from)?)
     }
 }
 
@@ -46,72 +249,15 @@ impl StorageActor {
 #[derive(Debug)]
 pub enum StorageMessage {
     /// Start tracking a content generation.
-    StartGeneration {
-        /// Target table name for content storage.
-        table_name: String,
-        /// Path to the narrative file.
-        narrative_file: String,
-        /// Name of the narrative being executed.
-        narrative_name: String,
-        /// Reply port for RPC response.
-        reply: RpcReplyPort<BotticelliResult<()>>,
-    },
+    StartGeneration(StartGeneration),
     /// Create a table from a template.
-    CreateTableFromTemplate {
-        /// Target table name to create.
-        table_name: String,
-        /// Template table name to copy schema from.
-        template: String,
-        /// Optional narrative name for metadata.
-        narrative_name: Option<String>,
-        /// Optional description for the table.
-        description: Option<String>,
-        /// Reply port for RPC response.
-        reply: RpcReplyPort<BotticelliResult<()>>,
-    },
+    CreateTableFromTemplate(CreateTableFromTemplate),
     /// Create a table with inferred schema.
-    CreateTableFromInference {
-        /// Target table name to create.
-        table_name: String,
-        /// Sample JSON data for schema inference.
-        json_sample: JsonValue,
-        /// Optional narrative name for metadata.
-        narrative_name: Option<String>,
-        /// Optional description for the table.
-        description: Option<String>,
-        /// Reply port for RPC response.
-        reply: RpcReplyPort<BotticelliResult<()>>,
-    },
+    CreateTableFromInference(CreateTableFromInference),
     /// Insert content into a table.
-    InsertContent {
-        /// Target table name for insertion.
-        table_name: String,
-        /// JSON data to insert.
-        json_data: JsonValue,
-        /// Name of the narrative generating content.
-        narrative_name: String,
-        /// Name of the act generating content.
-        act_name: String,
-        /// Optional model name used for generation.
-        model: Option<String>,
-        /// Reply port for RPC response.
-        reply: RpcReplyPort<BotticelliResult<()>>,
-    },
+    InsertContent(InsertContent),
     /// Complete a content generation.
-    CompleteGeneration {
-        /// Target table name.
-        table_name: String,
-        /// Number of rows generated.
-        row_count: Option<i32>,
-        /// Duration in milliseconds.
-        duration_ms: i32,
-        /// Final status (success/failed).
-        status: String,
-        /// Optional error message if failed.
-        error_message: Option<String>,
-        /// Reply port for RPC response.
-        reply: RpcReplyPort<BotticelliResult<()>>,
-    },
+    CompleteGeneration(CompleteGeneration),
 }
 
 /// State is unit type since all state is in the actor struct
@@ -148,79 +294,51 @@ impl Actor for StorageActor {
         _state: &mut Self::State,
     ) -> Result<(), ActorProcessingErr> {
         match message {
-            StorageMessage::StartGeneration {
-                table_name,
-                narrative_file,
-                narrative_name,
-                reply,
-            } => {
-                let result =
-                    self.handle_start_generation(table_name, narrative_file, narrative_name);
-                let _ = reply.send(result);
+            StorageMessage::StartGeneration(msg) => {
+                let result = self.handle_start_generation(
+                    msg.table_name().clone(),
+                    msg.narrative_file().clone(),
+                    msg.narrative_name().clone(),
+                );
+                let _ = msg.into_reply().send(result);
             }
-            StorageMessage::CreateTableFromTemplate {
-                table_name,
-                template,
-                narrative_name,
-                description,
-                reply,
-            } => {
+            StorageMessage::CreateTableFromTemplate(msg) => {
                 let result = self.handle_create_from_template(
-                    table_name,
-                    template,
-                    narrative_name,
-                    description,
+                    msg.table_name().clone(),
+                    msg.template().clone(),
+                    msg.narrative_name().clone(),
+                    msg.description().clone(),
                 );
-                let _ = reply.send(result);
+                let _ = msg.into_reply().send(result);
             }
-            StorageMessage::CreateTableFromInference {
-                table_name,
-                json_sample,
-                narrative_name,
-                description,
-                reply,
-            } => {
+            StorageMessage::CreateTableFromInference(msg) => {
                 let result = self.handle_create_from_inference(
-                    table_name,
-                    json_sample,
-                    narrative_name,
-                    description,
+                    msg.table_name().clone(),
+                    msg.json_sample().clone(),
+                    msg.narrative_name().clone(),
+                    msg.description().clone(),
                 );
-                let _ = reply.send(result);
+                let _ = msg.into_reply().send(result);
             }
-            StorageMessage::InsertContent {
-                table_name,
-                json_data,
-                narrative_name,
-                act_name,
-                model,
-                reply,
-            } => {
+            StorageMessage::InsertContent(msg) => {
                 let result = self.handle_insert_content(
-                    table_name,
-                    json_data,
-                    narrative_name,
-                    act_name,
-                    model,
+                    msg.table_name().clone(),
+                    msg.json_data().clone(),
+                    msg.narrative_name().clone(),
+                    msg.act_name().clone(),
+                    msg.model().clone(),
                 );
-                let _ = reply.send(result);
+                let _ = msg.into_reply().send(result);
             }
-            StorageMessage::CompleteGeneration {
-                table_name,
-                row_count,
-                duration_ms,
-                status,
-                error_message,
-                reply,
-            } => {
+            StorageMessage::CompleteGeneration(msg) => {
                 let result = self.handle_complete_generation(
-                    table_name,
-                    row_count,
-                    duration_ms,
-                    status,
-                    error_message,
+                    msg.table_name().clone(),
+                    *msg.row_count(),
+                    *msg.duration_ms(),
+                    msg.status().clone(),
+                    msg.error_message().clone(),
                 );
-                let _ = reply.send(result);
+                let _ = msg.into_reply().send(result);
             }
         }
         Ok(())
@@ -228,12 +346,19 @@ impl Actor for StorageActor {
 }
 
 impl StorageActor {
+    #[tracing::instrument(skip(self), fields(table = %table_name))]
     fn handle_start_generation(
         &self,
         table_name: String,
         narrative_file: String,
         narrative_name: String,
     ) -> BotticelliResult<()> {
+        tracing::debug!(
+            narrative_file = %narrative_file,
+            narrative_name = %narrative_name,
+            "Starting generation tracking"
+        );
+
         let mut conn = self.get_conn()?;
         let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
@@ -258,6 +383,12 @@ impl StorageActor {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self), fields(
+        table = %table_name,
+        template = %template,
+        has_narrative_name = narrative_name.is_some(),
+        has_description = description.is_some()
+    ))]
     fn handle_create_from_template(
         &self,
         table_name: String,
@@ -265,13 +396,9 @@ impl StorageActor {
         narrative_name: Option<String>,
         description: Option<String>,
     ) -> BotticelliResult<()> {
-        let mut conn = self.get_conn()?;
+        tracing::debug!("Creating table from template");
 
-        tracing::debug!(
-            template = %template,
-            table = %table_name,
-            "Creating table from template"
-        );
+        let mut conn = self.get_conn()?;
 
         create_content_table(
             &mut conn,
@@ -285,6 +412,12 @@ impl StorageActor {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, json_sample), fields(
+        table = %table_name,
+        has_narrative_name = narrative_name.is_some(),
+        has_description = description.is_some(),
+        field_count
+    ))]
     fn handle_create_from_inference(
         &self,
         table_name: String,
@@ -292,15 +425,15 @@ impl StorageActor {
         narrative_name: Option<String>,
         description: Option<String>,
     ) -> BotticelliResult<()> {
+        tracing::debug!("Inferring schema from JSON");
+
         let mut conn = self.get_conn()?;
 
-        tracing::debug!(table = %table_name, "Inferring schema from JSON");
-
         let schema = infer_schema(&json_sample)?;
+        tracing::Span::current().record("field_count", schema.field_count());
 
         tracing::info!(
             field_count = schema.field_count(),
-            table = %table_name,
             "Inferred schema from JSON"
         );
 
@@ -316,6 +449,15 @@ impl StorageActor {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self, json_data), fields(
+        table = %table_name,
+        narrative = %narrative_name,
+        act = %act_name,
+        has_model = model.is_some(),
+        column_count,
+        provided_field_count,
+        missing_required_count
+    ))]
     fn handle_insert_content(
         &self,
         table_name: String,
@@ -324,10 +466,15 @@ impl StorageActor {
         act_name: String,
         model: Option<String>,
     ) -> BotticelliResult<()> {
+        tracing::debug!("Inserting content into table");
+
         let mut conn = self.get_conn()?;
 
         // Query schema to get column types and constraints
         let schema = reflect_table_schema(&mut conn, &table_name)?;
+        tracing::Span::current().record("column_count", schema.columns.len());
+        tracing::debug!(column_count = schema.columns.len(), "Reflected table schema");
+
         let column_types: std::collections::HashMap<_, _> = schema
             .columns
             .iter()
@@ -341,6 +488,8 @@ impl StorageActor {
             .filter(|col| col.is_nullable == "NO" && col.column_default.is_none())
             .map(|col| col.name.as_str())
             .collect();
+
+        tracing::debug!(required_count = required_columns.len(), "Identified required columns");
 
         // Build INSERT statement dynamically
         let obj = json_data
@@ -366,6 +515,12 @@ impl StorageActor {
             }
         }
 
+        tracing::Span::current().record("provided_field_count", provided_columns.len());
+        tracing::debug!(
+            provided_count = provided_columns.len(),
+            "Matched JSON fields to table columns"
+        );
+
         // Validate required fields before INSERT
         // Per JSON_SCHEMA_MISMATCH_STRATEGY: Allow missing fields (will be NULL)
         let missing_required: Vec<&str> = required_columns
@@ -378,6 +533,8 @@ impl StorageActor {
             })
             .copied()
             .collect();
+
+        tracing::Span::current().record("missing_required_count", missing_required.len());
 
         if !missing_required.is_empty() {
             tracing::warn!(
@@ -416,13 +573,17 @@ impl StorageActor {
             values.join(", ")
         );
 
-        tracing::debug!(sql = %query, "Executing INSERT");
-
-        diesel::sql_query(&query).execute(&mut conn).map_err(|e| {
-            botticelli_error::BackendError::new(format!("Failed to insert content: {}", e))
-        })?;
-
         tracing::debug!(
+            sql = %query,
+            column_count = columns.len(),
+            "Executing INSERT"
+        );
+
+        diesel::sql_query(&query)
+            .execute(&mut conn)
+            .map_err(botticelli_error::DatabaseError::from)?;
+
+        tracing::info!(
             table = %table_name,
             act = %act_name,
             "Content inserted successfully"
@@ -431,6 +592,13 @@ impl StorageActor {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self), fields(
+        table = %table_name,
+        row_count,
+        duration_ms,
+        status = %status,
+        has_error = error_message.is_some()
+    ))]
     fn handle_complete_generation(
         &self,
         table_name: String,
@@ -439,6 +607,8 @@ impl StorageActor {
         status: String,
         error_message: Option<String>,
     ) -> BotticelliResult<()> {
+        tracing::debug!("Completing generation tracking");
+
         let mut conn = self.get_conn()?;
         let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
@@ -471,21 +641,25 @@ impl StorageActor {
     }
 }
 
-/// Convert a JSON value to SQL literal string.
 /// Converts JSON field name to potential database column name variations
+#[tracing::instrument(fields(field, variation_count))]
 fn field_name_variations(field: &str) -> Vec<String> {
-    vec![
+    let variations = vec![
         field.to_string(),    // exact match
         field.to_lowercase(), // lowercase
         to_snake_case(field), // snake_case
         to_camel_case(field), // camelCase
-    ]
+    ];
+    tracing::Span::current().record("variation_count", variations.len());
+    tracing::trace!(variations = ?variations, "Generated field name variations");
+    variations
 }
 
 /// Convert string to snake_case
-fn to_snake_case(s: &str) -> String {
+#[tracing::instrument(fields(input = field, output))]
+fn to_snake_case(field: &str) -> String {
     let mut result = String::new();
-    for (i, ch) in s.chars().enumerate() {
+    for (i, ch) in field.chars().enumerate() {
         if ch.is_uppercase() && i > 0 {
             result.push('_');
         }
@@ -493,14 +667,17 @@ fn to_snake_case(s: &str) -> String {
             result.push(lowercase);
         }
     }
+    tracing::Span::current().record("output", &result);
+    tracing::trace!(result = %result, "Converted to snake_case");
     result
 }
 
 /// Convert string to camelCase
-fn to_camel_case(s: &str) -> String {
+#[tracing::instrument(fields(input = field, output))]
+fn to_camel_case(field: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = false;
-    for ch in s.chars() {
+    for ch in field.chars() {
         if ch == '_' {
             capitalize_next = true;
         } else if capitalize_next {
@@ -512,10 +689,13 @@ fn to_camel_case(s: &str) -> String {
             result.push(ch);
         }
     }
+    tracing::Span::current().record("output", &result);
+    tracing::trace!(result = %result, "Converted to camelCase");
     result
 }
 
 /// Find matching column name using fuzzy matching
+#[tracing::instrument(skip(column_types), fields(field, matched, column_type))]
 fn find_column_match<'a>(
     field: &str,
     column_types: &'a HashMap<&str, &str>,
@@ -530,20 +710,31 @@ fn find_column_match<'a>(
                 );
             }
             if let Some((k, _)) = column_types.iter().find(|(k, _)| **k == variant) {
+                tracing::Span::current().record("matched", true);
+                tracing::Span::current().record("column_type", col_type);
                 return Some((*k, col_type));
             }
         }
     }
+    tracing::Span::current().record("matched", false);
+    tracing::trace!("No column match found");
     None
 }
 
-/// Format table schema as human-readable string for LLM prompts
-/// Formats schema for LLM prompts (reserved for Phase 2 improved prompts)
-///
-///
 /// Converts a JSON value to SQL literal based on column type with best-effort coercion
+#[tracing::instrument(skip(value), fields(col_type, value_type, result_preview))]
 fn json_value_to_sql(value: &JsonValue, col_type: &str) -> String {
     use serde_json::Value;
+
+    let value_type = match value {
+        Value::Null => "null",
+        Value::Bool(_) => "bool",
+        Value::Number(_) => "number",
+        Value::String(_) => "string",
+        Value::Array(_) => "array",
+        Value::Object(_) => "object",
+    };
+    tracing::Span::current().record("value_type", value_type);
 
     let col_type_lower = col_type.to_lowercase();
 

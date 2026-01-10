@@ -5,11 +5,12 @@
 //! schema automatically from JSON responses when no template is provided.
 
 use crate::{
-    ActProcessor, ProcessorContext, StorageMessage, extraction::extract_json,
-    extraction::parse_json,
+    CompleteGeneration, CreateTableFromInference, CreateTableFromTemplate, Extract, InsertContent,
+    ProcessorContext, StartGeneration, StorageMessage,
 };
 use async_trait::async_trait;
 use botticelli_error::{BotticelliResult, NarrativeError, NarrativeErrorKind};
+use botticelli_interface::ActProcessor;
 use ractor::{ActorRef, MessagingErr, rpc::CallResult};
 use serde_json::Value as JsonValue;
 
@@ -67,36 +68,38 @@ impl ContentGenerationProcessor {
 }
 
 #[async_trait]
-impl ActProcessor for ContentGenerationProcessor {
-    async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
+impl<'a> ActProcessor<ProcessorContext<'a>> for ContentGenerationProcessor {
+    type Error = botticelli_error::BotticelliError;
+
+    async fn process(&self, context: &ProcessorContext<'a>) -> Result<(), Self::Error> {
         // Check if we should extract output for this act
-        if !context.should_extract_output {
+        if !context.should_extract_output() {
             tracing::debug!(
-                act = %context.execution.act_name(),
+                act = %context.execution().act_name(),
                 "Skipping output extraction (extract_output=false or not last act)"
             );
             return Ok(());
         }
 
         // Determine processing mode: Template or Inference
-        let processing_mode = if let Some(template) = &context.narrative_metadata.template() {
+        let processing_mode = if let Some(template) = &context.narrative_metadata().template() {
             ProcessingMode::Template(template.clone())
         } else {
             ProcessingMode::Inference
         };
 
         // Use target if specified, otherwise template name or narrative name
-        let table_name = if let Some(target) = context.narrative_metadata.target() {
+        let table_name = if let Some(target) = context.narrative_metadata().target() {
             target.to_string()
         } else {
             match &processing_mode {
                 ProcessingMode::Template(template) => template.clone(),
-                ProcessingMode::Inference => context.narrative_metadata.name().to_string(),
+                ProcessingMode::Inference => context.narrative_metadata().name().to_string(),
             }
         };
 
         tracing::info!(
-            act = %context.execution.act_name(),
+            act = %context.execution().act_name(),
             table = %table_name,
             mode = ?processing_mode,
             "Processing content generation"
@@ -108,11 +111,13 @@ impl ActProcessor for ContentGenerationProcessor {
         let _ = self
             .storage_actor
             .call(
-                |reply| StorageMessage::StartGeneration {
-                    table_name: table_name.clone(),
-                    narrative_file: format!("{} (from processor)", context.narrative_name),
-                    narrative_name: context.narrative_name.to_string(),
-                    reply,
+                |reply| {
+                    StorageMessage::StartGeneration(StartGeneration::new(
+                        table_name.clone(),
+                        format!("{} (from processor)", context.narrative_name()),
+                        context.narrative_name().to_string(),
+                        reply,
+                    ))
                 },
                 None,
             )
@@ -121,12 +126,12 @@ impl ActProcessor for ContentGenerationProcessor {
         // Execute content generation
         let generation_result: Result<usize, botticelli_error::BotticelliError> = async {
             // Extract JSON from response first (needed for both modes)
-            let json_str = extract_json(context.execution.response())?;
+            let json_str = Extract::json(context.execution().response())?;
 
             tracing::debug!(json_length = json_str.len(), "Extracted JSON from response");
 
             // Parse JSON - could be single object or array
-            let parsed_json: JsonValue = parse_json(&json_str)?;
+            let parsed_json: JsonValue = Extract::parse_json(&json_str)?;
 
             let items: Vec<JsonValue> = if parsed_json.is_array() {
                 parsed_json
@@ -147,12 +152,16 @@ impl ActProcessor for ContentGenerationProcessor {
                     unwrap_call_result(
                         self.storage_actor
                             .call(
-                                |reply| StorageMessage::CreateTableFromTemplate {
-                                    table_name: table_name.clone(),
-                                    template: template.clone(),
-                                    narrative_name: Some(context.narrative_name.to_string()),
-                                    description: context.narrative_metadata.description().clone(),
-                                    reply,
+                                |reply| {
+                                    StorageMessage::CreateTableFromTemplate(
+                                        CreateTableFromTemplate::new(
+                                            table_name.clone(),
+                                            template.clone(),
+                                            Some(context.narrative_name().to_string()),
+                                            context.narrative_metadata().description().clone(),
+                                            reply,
+                                        ),
+                                    )
                                 },
                                 None,
                             )
@@ -163,12 +172,16 @@ impl ActProcessor for ContentGenerationProcessor {
                     unwrap_call_result(
                         self.storage_actor
                             .call(
-                                |reply| StorageMessage::CreateTableFromInference {
-                                    table_name: table_name.clone(),
-                                    json_sample: parsed_json.clone(),
-                                    narrative_name: Some(context.narrative_name.to_string()),
-                                    description: context.narrative_metadata.description().clone(),
-                                    reply,
+                                |reply| {
+                                    StorageMessage::CreateTableFromInference(
+                                        CreateTableFromInference::new(
+                                            table_name.clone(),
+                                            parsed_json.clone(),
+                                            Some(context.narrative_name().to_string()),
+                                            context.narrative_metadata().description().clone(),
+                                            reply,
+                                        ),
+                                    )
                                 },
                                 None,
                             )
@@ -187,20 +200,22 @@ impl ActProcessor for ContentGenerationProcessor {
             for (idx, item) in items.iter().enumerate() {
                 tracing::debug!(
                     index = idx,
-                    act = %context.execution.act_name(),
+                    act = %context.execution().act_name(),
                     "Inserting content item"
                 );
 
                 unwrap_call_result(
                     self.storage_actor
                         .call(
-                            |reply| StorageMessage::InsertContent {
-                                table_name: table_name.clone(),
-                                json_data: item.clone(),
-                                narrative_name: context.narrative_name.to_string(),
-                                act_name: context.execution.act_name().clone(),
-                                model: context.execution.model().clone(),
-                                reply,
+                            |reply| {
+                                StorageMessage::InsertContent(InsertContent::new(
+                                    table_name.clone(),
+                                    item.clone(),
+                                    context.narrative_name().to_string(),
+                                    context.execution().act_name().clone(),
+                                    context.execution().model().clone(),
+                                    reply,
+                                ))
                             },
                             None,
                         )
@@ -224,13 +239,15 @@ impl ActProcessor for ContentGenerationProcessor {
         let _ = self
             .storage_actor
             .call(
-                |reply| StorageMessage::CompleteGeneration {
-                    table_name: table_name.clone(),
-                    row_count,
-                    duration_ms,
-                    status,
-                    error_message,
-                    reply,
+                |reply| {
+                    StorageMessage::CompleteGeneration(CompleteGeneration::new(
+                        table_name.clone(),
+                        row_count,
+                        duration_ms,
+                        status,
+                        error_message,
+                        reply,
+                    ))
                 },
                 None,
             )
@@ -239,7 +256,7 @@ impl ActProcessor for ContentGenerationProcessor {
         // Return the original result
         generation_result.map(|row_count| {
             tracing::info!(
-                act = %context.execution.act_name(),
+                act = %context.execution().act_name(),
                 table = %table_name,
                 count = row_count,
                 "Content generation completed successfully"
@@ -247,29 +264,29 @@ impl ActProcessor for ContentGenerationProcessor {
         })
     }
 
-    fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+    fn should_process(&self, context: &ProcessorContext<'a>) -> bool {
         // Don't process if user explicitly opted out
-        if *context.narrative_metadata.skip_content_generation() {
+        if *context.narrative_metadata().skip_content_generation() {
             tracing::debug!(
-                act = %context.execution.act_name(),
+                act = %context.execution().act_name(),
                 "Skipping content generation (skip_content_generation = true)"
             );
             return false;
         }
 
         // Only process the last act by default (Phase 1 of JSON extraction strategy)
-        if !context.is_last_act {
+        if !*context.is_last_act() {
             tracing::debug!(
-                act = %context.execution.act_name(),
+                act = %context.execution().act_name(),
                 "Skipping content generation (not the last act)"
             );
             return false;
         }
 
         tracing::debug!(
-            act = %context.execution.act_name(),
-            template = ?context.narrative_metadata.template(),
-            target = ?context.narrative_metadata.target(),
+            act = %context.execution().act_name(),
+            template = ?context.narrative_metadata().template(),
+            target = ?context.narrative_metadata().target(),
             "Content generation processor will process this act (last act)"
         );
 

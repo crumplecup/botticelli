@@ -35,10 +35,13 @@ toml = { workspace = true }
 tracing = { workspace = true }
 derive_builder.workspace = true
 derive-getters.workspace = true
+derive-new.workspace = true
 botticelli_rate_limit = { workspace = true }
 regex = { workspace = true }
 derive_setters.workspace = true
 petgraph = { workspace = true }
+sha2 = { workspace = true }
+uuid = { workspace = true }
 
 [features]
 default = ["database"]

@@ -61,15 +61,13 @@ mod storage_actor;
 
 pub use carousel::{CarouselConfig, CarouselResult, CarouselState};
 pub use core::{Narrative, NarrativeMetadata, NarrativeSource, NarrativeToc};
-pub use executor::{BotCommandRegistry, NarrativeExecutor};
+pub use executor::NarrativeExecutor;
 pub use filesystem_storage::FilesystemNarrativeStorage;
-pub use history_retention::{
-    AUTO_SUMMARY_THRESHOLD, apply_retention_to_inputs, should_auto_summarize, summarize_input,
-};
+pub use history_retention::HistoryRetention;
 pub use in_memory_repository::InMemoryNarrativeRepository;
 pub use multi_narrative::MultiNarrative;
-pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
-pub use provider::{ActConfig, NarrativeProvider};
+pub use processor::{ProcessorContext, ProcessorRegistry};
+pub use provider::ActConfig;
 pub use state::{NarrativeState, StateManager, StateScope};
 pub use table_reference::TableReference;
 
@@ -77,7 +75,10 @@ pub use table_reference::TableReference;
 pub use content_generation::ContentGenerationProcessor;
 
 #[cfg(feature = "database")]
-pub use extraction::{extract_json, extract_toml, parse_json, parse_toml};
+pub use extraction::Extract;
 
 #[cfg(feature = "database")]
-pub use storage_actor::{StorageActor, StorageActorState, StorageMessage};
+pub use storage_actor::{
+    CompleteGeneration, CreateTableFromInference, CreateTableFromTemplate, InsertContent,
+    StartGeneration, StorageActor, StorageActorState, StorageMessage,
+};

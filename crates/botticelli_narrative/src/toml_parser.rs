@@ -371,31 +371,31 @@ pub struct TomlInput {
 }
 
 /// Root TOML structure supporting both single and multi-narrative files.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
 pub struct TomlNarrativeFile {
     /// Shared act definitions (available to all narratives)
     #[serde(default)]
-    pub acts: HashMap<String, TomlAct>,
+    acts: HashMap<String, TomlAct>,
 
     /// Optional bot command definitions (shared)
     #[serde(default)]
-    pub bots: HashMap<String, TomlBotDefinition>,
+    bots: HashMap<String, TomlBotDefinition>,
 
     /// Optional table query definitions (shared)
     #[serde(default)]
-    pub tables: HashMap<String, TomlTableDefinition>,
+    tables: HashMap<String, TomlTableDefinition>,
 
     /// Optional media source definitions (shared)
     #[serde(default)]
-    pub media: HashMap<String, TomlMediaDefinition>,
+    media: HashMap<String, TomlMediaDefinition>,
 
     /// Flattened narrative field - can be single TomlNarrative or HashMap<String, TomlNarrativeEntry>
     #[serde(flatten)]
-    pub narrative_data: TomlNarrativeData,
+    narrative_data: TomlNarrativeData,
 
     /// Legacy support for [narratives.name] syntax (deprecated)
     #[serde(default)]
-    pub narratives: HashMap<String, TomlNarrativeEntry>,
+    narratives: HashMap<String, TomlNarrativeEntry>,
 }
 
 /// Wrapper for either single narrative or multi-narrative format

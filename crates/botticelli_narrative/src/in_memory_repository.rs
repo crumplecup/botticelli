@@ -33,6 +33,10 @@ pub struct InMemoryNarrativeRepository {
     executions: Arc<RwLock<HashMap<i32, StoredExecution>>>,
     /// Next ID to assign
     next_id: Arc<RwLock<i32>>,
+    /// Storage for media binary data, keyed by UUID
+    media_storage: Arc<RwLock<HashMap<uuid::Uuid, Vec<u8>>>>,
+    /// Index for deduplication: content hash -> media reference
+    media_by_hash: Arc<RwLock<HashMap<String, botticelli_storage::MediaReference>>>,
 }
 
 /// Internal storage structure for executions.
@@ -52,6 +56,8 @@ impl InMemoryNarrativeRepository {
         Self {
             executions: Arc::new(RwLock::new(HashMap::new())),
             next_id: Arc::new(RwLock::new(1)),
+            media_storage: Arc::new(RwLock::new(HashMap::new())),
+            media_by_hash: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -69,6 +75,8 @@ impl InMemoryNarrativeRepository {
     pub async fn clear(&self) {
         self.executions.write().await.clear();
         *self.next_id.write().await = 1;
+        self.media_storage.write().await.clear();
+        self.media_by_hash.write().await.clear();
     }
 }
 
@@ -206,32 +214,110 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
             })
     }
 
-    // Media storage methods - simple passthrough to future implementations
+    #[tracing::instrument(skip(self, data, metadata), fields(data_len = data.len(), media_type = ?metadata.media_type()))]
     async fn store_media(
         &self,
-        _data: &[u8],
-        _metadata: &Self::MediaMetadata,
+        data: &[u8],
+        metadata: &Self::MediaMetadata,
     ) -> Result<Self::MediaReference, Self::Error> {
-        Err(NarrativeError::new(
-            botticelli_error::NarrativeErrorKind::SerializationError(
-                "Media storage not yet implemented for in-memory repository".to_string(),
-            ),
-        ))
+        use sha2::{Digest, Sha256};
+        use tracing::{debug, info};
+
+        // Compute content hash for deduplication
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let hash = format!("{:x}", hasher.finalize());
+
+        debug!(hash = %hash, size = data.len(), "Computed content hash");
+
+        // Check if media with same hash already exists
+        {
+            let hash_index = self.media_by_hash.read().await;
+            if let Some(existing) = hash_index.get(&hash) {
+                info!(
+                    hash = %hash,
+                    id = %existing.id(),
+                    "Media already exists (deduplication), returning existing reference"
+                );
+                return Ok(existing.clone());
+            }
+        }
+
+        // Generate new UUID for this media
+        let id = uuid::Uuid::new_v4();
+
+        // Create media reference
+        let reference = botticelli_storage::MediaReferenceBuilder::default()
+            .id(id)
+            .media_type(*metadata.media_type())
+            .mime_type(metadata.mime_type().to_string())
+            .size_bytes(data.len() as i64)
+            .content_hash(hash.clone())
+            .storage_backend("in-memory".to_string())
+            .storage_path(format!("mem://{}", id))
+            .build()
+            .map_err(|e| {
+                NarrativeError::new(botticelli_error::NarrativeErrorKind::ConfigurationError(
+                    format!("Failed to build media reference: {}", e),
+                ))
+            })?;
+
+        // Store binary data
+        self.media_storage.write().await.insert(id, data.to_vec());
+
+        // Index by hash for deduplication
+        self.media_by_hash.write().await.insert(hash.clone(), reference.clone());
+
+        info!(
+            id = %id,
+            hash = %hash,
+            size = data.len(),
+            "Stored new media"
+        );
+
+        Ok(reference)
     }
 
-    async fn load_media(&self, _reference: &Self::MediaReference) -> Result<Vec<u8>, Self::Error> {
-        Err(NarrativeError::new(
-            botticelli_error::NarrativeErrorKind::SerializationError(
-                "Media loading not yet implemented for in-memory repository".to_string(),
-            ),
-        ))
+    #[tracing::instrument(skip(self), fields(id = %reference.id()))]
+    async fn load_media(&self, reference: &Self::MediaReference) -> Result<Vec<u8>, Self::Error> {
+        use tracing::{debug, error};
+
+        let storage = self.media_storage.read().await;
+        
+        match storage.get(reference.id()) {
+            Some(data) => {
+                debug!(size = data.len(), "Retrieved media");
+                Ok(data.clone())
+            }
+            None => {
+                error!("Media not found");
+                Err(NarrativeError::new(
+                    botticelli_error::NarrativeErrorKind::FileRead(format!(
+                        "Media not found: {}",
+                        reference.id()
+                    )),
+                ))
+            }
+        }
     }
 
+    #[tracing::instrument(skip(self), fields(content_hash))]
     async fn get_media_by_hash(
         &self,
-        _content_hash: &str,
+        content_hash: &str,
     ) -> Result<Option<Self::MediaReference>, Self::Error> {
-        Ok(None)
+        use tracing::debug;
+
+        let hash_index = self.media_by_hash.read().await;
+        let result = hash_index.get(content_hash).cloned();
+
+        if result.is_some() {
+            debug!("Found media by hash");
+        } else {
+            debug!("Media not found by hash");
+        }
+
+        Ok(result)
     }
 
     // Video methods use default implementations (return NotImplemented)

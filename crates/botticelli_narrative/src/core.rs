@@ -1,7 +1,8 @@
 //! Core data structures for narratives.
 
-use crate::{ActConfig, CarouselConfig, NarrativeProvider, toml_parser};
+use crate::{ActConfig, CarouselConfig, toml_parser};
 use botticelli_error::{NarrativeError, NarrativeErrorKind};
+use botticelli_interface::NarrativeProvider;
 use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
@@ -262,24 +263,20 @@ impl Narrative {
     pub fn validate(&self) -> Result<(), NarrativeError> {
         // Check that toc.order is not empty
         if self.toc.order.is_empty() {
-            return Err(NarrativeError::new(NarrativeErrorKind::EmptyToc));
+            return Err(NarrativeErrorKind::EmptyToc.into());
         }
 
         // Check that all acts in toc.order exist in acts map
         for act_name in &self.toc.order {
             if !self.acts.contains_key(act_name) {
-                return Err(NarrativeError::new(NarrativeErrorKind::MissingAct(
-                    act_name.clone(),
-                )));
+                return Err(NarrativeErrorKind::MissingAct(act_name.clone()).into());
             }
         }
 
         // Check that all acts have at least one input OR are narrative references
         for (act_name, config) in &self.acts {
             if config.inputs().is_empty() && !config.is_narrative_ref() {
-                return Err(NarrativeError::new(NarrativeErrorKind::EmptyPrompt(
-                    act_name.clone(),
-                )));
+                return Err(NarrativeErrorKind::EmptyPrompt(act_name.clone()).into());
             }
         }
 
@@ -316,7 +313,7 @@ impl Narrative {
         // Resolve the narrative (supports multi-narrative files)
         let (narrative_meta, narrative_toc, narrative_acts) = toml_narrative_file
             .resolve_narrative(narrative_name)
-            .map_err(|e| NarrativeError::new(NarrativeErrorKind::TomlParse(e)))?;
+            .map_err(|e| NarrativeError::new(NarrativeErrorKind::TomlParse(e.to_string())))?;
 
         // Convert to domain types
         let metadata = NarrativeMetadata {
@@ -340,12 +337,13 @@ impl Narrative {
         for (act_name, toml_act) in &narrative_acts {
             let act_config = toml_act.to_act_config(&toml_narrative_file).map_err(|e| {
                 // Check if this is an empty prompt error
-                if e.contains("empty") || e.contains("whitespace") {
+                let err_str = e.to_string();
+                if err_str.contains("empty") || err_str.contains("whitespace") {
                     NarrativeError::new(NarrativeErrorKind::EmptyPrompt(act_name.clone()))
                 } else {
                     NarrativeError::new(NarrativeErrorKind::TomlParse(format!(
                         "Act '{}': {}",
-                        act_name, e
+                        act_name, err_str
                     )))
                 }
             })?;
@@ -364,11 +362,15 @@ impl Narrative {
 }
 
 impl NarrativeProvider for Narrative {
+    type Metadata = NarrativeMetadata;
+    type ActConfig = ActConfig;
+    type CarouselConfig = CarouselConfig;
+
     fn name(&self) -> &str {
         &self.metadata.name
     }
 
-    fn metadata(&self) -> &NarrativeMetadata {
+    fn metadata(&self) -> &Self::Metadata {
         &self.metadata
     }
 
@@ -376,11 +378,11 @@ impl NarrativeProvider for Narrative {
         &self.toc.order
     }
 
-    fn get_act_config(&self, act_name: &str) -> Option<ActConfig> {
+    fn get_act_config(&self, act_name: &str) -> Option<Self::ActConfig> {
         self.acts.get(act_name).cloned()
     }
 
-    fn carousel_config(&self) -> Option<&CarouselConfig> {
+    fn carousel_config(&self) -> Option<&Self::CarouselConfig> {
         self.metadata.carousel.as_ref()
     }
 
