@@ -82,7 +82,7 @@ impl Default for ValidationResult {
 }
 
 /// A validation error with location and fix suggestion.
-#[derive(Debug, Clone, derive_getters::Getters)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_new::new)]
 pub struct ValidationError {
     /// Type of validation error
     kind: ValidationErrorKind,
@@ -95,7 +95,7 @@ pub struct ValidationError {
 }
 
 /// A validation warning that should be reviewed.
-#[derive(Debug, Clone, derive_getters::Getters)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_new::new)]
 pub struct ValidationWarning {
     /// Type of validation warning
     kind: ValidationWarningKind,
@@ -106,7 +106,7 @@ pub struct ValidationWarning {
 }
 
 /// Location information for validation messages.
-#[derive(Debug, Clone, derive_getters::Getters)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_new::new)]
 pub struct ValidationLocation {
     /// Line number (1-indexed)
     line: usize,
@@ -260,12 +260,12 @@ pub fn validate_narrative_toml_with_config(
     let parsed = match toml::from_str::<toml::Value>(toml) {
         Ok(value) => value,
         Err(e) => {
-            result.add_error(ValidationError {
-                kind: ValidationErrorKind::InvalidSyntax,
-                location: None,
-                message: format!("Failed to parse TOML: {}", e),
-                suggestion: Some("Check for syntax errors like missing quotes, unmatched brackets, or invalid escape sequences.".to_string()),
-            });
+            result.add_error(ValidationError::new(
+                ValidationErrorKind::InvalidSyntax,
+                None,
+                format!("Failed to parse TOML: {}", e),
+                Some("Check for syntax errors like missing quotes, unmatched brackets, or invalid escape sequences.".to_string()),
+            ));
             return result;
         }
     };
@@ -311,12 +311,12 @@ pub fn validate_narrative_file_with_config(
     let content = match std::fs::read_to_string(path) {
         Ok(content) => content,
         Err(e) => {
-            result.add_error(ValidationError {
-                kind: ValidationErrorKind::FileNotFound,
-                location: None,
-                message: format!("Failed to read file '{}': {}", path.display(), e),
-                suggestion: Some("Check that the file exists and is readable.".to_string()),
-            });
+            result.add_error(ValidationError::new(
+                ValidationErrorKind::FileNotFound,
+                None,
+                format!("Failed to read file '{}': {}", path.display(), e),
+                Some("Check that the file exists and is readable.".to_string()),
+            ));
             return result;
         }
     };
@@ -331,12 +331,12 @@ fn detect_syntax_patterns(parsed: &toml::Value, result: &mut ValidationResult) {
         if let Some(acts_value) = table.get("acts")
             && acts_value.is_array()
         {
-            result.add_error(ValidationError {
-                kind: ValidationErrorKind::InvalidSyntax,
-                location: None,
-                message: "Found [[acts]] but acts should be a table of tables, not an array"
+            result.add_error(ValidationError::new(
+                ValidationErrorKind::InvalidSyntax,
+                None,
+                "Found [[acts]] but acts should be a table of tables, not an array"
                     .to_string(),
-                suggestion: Some(
+                Some(
                     "Use one of these formats:\n\n\
                     1. Inline table syntax (recommended for simple prompts):\n\
                        [acts]\n\
@@ -347,19 +347,19 @@ fn detect_syntax_patterns(parsed: &toml::Value, result: &mut ValidationResult) {
                        model = \"gemini-2.0-flash-exp\""
                         .to_string(),
                 ),
-            });
+            ));
         }
 
         // Check for [[narrative]] (multiple narrative sections)
         if let Some(narrative_value) = table.get("narrative")
             && narrative_value.is_array()
         {
-            result.add_error(ValidationError {
-                kind: ValidationErrorKind::InvalidSyntax,
-                location: None,
-                message: "Found [[narrative]] but only a single [narrative] section is allowed".to_string(),
-                suggestion: Some("Use a single [narrative] section:\n\n[narrative]\nname = \"my_narrative\"\ndescription = \"...\"".to_string()),
-            });
+            result.add_error(ValidationError::new(
+                ValidationErrorKind::InvalidSyntax,
+                None,
+                "Found [[narrative]] but only a single [narrative] section is allowed".to_string(),
+                Some("Use a single [narrative] section:\n\n[narrative]\nname = \"my_narrative\"\ndescription = \"...\"".to_string()),
+            ));
         }
     }
 }
@@ -373,12 +373,12 @@ fn validate_structure(
     let table = match parsed.as_table() {
         Some(t) => t,
         None => {
-            result.add_error(ValidationError {
-                kind: ValidationErrorKind::InvalidSyntax,
-                location: None,
-                message: "TOML root must be a table".to_string(),
-                suggestion: None,
-            });
+            result.add_error(ValidationError::new(
+                ValidationErrorKind::InvalidSyntax,
+                None,
+                "TOML root must be a table".to_string(),
+                None,
+            ));
             return;
         }
     };
@@ -388,12 +388,12 @@ fn validate_structure(
     let has_narratives = table.contains_key("narratives");
 
     if !has_narrative && !has_narratives {
-        result.add_error(ValidationError {
-            kind: ValidationErrorKind::MissingSection,
-            location: None,
-            message: "Missing [narrative] or [narratives] section".to_string(),
-            suggestion: Some("Add a [narrative] section:\n\n[narrative]\nname = \"my_narrative\"\ndescription = \"...\"".to_string()),
-        });
+        result.add_error(ValidationError::new(
+            ValidationErrorKind::MissingSection,
+            None,
+            "Missing [narrative] or [narratives] section".to_string(),
+            Some("Add a [narrative] section:\n\n[narrative]\nname = \"my_narrative\"\ndescription = \"...\"".to_string()),
+        ));
         return;
     }
 
@@ -452,28 +452,28 @@ fn validate_single_narrative(
 ) {
     // Check for toc
     if !table.contains_key("toc") {
-        result.add_error(ValidationError {
-            kind: ValidationErrorKind::MissingSection,
-            location: None,
-            message: "Missing [toc] section".to_string(),
-            suggestion: Some(
+        result.add_error(ValidationError::new(
+            ValidationErrorKind::MissingSection,
+            None,
+            "Missing [toc] section".to_string(),
+            Some(
                 "Add a table of contents:\n\n[toc]\norder = [\"act1\", \"act2\"]".to_string(),
             ),
-        });
+        ));
         return;
     }
 
     // Get toc.order
     let toc_order = extract_toc_order(table.get("toc"));
     if toc_order.is_empty() {
-        result.add_error(ValidationError {
-            kind: ValidationErrorKind::EmptyToc,
-            location: None,
-            message: "Table of contents is empty".to_string(),
-            suggestion: Some(
+        result.add_error(ValidationError::new(
+            ValidationErrorKind::EmptyToc,
+            None,
+            "Table of contents is empty".to_string(),
+            Some(
                 "Add at least one act to toc.order:\n\n[toc]\norder = [\"act1\"]".to_string(),
             ),
-        });
+        ));
         return;
     }
 
@@ -483,15 +483,15 @@ fn validate_single_narrative(
     // Validate each act in toc.order exists and has valid references
     for act_name in &toc_order {
         if !acts.contains_key(act_name.as_str()) {
-            result.add_error(ValidationError {
-                kind: ValidationErrorKind::MissingAct,
-                location: None,
-                message: format!("Act '{}' referenced in toc.order does not exist", act_name),
-                suggestion: Some(format!(
+            result.add_error(ValidationError::new(
+                ValidationErrorKind::MissingAct,
+                None,
+                format!("Act '{}' referenced in toc.order does not exist", act_name),
+                Some(format!(
                     "Add the act:\n\n[acts.{}]\nprompt = \"...\"",
                     act_name
                 )),
-            });
+            ));
         } else {
             // Validate references in act
             if let Some(act_value) = acts.get(act_name.as_str()) {
@@ -523,19 +523,19 @@ fn validate_multi_narratives(
         // Each narrative must have a toc
         let toc_order = extract_toc_order(narrative_table.get("toc"));
         if toc_order.is_empty() {
-            result.add_error(ValidationError {
-                kind: ValidationErrorKind::EmptyToc,
-                location: Some(ValidationLocation {
-                    line: 0,
-                    column: 0,
-                    section: Some(format!("narratives.{}", narrative_name)),
-                }),
-                message: format!("Narrative '{}' has empty table of contents", narrative_name),
-                suggestion: Some(format!(
+            result.add_error(ValidationError::new(
+                ValidationErrorKind::EmptyToc,
+                Some(ValidationLocation::new(
+                    0,
+                    0,
+                    Some(format!("narratives.{}", narrative_name)),
+                )),
+                format!("Narrative '{}' has empty table of contents", narrative_name),
+                Some(format!(
                     "Add toc to narrative:\n\n[narratives.{}]\ntoc = [\"act1\"]",
                     narrative_name
                 )),
-            });
+            ));
             continue;
         }
 
@@ -549,22 +549,22 @@ fn validate_multi_narratives(
                 .or_else(|| shared_acts.get(act_name.as_str()));
 
             if act_value.is_none() {
-                result.add_error(ValidationError {
-                    kind: ValidationErrorKind::MissingAct,
-                    location: Some(ValidationLocation {
-                        line: 0,
-                        column: 0,
-                        section: Some(format!("narratives.{}", narrative_name)),
-                    }),
-                    message: format!(
+                result.add_error(ValidationError::new(
+                    ValidationErrorKind::MissingAct,
+                    Some(ValidationLocation::new(
+                        0,
+                        0,
+                        Some(format!("narratives.{}", narrative_name)),
+                    )),
+                    format!(
                         "Act '{}' in narrative '{}' does not exist",
                         act_name, narrative_name
                     ),
-                    suggestion: Some(format!(
+                    Some(format!(
                         "Add the act under [acts] or [narratives.{}.acts]",
                         narrative_name
                     )),
-                });
+                ));
             } else if let Some(value) = act_value {
                 validate_act_references(act_name, value, resources, result);
             }
@@ -724,19 +724,19 @@ fn validate_reference(
                 )
             };
 
-            result.add_error(ValidationError {
-                kind: ValidationErrorKind::UndefinedReference,
-                location: Some(ValidationLocation {
-                    line: 0,
-                    column: 0,
-                    section: Some(format!("acts.{}", act_name)),
-                }),
-                message: format!(
+            result.add_error(ValidationError::new(
+                ValidationErrorKind::UndefinedReference,
+                Some(ValidationLocation::new(
+                    0,
+                    0,
+                    Some(format!("acts.{}", act_name)),
+                )),
+                format!(
                     "Undefined reference '{}.{}' in act '{}'",
                     resource_type, resource_name, act_name
                 ),
-                suggestion: Some(suggestion),
-            });
+                Some(suggestion),
+            ));
         }
     }
 }
@@ -753,14 +753,14 @@ fn validate_model_name(
         // Try to find a close match for suggestions
         let suggestion = find_closest_model(model);
 
-        result.add_warning(ValidationWarning {
-                kind: ValidationWarningKind::UnknownModel,
-                location: Some(ValidationLocation {
-                    line: 0,
-                    column: 0,
-                    section: Some(section_name.to_string()),
-                }),
-                message: if let Some(closest) = suggestion {
+        result.add_warning(ValidationWarning::new(
+                ValidationWarningKind::UnknownModel,
+                Some(ValidationLocation::new(
+                    0,
+                    0,
+                    Some(section_name.to_string()),
+                )),
+                if let Some(closest) = suggestion {
                     format!("Unknown model '{}'. Did you mean '{}'?", model, closest)
                 } else {
                     format!(
@@ -768,7 +768,7 @@ fn validate_model_name(
                         model
                     )
                 },
-            });
+            ));
     }
 }
 
@@ -836,45 +836,45 @@ fn check_unused_resources(resources: &ResourceRegistry, result: &mut ValidationR
     for bot in &resources.bots {
         let reference = format!("bots.{}", bot);
         if !used.contains(&reference) {
-            result.add_warning(ValidationWarning {
-                kind: ValidationWarningKind::UnusedResource,
-                location: Some(ValidationLocation {
-                    line: 0,
-                    column: 0,
-                    section: Some(format!("bots.{}", bot)),
-                }),
-                message: format!("Bot '{}' is defined but never used", bot),
-            });
+            result.add_warning(ValidationWarning::new(
+                ValidationWarningKind::UnusedResource,
+                Some(ValidationLocation::new(
+                    0,
+                    0,
+                    Some(format!("bots.{}", bot)),
+                )),
+                format!("Bot '{}' is defined but never used", bot),
+            ));
         }
     }
 
     for table in &resources.tables {
         let reference = format!("tables.{}", table);
         if !used.contains(&reference) {
-            result.add_warning(ValidationWarning {
-                kind: ValidationWarningKind::UnusedResource,
-                location: Some(ValidationLocation {
-                    line: 0,
-                    column: 0,
-                    section: Some(format!("tables.{}", table)),
-                }),
-                message: format!("Table '{}' is defined but never used", table),
-            });
+            result.add_warning(ValidationWarning::new(
+                ValidationWarningKind::UnusedResource,
+                Some(ValidationLocation::new(
+                    0,
+                    0,
+                    Some(format!("tables.{}", table)),
+                )),
+                format!("Table '{}' is defined but never used", table),
+            ));
         }
     }
 
     for media in &resources.media {
         let reference = format!("media.{}", media);
         if !used.contains(&reference) {
-            result.add_warning(ValidationWarning {
-                kind: ValidationWarningKind::UnusedResource,
-                location: Some(ValidationLocation {
-                    line: 0,
-                    column: 0,
-                    section: Some(format!("media.{}", media)),
-                }),
-                message: format!("Media '{}' is defined but never used", media),
-            });
+            result.add_warning(ValidationWarning::new(
+                ValidationWarningKind::UnusedResource,
+                Some(ValidationLocation::new(
+                    0,
+                    0,
+                    Some(format!("media.{}", media)),
+                )),
+                format!("Media '{}' is defined but never used", media),
+            ));
         }
     }
 }
@@ -962,27 +962,27 @@ fn check_circular_dependencies(
             // This is a cycle involving multiple nodes
             let cycle_names: Vec<String> = scc.iter().map(|&idx| graph[idx].clone()).collect();
 
-            result.add_error(ValidationError {
-                kind: ValidationErrorKind::CircularDependency,
-                location: None,
-                message: format!(
+            result.add_error(ValidationError::new(
+                ValidationErrorKind::CircularDependency,
+                None,
+                format!(
                     "Circular dependency detected: {}",
                     cycle_names.join(" → ")
                 ),
-                suggestion: Some(
+                Some(
                     "Break the circular dependency by removing one of the narrative references or restructuring the acts.".to_string()
                 ),
-            });
+            ));
         } else if scc.len() == 1 {
             // Check for self-reference
             let node = scc[0];
             if graph.neighbors(node).any(|n| n == node) {
-                result.add_error(ValidationError {
-                    kind: ValidationErrorKind::CircularDependency,
-                    location: None,
-                    message: format!("Self-referencing circular dependency in '{}'", graph[node]),
-                    suggestion: Some("Remove the self-reference to break the cycle.".to_string()),
-                });
+                result.add_error(ValidationError::new(
+                    ValidationErrorKind::CircularDependency,
+                    None,
+                    format!("Self-referencing circular dependency in '{}'", graph[node]),
+                    Some("Remove the self-reference to break the cycle.".to_string()),
+                ));
             }
         }
     }
