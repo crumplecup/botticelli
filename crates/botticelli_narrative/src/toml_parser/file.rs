@@ -32,10 +32,6 @@ pub struct TomlNarrativeFile {
     /// Flattened narrative field - can be single TomlNarrative or HashMap<String, TomlNarrativeEntry>
     #[serde(flatten)]
     narrative_data: TomlNarrativeData,
-
-    /// Legacy support for [narratives.name] syntax (deprecated)
-    #[serde(default)]
-    narratives: HashMap<String, TomlNarrativeEntry>,
 }
 
 /// Wrapper for either single narrative or multi-narrative format
@@ -77,10 +73,10 @@ impl TomlNarrativeFile {
 
     /// Resolve a narrative from this file.
     ///
-    /// If `narrative_name` is provided, looks for it in [narrative.name] or [narratives.name].
+    /// If `narrative_name` is provided, looks for it in [narrative.name].
     /// Otherwise, uses the single [narrative] section if present.
     ///
-    /// Returns a tuple of (metadata fields, toc, acts map, shared resources).
+    /// Returns a tuple of (metadata fields, toc, acts map).
     pub fn resolve_narrative(
         &self,
         narrative_name: Option<&str>,
@@ -93,14 +89,9 @@ impl TomlNarrativeFile {
             TomlNarrativeData::Multi { narrative } => (None, None, Some(narrative)),
         };
 
-        match (
-            narrative_name,
-            single_narrative,
-            multi_map,
-            &self.narratives,
-        ) {
-            // Explicit name provided - look in [narrative.name] first, then [narratives.name]
-            (Some(name), _, Some(multi), _) if !multi.is_empty() => {
+        match (narrative_name, single_narrative, multi_map) {
+            // Explicit name provided - look in [narrative.name]
+            (Some(name), _, Some(multi)) if !multi.is_empty() => {
                 let entry = multi.get(name).ok_or_else(|| {
                     let available: Vec<_> = multi.keys().cloned().collect();
                     NarrativeErrorKind::NarrativeNotFound {
@@ -112,21 +103,8 @@ impl TomlNarrativeFile {
                 self.process_narrative_entry(name, entry)
             }
 
-            // Explicit name, check legacy [narratives.name]
-            (Some(name), _, _, narratives) if !narratives.is_empty() => {
-                let entry = narratives.get(name).ok_or_else(|| {
-                    let available: Vec<_> = narratives.keys().cloned().collect();
-                    NarrativeErrorKind::NarrativeNotFound {
-                        name: name.to_string(),
-                        available: available.join(", "),
-                    }
-                })?;
-
-                self.process_narrative_entry(name, entry)
-            }
-
-            // No name provided, use single [narrative] (backwards compat)
-            (None, Some(single), _, _) => {
+            // No name provided, use single [narrative]
+            (None, Some(single), _) => {
                 let toc = single_toc.ok_or_else(|| {
                     NarrativeErrorKind::MissingRequiredField {
                         field: "toc".to_string(),
@@ -137,17 +115,8 @@ impl TomlNarrativeFile {
             }
 
             // No name, multiple definitions exist - ambiguous
-            (None, _, Some(multi), _) if !multi.is_empty() => {
+            (None, _, Some(multi)) if !multi.is_empty() => {
                 let available: Vec<_> = multi.keys().cloned().collect();
-                Err(NarrativeErrorKind::AmbiguousNarrative {
-                    available: available.join(", "),
-                }
-                .into())
-            }
-
-            // No name, multiple definitions in legacy field - ambiguous
-            (None, _, _, narratives) if !narratives.is_empty() => {
-                let available: Vec<_> = narratives.keys().cloned().collect();
                 Err(NarrativeErrorKind::AmbiguousNarrative {
                     available: available.join(", "),
                 }
@@ -424,7 +393,21 @@ impl TomlNarrativeFile {
     #[instrument(skip(self), fields(name))]
     fn resolve_narrative_reference(&self, name: &str) -> NarrativeResult<Input> {
         debug!(%name, "Resolving narrative reference");
-        let narrative_entry = self.narratives.get(name).ok_or_else(|| {
+        
+        // Get the multi-narrative map if it exists
+        let multi_map = match &self.narrative_data {
+            TomlNarrativeData::Multi { narrative } => narrative,
+            TomlNarrativeData::Single { .. } => {
+                error!("Cannot reference narratives from single-narrative file");
+                return Err(NarrativeErrorKind::ResourceNotFound {
+                    resource_type: "narrative".to_string(),
+                    name: name.to_string(),
+                }
+                .into());
+            }
+        };
+        
+        let narrative_entry = multi_map.get(name).ok_or_else(|| {
             error!(%name, "Narrative not found");
             NarrativeErrorKind::ResourceNotFound {
                 resource_type: "narrative".to_string(),
