@@ -379,6 +379,28 @@ where T: Into<CrateErrorKind>
 
 Reference: See `crates/botticelli_error` for complete implementation.
 
+### Error Conversion: Social Mobility
+
+**Surfs** (specific errors) → **Royalty** (umbrella error):
+
+- **Surfs**: `NarrativeError`, `DatabaseError`, `HttpError`, etc.
+- **Royalty**: `BotticelliError` (umbrella type)
+
+Rules:
+
+```rust
+// ✅ Create Surf at error site
+return Err(NarrativeErrorKind::EmptyToc.into());
+
+// ✅ Let ? promote Surf → Royalty automatically
+let state = state_mgr.load()?;  // Returns BotticelliResult
+
+// ❌ NEVER convert Surf → Surf
+state_mgr.load().map_err(|e| NarrativeError::new(...))?;  // BAD!
+```
+
+Think: "Fishmonger to streetsweeper" (Surf → Surf) is useless. Only "Serf to Prince" (Surf → Royalty) matters.
+
 ---
 
 ## Logging and Tracing
