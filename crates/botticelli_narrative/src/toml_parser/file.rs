@@ -156,29 +156,29 @@ impl TomlNarrativeFile {
         match entry {
             TomlNarrativeEntry::Definition(def) => {
                 // Use table key as name if not specified inline
-                let narrative_name = def.name.clone().unwrap_or_else(|| name.to_string());
-                let narrative_desc = def.description.clone().unwrap_or_default();
+                let narrative_name = def.name().clone().unwrap_or_else(|| name.to_string());
+                let narrative_desc = def.description().clone().unwrap_or_default();
 
                 // Convert definition to TomlNarrative format
-                let meta = TomlNarrative {
-                    name: narrative_name,
-                    description: narrative_desc,
-                    template: def.template.clone(),
-                    target: def.target.clone(),
-                    skip_content_generation: def.skip_content_generation,
-                    carousel: def.carousel.clone(),
-                    model: def.model.clone(),
-                    temperature: def.temperature,
-                    max_tokens: def.max_tokens,
-                    budget: def.budget.clone(),
-                };
+                let meta = TomlNarrative::new(
+                    narrative_name,
+                    narrative_desc,
+                    def.template().clone(),
+                    def.target().clone(),
+                    *def.skip_content_generation(),
+                    def.carousel().clone(),
+                    def.model().clone(),
+                    *def.temperature(),
+                    *def.max_tokens(),
+                    def.budget().clone(),
+                );
 
                 // Merge shared acts with definition-specific acts
                 let mut acts = self.acts.clone();
-                acts.extend(def.acts.clone()); // Definition acts override shared
+                acts.extend(def.acts().clone()); // Definition acts override shared
 
                 // Convert toc Vec to TomlToc::Array
-                let toc = TomlToc::Array(def.toc.clone());
+                let toc = TomlToc::Array(def.toc().clone());
                 debug!(act_count = acts.len(), toc_length = toc.order().len(), "Narrative entry processed");
                 Ok((meta, toc, acts))
             }
