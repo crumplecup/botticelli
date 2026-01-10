@@ -77,11 +77,14 @@ pub(super) fn find_file_recursive(
     }
 
     error!("File not found after exhaustive search");
-    Err(NarrativeErrorKind::FileRead(format!(
-        "File '{}' not found in {} or any parent/child directories",
-        filename,
-        base_dir.display()
-    ))
+    Err(NarrativeErrorKind::Io(IoError::from(std::io::Error::new(
+        std::io::ErrorKind::NotFound,
+        format!(
+            "File '{}' not found in {} or any parent/child directories",
+            filename,
+            base_dir.display()
+        ),
+    )))
     .into())
 }
 

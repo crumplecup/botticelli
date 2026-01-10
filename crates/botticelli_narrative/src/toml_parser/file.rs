@@ -5,7 +5,7 @@ use super::{
     TomlNarrativeReference,
 };
 use botticelli_core::{HistoryRetention, Input, MediaSource};
-use botticelli_error::{NarrativeErrorKind, NarrativeResult};
+use botticelli_error::{IoError, NarrativeErrorKind, NarrativeResult};
 use serde::Deserialize;
 use std::collections::HashMap;
 use tracing::{debug, error, instrument};
@@ -328,7 +328,7 @@ impl TomlNarrativeFile {
             debug!(%file, "Reading file source");
             let data = std::fs::read(file).map_err(|e| {
                 error!(%file, error = %e, "Failed to read file");
-                NarrativeErrorKind::FileRead(format!("Failed to read file {}: {}", file, e))
+                NarrativeErrorKind::Io(IoError::from(e))
             })?;
             debug!(%file, size = data.len(), "File read successfully");
             MediaSource::Binary(data)

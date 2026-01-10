@@ -2,7 +2,7 @@
 
 use super::utils::*;
 use botticelli_core::{Input, MediaSource, TableFormat};
-use botticelli_error::{NarrativeErrorKind, NarrativeResult};
+use botticelli_error::{IoError, NarrativeErrorKind, NarrativeResult};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -96,11 +96,7 @@ impl TomlInput {
                     debug!(file = %file_path.display(), "Loading text from file");
                     std::fs::read_to_string(&file_path).map_err(|e| {
                         error!(file = %file_path.display(), error = %e, "Failed to read text file");
-                        NarrativeErrorKind::FileRead(format!(
-                            "Failed to read text file {}: {}",
-                            file_path.display(),
-                            e
-                        ))
+                        NarrativeErrorKind::Io(IoError::from(e))
                     })?
                 } else {
                     error!("Text input missing both 'content' and 'file' fields");
@@ -257,11 +253,7 @@ impl TomlInput {
             debug!(file = %file_path.display(), "Reading file source");
             let data = std::fs::read(&file_path).map_err(|e| {
                 error!(file = %file_path.display(), error = %e, "Failed to read file");
-                NarrativeErrorKind::FileRead(format!(
-                    "Failed to read file {}: {}",
-                    file_path.display(),
-                    e
-                ))
+                NarrativeErrorKind::Io(IoError::from(e))
             })?;
             debug!(file = %file_path.display(), size = data.len(), "File read successfully");
             Ok(MediaSource::Binary(data))
