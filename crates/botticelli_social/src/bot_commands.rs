@@ -483,15 +483,15 @@ impl Default for BotCommandRegistryImpl {
 
 // Implement the narrative trait to avoid circular dependencies
 #[async_trait]
-impl botticelli_narrative::BotCommandRegistry for BotCommandRegistryImpl {
+impl botticelli_interface::BotCommandRegistry for BotCommandRegistryImpl {
+    type Error = BotCommandError;
+
     async fn execute(
         &self,
         platform: &str,
         command: &str,
         args: &HashMap<String, JsonValue>,
-    ) -> Result<JsonValue, Box<dyn std::error::Error + Send + Sync>> {
-        self.execute(platform, command, args)
-            .await
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    ) -> Result<JsonValue, Self::Error> {
+        self.execute(platform, command, args).await
     }
 }
