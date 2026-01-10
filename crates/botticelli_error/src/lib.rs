@@ -81,7 +81,7 @@ pub use models::{AnthropicError, AnthropicErrorKind};
 pub use models::{ModelsError, ModelsErrorKind, ModelsResult};
 #[cfg(feature = "ollama")]
 pub use models::{OllamaError, OllamaErrorKind, OllamaResult};
-pub use narrative::{NarrativeError, NarrativeErrorKind};
+pub use narrative::{NarrativeError, NarrativeErrorKind, NarrativeResult};
 pub use not_implemented::NotImplementedError;
 pub use observability::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};
 pub use openai::{OpenAIError, OpenAIErrorKind};

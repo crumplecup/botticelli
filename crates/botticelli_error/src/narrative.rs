@@ -202,3 +202,6 @@ impl From<toml::de::Error> for NarrativeError {
 }
 
 crate::impl_error_from_kind!(NarrativeErrorKind => NarrativeError);
+
+/// Result type for narrative operations.
+pub type NarrativeResult<T> = Result<T, NarrativeError>;
