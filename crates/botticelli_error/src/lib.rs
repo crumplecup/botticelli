@@ -56,6 +56,7 @@ mod rate_limit;
 mod server;
 mod storage;
 mod token_counting;
+mod toml;
 #[cfg(feature = "tui")]
 mod tui;
 
@@ -93,5 +94,6 @@ pub use rate_limit::{RateLimitError, RateLimitErrorKind};
 pub use server::{ServerError, ServerErrorKind};
 pub use storage::{StorageError, StorageErrorKind};
 pub use token_counting::{TokenCountingError, TokenCountingErrorKind, TokenCountingResult};
+pub use toml::TomlError;
 #[cfg(feature = "tui")]
 pub use tui::{TuiError, TuiErrorKind, TuiIoError, TuiResult};

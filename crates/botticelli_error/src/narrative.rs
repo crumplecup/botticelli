@@ -3,6 +3,16 @@
 /// Specific error conditions for narrative operations.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
 pub enum NarrativeErrorKind {
+    /// I/O error (file read/write)
+    #[display("I/O error: {}", _0)]
+    Io(crate::IoError),
+    /// JSON serialization/deserialization error
+    #[cfg(feature = "serde_json")]
+    #[display("JSON error: {}", _0)]
+    Json(crate::JsonError),
+    /// TOML deserialization error
+    #[display("TOML error: {}", _0)]
+    Toml(crate::TomlError),
     /// Failed to read narrative file
     #[display("Failed to read narrative file: {}", _0)]
     FileRead(String),
@@ -57,6 +67,67 @@ pub enum NarrativeErrorKind {
     /// Configuration error
     #[display("Configuration error: {}", _0)]
     ConfigurationError(String),
+    /// Narrative not found in file
+    #[display("Narrative '{}' not found. Available narratives: {}", name, available)]
+    NarrativeNotFound {
+        /// Requested narrative name
+        name: String,
+        /// Available narrative names
+        available: String,
+    },
+    /// Ambiguous narrative selection - multiple narratives exist but no name provided
+    #[display("Multiple narratives found, must specify one: {}", available)]
+    AmbiguousNarrative {
+        /// Available narrative names
+        available: String,
+    },
+    /// No narrative found in file
+    #[display("No narrative definition found in TOML file")]
+    NoNarrativeFound,
+    /// Missing required field in TOML configuration
+    #[display("Missing required field '{}' in {} input", field, input_type)]
+    MissingRequiredField {
+        /// Field name
+        field: String,
+        /// Input type (text, bot_command, table, etc.)
+        input_type: String,
+    },
+    /// Invalid value for field
+    #[display("Invalid value '{}' for field '{}': {}", value, field, reason)]
+    InvalidFieldValue {
+        /// The invalid value
+        value: String,
+        /// Field name  
+        field: String,
+        /// Reason why it's invalid
+        reason: String,
+    },
+    /// Invalid reference format
+    #[display("Invalid reference format '{}': {}", reference, reason)]
+    InvalidReferenceFormat {
+        /// The reference string
+        reference: String,
+        /// Explanation of what's wrong
+        reason: String,
+    },
+    /// Wrong entry type found
+    #[display("Reference '{}' resolves to {} but expected {}", reference, found, expected)]
+    WrongReferenceType {
+        /// The reference string
+        reference: String,
+        /// What was found (e.g., "inline definition")
+        found: String,
+        /// What was expected (e.g., "file reference")
+        expected: String,
+    },
+    /// Resource not found (bot, table, media definition)
+    #[display("{} '{}' not found in shared resources", resource_type, name)]
+    ResourceNotFound {
+        /// Type of resource (bot, table, media)
+        resource_type: String,
+        /// Name that was requested
+        name: String,
+    },
     /// Template resolution error
     #[display("Template error: {}", _0)]
     TemplateError(String),
@@ -69,6 +140,9 @@ pub enum NarrativeErrorKind {
     /// State management error
     #[display("State error: {}", _0)]
     StateError(String),
+    /// Feature not implemented
+    #[display("Not implemented: {}", _0)]
+    NotImplemented(String),
 }
 
 /// Error type for narrative operations.
@@ -102,6 +176,28 @@ impl NarrativeError {
             line: location.line(),
             file: location.file(),
         }
+    }
+}
+
+impl From<std::io::Error> for NarrativeError {
+    #[track_caller]
+    fn from(err: std::io::Error) -> Self {
+        Self::new(NarrativeErrorKind::Io(crate::IoError::from(err)))
+    }
+}
+
+#[cfg(feature = "serde_json")]
+impl From<serde_json::Error> for NarrativeError {
+    #[track_caller]
+    fn from(err: serde_json::Error) -> Self {
+        Self::new(NarrativeErrorKind::Json(crate::JsonError::from(err)))
+    }
+}
+
+impl From<toml::de::Error> for NarrativeError {
+    #[track_caller]
+    fn from(err: toml::de::Error) -> Self {
+        Self::new(NarrativeErrorKind::Toml(crate::TomlError::from(err)))
     }
 }
 

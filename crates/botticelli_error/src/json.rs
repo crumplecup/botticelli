@@ -43,8 +43,43 @@ impl Clone for SerdeJsonError {
     }
 }
 
+#[cfg(feature = "serde_json")]
+impl PartialEq for SerdeJsonError {
+    fn eq(&self, other: &Self) -> bool {
+        self.line == other.line && self.file == other.file
+            && format!("{:?}", self.source) == format!("{:?}", other.source)
+    }
+}
+
+#[cfg(feature = "serde_json")]
+impl Eq for SerdeJsonError {}
+
+#[cfg(feature = "serde_json")]
+impl std::hash::Hash for SerdeJsonError {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.line.hash(state);
+        self.file.hash(state);
+        format!("{:?}", self.source).hash(state);
+    }
+}
+
+#[cfg(feature = "serde_json")]
+impl PartialOrd for SerdeJsonError {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+#[cfg(feature = "serde_json")]
+impl Ord for SerdeJsonError {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        (self.file, self.line, format!("{:?}", self.source))
+            .cmp(&(other.file, other.line, format!("{:?}", other.source)))
+    }
+}
+
 /// JSON error kind.
-#[derive(Debug, Clone, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
 pub enum JsonErrorKind {
     /// Generic JSON error with message
     #[display("JSON error: {}", _0)]
@@ -66,6 +101,34 @@ pub struct JsonError {
     line: u32,
     /// File where the error occurred
     file: &'static str,
+}
+
+impl PartialEq for JsonError {
+    fn eq(&self, other: &Self) -> bool {
+        self.line == other.line && self.file == other.file && self.kind == other.kind
+    }
+}
+
+impl Eq for JsonError {}
+
+impl std::hash::Hash for JsonError {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.line.hash(state);
+        self.file.hash(state);
+        self.kind.hash(state);
+    }
+}
+
+impl PartialOrd for JsonError {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for JsonError {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        (self.file, self.line, &self.kind).cmp(&(other.file, other.line, &other.kind))
+    }
 }
 
 impl JsonError {
