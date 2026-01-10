@@ -90,6 +90,7 @@ fn find_file_recursive(
 }
 
 /// Recursively search a directory tree for a file.
+#[instrument(skip_all, fields(%filename, dir = %dir.display()))]
 fn search_directory_recursive(dir: &Path, filename: &str) -> Result<PathBuf, ()> {
     if let Ok(entries) = std::fs::read_dir(dir) {
         for entry in entries.flatten() {
@@ -97,6 +98,7 @@ fn search_directory_recursive(dir: &Path, filename: &str) -> Result<PathBuf, ()>
 
             // Check if this is the file we're looking for
             if path.is_file() && path.file_name().and_then(|n| n.to_str()) == Some(filename) {
+                debug!(found = %path.display(), "Found file in directory");
                 return Ok(path);
             }
 
@@ -119,15 +121,22 @@ fn search_directory_recursive(dir: &Path, filename: &str) -> Result<PathBuf, ()>
 /// Expand environment variables in string values within a HashMap.
 ///
 /// Supports `${VAR_NAME}` and `$VAR_NAME` syntax.
+#[instrument(skip_all, fields(arg_count = args.len()))]
 fn expand_env_vars(
     args: &HashMap<String, serde_json::Value>,
 ) -> HashMap<String, serde_json::Value> {
+    debug!("Expanding environment variables in arguments");
     args.iter()
         .map(|(k, v)| {
             let expanded_value = match v {
                 serde_json::Value::String(s) => {
                     match shellexpand::env(s) {
-                        Ok(expanded) => serde_json::Value::String(expanded.into_owned()),
+                        Ok(expanded) => {
+                            if expanded.as_ref() != s {
+                                debug!(key = %k, original = %s, expanded = %expanded, "Expanded environment variable");
+                            }
+                            serde_json::Value::String(expanded.into_owned())
+                        }
                         Err(_) => v.clone(), // Keep original if expansion fails
                     }
                 }
@@ -523,11 +532,13 @@ impl TomlNarrativeFile {
         }
     }
 
+    #[instrument(skip(self, entry), fields(%name))]
     fn process_narrative_entry(
         &self,
         name: &str,
         entry: &TomlNarrativeEntry,
     ) -> NarrativeResult<(TomlNarrative, TomlToc, HashMap<String, TomlAct>)> {
+        debug!("Processing narrative entry");
         match entry {
             TomlNarrativeEntry::Definition(def) => {
                 // Use table key as name if not specified inline
@@ -554,14 +565,18 @@ impl TomlNarrativeFile {
 
                 // Convert toc Vec to TomlToc::Array
                 let toc = TomlToc::Array(def.toc.clone());
+                debug!(act_count = acts.len(), toc_length = toc.order().len(), "Narrative entry processed");
                 Ok((meta, toc, acts))
             }
-            TomlNarrativeEntry::Reference(_) => Err(NarrativeErrorKind::WrongReferenceType {
-                reference: name.to_string(),
-                found: "file reference".to_string(),
-                expected: "inline definition".to_string(),
+            TomlNarrativeEntry::Reference(_) => {
+                error!("Cannot use file reference as inline definition");
+                Err(NarrativeErrorKind::WrongReferenceType {
+                    reference: name.to_string(),
+                    found: "file reference".to_string(),
+                    expected: "inline definition".to_string(),
+                }
+                .into())
             }
-            .into()),
         }
     }
 }
@@ -570,8 +585,9 @@ impl TomlNarrativeFile {
 ///
 /// Accepts: "full", "summary", "drop"
 /// Returns HistoryRetention::Full if None or invalid value.
+#[instrument(skip_all, fields(value = ?value))]
 fn parse_history_retention(value: Option<&String>) -> HistoryRetention {
-    match value.map(|s| s.as_str()) {
+    let result = match value.map(|s| s.as_str()) {
         Some("full") => HistoryRetention::Full,
         Some("summary") => HistoryRetention::Summary,
         Some("drop") => HistoryRetention::Drop,
@@ -583,7 +599,9 @@ fn parse_history_retention(value: Option<&String>) -> HistoryRetention {
             HistoryRetention::Full
         }
         None => HistoryRetention::Full,
-    }
+    };
+    debug!(result = ?result, "Parsed history retention");
+    result
 }
 
 impl TomlInput {
@@ -911,12 +929,15 @@ impl TomlAct {
 }
 
 /// Check if a string is a resource reference (bots.name, tables.name, media.name, narratives.name, narrative:name).
+#[instrument(skip_all, fields(%s))]
 fn is_reference(s: &str) -> bool {
-    s.starts_with("bots.")
+    let result = s.starts_with("bots.")
         || s.starts_with("tables.")
         || s.starts_with("media.")
         || s.starts_with("narratives.")
-        || s.starts_with("narrative:")
+        || s.starts_with("narrative:");
+    debug!(is_ref = result, "Checked if string is reference");
+    result
 }
 
 impl TomlNarrativeFile {
@@ -1168,39 +1189,45 @@ impl TomlNarrativeFile {
 }
 
 /// Infer MIME type from file extension.
+#[instrument(skip_all, fields(%path))]
 fn infer_mime_type(path: &str) -> Option<String> {
     let extension = std::path::Path::new(path)
         .extension()?
         .to_str()?
         .to_lowercase();
 
-    Some(
-        match extension.as_str() {
-            "png" => "image/png",
-            "jpg" | "jpeg" => "image/jpeg",
-            "gif" => "image/gif",
-            "webp" => "image/webp",
-            "mp3" => "audio/mp3",
-            "wav" => "audio/wav",
-            "ogg" => "audio/ogg",
-            "mp4" => "video/mp4",
-            "webm" => "video/webm",
-            "pdf" => "application/pdf",
-            "txt" => "text/plain",
-            "md" => "text/markdown",
-            "json" => "application/json",
-            _ => return None,
+    let mime = match extension.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "mp3" => "audio/mp3",
+        "wav" => "audio/wav",
+        "ogg" => "audio/ogg",
+        "mp4" => "video/mp4",
+        "webm" => "video/webm",
+        "pdf" => "application/pdf",
+        "txt" => "text/plain",
+        "md" => "text/markdown",
+        "json" => "application/json",
+        _ => {
+            debug!(extension = %extension, "Unknown file extension, cannot infer MIME");
+            return None;
         }
-        .to_string(),
-    )
+    };
+    
+    debug!(mime = %mime, "Inferred MIME type");
+    Some(mime.to_string())
 }
 
 /// Infer media type category from extension.
+#[instrument(skip_all, fields(%path))]
 fn infer_media_type_from_extension(path: &str) -> NarrativeResult<&'static str> {
     let extension = std::path::Path::new(path)
         .extension()
         .and_then(|e| e.to_str())
         .ok_or_else(|| {
+            error!("Cannot determine file extension");
             NarrativeErrorKind::InvalidFieldValue {
                 value: path.to_string(),
                 field: "file".to_string(),
@@ -1209,12 +1236,13 @@ fn infer_media_type_from_extension(path: &str) -> NarrativeResult<&'static str> 
         })?
         .to_lowercase();
 
-    Ok(match extension.as_str() {
+    let media_type = match extension.as_str() {
         "png" | "jpg" | "jpeg" | "gif" | "webp" => "image",
         "mp3" | "wav" | "ogg" => "audio",
         "mp4" | "avi" | "mov" | "webm" => "video",
         "pdf" | "txt" | "md" | "json" => "document",
         _ => {
+            error!(extension = %extension, "Unsupported file extension");
             return Err(
                 NarrativeErrorKind::InvalidFieldValue {
                     value: extension,
@@ -1224,5 +1252,8 @@ fn infer_media_type_from_extension(path: &str) -> NarrativeResult<&'static str> 
                 .into(),
             )
         }
-    })
+    };
+    
+    debug!(media_type, "Inferred media type category");
+    Ok(media_type)
 }
