@@ -209,12 +209,12 @@ impl Validator {
 
     // Collect resources for reference validation and unused detection
     let resources = ResourceValidator::collect(table);
-    let resource_count = resources.bots.len() + resources.tables.len() + resources.media.len();
+    let resource_count = resources.bots().len() + resources.tables().len() + resources.media().len();
     tracing::Span::current().record("resource_count", resource_count);
     tracing::debug!(
-        bots = resources.bots.len(),
-        tables = resources.tables.len(),
-        media = resources.media.len(),
+        bots = resources.bots().len(),
+        tables = resources.tables().len(),
+        media = resources.media().len(),
         "Collected resources"
     );
 
@@ -236,43 +236,4 @@ impl Validator {
     // Check for circular dependencies in narrative references
     Analyzer::check_circular_dependencies(table, result);
     }
-}
-
-// Backward-compatible function wrappers
-/// Validates a narrative TOML string.
-///
-/// This is a convenience wrapper around `Validator::validate_toml()`.
-#[inline]
-pub fn validate_narrative_toml(toml: &str) -> ValidationResult {
-    Validator::validate_toml(toml)
-}
-
-/// Validates a narrative TOML string with custom configuration.
-///
-/// This is a convenience wrapper around `Validator::validate_toml_with_config()`.
-#[inline]
-pub fn validate_narrative_toml_with_config(
-    toml: &str,
-    config: &ValidationConfig,
-) -> ValidationResult {
-    Validator::validate_toml_with_config(toml, config)
-}
-
-/// Validates a narrative TOML file.
-///
-/// This is a convenience wrapper around `Validator::validate_file()`.
-#[inline]
-pub fn validate_narrative_file(path: impl AsRef<Path>) -> ValidationResult {
-    Validator::validate_file(path)
-}
-
-/// Validates a narrative TOML file with custom configuration.
-///
-/// This is a convenience wrapper around `Validator::validate_file_with_config()`.
-#[inline]
-pub fn validate_narrative_file_with_config(
-    path: impl AsRef<Path>,
-    config: &ValidationConfig,
-) -> ValidationResult {
-    Validator::validate_file_with_config(path, config)
 }

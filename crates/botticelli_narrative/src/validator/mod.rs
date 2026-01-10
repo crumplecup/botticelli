@@ -25,8 +25,5 @@ pub use resources::{ResourceRegistry, ResourceValidator};
 pub use structure::StructureValidator;
 pub use syntax::SyntaxValidator;
 
-// Re-export core types and functions
-pub use core::{
-    validate_narrative_file, validate_narrative_file_with_config, validate_narrative_toml,
-    validate_narrative_toml_with_config, ValidationConfig, Validator,
-};
+// Re-export core types
+pub use core::{ValidationConfig, Validator};

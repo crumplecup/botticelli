@@ -1,6 +1,6 @@
 //! Tests for narrative TOML validation.
 
-use botticelli_narrative::validator::{ValidationErrorKind, validate_narrative_toml};
+use botticelli_narrative::validator::{ValidationErrorKind, Validator};
 
 #[test]
 fn test_valid_narrative() {
@@ -16,13 +16,13 @@ fn test_valid_narrative() {
         act1 = "Hello world"
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(
         result.is_valid(),
         "Expected valid narrative, got errors: {:?}",
         result.errors
     );
-    assert!(result.warnings.is_empty());
+    assert!(result.warnings().is_empty());
 }
 
 #[test]
@@ -40,13 +40,13 @@ fn test_array_of_tables_acts_error() {
         prompt = "Hello"
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(!result.is_valid());
     // Should have at least one error for [[acts]]
-    assert!(!result.errors.is_empty());
+    assert!(!result.errors().is_empty());
 
     // Find the InvalidSyntax error about [[acts]]
-    let syntax_error = result.errors.iter().find(|e| {
+    let syntax_error = result.errors().iter().find(|e| {
         matches!(e.kind, ValidationErrorKind::InvalidSyntax) && e.message.contains("[[acts]]")
     });
     assert!(
@@ -68,9 +68,9 @@ fn test_missing_toc_error() {
         act1 = "Hello"
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(!result.is_valid());
-    assert_eq!(result.errors.len(), 1);
+    assert_eq!(result.errors().len(), 1);
     assert!(matches!(
         result.errors[0].kind,
         ValidationErrorKind::MissingSection
@@ -92,9 +92,9 @@ fn test_empty_toc_error() {
         act1 = "Hello"
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(!result.is_valid());
-    assert_eq!(result.errors.len(), 1);
+    assert_eq!(result.errors().len(), 1);
     assert!(matches!(
         result.errors[0].kind,
         ValidationErrorKind::EmptyToc
@@ -115,9 +115,9 @@ fn test_missing_act_error() {
         act1 = "Hello"
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(!result.is_valid());
-    assert_eq!(result.errors.len(), 1);
+    assert_eq!(result.errors().len(), 1);
     assert!(matches!(
         result.errors[0].kind,
         ValidationErrorKind::MissingAct
@@ -143,9 +143,9 @@ fn test_undefined_bot_reference() {
         fetch = "bots.undefined"
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(!result.is_valid());
-    assert_eq!(result.errors.len(), 1);
+    assert_eq!(result.errors().len(), 1);
     assert!(matches!(
         result.errors[0].kind,
         ValidationErrorKind::UndefinedReference
@@ -179,7 +179,7 @@ fn test_valid_bot_reference() {
         fetch = "bots.get_stats"
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(
         result.is_valid(),
         "Expected valid narrative, got errors: {:?}",
@@ -208,7 +208,7 @@ fn test_valid_array_act() {
         analyze = ["bots.get_stats", "media.logo", "Analyze this"]
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(
         result.is_valid(),
         "Expected valid narrative, got errors: {:?}",
@@ -234,7 +234,7 @@ fn test_multi_narrative_valid() {
         act2 = "World"
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(
         result.is_valid(),
         "Expected valid narrative, got errors: {:?}",
@@ -250,9 +250,9 @@ fn test_multi_narrative_empty_toc() {
         toc = []
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(!result.is_valid());
-    assert_eq!(result.errors.len(), 1);
+    assert_eq!(result.errors().len(), 1);
     assert!(matches!(
         result.errors[0].kind,
         ValidationErrorKind::EmptyToc
@@ -271,9 +271,9 @@ fn test_multi_narrative_missing_act() {
         other_act = "Hello"
     "#;
 
-    let result = validate_narrative_toml(toml);
+    let result = Validator::validate_toml(toml);
     assert!(!result.is_valid());
-    assert_eq!(result.errors.len(), 1);
+    assert_eq!(result.errors().len(), 1);
     assert!(matches!(
         result.errors[0].kind,
         ValidationErrorKind::MissingAct

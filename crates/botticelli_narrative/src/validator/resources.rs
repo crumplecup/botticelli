@@ -5,12 +5,12 @@ use std::collections::HashSet;
 use tracing::instrument;
 
 /// Registry of defined resources.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, derive_getters::Getters)]
 pub struct ResourceRegistry {
-    pub(super) bots: Vec<String>,
-    pub(super) tables: Vec<String>,
-    pub(super) media: Vec<String>,
-    pub(super) used_resources: std::cell::RefCell<HashSet<String>>,
+    bots: Vec<String>,
+    tables: Vec<String>,
+    media: Vec<String>,
+    used_resources: std::cell::RefCell<HashSet<String>>,
 }
 
 impl Clone for ResourceRegistry {
@@ -105,9 +105,9 @@ impl ResourceValidator {
         // Parse reference format: "type.name"
         if let Some((resource_type, resource_name)) = reference.split_once('.') {
             let exists = match resource_type {
-                "bots" => resources.bots.contains(&resource_name.to_string()),
-                "tables" => resources.tables.contains(&resource_name.to_string()),
-                "media" => resources.media.contains(&resource_name.to_string()),
+                "bots" => resources.bots().contains(&resource_name.to_string()),
+                "tables" => resources.tables().contains(&resource_name.to_string()),
+                "media" => resources.media().contains(&resource_name.to_string()),
                 "narrative" => true, // Narrative references validated separately
                 _ => {
                     tracing::debug!(resource_type, "Unknown resource type, skipping");
@@ -125,9 +125,9 @@ impl ResourceValidator {
             } else {
                 tracing::error!(resource_type, resource_name, "Undefined reference");
                 let available = match resource_type {
-                    "bots" => &resources.bots,
-                    "tables" => &resources.tables,
-                    "media" => &resources.media,
+                    "bots" => &resources.bots(),
+                    "tables" => &resources.tables(),
+                    "media" => &resources.media(),
                     _ => return,
                 };
 

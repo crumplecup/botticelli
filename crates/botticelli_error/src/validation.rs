@@ -22,8 +22,8 @@ impl ValidationResult {
     /// Returns true if validation passed (no errors).
     #[tracing::instrument(skip(self))]
     pub fn is_valid(&self) -> bool {
-        let is_valid = self.errors.is_empty();
-        tracing::debug!(is_valid, error_count = self.errors.len(), warning_count = self.warnings.len(), "Validation result checked");
+        let is_valid = self.errors().is_empty();
+        tracing::debug!(is_valid, error_count = self.errors().len(), warning_count = self.warnings().len(), "Validation result checked");
         is_valid
     }
 
@@ -46,11 +46,11 @@ impl ValidationResult {
     }
 
     /// Formats errors as a human-readable string.
-    #[tracing::instrument(skip(self), fields(error_count = self.errors.len()))]
+    #[tracing::instrument(skip(self), fields(error_count = self.errors().len()))]
     pub fn format_errors(&self) -> String {
         let mut output = String::new();
 
-        for (i, error) in self.errors.iter().enumerate() {
+        for (i, error) in self.errors().iter().enumerate() {
             if i > 0 {
                 output.push_str("\n\n");
             }
@@ -66,11 +66,11 @@ impl ValidationResult {
     }
 
     /// Formats warnings as a human-readable string.
-    #[tracing::instrument(skip(self), fields(warning_count = self.warnings.len()))]
+    #[tracing::instrument(skip(self), fields(warning_count = self.warnings().len()))]
     pub fn format_warnings(&self) -> String {
         let mut output = String::new();
 
-        for (i, warning) in self.warnings.iter().enumerate() {
+        for (i, warning) in self.warnings().iter().enumerate() {
             if i > 0 {
                 output.push_str("\n\n");
             }

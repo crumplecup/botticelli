@@ -22,10 +22,10 @@ impl Analyzer {
         unused_count = tracing::field::Empty
     ))]
     pub fn check_unused_resources(resources: &ResourceRegistry, result: &mut ValidationResult) {
-        let used = resources.used_resources.borrow();
+        let used = resources.used_resources().borrow();
         let mut unused_count = 0;
 
-        for bot in &resources.bots {
+        for bot in resources.bots() {
             let reference = format!("bots.{}", bot);
             if !used.contains(&reference) {
                 unused_count += 1;
@@ -42,7 +42,7 @@ impl Analyzer {
             }
         }
 
-        for table in &resources.tables {
+        for table in resources.tables() {
             let reference = format!("tables.{}", table);
             if !used.contains(&reference) {
                 unused_count += 1;
@@ -59,7 +59,7 @@ impl Analyzer {
             }
         }
 
-        for media in &resources.media {
+        for media in resources.media() {
             let reference = format!("media.{}", media);
             if !used.contains(&reference) {
                 unused_count += 1;
