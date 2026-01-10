@@ -36,8 +36,8 @@ pub use registry_traits::{
     NarrativeStorageOperations,
 };
 pub use repository::{
-    ContentGenerationRepository, ContentRepository, NarrativeRepository, TableQueryRegistry,
-    TableView,
+    ActProcessor, BotCommandRegistry, ContentGenerationRepository, ContentRepository,
+    NarrativeProvider, NarrativeRepository, ProcessorTrait, TableQueryRegistry, TableView,
 };
 pub use retry::RetryableError;
 pub use tier::Tier;
