@@ -64,11 +64,14 @@ pub enum TomlNarrativeEntry {
 
 impl TomlNarrativeFile {
     /// Check if this file contains multiple narratives.
+    #[instrument(skip(self))]
     pub fn is_multi_narrative(&self) -> bool {
-        match &self.narrative_data {
+        let result = match &self.narrative_data {
             TomlNarrativeData::Single { .. } => false,
             TomlNarrativeData::Multi { .. } => true,
-        }
+        };
+        debug!(is_multi = result, "Checked narrative file type");
+        result
     }
 
     /// Resolve a narrative from this file.
@@ -77,23 +80,31 @@ impl TomlNarrativeFile {
     /// Otherwise, uses the single [narrative] section if present.
     ///
     /// Returns a tuple of (metadata fields, toc, acts map).
+    #[instrument(skip(self), fields(narrative_name = ?narrative_name))]
     pub fn resolve_narrative(
         &self,
         narrative_name: Option<&str>,
     ) -> NarrativeResult<(TomlNarrative, TomlToc, HashMap<String, TomlAct>)> {
+        debug!("Resolving narrative from file");
         // Extract the narrative map from narrative_data
         let (single_narrative, single_toc, multi_map) = match &self.narrative_data {
             TomlNarrativeData::Single { narrative, toc } => {
+                debug!("Processing single narrative file");
                 (narrative.as_ref().as_ref(), toc.as_ref(), None)
             }
-            TomlNarrativeData::Multi { narrative } => (None, None, Some(narrative)),
+            TomlNarrativeData::Multi { narrative } => {
+                debug!(narrative_count = narrative.len(), "Processing multi-narrative file");
+                (None, None, Some(narrative))
+            }
         };
 
         match (narrative_name, single_narrative, multi_map) {
             // Explicit name provided - look in [narrative.name]
             (Some(name), _, Some(multi)) if !multi.is_empty() => {
+                debug!(%name, "Looking up narrative by name");
                 let entry = multi.get(name).ok_or_else(|| {
                     let available: Vec<_> = multi.keys().cloned().collect();
+                    error!(%name, available = %available.join(", "), "Narrative not found");
                     NarrativeErrorKind::NarrativeNotFound {
                         name: name.to_string(),
                         available: available.join(", "),
@@ -105,18 +116,22 @@ impl TomlNarrativeFile {
 
             // No name provided, use single [narrative]
             (None, Some(single), _) => {
+                debug!("Using single narrative");
                 let toc = single_toc.ok_or_else(|| {
+                    error!("Single narrative missing toc field");
                     NarrativeErrorKind::MissingRequiredField {
                         field: "toc".to_string(),
                         input_type: "narrative".to_string(),
                     }
                 })?;
+                debug!(act_count = self.acts.len(), toc_length = toc.order().len(), "Resolved single narrative");
                 Ok((single.clone(), toc.clone(), self.acts.clone()))
             }
 
             // No name, multiple definitions exist - ambiguous
             (None, _, Some(multi)) if !multi.is_empty() => {
                 let available: Vec<_> = multi.keys().cloned().collect();
+                error!(available = %available.join(", "), "Multiple narratives found but no name provided");
                 Err(NarrativeErrorKind::AmbiguousNarrative {
                     available: available.join(", "),
                 }
@@ -124,7 +139,10 @@ impl TomlNarrativeFile {
             }
 
             // No narrative found at all
-            _ => Err(NarrativeErrorKind::NoNarrativeFound.into()),
+            _ => {
+                error!("No narrative found in file");
+                Err(NarrativeErrorKind::NoNarrativeFound.into())
+            }
         }
     }
 
