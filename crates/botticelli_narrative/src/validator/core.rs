@@ -1,4 +1,4 @@
-//! Core validation functions and configuration.
+//! Core validation orchestration.
 
 use super::{
     analysis::Analyzer, models::ModelValidator, resources::ResourceValidator,
@@ -36,114 +36,115 @@ impl Default for ValidationConfig {
     }
 }
 
-/// Validates a narrative TOML string.
-///
-/// # Arguments
-///
-/// * `toml` - The TOML content to validate
-///
-/// # Returns
-///
-/// A `ValidationResult` containing any errors or warnings found.
-///
-/// # Examples
-///
-/// ```
-/// use botticelli_narrative::validator::validate_narrative_toml;
-///
-/// let toml = r#"
-///     [narrative]
-///     name = "test"
-///     description = "Test narrative"
-///     
-///     [toc]
-///     order = ["act1"]
-///     
-///     [acts]
-///     act1 = "Hello world"
-/// "#;
-///
-/// let result = validate_narrative_toml(toml);
-/// assert!(result.is_valid());
-/// ```
-#[instrument(skip(toml), fields(toml_len = toml.len()))]
-pub fn validate_narrative_toml(toml: &str) -> ValidationResult {
-    validate_narrative_toml_with_config(toml, &ValidationConfig::default())
-}
+/// Core validation orchestrator.
+pub struct Validator;
 
-/// Validates a narrative TOML string with custom configuration.
-#[instrument(skip(toml, config), fields(toml_len = toml.len()))]
-pub fn validate_narrative_toml_with_config(
-    toml: &str,
-    config: &ValidationConfig,
-) -> ValidationResult {
-    let mut result = ValidationResult::new();
+impl Validator {
+    /// Validates a narrative TOML string.
+    ///
+    /// # Arguments
+    ///
+    /// * `toml` - The TOML content to validate
+    ///
+    /// # Returns
+    ///
+    /// A `ValidationResult` containing any errors or warnings found.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use botticelli_narrative::validator::Validator;
+    ///
+    /// let toml = r#"
+    ///     [narrative]
+    ///     name = "test"
+    ///     description = "Test narrative"
+    ///     
+    ///     [toc]
+    ///     order = ["act1"]
+    ///     
+    ///     [acts]
+    ///     act1 = "Hello world"
+    /// "#;
+    ///
+    /// let result = Validator::validate_toml(toml);
+    /// assert!(result.is_valid());
+    /// ```
+    #[instrument(skip(toml), fields(toml_len = toml.len()))]
+    pub fn validate_toml(toml: &str) -> ValidationResult {
+        Self::validate_toml_with_config(toml, &ValidationConfig::default())
+    }
 
-    // Phase 1: Parse TOML
-    let parsed = match toml::from_str::<toml::Value>(toml) {
-        Ok(value) => value,
-        Err(e) => {
-            result.add_error(ValidationError::new(
-                ValidationErrorKind::InvalidSyntax,
-                None,
-                format!("Failed to parse TOML: {}", e),
-                Some("Check for syntax errors like missing quotes, unmatched brackets, or invalid escape sequences.".to_string()),
-            ));
-            return result;
-        }
-    };
+    /// Validates a narrative TOML string with custom configuration.
+    #[instrument(skip(toml, config), fields(toml_len = toml.len()))]
+    pub fn validate_toml_with_config(toml: &str, config: &ValidationConfig) -> ValidationResult {
+        let mut result = ValidationResult::new();
 
-    // Phase 2: Check for common syntax patterns
-    SyntaxValidator::detect_patterns(&parsed, &mut result);
+        // Phase 1: Parse TOML
+        let parsed = match toml::from_str::<toml::Value>(toml) {
+            Ok(value) => value,
+            Err(e) => {
+                result.add_error(ValidationError::new(
+                    ValidationErrorKind::InvalidSyntax,
+                    None,
+                    format!("Failed to parse TOML: {}", e),
+                    Some("Check for syntax errors like missing quotes, unmatched brackets, or invalid escape sequences.".to_string()),
+                ));
+                return result;
+            }
+        };
 
-    // Phase 3: Validate structure (sections, references, etc.)
-    validate_structure(&parsed, config, &mut result);
+        // Phase 2: Check for common syntax patterns
+        SyntaxValidator::detect_patterns(&parsed, &mut result);
 
-    result
-}
+        // Phase 3: Validate structure (sections, references, etc.)
+        Self::validate_structure(&parsed, config, &mut result);
 
-/// Validates a narrative TOML file.
-#[instrument(skip(path), fields(path = %path.as_ref().display()))]
-pub fn validate_narrative_file(path: impl AsRef<Path>) -> ValidationResult {
-    validate_narrative_file_with_config(path, &ValidationConfig::default())
-}
+        result
+    }
 
-/// Validates a narrative TOML file with custom configuration.
-#[instrument(skip(path, config), fields(path = %path.as_ref().display()))]
-pub fn validate_narrative_file_with_config(
-    path: impl AsRef<Path>,
-    config: &ValidationConfig,
-) -> ValidationResult {
-    let path = path.as_ref();
-    let mut result = ValidationResult::new();
+    /// Validates a narrative TOML file.
+    #[instrument(skip(path), fields(path = %path.as_ref().display()))]
+    pub fn validate_file(path: impl AsRef<Path>) -> ValidationResult {
+        Self::validate_file_with_config(path, &ValidationConfig::default())
+    }
 
-    let content = match std::fs::read_to_string(path) {
-        Ok(content) => content,
-        Err(e) => {
-            result.add_error(ValidationError::new(
-                ValidationErrorKind::FileNotFound,
-                None,
-                format!("Failed to read file '{}': {}", path.display(), e),
-                Some("Check that the file exists and is readable.".to_string()),
-            ));
-            return result;
-        }
-    };
+    /// Validates a narrative TOML file with custom configuration.
+    #[instrument(skip(path, config), fields(path = %path.as_ref().display()))]
+    pub fn validate_file_with_config(
+        path: impl AsRef<Path>,
+        config: &ValidationConfig,
+    ) -> ValidationResult {
+        let path = path.as_ref();
+        let mut result = ValidationResult::new();
 
-    validate_narrative_toml_with_config(&content, config)
-}
+        let content = match std::fs::read_to_string(path) {
+            Ok(content) => content,
+            Err(e) => {
+                result.add_error(ValidationError::new(
+                    ValidationErrorKind::FileNotFound,
+                    None,
+                    format!("Failed to read file '{}': {}", path.display(), e),
+                    Some("Check that the file exists and is readable.".to_string()),
+                ));
+                return result;
+            }
+        };
 
-/// Validates narrative structure (sections, references, etc.).
-#[instrument(skip(parsed, config, result), fields(
-    has_narrative = tracing::field::Empty,
-    has_narratives = tracing::field::Empty,
-    resource_count = tracing::field::Empty
-))]
-fn validate_structure(
-    parsed: &toml::Value,
-    config: &ValidationConfig,
-    result: &mut ValidationResult,
-) {
+        Self::validate_toml_with_config(&content, config)
+    }
+
+    /// Validates narrative structure (sections, references, etc.).
+    #[instrument(skip(parsed, config, result), fields(
+        has_narrative = tracing::field::Empty,
+        has_narratives = tracing::field::Empty,
+        resource_count = tracing::field::Empty
+    ))]
+    fn validate_structure(
+        parsed: &toml::Value,
+        config: &ValidationConfig,
+        result: &mut ValidationResult,
+    ) {
     let table = match parsed.as_table() {
         Some(t) => t,
         None => {
@@ -234,4 +235,44 @@ fn validate_structure(
 
     // Check for circular dependencies in narrative references
     Analyzer::check_circular_dependencies(table, result);
+    }
+}
+
+// Backward-compatible function wrappers
+/// Validates a narrative TOML string.
+///
+/// This is a convenience wrapper around `Validator::validate_toml()`.
+#[inline]
+pub fn validate_narrative_toml(toml: &str) -> ValidationResult {
+    Validator::validate_toml(toml)
+}
+
+/// Validates a narrative TOML string with custom configuration.
+///
+/// This is a convenience wrapper around `Validator::validate_toml_with_config()`.
+#[inline]
+pub fn validate_narrative_toml_with_config(
+    toml: &str,
+    config: &ValidationConfig,
+) -> ValidationResult {
+    Validator::validate_toml_with_config(toml, config)
+}
+
+/// Validates a narrative TOML file.
+///
+/// This is a convenience wrapper around `Validator::validate_file()`.
+#[inline]
+pub fn validate_narrative_file(path: impl AsRef<Path>) -> ValidationResult {
+    Validator::validate_file(path)
+}
+
+/// Validates a narrative TOML file with custom configuration.
+///
+/// This is a convenience wrapper around `Validator::validate_file_with_config()`.
+#[inline]
+pub fn validate_narrative_file_with_config(
+    path: impl AsRef<Path>,
+    config: &ValidationConfig,
+) -> ValidationResult {
+    Validator::validate_file_with_config(path, config)
 }
