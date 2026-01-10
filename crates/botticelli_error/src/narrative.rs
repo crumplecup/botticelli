@@ -143,6 +143,23 @@ pub enum NarrativeErrorKind {
     /// Feature not implemented
     #[display("Not implemented: {}", _0)]
     NotImplemented(String),
+    /// Invalid TOML syntax pattern detected during validation
+    #[display("Invalid TOML syntax: {}", _0)]
+    InvalidSyntax(String),
+    /// Missing required TOML section during validation
+    #[display("Missing required section: {}", _0)]
+    MissingSection(String),
+    /// Undefined resource reference in act
+    #[display("Undefined reference '{}' in act '{}'", reference, act)]
+    UndefinedReference {
+        /// The reference string (e.g., "bots.my_bot")
+        reference: String,
+        /// Act name where reference was found
+        act: String,
+    },
+    /// Circular dependency detected in narrative references
+    #[display("Circular dependency: {}", _0)]
+    CircularDependency(String),
 }
 
 /// Error type for narrative operations.

@@ -12,6 +12,7 @@ categories.workspace = true
 [dependencies]
 derive_more = { workspace = true, features = ["from", "display", "error"] }
 derive-getters = { workspace = true }
+derive-new = { workspace = true }
 derive_builder = { workspace = true }
 tracing = { workspace = true }
 botticelli_interface = { workspace = true }

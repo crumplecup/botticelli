@@ -59,6 +59,7 @@ mod token_counting;
 mod toml;
 #[cfg(feature = "tui")]
 mod tui;
+mod validation;
 
 pub use backend::BackendError;
 pub use builder::{BuilderError, BuilderErrorKind};
@@ -97,3 +98,7 @@ pub use token_counting::{TokenCountingError, TokenCountingErrorKind, TokenCounti
 pub use toml::TomlError;
 #[cfg(feature = "tui")]
 pub use tui::{TuiError, TuiErrorKind, TuiIoError, TuiResult};
+pub use validation::{
+    ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult, ValidationWarning,
+    ValidationWarningKind,
+};
