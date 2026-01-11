@@ -71,6 +71,22 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ### Core Architecture & Refactoring
 
+- **HANDLER_TRAIT_ERROR_DESIGN.md** - `current` (2026-01-11) **🏛️ ARCHITECTURAL ANALYSIS**
+  - Analysis of error handling in EventHandler implementations
+  - Question: Should we modify traits to return Result types?
+  - Evaluates 4 options: explicit handling, internal trait, error aggregation, policy-based
+  - Recommendation: Keep explicit error handling at call sites (Option 1)
+  - Rationale: Serenity's EventHandler cannot be changed, events are best-effort
+  - Discord's event model is inherently fire-and-forget
+  - Documents conventions: critical failures abort, non-critical log and continue
+  - Status: 📚 Architectural guidance for event handler implementations
+
+- **DISCORD_COMMANDS_HELPER_TYPE_REFACTOR.md** - `current` (2026-01-11) **✅ COMPLETE**
+  - Applied Extract pattern to all 62 Discord command functions across 11 modules
+  - Helper type pattern: zero-sized structs as namespaces (Channels, Messages, etc.)
+  - Benefits: Better organization, discoverability, consistency with botticelli_narrative
+  - Status: ✅ All modules complete, documented with lessons learned
+
 - **ELICITATION_MCP_INTEGRATION_PLAN.md** - `current` (2025-12-28) **🎯 INTEGRATION PLAN**
   - Comprehensive plan for integrating elicitation crate with botticelli_mcp
   - Add primitive elicitation tools (elicit_text, elicit_select, etc.) to MCP server
