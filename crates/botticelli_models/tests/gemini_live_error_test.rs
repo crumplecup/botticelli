@@ -27,6 +27,9 @@ use std::time::Instant;
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
 async fn test_live_api_invalid_model() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Live API with invalid model");
+    
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -44,6 +47,7 @@ async fn test_live_api_invalid_model() -> anyhow::Result<()> {
         .build()?;
 
     // Should fail gracefully
+    tracing::debug!(model = "models/nonexistent-live-model", "Attempting invalid model");
     let result = client.generate(&request).await;
 
     // We expect an error since the model doesn't exist
@@ -51,20 +55,25 @@ async fn test_live_api_invalid_model() -> anyhow::Result<()> {
     assert!(result.is_err(), "Should fail with non-existent model");
 
     if let Err(e) = result {
+        tracing::debug!(error = %e, "Received expected error");
         println!("Expected error for invalid model: {}", e);
     }
 
-    tracing::info!("Test Live Api Invalid Model test passed");
+    tracing::info!("Live API invalid model test passed");
     Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
 async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Live API rate limiting");
+    
     let _ = dotenvy::dotenv();
 
     // Create client with very low rate limit (2 messages per minute)
     let client = GeminiLiveClient::new_with_rate_limit(Some(2))?;
+    tracing::debug!(rpm_limit = 2, "Created client with rate limit");
 
     let config = GenerationConfigBuilder::default()
         .max_output_tokens(5)
@@ -73,6 +82,7 @@ async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
     let start = Instant::now();
 
     // First message - should succeed immediately
+    tracing::debug!("Sending message 1");
     let mut session1 = client
         .connect_with_config("models/gemini-2.0-flash-exp", config.clone())
         .await?;
@@ -82,6 +92,7 @@ async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
     session1.close().await.ok();
 
     // Second message - should succeed immediately
+    tracing::debug!("Sending message 2");
     let mut session2 = client
         .connect_with_config("models/gemini-2.0-flash-exp", config.clone())
         .await?;
@@ -91,9 +102,11 @@ async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
     session2.close().await.ok();
 
     let elapsed_before_third = start.elapsed();
+    tracing::debug!(elapsed_secs = elapsed_before_third.as_secs(), "Time before third message");
     println!("Time before third message: {:?}", elapsed_before_third);
 
     // Third message - should block and wait for window reset
+    tracing::debug!("Sending message 3 (should be rate limited)");
     let mut session3 = client
         .connect_with_config("models/gemini-2.0-flash-exp", config)
         .await?;
@@ -106,6 +119,7 @@ async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
     session3.close().await.ok();
 
     let total_elapsed = start.elapsed();
+    tracing::debug!(total_secs = total_elapsed.as_secs(), "Total time for 3 messages");
     println!("Total time for 3 messages: {:?}", total_elapsed);
 
     // Third message should have been delayed by rate limiting
@@ -116,13 +130,16 @@ async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
         "Rate limiting should have caused a delay"
     );
 
-    tracing::info!("Test Live Api Rate Limiting test passed");
+    tracing::info!("Live API rate limiting test passed");
     Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
 async fn test_live_api_empty_message() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Live API with empty message");
+    
     let _ = dotenvy::dotenv();
 
     let client = GeminiLiveClient::new()?;
@@ -136,27 +153,33 @@ async fn test_live_api_empty_message() -> anyhow::Result<()> {
         .await?;
 
     // Send empty message
+    tracing::debug!("Sending empty message");
     let response = session.send_text("").await;
 
     // Should either succeed (with model handling empty input) or fail gracefully
     match response {
         Ok(text) => {
+            tracing::debug!(response_len = text.len(), "Model handled empty message");
             println!("Model handled empty message: {}", text);
         }
         Err(e) => {
+            tracing::debug!(error = %e, "Model rejected empty message");
             println!("Model rejected empty message: {}", e);
         }
     }
 
     session.close().await.ok();
 
-    tracing::info!("Test Live Api Empty Message test passed");
+    tracing::info!("Live API empty message test passed");
     Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
 async fn test_live_api_very_long_message() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Live API with very long message");
+    
     let _ = dotenvy::dotenv();
 
     let client = GeminiLiveClient::new()?;
@@ -171,6 +194,7 @@ async fn test_live_api_very_long_message() -> anyhow::Result<()> {
 
     // Send a very long message (but not exceeding model limits)
     let long_message = "Tell me about ".to_string() + &"artificial intelligence ".repeat(50);
+    tracing::debug!(message_len = long_message.len(), "Sending long message");
 
     let response = session.send_text(&long_message).await;
 
@@ -178,18 +202,22 @@ async fn test_live_api_very_long_message() -> anyhow::Result<()> {
     assert!(response.is_ok(), "Should handle long messages");
 
     if let Ok(text) = response {
+        tracing::debug!(response_len = text.len(), "Received response");
         println!("Response to long message: {} chars", text.len());
     }
 
     session.close().await.ok();
 
-    tracing::info!("Test Live Api Very Long Message test passed");
+    tracing::info!("Live API very long message test passed");
     Ok(())
 }
 
 #[tokio::test]
 #[cfg(feature = "api")]
 async fn test_unified_client_handles_live_model_errors() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing unified client with live model errors");
+    
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -207,47 +235,57 @@ async fn test_unified_client_handles_live_model_errors() -> anyhow::Result<()> {
         .build()?;
 
     // Should handle gracefully
+    tracing::debug!(max_tokens = 0, "Sending request with zero max_tokens");
     let result = client.generate(&request).await;
 
     // May succeed with minimal output or fail - either is acceptable
     match result {
         Ok(response) => {
+            tracing::debug!(output_count = response.outputs().len(), "Zero max_tokens handled");
             println!("Zero max_tokens handled: {:?}", response.outputs());
         }
         Err(e) => {
+            tracing::debug!(error = %e, "Zero max_tokens rejected");
             println!("Zero max_tokens rejected: {}", e);
         }
     }
 
-    tracing::info!("Test Unified Client Handles Live Model Errors test passed");
+    tracing::info!("Unified client handles live model errors test passed");
     Ok(())
 }
 
 #[tokio::test]
 #[cfg(feature = "api")]
 async fn test_live_rate_limiter_concurrent_sessions() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing live rate limiter with concurrent sessions");
+    
     let _ = dotenvy::dotenv();
 
     // Create shared rate limiter
     let rate_limiter = LiveRateLimiter::new(3); // 3 messages per minute
+    tracing::debug!(rpm_limit = 3, "Created rate limiter");
 
     // Simulate sending messages
     let start = Instant::now();
 
     for i in 1..=5 {
         rate_limiter.acquire().await;
-        println!("Message {} sent at {:?}", i, start.elapsed());
+        let elapsed = start.elapsed();
+        tracing::debug!(message_num = i, elapsed_ms = elapsed.as_millis(), "Message sent");
+        println!("Message {} sent at {:?}", i, elapsed);
         rate_limiter.record();
 
         // After 3 messages, should start blocking
         if i == 4 {
-            let elapsed = start.elapsed();
             // Should have waited for rate limit
+            tracing::debug!(wait_time_ms = elapsed.as_millis(), "Fourth message required waiting");
             println!("Fourth message required waiting: {:?}", elapsed);
         }
     }
 
     let total_elapsed = start.elapsed();
+    tracing::debug!(total_ms = total_elapsed.as_millis(), "Completed 5 messages");
     println!("Total time for 5 messages with RPM=3: {:?}", total_elapsed);
 
     // With RPM=3, sending 5 messages should require waiting
@@ -257,13 +295,16 @@ async fn test_live_rate_limiter_concurrent_sessions() -> anyhow::Result<()> {
         "Should have experienced rate limiting delay"
     );
 
-    tracing::info!("Test Live Rate Limiter Concurrent Sessions test passed");
+    tracing::info!("Live rate limiter concurrent sessions test passed");
     Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
 async fn test_streaming_error_recovery() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing streaming error recovery");
+    
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -279,6 +320,7 @@ async fn test_streaming_error_recovery() -> anyhow::Result<()> {
         .max_tokens(50u32)
         .build()?;
 
+    tracing::debug!("Starting streaming request");
     let mut stream = client.generate_stream(&request).await?;
 
     let mut chunk_count = 0;
@@ -289,17 +331,20 @@ async fn test_streaming_error_recovery() -> anyhow::Result<()> {
             Ok(chunk) => {
                 chunk_count += 1;
                 if *chunk.is_final() {
+                    tracing::debug!("Received final chunk");
                     break;
                 }
             }
             Err(e) => {
                 error_count += 1;
+                tracing::debug!(error = %e, error_count, "Stream error");
                 println!("Stream error: {}", e);
                 break;
             }
         }
     }
 
+    tracing::debug!(chunk_count, error_count, "Streaming completed");
     println!("Received {} chunks, {} errors", chunk_count, error_count);
 
     // Should have received at least one chunk
