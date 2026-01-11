@@ -7,6 +7,7 @@ mod bot_server;
 mod capabilities;
 mod chat_host;
 mod chat_service;
+mod discord_events;
 mod driver;
 mod executor;
 mod health;
@@ -26,6 +27,7 @@ pub use capabilities::{
 };
 pub use chat_host::ChatHost;
 pub use chat_service::ChatService;
+pub use discord_events::{DiscordEventProcessor, EventResult};
 pub use driver::BotticelliDriver;
 pub use executor::BotCommandExecutor;
 pub use health::Health;
