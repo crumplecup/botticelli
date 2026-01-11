@@ -4,9 +4,10 @@
 //! and persist data to the database.
 
 use crate::{
-    ChannelType, DiscordError, DiscordRepository, NewChannelBuilder, NewGuildBuilder,
+    ChannelType, DiscordRepository, NewChannelBuilder, NewGuildBuilder,
     NewGuildMemberBuilder, NewRoleBuilder, NewUserBuilder,
 };
+use botticelli_error::{DiscordError, DiscordErrorKind, DiscordResult};
 use botticelli_interface::{DiscordEventProcessor, EventResult};
 use chrono::NaiveDateTime;
 use serenity::all::{GuildId, Ready};
@@ -74,7 +75,7 @@ impl BotticelliHandler {
 
     /// Store a Discord guild in the database.
     #[instrument(skip(self, guild), fields(guild_id = %guild.id, guild_name = %guild.name))]
-    async fn store_guild(&self, guild: &Guild) -> crate::DiscordResult<()> {
+    async fn store_guild(&self, guild: &Guild) -> DiscordResult<()> {
         let new_guild = NewGuildBuilder::default()
             .id(Self::to_db_id(guild.id.get()))
             .name(guild.name.clone())
@@ -137,7 +138,7 @@ impl BotticelliHandler {
         &self,
         guild_id: Option<GuildId>,
         channel: &Channel,
-    ) -> crate::DiscordResult<()> {
+    ) -> DiscordResult<()> {
         let (id, name, channel_type, position, topic, nsfw, parent_id) = match channel {
             Channel::Guild(gc) => (
                 Self::to_db_id(gc.id.get()),
@@ -214,7 +215,7 @@ impl BotticelliHandler {
 
     /// Store a Discord member in the database.
     #[instrument(skip(self, guild_id, member), fields(guild_id = %guild_id, user_id = %member.user.id))]
-    async fn store_member(&self, guild_id: GuildId, member: &Member) -> crate::DiscordResult<()> {
+    async fn store_member(&self, guild_id: GuildId, member: &Member) -> DiscordResult<()> {
         // First store the user
         let new_user = NewUserBuilder::default()
             .id(Self::to_db_id(member.user.id.get()))
@@ -288,7 +289,7 @@ impl BotticelliHandler {
 
     /// Store a Discord role in the database.
     #[instrument(skip(self, guild_id, role), fields(guild_id = %guild_id, role_id = %role.id, role_name = %role.name))]
-    async fn store_role(&self, guild_id: GuildId, role: &Role) -> crate::DiscordResult<()> {
+    async fn store_role(&self, guild_id: GuildId, role: &Role) -> DiscordResult<()> {
         let new_role = NewRoleBuilder::default()
             .id(Self::to_db_id(role.id.get()))
             .guild_id(Self::to_db_id(guild_id.get()))
@@ -382,7 +383,7 @@ impl DiscordEventProcessor for BotticelliHandler {
                 .store_channel(Some(guild.id), &Channel::Guild(channel.clone()))
                 .await
             {
-                use crate::DiscordErrorSeverity;
+                use botticelli_error::DiscordErrorSeverity;
                 if self.error_severity(&e) == DiscordErrorSeverity::Critical {
                     return Err(e);
                 }
@@ -394,7 +395,7 @@ impl DiscordEventProcessor for BotticelliHandler {
         let mut role_errors = Vec::new();
         for role in guild.roles.values() {
             if let Err(e) = self.store_role(guild.id, role).await {
-                use crate::DiscordErrorSeverity;
+                use botticelli_error::DiscordErrorSeverity;
                 if self.error_severity(&e) == DiscordErrorSeverity::Critical {
                     return Err(e);
                 }
@@ -406,7 +407,7 @@ impl DiscordEventProcessor for BotticelliHandler {
         let mut member_errors = Vec::new();
         for member in guild.members.values() {
             if let Err(e) = self.store_member(guild.id, member).await {
-                use crate::DiscordErrorSeverity;
+                use botticelli_error::DiscordErrorSeverity;
                 if self.error_severity(&e) == DiscordErrorSeverity::Critical {
                     return Err(e);
                 }
@@ -506,7 +507,7 @@ impl EventHandler for BotticelliHandler {
             );
 
             // Send critical errors to runtime for handling
-            use crate::DiscordErrorSeverity;
+            use botticelli_error::DiscordErrorSeverity;
             if severity == DiscordErrorSeverity::Critical {
                 if let Err(send_err) = self.error_tx.send(e) {
                     error!(error = %send_err, "Failed to send critical error to runtime");
@@ -542,7 +543,7 @@ impl EventHandler for BotticelliHandler {
             );
 
             // Send critical errors to runtime for handling
-            use crate::DiscordErrorSeverity;
+            use botticelli_error::DiscordErrorSeverity;
             if severity == DiscordErrorSeverity::Critical {
                 if let Err(send_err) = self.error_tx.send(e) {
                     error!(error = %send_err, "Failed to send critical error to runtime");

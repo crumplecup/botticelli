@@ -5,8 +5,7 @@
 
 use botticelli_error::BotticelliResult;
 use botticelli_interface::ActProcessor;
-use botticelli_narrative::ProcessorContext;
-use botticelli_narrative::extraction::{extract_json, parse_json};
+use botticelli_narrative::{ProcessorContext, Extract};
 
 use crate::{
     DiscordChannelJson, DiscordGuildJson, DiscordGuildMemberJson, DiscordMemberRoleJson,
@@ -37,9 +36,9 @@ impl DiscordGuildProcessor {
 impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
     type Error = botticelli_error::BotticelliError;
 
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = "DiscordGuildProcessor"))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = "DiscordGuildProcessor"))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
-        let json_str = match extract_json(&context.execution.response) {
+        let json_str = match Extract::json(&context.execution().response()) {
             Ok(s) => s,
             Err(e) => {
                 error!(error = %e, "Failed to extract JSON from LLM response");
@@ -49,7 +48,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
 
         // Try parsing as array first, then single object
         let guilds: Vec<DiscordGuildJson> = if json_str.trim().starts_with('[') {
-            match parse_json(&json_str) {
+            match Extract::parse_json(&json_str) {
                 Ok(g) => g,
                 Err(e) => {
                     error!(error = %e, "Failed to parse guild array from JSON");
@@ -57,7 +56,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
                 }
             }
         } else {
-            match parse_json::<DiscordGuildJson>(&json_str) {
+            match Extract::parse_json::<DiscordGuildJson>(&json_str) {
                 Ok(g) => vec![g],
                 Err(e) => {
                     error!(error = %e, "Failed to parse single guild from JSON");
@@ -106,15 +105,15 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
         Ok(())
     }
 
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
         // Process if act name suggests guild/server data
-        let name_lower = context.execution.act_name.to_lowercase();
+        let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("guild") || name_lower.contains("server");
 
         // Or if response contains owner_id field (unique to guilds)
-        let content_match = context.execution.response.contains("\"owner_id\"");
+        let content_match = context.execution().response().contains("\"owner_id\"");
 
         let should_process = name_match || content_match;
         debug!(
@@ -150,18 +149,18 @@ impl DiscordUserProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
-        let json_str = extract_json(&context.execution.response)?;
+        let json_str = Extract::json(&context.execution().response())?;
 
         let users: Vec<DiscordUserJson> = if json_str.trim().starts_with('[') {
-            parse_json(&json_str)?
+            Extract::parse_json(&json_str)?
         } else {
-            vec![parse_json(&json_str)?]
+            vec![Extract::parse_json(&json_str)?]
         };
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             count = users.len(),
             "Processing Discord users"
         );
@@ -178,21 +177,21 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
         }
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             "Discord users stored successfully"
         );
         Ok(())
     }
 
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
-        let name_lower = context.execution.act_name.to_lowercase();
+        let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("user") || name_lower.contains("member");
 
         // Users have username field, members have user_id
-        let content_match = context.execution.response.contains("\"username\"")
-            && !context.execution.response.contains("\"user_id\"");
+        let content_match = context.execution().response().contains("\"username\"")
+            && !context.execution().response().contains("\"user_id\"");
 
         let should_process = name_match || content_match;
         debug!(
@@ -228,18 +227,18 @@ impl DiscordChannelProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
-        let json_str = extract_json(&context.execution.response)?;
+        let json_str = Extract::json(&context.execution().response())?;
 
         let channels: Vec<DiscordChannelJson> = if json_str.trim().starts_with('[') {
-            parse_json(&json_str)?
+            Extract::parse_json(&json_str)?
         } else {
-            vec![parse_json(&json_str)?]
+            vec![Extract::parse_json(&json_str)?]
         };
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             count = channels.len(),
             "Processing Discord channels"
         );
@@ -257,20 +256,20 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
         }
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             "Discord channels stored successfully"
         );
         Ok(())
     }
 
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
-        let name_lower = context.execution.act_name.to_lowercase();
+        let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("channel");
 
         // Channels have channel_type field
-        let content_match = context.execution.response.contains("\"channel_type\"");
+        let content_match = context.execution().response().contains("\"channel_type\"");
 
         let should_process = name_match || content_match;
         debug!(
@@ -306,18 +305,18 @@ impl DiscordRoleProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
-        let json_str = extract_json(&context.execution.response)?;
+        let json_str = Extract::json(&context.execution().response())?;
 
         let roles: Vec<DiscordRoleJson> = if json_str.trim().starts_with('[') {
-            parse_json(&json_str)?
+            Extract::parse_json(&json_str)?
         } else {
-            vec![parse_json(&json_str)?]
+            vec![Extract::parse_json(&json_str)?]
         };
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             count = roles.len(),
             "Processing Discord roles"
         );
@@ -335,20 +334,20 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
         }
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             "Discord roles stored successfully"
         );
         Ok(())
     }
 
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
-        let name_lower = context.execution.act_name.to_lowercase();
+        let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("role");
 
         // Roles have permissions and position fields
-        let content_match = context.execution.response.contains("\"permissions\"")
-            && context.execution.response.contains("\"position\"");
+        let content_match = context.execution().response().contains("\"permissions\"")
+            && context.execution().response().contains("\"position\"");
 
         let should_process = name_match || content_match;
         debug!(
@@ -384,18 +383,18 @@ impl DiscordGuildMemberProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
-        let json_str = extract_json(&context.execution.response)?;
+        let json_str = Extract::json(&context.execution().response())?;
 
         let members: Vec<DiscordGuildMemberJson> = if json_str.trim().starts_with('[') {
-            parse_json(&json_str)?
+            Extract::parse_json(&json_str)?
         } else {
-            vec![parse_json(&json_str)?]
+            vec![Extract::parse_json(&json_str)?]
         };
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             count = members.len(),
             "Processing Discord guild members"
         );
@@ -413,21 +412,21 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
         }
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             "Discord guild members stored successfully"
         );
         Ok(())
     }
 
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
-        let name_lower = context.execution.act_name.to_lowercase();
+        let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("member") && !name_lower.contains("role");
 
         // Guild members have both guild_id and user_id, plus joined_at
-        let content_match = context.execution.response.contains("\"guild_id\"")
-            && context.execution.response.contains("\"user_id\"")
-            && context.execution.response.contains("\"joined_at\"");
+        let content_match = context.execution().response().contains("\"guild_id\"")
+            && context.execution().response().contains("\"user_id\"")
+            && context.execution().response().contains("\"joined_at\"");
 
         let should_process = name_match || content_match;
         debug!(
@@ -463,18 +462,18 @@ impl DiscordMemberRoleProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
-        let json_str = extract_json(&context.execution.response)?;
+        let json_str = Extract::json(&context.execution().response())?;
 
         let member_roles: Vec<DiscordMemberRoleJson> = if json_str.trim().starts_with('[') {
-            parse_json(&json_str)?
+            Extract::parse_json(&json_str)?
         } else {
-            vec![parse_json(&json_str)?]
+            vec![Extract::parse_json(&json_str)?]
         };
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             count = member_roles.len(),
             "Processing Discord member role assignments"
         );
@@ -492,22 +491,22 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
         }
 
         info!(
-            act = %context.execution.act_name,
+            act = %context.execution().act_name(),
             "Discord member role assignments stored successfully"
         );
         Ok(())
     }
 
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
-        let name_lower = context.execution.act_name.to_lowercase();
+        let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("member") && name_lower.contains("role");
 
         // Member roles have guild_id, user_id, role_id, and assigned_at
-        let content_match = context.execution.response.contains("\"guild_id\"")
-            && context.execution.response.contains("\"user_id\"")
-            && context.execution.response.contains("\"role_id\"")
-            && context.execution.response.contains("\"assigned_at\"");
+        let content_match = context.execution().response().contains("\"guild_id\"")
+            && context.execution().response().contains("\"user_id\"")
+            && context.execution().response().contains("\"role_id\"")
+            && context.execution().response().contains("\"assigned_at\"");
 
         let should_process = name_match || content_match;
         debug!(

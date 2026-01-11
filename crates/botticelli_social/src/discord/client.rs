@@ -3,7 +3,8 @@
 //! This module provides the BotticelliBot struct which manages the Discord client
 //! connection, event handling, and database integration.
 
-use crate::{BotticelliHandler, DiscordError, DiscordErrorKind, DiscordRepository};
+use crate::{BotticelliHandler, DiscordRepository};
+use botticelli_error::{DiscordError, DiscordErrorKind};
 use diesel::pg::PgConnection;
 use serenity::Client;
 use std::sync::Arc;
