@@ -69,7 +69,8 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
             .get_mut(key)
             .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", key)))?;
 
-        narrative.update_from_json(args)?;
+        narrative.update_from_json(args)
+            .map_err(|e| McpError::execution_failed(e.to_string()))?;
         tracing::debug!("Updated narrative");
         Ok(())
     }
@@ -180,13 +181,15 @@ impl<T> botticelli_interface::ElicitationRegistryOperations<T> for NarrativeRegi
 where
     T: RegistryOperations<Key = String> + Clone + Send + Sync + serde::Serialize,
 {
-    fn get_narrative(&self, id: &str) -> botticelli_error::BotticelliResult<T> {
+    type Error = botticelli_error::BotticelliError;
+
+    fn get_narrative(&self, id: &str) -> Result<T, Self::Error> {
         self.get(id).map_err(Into::into)
     }
 
-    fn update_narrative<F>(&self, id: &str, updater: F) -> botticelli_error::BotticelliResult<()>
+    fn update_narrative<F>(&self, id: &str, updater: F) -> Result<(), Self::Error>
     where
-        F: FnOnce(&mut T) -> botticelli_error::BotticelliResult<()>,
+        F: FnOnce(&mut T) -> Result<(), Self::Error>,
     {
         let mut narratives = self.narratives.write().expect("Registry lock poisoned");
         let narrative = narratives.get_mut(id).ok_or_else(|| {
@@ -199,7 +202,7 @@ where
         updater(narrative)
     }
 
-    fn remove_narrative(&self, id: &str) -> botticelli_error::BotticelliResult<Option<T>> {
+    fn remove_narrative(&self, id: &str) -> Result<Option<T>, Self::Error> {
         Ok(self.remove(id))
     }
 
@@ -210,7 +213,7 @@ where
     fn get_narrative_state(
         &self,
         id: &str,
-    ) -> botticelli_error::BotticelliResult<serde_json::Value> {
+    ) -> Result<serde_json::Value, Self::Error> {
         let narrative: T = self
             .get(id)
             .map_err(|e: McpError| botticelli_error::BotticelliError::from(e))?;
@@ -223,7 +226,7 @@ where
     fn validate_narrative(
         &self,
         _id: &str,
-    ) -> botticelli_error::BotticelliResult<serde_json::Value> {
+    ) -> Result<serde_json::Value, Self::Error> {
         // TODO: Implement proper validation
         Ok(serde_json::json!({
             "valid": true

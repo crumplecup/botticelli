@@ -60,7 +60,7 @@ where
 
 impl<R> ElicitCarouselTool<R>
 where
-    R: ElicitationRegistryOperations<crate::PartialNarrative>,
+    R: ElicitationRegistryOperations<crate::PartialNarrative, Error = botticelli_error::BotticelliError>,
 {
     /// Creates a new carousel elicitation tool.
     pub fn new(registry: Arc<R>) -> Self {
@@ -107,28 +107,32 @@ where
 
         // Update narrative with carousel config
         self.registry
-            .update_narrative(&input.narrative_id, |partial| {
+            .update_narrative(&input.narrative_id, |partial| -> Result<(), _> {
                 match input.level {
                     CarouselLevel::Narrative => {
                         partial.carousel = Some(carousel_config.clone());
+                        Ok(())
                     }
                     CarouselLevel::Act => {
-                        let act_name = input.act_name.as_ref().ok_or_else(|| {
-                            botticelli_error::BotticelliError::from(McpError::invalid_input(
-                                "act_name required for Act level carousel",
-                            ))
-                        })?;
+                        let act_name = match input.act_name.as_ref() {
+                            Some(name) => name,
+                            None => {
+                                return Err(botticelli_error::BotticelliError::from(
+                                    McpError::invalid_input("act_name required for Act level carousel")
+                                ));
+                            }
+                        };
 
                         if let Some(act) = partial.acts.get_mut(act_name) {
                             act.carousel = Some(carousel_config.clone());
+                            Ok(())
                         } else {
-                            return Err(botticelli_error::BotticelliError::from(
+                            Err(botticelli_error::BotticelliError::from(
                                 McpError::invalid_input(format!("Act '{}' not found", act_name)),
-                            ));
+                            ))
                         }
                     }
                 }
-                Ok(())
             })
             .map_err(|e| McpError::execution_failed(e.to_string()))?;
 
@@ -158,7 +162,7 @@ where
 }
 
 #[async_trait]
-impl<R: ElicitationRegistryOperations<crate::PartialNarrative> + Send + Sync> McpTool
+impl<R: ElicitationRegistryOperations<crate::PartialNarrative, Error = botticelli_error::BotticelliError> + Send + Sync> McpTool
     for ElicitCarouselTool<R>
 {
     fn name(&self) -> &str {

@@ -179,24 +179,25 @@ impl PartialNarrative {
 
 impl RegistryOperations for PartialNarrative {
     type Key = String;
+    type Error = McpError;
 
     fn registry_key(&self) -> Self::Key {
         self.name.clone().unwrap_or_else(|| "unnamed".to_string())
     }
 
-    fn from_json_args(args: Value) -> McpResult<Self> {
+    fn from_json_args(args: Value) -> Result<Self, Self::Error> {
         serde_json::from_value(args).map_err(|e| {
             McpError::invalid_input(format!("Failed to deserialize PartialNarrative: {}", e))
         })
     }
 
-    fn to_json(&self) -> McpResult<Value> {
+    fn to_json(&self) -> Result<Value, Self::Error> {
         serde_json::to_value(self).map_err(|e| {
             McpError::execution_failed(format!("Failed to serialize PartialNarrative: {}", e))
         })
     }
 
-    fn update_from_json(&mut self, args: Value) -> McpResult<()> {
+    fn update_from_json(&mut self, args: Value) -> Result<(), Self::Error> {
         let obj = args
             .as_object()
             .ok_or_else(|| McpError::invalid_input("Expected JSON object".to_string()))?;
