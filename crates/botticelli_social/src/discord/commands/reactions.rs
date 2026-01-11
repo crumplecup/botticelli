@@ -10,11 +10,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{error, info, instrument};
 
-/// Execute: reactions.add
-///
-/// Add a reaction to a message.
-#[instrument(skip(http, args), fields(channel_id, message_id, emoji))]
-pub(super) async fn add(
+/// Helper type for reaction command operations.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Reactions;
+
+impl Reactions {
+    /// Execute: reactions.add
+    ///
+    /// Add a reaction to a message.
+    #[instrument(skip(http, args), fields(channel_id, message_id, emoji))]
+    pub async fn add(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -62,11 +67,11 @@ pub(super) async fn add(
     }))
 }
 
-/// Execute: reactions.remove
-///
-/// Remove a reaction from a message.
-#[instrument(skip(http, args), fields(channel_id, message_id, user_id, emoji))]
-pub(super) async fn remove(
+    /// Execute: reactions.remove
+    ///
+    /// Remove a reaction from a message.
+    #[instrument(skip(http, args), fields(channel_id, message_id, user_id, emoji))]
+    pub async fn remove(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -121,11 +126,11 @@ pub(super) async fn remove(
     }))
 }
 
-/// Execute: reactions.list
-///
-/// List users who reacted with a specific emoji.
-#[instrument(skip(http, args), fields(channel_id, message_id, emoji, limit))]
-pub(super) async fn list(
+    /// Execute: reactions.list
+    ///
+    /// List users who reacted with a specific emoji.
+    #[instrument(skip(http, args), fields(channel_id, message_id, emoji, limit))]
+    pub async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -185,11 +190,11 @@ pub(super) async fn list(
     }))
 }
 
-/// Execute: reactions.clear
-///
-/// Clear all reactions from a message.
-#[instrument(skip(http, args), fields(channel_id, message_id))]
-pub(super) async fn clear(
+    /// Execute: reactions.clear
+    ///
+    /// Clear all reactions from a message.
+    #[instrument(skip(http, args), fields(channel_id, message_id))]
+    pub async fn clear(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -224,11 +229,11 @@ pub(super) async fn clear(
     Ok(serde_json::json!({ "success": true }))
 }
 
-/// Execute: reactions.clear_emoji
-///
-/// Clear all reactions of a specific emoji from a message.
-#[instrument(skip(http, args), fields(channel_id, message_id, emoji))]
-pub(super) async fn clear_emoji(
+    /// Execute: reactions.clear_emoji
+    ///
+    /// Clear all reactions of a specific emoji from a message.
+    #[instrument(skip(http, args), fields(channel_id, message_id, emoji))]
+    pub async fn clear_emoji(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -268,6 +273,7 @@ pub(super) async fn clear_emoji(
 
     info!("Successfully cleared emoji reactions");
     Ok(serde_json::json!({ "success": true, "emoji": emoji_str }))
+}
 }
 
 // Helper functions

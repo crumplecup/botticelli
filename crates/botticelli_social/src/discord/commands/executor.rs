@@ -3,9 +3,10 @@
 use super::channels::Channels;
 use super::members::Members;
 use super::messages::Messages;
+use super::reactions::Reactions;
 use super::roles::Roles;
 use super::threads::Threads;
-use super::{events, forum, misc, moderation, reactions, server};
+use super::{events, forum, misc, moderation, server};
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -86,11 +87,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "forum.get_post" => forum::get_post(&self.http, args).await?,
 
             // Reaction commands
-            "reactions.add" => reactions::add(&self.http, args).await?,
-            "reactions.remove" => reactions::remove(&self.http, args).await?,
-            "reactions.list" => reactions::list(&self.http, args).await?,
-            "reactions.clear" => reactions::clear(&self.http, args).await?,
-            "reactions.clear_emoji" => reactions::clear_emoji(&self.http, args).await?,
+            "reactions.add" => Reactions::add(&self.http, args).await?,
+            "reactions.remove" => Reactions::remove(&self.http, args).await?,
+            "reactions.list" => Reactions::list(&self.http, args).await?,
+            "reactions.clear" => Reactions::clear(&self.http, args).await?,
+            "reactions.clear_emoji" => Reactions::clear_emoji(&self.http, args).await?,
 
             // Role commands
             "roles.list" => Roles::list(&self.http, args).await?,
