@@ -69,7 +69,8 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
             .get_mut(key)
             .ok_or_else(|| McpError::invalid_input(format!("Narrative {} not found", key)))?;
 
-        narrative.update_from_json(args)
+        narrative
+            .update_from_json(args)
             .map_err(|e| McpError::execution_failed(e.to_string()))?;
         tracing::debug!("Updated narrative");
         Ok(())
@@ -210,10 +211,7 @@ where
         self.add(narrative)
     }
 
-    fn get_narrative_state(
-        &self,
-        id: &str,
-    ) -> Result<serde_json::Value, Self::Error> {
+    fn get_narrative_state(&self, id: &str) -> Result<serde_json::Value, Self::Error> {
         let narrative: T = self
             .get(id)
             .map_err(|e: McpError| botticelli_error::BotticelliError::from(e))?;
@@ -223,10 +221,7 @@ where
         })
     }
 
-    fn validate_narrative(
-        &self,
-        _id: &str,
-    ) -> Result<serde_json::Value, Self::Error> {
+    fn validate_narrative(&self, _id: &str) -> Result<serde_json::Value, Self::Error> {
         // TODO: Implement proper validation
         Ok(serde_json::json!({
             "valid": true

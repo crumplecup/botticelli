@@ -60,7 +60,10 @@ where
 
 impl<R> ElicitCarouselTool<R>
 where
-    R: ElicitationRegistryOperations<crate::PartialNarrative, Error = botticelli_error::BotticelliError>,
+    R: ElicitationRegistryOperations<
+            crate::PartialNarrative,
+            Error = botticelli_error::BotticelliError,
+        >,
 {
     /// Creates a new carousel elicitation tool.
     pub fn new(registry: Arc<R>) -> Self {
@@ -118,7 +121,9 @@ where
                             Some(name) => name,
                             None => {
                                 return Err(botticelli_error::BotticelliError::from(
-                                    McpError::invalid_input("act_name required for Act level carousel")
+                                    McpError::invalid_input(
+                                        "act_name required for Act level carousel",
+                                    ),
                                 ));
                             }
                         };
@@ -162,8 +167,13 @@ where
 }
 
 #[async_trait]
-impl<R: ElicitationRegistryOperations<crate::PartialNarrative, Error = botticelli_error::BotticelliError> + Send + Sync> McpTool
-    for ElicitCarouselTool<R>
+impl<
+    R: ElicitationRegistryOperations<
+            crate::PartialNarrative,
+            Error = botticelli_error::BotticelliError,
+        > + Send
+        + Sync,
+> McpTool for ElicitCarouselTool<R>
 {
     fn name(&self) -> &str {
         "elicit_carousel"

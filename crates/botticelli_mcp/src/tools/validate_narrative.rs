@@ -115,8 +115,10 @@ impl McpTool for ValidateNarrativeTool {
             .with_validate_media_files(validate_files)
             .with_warn_unknown_models(validate_models)
             .with_warn_unused_resources(warn_unused);
-        
-        if let Some(p) = file_path.and_then(|p| PathBuf::from(p).parent().map(|parent| parent.to_path_buf())) {
+
+        if let Some(p) =
+            file_path.and_then(|p| PathBuf::from(p).parent().map(|parent| parent.to_path_buf()))
+        {
             config = config.with_base_dir(Some(p));
         }
 
