@@ -7,6 +7,7 @@ mod channels;
 mod events;
 mod forum;
 mod members;
+mod messages;
 mod misc;
 mod moderation;
 mod reactions;
@@ -125,6 +126,17 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "channels.create_invite" => channels::create_invite(&self.http, args).await?,
             "channels.typing" => channels::typing(&self.http, args).await?,
 
+            // Message commands
+            "messages.send" => messages::send(&self.http, args).await?,
+            "messages.get" => messages::get(&self.http, args).await?,
+            "messages.list" => messages::list(&self.http, args).await?,
+            "messages.edit" => messages::edit(&self.http, args).await?,
+            "messages.delete" => messages::delete(&self.http, args).await?,
+            "messages.pin" => messages::pin(&self.http, args).await?,
+            "messages.unpin" => messages::unpin(&self.http, args).await?,
+            "messages.bulk_delete" => messages::bulk_delete(&self.http, args).await?,
+            "messages.clear" => messages::clear(&self.http, args).await?,
+
             // TODO: Add other commands as we migrate them
             
             _ => {
@@ -207,6 +219,16 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             | "channels.get_or_create"
             | "channels.create_invite"
             | "channels.typing"
+            // Messages
+            | "messages.send"
+            | "messages.get"
+            | "messages.list"
+            | "messages.edit"
+            | "messages.delete"
+            | "messages.pin"
+            | "messages.unpin"
+            | "messages.bulk_delete"
+            | "messages.clear"
             // TODO: Add other commands as we migrate them
         )
     }
@@ -266,6 +288,16 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "channels.get_or_create".to_string(),
             "channels.create_invite".to_string(),
             "channels.typing".to_string(),
+            // Messages
+            "messages.send".to_string(),
+            "messages.get".to_string(),
+            "messages.list".to_string(),
+            "messages.edit".to_string(),
+            "messages.delete".to_string(),
+            "messages.pin".to_string(),
+            "messages.unpin".to_string(),
+            "messages.bulk_delete".to_string(),
+            "messages.clear".to_string(),
             // TODO: Add other commands as we migrate them
         ]
     }
@@ -320,6 +352,15 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "channels.get_or_create" => Some("Get or create channel\nRequired arguments: guild_id, name\nOptional: channel_type, topic, position, nsfw".to_string()),
             "channels.create_invite" => Some("Create invite link\nRequired arguments: channel_id\nOptional: max_age, max_uses, temporary".to_string()),
             "channels.typing" => Some("Trigger typing indicator\nRequired arguments: channel_id".to_string()),
+            "messages.send" => Some("Send message\nRequired arguments: channel_id, content\nOptional: tts".to_string()),
+            "messages.get" => Some("Get message details\nRequired arguments: channel_id, message_id".to_string()),
+            "messages.list" => Some("List messages\nRequired arguments: channel_id\nOptional: limit (max 100)".to_string()),
+            "messages.edit" => Some("Edit message\nRequired arguments: channel_id, message_id, content".to_string()),
+            "messages.delete" => Some("Delete message\nRequired arguments: channel_id, message_id\nOptional: reason".to_string()),
+            "messages.pin" => Some("Pin message\nRequired arguments: channel_id, message_id".to_string()),
+            "messages.unpin" => Some("Unpin message\nRequired arguments: channel_id, message_id".to_string()),
+            "messages.bulk_delete" => Some("Bulk delete messages\nRequired arguments: channel_id, message_ids (array, max 100)".to_string()),
+            "messages.clear" => Some("Clear messages from channel\nRequired arguments: channel_id\nOptional: limit (max 100)".to_string()),
             // TODO: Add other commands as we migrate them
             _ => None,
         }
