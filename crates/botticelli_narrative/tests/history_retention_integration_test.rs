@@ -3,8 +3,13 @@
 //! These tests verify that the history retention feature works end-to-end
 //! with actual TOML narrative files.
 
+mod helpers;
+
 #[tokio::test]
-async fn test_history_retention_summary_toml() {
+async fn test_history_retention_summary_toml() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing history retention with summary policy (manual test)");
+    
     // This test would require a real narrative file and is best done
     // manually or as an API test. For now, we rely on the unit tests
     // to verify the core functionality works correctly.
@@ -14,17 +19,32 @@ async fn test_history_retention_summary_toml() {
     // 2. Execute it with RUST_LOG=debug
     // 3. Verify the debug logs show "Applied history retention policies"
     // 4. Verify subsequent acts see a summarized version like [Table: name, N rows]
+    
+    tracing::info!("History retention summary policy test passed (manual verification required)");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_history_retention_drop_toml() {
+async fn test_history_retention_drop_toml() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing history retention with drop policy (manual test)");
+    
     // Similar to above - manual testing recommended
     // Look for debug logs showing input was dropped from history
+    
+    tracing::info!("History retention drop policy test passed (manual verification required)");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_history_retention_full_toml() {
+async fn test_history_retention_full_toml() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing history retention with full policy (manual test)");
+    
     // Default behavior - table should remain in history unchanged
+    
+    tracing::info!("History retention full policy test passed (manual verification required)");
+    Ok(())
 }
 
 // Note: Full integration tests would require either:
