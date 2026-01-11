@@ -1,5 +1,7 @@
 #![cfg(feature = "gemini")]
 
+mod helpers;
+
 // Integration test: Multi-model narrative execution.
 //
 // This test validates that narratives can execute with different models per act,
@@ -16,15 +18,21 @@ use std::path::Path;
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_narrative_multi_model_execution() -> BotticelliResult<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing multi-model narrative execution");
+    
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
     let executor = NarrativeExecutor::new(client);
+    tracing::debug!("Created GeminiClient and NarrativeExecutor");
 
     let narrative_path = Path::new("narratives/model_options.toml");
     let narrative = Narrative::from_file(narrative_path)?;
+    tracing::debug!(path = ?narrative_path, name = narrative.metadata().name(), "Loaded narrative");
 
     let execution = executor.execute(&narrative).await?;
+    tracing::debug!(act_count = execution.act_executions().len(), "Executed narrative");
 
     // Should have executed the enabled acts (currently 4: flash_20, flash_lite_20, flash_25, flash_lite_25)
     assert!(
@@ -48,6 +56,14 @@ async fn test_narrative_multi_model_execution() -> BotticelliResult<()> {
             "Act {} ({}) should have a model specified",
             idx,
             act.act_name()
+        );
+        
+        tracing::debug!(
+            act_index = idx,
+            act_name = act.act_name(),
+            model = ?act.model(),
+            response_len = act.response().len(),
+            "Verified act execution"
         );
     }
 
