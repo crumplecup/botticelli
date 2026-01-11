@@ -79,10 +79,14 @@ fn test_mock_provider_name() {
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_default_model_usage() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing default model usage");
+    
     let client = GeminiClient::new()?;
 
     // The default model should be gemini-2.0-flash-lite (for development)
     assert_eq!(client.model_name(), "gemini-2.0-flash-lite");
+    tracing::debug!(default_model = client.model_name(), "Using default model");
 
     let message = Message::builder()
         .role(Role::User)
@@ -98,7 +102,7 @@ async fn test_default_model_usage() -> anyhow::Result<()> {
 
     // Should get a response (validates default model works)
     assert!(!response.outputs().is_empty());
-    tracing::info!("Test Default Model Usage test passed");
+    tracing::info!("Default model usage test passed");
     Ok(())
 }
 
@@ -108,6 +112,9 @@ async fn test_default_model_usage() -> anyhow::Result<()> {
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_model_override_in_request() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing model override in request");
+    
     let client = GeminiClient::new()?;
 
     // Request should use gemini-2.5-flash-lite, not the default
@@ -122,11 +129,12 @@ async fn test_model_override_in_request() -> anyhow::Result<()> {
         .model("gemini-2.5-flash-lite".to_string()) // Override default
         .build()?;
 
+    tracing::debug!(override_model = "gemini-2.5-flash-lite", default_model = client.model_name(), "Using model override");
     let response = client.generate(&request).await?;
 
     // Verify we got a response
     assert!(!response.outputs().is_empty());
-    tracing::info!("Test Model Override In Request test passed");
+    tracing::info!("Model override in request test passed");
     Ok(())
 
     // TODO: Once fixed, this should validate the correct model was used.
@@ -141,6 +149,9 @@ async fn test_model_override_in_request() -> anyhow::Result<()> {
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_gemini_2_5_model_override() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Gemini 2.5 model override");
+    
     let client = GeminiClient::new()?;
 
     let message = Message::builder()
@@ -154,10 +165,11 @@ async fn test_gemini_2_5_model_override() -> anyhow::Result<()> {
         .model("gemini-2.5-flash".to_string())
         .build()?;
 
+    tracing::debug!(model = "gemini-2.5-flash", "Sending request");
     let response = client.generate(&request).await?;
 
     assert!(!response.outputs().is_empty());
-    tracing::info!("Test Gemini 2 5 Model Override test passed");
+    tracing::info!("Gemini 2.5 model override test passed");
     Ok(())
 }
 
@@ -167,6 +179,9 @@ async fn test_gemini_2_5_model_override() -> anyhow::Result<()> {
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)] // Requires GEMINI_API_KEY
 async fn test_multiple_model_requests() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing multiple requests with different models");
+    
     let client = GeminiClient::new()?;
 
     // Request 1: Use lite model
@@ -181,6 +196,7 @@ async fn test_multiple_model_requests() -> anyhow::Result<()> {
         .model("gemini-2.5-flash-lite".to_string())
         .build()?;
 
+    tracing::debug!(request = 1, model = "gemini-2.5-flash-lite", "Sending request");
     let response1 = client.generate(&request1).await?;
     assert!(!response1.outputs().is_empty());
 
@@ -196,6 +212,7 @@ async fn test_multiple_model_requests() -> anyhow::Result<()> {
         .model("gemini-2.5-flash".to_string())
         .build()?;
 
+    tracing::debug!(request = 2, model = "gemini-2.5-flash", "Sending request");
     let response2 = client.generate(&request2).await?;
     assert!(!response2.outputs().is_empty());
 
@@ -211,6 +228,7 @@ async fn test_multiple_model_requests() -> anyhow::Result<()> {
         .model("gemini-2.5-pro".to_string())
         .build()?;
 
+    tracing::debug!(request = 3, model = "gemini-2.5-pro", "Sending request");
     let response3 = client.generate(&request3).await?;
     assert!(!response3.outputs().is_empty());
     tracing::info!("Test Multiple Model Requests test passed");
