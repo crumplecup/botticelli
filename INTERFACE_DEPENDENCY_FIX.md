@@ -39,38 +39,63 @@ use async_trait::async_trait;
 /// to use their own error types (DiscordError, TestError, etc.).
 pub type EventResult<T, E> = Result<T, E>;
 
-/// Error severity level for event processing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ErrorSeverity {
-    /// Critical error - abort event processing immediately
-    Critical,
-    /// Non-critical - log and continue with other entities
-    Warning,
-    /// Informational - entity already processed or skipped
-    Info,
-}
-
-/// Event processing error with retry/abort semantics.
-pub trait EventError: std::error::Error + Send + Sync {
-    /// Severity of this error
-    fn severity(&self) -> ErrorSeverity;
-    
-    /// Whether this error is retryable
-    fn is_retryable(&self) -> bool;
-    
-    /// Human-readable context for logging
-    fn context(&self) -> String;
-}
-
 /// Discord event processor trait.
 /// 
 /// This trait defines the interface for processing Discord events with
-/// proper error handling. Implementations can return errors that indicate
-/// severity and retry semantics.
+/// proper error handling. Implementations define their own error types
+/// and severity types via associated type aliases.
+/// 
+/// # Type Parameters
+/// 
+/// All types are aliases to allow different implementations:
+/// - `Error`: The error type (must be Send + Sync + std::error::Error)
+/// - `Severity`: The severity type (implementation-specific)
+/// - `Guild`, `Channel`, etc.: Entity types (Serenity, mock, custom)
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use botticelli_interface::{DiscordEventProcessor, EventResult};
+/// 
+/// #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// enum MySeverity { Critical, Warning, Info }
+/// 
+/// #[derive(Debug)]
+/// struct MyError(String);
+/// 
+/// impl std::error::Error for MyError {}
+/// 
+/// struct MyProcessor;
+/// 
+/// #[async_trait::async_trait]
+/// impl DiscordEventProcessor for MyProcessor {
+///     type Error = MyError;
+///     type Severity = MySeverity;
+///     type Guild = MyGuild;
+///     // ... other types
+///     
+///     fn error_severity(&self, error: &Self::Error) -> Self::Severity {
+///         MySeverity::Warning
+///     }
+///     
+///     fn error_is_retryable(&self, error: &Self::Error) -> bool {
+///         false
+///     }
+///     
+///     // ... implement event methods
+/// }
+/// ```
 #[async_trait]
 pub trait DiscordEventProcessor {
-    /// Error type for this processor
-    type Error: EventError;
+    /// Error type for this processor.
+    /// 
+    /// Must implement std::error::Error + Send + Sync for async compatibility.
+    type Error: std::error::Error + Send + Sync;
+    
+    /// Severity type for error classification.
+    /// 
+    /// Implementation defines the severity levels (e.g., Critical/Warning/Info).
+    type Severity;
     
     /// Guild type (allows different representations: Serenity, mock, etc.)
     type Guild;
@@ -87,14 +112,29 @@ pub trait DiscordEventProcessor {
     /// User type
     type User;
     
+    /// Get the severity level for an error.
+    /// 
+    /// Used by the framework to decide whether to abort or continue processing.
+    fn error_severity(&self, error: &Self::Error) -> Self::Severity;
+    
+    /// Check if an error is retryable.
+    /// 
+    /// Used for retry logic, circuit breakers, etc.
+    fn error_is_retryable(&self, error: &Self::Error) -> bool;
+    
+    /// Get human-readable context for an error.
+    /// 
+    /// Used for logging and diagnostics.
+    fn error_context(&self, error: &Self::Error) -> String;
+    
     /// Process a guild_create event.
     /// 
     /// This should store the guild and all its entities (channels, roles, members).
     /// 
     /// # Errors
     /// 
-    /// - Critical error: Guild cannot be stored (abort)
-    /// - Warning: Some channels/roles/members failed (continue)
+    /// Returns an error if the event cannot be processed. The severity
+    /// determines whether processing should abort or continue.
     async fn process_guild_create(
         &self,
         guild: &Self::Guild,
@@ -128,40 +168,53 @@ pub trait DiscordEventProcessor {
 }
 ```
 
-### Phase 2: Implement EventError for DiscordError
+### Phase 2: Define Severity Type and Implement Trait Methods
 
 ```rust
 // crates/botticelli_error/src/discord.rs
 
-impl botticelli_interface::EventError for DiscordError {
-    fn severity(&self) -> botticelli_interface::ErrorSeverity {
-        use botticelli_interface::ErrorSeverity;
+/// Error severity level for Discord event processing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DiscordErrorSeverity {
+    /// Critical error - abort event processing immediately
+    Critical,
+    /// Non-critical - log and continue with other entities
+    Warning,
+    /// Informational - entity already processed or skipped
+    Info,
+}
+
+impl DiscordError {
+    /// Get the severity level for this error.
+    pub fn severity(&self) -> DiscordErrorSeverity {
+        use DiscordErrorSeverity::*;
         use DiscordErrorKind::*;
         
         match self.kind() {
             // Critical errors - can't continue processing
-            ConnectionFailed(_) | ConnectionFailedWithSource { .. } => ErrorSeverity::Critical,
-            InvalidToken => ErrorSeverity::Critical,
-            DatabaseError(_) => ErrorSeverity::Critical,
-            DataConversionError(_) => ErrorSeverity::Critical,
+            ConnectionFailed(_) | ConnectionFailedWithSource { .. } => Critical,
+            InvalidToken => Critical,
+            DatabaseError(_) => Critical,
+            DataConversionError(_) => Critical,
+            ConfigurationError(_) => Critical,
             
             // Warnings - log and continue
-            GuildNotFound(_) => ErrorSeverity::Warning,
-            ChannelNotFound(_) => ErrorSeverity::Warning,
-            UserNotFound(_) => ErrorSeverity::Warning,
-            RoleNotFound(_) => ErrorSeverity::Warning,
+            GuildNotFound(_) => Warning,
+            ChannelNotFound(_) => Warning,
+            UserNotFound(_) => Warning,
+            RoleNotFound(_) => Warning,
+            MessageSendFailed(_) => Warning,
+            InteractionFailed(_) => Warning,
+            InvalidId(_) => Warning,
             
             // Info - expected conditions
-            SerenityError(_) => ErrorSeverity::Info,
-            InsufficientPermissions(_) => ErrorSeverity::Info,
-            MessageSendFailed(_) => ErrorSeverity::Warning,
-            InteractionFailed(_) => ErrorSeverity::Warning,
-            InvalidId(_) => ErrorSeverity::Warning,
-            ConfigurationError(_) => ErrorSeverity::Critical,
+            SerenityError(_) => Info,
+            InsufficientPermissions(_) => Info,
         }
     }
     
-    fn is_retryable(&self) -> bool {
+    /// Check if this error is retryable.
+    pub fn is_retryable(&self) -> bool {
         use DiscordErrorKind::*;
         
         match self.kind() {
@@ -185,7 +238,8 @@ impl botticelli_interface::EventError for DiscordError {
         }
     }
     
-    fn context(&self) -> String {
+    /// Get human-readable context for logging.
+    pub fn error_context(&self) -> String {
         format!("{} at {}:{}", self.kind(), self.file(), self.line())
     }
 }
