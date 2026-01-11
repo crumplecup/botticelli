@@ -2,13 +2,14 @@
 
 use super::channels::Channels;
 use super::events::Events;
+use super::forum::Forum;
 use super::members::Members;
 use super::messages::Messages;
 use super::moderation::Moderation;
 use super::reactions::Reactions;
 use super::roles::Roles;
 use super::threads::Threads;
-use super::{forum, misc, server};
+use super::{misc, server};
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -84,9 +85,9 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "events.delete" => Events::delete(&self.http, args).await?,
 
             // Forum commands
-            "forum.create_post" => forum::create_post(&self.http, args).await?,
-            "forum.list_posts" => forum::list_posts(&self.http, args).await?,
-            "forum.get_post" => forum::get_post(&self.http, args).await?,
+            "forum.create_post" => Forum::create_post(&self.http, args).await?,
+            "forum.list_posts" => Forum::list_posts(&self.http, args).await?,
+            "forum.get_post" => Forum::get_post(&self.http, args).await?,
 
             // Reaction commands
             "reactions.add" => Reactions::add(&self.http, args).await?,

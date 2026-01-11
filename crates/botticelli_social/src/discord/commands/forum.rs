@@ -12,11 +12,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument};
 
-/// Execute: forum.create_post
-///
-/// Create a new forum post (thread in a forum channel).
-#[instrument(skip(http, args), fields(channel_id, name))]
-pub(super) async fn create_post(
+/// Helper type for forum command operations.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Forum;
+
+impl Forum {
+    /// Execute: forum.create_post
+    ///
+    /// Create a new forum post (thread in a forum channel).
+    #[instrument(skip(http, args), fields(channel_id, name))]
+    pub async fn create_post(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -68,11 +73,11 @@ pub(super) async fn create_post(
     }))
 }
 
-/// Execute: forum.list_posts
-///
-/// List forum posts (active threads in a forum channel).
-#[instrument(skip(_http, args), fields(channel_id))]
-pub(super) async fn list_posts(
+    /// Execute: forum.list_posts
+    ///
+    /// List forum posts (active threads in a forum channel).
+    #[instrument(skip(_http, args), fields(channel_id))]
+    pub async fn list_posts(
     _http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -94,11 +99,11 @@ pub(super) async fn list_posts(
     .into())
 }
 
-/// Execute: forum.get_post
-///
-/// Get details about a specific forum post.
-#[instrument(skip(http, args), fields(thread_id))]
-pub(super) async fn get_post(
+    /// Execute: forum.get_post
+    ///
+    /// Get details about a specific forum post.
+    #[instrument(skip(http, args), fields(thread_id))]
+    pub async fn get_post(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -133,6 +138,7 @@ pub(super) async fn get_post(
         }
         .into()),
     }
+}
 }
 
 // Helper functions
