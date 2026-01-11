@@ -7,6 +7,7 @@ mod events;
 mod forum;
 mod misc;
 mod moderation;
+mod reactions;
 mod server;
 
 use crate::{BotCommandError, BotCommandErrorKind};
@@ -88,6 +89,13 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "forum.list_posts" => forum::list_posts(&self.http, args).await?,
             "forum.get_post" => forum::get_post(&self.http, args).await?,
 
+            // Reaction commands
+            "reactions.add" => reactions::add(&self.http, args).await?,
+            "reactions.remove" => reactions::remove(&self.http, args).await?,
+            "reactions.list" => reactions::list(&self.http, args).await?,
+            "reactions.clear" => reactions::clear(&self.http, args).await?,
+            "reactions.clear_emoji" => reactions::clear_emoji(&self.http, args).await?,
+
             // TODO: Add other commands as we migrate them
             
             _ => {
@@ -141,6 +149,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             | "forum.create_post"
             | "forum.list_posts"
             | "forum.get_post"
+            // Reactions
+            | "reactions.add"
+            | "reactions.remove"
+            | "reactions.list"
+            | "reactions.clear"
+            | "reactions.clear_emoji"
             // TODO: Add other commands as we migrate them
         )
     }
@@ -171,6 +185,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "forum.create_post".to_string(),
             "forum.list_posts".to_string(),
             "forum.get_post".to_string(),
+            // Reactions
+            "reactions.add".to_string(),
+            "reactions.remove".to_string(),
+            "reactions.list".to_string(),
+            "reactions.clear".to_string(),
+            "reactions.clear_emoji".to_string(),
             // TODO: Add other commands as we migrate them
         ]
     }
@@ -200,6 +220,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "forum.create_post" => Some("Create a forum post\nRequired arguments: channel_id, name, content\nOptional: auto_archive_duration".to_string()),
             "forum.list_posts" => Some("List forum posts\nRequired arguments: channel_id".to_string()),
             "forum.get_post" => Some("Get forum post details\nRequired arguments: thread_id".to_string()),
+            "reactions.add" => Some("Add reaction to message\nRequired arguments: channel_id, message_id, emoji".to_string()),
+            "reactions.remove" => Some("Remove reaction from message\nRequired arguments: channel_id, message_id, emoji, user_id".to_string()),
+            "reactions.list" => Some("List users who reacted\nRequired arguments: channel_id, message_id, emoji\nOptional: limit".to_string()),
+            "reactions.clear" => Some("Clear all reactions\nRequired arguments: channel_id, message_id".to_string()),
+            "reactions.clear_emoji" => Some("Clear specific emoji reactions\nRequired arguments: channel_id, message_id, emoji".to_string()),
             // TODO: Add other commands as we migrate them
             _ => None,
         }
