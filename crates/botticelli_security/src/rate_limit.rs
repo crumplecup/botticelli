@@ -19,7 +19,9 @@ pub struct RateLimit {
 
 impl RateLimit {
     /// Create a new rate limit.
+    #[tracing::instrument(fields(max_tokens, window_secs, burst))]
     pub fn new(max_tokens: u32, window_secs: u64, burst: u32) -> Self {
+        tracing::debug!("Creating rate limit");
         Self {
             max_tokens,
             window_secs,
@@ -28,6 +30,7 @@ impl RateLimit {
     }
 
     /// Create a rate limit with no burst.
+    #[tracing::instrument(fields(max_tokens, window_secs))]
     pub fn strict(max_tokens: u32, window_secs: u64) -> Self {
         Self::new(max_tokens, window_secs, 0)
     }
@@ -57,8 +60,10 @@ struct TokenBucket {
 
 impl TokenBucket {
     /// Create a new token bucket.
+    #[tracing::instrument(skip(limit), fields(max_tokens = limit.max_tokens, burst = limit.burst))]
     fn new(limit: RateLimit) -> Self {
         let max_tokens = (limit.max_tokens + limit.burst) as f64;
+        tracing::debug!(initial_tokens = max_tokens, "Token bucket created");
         Self {
             limit,
             tokens: max_tokens,
@@ -67,6 +72,7 @@ impl TokenBucket {
     }
 
     /// Refill tokens based on elapsed time.
+    #[tracing::instrument(skip(self), fields(current_tokens = self.tokens))]
     fn refill(&mut self) {
         let now = Instant::now();
         let elapsed = now.duration_since(self.last_refill);
@@ -79,20 +85,24 @@ impl TokenBucket {
         let max_tokens = (self.limit.max_tokens + self.limit.burst) as f64;
         self.tokens = (self.tokens + tokens_to_add).min(max_tokens);
         self.last_refill = now;
+        tracing::debug!(tokens_after_refill = self.tokens, "Tokens refilled");
     }
 
     /// Try to consume a token. Returns Ok if successful, Err with retry duration if not.
+    #[tracing::instrument(skip(self), fields(available_tokens = self.tokens))]
     fn try_consume(&mut self) -> Result<(), Duration> {
         self.refill();
 
         if self.tokens >= 1.0 {
             self.tokens -= 1.0;
+            tracing::debug!(remaining_tokens = self.tokens, "Token consumed");
             Ok(())
         } else {
             // Calculate time until a token is available
             let refill_rate = self.limit.max_tokens as f64 / self.limit.window_secs as f64;
             let tokens_needed = 1.0 - self.tokens;
             let secs_to_wait = tokens_needed / refill_rate;
+            tracing::debug!(secs_to_wait, "Rate limit exceeded");
             Err(Duration::from_secs_f64(secs_to_wait))
         }
     }
@@ -114,7 +124,9 @@ pub struct RateLimiter {
 
 impl RateLimiter {
     /// Create a new rate limiter.
+    #[tracing::instrument]
     pub fn new() -> Self {
+        tracing::debug!("Creating rate limiter");
         Self {
             limits: HashMap::new(),
             buckets: HashMap::new(),
@@ -122,8 +134,10 @@ impl RateLimiter {
     }
 
     /// Add a rate limit for an operation.
+    #[tracing::instrument(skip(self, limit), fields(operation, max_tokens = limit.max_tokens))]
     pub fn add_limit(&mut self, operation: impl Into<String>, limit: RateLimit) {
         let operation = operation.into();
+        tracing::debug!("Adding rate limit for operation");
         self.buckets
             .insert(operation.clone(), TokenBucket::new(limit.clone()));
         self.limits.insert(operation, limit);
@@ -166,6 +180,7 @@ impl RateLimiter {
     }
 
     /// Get available tokens for an operation.
+    #[tracing::instrument(skip(self), fields(operation))]
     pub fn available_tokens(&mut self, operation: &str) -> Option<u32> {
         self.buckets
             .get_mut(operation)
@@ -173,6 +188,7 @@ impl RateLimiter {
     }
 
     /// Get rate limit configuration for an operation.
+    #[tracing::instrument(skip(self), fields(operation))]
     pub fn get_limit(&self, operation: &str) -> Option<&RateLimit> {
         self.limits.get(operation)
     }
