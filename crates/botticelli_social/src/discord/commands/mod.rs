@@ -8,6 +8,7 @@ mod forum;
 mod misc;
 mod moderation;
 mod reactions;
+mod roles;
 mod server;
 
 use crate::{BotCommandError, BotCommandErrorKind};
@@ -96,6 +97,15 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "reactions.clear" => reactions::clear(&self.http, args).await?,
             "reactions.clear_emoji" => reactions::clear_emoji(&self.http, args).await?,
 
+            // Role commands
+            "roles.list" => roles::list(&self.http, args).await?,
+            "roles.get" => roles::get(&self.http, args).await?,
+            "roles.create" => roles::create(&self.http, args).await?,
+            "roles.edit" => roles::edit(&self.http, args).await?,
+            "roles.delete" => roles::delete(&self.http, args).await?,
+            "roles.assign" => roles::assign(&self.http, args).await?,
+            "roles.remove" => roles::remove(&self.http, args).await?,
+
             // TODO: Add other commands as we migrate them
             
             _ => {
@@ -155,6 +165,14 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             | "reactions.list"
             | "reactions.clear"
             | "reactions.clear_emoji"
+            // Roles
+            | "roles.list"
+            | "roles.get"
+            | "roles.create"
+            | "roles.edit"
+            | "roles.delete"
+            | "roles.assign"
+            | "roles.remove"
             // TODO: Add other commands as we migrate them
         )
     }
@@ -191,6 +209,14 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "reactions.list".to_string(),
             "reactions.clear".to_string(),
             "reactions.clear_emoji".to_string(),
+            // Roles
+            "roles.list".to_string(),
+            "roles.get".to_string(),
+            "roles.create".to_string(),
+            "roles.edit".to_string(),
+            "roles.delete".to_string(),
+            "roles.assign".to_string(),
+            "roles.remove".to_string(),
             // TODO: Add other commands as we migrate them
         ]
     }
@@ -225,6 +251,13 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "reactions.list" => Some("List users who reacted\nRequired arguments: channel_id, message_id, emoji\nOptional: limit".to_string()),
             "reactions.clear" => Some("Clear all reactions\nRequired arguments: channel_id, message_id".to_string()),
             "reactions.clear_emoji" => Some("Clear specific emoji reactions\nRequired arguments: channel_id, message_id, emoji".to_string()),
+            "roles.list" => Some("List all roles in guild\nRequired arguments: guild_id".to_string()),
+            "roles.get" => Some("Get role details\nRequired arguments: guild_id, role_id".to_string()),
+            "roles.create" => Some("Create new role\nRequired arguments: guild_id, name\nOptional: color, hoist, mentionable".to_string()),
+            "roles.edit" => Some("Edit role properties\nRequired arguments: guild_id, role_id\nOptional: name, color, hoist, mentionable".to_string()),
+            "roles.delete" => Some("Delete role\nRequired arguments: guild_id, role_id".to_string()),
+            "roles.assign" => Some("Assign role to member\nRequired arguments: guild_id, user_id, role_id".to_string()),
+            "roles.remove" => Some("Remove role from member\nRequired arguments: guild_id, user_id, role_id".to_string()),
             // TODO: Add other commands as we migrate them
             _ => None,
         }
