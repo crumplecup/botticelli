@@ -4,6 +4,7 @@
 //! routing commands to domain-specific submodules.
 
 mod misc;
+mod moderation;
 mod server;
 
 use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
@@ -67,6 +68,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "integrations.list" => misc::integrations_list(&self.http, args).await?,
             "voice_regions.list" => misc::voice_regions_list(&self.http, args).await?,
 
+            // Moderation commands
+            "bans.list" => moderation::list(&self.http, args).await?,
+            "members.ban" => moderation::ban(&self.http, args).await?,
+            "members.unban" => moderation::unban(&self.http, args).await?,
+            "members.kick" => moderation::kick(&self.http, args).await?,
+
             // TODO: Add other commands as we migrate them
             
             _ => {
@@ -105,6 +112,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             | "webhooks.list"
             | "integrations.list"
             | "voice_regions.list"
+            // Moderation
+            | "bans.list"
+            | "members.ban"
+            | "members.unban"
+            | "members.kick"
             // TODO: Add other commands as we migrate them
         )
     }
@@ -120,6 +132,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "webhooks.list".to_string(),
             "integrations.list".to_string(),
             "voice_regions.list".to_string(),
+            // Moderation
+            "bans.list".to_string(),
+            "members.ban".to_string(),
+            "members.unban".to_string(),
+            "members.kick".to_string(),
             // TODO: Add other commands as we migrate them
         ]
     }
@@ -137,6 +154,10 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "webhooks.list" => Some("List webhooks\nRequired arguments: guild_id".to_string()),
             "integrations.list" => Some("List integrations\nRequired arguments: guild_id".to_string()),
             "voice_regions.list" => Some("List voice regions\nRequired arguments: guild_id".to_string()),
+            "bans.list" => Some("List banned users\nRequired arguments: guild_id\nOptional: limit".to_string()),
+            "members.ban" => Some("Ban a member\nRequired arguments: guild_id, user_id\nOptional: delete_message_days".to_string()),
+            "members.unban" => Some("Unban a member\nRequired arguments: guild_id, user_id".to_string()),
+            "members.kick" => Some("Kick a member\nRequired arguments: guild_id, user_id\nOptional: reason".to_string()),
             // TODO: Add other commands as we migrate them
             _ => None,
         }
