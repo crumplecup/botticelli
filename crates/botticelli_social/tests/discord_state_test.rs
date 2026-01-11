@@ -5,7 +5,10 @@ mod helpers;
 #[test]
 fn test_state_persistence_basic() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
-    tracing::info!(test = "test_state_persistence_basic", "Starting state persistence test");
+    tracing::info!(
+        test = "test_state_persistence_basic",
+        "Starting state persistence test"
+    );
     use std::fs;
     use std::path::PathBuf;
 
@@ -46,7 +49,10 @@ fn test_state_persistence_basic() -> anyhow::Result<()> {
 #[cfg_attr(not(feature = "api"), ignore)]
 fn test_state_persistence_across_narratives() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
-    tracing::info!(test = "test_state_persistence_across_narratives", "Starting cross-narrative persistence test");
+    tracing::info!(
+        test = "test_state_persistence_across_narratives",
+        "Starting cross-narrative persistence test"
+    );
     use std::fs;
     use std::path::PathBuf;
     use std::process::Command;
@@ -64,7 +70,8 @@ fn test_state_persistence_across_narratives() -> anyhow::Result<()> {
 
     // Run setup narrative to create and store channel ID
     tracing::debug!("Running setup narrative");
-    let state_dir_str = state_dir.to_str()
+    let state_dir_str = state_dir
+        .to_str()
         .ok_or_else(|| anyhow::anyhow!("Invalid state directory path"))?;
     let setup_output = Command::new("just")
         .args([

@@ -34,7 +34,7 @@ use derive_getters::Getters;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use tracing::{debug, error, info, instrument, warn, Span};
+use tracing::{Span, debug, error, info, instrument, warn};
 
 /// Registry of bot command executors for multiple platforms.
 ///

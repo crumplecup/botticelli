@@ -72,14 +72,16 @@ impl WriteOperationTest {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
             tracing::error!(
-                stage = %stage, 
-                stdout = %stdout, 
-                stderr = %stderr, 
+                stage = %stage,
+                stdout = %stdout,
+                stderr = %stderr,
                 "Narrative failed"
             );
             anyhow::bail!(
                 "{} narrative failed:\nStdout: {}\nStderr: {}",
-                stage, stdout, stderr
+                stage,
+                stdout,
+                stderr
             );
         }
 

@@ -41,7 +41,11 @@ macro_rules! parse_test {
         #[test]
         fn $name() -> anyhow::Result<()> {
             helpers::init_test_tracing("info");
-            tracing::info!(test = stringify!($name), file = $file, "Starting parse test");
+            tracing::info!(
+                test = stringify!($name),
+                file = $file,
+                "Starting parse test"
+            );
             let narrative = load_narrative($file)?;
             assert!(!narrative.acts().is_empty());
             tracing::debug!(acts = narrative.acts().len(), "Validation passed");
@@ -96,11 +100,12 @@ parse_test!(parse_events_get, "discord/events_get_test.toml");
 async fn run_test_narrative(name: &str) -> anyhow::Result<()> {
     tracing::debug!(narrative = %name, "Running test narrative");
     let narrative_path = get_test_narrative_path(name);
-    let narrative_str = narrative_path.to_str()
+    let narrative_str = narrative_path
+        .to_str()
         .ok_or_else(|| anyhow::anyhow!("Invalid narrative path"))?;
 
     tracing::debug!(path = %narrative_str, "Executing botticelli CLI");
-    
+
     // Use botticelli CLI to run the narrative
     let output = tokio::process::Command::new("cargo")
         .args([
@@ -137,7 +142,11 @@ macro_rules! integration_test {
         #[cfg_attr(not(feature = "api"), ignore)]
         async fn $name() -> anyhow::Result<()> {
             helpers::init_test_tracing("info");
-            tracing::info!(test = stringify!($name), narrative = $file, "Starting integration test");
+            tracing::info!(
+                test = stringify!($name),
+                narrative = $file,
+                "Starting integration test"
+            );
             load_env();
             run_test_narrative($file).await?;
             tracing::info!(test = stringify!($name), "Integration test passed");

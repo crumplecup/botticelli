@@ -4,8 +4,8 @@
 //! and persist data to the database.
 
 use crate::{
-    ChannelType, DiscordRepository, NewChannelBuilder, NewGuildBuilder,
-    NewGuildMemberBuilder, NewRoleBuilder, NewUserBuilder,
+    ChannelType, DiscordRepository, NewChannelBuilder, NewGuildBuilder, NewGuildMemberBuilder,
+    NewRoleBuilder, NewUserBuilder,
 };
 use botticelli_error::{DiscordError, DiscordErrorKind, DiscordErrorSeverity, DiscordResult};
 use botticelli_interface::{DiscordEventProcessor, EventResult};
@@ -124,8 +124,9 @@ impl BotticelliHandler {
             .bot_active(Some(true))
             .build();
 
-        let new_guild = new_guild
-            .map_err(|e| DiscordError::new(DiscordErrorKind::BuilderValidationError(e.to_string())))?;
+        let new_guild = new_guild.map_err(|e| {
+            DiscordError::new(DiscordErrorKind::BuilderValidationError(e.to_string()))
+        })?;
 
         self.repository.store_guild(&new_guild).await?;
         debug!(guild_id = %guild.id, guild_name = %guild.name, "Stored guild");
@@ -159,11 +160,9 @@ impl BotticelliHandler {
                 None,
             ),
             _ => {
-                return Err(DiscordError::new(
-                    DiscordErrorKind::UnsupportedType(
-                        "Unsupported channel type for storage".to_string(),
-                    ),
-                ));
+                return Err(DiscordError::new(DiscordErrorKind::UnsupportedType(
+                    "Unsupported channel type for storage".to_string(),
+                )));
             }
         };
 
@@ -201,9 +200,9 @@ impl BotticelliHandler {
             Ok(channel) => channel,
             Err(e) => {
                 error!(channel_id = id, error = %e, "Failed to build NewChannel");
-                return Err(DiscordError::new(
-                    DiscordErrorKind::BuilderValidationError(e.to_string())
-                ));
+                return Err(DiscordError::new(DiscordErrorKind::BuilderValidationError(
+                    e.to_string(),
+                )));
             }
         };
 
@@ -236,12 +235,9 @@ impl BotticelliHandler {
         let new_user = match new_user {
             Ok(user) => user,
             Err(e) => {
-                return Err(DiscordError::new(
-                    DiscordErrorKind::BuilderValidationError(format!(
-                        "Failed to build NewUser: {}",
-                        e
-                    )),
-                ));
+                return Err(DiscordError::new(DiscordErrorKind::BuilderValidationError(
+                    format!("Failed to build NewUser: {}", e),
+                )));
             }
         };
 
@@ -572,7 +568,10 @@ impl EventHandler for BotticelliHandler {
             channel_name = %channel.name,
             "Channel created"
         );
-        if let Err(e) = self.store_channel(Some(channel.guild_id), &Channel::Guild(channel)).await {
+        if let Err(e) = self
+            .store_channel(Some(channel.guild_id), &Channel::Guild(channel))
+            .await
+        {
             error!(error = ?e, "Failed to store channel");
         }
     }

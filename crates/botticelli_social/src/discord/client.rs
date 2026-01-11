@@ -149,11 +149,11 @@ impl BotticelliBot {
                     error = %err,
                     "Critical error in event handler, shutting down bot"
                 );
-                
+
                 // Graceful shutdown: signal client to stop
                 info!("Initiating graceful shutdown");
                 shard_manager.shutdown_all().await;
-                
+
                 // Client task continues running, we just return the error
                 // (the spawned task will complete in background)
                 return Err(err);

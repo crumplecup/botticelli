@@ -14,14 +14,14 @@ use discord_write_test_helpers::{WriteOperationTest, narrative_path};
 fn test_channel_update() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!(test = "test_channel_update", "Starting channel update test");
-    
+
     WriteOperationTest::new(
         narrative_path("write_tests/channel_create_setup"),
         narrative_path("write_tests/channel_update_test"),
     )
     .with_teardown(narrative_path("write_tests/channel_create_teardown"))
     .run()?;
-    
+
     tracing::info!("Channel update test completed successfully");
     Ok(())
 }

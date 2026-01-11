@@ -77,7 +77,11 @@ async fn test_bot_command_execution() -> anyhow::Result<()> {
     let mut args = HashMap::new();
     args.insert("guild_id".to_string(), serde_json::json!("1234567890"));
 
-    tracing::debug!(platform = "mock", command = "server.get_stats", "Executing command");
+    tracing::debug!(
+        platform = "mock",
+        command = "server.get_stats",
+        "Executing command"
+    );
 
     let result = executor.execute("server.get_stats", &args).await?;
 
@@ -106,9 +110,7 @@ async fn test_bot_command_registry() -> anyhow::Result<()> {
     let mut args = HashMap::new();
     args.insert("guild_id".to_string(), serde_json::json!("1234567890"));
 
-    let result = registry
-        .execute("mock", "server.get_stats", &args)
-        .await?;
+    let result = registry.execute("mock", "server.get_stats", &args).await?;
 
     tracing::info!(?result, "Registry executed command");
 
@@ -125,7 +127,10 @@ async fn test_unknown_platform() -> anyhow::Result<()> {
     let registry = BotCommandRegistryImpl::new();
     let args = HashMap::new();
 
-    tracing::debug!(platform = "unknown", "Attempting to execute on unknown platform");
+    tracing::debug!(
+        platform = "unknown",
+        "Attempting to execute on unknown platform"
+    );
 
     let result = registry.execute("unknown", "test", &args).await;
 
@@ -192,10 +197,18 @@ async fn test_registry_has_platform() -> anyhow::Result<()> {
     let mut registry = BotCommandRegistryImpl::new();
     registry.register(MockBotCommandExecutor::new("discord"));
 
-    tracing::debug!(platform = "discord", has = registry.has_platform("discord"), "Checking platform");
+    tracing::debug!(
+        platform = "discord",
+        has = registry.has_platform("discord"),
+        "Checking platform"
+    );
     assert!(registry.has_platform("discord"));
 
-    tracing::debug!(platform = "slack", has = registry.has_platform("slack"), "Checking platform");
+    tracing::debug!(
+        platform = "slack",
+        has = registry.has_platform("slack"),
+        "Checking platform"
+    );
     assert!(!registry.has_platform("slack"));
 
     tracing::info!("Platform detection verified");

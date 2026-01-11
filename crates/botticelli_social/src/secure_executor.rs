@@ -40,7 +40,14 @@ pub struct SecureBotCommandExecutor<V: CommandValidator> {
 impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     /// Create a new secure bot command executor.
     /// Create a new secure bot command executor.
-    #[instrument(skip(registry, permission_checker, validator, content_filter, rate_limiter, approval_workflow))]
+    #[instrument(skip(
+        registry,
+        permission_checker,
+        validator,
+        content_filter,
+        rate_limiter,
+        approval_workflow
+    ))]
     pub fn new(
         registry: BotCommandRegistryImpl,
         permission_checker: PermissionChecker,

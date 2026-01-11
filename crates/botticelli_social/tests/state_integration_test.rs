@@ -28,7 +28,9 @@ fn run_narrative_with_just(narrative_name: &str) -> anyhow::Result<()> {
         );
         anyhow::bail!(
             "Narrative {} failed:\nSTDOUT:\n{}\nSTDERR:\n{}",
-            narrative_name, stdout, stderr
+            narrative_name,
+            stdout,
+            stderr
         );
     }
 
@@ -40,8 +42,11 @@ fn run_narrative_with_just(narrative_name: &str) -> anyhow::Result<()> {
 #[cfg_attr(not(feature = "api"), ignore)]
 fn test_state_integration_lifecycle() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
-    tracing::info!(test = "test_state_integration_lifecycle", "Starting state integration lifecycle test");
-    
+    tracing::info!(
+        test = "test_state_integration_lifecycle",
+        "Starting state integration lifecycle test"
+    );
+
     // This test requires DISCORD_TOKEN and TEST_GUILD_ID environment variables
     dotenvy::dotenv().ok();
 

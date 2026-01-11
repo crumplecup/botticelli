@@ -4,7 +4,7 @@
 //! and insert them into the database using the DiscordRepository.
 
 use botticelli_interface::ActProcessor;
-use botticelli_narrative::{ProcessorContext, Extract};
+use botticelli_narrative::{Extract, ProcessorContext};
 
 use crate::{
     DiscordChannelJson, DiscordGuildJson, DiscordGuildMemberJson, DiscordMemberRoleJson,
