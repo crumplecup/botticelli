@@ -1,30 +1,14 @@
 //! Integration tests for ContentGenerationRepository trait implementation.
 
+mod helpers;
+
 use botticelli_database::{
     NewContentGenerationRow, PostgresContentGenerationRepository, UpdateContentGenerationRow,
 };
-use botticelli_error::{DatabaseError, DatabaseErrorKind};
 use botticelli_interface::ContentGenerationRepository;
 use diesel::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use std::env;
-use tracing::info;
-
-type DatabaseResult<T> = Result<T, DatabaseError>;
-
-/// Initialize tracing for tests.
-///
-/// Uses try_init() to avoid panicking if already initialized.
-/// Logs are captured by test framework when tests fail.
-fn init_test_tracing() {
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("debug")),
-        )
-        .with_test_writer()
-        .try_init();
-}
 
 fn get_database_url() -> String {
     env::var("DATABASE_URL").unwrap_or_else(|_| {
@@ -32,25 +16,28 @@ fn get_database_url() -> String {
     })
 }
 
-fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgConnection>>> {
+fn create_pool(database_url: &str) -> anyhow::Result<Pool<ConnectionManager<PgConnection>>> {
     let manager = ConnectionManager::<PgConnection>::new(database_url);
-    Pool::builder().build(manager).map_err(DatabaseError::from)
+    Ok(Pool::builder().build(manager)?)
 }
 
 #[test]
 #[cfg(feature = "postgres")]
-fn test_start_and_get_generation() -> DatabaseResult<()> {
-    init_test_tracing();
-    info!("Starting test: test_start_and_get_generation");
+fn test_start_and_get_generation() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    use tracing::{debug, info};
+
+    info!("Testing content generation creation and retrieval");
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(DatabaseError::from)?;
+    let mut conn = pool.get()?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
     // Create new generation record
     let table_name = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    debug!(table_name = %table_name, "Creating test generation");
     let new_gen = NewContentGenerationRow {
         table_name: table_name.clone(),
         narrative_file: "test.toml".to_string(),
@@ -60,37 +47,46 @@ fn test_start_and_get_generation() -> DatabaseResult<()> {
     };
 
     // Start generation
+    debug!("Starting generation");
     let row = repo.start_generation(new_gen)?;
     assert_eq!(row.table_name(), &table_name);
     assert_eq!(row.status(), "running");
+    debug!("Generation started successfully");
 
     // Get generation by table name
+    debug!("Retrieving generation by table name");
     let retrieved = repo.get_by_table_name(&table_name)?;
     assert!(retrieved.is_some(), "Expected to find generation");
 
     let retrieved = retrieved.unwrap();
     assert_eq!(retrieved.table_name(), &table_name);
     assert_eq!(retrieved.narrative_name(), "test_narrative");
+    debug!("Generation retrieved successfully");
 
     // Cleanup
+    debug!("Cleaning up test generation");
     repo.delete_generation(&table_name)?;
 
+    info!("Content generation test passed");
     Ok(())
 }
 
 #[test]
 #[cfg(feature = "postgres")]
-fn test_complete_generation() -> DatabaseResult<()> {
-    init_test_tracing();
-    info!("Starting test: test_complete_generation");
+fn test_complete_generation() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    use tracing::{debug, info};
+
+    info!("Testing generation completion");
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(|e| DatabaseError::from(e))?;
+    let mut conn = pool.get()?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
     let table_name = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    debug!(table_name = %table_name, "Creating test generation");
     let new_gen = NewContentGenerationRow {
         table_name: table_name.clone(),
         narrative_file: "test.toml".to_string(),
