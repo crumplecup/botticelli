@@ -7,7 +7,7 @@ use botticelli_database::schema::{
     discord_channels, discord_guild_members, discord_guilds, discord_member_roles, discord_roles,
     discord_users,
 };
-use botticelli_error::{DatabaseError, DiscordError, DiscordErrorKind};
+use botticelli_error::{DatabaseError, DiscordError, DiscordErrorKind, DiscordResult};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use std::sync::Arc;
@@ -19,8 +19,6 @@ use super::models::{
     ChannelRow, GuildMemberRow, GuildRow, NewChannel, NewGuild, NewGuildMember, NewRole, NewUser,
     RoleRow, UserRow,
 };
-
-use crate::DiscordResult;
 
 /// PostgreSQL repository for Discord data.
 ///
