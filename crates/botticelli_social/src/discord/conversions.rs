@@ -135,7 +135,7 @@ impl TryFrom<DiscordUserJson> for NewUser {
     type Error = botticelli_error::BotticelliError;
 
     fn try_from(json: DiscordUserJson) -> BotticelliResult<Self> {
-        Ok(NewUserBuilder::default()
+        NewUserBuilder::default()
             .id(*json.id())
             .username(json.username().clone())
             .discriminator(json.discriminator().clone())
@@ -151,7 +151,7 @@ impl TryFrom<DiscordUserJson> for NewUser {
             .public_flags(None)
             .locale(json.locale().clone())
             .build()
-            .expect("Valid user"))
+            .map_err(|e| BackendError::new(e.to_string()).into())
     }
 }
 
@@ -161,7 +161,7 @@ impl TryFrom<DiscordChannelJson> for NewChannel {
     fn try_from(json: DiscordChannelJson) -> BotticelliResult<Self> {
         let channel_type = parse_channel_type(json.channel_type())?;
 
-        Ok(NewChannelBuilder::default()
+        NewChannelBuilder::default()
             .id(*json.id())
             .guild_id(*json.guild_id())
             .name(json.name().clone())
@@ -190,7 +190,7 @@ impl TryFrom<DiscordChannelJson> for NewChannel {
             .last_read_message_id(None)
             .bot_has_access(None)
             .build()
-            .expect("Valid channel"))
+            .map_err(|e| BackendError::new(e.to_string()).into())
     }
 }
 
@@ -198,7 +198,7 @@ impl TryFrom<DiscordRoleJson> for NewRole {
     type Error = botticelli_error::BotticelliError;
 
     fn try_from(json: DiscordRoleJson) -> BotticelliResult<Self> {
-        Ok(NewRoleBuilder::default()
+        NewRoleBuilder::default()
             .id(*json.id())
             .guild_id(*json.guild_id())
             .name(json.name().clone())
@@ -212,7 +212,7 @@ impl TryFrom<DiscordRoleJson> for NewRole {
             .mentionable(*json.mentionable())
             .tags(None)
             .build()
-            .expect("Valid role"))
+            .map_err(|e| BackendError::new(e.to_string()).into())
     }
 }
 
@@ -227,7 +227,7 @@ impl TryFrom<DiscordGuildMemberJson> for NewGuildMember {
             .map(|s| parse_iso_timestamp(s))
             .transpose()?;
 
-        Ok(NewGuildMemberBuilder::default()
+        NewGuildMemberBuilder::default()
             .guild_id(*json.guild_id())
             .user_id(*json.user_id())
             .nick(json.nick().clone())
@@ -240,7 +240,7 @@ impl TryFrom<DiscordGuildMemberJson> for NewGuildMember {
             .pending(*json.pending())
             .left_at(None)
             .build()
-            .expect("Valid guild member"))
+            .map_err(|e| BackendError::new(e.to_string()).into())
     }
 }
 
