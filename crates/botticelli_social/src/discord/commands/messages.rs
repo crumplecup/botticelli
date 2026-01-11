@@ -10,14 +10,22 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument, warn};
 
-/// Execute: messages.send
+/// Messages command namespace.
 ///
-/// Send a message to a channel.
-#[instrument(skip(http, args), fields(channel_id, content_len, tts))]
-pub(super) async fn send(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
+/// This zero-sized type provides a clean namespace for message-related
+/// Discord commands without polluting the module with free functions.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Messages;
+
+impl Messages {
+    /// Execute: messages.send
+    ///
+    /// Send a message to a channel.
+    #[instrument(skip(http, args), fields(channel_id, content_len, tts))]
+    pub async fn send(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
     let channel_id_str = args
         .get("channel_id")
         .and_then(|v| v.as_str())
@@ -85,13 +93,12 @@ pub(super) async fn send(
             "parts": message_ids.len(),
         }))
     }
-}
 
-/// Execute: messages.get
-///
-/// Get a specific message.
-#[instrument(skip(http, args), fields(channel_id, message_id))]
-pub(super) async fn get(
+    /// Execute: messages.get
+    ///
+    /// Get a specific message.
+    #[instrument(skip(http, args), fields(channel_id, message_id))]
+    pub async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -144,13 +151,13 @@ pub(super) async fn get(
     }))
 }
 
-/// Execute: messages.list
-///
-/// List messages from a channel (message history).
-#[instrument(skip(http, args), fields(channel_id, limit, message_count))]
-pub(super) async fn list(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: messages.list
+    ///
+    /// List messages from a channel (message history).
+    #[instrument(skip(http, args), fields(channel_id, limit, message_count))]
+    pub async fn list(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let channel_id_str = args
         .get("channel_id")
@@ -199,13 +206,13 @@ pub(super) async fn list(
     Ok(serde_json::json!(messages_json))
 }
 
-/// Execute: messages.edit
-///
-/// Edit an existing message.
-#[instrument(skip(http, args), fields(channel_id, message_id))]
-pub(super) async fn edit(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: messages.edit
+    ///
+    /// Edit an existing message.
+    #[instrument(skip(http, args), fields(channel_id, message_id))]
+    pub async fn edit(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let channel_id_str = args
         .get("channel_id")
@@ -244,13 +251,13 @@ pub(super) async fn edit(
     }))
 }
 
-/// Execute: messages.delete
-///
-/// Delete a message from a channel.
-#[instrument(skip(http, args), fields(channel_id, message_id))]
-pub(super) async fn delete(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: messages.delete
+    ///
+    /// Delete a message from a channel.
+    #[instrument(skip(http, args), fields(channel_id, message_id))]
+    pub async fn delete(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let channel_id_str = args
         .get("channel_id")
@@ -284,13 +291,13 @@ pub(super) async fn delete(
     }))
 }
 
-/// Execute: messages.pin
-///
-/// Pin a message in a channel.
-#[instrument(skip(http, args), fields(channel_id, message_id))]
-pub(super) async fn pin(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: messages.pin
+    ///
+    /// Pin a message in a channel.
+    #[instrument(skip(http, args), fields(channel_id, message_id))]
+    pub async fn pin(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let channel_id_str = args
         .get("channel_id")
@@ -323,13 +330,13 @@ pub(super) async fn pin(
     }))
 }
 
-/// Execute: messages.unpin
-///
-/// Unpin a message from a channel.
-#[instrument(skip(http, args), fields(channel_id, message_id))]
-pub(super) async fn unpin(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: messages.unpin
+    ///
+    /// Unpin a message from a channel.
+    #[instrument(skip(http, args), fields(channel_id, message_id))]
+    pub async fn unpin(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let channel_id_str = args
         .get("channel_id")
@@ -362,13 +369,13 @@ pub(super) async fn unpin(
     }))
 }
 
-/// Execute: messages.bulk_delete
-///
-/// Bulk delete messages (up to 100 messages, must be less than 14 days old).
-#[instrument(skip(http, args), fields(channel_id, count))]
-pub(super) async fn bulk_delete(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: messages.bulk_delete
+    ///
+    /// Bulk delete messages (up to 100 messages, must be less than 14 days old).
+    #[instrument(skip(http, args), fields(channel_id, count))]
+    pub async fn bulk_delete(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let channel_id_str = args
         .get("channel_id")
@@ -446,13 +453,13 @@ pub(super) async fn bulk_delete(
     }))
 }
 
-/// Execute: messages.clear
-///
-/// Clear all messages from a channel (bulk delete with fetch).
-#[instrument(skip(http, args), fields(channel_id, limit))]
-pub(super) async fn clear(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: messages.clear
+    ///
+    /// Clear all messages from a channel (bulk delete with fetch).
+    #[instrument(skip(http, args), fields(channel_id, limit))]
+    pub async fn clear(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let channel_id_str = args
         .get("channel_id")
@@ -509,6 +516,7 @@ pub(super) async fn clear(
         "deleted": message_ids.len(),
         "channel_id": channel_id.to_string(),
     }))
+}
 }
 
 // Helper functions

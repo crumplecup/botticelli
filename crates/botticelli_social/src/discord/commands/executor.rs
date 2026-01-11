@@ -1,7 +1,8 @@
 //! Discord command executor implementation.
 
 use super::channels::Channels;
-use super::{events, forum, members, messages, misc, moderation, reactions, roles, server, threads};
+use super::messages::Messages;
+use super::{events, forum, members, misc, moderation, reactions, roles, server, threads};
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -115,15 +116,15 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "channels.typing" => Channels::typing(&self.http, args).await?,
 
             // Message commands
-            "messages.send" => messages::send(&self.http, args).await?,
-            "messages.get" => messages::get(&self.http, args).await?,
-            "messages.list" => messages::list(&self.http, args).await?,
-            "messages.edit" => messages::edit(&self.http, args).await?,
-            "messages.delete" => messages::delete(&self.http, args).await?,
-            "messages.pin" => messages::pin(&self.http, args).await?,
-            "messages.unpin" => messages::unpin(&self.http, args).await?,
-            "messages.bulk_delete" => messages::bulk_delete(&self.http, args).await?,
-            "messages.clear" => messages::clear(&self.http, args).await?,
+            "messages.send" => Messages::send(&self.http, args).await?,
+            "messages.get" => Messages::get(&self.http, args).await?,
+            "messages.list" => Messages::list(&self.http, args).await?,
+            "messages.edit" => Messages::edit(&self.http, args).await?,
+            "messages.delete" => Messages::delete(&self.http, args).await?,
+            "messages.pin" => Messages::pin(&self.http, args).await?,
+            "messages.unpin" => Messages::unpin(&self.http, args).await?,
+            "messages.bulk_delete" => Messages::bulk_delete(&self.http, args).await?,
+            "messages.clear" => Messages::clear(&self.http, args).await?,
 
             // Thread commands
             "threads.create" => threads::create(&self.http, args).await?,
