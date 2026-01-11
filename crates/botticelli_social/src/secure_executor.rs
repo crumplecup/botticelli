@@ -39,6 +39,8 @@ pub struct SecureBotCommandExecutor<V: CommandValidator> {
 
 impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     /// Create a new secure bot command executor.
+    /// Create a new secure bot command executor.
+    #[instrument(skip(registry, permission_checker, validator, content_filter, rate_limiter, approval_workflow))]
     pub fn new(
         registry: BotCommandRegistryImpl,
         permission_checker: PermissionChecker,
@@ -47,6 +49,7 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
         rate_limiter: RateLimiter,
         approval_workflow: ApprovalWorkflow,
     ) -> Self {
+        debug!("Creating secure bot command executor");
         Self {
             registry,
             security: SecureExecutor::new(
@@ -112,19 +115,23 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     }
 
     /// Get immutable access to the approval workflow.
+    #[instrument(skip(self))]
     pub fn approval_workflow(&self) -> &ApprovalWorkflow {
         self.security.approval_workflow()
     }
 
     /// Get immutable access to the rate limiter.
+    #[instrument(skip(self))]
     pub fn rate_limiter(&self) -> &RateLimiter {
         self.security.rate_limiter()
     }
 
     /// Convert JSON arguments to string arguments for security pipeline.
+    #[instrument(skip(args), fields(arg_count = args.len()))]
     fn convert_args_to_strings(
         args: &HashMap<String, JsonValue>,
     ) -> BotCommandResult<HashMap<String, String>> {
+        debug!("Converting JSON args to string args");
         let mut string_args = HashMap::new();
         for (key, value) in args {
             let string_value = match value {
@@ -137,11 +144,14 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
             };
             string_args.insert(key.clone(), string_value);
         }
+        debug!(string_arg_count = string_args.len(), "Converted args");
         Ok(string_args)
     }
 
     /// Convert security error to bot command error.
+    #[instrument(skip(error), fields(command = command_name, error_kind = ?error.kind))]
     fn convert_security_error(error: SecurityError, command_name: &str) -> BotCommandError {
+        debug!("Converting security error to bot command error");
         match error.kind {
             SecurityErrorKind::PermissionDenied { command, reason } => {
                 BotCommandError::new(BotCommandErrorKind::PermissionDenied { command, reason })
