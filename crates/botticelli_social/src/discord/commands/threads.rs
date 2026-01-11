@@ -339,6 +339,7 @@ pub(super) async fn remove_member(
 // Helper functions
 
 #[instrument(skip(arg_name))]
+#[track_caller]
 fn missing_arg_error(arg_name: &str) -> BotCommandError {
     BotCommandError::new(BotCommandErrorKind::MissingArgument {
         command: "".to_string(),
