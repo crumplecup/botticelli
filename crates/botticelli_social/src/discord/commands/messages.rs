@@ -407,11 +407,12 @@ pub(super) async fn bulk_delete(
     let message_ids = message_ids?;
 
     if message_ids.len() > 100 {
-        return Err(BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+        return Err(BotCommandErrorKind::InvalidArgument {
             command: "messages.bulk_delete".to_string(),
             arg_name: "message_ids".to_string(),
             reason: "Cannot delete more than 100 messages at once".to_string(),
-        }));
+        }
+        .into());
     }
 
     tracing::Span::current().record("channel_id", channel_id.get());

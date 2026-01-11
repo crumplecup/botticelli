@@ -233,11 +233,12 @@ pub(super) async fn timeout(
 
     // Discord timeout limit is 28 days (2419200 seconds)
     if duration_seconds > 2419200 {
-        return Err(BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+        return Err(BotCommandErrorKind::InvalidArgument {
             command: "members.timeout".to_string(),
             arg_name: "duration_seconds".to_string(),
             reason: "Timeout duration cannot exceed 28 days (2419200 seconds)".to_string(),
-        }));
+        }
+        .into());
     }
 
     tracing::Span::current().record("guild_id", guild_id.get());

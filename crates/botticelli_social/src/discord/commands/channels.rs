@@ -447,10 +447,11 @@ fn parse_channel_type(s: &str) -> BotCommandResult<ChannelType> {
         "announcement" => Ok(ChannelType::News),
         "stage" => Ok(ChannelType::Stage),
         "forum" => Ok(ChannelType::Forum),
-        _ => Err(BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+        _ => Err(BotCommandErrorKind::InvalidArgument {
             command: "".to_string(),
             arg_name: "kind".to_string(),
             reason: format!("Invalid channel type: {}", s),
-        })),
+        }
+        .into()),
     }
 }

@@ -88,9 +88,10 @@ pub(super) async fn list_posts(
 
     // TODO: Implement forum post listing
     // The Serenity API doesn't have a direct method for this
-    Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
+    Err(BotCommandErrorKind::CommandNotFound(
         "forum.list_posts not yet implemented".to_string(),
-    )))
+    )
+    .into())
 }
 
 /// Execute: forum.get_post
@@ -125,11 +126,12 @@ pub(super) async fn get_post(
                 "message_count": guild_channel.message_count.unwrap_or(0),
             }))
         }
-        _ => Err(BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+        _ => Err(BotCommandErrorKind::InvalidArgument {
             command: "forum.get_post".to_string(),
             arg_name: "thread_id".to_string(),
             reason: "Not a forum post".to_string(),
-        })),
+        }
+        .into()),
     }
 }
 

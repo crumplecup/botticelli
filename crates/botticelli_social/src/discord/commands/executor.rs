@@ -140,9 +140,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
                     command,
                     "Command not found or not yet migrated"
                 );
-                return Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
-                    command.to_string(),
-                )));
+                return Err(BotCommandErrorKind::CommandNotFound(command.to_string()).into());
             }
         };
 
