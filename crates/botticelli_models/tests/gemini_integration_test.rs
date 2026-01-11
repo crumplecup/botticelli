@@ -1,5 +1,8 @@
 #![cfg(feature = "gemini")]
 
+mod helpers;
+
+
 // Tests for Gemini model selection functionality.
 //
 // These tests validate that the GeminiClient correctly uses the model
@@ -14,7 +17,6 @@
 // A small number of integration tests (marked with `#[cfg_attr(not(feature = "api"), ignore)]`)
 // hit the real Gemini API to validate end-to-end behavior.
 
-mod helpers;
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
 use botticelli_interface::BotticelliDriver;
@@ -28,6 +30,7 @@ use helpers::mock_gemini::MockGeminiClient;
 /// Test basic generate functionality using mock.
 #[tokio::test]
 async fn test_mock_model_basic_generate() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     let mock = MockGeminiClient::new_success("Mock response");
 
     let message = Message::builder()
@@ -48,6 +51,7 @@ async fn test_mock_model_basic_generate() -> anyhow::Result<()> {
 /// Test that model_name() returns the correct default for mock.
 #[test]
 fn test_mock_model_name() {
+    helpers::init_test_tracing("info");
     let mock = MockGeminiClient::new_success("test");
     assert_eq!(mock.model_name(), "mock-gemini");
 }
@@ -55,6 +59,7 @@ fn test_mock_model_name() {
 /// Test provider_name() returns "mock-gemini" for mock.
 #[test]
 fn test_mock_provider_name() {
+    helpers::init_test_tracing("info");
     let mock = MockGeminiClient::new_success("test");
     assert_eq!(mock.provider_name(), "mock-gemini");
 }

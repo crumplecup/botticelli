@@ -1,5 +1,7 @@
 #![cfg(feature = "gemini")]
+
 mod helpers;
+
 
 // Error handling tests for Gemini Live API.
 //

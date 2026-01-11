@@ -6,7 +6,10 @@
 //!
 //! Run with: cargo test --package botticelli_models --features ollama
 
+
 #![cfg(feature = "ollama")]
+
+mod helpers;
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
 use botticelli_error::OllamaErrorKind;

@@ -9,9 +9,11 @@
 //! This appears to be a timing or protocol issue with the Live API handshake.
 //! Tests are currently ignored until the handshake issue is resolved.
 
+
 #![cfg(feature = "gemini")]
 
 mod helpers;
+
 
 use botticelli_models::{GeminiLiveClient, GenerationConfig};
 use futures_util::StreamExt;

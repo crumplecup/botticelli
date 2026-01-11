@@ -1,5 +1,7 @@
 //! Tests for provider capability queries.
 
+mod helpers;
+
 use botticelli_interface::BotticelliDriver;
 
 #[cfg(feature = "anthropic")]

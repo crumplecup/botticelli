@@ -1,5 +1,8 @@
 #![cfg(feature = "gemini")]
 
+mod helpers;
+
+
 // Tests for Gemini 2.0 model compatibility.
 //
 // These tests validate that older Gemini 2.0 models work correctly

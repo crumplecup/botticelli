@@ -1,7 +1,10 @@
+mod helpers;
+
 use botticelli_models::{GeminiModel, ModelBounds, ModelFamily, ModelId};
 
 #[test]
 fn test_bounds_none_allows_all() {
+    helpers::init_test_tracing("info");
     let bounds = ModelBounds::none();
     assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Pro)));
     assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25FlashLite)));
@@ -9,6 +12,7 @@ fn test_bounds_none_allows_all() {
 
 #[test]
 fn test_bounds_no_lower_than() {
+    helpers::init_test_tracing("info");
     let bounds = ModelBounds::lower_bound(ModelId::Gemini(GeminiModel::Gemini25Flash));
     assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Pro)));
     assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Flash)));
@@ -17,6 +21,7 @@ fn test_bounds_no_lower_than() {
 
 #[test]
 fn test_bounds_no_higher_than() {
+    helpers::init_test_tracing("info");
     let bounds = ModelBounds::upper_bound(ModelId::Gemini(GeminiModel::Gemini25Flash));
     assert!(!bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Pro)));
     assert!(bounds.allows(ModelId::Gemini(GeminiModel::Gemini25Flash)));
@@ -25,6 +30,7 @@ fn test_bounds_no_higher_than() {
 
 #[test]
 fn test_bounds_both() {
+    helpers::init_test_tracing("info");
     let bounds = ModelBounds::new(
         Some(ModelId::Gemini(GeminiModel::Gemini20Flash)),
         Some(ModelId::Gemini(GeminiModel::Gemini25Flash)),
@@ -37,6 +43,7 @@ fn test_bounds_both() {
 
 #[test]
 fn test_model_id_family() {
+    helpers::init_test_tracing("info");
     assert_eq!(
         ModelId::Gemini(GeminiModel::Gemini25Flash).family(),
         ModelFamily::Gemini
@@ -49,6 +56,7 @@ fn test_model_id_family() {
 
 #[test]
 fn test_model_id_move_up() {
+    helpers::init_test_tracing("info");
     let model = ModelId::Gemini(GeminiModel::Gemini25Flash);
     assert_eq!(
         model.move_up(),
@@ -58,6 +66,7 @@ fn test_model_id_move_up() {
 
 #[test]
 fn test_model_id_move_down() {
+    helpers::init_test_tracing("info");
     let model = ModelId::Gemini(GeminiModel::Gemini25Flash);
     assert_eq!(
         model.move_down(),
@@ -67,6 +76,7 @@ fn test_model_id_move_down() {
 
 #[test]
 fn test_model_id_friends() {
+    helpers::init_test_tracing("info");
     let model = ModelId::Gemini(GeminiModel::Gemini25Flash);
     let friends = model.friends();
     assert!(!friends.is_empty());
@@ -75,6 +85,7 @@ fn test_model_id_friends() {
 
 #[test]
 fn test_is_at_least_same_family() {
+    helpers::init_test_tracing("info");
     let pro = ModelId::Gemini(GeminiModel::Gemini25Pro);
     let flash = ModelId::Gemini(GeminiModel::Gemini25Flash);
     let lite = ModelId::Gemini(GeminiModel::Gemini25FlashLite);
@@ -89,6 +100,7 @@ fn test_is_at_least_same_family() {
 
 #[test]
 fn test_is_at_most_same_family() {
+    helpers::init_test_tracing("info");
     let pro = ModelId::Gemini(GeminiModel::Gemini25Pro);
     let flash = ModelId::Gemini(GeminiModel::Gemini25Flash);
     let lite = ModelId::Gemini(GeminiModel::Gemini25FlashLite);

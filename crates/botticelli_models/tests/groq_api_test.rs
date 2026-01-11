@@ -1,3 +1,5 @@
+mod helpers;
+
 #[cfg(feature = "groq")]
 use botticelli_core::{GenerateRequest, Input, Message, Role};
 #[cfg(feature = "groq")]

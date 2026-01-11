@@ -1,5 +1,7 @@
 #![cfg(feature = "gemini")]
+
 mod helpers;
+
 
 // Tests for Gemini streaming support.
 //

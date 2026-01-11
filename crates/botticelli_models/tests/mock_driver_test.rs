@@ -2,6 +2,8 @@
 //!
 //! Demonstrates proper manual mocking patterns for testing without hitting real APIs.
 
+mod helpers;
+
 use async_trait::async_trait;
 use botticelli_core::{
     GenerateRequest, GenerateResponse, Input, Message, Output, Role, StopReason,
@@ -113,6 +115,7 @@ impl BotticelliDriver for MockDriver {
 /// Test that a mock driver can be configured and used.
 #[tokio::test]
 async fn test_mock_driver_basic() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     let mock = MockDriver::new("mock_provider", "mock_model");
 
     // Configure response
@@ -150,6 +153,7 @@ async fn test_mock_driver_basic() -> anyhow::Result<()> {
 /// Test that mocks can simulate errors.
 #[tokio::test]
 async fn test_mock_driver_error() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     let mock = MockDriver::new("mock_provider", "mock_model");
 
     // Configure error
@@ -175,6 +179,7 @@ async fn test_mock_driver_error() -> anyhow::Result<()> {
 /// Test multiple calls to mock.
 #[tokio::test]
 async fn test_mock_driver_multiple_calls() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     let mock = MockDriver::new("test", "test");
 
     let response = GenerateResponse::builder()

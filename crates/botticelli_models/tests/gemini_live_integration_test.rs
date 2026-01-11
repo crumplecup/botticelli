@@ -1,5 +1,7 @@
 #![cfg(feature = "gemini")]
+
 mod helpers;
+
 
 // Integration tests for unified GeminiClient with Live API routing.
 //
