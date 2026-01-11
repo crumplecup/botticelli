@@ -10,14 +10,22 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument};
 
-/// Execute: threads.create
+/// Threads command namespace.
 ///
-/// Create a new thread in a channel.
-#[instrument(skip(http, args), fields(channel_id, name))]
-pub(super) async fn create(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
+/// This zero-sized type provides a clean namespace for thread-related
+/// Discord commands without polluting the module with free functions.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Threads;
+
+impl Threads {
+    /// Execute: threads.create
+    ///
+    /// Create a new thread in a channel.
+    #[instrument(skip(http, args), fields(channel_id, name))]
+    pub async fn create(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
     let channel_id_str = args
         .get("channel_id")
         .and_then(|v| v.as_str())
@@ -51,13 +59,13 @@ pub(super) async fn create(
     }))
 }
 
-/// Execute: threads.list
-///
-/// List active threads in a guild.
-#[instrument(skip(http, args), fields(guild_id, count))]
-pub(super) async fn list(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: threads.list
+    ///
+    /// List active threads in a guild.
+    #[instrument(skip(http, args), fields(guild_id, count))]
+    pub async fn list(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let guild_id_str = args
         .get("guild_id")
@@ -98,13 +106,13 @@ pub(super) async fn list(
     }))
 }
 
-/// Execute: threads.get
-///
-/// Get specific thread details.
-#[instrument(skip(http, args), fields(thread_id))]
-pub(super) async fn get(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: threads.get
+    ///
+    /// Get specific thread details.
+    #[instrument(skip(http, args), fields(thread_id))]
+    pub async fn get(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let thread_id_str = args
         .get("thread_id")
@@ -138,13 +146,13 @@ pub(super) async fn get(
     }))
 }
 
-/// Execute: threads.edit
-///
-/// Edit thread properties.
-#[instrument(skip(http, args), fields(thread_id))]
-pub(super) async fn edit(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: threads.edit
+    ///
+    /// Edit thread properties.
+    #[instrument(skip(http, args), fields(thread_id))]
+    pub async fn edit(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let thread_id_str = args
         .get("thread_id")
@@ -179,13 +187,13 @@ pub(super) async fn edit(
     Ok(serde_json::json!({ "success": true }))
 }
 
-/// Execute: threads.delete
-///
-/// Delete a thread.
-#[instrument(skip(http, args), fields(thread_id))]
-pub(super) async fn delete(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: threads.delete
+    ///
+    /// Delete a thread.
+    #[instrument(skip(http, args), fields(thread_id))]
+    pub async fn delete(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let thread_id_str = args
         .get("thread_id")
@@ -208,13 +216,13 @@ pub(super) async fn delete(
     Ok(serde_json::json!({ "success": true }))
 }
 
-/// Execute: threads.join
-///
-/// Join a thread.
-#[instrument(skip(http, args), fields(thread_id))]
-pub(super) async fn join(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: threads.join
+    ///
+    /// Join a thread.
+    #[instrument(skip(http, args), fields(thread_id))]
+    pub async fn join(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let thread_id_str = args
         .get("thread_id")
@@ -237,13 +245,13 @@ pub(super) async fn join(
     Ok(serde_json::json!({ "success": true }))
 }
 
-/// Execute: threads.leave
-///
-/// Leave a thread.
-#[instrument(skip(http, args), fields(thread_id))]
-pub(super) async fn leave(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: threads.leave
+    ///
+    /// Leave a thread.
+    #[instrument(skip(http, args), fields(thread_id))]
+    pub async fn leave(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let thread_id_str = args
         .get("thread_id")
@@ -266,13 +274,13 @@ pub(super) async fn leave(
     Ok(serde_json::json!({ "success": true }))
 }
 
-/// Execute: threads.add_member
-///
-/// Add a member to a thread.
-#[instrument(skip(http, args), fields(thread_id, user_id))]
-pub(super) async fn add_member(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: threads.add_member
+    ///
+    /// Add a member to a thread.
+    #[instrument(skip(http, args), fields(thread_id, user_id))]
+    pub async fn add_member(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let thread_id_str = args
         .get("thread_id")
@@ -301,13 +309,13 @@ pub(super) async fn add_member(
     Ok(serde_json::json!({ "success": true }))
 }
 
-/// Execute: threads.remove_member
-///
-/// Remove a member from a thread.
-#[instrument(skip(http, args), fields(thread_id, user_id))]
-pub(super) async fn remove_member(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
+    /// Execute: threads.remove_member
+    ///
+    /// Remove a member from a thread.
+    #[instrument(skip(http, args), fields(thread_id, user_id))]
+    pub async fn remove_member(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
     let thread_id_str = args
         .get("thread_id")
@@ -334,6 +342,7 @@ pub(super) async fn remove_member(
 
     info!("Successfully removed member from thread");
     Ok(serde_json::json!({ "success": true }))
+}
 }
 
 // Helper functions

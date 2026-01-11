@@ -2,7 +2,8 @@
 
 use super::channels::Channels;
 use super::messages::Messages;
-use super::{events, forum, members, misc, moderation, reactions, roles, server, threads};
+use super::threads::Threads;
+use super::{events, forum, members, misc, moderation, reactions, roles, server};
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -127,15 +128,15 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "messages.clear" => Messages::clear(&self.http, args).await?,
 
             // Thread commands
-            "threads.create" => threads::create(&self.http, args).await?,
-            "threads.list" => threads::list(&self.http, args).await?,
-            "threads.get" => threads::get(&self.http, args).await?,
-            "threads.edit" => threads::edit(&self.http, args).await?,
-            "threads.delete" => threads::delete(&self.http, args).await?,
-            "threads.join" => threads::join(&self.http, args).await?,
-            "threads.leave" => threads::leave(&self.http, args).await?,
-            "threads.add_member" => threads::add_member(&self.http, args).await?,
-            "threads.remove_member" => threads::remove_member(&self.http, args).await?,
+            "threads.create" => Threads::create(&self.http, args).await?,
+            "threads.list" => Threads::list(&self.http, args).await?,
+            "threads.get" => Threads::get(&self.http, args).await?,
+            "threads.edit" => Threads::edit(&self.http, args).await?,
+            "threads.delete" => Threads::delete(&self.http, args).await?,
+            "threads.join" => Threads::join(&self.http, args).await?,
+            "threads.leave" => Threads::leave(&self.http, args).await?,
+            "threads.add_member" => Threads::add_member(&self.http, args).await?,
+            "threads.remove_member" => Threads::remove_member(&self.http, args).await?,
             
             _ => {
                 error!(
