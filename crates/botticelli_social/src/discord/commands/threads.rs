@@ -40,10 +40,7 @@ pub(super) async fn create(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to create thread");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "threads.create".to_string(),
-                reason: format!("Failed to create thread: {}", e),
-            })
+            BotCommandError::from_api_error("threads.create", e)
         })?;
 
     info!(thread_id = %thread.id, "Successfully created thread");
@@ -77,10 +74,7 @@ pub(super) async fn list(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to list threads");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "threads.list".to_string(),
-                reason: format!("Failed to list threads: {}", e),
-            })
+            BotCommandError::from_api_error("threads.list", e)
         })?;
 
     let thread_list: Vec<JsonValue> = threads
@@ -124,10 +118,7 @@ pub(super) async fn get(
 
     let thread = http.get_channel(thread_id).await.map_err(|e| {
         error!(error = %e, "Failed to get thread");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "threads.get".to_string(),
-            reason: format!("Failed to get thread: {}", e),
-        })
+        BotCommandError::from_api_error("threads.get", e)
     })?;
 
     let guild_channel = thread.guild().ok_or_else(|| {
@@ -181,10 +172,7 @@ pub(super) async fn edit(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to edit thread");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "threads.edit".to_string(),
-                reason: format!("Failed to edit thread: {}", e),
-            })
+            BotCommandError::from_api_error("threads.edit", e)
         })?;
 
     info!(thread_id = %thread_id, "Successfully edited thread");
@@ -213,10 +201,7 @@ pub(super) async fn delete(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to delete thread");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "threads.delete".to_string(),
-                reason: format!("Failed to delete thread: {}", e),
-            })
+            BotCommandError::from_api_error("threads.delete", e)
         })?;
 
     info!(thread_id = %thread_id, "Successfully deleted thread");
@@ -245,10 +230,7 @@ pub(super) async fn join(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to join thread");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "threads.join".to_string(),
-                reason: format!("Failed to join thread: {}", e),
-            })
+            BotCommandError::from_api_error("threads.join", e)
         })?;
 
     info!(thread_id = %thread_id, "Successfully joined thread");
@@ -277,10 +259,7 @@ pub(super) async fn leave(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to leave thread");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "threads.leave".to_string(),
-                reason: format!("Failed to leave thread: {}", e),
-            })
+            BotCommandError::from_api_error("threads.leave", e)
         })?;
 
     info!(thread_id = %thread_id, "Successfully left thread");
@@ -315,10 +294,7 @@ pub(super) async fn add_member(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to add member to thread");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "threads.add_member".to_string(),
-                reason: format!("Failed to add member to thread: {}", e),
-            })
+            BotCommandError::from_api_error("threads.add_member", e)
         })?;
 
     info!("Successfully added member to thread");
@@ -353,10 +329,7 @@ pub(super) async fn remove_member(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to remove member from thread");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "threads.remove_member".to_string(),
-                reason: format!("Failed to remove member from thread: {}", e),
-            })
+            BotCommandError::from_api_error("threads.remove_member", e)
         })?;
 
     info!("Successfully removed member from thread");

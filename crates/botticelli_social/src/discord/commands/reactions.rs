@@ -50,10 +50,7 @@ pub(super) async fn add(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to add reaction");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "reactions.add".to_string(),
-                reason: format!("Failed to add reaction: {}", e),
-            })
+            BotCommandError::from_api_error("reactions.add", e)
         })?;
 
     info!("Successfully added reaction");
@@ -112,10 +109,7 @@ pub(super) async fn remove(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to remove reaction");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "reactions.remove".to_string(),
-                reason: format!("Failed to remove reaction: {}", e),
-            })
+            BotCommandError::from_api_error("reactions.remove", e)
         })?;
 
     info!("Successfully removed reaction");
@@ -170,10 +164,7 @@ pub(super) async fn list(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to list reactions");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "reactions.list".to_string(),
-                reason: format!("Failed to list reactions: {}", e),
-            })
+            BotCommandError::from_api_error("reactions.list", e)
         })?;
 
     let user_list: Vec<JsonValue> = users
@@ -226,10 +217,7 @@ pub(super) async fn clear(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to clear reactions");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "reactions.clear".to_string(),
-                reason: format!("Failed to clear reactions: {}", e),
-            })
+            BotCommandError::from_api_error("reactions.clear", e)
         })?;
 
     info!("Successfully cleared all reactions");
@@ -275,10 +263,7 @@ pub(super) async fn clear_emoji(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to clear emoji reactions");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "reactions.clear_emoji".to_string(),
-                reason: format!("Failed to clear emoji reactions: {}", e),
-            })
+            BotCommandError::from_api_error("reactions.clear_emoji", e)
         })?;
 
     info!("Successfully cleared emoji reactions");

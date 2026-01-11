@@ -25,10 +25,7 @@ pub(super) async fn emojis_list(
     // Fetch emojis
     let emojis = http.get_emojis(guild_id).await.map_err(|e| {
         error!(guild_id = %guild_id, error = %e, "Failed to fetch emojis");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "emojis.list".to_string(),
-            reason: format!("Failed to fetch emojis: {}", e),
-        })
+        BotCommandError::from_api_error("emojis.list", e)
     })?;
 
     let emoji_count = emojis.len();
@@ -71,10 +68,7 @@ pub(super) async fn stickers_list(
     // Fetch stickers
     let stickers = http.get_guild_stickers(guild_id).await.map_err(|e| {
         error!(guild_id = %guild_id, error = %e, "Failed to fetch stickers");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "stickers.list".to_string(),
-            reason: format!("Failed to fetch stickers: {}", e),
-        })
+        BotCommandError::from_api_error("stickers.list", e)
     })?;
 
     let sticker_count = stickers.len();
@@ -117,10 +111,7 @@ pub(super) async fn invites_list(
     // Fetch invites
     let invites = http.get_guild_invites(guild_id).await.map_err(|e| {
         error!(guild_id = %guild_id, error = %e, "Failed to fetch invites");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "invites.list".to_string(),
-            reason: format!("Failed to fetch invites: {}", e),
-        })
+        BotCommandError::from_api_error("invites.list", e)
     })?;
 
     let invite_count = invites.len();
@@ -168,10 +159,7 @@ pub(super) async fn webhooks_list(
     // Fetch webhooks
     let webhooks = http.get_guild_webhooks(guild_id).await.map_err(|e| {
         error!(guild_id = %guild_id, error = %e, "Failed to fetch webhooks");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "webhooks.list".to_string(),
-            reason: format!("Failed to fetch webhooks: {}", e),
-        })
+        BotCommandError::from_api_error("webhooks.list", e)
     })?;
 
     let webhook_count = webhooks.len();
@@ -216,10 +204,7 @@ pub(super) async fn integrations_list(
         .await
         .map_err(|e| {
             error!(guild_id = %guild_id, error = %e, "Failed to fetch integrations");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "integrations.list".to_string(),
-                reason: format!("Failed to fetch integrations: {}", e),
-            })
+            BotCommandError::from_api_error("integrations.list", e)
         })?;
 
     let integration_count = integrations.len();
@@ -265,10 +250,7 @@ pub(super) async fn voice_regions_list(
     // Fetch voice regions
     let regions = http.get_guild_regions(guild_id).await.map_err(|e| {
         error!(guild_id = %guild_id, error = %e, "Failed to fetch voice regions");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "voice_regions.list".to_string(),
-            reason: format!("Failed to fetch voice regions: {}", e),
-        })
+        BotCommandError::from_api_error("voice_regions.list", e)
     })?;
 
     let region_count = regions.len();

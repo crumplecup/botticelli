@@ -135,6 +135,15 @@ pub enum BotCommandErrorKind {
         /// Original serialization error
         source: Arc<dyn std::error::Error + Send + Sync>,
     },
+
+    /// API error with source preserved.
+    #[display("API error in '{}': {}", command, source)]
+    ApiErrorWithSource {
+        /// Command that failed
+        command: String,
+        /// Original API error
+        source: Arc<dyn std::error::Error + Send + Sync>,
+    },
 }
 
 /// Bot command error with location tracking.
@@ -173,6 +182,18 @@ impl BotCommandError {
     #[track_caller]
     pub fn from_serialization_error(error: impl std::error::Error + Send + Sync + 'static) -> Self {
         Self::new(BotCommandErrorKind::SerializationFailed {
+            source: Arc::new(error),
+        })
+    }
+
+    /// Create from an API error with location tracking.
+    #[track_caller]
+    pub fn from_api_error(
+        command: impl Into<String>,
+        error: impl std::error::Error + Send + Sync + 'static,
+    ) -> Self {
+        Self::new(BotCommandErrorKind::ApiErrorWithSource {
+            command: command.into(),
             source: Arc::new(error),
         })
     }

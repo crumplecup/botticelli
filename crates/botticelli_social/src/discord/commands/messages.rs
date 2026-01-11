@@ -48,10 +48,7 @@ pub(super) async fn send(
             .await
             .map_err(|e| {
                 error!(error = %e, "Failed to send message");
-                BotCommandError::new(BotCommandErrorKind::ApiError {
-                    command: "messages.send".to_string(),
-                    reason: format!("Failed to send message: {}", e),
-                })
+                BotCommandError::from_api_error("messages.send", e)
             })?;
 
         info!(message_id = %message.id, "Successfully sent message");
@@ -76,10 +73,7 @@ pub(super) async fn send(
                 .await
                 .map_err(|e| {
                     error!(error = %e, "Failed to send message chunk");
-                    BotCommandError::new(BotCommandErrorKind::ApiError {
-                        command: "messages.send".to_string(),
-                        reason: format!("Failed to send message chunk: {}", e),
-                    })
+                    BotCommandError::from_api_error("messages.send", e)
                 })?;
             message_ids.push(message.id.to_string());
         }
@@ -122,10 +116,7 @@ pub(super) async fn get(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to fetch message");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "messages.get".to_string(),
-                reason: format!("Failed to fetch message: {}", e),
-            })
+            BotCommandError::from_api_error("messages.get", e)
         })?;
 
     info!("Successfully retrieved message");
@@ -182,10 +173,7 @@ pub(super) async fn list(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to fetch messages");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "messages.list".to_string(),
-                reason: format!("Failed to fetch messages: {}", e),
-            })
+            BotCommandError::from_api_error("messages.list", e)
         })?;
 
     let messages_json: Vec<JsonValue> = messages
@@ -245,10 +233,7 @@ pub(super) async fn edit(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to edit message");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "messages.edit".to_string(),
-                reason: format!("Failed to edit message: {}", e),
-            })
+            BotCommandError::from_api_error("messages.edit", e)
         })?;
 
     info!("Successfully edited message");
@@ -288,10 +273,7 @@ pub(super) async fn delete(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to delete message");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "messages.delete".to_string(),
-                reason: format!("Failed to delete message: {}", e),
-            })
+            BotCommandError::from_api_error("messages.delete", e)
         })?;
 
     info!("Successfully deleted message");
@@ -330,10 +312,7 @@ pub(super) async fn pin(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to pin message");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "messages.pin".to_string(),
-                reason: format!("Failed to pin message: {}", e),
-            })
+            BotCommandError::from_api_error("messages.pin", e)
         })?;
 
     info!("Successfully pinned message");
@@ -372,10 +351,7 @@ pub(super) async fn unpin(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to unpin message");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "messages.unpin".to_string(),
-                reason: format!("Failed to unpin message: {}", e),
-            })
+            BotCommandError::from_api_error("messages.unpin", e)
         })?;
 
     info!("Successfully unpinned message");
@@ -459,10 +435,7 @@ pub(super) async fn bulk_delete(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to bulk delete messages");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "messages.bulk_delete".to_string(),
-                reason: format!("Failed to bulk delete messages: {}", e),
-            })
+            BotCommandError::from_api_error("messages.bulk_delete", e)
         })?;
 
     info!(count = message_ids.len(), "Successfully bulk deleted messages");
@@ -501,10 +474,7 @@ pub(super) async fn clear(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to fetch messages for clearing");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "messages.clear".to_string(),
-                reason: format!("Failed to fetch messages: {}", e),
-            })
+            BotCommandError::from_api_error("messages.clear", e)
         })?;
 
     let message_ids: Vec<u64> = messages.iter().map(|m| m.id.get()).collect();
@@ -530,10 +500,7 @@ pub(super) async fn clear(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to clear messages");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "messages.clear".to_string(),
-                reason: format!("Failed to clear messages: {}", e),
-            })
+            BotCommandError::from_api_error("messages.clear", e)
         })?;
 
     info!(count = message_ids.len(), "Successfully cleared messages");

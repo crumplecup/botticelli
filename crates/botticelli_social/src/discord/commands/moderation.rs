@@ -38,10 +38,7 @@ pub(super) async fn list(
         .await
         .map_err(|e| {
             error!(guild_id = %guild_id, error = %e, "Failed to fetch bans");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "bans.list".to_string(),
-                reason: format!("Failed to fetch bans: {}", e),
-            })
+            BotCommandError::from_api_error("bans.list", e)
         })?;
 
     let ban_count = bans.len();
@@ -123,10 +120,7 @@ pub(super) async fn ban(
                 error = %e,
                 "Failed to ban member"
             );
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "members.ban".to_string(),
-                reason: format!("Failed to ban member: {}", e),
-            })
+            BotCommandError::from_api_error("members.ban", e)
         })?;
 
     info!(user_id = %user_id, "Successfully banned member");
@@ -175,10 +169,7 @@ pub(super) async fn unban(
         .await
         .map_err(|e| {
             error!(guild_id = %guild_id, user_id, error = %e, "Failed to unban member");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "members.unban".to_string(),
-                reason: format!("Failed to unban member: {}", e),
-            })
+            BotCommandError::from_api_error("members.unban", e)
         })?;
 
     info!("Successfully unbanned member");
@@ -237,10 +228,7 @@ pub(super) async fn kick(
         .await
         .map_err(|e| {
             error!(guild_id = %guild_id, user_id, error = %e, "Failed to kick member");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "members.kick".to_string(),
-                reason: format!("Failed to kick member: {}", e),
-            })
+            BotCommandError::from_api_error("members.kick", e)
         })?;
 
     info!("Successfully kicked member");

@@ -40,10 +40,7 @@ pub(super) async fn list(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to fetch members");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "members.list".to_string(),
-                reason: format!("Failed to fetch members: {}", e),
-            })
+            BotCommandError::from_api_error("members.list", e)
         })?;
 
     let members_json: Vec<JsonValue> = members
@@ -102,10 +99,7 @@ pub(super) async fn get(
 
     let member = http.get_member(guild_id, user_id).await.map_err(|e| {
         error!(error = %e, "Failed to fetch member");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "members.get".to_string(),
-            reason: format!("Failed to fetch member: {}", e),
-        })
+        BotCommandError::from_api_error("members.get", e)
     })?;
 
     let roles: Vec<String> = member
@@ -202,10 +196,7 @@ pub(super) async fn edit(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to edit member");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "members.edit".to_string(),
-                reason: format!("Failed to edit member: {}", e),
-            })
+            BotCommandError::from_api_error("members.edit", e)
         })?;
 
     info!("Successfully edited member");
@@ -275,10 +266,7 @@ pub(super) async fn timeout(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to timeout member");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "members.timeout".to_string(),
-                reason: format!("Failed to timeout member: {}", e),
-            })
+            BotCommandError::from_api_error("members.timeout", e)
         })?;
 
     info!("Successfully timed out member");
@@ -322,10 +310,7 @@ pub(super) async fn remove_timeout(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to remove timeout");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "members.remove_timeout".to_string(),
-                reason: format!("Failed to remove timeout: {}", e),
-            })
+            BotCommandError::from_api_error("members.remove_timeout", e)
         })?;
 
     info!("Successfully removed member timeout");

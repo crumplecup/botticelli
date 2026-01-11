@@ -57,10 +57,7 @@ pub(super) async fn create_post(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to create forum post");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "forum.create_post".to_string(),
-                reason: format!("Failed to create forum post: {}", e),
-            })
+            BotCommandError::from_api_error("forum.create_post", e)
         })?;
 
     info!(thread_id = %thread.id, "Successfully created forum post");
@@ -116,10 +113,7 @@ pub(super) async fn get_post(
 
     let channel = http.get_channel(thread_id).await.map_err(|e| {
         error!(error = %e, "Failed to get forum post");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "forum.get_post".to_string(),
-            reason: format!("Failed to get forum post: {}", e),
-        })
+        BotCommandError::from_api_error("forum.get_post", e)
     })?;
 
     match channel {

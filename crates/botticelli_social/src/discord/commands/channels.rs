@@ -30,10 +30,7 @@ pub(super) async fn list(
 
     let channels = http.get_channels(guild_id).await.map_err(|e| {
         error!(error = %e, "Failed to fetch channels");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "channels.list".to_string(),
-            reason: format!("Failed to fetch channels: {}", e),
-        })
+        BotCommandError::from_api_error("channels.list", e)
     })?;
 
     let channels_json: Vec<JsonValue> = channels
@@ -82,10 +79,7 @@ pub(super) async fn get(
 
     let channels = http.get_channels(guild_id).await.map_err(|e| {
         error!(error = %e, "Failed to fetch channels");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "channels.get".to_string(),
-            reason: format!("Failed to fetch channels: {}", e),
-        })
+        BotCommandError::from_api_error("channels.get", e)
     })?;
 
     let channel = channels
@@ -156,10 +150,7 @@ pub(super) async fn create(
 
     let channel = guild_id.create_channel(http, builder).await.map_err(|e| {
         error!(error = %e, "Failed to create channel");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "channels.create".to_string(),
-            reason: format!("Failed to create channel: {}", e),
-        })
+        BotCommandError::from_api_error("channels.create", e)
     })?;
 
     info!(channel_id = %channel.id, name, "Successfully created channel");
@@ -215,10 +206,7 @@ pub(super) async fn edit(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to edit channel");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "channels.edit".to_string(),
-                reason: format!("Failed to edit channel: {}", e),
-            })
+            BotCommandError::from_api_error("channels.edit", e)
         })?;
 
     info!(channel_id = %channel_id, "Successfully edited channel");
@@ -258,10 +246,7 @@ pub(super) async fn delete(
 
     channel_id.delete(http).await.map_err(|e| {
         error!(error = %e, "Failed to delete channel");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "channels.delete".to_string(),
-            reason: format!("Failed to delete channel: {}", e),
-        })
+        BotCommandError::from_api_error("channels.delete", e)
     })?;
 
     info!(channel_id = %channel_id, "Successfully deleted channel");
@@ -296,10 +281,7 @@ pub(super) async fn get_or_create(
 
     let channels = http.get_channels(guild_id).await.map_err(|e| {
         error!(error = %e, "Failed to fetch channels");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "channels.get_or_create".to_string(),
-            reason: format!("Failed to fetch channels: {}", e),
-        })
+        BotCommandError::from_api_error("channels.get_or_create", e)
     })?;
 
     if let Some(existing) = channels.iter().find(|c| c.name == name) {
@@ -336,10 +318,7 @@ pub(super) async fn get_or_create(
 
     let channel = guild_id.create_channel(http, builder).await.map_err(|e| {
         error!(error = %e, "Failed to create channel");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "channels.get_or_create".to_string(),
-            reason: format!("Failed to create channel: {}", e),
-        })
+        BotCommandError::from_api_error("channels.get_or_create", e)
     })?;
 
     info!(channel_id = %channel.id, name, "Successfully created channel");
@@ -389,10 +368,7 @@ pub(super) async fn create_invite(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to create invite");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "channels.create_invite".to_string(),
-                reason: format!("Failed to create invite: {}", e),
-            })
+            BotCommandError::from_api_error("channels.create_invite", e)
         })?;
 
     info!(code = %invite.code, "Successfully created invite");
@@ -426,10 +402,7 @@ pub(super) async fn typing(
 
     channel_id.broadcast_typing(http).await.map_err(|e| {
         error!(error = %e, "Failed to trigger typing");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "channels.typing".to_string(),
-            reason: format!("Failed to trigger typing: {}", e),
-        })
+        BotCommandError::from_api_error("channels.typing", e)
     })?;
 
     debug!("Successfully triggered typing indicator");

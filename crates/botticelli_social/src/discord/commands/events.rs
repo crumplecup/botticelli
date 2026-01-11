@@ -31,10 +31,7 @@ pub(super) async fn list(
         .await
         .map_err(|e| {
             error!(guild_id = %guild_id, error = %e, "Failed to fetch events");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "events.list".to_string(),
-                reason: format!("Failed to fetch events: {}", e),
-            })
+            BotCommandError::from_api_error("events.list", e)
         })?;
 
     let event_count = events.len();
@@ -91,10 +88,7 @@ pub(super) async fn get(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to get event");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "events.get".to_string(),
-                reason: format!("Failed to get event: {}", e),
-            })
+            BotCommandError::from_api_error("events.get", e)
         })?;
 
     debug!(name = %event.name, "Retrieved event");
@@ -170,10 +164,7 @@ pub(super) async fn create(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to create event");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "events.create".to_string(),
-                reason: format!("Failed to create event: {}", e),
-            })
+            BotCommandError::from_api_error("events.create", e)
         })?;
 
     info!(event_id = %event.id, "Successfully created event");
@@ -240,10 +231,7 @@ pub(super) async fn edit(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to edit event");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "events.edit".to_string(),
-                reason: format!("Failed to edit event: {}", e),
-            })
+            BotCommandError::from_api_error("events.edit", e)
         })?;
 
     info!("Successfully edited event");
@@ -281,10 +269,7 @@ pub(super) async fn delete(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to delete event");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "events.delete".to_string(),
-                reason: format!("Failed to delete event: {}", e),
-            })
+            BotCommandError::from_api_error("events.delete", e)
         })?;
 
     info!("Successfully deleted event");

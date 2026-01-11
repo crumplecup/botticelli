@@ -30,10 +30,7 @@ pub(super) async fn list(
 
     let roles = http.get_guild_roles(guild_id).await.map_err(|e| {
         error!(error = %e, "Failed to fetch roles");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "roles.list".to_string(),
-            reason: format!("Failed to fetch roles: {}", e),
-        })
+        BotCommandError::from_api_error("roles.list", e)
     })?;
 
     let roles_json: Vec<JsonValue> = roles
@@ -83,10 +80,7 @@ pub(super) async fn get(
 
     let roles = http.get_guild_roles(guild_id).await.map_err(|e| {
         error!(error = %e, "Failed to fetch roles");
-        BotCommandError::new(BotCommandErrorKind::ApiError {
-            command: "roles.get".to_string(),
-            reason: format!("Failed to fetch roles: {}", e),
-        })
+        BotCommandError::from_api_error("roles.get", e)
     })?;
 
     let role = roles.into_iter().find(|r| r.id == role_id).ok_or_else(|| {
@@ -163,10 +157,7 @@ pub(super) async fn create(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to create role");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "roles.create".to_string(),
-                reason: format!("Failed to create role: {}", e),
-            })
+            BotCommandError::from_api_error("roles.create", e)
         })?;
 
     info!(role_id = %role.id, "Successfully created role");
@@ -225,10 +216,7 @@ pub(super) async fn edit(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to edit role");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "roles.edit".to_string(),
-                reason: format!("Failed to edit role: {}", e),
-            })
+            BotCommandError::from_api_error("roles.edit", e)
         })?;
 
     info!(role_id = %role_id, "Successfully edited role");
@@ -271,10 +259,7 @@ pub(super) async fn delete(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to delete role");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "roles.delete".to_string(),
-                reason: format!("Failed to delete role: {}", e),
-            })
+            BotCommandError::from_api_error("roles.delete", e)
         })?;
 
     info!(role_id = %role_id, "Successfully deleted role");
@@ -324,10 +309,7 @@ pub(super) async fn assign(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to assign role");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "roles.assign".to_string(),
-                reason: format!("Failed to assign role: {}", e),
-            })
+            BotCommandError::from_api_error("roles.assign", e)
         })?;
 
     info!("Successfully assigned role to member");
@@ -378,10 +360,7 @@ pub(super) async fn remove(
         .await
         .map_err(|e| {
             error!(error = %e, "Failed to remove role");
-            BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: "roles.remove".to_string(),
-                reason: format!("Failed to remove role: {}", e),
-            })
+            BotCommandError::from_api_error("roles.remove", e)
         })?;
 
     info!("Successfully removed role from member");
