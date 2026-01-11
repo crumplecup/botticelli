@@ -354,8 +354,8 @@ impl DiscordEventProcessor for BotticelliHandler {
             if let Err(e) =
                 self.store_channel(Some(guild.id), &Channel::Guild(channel.clone())).await
             {
-                use crate::DiscordErrorSeverity::*;
-                if self.error_severity(&e) == Critical {
+                use crate::DiscordErrorSeverity;
+                if self.error_severity(&e) == DiscordErrorSeverity::Critical {
                     return Err(e);
                 }
                 channel_errors.push((channel.id, e));
@@ -366,8 +366,8 @@ impl DiscordEventProcessor for BotticelliHandler {
         let mut role_errors = Vec::new();
         for role in guild.roles.values() {
             if let Err(e) = self.store_role(guild.id, role).await {
-                use crate::DiscordErrorSeverity::*;
-                if self.error_severity(&e) == Critical {
+                use crate::DiscordErrorSeverity;
+                if self.error_severity(&e) == DiscordErrorSeverity::Critical {
                     return Err(e);
                 }
                 role_errors.push((role.id, e));
@@ -378,8 +378,8 @@ impl DiscordEventProcessor for BotticelliHandler {
         let mut member_errors = Vec::new();
         for member in guild.members.values() {
             if let Err(e) = self.store_member(guild.id, member).await {
-                use crate::DiscordErrorSeverity::*;
-                if self.error_severity(&e) == Critical {
+                use crate::DiscordErrorSeverity;
+                if self.error_severity(&e) == DiscordErrorSeverity::Critical {
                     return Err(e);
                 }
                 member_errors.push((member.user.id, e));
@@ -476,8 +476,8 @@ impl EventHandler for BotticelliHandler {
             );
 
             // Send critical errors to runtime for handling
-            use crate::DiscordErrorSeverity::*;
-            if severity == Critical {
+            use crate::DiscordErrorSeverity;
+            if severity == DiscordErrorSeverity::Critical {
                 if let Err(send_err) = self.error_tx.send(e) {
                     error!(error = %send_err, "Failed to send critical error to runtime");
                 }
@@ -511,8 +511,8 @@ impl EventHandler for BotticelliHandler {
             );
 
             // Send critical errors to runtime for handling
-            use crate::DiscordErrorSeverity::*;
-            if severity == Critical {
+            use crate::DiscordErrorSeverity;
+            if severity == DiscordErrorSeverity::Critical {
                 if let Err(send_err) = self.error_tx.send(e) {
                     error!(error = %send_err, "Failed to send critical error to runtime");
                 }
