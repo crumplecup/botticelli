@@ -572,8 +572,9 @@ impl EventHandler for BotticelliHandler {
             channel_name = %channel.name,
             "Channel created"
         );
-        self.store_channel(Some(channel.guild_id), &Channel::Guild(channel))
-            .await;
+        if let Err(e) = self.store_channel(Some(channel.guild_id), &Channel::Guild(channel)).await {
+            error!(error = ?e, "Failed to store channel");
+        }
     }
 
     /// Called when a new member joins a guild.
@@ -585,7 +586,9 @@ impl EventHandler for BotticelliHandler {
             username = %new_member.user.name,
             "Member joined guild"
         );
-        self.store_member(new_member.guild_id, &new_member).await;
+        if let Err(e) = self.store_member(new_member.guild_id, &new_member).await {
+            error!(error = ?e, "Failed to store member");
+        }
     }
 
     /// Called when a member leaves a guild.
@@ -630,6 +633,8 @@ impl EventHandler for BotticelliHandler {
             role_name = %new.name,
             "Role created"
         );
-        self.store_role(new.guild_id, &new).await;
+        if let Err(e) = self.store_role(new.guild_id, &new).await {
+            error!(error = ?e, "Failed to store role");
+        }
     }
 }

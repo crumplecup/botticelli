@@ -3,7 +3,6 @@
 //! This module provides processors that extract Discord data from LLM responses
 //! and insert them into the database using the DiscordRepository.
 
-use botticelli_error::BotticelliResult;
 use botticelli_interface::ActProcessor;
 use botticelli_narrative::{ProcessorContext, Extract};
 

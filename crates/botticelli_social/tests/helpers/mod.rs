@@ -1,10 +1,5 @@
 /// Test helper utilities for botticelli_social
 
-/// Initialize environment for tests (load .env)
-pub fn init_test_env() {
-    let _ = dotenvy::dotenv();
-}
-
 /// Initialize tracing for tests.
 ///
 /// Reads RUST_LOG from environment (including .env file) and falls back
