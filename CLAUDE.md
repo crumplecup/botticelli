@@ -6,7 +6,7 @@
 | ------------- | ---------------------------------------------------------- | ------------------------------------------------- |
 | **Testing**   | No `#[cfg(test)]` in source files → use `tests/` directory | [Testing](#testing)                               |
 | **Errors**    | Use `derive_more::Display` + `derive_more::Error`          | [Error Handling](#error-handling)                 |
-| **Tracing**   | All public functions have `#[instrument]`                  | [Logging](#logging-and-tracing)                   |
+| **Tracing**   | All functions have `#[instrument]`                         | [Logging](#logging-and-tracing)                   |
 | **Builders**  | Always use builders, never struct literals                 | [Type Construction](#type-construction)           |
 | **Imports**   | `use crate::{Type}` not `use crate::module::Type`          | [Module Organization](#module-organization)       |
 | **lib.rs**    | Only `mod` and `pub use` statements                        | [Module Organization](#module-organization)       |
@@ -429,9 +429,17 @@ Think: "Fishmonger to streetsweeper" (Surf → Surf) is useless. Only "Serf to P
 
 ### Instrumentation
 
-All public functions have `#[instrument]`.
+All functions have `#[instrument]`.
 
 Observability is critical for debugging, performance monitoring, and error tracking. Missing instrumentation is a defect.
+
+Public functions (`pub`, `pub(crate)`) and module-internal functions (`pub(super)`) must all be instrumented. This includes:
+- Command handlers
+- Helper functions
+- Internal utilities
+- Private implementation functions
+
+**Exception:** Only trivial getters/setters or one-line forwarding functions may skip instrumentation.
 
 ```rust
 #[instrument(skip(conn), fields(table_name, limit))]
@@ -458,7 +466,7 @@ pub fn list_content(
 
 ### Instrumentation Requirements
 
-All public functions:
+All functions (public and internal):
 
 1. Use `#[instrument]` for automatic span creation
 2. Skip large params: `skip(connection, data)`
@@ -488,7 +496,7 @@ info!(table = %table_name, "Creating");          // Display format
 
 ### Audit Checklist
 
-- ✅ Every public function has `#[instrument]`
+- ✅ Every function has `#[instrument]` (public, pub(crate), pub(super), private)
 - ✅ Span fields include context (IDs, counts)
 - ✅ Large structures skipped
 - ✅ Key operations emit events
@@ -1042,7 +1050,7 @@ Before release:
 Top priorities:
 
 1. ✅ Fix all issues before commit
-2. ✅ All public functions instrumented
+2. ✅ All functions instrumented (public and internal)
 3. ✅ Use derive_more for all errors
 4. ✅ Always use builders, never literals
 5. ✅ Tests in `tests/`, never inline
