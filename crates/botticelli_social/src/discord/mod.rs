@@ -54,7 +54,6 @@ mod processors;
 mod repository;
 
 // Public re-exports
-pub use botticelli_error::{DiscordError, DiscordErrorKind, DiscordErrorResult, DiscordResult};
 pub use client::BotticelliBot;
 pub use commands::DiscordCommandExecutor;
 pub use conversions::{NewMemberRole, parse_channel_type, parse_iso_timestamp};
