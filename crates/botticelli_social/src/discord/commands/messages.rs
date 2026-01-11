@@ -8,11 +8,12 @@ use serde_json::Value as JsonValue;
 use serenity::all::{ChannelId, CreateMessage, EditMessage, Http, MessageId};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 /// Execute: messages.send
 ///
 /// Send a message to a channel.
+#[instrument(skip(http, args), fields(channel_id, content_len, tts))]
 pub(super) async fn send(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -29,6 +30,9 @@ pub(super) async fn send(
     let channel_id = parse_channel_id(channel_id_str)?;
     let tts = args.get("tts").and_then(|v| v.as_bool()).unwrap_or(false);
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("content_len", content.len());
+    tracing::Span::current().record("tts", tts);
     info!(
         channel_id = %channel_id,
         content_len = content.len(),
@@ -92,6 +96,7 @@ pub(super) async fn send(
 /// Execute: messages.get
 ///
 /// Get a specific message.
+#[instrument(skip(http, args), fields(channel_id, message_id))]
 pub(super) async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -108,6 +113,8 @@ pub(super) async fn get(
     let channel_id = parse_channel_id(channel_id_str)?;
     let message_id = parse_message_id(message_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
     debug!(channel_id = %channel_id, message_id = %message_id, "Fetching message");
 
     let message = http
@@ -149,6 +156,7 @@ pub(super) async fn get(
 /// Execute: messages.list
 ///
 /// List messages from a channel (message history).
+#[instrument(skip(http, args), fields(channel_id, limit, message_count))]
 pub(super) async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -165,6 +173,8 @@ pub(super) async fn list(
         .map(|l| l.min(100) as u8)
         .unwrap_or(50);
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("limit", limit);
     debug!(channel_id = %channel_id, limit, "Fetching messages");
 
     let messages = http
@@ -196,6 +206,7 @@ pub(super) async fn list(
         })
         .collect();
 
+    tracing::Span::current().record("message_count", messages_json.len());
     info!(message_count = messages_json.len(), "Successfully retrieved messages");
     Ok(serde_json::json!(messages_json))
 }
@@ -203,6 +214,7 @@ pub(super) async fn list(
 /// Execute: messages.edit
 ///
 /// Edit an existing message.
+#[instrument(skip(http, args), fields(channel_id, message_id))]
 pub(super) async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -223,6 +235,8 @@ pub(super) async fn edit(
     let channel_id = parse_channel_id(channel_id_str)?;
     let message_id = parse_message_id(message_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
     info!(channel_id = %channel_id, message_id = %message_id, "Editing message");
 
     let builder = EditMessage::new().content(content);
@@ -248,6 +262,7 @@ pub(super) async fn edit(
 /// Execute: messages.delete
 ///
 /// Delete a message from a channel.
+#[instrument(skip(http, args), fields(channel_id, message_id))]
 pub(super) async fn delete(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -265,6 +280,8 @@ pub(super) async fn delete(
     let message_id = parse_message_id(message_id_str)?;
     let reason = args.get("reason").and_then(|v| v.as_str());
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
     info!(channel_id = %channel_id, message_id = %message_id, ?reason, "Deleting message");
 
     http.delete_message(channel_id, message_id, reason)
@@ -288,6 +305,7 @@ pub(super) async fn delete(
 /// Execute: messages.pin
 ///
 /// Pin a message in a channel.
+#[instrument(skip(http, args), fields(channel_id, message_id))]
 pub(super) async fn pin(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -304,6 +322,8 @@ pub(super) async fn pin(
     let channel_id = parse_channel_id(channel_id_str)?;
     let message_id = parse_message_id(message_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
     info!(channel_id = %channel_id, message_id = %message_id, "Pinning message");
 
     http.pin_message(channel_id, message_id, None)
@@ -327,6 +347,7 @@ pub(super) async fn pin(
 /// Execute: messages.unpin
 ///
 /// Unpin a message from a channel.
+#[instrument(skip(http, args), fields(channel_id, message_id))]
 pub(super) async fn unpin(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -343,6 +364,8 @@ pub(super) async fn unpin(
     let channel_id = parse_channel_id(channel_id_str)?;
     let message_id = parse_message_id(message_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
     info!(channel_id = %channel_id, message_id = %message_id, "Unpinning message");
 
     http.unpin_message(channel_id, message_id, None)
@@ -366,6 +389,7 @@ pub(super) async fn unpin(
 /// Execute: messages.bulk_delete
 ///
 /// Bulk delete messages (up to 100 messages, must be less than 14 days old).
+#[instrument(skip(http, args), fields(channel_id, count))]
 pub(super) async fn bulk_delete(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -414,6 +438,8 @@ pub(super) async fn bulk_delete(
         }));
     }
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("count", message_ids.len());
     warn!(
         channel_id = %channel_id,
         count = message_ids.len(),
@@ -449,6 +475,7 @@ pub(super) async fn bulk_delete(
 /// Execute: messages.clear
 ///
 /// Clear all messages from a channel (bulk delete with fetch).
+#[instrument(skip(http, args), fields(channel_id, limit))]
 pub(super) async fn clear(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -465,6 +492,8 @@ pub(super) async fn clear(
         .map(|l| l.min(100) as u8)
         .unwrap_or(100);
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("limit", limit);
     warn!(channel_id = %channel_id, limit, "Clearing messages");
 
     let messages = http
@@ -516,6 +545,7 @@ pub(super) async fn clear(
 
 // Helper functions
 
+#[instrument(skip(arg_name))]
 fn missing_arg_error(arg_name: &str) -> BotCommandError {
     BotCommandError::new(BotCommandErrorKind::MissingArgument {
         command: "".to_string(),
@@ -523,6 +553,7 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
     })
 }
 
+#[instrument(skip(s))]
 fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
     s.parse::<u64>()
         .map(ChannelId::new)
@@ -535,6 +566,7 @@ fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_message_id(s: &str) -> BotCommandResult<MessageId> {
     s.parse::<u64>()
         .map(MessageId::new)

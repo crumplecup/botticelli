@@ -8,11 +8,12 @@ use serde_json::Value as JsonValue;
 use serenity::all::{ChannelId, Http, MessageId, ReactionType, UserId};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 
 /// Execute: reactions.add
 ///
 /// Add a reaction to a message.
+#[instrument(skip(http, args), fields(channel_id, message_id, emoji))]
 pub(super) async fn add(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -33,6 +34,9 @@ pub(super) async fn add(
     let channel_id = parse_channel_id(channel_id_str)?;
     let message_id = parse_message_id(message_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
+    tracing::Span::current().record("emoji", emoji_str);
     info!(
         channel_id = %channel_id,
         message_id = %message_id,
@@ -64,6 +68,7 @@ pub(super) async fn add(
 /// Execute: reactions.remove
 ///
 /// Remove a reaction from a message.
+#[instrument(skip(http, args), fields(channel_id, message_id, user_id, emoji))]
 pub(super) async fn remove(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -89,6 +94,10 @@ pub(super) async fn remove(
     let message_id = parse_message_id(message_id_str)?;
     let user_id = parse_user_id(user_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
+    tracing::Span::current().record("user_id", user_id.get());
+    tracing::Span::current().record("emoji", emoji_str);
     info!(
         channel_id = %channel_id,
         message_id = %message_id,
@@ -121,6 +130,7 @@ pub(super) async fn remove(
 /// Execute: reactions.list
 ///
 /// List users who reacted with a specific emoji.
+#[instrument(skip(http, args), fields(channel_id, message_id, emoji, limit))]
 pub(super) async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -143,6 +153,10 @@ pub(super) async fn list(
     let reaction = parse_reaction_type(emoji_str)?;
     let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(25) as u8;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
+    tracing::Span::current().record("emoji", emoji_str);
+    tracing::Span::current().record("limit", limit);
     info!(
         channel_id = %channel_id,
         message_id = %message_id,
@@ -183,6 +197,7 @@ pub(super) async fn list(
 /// Execute: reactions.clear
 ///
 /// Clear all reactions from a message.
+#[instrument(skip(http, args), fields(channel_id, message_id))]
 pub(super) async fn clear(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -199,6 +214,8 @@ pub(super) async fn clear(
     let channel_id = parse_channel_id(channel_id_str)?;
     let message_id = parse_message_id(message_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
     info!(
         channel_id = %channel_id,
         message_id = %message_id,
@@ -222,6 +239,7 @@ pub(super) async fn clear(
 /// Execute: reactions.clear_emoji
 ///
 /// Clear all reactions of a specific emoji from a message.
+#[instrument(skip(http, args), fields(channel_id, message_id, emoji))]
 pub(super) async fn clear_emoji(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -243,6 +261,9 @@ pub(super) async fn clear_emoji(
     let message_id = parse_message_id(message_id_str)?;
     let reaction = parse_reaction_type(emoji_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("message_id", message_id.get());
+    tracing::Span::current().record("emoji", emoji_str);
     info!(
         channel_id = %channel_id,
         message_id = %message_id,
@@ -266,6 +287,7 @@ pub(super) async fn clear_emoji(
 
 // Helper functions
 
+#[instrument(skip(arg_name))]
 fn missing_arg_error(arg_name: &str) -> BotCommandError {
     BotCommandError::new(BotCommandErrorKind::MissingArgument {
         command: "".to_string(),
@@ -273,6 +295,7 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
     })
 }
 
+#[instrument(skip(s))]
 fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
     s.parse::<u64>()
         .map(ChannelId::new)
@@ -285,6 +308,7 @@ fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_message_id(s: &str) -> BotCommandResult<MessageId> {
     s.parse::<u64>()
         .map(MessageId::new)
@@ -297,6 +321,7 @@ fn parse_message_id(s: &str) -> BotCommandResult<MessageId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_user_id(s: &str) -> BotCommandResult<UserId> {
     s.parse::<u64>()
         .map(UserId::new)
@@ -309,6 +334,7 @@ fn parse_user_id(s: &str) -> BotCommandResult<UserId> {
         })
 }
 
+#[instrument(skip(emoji_str))]
 fn parse_reaction_type(emoji_str: &str) -> BotCommandResult<ReactionType> {
     // Try to parse as custom emoji or use as Unicode
     if emoji_str.starts_with("custom:") {

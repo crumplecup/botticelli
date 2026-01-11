@@ -5,12 +5,13 @@ use serde_json::Value as JsonValue;
 use serenity::all::{GuildId, Http};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 
 /// Get server statistics.
 ///
 /// Command: `server.get_stats`
 /// Required arguments: `guild_id`
+#[instrument(skip(http, args), fields(guild_id, member_count, channel_count))]
 pub(super) async fn get_stats(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -57,6 +58,7 @@ pub(super) async fn get_stats(
 }
 
 /// Parse guild_id from command arguments.
+#[instrument(skip(args), fields(guild_id))]
 fn parse_guild_id(command: &str, args: &HashMap<String, JsonValue>) -> BotCommandResult<GuildId> {
     let guild_id_str = args
         .get("guild_id")
@@ -75,6 +77,9 @@ fn parse_guild_id(command: &str, args: &HashMap<String, JsonValue>) -> BotComman
             reason: format!("Invalid guild_id format: {}", e),
         })
     })?;
+
+    tracing::Span::current().record("guild_id", guild_id);
+    debug!(guild_id, "Parsed guild_id");
 
     Ok(GuildId::new(guild_id))
 }

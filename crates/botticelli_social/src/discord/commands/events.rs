@@ -8,12 +8,13 @@ use serenity::all::{
 };
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 
 /// List scheduled events in a server.
 ///
 /// Command: `events.list`
 /// Required arguments: `guild_id`
+#[instrument(skip(http, args), fields(guild_id, event_count))]
 pub(super) async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -64,6 +65,7 @@ pub(super) async fn list(
 ///
 /// Command: `events.get`
 /// Required arguments: `guild_id`, `event_id`
+#[instrument(skip(http, args), fields(guild_id, event_id))]
 pub(super) async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -80,6 +82,8 @@ pub(super) async fn get(
     let guild_id = parse_guild_id_str(guild_id_str)?;
     let event_id = parse_event_id(event_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("event_id", event_id.get());
     debug!("Getting scheduled event details");
 
     let event = http
@@ -108,6 +112,7 @@ pub(super) async fn get(
 /// Command: `events.create`
 /// Required arguments: `guild_id`, `name`, `start_time`
 /// Optional arguments: `description`, `end_time`, `location`
+#[instrument(skip(http, args), fields(guild_id, name))]
 pub(super) async fn create(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -127,6 +132,8 @@ pub(super) async fn create(
 
     let guild_id = parse_guild_id_str(guild_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("name", name);
     info!(name, "Creating scheduled event");
 
     let start_time = Timestamp::parse(start_time_str).map_err(|_| {
@@ -182,6 +189,7 @@ pub(super) async fn create(
 /// Command: `events.edit`
 /// Required arguments: `guild_id`, `event_id`
 /// Optional arguments: `name`, `description`, `start_time`, `location`
+#[instrument(skip(http, args), fields(guild_id, event_id))]
 pub(super) async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -198,6 +206,8 @@ pub(super) async fn edit(
     let guild_id = parse_guild_id_str(guild_id_str)?;
     let event_id = parse_event_id(event_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("event_id", event_id.get());
     info!("Editing scheduled event");
 
     let mut builder = EditScheduledEvent::new();
@@ -245,6 +255,7 @@ pub(super) async fn edit(
 ///
 /// Command: `events.delete`
 /// Required arguments: `guild_id`, `event_id`
+#[instrument(skip(http, args), fields(guild_id, event_id))]
 pub(super) async fn delete(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -261,6 +272,8 @@ pub(super) async fn delete(
     let guild_id = parse_guild_id_str(guild_id_str)?;
     let event_id = parse_event_id(event_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("event_id", event_id.get());
     info!("Deleting scheduled event");
 
     http
@@ -281,6 +294,7 @@ pub(super) async fn delete(
 
 // Helper functions
 
+#[instrument(skip(arg_name))]
 fn missing_arg_error(arg_name: &str) -> BotCommandError {
     BotCommandError::new(BotCommandErrorKind::MissingArgument {
         command: "".to_string(),
@@ -288,6 +302,7 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
     })
 }
 
+#[instrument(skip(command, args))]
 fn parse_guild_id(command: &str, args: &HashMap<String, JsonValue>) -> BotCommandResult<GuildId> {
     let guild_id_str = args
         .get("guild_id")
@@ -302,6 +317,7 @@ fn parse_guild_id(command: &str, args: &HashMap<String, JsonValue>) -> BotComman
     parse_guild_id_str(guild_id_str)
 }
 
+#[instrument(skip(id_str))]
 fn parse_guild_id_str(id_str: &str) -> BotCommandResult<GuildId> {
     let id_u64: u64 = id_str.parse().map_err(|_| {
         BotCommandError::new(BotCommandErrorKind::InvalidArgument {
@@ -313,6 +329,7 @@ fn parse_guild_id_str(id_str: &str) -> BotCommandResult<GuildId> {
     Ok(GuildId::new(id_u64))
 }
 
+#[instrument(skip(id_str))]
 fn parse_event_id(id_str: &str) -> BotCommandResult<ScheduledEventId> {
     let id_u64: u64 = id_str.parse().map_err(|_| {
         BotCommandError::new(BotCommandErrorKind::InvalidArgument {

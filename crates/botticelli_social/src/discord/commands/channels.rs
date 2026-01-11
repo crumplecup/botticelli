@@ -8,11 +8,12 @@ use serde_json::Value as JsonValue;
 use serenity::all::{ChannelId, ChannelType, CreateChannel, CreateInvite, EditChannel, GuildId, Http};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 /// Execute: channels.list
 ///
 /// List all channels in a guild.
+#[instrument(skip(http, args), fields(guild_id, channel_count))]
 pub(super) async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -24,6 +25,7 @@ pub(super) async fn list(
 
     let guild_id = parse_guild_id(guild_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
     debug!(guild_id = %guild_id, "Fetching channels");
 
     let channels = http.get_channels(guild_id).await.map_err(|e| {
@@ -49,6 +51,7 @@ pub(super) async fn list(
         })
         .collect();
 
+    tracing::Span::current().record("channel_count", channels_json.len());
     info!(channel_count = channels_json.len(), "Successfully retrieved channels");
     Ok(serde_json::json!(channels_json))
 }
@@ -56,6 +59,7 @@ pub(super) async fn list(
 /// Execute: channels.get
 ///
 /// Get specific channel details.
+#[instrument(skip(http, args), fields(guild_id, channel_id))]
 pub(super) async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -72,6 +76,8 @@ pub(super) async fn get(
     let guild_id = parse_guild_id(guild_id_str)?;
     let channel_id = parse_channel_id(channel_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("channel_id", channel_id.get());
     debug!(guild_id = %guild_id, channel_id = %channel_id, "Fetching channel");
 
     let channels = http.get_channels(guild_id).await.map_err(|e| {
@@ -110,6 +116,7 @@ pub(super) async fn get(
 /// Execute: channels.create
 ///
 /// Create a new channel in the guild.
+#[instrument(skip(http, args), fields(guild_id, name, kind))]
 pub(super) async fn create(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -130,6 +137,9 @@ pub(super) async fn create(
     let guild_id = parse_guild_id(guild_id_str)?;
     let kind = parse_channel_type(kind_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("name", name);
+    tracing::Span::current().record("kind", kind_str);
     info!(guild_id = %guild_id, name, kind = kind_str, "Creating channel");
 
     let mut builder = CreateChannel::new(name).kind(kind);
@@ -164,6 +174,7 @@ pub(super) async fn create(
 /// Execute: channels.edit
 ///
 /// Edit channel properties.
+#[instrument(skip(http, args), fields(channel_id))]
 pub(super) async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -175,6 +186,7 @@ pub(super) async fn edit(
 
     let channel_id = parse_channel_id(channel_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
     info!(channel_id = %channel_id, "Editing channel");
 
     let mut builder = EditChannel::new();
@@ -223,6 +235,7 @@ pub(super) async fn edit(
 /// Execute: channels.delete
 ///
 /// Delete a channel.
+#[instrument(skip(http, args), fields(guild_id, channel_id))]
 pub(super) async fn delete(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -239,6 +252,8 @@ pub(super) async fn delete(
     let guild_id = parse_guild_id(guild_id_str)?;
     let channel_id = parse_channel_id(channel_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("channel_id", channel_id.get());
     warn!(guild_id = %guild_id, channel_id = %channel_id, "Deleting channel");
 
     channel_id.delete(http).await.map_err(|e| {
@@ -259,6 +274,7 @@ pub(super) async fn delete(
 /// Execute: channels.get_or_create
 ///
 /// Get a channel by name, or create it if it doesn't exist.
+#[instrument(skip(http, args), fields(guild_id, name, existed))]
 pub(super) async fn get_or_create(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -274,6 +290,8 @@ pub(super) async fn get_or_create(
 
     let guild_id = parse_guild_id(guild_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("name", name);
     debug!(guild_id = %guild_id, name, "Checking if channel exists");
 
     let channels = http.get_channels(guild_id).await.map_err(|e| {
@@ -285,6 +303,7 @@ pub(super) async fn get_or_create(
     })?;
 
     if let Some(existing) = channels.iter().find(|c| c.name == name) {
+        tracing::Span::current().record("existed", true);
         info!(channel_id = %existing.id, name, "Channel already exists");
         return Ok(serde_json::json!({
             "id": existing.id.to_string(),
@@ -336,6 +355,7 @@ pub(super) async fn get_or_create(
 /// Execute: channels.create_invite
 ///
 /// Create an invite link for a channel.
+#[instrument(skip(http, args), fields(channel_id, max_age, max_uses))]
 pub(super) async fn create_invite(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -347,14 +367,17 @@ pub(super) async fn create_invite(
 
     let channel_id = parse_channel_id(channel_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
     info!(channel_id = %channel_id, "Creating invite");
 
     let mut builder = CreateInvite::new();
 
     if let Some(max_age) = args.get("max_age").and_then(|v| v.as_u64()) {
+        tracing::Span::current().record("max_age", max_age);
         builder = builder.max_age(max_age as u32);
     }
     if let Some(max_uses) = args.get("max_uses").and_then(|v| v.as_u64()) {
+        tracing::Span::current().record("max_uses", max_uses);
         builder = builder.max_uses(max_uses as u8);
     }
     if let Some(temporary) = args.get("temporary").and_then(|v| v.as_bool()) {
@@ -386,6 +409,7 @@ pub(super) async fn create_invite(
 /// Execute: channels.typing
 ///
 /// Trigger typing indicator in a channel.
+#[instrument(skip(http, args), fields(channel_id))]
 pub(super) async fn typing(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -397,6 +421,7 @@ pub(super) async fn typing(
 
     let channel_id = parse_channel_id(channel_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
     debug!(channel_id = %channel_id, "Triggering typing indicator");
 
     channel_id.broadcast_typing(http).await.map_err(|e| {
@@ -416,6 +441,7 @@ pub(super) async fn typing(
 
 // Helper functions
 
+#[instrument(skip(arg_name))]
 fn missing_arg_error(arg_name: &str) -> BotCommandError {
     BotCommandError::new(BotCommandErrorKind::MissingArgument {
         command: "".to_string(),
@@ -423,6 +449,7 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
     })
 }
 
+#[instrument(skip(s))]
 fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
     s.parse::<u64>()
         .map(GuildId::new)
@@ -435,6 +462,7 @@ fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
     s.parse::<u64>()
         .map(ChannelId::new)
@@ -447,6 +475,7 @@ fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_channel_type(s: &str) -> BotCommandResult<ChannelType> {
     match s {
         "text" => Ok(ChannelType::Text),

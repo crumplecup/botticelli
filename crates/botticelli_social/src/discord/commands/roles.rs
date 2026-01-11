@@ -8,11 +8,12 @@ use serde_json::Value as JsonValue;
 use serenity::all::{EditRole, GuildId, Http, RoleId, UserId};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 
 /// Execute: roles.list
 ///
 /// List all roles in a guild.
+#[instrument(skip(http, args), fields(guild_id, role_count))]
 pub(super) async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -24,6 +25,7 @@ pub(super) async fn list(
 
     let guild_id = parse_guild_id(guild_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
     debug!(guild_id = %guild_id, "Fetching roles");
 
     let roles = http.get_guild_roles(guild_id).await.map_err(|e| {
@@ -50,6 +52,7 @@ pub(super) async fn list(
         })
         .collect();
 
+    tracing::Span::current().record("role_count", roles_json.len());
     info!(role_count = roles_json.len(), "Successfully retrieved roles");
     Ok(serde_json::json!(roles_json))
 }
@@ -57,6 +60,7 @@ pub(super) async fn list(
 /// Execute: roles.get
 ///
 /// Get specific role details.
+#[instrument(skip(http, args), fields(guild_id, role_id))]
 pub(super) async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -73,6 +77,8 @@ pub(super) async fn get(
     let guild_id = parse_guild_id(guild_id_str)?;
     let role_id = parse_role_id(role_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("role_id", role_id.get());
     debug!(guild_id = %guild_id, role_id = %role_id, "Fetching role");
 
     let roles = http.get_guild_roles(guild_id).await.map_err(|e| {
@@ -109,6 +115,7 @@ pub(super) async fn get(
 /// Execute: roles.create
 ///
 /// Create a new role in the guild.
+#[instrument(skip(http, args), fields(guild_id, name))]
 pub(super) async fn create(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -131,6 +138,8 @@ pub(super) async fn create(
         .and_then(|v| v.as_bool())
         .unwrap_or(false);
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("name", name);
     info!(
         guild_id = %guild_id,
         name,
@@ -175,6 +184,7 @@ pub(super) async fn create(
 /// Execute: roles.edit
 ///
 /// Edit role properties.
+#[instrument(skip(http, args), fields(guild_id, role_id))]
 pub(super) async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -191,6 +201,8 @@ pub(super) async fn edit(
     let guild_id = parse_guild_id(guild_id_str)?;
     let role_id = parse_role_id(role_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("role_id", role_id.get());
     info!(guild_id = %guild_id, role_id = %role_id, "Editing role");
 
     let mut builder = EditRole::new();
@@ -234,6 +246,7 @@ pub(super) async fn edit(
 /// Execute: roles.delete
 ///
 /// Delete a role.
+#[instrument(skip(http, args), fields(guild_id, role_id))]
 pub(super) async fn delete(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -250,6 +263,8 @@ pub(super) async fn delete(
     let guild_id = parse_guild_id(guild_id_str)?;
     let role_id = parse_role_id(role_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("role_id", role_id.get());
     info!(guild_id = %guild_id, role_id = %role_id, "Deleting role");
 
     http.delete_role(guild_id, role_id, None)
@@ -273,6 +288,7 @@ pub(super) async fn delete(
 /// Execute: roles.assign
 ///
 /// Assign a role to a member.
+#[instrument(skip(http, args), fields(guild_id, user_id, role_id))]
 pub(super) async fn assign(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -294,6 +310,9 @@ pub(super) async fn assign(
     let user_id = parse_user_id(user_id_str)?;
     let role_id = parse_role_id(role_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("user_id", user_id.get());
+    tracing::Span::current().record("role_id", role_id.get());
     info!(
         guild_id = %guild_id,
         user_id = %user_id,
@@ -323,6 +342,7 @@ pub(super) async fn assign(
 /// Execute: roles.remove
 ///
 /// Remove a role from a member.
+#[instrument(skip(http, args), fields(guild_id, user_id, role_id))]
 pub(super) async fn remove(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -344,6 +364,9 @@ pub(super) async fn remove(
     let user_id = parse_user_id(user_id_str)?;
     let role_id = parse_role_id(role_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("user_id", user_id.get());
+    tracing::Span::current().record("role_id", role_id.get());
     info!(
         guild_id = %guild_id,
         user_id = %user_id,
@@ -372,6 +395,7 @@ pub(super) async fn remove(
 
 // Helper functions
 
+#[instrument(skip(arg_name))]
 fn missing_arg_error(arg_name: &str) -> BotCommandError {
     BotCommandError::new(BotCommandErrorKind::MissingArgument {
         command: "".to_string(),
@@ -379,6 +403,7 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
     })
 }
 
+#[instrument(skip(s))]
 fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
     s.parse::<u64>()
         .map(GuildId::new)
@@ -391,6 +416,7 @@ fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_role_id(s: &str) -> BotCommandResult<RoleId> {
     s.parse::<u64>()
         .map(RoleId::new)
@@ -403,6 +429,7 @@ fn parse_role_id(s: &str) -> BotCommandResult<RoleId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_user_id(s: &str) -> BotCommandResult<UserId> {
     s.parse::<u64>()
         .map(UserId::new)

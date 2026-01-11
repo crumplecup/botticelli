@@ -10,11 +10,12 @@ use serenity::all::{
 };
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 
 /// Execute: forum.create_post
 ///
 /// Create a new forum post (thread in a forum channel).
+#[instrument(skip(http, args), fields(channel_id, name))]
 pub(super) async fn create_post(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -34,6 +35,8 @@ pub(super) async fn create_post(
 
     let channel_id = parse_channel_id(channel_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("name", name);
     info!(name, "Creating forum post");
 
     let mut builder = CreateForumPost::new(name, CreateMessage::new().content(content));
@@ -71,6 +74,7 @@ pub(super) async fn create_post(
 /// Execute: forum.list_posts
 ///
 /// List forum posts (active threads in a forum channel).
+#[instrument(skip(_http, args), fields(channel_id))]
 pub(super) async fn list_posts(
     _http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -82,6 +86,7 @@ pub(super) async fn list_posts(
 
     let _channel_id = parse_channel_id(channel_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id_str);
     debug!("Listing forum posts");
 
     // TODO: Implement forum post listing
@@ -94,6 +99,7 @@ pub(super) async fn list_posts(
 /// Execute: forum.get_post
 ///
 /// Get details about a specific forum post.
+#[instrument(skip(http, args), fields(thread_id))]
 pub(super) async fn get_post(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -105,6 +111,7 @@ pub(super) async fn get_post(
 
     let thread_id = parse_channel_id(thread_id_str)?;
 
+    tracing::Span::current().record("thread_id", thread_id.get());
     debug!("Getting forum post details");
 
     let channel = http.get_channel(thread_id).await.map_err(|e| {
@@ -134,6 +141,7 @@ pub(super) async fn get_post(
 
 // Helper functions
 
+#[instrument(skip(arg_name))]
 fn missing_arg_error(arg_name: &str) -> BotCommandError {
     BotCommandError::new(BotCommandErrorKind::MissingArgument {
         command: "".to_string(),
@@ -141,6 +149,7 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
     })
 }
 
+#[instrument(skip(s))]
 fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
     s.parse::<u64>()
         .map(ChannelId::new)

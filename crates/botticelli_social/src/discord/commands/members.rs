@@ -8,11 +8,12 @@ use serde_json::Value as JsonValue;
 use serenity::all::{EditMember, GuildId, Http, RoleId, Timestamp, UserId};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 
 /// Execute: members.list
 ///
 /// List members in a guild.
+#[instrument(skip(http, args), fields(guild_id, limit, member_count))]
 pub(super) async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -30,6 +31,8 @@ pub(super) async fn list(
         .unwrap_or(100)
         .min(1000); // Discord's max is 1000
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("limit", limit);
     debug!(guild_id = %guild_id, limit, "Fetching guild members");
 
     let members = http
@@ -68,6 +71,7 @@ pub(super) async fn list(
         })
         .collect();
 
+    tracing::Span::current().record("member_count", members_json.len());
     info!(member_count = members_json.len(), "Successfully retrieved guild members");
     Ok(serde_json::json!(members_json))
 }
@@ -75,6 +79,7 @@ pub(super) async fn list(
 /// Execute: members.get
 ///
 /// Get specific member details.
+#[instrument(skip(http, args), fields(guild_id, user_id))]
 pub(super) async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -91,6 +96,8 @@ pub(super) async fn get(
     let guild_id = parse_guild_id(guild_id_str)?;
     let user_id = parse_user_id(user_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("user_id", user_id.get());
     debug!(guild_id = %guild_id, user_id = %user_id, "Fetching member");
 
     let member = http.get_member(guild_id, user_id).await.map_err(|e| {
@@ -127,6 +134,7 @@ pub(super) async fn get(
 /// Execute: members.edit
 ///
 /// Edit member properties.
+#[instrument(skip(http, args), fields(guild_id, user_id))]
 pub(super) async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -143,6 +151,8 @@ pub(super) async fn edit(
     let guild_id = parse_guild_id(guild_id_str)?;
     let user_id = parse_user_id(user_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("user_id", user_id.get());
     info!(guild_id = %guild_id, user_id = %user_id, "Editing member");
 
     let mut builder = EditMember::new();
@@ -209,6 +219,7 @@ pub(super) async fn edit(
 /// Execute: members.timeout
 ///
 /// Apply timeout to a member.
+#[instrument(skip(http, args), fields(guild_id, user_id, duration_seconds))]
 pub(super) async fn timeout(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -238,6 +249,9 @@ pub(super) async fn timeout(
         }));
     }
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("user_id", user_id.get());
+    tracing::Span::current().record("duration_seconds", duration_seconds);
     info!(
         guild_id = %guild_id,
         user_id = %user_id,
@@ -280,6 +294,7 @@ pub(super) async fn timeout(
 /// Execute: members.remove_timeout
 ///
 /// Remove timeout from a member.
+#[instrument(skip(http, args), fields(guild_id, user_id))]
 pub(super) async fn remove_timeout(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -296,6 +311,8 @@ pub(super) async fn remove_timeout(
     let guild_id = parse_guild_id(guild_id_str)?;
     let user_id = parse_user_id(user_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
+    tracing::Span::current().record("user_id", user_id.get());
     info!(guild_id = %guild_id, user_id = %user_id, "Removing member timeout");
 
     let builder = EditMember::new().disable_communication_until_datetime(Timestamp::now());
@@ -321,6 +338,7 @@ pub(super) async fn remove_timeout(
 
 // Helper functions
 
+#[instrument(skip(arg_name))]
 fn missing_arg_error(arg_name: &str) -> BotCommandError {
     BotCommandError::new(BotCommandErrorKind::MissingArgument {
         command: "".to_string(),
@@ -328,6 +346,7 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
     })
 }
 
+#[instrument(skip(s))]
 fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
     s.parse::<u64>()
         .map(GuildId::new)
@@ -340,6 +359,7 @@ fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_user_id(s: &str) -> BotCommandResult<UserId> {
     s.parse::<u64>()
         .map(UserId::new)

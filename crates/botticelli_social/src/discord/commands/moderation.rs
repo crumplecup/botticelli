@@ -5,13 +5,14 @@ use serde_json::Value as JsonValue;
 use serenity::all::{GuildId, Http, UserId};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 /// List banned users in a server.
 ///
 /// Command: `bans.list`
 /// Required arguments: `guild_id`
 /// Optional arguments: `limit` (default 100, max 1000)
+#[instrument(skip(http, args), fields(guild_id, limit, ban_count))]
 pub(super) async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -67,6 +68,7 @@ pub(super) async fn list(
 /// Command: `members.ban`
 /// Required arguments: `guild_id`, `user_id`
 /// Optional arguments: `delete_message_days` (0-7, default 0)
+#[instrument(skip(http, args), fields(guild_id, user_id, delete_message_days))]
 pub(super) async fn ban(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -101,6 +103,7 @@ pub(super) async fn ban(
 
     tracing::Span::current().record("guild_id", guild_id.get());
     tracing::Span::current().record("user_id", user_id.get());
+    tracing::Span::current().record("delete_message_days", delete_message_days);
 
     warn!(
         guild_id = %guild_id,
@@ -138,6 +141,7 @@ pub(super) async fn ban(
 ///
 /// Command: `members.unban`
 /// Required arguments: `guild_id`, `user_id`
+#[instrument(skip(http, args), fields(guild_id, user_id))]
 pub(super) async fn unban(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -190,6 +194,7 @@ pub(super) async fn unban(
 /// Command: `members.kick`
 /// Required arguments: `guild_id`, `user_id`
 /// Optional arguments: `reason`
+#[instrument(skip(http, args), fields(guild_id, user_id))]
 pub(super) async fn kick(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -247,6 +252,7 @@ pub(super) async fn kick(
 }
 
 /// Parse guild_id from command arguments.
+#[instrument(skip(command, args))]
 fn parse_guild_id(command: &str, args: &HashMap<String, JsonValue>) -> BotCommandResult<GuildId> {
     let guild_id_str = args
         .get("guild_id")

@@ -8,11 +8,12 @@ use serde_json::Value as JsonValue;
 use serenity::all::{ChannelId, ChannelType, CreateThread, EditThread, GuildId, Http, UserId};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 
 /// Execute: threads.create
 ///
 /// Create a new thread in a channel.
+#[instrument(skip(http, args), fields(channel_id, name))]
 pub(super) async fn create(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -28,6 +29,8 @@ pub(super) async fn create(
 
     let channel_id = parse_channel_id(channel_id_str)?;
 
+    tracing::Span::current().record("channel_id", channel_id.get());
+    tracing::Span::current().record("name", name);
     info!(channel_id = %channel_id, name, "Creating thread");
 
     let builder = CreateThread::new(name.to_string()).kind(ChannelType::PublicThread);
@@ -54,6 +57,7 @@ pub(super) async fn create(
 /// Execute: threads.list
 ///
 /// List active threads in a guild.
+#[instrument(skip(http, args), fields(guild_id, count))]
 pub(super) async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -65,6 +69,7 @@ pub(super) async fn list(
 
     let guild_id = parse_guild_id(guild_id_str)?;
 
+    tracing::Span::current().record("guild_id", guild_id.get());
     debug!(guild_id = %guild_id, "Listing threads");
 
     let threads = http
@@ -91,6 +96,7 @@ pub(super) async fn list(
         })
         .collect();
 
+    tracing::Span::current().record("count", thread_list.len());
     info!(count = thread_list.len(), "Successfully listed threads");
     Ok(serde_json::json!({
         "threads": thread_list,
@@ -101,6 +107,7 @@ pub(super) async fn list(
 /// Execute: threads.get
 ///
 /// Get specific thread details.
+#[instrument(skip(http, args), fields(thread_id))]
 pub(super) async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -112,6 +119,7 @@ pub(super) async fn get(
 
     let thread_id = parse_channel_id(thread_id_str)?;
 
+    tracing::Span::current().record("thread_id", thread_id.get());
     debug!(thread_id = %thread_id, "Fetching thread");
 
     let thread = http.get_channel(thread_id).await.map_err(|e| {
@@ -142,6 +150,7 @@ pub(super) async fn get(
 /// Execute: threads.edit
 ///
 /// Edit thread properties.
+#[instrument(skip(http, args), fields(thread_id))]
 pub(super) async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -153,6 +162,7 @@ pub(super) async fn edit(
 
     let thread_id = parse_channel_id(thread_id_str)?;
 
+    tracing::Span::current().record("thread_id", thread_id.get());
     info!(thread_id = %thread_id, "Editing thread");
 
     let mut builder = EditThread::new();
@@ -184,6 +194,7 @@ pub(super) async fn edit(
 /// Execute: threads.delete
 ///
 /// Delete a thread.
+#[instrument(skip(http, args), fields(thread_id))]
 pub(super) async fn delete(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -195,6 +206,7 @@ pub(super) async fn delete(
 
     let thread_id = parse_channel_id(thread_id_str)?;
 
+    tracing::Span::current().record("thread_id", thread_id.get());
     info!(thread_id = %thread_id, "Deleting thread");
 
     http.delete_channel(thread_id, None)
@@ -214,6 +226,7 @@ pub(super) async fn delete(
 /// Execute: threads.join
 ///
 /// Join a thread.
+#[instrument(skip(http, args), fields(thread_id))]
 pub(super) async fn join(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -225,6 +238,7 @@ pub(super) async fn join(
 
     let thread_id = parse_channel_id(thread_id_str)?;
 
+    tracing::Span::current().record("thread_id", thread_id.get());
     info!(thread_id = %thread_id, "Joining thread");
 
     http.join_thread_channel(thread_id)
@@ -244,6 +258,7 @@ pub(super) async fn join(
 /// Execute: threads.leave
 ///
 /// Leave a thread.
+#[instrument(skip(http, args), fields(thread_id))]
 pub(super) async fn leave(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -255,6 +270,7 @@ pub(super) async fn leave(
 
     let thread_id = parse_channel_id(thread_id_str)?;
 
+    tracing::Span::current().record("thread_id", thread_id.get());
     info!(thread_id = %thread_id, "Leaving thread");
 
     http.leave_thread_channel(thread_id)
@@ -274,6 +290,7 @@ pub(super) async fn leave(
 /// Execute: threads.add_member
 ///
 /// Add a member to a thread.
+#[instrument(skip(http, args), fields(thread_id, user_id))]
 pub(super) async fn add_member(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -290,6 +307,8 @@ pub(super) async fn add_member(
     let thread_id = parse_channel_id(thread_id_str)?;
     let user_id = parse_user_id(user_id_str)?;
 
+    tracing::Span::current().record("thread_id", thread_id.get());
+    tracing::Span::current().record("user_id", user_id.get());
     info!(thread_id = %thread_id, user_id = %user_id, "Adding member to thread");
 
     http.add_thread_channel_member(thread_id, user_id)
@@ -309,6 +328,7 @@ pub(super) async fn add_member(
 /// Execute: threads.remove_member
 ///
 /// Remove a member from a thread.
+#[instrument(skip(http, args), fields(thread_id, user_id))]
 pub(super) async fn remove_member(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -325,6 +345,8 @@ pub(super) async fn remove_member(
     let thread_id = parse_channel_id(thread_id_str)?;
     let user_id = parse_user_id(user_id_str)?;
 
+    tracing::Span::current().record("thread_id", thread_id.get());
+    tracing::Span::current().record("user_id", user_id.get());
     info!(thread_id = %thread_id, user_id = %user_id, "Removing member from thread");
 
     http.remove_thread_channel_member(thread_id, user_id)
@@ -343,6 +365,7 @@ pub(super) async fn remove_member(
 
 // Helper functions
 
+#[instrument(skip(arg_name))]
 fn missing_arg_error(arg_name: &str) -> BotCommandError {
     BotCommandError::new(BotCommandErrorKind::MissingArgument {
         command: "".to_string(),
@@ -350,6 +373,7 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
     })
 }
 
+#[instrument(skip(s))]
 fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
     s.parse::<u64>()
         .map(GuildId::new)
@@ -362,6 +386,7 @@ fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
     s.parse::<u64>()
         .map(ChannelId::new)
@@ -374,6 +399,7 @@ fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
         })
 }
 
+#[instrument(skip(s))]
 fn parse_user_id(s: &str) -> BotCommandResult<UserId> {
     s.parse::<u64>()
         .map(UserId::new)

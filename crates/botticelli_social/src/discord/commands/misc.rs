@@ -5,12 +5,13 @@ use serde_json::Value as JsonValue;
 use serenity::all::{GuildId, Http};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, instrument};
 
 /// List custom emojis in a server.
 ///
 /// Command: `emojis.list`
 /// Required arguments: `guild_id`
+#[instrument(skip(http, args), fields(guild_id, emoji_count))]
 pub(super) async fn emojis_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -56,6 +57,7 @@ pub(super) async fn emojis_list(
 ///
 /// Command: `stickers.list`
 /// Required arguments: `guild_id`
+#[instrument(skip(http, args), fields(guild_id, sticker_count))]
 pub(super) async fn stickers_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -101,6 +103,7 @@ pub(super) async fn stickers_list(
 ///
 /// Command: `invites.list`
 /// Required arguments: `guild_id`
+#[instrument(skip(http, args), fields(guild_id, invite_count))]
 pub(super) async fn invites_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -151,6 +154,7 @@ pub(super) async fn invites_list(
 ///
 /// Command: `webhooks.list`
 /// Required arguments: `guild_id`
+#[instrument(skip(http, args), fields(guild_id, webhook_count))]
 pub(super) async fn webhooks_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -195,6 +199,7 @@ pub(super) async fn webhooks_list(
 ///
 /// Command: `integrations.list`
 /// Required arguments: `guild_id`
+#[instrument(skip(http, args), fields(guild_id, integration_count))]
 pub(super) async fn integrations_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -246,6 +251,7 @@ pub(super) async fn integrations_list(
 ///
 /// Command: `voice_regions.list`
 /// Required arguments: `guild_id`
+#[instrument(skip(http, args), fields(guild_id, region_count))]
 pub(super) async fn voice_regions_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
@@ -287,6 +293,7 @@ pub(super) async fn voice_regions_list(
 }
 
 /// Parse guild_id from command arguments.
+#[instrument(skip(command, args))]
 fn parse_guild_id(command: &str, args: &HashMap<String, JsonValue>) -> BotCommandResult<GuildId> {
     let guild_id_str = args
         .get("guild_id")
