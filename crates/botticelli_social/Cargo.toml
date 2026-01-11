@@ -50,7 +50,7 @@ botticelli = { path = "../../crates/botticelli", features = ["discord", "databas
 
 [features]
 default = []
-discord = ["serenity", "database"]
+discord = ["serenity", "database", "botticelli_error/discord"]
 database = ["dep:botticelli_database", "dep:botticelli_narrative", "dep:diesel", "dep:chrono"]
 # Empty feature flag for marking expensive API integration tests
 api = []
