@@ -5,6 +5,7 @@
 
 mod events;
 mod forum;
+mod members;
 mod misc;
 mod moderation;
 mod reactions;
@@ -106,6 +107,13 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "roles.assign" => roles::assign(&self.http, args).await?,
             "roles.remove" => roles::remove(&self.http, args).await?,
 
+            // Member commands (non-moderation)
+            "members.list" => members::list(&self.http, args).await?,
+            "members.get" => members::get(&self.http, args).await?,
+            "members.edit" => members::edit(&self.http, args).await?,
+            "members.timeout" => members::timeout(&self.http, args).await?,
+            "members.remove_timeout" => members::remove_timeout(&self.http, args).await?,
+
             // TODO: Add other commands as we migrate them
             
             _ => {
@@ -173,6 +181,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             | "roles.delete"
             | "roles.assign"
             | "roles.remove"
+            // Members (non-moderation)
+            | "members.list"
+            | "members.get"
+            | "members.edit"
+            | "members.timeout"
+            | "members.remove_timeout"
             // TODO: Add other commands as we migrate them
         )
     }
@@ -217,6 +231,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "roles.delete".to_string(),
             "roles.assign".to_string(),
             "roles.remove".to_string(),
+            // Members (non-moderation)
+            "members.list".to_string(),
+            "members.get".to_string(),
+            "members.edit".to_string(),
+            "members.timeout".to_string(),
+            "members.remove_timeout".to_string(),
             // TODO: Add other commands as we migrate them
         ]
     }
@@ -258,6 +278,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "roles.delete" => Some("Delete role\nRequired arguments: guild_id, role_id".to_string()),
             "roles.assign" => Some("Assign role to member\nRequired arguments: guild_id, user_id, role_id".to_string()),
             "roles.remove" => Some("Remove role from member\nRequired arguments: guild_id, user_id, role_id".to_string()),
+            "members.list" => Some("List guild members\nRequired arguments: guild_id\nOptional: limit (max 1000)".to_string()),
+            "members.get" => Some("Get member details\nRequired arguments: guild_id, user_id".to_string()),
+            "members.edit" => Some("Edit member properties\nRequired arguments: guild_id, user_id\nOptional: nickname, mute, deafen, roles".to_string()),
+            "members.timeout" => Some("Timeout member\nRequired arguments: guild_id, user_id, duration_seconds (max 28 days)".to_string()),
+            "members.remove_timeout" => Some("Remove member timeout\nRequired arguments: guild_id, user_id".to_string()),
             // TODO: Add other commands as we migrate them
             _ => None,
         }
