@@ -10,11 +10,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument};
 
-/// Execute: roles.list
-///
-/// List all roles in a guild.
-#[instrument(skip(http, args), fields(guild_id, role_count))]
-pub(super) async fn list(
+/// Helper type for role command operations.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Roles;
+
+impl Roles {
+    /// Execute: roles.list
+    ///
+    /// List all roles in a guild.
+    #[instrument(skip(http, args), fields(guild_id, role_count))]
+    pub async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -54,11 +59,11 @@ pub(super) async fn list(
     Ok(serde_json::json!(roles_json))
 }
 
-/// Execute: roles.get
-///
-/// Get specific role details.
-#[instrument(skip(http, args), fields(guild_id, role_id))]
-pub(super) async fn get(
+    /// Execute: roles.get
+    ///
+    /// Get specific role details.
+    #[instrument(skip(http, args), fields(guild_id, role_id))]
+    pub async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -106,11 +111,11 @@ pub(super) async fn get(
     }))
 }
 
-/// Execute: roles.create
-///
-/// Create a new role in the guild.
-#[instrument(skip(http, args), fields(guild_id, name))]
-pub(super) async fn create(
+    /// Execute: roles.create
+    ///
+    /// Create a new role in the guild.
+    #[instrument(skip(http, args), fields(guild_id, name))]
+    pub async fn create(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -172,11 +177,11 @@ pub(super) async fn create(
     }))
 }
 
-/// Execute: roles.edit
-///
-/// Edit role properties.
-#[instrument(skip(http, args), fields(guild_id, role_id))]
-pub(super) async fn edit(
+    /// Execute: roles.edit
+    ///
+    /// Edit role properties.
+    #[instrument(skip(http, args), fields(guild_id, role_id))]
+    pub async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -231,11 +236,11 @@ pub(super) async fn edit(
     }))
 }
 
-/// Execute: roles.delete
-///
-/// Delete a role.
-#[instrument(skip(http, args), fields(guild_id, role_id))]
-pub(super) async fn delete(
+    /// Execute: roles.delete
+    ///
+    /// Delete a role.
+    #[instrument(skip(http, args), fields(guild_id, role_id))]
+    pub async fn delete(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -270,11 +275,11 @@ pub(super) async fn delete(
     }))
 }
 
-/// Execute: roles.assign
-///
-/// Assign a role to a member.
-#[instrument(skip(http, args), fields(guild_id, user_id, role_id))]
-pub(super) async fn assign(
+    /// Execute: roles.assign
+    ///
+    /// Assign a role to a member.
+    #[instrument(skip(http, args), fields(guild_id, user_id, role_id))]
+    pub async fn assign(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -321,11 +326,11 @@ pub(super) async fn assign(
     }))
 }
 
-/// Execute: roles.remove
-///
-/// Remove a role from a member.
-#[instrument(skip(http, args), fields(guild_id, user_id, role_id))]
-pub(super) async fn remove(
+    /// Execute: roles.remove
+    ///
+    /// Remove a role from a member.
+    #[instrument(skip(http, args), fields(guild_id, user_id, role_id))]
+    pub async fn remove(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -370,6 +375,7 @@ pub(super) async fn remove(
         "user_id": user_id.to_string(),
         "role_id": role_id.to_string(),
     }))
+}
 }
 
 // Helper functions

@@ -2,8 +2,9 @@
 
 use super::channels::Channels;
 use super::messages::Messages;
+use super::roles::Roles;
 use super::threads::Threads;
-use super::{events, forum, members, misc, moderation, reactions, roles, server};
+use super::{events, forum, members, misc, moderation, reactions, server};
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -91,13 +92,13 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "reactions.clear_emoji" => reactions::clear_emoji(&self.http, args).await?,
 
             // Role commands
-            "roles.list" => roles::list(&self.http, args).await?,
-            "roles.get" => roles::get(&self.http, args).await?,
-            "roles.create" => roles::create(&self.http, args).await?,
-            "roles.edit" => roles::edit(&self.http, args).await?,
-            "roles.delete" => roles::delete(&self.http, args).await?,
-            "roles.assign" => roles::assign(&self.http, args).await?,
-            "roles.remove" => roles::remove(&self.http, args).await?,
+            "roles.list" => Roles::list(&self.http, args).await?,
+            "roles.get" => Roles::get(&self.http, args).await?,
+            "roles.create" => Roles::create(&self.http, args).await?,
+            "roles.edit" => Roles::edit(&self.http, args).await?,
+            "roles.delete" => Roles::delete(&self.http, args).await?,
+            "roles.assign" => Roles::assign(&self.http, args).await?,
+            "roles.remove" => Roles::remove(&self.http, args).await?,
 
             // Member commands (non-moderation)
             "members.list" => members::list(&self.http, args).await?,
