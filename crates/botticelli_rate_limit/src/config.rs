@@ -129,34 +129,42 @@ pub struct TierConfig {
 }
 
 impl Tier for TierConfig {
+    #[tracing::instrument(skip(self))]
     fn rpm(&self) -> Option<u32> {
         self.rpm
     }
 
+    #[tracing::instrument(skip(self))]
     fn tpm(&self) -> Option<u64> {
         self.tpm
     }
 
+    #[tracing::instrument(skip(self))]
     fn rpd(&self) -> Option<u32> {
         self.rpd
     }
 
+    #[tracing::instrument(skip(self))]
     fn max_concurrent(&self) -> Option<u32> {
         self.max_concurrent
     }
 
+    #[tracing::instrument(skip(self))]
     fn daily_quota_usd(&self) -> Option<f64> {
         self.daily_quota_usd
     }
 
+    #[tracing::instrument(skip(self))]
     fn cost_per_million_input_tokens(&self) -> Option<f64> {
         self.cost_per_million_input_tokens
     }
 
+    #[tracing::instrument(skip(self))]
     fn cost_per_million_output_tokens(&self) -> Option<f64> {
         self.cost_per_million_output_tokens
     }
 
+    #[tracing::instrument(skip(self))]
     fn name(&self) -> &str {
         &self.name
     }
@@ -194,6 +202,7 @@ impl TierConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[tracing::instrument(skip(self))]
     pub fn for_model(&self, model_name: &str) -> TierConfig {
         if let Some(model_config) = self.models.get(model_name) {
             // Apply model-specific overrides
@@ -254,6 +263,7 @@ impl RateLimitConfig {
     }
 
     /// Creates a rate limit configuration from a tier config.
+    #[tracing::instrument]
     pub fn from_tier(tier: &TierConfig) -> Self {
         Self {
             requests_per_minute: tier.rpm.unwrap_or(u32::MAX) as u64,
@@ -264,6 +274,7 @@ impl RateLimitConfig {
     }
 
     /// Creates an unlimited rate limit configuration (for local execution).
+    #[tracing::instrument]
     pub fn unlimited(name: &str) -> Self {
         debug!(name, "Creating unlimited rate limit config");
         Self {

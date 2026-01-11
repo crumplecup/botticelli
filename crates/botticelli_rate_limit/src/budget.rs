@@ -35,6 +35,7 @@ pub struct Budget {
 
 impl Budget {
     /// Creates a new budget tracker with the given rate limits.
+    #[tracing::instrument]
     pub fn new(config: RateLimitConfig) -> Self {
         let now = Instant::now();
         Self {
@@ -49,11 +50,13 @@ impl Budget {
     }
 
     /// Gets the rate limit configuration.
+    #[tracing::instrument(skip(self))]
     pub fn config(&self) -> &RateLimitConfig {
         &self.config
     }
 
     /// Resets window counters if windows have expired.
+    #[tracing::instrument(skip(self))]
     fn reset_windows(&mut self) {
         let now = Instant::now();
 
@@ -136,6 +139,7 @@ impl Budget {
     }
 
     /// Returns the remaining budget in the current windows.
+    #[tracing::instrument(skip(self))]
     pub fn remaining(&mut self) -> BudgetRemaining {
         self.reset_windows();
 

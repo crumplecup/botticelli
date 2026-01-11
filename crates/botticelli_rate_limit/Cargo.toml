@@ -34,6 +34,8 @@ gemini = []    # Marker feature for Gemini rate limiting
 anthropic = [] # Marker feature for Anthropic rate limiting
 
 [dev-dependencies]
+anyhow = { workspace = true }
+dotenvy = { workspace = true }
 tempfile = { workspace = true }
 reqwest = { workspace = true }
 tracing-subscriber = { workspace = true }

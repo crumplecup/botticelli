@@ -21,6 +21,7 @@ pub enum GeminiTier {
 
 #[cfg(feature = "gemini")]
 impl Tier for GeminiTier {
+    #[tracing::instrument(skip(self))]
     fn rpm(&self) -> Option<u32> {
         match self {
             GeminiTier::Free => Some(10),        // Free tier: 10 RPM (Flash 2.0)
@@ -28,6 +29,7 @@ impl Tier for GeminiTier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn tpm(&self) -> Option<u64> {
         match self {
             GeminiTier::Free => Some(250_000), // 250K tokens/min (Flash 2.0)
@@ -35,6 +37,7 @@ impl Tier for GeminiTier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn rpd(&self) -> Option<u32> {
         match self {
             GeminiTier::Free => Some(250),  // 250 requests/day (Flash 2.0)
@@ -42,10 +45,12 @@ impl Tier for GeminiTier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn max_concurrent(&self) -> Option<u32> {
         Some(1) // Both tiers: 1 concurrent request
     }
 
+    #[tracing::instrument(skip(self))]
     fn cost_per_million_input_tokens(&self) -> Option<f64> {
         match self {
             GeminiTier::Free => Some(0.0),
@@ -53,6 +58,7 @@ impl Tier for GeminiTier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn cost_per_million_output_tokens(&self) -> Option<f64> {
         match self {
             GeminiTier::Free => Some(0.0),
@@ -60,10 +66,12 @@ impl Tier for GeminiTier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn daily_quota_usd(&self) -> Option<f64> {
         None // No hard USD quota
     }
 
+    #[tracing::instrument(skip(self))]
     fn name(&self) -> &str {
         match self {
             GeminiTier::Free => "Free",
@@ -91,6 +99,7 @@ pub enum AnthropicTier {
 
 #[cfg(feature = "anthropic")]
 impl Tier for AnthropicTier {
+    #[tracing::instrument(skip(self))]
     fn rpm(&self) -> Option<u32> {
         match self {
             AnthropicTier::Tier1 => Some(5),
@@ -100,6 +109,7 @@ impl Tier for AnthropicTier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn tpm(&self) -> Option<u64> {
         match self {
             AnthropicTier::Tier1 => Some(20_000),
@@ -109,26 +119,32 @@ impl Tier for AnthropicTier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn rpd(&self) -> Option<u32> {
         None // No daily limit, monthly budget instead
     }
 
+    #[tracing::instrument(skip(self))]
     fn max_concurrent(&self) -> Option<u32> {
         Some(5) // All tiers
     }
 
+    #[tracing::instrument(skip(self))]
     fn cost_per_million_input_tokens(&self) -> Option<f64> {
         Some(3.0) // Claude 3.5 Sonnet (varies by model)
     }
 
+    #[tracing::instrument(skip(self))]
     fn cost_per_million_output_tokens(&self) -> Option<f64> {
         Some(15.0)
     }
 
+    #[tracing::instrument(skip(self))]
     fn daily_quota_usd(&self) -> Option<f64> {
         None // Monthly budget, not daily
     }
 
+    #[tracing::instrument(skip(self))]
     fn name(&self) -> &str {
         match self {
             AnthropicTier::Tier1 => "Tier 1",
@@ -160,6 +176,7 @@ pub enum OpenAITier {
 }
 
 impl Tier for OpenAITier {
+    #[tracing::instrument(skip(self))]
     fn rpm(&self) -> Option<u32> {
         match self {
             OpenAITier::Free => Some(3),
@@ -171,6 +188,7 @@ impl Tier for OpenAITier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn tpm(&self) -> Option<u64> {
         match self {
             OpenAITier::Free => Some(40_000),
@@ -182,6 +200,7 @@ impl Tier for OpenAITier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn rpd(&self) -> Option<u32> {
         match self {
             OpenAITier::Free => Some(200),
@@ -189,22 +208,28 @@ impl Tier for OpenAITier {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     fn max_concurrent(&self) -> Option<u32> {
         Some(50) // Batch queue limit
     }
 
+    #[tracing::instrument(skip(self))]
     fn cost_per_million_input_tokens(&self) -> Option<f64> {
         Some(2.50) // GPT-4 Turbo (varies by model)
     }
 
+    #[tracing::instrument(skip(self))]
     fn cost_per_million_output_tokens(&self) -> Option<f64> {
         Some(10.0)
     }
 
+    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self))]
     fn daily_quota_usd(&self) -> Option<f64> {
         None
     }
 
+    #[tracing::instrument(skip(self))]
     fn name(&self) -> &str {
         match self {
             OpenAITier::Free => "Free",

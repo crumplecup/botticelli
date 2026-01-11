@@ -159,6 +159,7 @@ impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
     /// // Limit to 3 retries with 1s initial backoff
     /// let limiter = RateLimiter::new_with_retry(GeminiTier::Free, false, Some(3), Some(1000));
     /// ```
+    #[tracing::instrument(skip(tier), fields(tier = ?tier))]
     pub fn new_with_retry(
         tier: T,
         no_retry: bool,
@@ -185,6 +186,7 @@ impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
     /// let client_ref = limiter.inner();
     /// // Use client_ref to make API calls
     /// ```
+    #[tracing::instrument(skip(self))]
     pub fn inner(&self) -> &T {
         &self.inner
     }
@@ -335,6 +337,7 @@ impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
     ///     client.generate(&request).await
     /// }).await?;
     /// ```
+    #[tracing::instrument(skip(self, operation))]
     pub async fn execute<F, Fut, R, E>(&self, estimated_tokens: u64, operation: F) -> Result<R, E>
     where
         F: Fn() -> Fut,
