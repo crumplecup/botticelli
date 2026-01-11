@@ -26,6 +26,9 @@ use futures_util::StreamExt;
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
 async fn test_gemini_client_routes_to_live_api() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing GeminiClient routes to Live API");
+    
     // Load environment variables
     let _ = dotenvy::dotenv();
 
@@ -45,19 +48,24 @@ async fn test_gemini_client_routes_to_live_api() -> anyhow::Result<()> {
         .build()?;
 
     // Call generate - should route to Live API
+    tracing::debug!(model = "models/gemini-2.0-flash-exp", "Calling generate (should route to Live API)");
     let response = client.generate(&request).await?;
 
     // Verify we got a response
     assert!(!response.outputs().is_empty());
+    tracing::debug!(output_count = response.outputs().len(), "Received response");
     println!("Live API response: {:?}", response.outputs());
 
-    tracing::info!("Test Gemini Client Routes To Live Api test passed");
+    tracing::info!("GeminiClient routes to Live API test passed");
     Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
 async fn test_gemini_client_streaming_routes_to_live_api() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing GeminiClient streaming routes to Live API");
+    
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -75,6 +83,7 @@ async fn test_gemini_client_streaming_routes_to_live_api() -> anyhow::Result<()>
         .build()?;
 
     // Call generate_stream - should route to Live API
+    tracing::debug!(model = "models/gemini-2.0-flash-exp", "Calling generate_stream (should route to Live API)");
     let mut stream = client.generate_stream(&request).await?;
 
     let mut chunks = Vec::new();
@@ -87,25 +96,30 @@ async fn test_gemini_client_streaming_routes_to_live_api() -> anyhow::Result<()>
 
         if *chunk.is_final() {
             found_final = true;
+            tracing::debug!("Received final chunk");
             break;
         }
     }
 
     // Verify we got chunks
     assert!(!chunks.is_empty(), "Should receive at least one chunk");
+    tracing::debug!(chunk_count = chunks.len(), "Received chunks");
 
     // Verify we got a final chunk
     assert!(found_final, "Should receive final chunk with is_final=true");
 
     println!("Total chunks received: {}", chunks.len());
 
-    tracing::info!("Test Gemini Client Streaming Routes To Live Api test passed");
+    tracing::info!("GeminiClient streaming routes to Live API test passed");
     Ok(())
 }
 
 #[tokio::test]
 #[ignore = "TODO: Fix WebSocket handshake failure"]
 async fn test_gemini_client_detects_live_models() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing GeminiClient detects live models");
+    
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -122,8 +136,10 @@ async fn test_gemini_client_detects_live_models() -> anyhow::Result<()> {
         .max_tokens(5u32)
         .build()?;
 
+    tracing::debug!(model = "models/gemini-2.0-flash-exp", "Testing -exp model (should route to Live API)");
     let response_exp = client.generate(&request_exp).await?;
     assert!(!response_exp.outputs().is_empty());
+    tracing::debug!("-exp model routed correctly");
 
     // Test with "-live" model (should use Live API)
     // Note: This may fail if the model doesn't exist, but it tests the routing logic
@@ -139,9 +155,13 @@ async fn test_gemini_client_detects_live_models() -> anyhow::Result<()> {
         .build()?;
 
     // This might fail if the model doesn't exist, so we just verify it attempts to use Live API
-    let _ = client.generate(&request_live).await;
+    tracing::debug!(model = "models/gemini-2.0-flash-live", "Testing -live model (should route to Live API)");
+    let result = client.generate(&request_live).await;
     // We don't assert success here because the model might not exist
+    if result.is_err() {
+        tracing::debug!("-live model may not exist, but routing attempted");
+    }
 
-    tracing::info!("Test Gemini Client Detects Live Models test passed");
+    tracing::info!("GeminiClient detects live models test passed");
     Ok(())
 }
