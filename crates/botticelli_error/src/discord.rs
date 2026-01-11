@@ -9,6 +9,19 @@ use std::sync::Arc;
 /// Result type for Discord operations.
 pub type DiscordErrorResult<T> = Result<T, DiscordError>;
 
+/// Error severity level for Discord event processing.
+///
+/// Used to determine whether event processing should abort or continue.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DiscordErrorSeverity {
+    /// Critical error - abort event processing immediately
+    Critical,
+    /// Non-critical - log and continue with other entities
+    Warning,
+    /// Informational - entity already processed or skipped
+    Info,
+}
+
 /// Discord error variants.
 ///
 /// Represents different error conditions that can occur during Discord operations.
@@ -114,6 +127,70 @@ impl DiscordError {
         Self::new(DiscordErrorKind::ConnectionFailedWithSource {
             source: Arc::new(error),
         })
+    }
+
+    /// Get the severity level for this error.
+    ///
+    /// Used to determine whether event processing should abort or continue.
+    pub fn severity(&self) -> DiscordErrorSeverity {
+        use DiscordErrorKind::*;
+        use DiscordErrorSeverity::*;
+
+        match self.kind() {
+            // Critical errors - can't continue processing
+            ConnectionFailed(_) | ConnectionFailedWithSource { .. } => Critical,
+            InvalidToken => Critical,
+            DatabaseError(_) => Critical,
+            DataConversionError(_) => Critical,
+            ConfigurationError(_) => Critical,
+
+            // Warnings - log and continue
+            GuildNotFound(_) => Warning,
+            ChannelNotFound(_) => Warning,
+            UserNotFound(_) => Warning,
+            RoleNotFound(_) => Warning,
+            MessageSendFailed(_) => Warning,
+            InteractionFailed(_) => Warning,
+            InvalidId(_) => Warning,
+
+            // Info - expected conditions
+            SerenityError(_) => Info,
+            InsufficientPermissions(_) => Info,
+        }
+    }
+
+    /// Check if this error is retryable.
+    ///
+    /// Used for retry logic and circuit breakers.
+    pub fn is_retryable(&self) -> bool {
+        use DiscordErrorKind::*;
+
+        match self.kind() {
+            // Network/transient errors - retryable
+            ConnectionFailed(_) | ConnectionFailedWithSource { .. } => true,
+            SerenityError(_) => true, // May be rate limit
+            DatabaseError(_) => true, // May be temporary lock
+
+            // Permanent errors - not retryable
+            InvalidToken => false,
+            DataConversionError(_) => false,
+            GuildNotFound(_) => false,
+            ChannelNotFound(_) => false,
+            UserNotFound(_) => false,
+            RoleNotFound(_) => false,
+            InvalidId(_) => false,
+            InsufficientPermissions(_) => false,
+            MessageSendFailed(_) => false,
+            InteractionFailed(_) => false,
+            ConfigurationError(_) => false,
+        }
+    }
+
+    /// Get human-readable context for logging.
+    ///
+    /// Returns formatted string with error details and source location.
+    pub fn error_context(&self) -> String {
+        format!("{} at {}:{}", self.kind, self.file, self.line)
     }
 }
 

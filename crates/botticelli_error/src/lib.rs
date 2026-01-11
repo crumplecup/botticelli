@@ -70,7 +70,9 @@ pub use chat::{ChatError, ChatErrorKind, ChatResult};
 pub use config::ConfigError;
 #[cfg(feature = "database")]
 pub use database::{DatabaseError, DatabaseErrorKind, DieselConnectionError, DieselError};
-pub use discord::{DiscordError, DiscordErrorKind, DiscordErrorResult, DiscordResult};
+pub use discord::{
+    DiscordError, DiscordErrorKind, DiscordErrorResult, DiscordErrorSeverity, DiscordResult,
+};
 pub use env::{EnvError, EnvErrorKind};
 pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};
 pub use gemini::{GeminiError, GeminiErrorKind};
