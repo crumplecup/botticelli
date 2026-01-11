@@ -14,7 +14,6 @@ mod execute_act;
 mod execute_narrative;
 mod generate;
 mod generate_llm;
-mod generate_with_backend;
 mod get_narrative_state;
 mod metrics;
 mod modify_narrative;
@@ -53,14 +52,6 @@ pub use elicitation::{
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;
-#[cfg(feature = "groq")]
-#[cfg(any())] // Disabled - see generate_with_backend.rs
-pub use generate_with_backend::GroqBackendFactory;
-#[cfg(any())] // Disabled - see generate_with_backend.rs
-pub use generate_with_backend::{
-    BackendFactory, GenerateWithBackendRequest, GenerateWithBackendResponse,
-    GenerateWithBackendTool,
-};
 pub use get_narrative_state::GetNarrativeStateTool;
 pub use metrics::{ActMetrics, ExecutionMetrics};
 // ModifyNarrativeTool migrated to rmcp (modify_narrative method in rmcp_server)
