@@ -112,57 +112,100 @@ impl ExecuteActTool {
         }
     }
 
-    /// Select the appropriate driver based on model prefix.
-    fn select_driver(&self, model: &str) -> Result<Arc<dyn BotticelliDriver>, McpError> {
-        #[cfg(feature = "gemini")]
-        if model.starts_with("gemini") || model.starts_with("models/gemini") {
-            return self
-                .gemini_driver
-                .clone()
-                .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("Gemini"));
+}
+
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "ollama",
+    feature = "huggingface",
+    feature = "groq"
+))]
+impl ExecuteActTool {
+    /// Generic helper to execute with any BotticelliDriver implementation.
+    async fn execute_with_driver<D>(
+        &self,
+        driver: D,
+        prompt: &str,
+        model: &str,
+        max_tokens: u32,
+        temperature: f64,
+        system_prompt: Option<&str>,
+    ) -> McpResult<Value>
+    where
+        D: botticelli_interface::BotticelliDriver<
+            Request = botticelli_core::GenerateRequest,
+            Response = botticelli_core::GenerateResponse,
+        >,
+    {
+        use botticelli_core::{GenerateRequest, Input, MessageBuilder, Output, Role};
+
+        // Build messages
+        let mut messages = Vec::new();
+
+        if let Some(sys) = system_prompt {
+            messages.push(
+                MessageBuilder::default()
+                    .role(Role::System)
+                    .content(vec![Input::Text(sys.to_string())])
+                    .build()
+                    .map_err(|e| {
+                        error!(error = ?e, "Failed to build system message");
+                        McpError::execution_failed(format!("Failed to build system message: {}", e))
+                    })?,
+            );
         }
 
-        #[cfg(feature = "anthropic")]
-        if model.starts_with("claude") {
-            return self
-                .anthropic_driver
-                .clone()
-                .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("Anthropic"));
-        }
+        messages.push(
+            MessageBuilder::default()
+                .role(Role::User)
+                .content(vec![Input::Text(prompt.to_string())])
+                .build()
+                .map_err(|e| {
+                    error!(error = ?e, "Failed to build user message");
+                    McpError::execution_failed(format!("Failed to build user message: {}", e))
+                })?,
+        );
 
-        #[cfg(feature = "ollama")]
-        if model.starts_with("llama")
-            || model.starts_with("mistral")
-            || model.starts_with("codellama")
-        {
-            return self
-                .ollama_driver
-                .clone()
-                .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("Ollama"));
-        }
+        // Build request
+        let request = GenerateRequest::builder()
+            .model(model.to_string())
+            .messages(messages)
+            .max_tokens(max_tokens as usize)
+            .temperature(temperature)
+            .build()
+            .map_err(|e| {
+                error!(error = ?e, "Failed to build request");
+                McpError::execution_failed(format!("Failed to build request: {}", e))
+            })?;
 
-        #[cfg(feature = "huggingface")]
-        if model.contains("huggingface") || model.contains("/") {
-            return self
-                .huggingface_driver
-                .clone()
-                .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("HuggingFace"));
-        }
+        // Execute
+        let response = driver.generate(&request).await.map_err(|e| {
+            error!(error = ?e, "Failed to execute act");
+            McpError::execution_failed(format!("LLM execution failed: {}", e))
+        })?;
 
-        #[cfg(feature = "groq")]
-        if model.contains("groq") {
-            return self
-                .groq_driver
-                .clone()
-                .map(|driver| driver as Arc<dyn BotticelliDriver>)
-                .ok_or_else(|| McpError::backend_unavailable("Groq"));
-        }
+        // Extract text from outputs
+        let text = response
+            .outputs()
+            .iter()
+            .filter_map(|output| {
+                if let Output::Text(t) = output {
+                    Some(t.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
 
-        Err(McpError::unsupported_model(model.to_string()))
+        debug!(response_len = text.len(), "Act executed successfully");
+
+        Ok(json!({
+            "success": true,
+            "response": text,
+            "model": model
+        }))
     }
 }
 
@@ -290,81 +333,53 @@ impl McpTool for ExecuteActTool {
             "Executing act"
         );
 
-        // Select driver
-        let driver = self.select_driver(model)?;
-
-        // Build messages
-        let mut messages = Vec::new();
-
-        if let Some(sys) = system_prompt {
-            messages.push(
-                MessageBuilder::default()
-                    .role(Role::System)
-                    .content(vec![Input::Text(sys.to_string())])
-                    .build()
-                    .map_err(|e| {
-                        error!(error = ?e, "Failed to build system message");
-                        McpError::execution_failed(format!("Failed to build system message: {}", e))
-                    })?,
-            );
-        }
-
-        messages.push(
-            MessageBuilder::default()
-                .role(Role::User)
-                .content(vec![Input::Text(prompt.to_string())])
-                .build()
-                .map_err(|e| {
-                    error!(error = ?e, "Failed to build user message");
-                    McpError::execution_failed(format!("Failed to build user message: {}", e))
-                })?,
-        );
-
-        // Build request
-        let request = GenerateRequest::builder()
-            .model(Some(model.to_string()))
-            .messages(messages)
-            .max_tokens(Some(max_tokens))
-            .temperature(Some(temperature as f32))
-            .build()
-            .map_err(|e| {
-                error!(error = ?e, "Failed to build request");
-                McpError::execution_failed(format!("Failed to build request: {}", e))
-            })?;
-
-        // Execute
-        match driver.generate(&request).await {
-            Ok(response) => {
-                // Extract text from outputs
-                let text = response
-                    .outputs()
-                    .iter()
-                    .filter_map(|output| {
-                        if let Output::Text(t) = output {
-                            Some(t.as_str())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\n");
-
-                debug!(response_len = text.len(), "Act executed successfully");
-
-                Ok(json!({
-                    "success": true,
-                    "response": text,
-                    "model": model
-                }))
-            }
-            Err(e) => {
-                error!(error = ?e, "Failed to execute act");
-                Err(McpError::execution_failed(format!(
-                    "LLM execution failed: {}",
-                    e
-                )))
+        // Dispatch to appropriate driver based on model prefix
+        #[cfg(feature = "gemini")]
+        if model.starts_with("gemini") || model.starts_with("models/gemini") {
+            if let Some(driver) = self.gemini_driver.clone() {
+                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+            } else {
+                return Err(McpError::backend_unavailable("Gemini"));
             }
         }
+
+        #[cfg(feature = "anthropic")]
+        if model.starts_with("claude") {
+            if let Some(driver) = self.anthropic_driver.clone() {
+                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+            } else {
+                return Err(McpError::backend_unavailable("Anthropic"));
+            }
+        }
+
+        #[cfg(feature = "ollama")]
+        if model.starts_with("llama") || model.starts_with("mistral") || model.starts_with("codellama") {
+            if let Some(driver) = self.ollama_driver.clone() {
+                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+            } else {
+                return Err(McpError::backend_unavailable("Ollama"));
+            }
+        }
+
+        #[cfg(feature = "huggingface")]
+        if model.contains("huggingface") || model.contains("/") {
+            if let Some(driver) = self.huggingface_driver.clone() {
+                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+            } else {
+                return Err(McpError::backend_unavailable("HuggingFace"));
+            }
+        }
+
+        #[cfg(feature = "groq")]
+        if model.contains("groq") {
+            if let Some(driver) = self.groq_driver.clone() {
+                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+            } else {
+                return Err(McpError::backend_unavailable("Groq"));
+            }
+        }
+
+        Err(McpError::unsupported_model(model.to_string()))
     }
 }
 

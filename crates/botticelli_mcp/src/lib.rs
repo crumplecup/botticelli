@@ -49,15 +49,10 @@ mod rmcp_server;
 mod save_narrative;
 mod scene;
 mod session_tools;
-// Legacy modules - to be migrated or removed
-// mod server;
 mod server_info;
 pub mod tools;
 mod transport;
 mod validate_narrative;
-
-#[cfg(feature = "http")]
-pub mod http;
 
 pub use conversation::{Attachment, ConversationSession, ConversationTurn, SessionState};
 pub use create_narrative::{CreateNarrativeParams, CreateNarrativeResult};
@@ -105,8 +100,6 @@ pub use validate_narrative::{
     ValidateNarrativeParams, ValidateNarrativeResult, ValidationError, ValidationLocation,
     ValidationWarning,
 };
-// Legacy exports - commented out during rmcp migration
-// pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use server_info::ServerInfoResult;
 pub use tools::{
     Act, ActMetrics, EchoTool, ElicitActInput, ElicitActTool, ElicitMetadataInput,
@@ -116,14 +109,6 @@ pub use tools::{
     SamplingError, SamplingErrorKind, SamplingHelper, SamplingResult, ServerInfoTool,
     StartNarrativeInput, StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
-// Narrative generation tools migrated to rmcp:
-// - CreateNarrativeTool → see CreateNarrativeParams/Result and rmcp_server::create_narrative
-// - ModifyNarrativeTool → see ModifyNarrativeParams/Result and rmcp_server::modify_narrative
-// - SaveNarrativeTool → see SaveNarrativeParams/Result and rmcp_server::save_narrative
-// Legacy transport exports - commented out during rmcp migration
-// pub use transport::{
-//     HttpTransport, InProcServerHandle, InProcTransport, McpTransport, McpTransportError,
-// };
 
 #[cfg(feature = "discord")]
 pub use tools::{

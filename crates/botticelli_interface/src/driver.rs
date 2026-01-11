@@ -1,5 +1,6 @@
 //! Core driver trait definition.
 
+use crate::Tier;
 use async_trait::async_trait;
 
 /// Core trait that all LLM backends must implement.
@@ -18,7 +19,7 @@ pub trait BotticelliDriver: Send + Sync {
     type Error: std::error::Error + Send + Sync + 'static;
 
     /// Rate limit configuration type.
-    type RateLimitConfig: Send + Sync;
+    type RateLimitConfig: Tier + std::fmt::Debug + Clone + Send + Sync;
 
     /// Capabilities type for runtime feature discovery.
     type Capabilities: Send + Sync;

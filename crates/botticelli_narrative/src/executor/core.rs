@@ -45,7 +45,6 @@ where
     D: BotticelliDriver<
             Request = GenerateRequest,
             Response = botticelli_core::GenerateResponse,
-            RateLimitConfig = TierConfig,
         >,
     BE: std::error::Error + Send + Sync + 'static,
 {
@@ -62,7 +61,6 @@ where
     D: BotticelliDriver<
             Request = GenerateRequest,
             Response = botticelli_core::GenerateResponse,
-            RateLimitConfig = TierConfig,
         >,
     BE: std::error::Error + Send + Sync + 'static,
 {
@@ -438,9 +436,7 @@ where
         );
 
         // Create carousel state with budget
-        let rate_limit_config =
-            botticelli_rate_limit::RateLimitConfig::from_tier(self.driver.rate_limits());
-        let mut state = CarouselState::new(carousel_config.clone(), rate_limit_config);
+        let mut state = CarouselState::new(carousel_config.clone(), self.driver.rate_limits().clone());
 
         let mut executions = Vec::new();
 

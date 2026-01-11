@@ -13,7 +13,6 @@ where
     D: BotticelliDriver<
             Request = botticelli_core::GenerateRequest,
             Response = botticelli_core::GenerateResponse,
-            RateLimitConfig = TierConfig,
         >,
     BE: std::error::Error + Send + Sync + 'static,
 {

@@ -114,12 +114,18 @@ impl ExecuteNarrativeTool {
     }
 
     #[instrument(skip(self, driver), fields(file_path, narrative_name))]
-    async fn execute_with_driver<D: BotticelliDriver + Clone>(
+    async fn execute_with_driver<D>(
         &self,
         driver: D,
         file_path: &str,
         narrative_name: &str,
-    ) -> McpResult<Value> {
+    ) -> McpResult<Value>
+    where
+        D: BotticelliDriver<
+            Request = botticelli_core::GenerateRequest,
+            Response = botticelli_core::GenerateResponse,
+        > + Clone,
+    {
         debug!("Starting narrative execution");
         let executor = NarrativeExecutor::new(driver);
 

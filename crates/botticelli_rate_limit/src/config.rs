@@ -487,3 +487,42 @@ impl BotticelliConfig {
         Some(tier_config)
     }
 }
+
+/// Implement Tier trait for RateLimitConfig to enable generic budget tracking.
+impl botticelli_interface::Tier for RateLimitConfig {
+    fn rpm(&self) -> Option<u32> {
+        Some(self.requests_per_minute as u32)
+    }
+
+    fn tpm(&self) -> Option<u64> {
+        Some(self.tokens_per_minute)
+    }
+
+    fn rpd(&self) -> Option<u32> {
+        Some(self.requests_per_day as u32)
+    }
+
+    fn tpd(&self) -> Option<u64> {
+        Some(self.tokens_per_day)
+    }
+
+    fn max_concurrent(&self) -> Option<u32> {
+        None // RateLimitConfig doesn't track concurrent requests
+    }
+
+    fn daily_quota_usd(&self) -> Option<f64> {
+        None
+    }
+
+    fn cost_per_million_input_tokens(&self) -> Option<f64> {
+        None
+    }
+
+    fn cost_per_million_output_tokens(&self) -> Option<f64> {
+        None
+    }
+
+    fn name(&self) -> &str {
+        "Custom"
+    }
+}

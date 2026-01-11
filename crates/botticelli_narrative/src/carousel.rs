@@ -60,12 +60,12 @@ impl CarouselConfig {
 ///
 /// Tracks progress through carousel iterations and manages the budget.
 #[derive(Debug, Getters)]
-pub struct CarouselState {
+pub struct CarouselState<T: botticelli_interface::Tier + std::fmt::Debug> {
     /// Carousel configuration
     config: CarouselConfig,
 
     /// Budget tracker
-    budget: Budget,
+    budget: Budget<T>,
 
     /// Current iteration number (1-indexed)
     current_iteration: u32,
@@ -83,10 +83,10 @@ pub struct CarouselState {
     budget_exhausted: bool,
 }
 
-impl CarouselState {
+impl<T: botticelli_interface::Tier + std::fmt::Debug> CarouselState<T> {
     /// Creates a new carousel state with the given configuration and budget.
     #[tracing::instrument(skip(rate_limits), fields(iterations = config.iterations, estimated_tokens = config.estimated_tokens_per_iteration))]
-    pub fn new(config: CarouselConfig, rate_limits: RateLimitConfig) -> Self {
+    pub fn new(config: CarouselConfig, rate_limits: T) -> Self {
         tracing::debug!(
             iterations = config.iterations,
             estimated_tokens = config.estimated_tokens_per_iteration,
@@ -105,7 +105,7 @@ impl CarouselState {
     }
 
     /// Gets mutable access to the budget.
-    pub fn budget_mut(&mut self) -> &mut Budget {
+    pub fn budget_mut(&mut self) -> &mut Budget<T> {
         &mut self.budget
     }
 
@@ -213,7 +213,7 @@ pub struct CarouselResult {
     budget_exhausted: bool,
 }
 
-impl From<&CarouselState> for CarouselResult {
+impl<T: botticelli_interface::Tier + std::fmt::Debug> From<&CarouselState<T>> for CarouselResult {
     #[tracing::instrument(skip(state), fields(
         iterations_attempted = state.current_iteration(),
         successful = state.successful_iterations(),
@@ -221,7 +221,7 @@ impl From<&CarouselState> for CarouselResult {
         completed = state.completed(),
         budget_exhausted = state.budget_exhausted()
     ))]
-    fn from(state: &CarouselState) -> Self {
+    fn from(state: &CarouselState<T>) -> Self {
         tracing::debug!(
             iterations_attempted = state.current_iteration(),
             successful = state.successful_iterations(),

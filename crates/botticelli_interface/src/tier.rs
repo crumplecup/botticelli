@@ -42,6 +42,15 @@ pub trait Tier: Send + Sync {
     /// Returns `None` if there is no daily request limit.
     fn rpd(&self) -> Option<u32>;
 
+    /// Tokens per day limit.
+    ///
+    /// Returns `None` if there is no daily token limit.
+    /// 
+    /// Default implementation estimates from TPM * 1440 (minutes per day).
+    fn tpd(&self) -> Option<u64> {
+        self.tpm().map(|tpm| tpm * 1440)
+    }
+
     /// Maximum concurrent requests.
     ///
     /// Returns `None` if there is no concurrent request limit.

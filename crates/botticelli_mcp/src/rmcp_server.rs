@@ -59,7 +59,7 @@ pub struct BotticelliServer {
     tool_router: ToolRouter<Self>,
 
     #[cfg(feature = "database")]
-    db_ops: Option<Arc<dyn DatabaseRegistryOperations>>,
+    db_ops: Option<Arc<dyn DatabaseRegistryOperations<Error = botticelli_error::BotticelliError>>>,
 
     dialog: Option<Arc<DialogResource>>,
 
@@ -110,7 +110,7 @@ impl BotticelliServer {
 #[derive(Clone, Default)]
 pub struct BotticelliServerBuilder {
     #[cfg(feature = "database")]
-    db_ops: Option<Arc<dyn DatabaseRegistryOperations>>,
+    db_ops: Option<Arc<dyn DatabaseRegistryOperations<Error = botticelli_error::BotticelliError>>>,
 
     dialog: Option<Arc<DialogResource>>,
 
@@ -145,7 +145,7 @@ impl BotticelliServerBuilder {
     ///
     /// The builder for method chaining.
     #[cfg(feature = "database")]
-    pub fn database(mut self, db: Arc<dyn DatabaseRegistryOperations>) -> Self {
+    pub fn database(mut self, db: Arc<dyn DatabaseRegistryOperations<Error = botticelli_error::BotticelliError>>) -> Self {
         self.db_ops = Some(db);
         self
     }
@@ -283,122 +283,6 @@ impl BotticelliServerBuilder {
 }
 
 impl BotticelliServer {
-    /// Select the appropriate LLM driver based on model prefix.
-    ///
-    /// # Arguments
-    ///
-    /// * `model` - Model identifier (e.g., "gemini-2.0-flash", "claude-3-5-sonnet")
-    ///
-    /// # Returns
-    ///
-    /// Arc to trait object implementing BotticelliDriver.
-    ///
-    /// # Errors
-    ///
-    /// Returns error if no matching driver is configured or available.
-    #[cfg(any(
-        feature = "gemini",
-        feature = "anthropic",
-        feature = "ollama",
-        feature = "huggingface",
-        feature = "groq"
-    ))]
-    fn select_driver(
-        &self,
-        model: &str,
-    ) -> Result<Arc<dyn botticelli_interface::BotticelliDriver>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
-        #[cfg(feature = "gemini")]
-        if model.starts_with("gemini") || model.starts_with("models/gemini") {
-            return self
-                .gemini_driver
-                .as_ref()
-                .cloned()
-                .map(|driver| driver as Arc<dyn botticelli_interface::BotticelliDriver>)
-                .ok_or_else(|| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Borrowed("Gemini driver not configured"),
-                        None,
-                    )
-                });
-        }
-
-        #[cfg(feature = "anthropic")]
-        if model.starts_with("claude") {
-            return self
-                .anthropic_driver
-                .as_ref()
-                .cloned()
-                .map(|driver| driver as Arc<dyn botticelli_interface::BotticelliDriver>)
-                .ok_or_else(|| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Borrowed("Anthropic driver not configured"),
-                        None,
-                    )
-                });
-        }
-
-        #[cfg(feature = "ollama")]
-        if model.starts_with("llama")
-            || model.starts_with("mistral")
-            || model.starts_with("codellama")
-        {
-            return self
-                .ollama_driver
-                .as_ref()
-                .cloned()
-                .map(|driver| driver as Arc<dyn botticelli_interface::BotticelliDriver>)
-                .ok_or_else(|| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Borrowed("Ollama driver not configured"),
-                        None,
-                    )
-                });
-        }
-
-        #[cfg(feature = "huggingface")]
-        if model.contains("huggingface") {
-            return self
-                .huggingface_driver
-                .as_ref()
-                .cloned()
-                .map(|driver| driver as Arc<dyn botticelli_interface::BotticelliDriver>)
-                .ok_or_else(|| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Borrowed("HuggingFace driver not configured"),
-                        None,
-                    )
-                });
-        }
-
-        #[cfg(feature = "groq")]
-        if model.contains("groq") {
-            return self
-                .groq_driver
-                .as_ref()
-                .cloned()
-                .map(|driver| driver as Arc<dyn botticelli_interface::BotticelliDriver>)
-                .ok_or_else(|| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Borrowed("Groq driver not configured"),
-                        None,
-                    )
-                });
-        }
-
-        Err(rmcp::ErrorData::new(
-            ErrorCode::INVALID_PARAMS,
-            Cow::Owned(format!("No driver available for model: {}", model)),
-            None,
-        ))
-    }
 }
 
 #[tool_router]
@@ -1418,83 +1302,80 @@ impl BotticelliServer {
             feature = "groq"
         ))]
         {
-            use botticelli_core::{GenerateRequest, Input, MessageBuilder, Role};
-            use botticelli_interface::BotticelliDriver;
+            use rmcp::model::ErrorCode;
+            use std::borrow::Cow;
 
-            // Select driver based on model
-            let driver = self.select_driver(&model)?;
-
-            // Build request
-            let mut messages = Vec::new();
-
-            if let Some(sys_prompt) = system_prompt {
-                messages.push(
-                    MessageBuilder::default()
-                        .role(Role::System)
-                        .content(vec![Input::Text(sys_prompt)])
-                        .build()
-                        .map_err(|e| {
-                            rmcp::ErrorData::new(
-                                ErrorCode::INTERNAL_ERROR,
-                                Cow::Owned(format!("Failed to build system message: {}", e)),
-                                None,
-                            )
-                        })?,
-                );
+            // Dispatch to appropriate driver based on model prefix
+            #[cfg(feature = "gemini")]
+            if model.starts_with("gemini") || model.starts_with("models/gemini") {
+                if let Some(driver) = self.gemini_driver.clone() {
+                    return self.generate_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                } else {
+                    return Err(rmcp::ErrorData::new(
+                        ErrorCode::INTERNAL_ERROR,
+                        Cow::Borrowed("Gemini driver not configured"),
+                        None,
+                    ));
+                }
             }
 
-            messages.push(
-                MessageBuilder::default()
-                    .role(Role::User)
-                    .content(vec![Input::Text(prompt.clone())])
-                    .build()
-                    .map_err(|e| {
-                        rmcp::ErrorData::new(
-                            ErrorCode::INTERNAL_ERROR,
-                            Cow::Owned(format!("Failed to build user message: {}", e)),
-                            None,
-                        )
-                    })?,
-            );
-
-            let request = GenerateRequest::builder()
-                .messages(messages)
-                .max_tokens(Some(max_tokens as usize))
-                .temperature(Some(temperature as f64))
-                .build()
-                .map_err(|e| {
-                    rmcp::ErrorData::new(
+            #[cfg(feature = "anthropic")]
+            if model.starts_with("claude") {
+                if let Some(driver) = self.anthropic_driver.clone() {
+                    return self.generate_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                } else {
+                    return Err(rmcp::ErrorData::new(
                         ErrorCode::INTERNAL_ERROR,
-                        Cow::Owned(format!("Failed to build request: {}", e)),
+                        Cow::Borrowed("Anthropic driver not configured"),
                         None,
-                    )
-                })?;
+                    ));
+                }
+            }
 
-            // Execute generation
-            let response = driver.generate(&request).await.map_err(|e| {
-                tracing::error!(error = ?e, "LLM generation failed");
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Generation failed: {}", e)),
-                    None,
-                )
-            })?;
+            #[cfg(feature = "ollama")]
+            if model.starts_with("llama") || model.starts_with("mistral") || model.starts_with("codellama") {
+                if let Some(driver) = self.ollama_driver.clone() {
+                    return self.generate_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                } else {
+                    return Err(rmcp::ErrorData::new(
+                        ErrorCode::INTERNAL_ERROR,
+                        Cow::Borrowed("Ollama driver not configured"),
+                        None,
+                    ));
+                }
+            }
 
-            // Extract text from response
-            let text = response
-                .outputs()
-                .first()
-                .map(|output| match output {
-                    botticelli_core::Output::Text(t) => t.clone(),
-                    _ => format!("{:?}", output),
-                })
-                .unwrap_or_else(|| "No text generated".to_string());
+            #[cfg(feature = "huggingface")]
+            if model.contains("huggingface") {
+                if let Some(driver) = self.huggingface_driver.clone() {
+                    return self.generate_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                } else {
+                    return Err(rmcp::ErrorData::new(
+                        ErrorCode::INTERNAL_ERROR,
+                        Cow::Borrowed("HuggingFace driver not configured"),
+                        None,
+                    ));
+                }
+            }
 
-            let tokens_used = response.usage().map(|u| *u.total_tokens() as u32);
+            #[cfg(feature = "groq")]
+            if model.contains("groq") {
+                if let Some(driver) = self.groq_driver.clone() {
+                    return self.generate_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                } else {
+                    return Err(rmcp::ErrorData::new(
+                        ErrorCode::INTERNAL_ERROR,
+                        Cow::Borrowed("Groq driver not configured"),
+                        None,
+                    ));
+                }
+            }
 
-            debug!(response_len = text.len(), ?tokens_used, "Generated text");
-
-            Ok(Json(GenerateResult::new(text, model, tokens_used)))
+            return Err(rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("No driver available for model: {}", model)),
+                None,
+            ));
         }
 
         #[cfg(not(any(
@@ -1522,6 +1403,107 @@ impl BotticelliServer {
                 Some(max_tokens),
             )))
         }
+    }
+
+    /// Generic helper to execute generation with any BotticelliDriver implementation.
+    #[cfg(any(
+        feature = "gemini",
+        feature = "anthropic",
+        feature = "ollama",
+        feature = "huggingface",
+        feature = "groq"
+    ))]
+    async fn generate_with_driver<D>(
+        &self,
+        driver: D,
+        prompt: String,
+        model: String,
+        max_tokens: u32,
+        temperature: f32,
+        system_prompt: Option<String>,
+    ) -> Result<Json<GenerateResult>, rmcp::ErrorData>
+    where
+        D: botticelli_interface::BotticelliDriver<
+            Request = botticelli_core::GenerateRequest,
+            Response = botticelli_core::GenerateResponse,
+        >,
+    {
+        use botticelli_core::{GenerateRequest, Input, MessageBuilder, Role};
+        use botticelli_interface::BotticelliDriver;
+        use rmcp::model::ErrorCode;
+        use std::borrow::Cow;
+
+        // Build request
+        let mut messages = Vec::new();
+
+        if let Some(sys_prompt) = system_prompt {
+            messages.push(
+                MessageBuilder::default()
+                    .role(Role::System)
+                    .content(vec![Input::Text(sys_prompt)])
+                    .build()
+                    .map_err(|e| {
+                        rmcp::ErrorData::new(
+                            ErrorCode::INTERNAL_ERROR,
+                            Cow::Owned(format!("Failed to build system message: {}", e)),
+                            None,
+                        )
+                    })?,
+            );
+        }
+
+        messages.push(
+            MessageBuilder::default()
+                .role(Role::User)
+                .content(vec![Input::Text(prompt.clone())])
+                .build()
+                .map_err(|e| {
+                    rmcp::ErrorData::new(
+                        ErrorCode::INTERNAL_ERROR,
+                        Cow::Owned(format!("Failed to build user message: {}", e)),
+                        None,
+                    )
+                })?,
+        );
+
+        let request = GenerateRequest::builder()
+            .messages(messages)
+            .max_tokens(max_tokens as usize)
+            .temperature(temperature)
+            .build()
+            .map_err(|e| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Owned(format!("Failed to build request: {}", e)),
+                    None,
+                )
+            })?;
+
+        // Execute generation
+        let response = driver.generate(&request).await.map_err(|e| {
+            tracing::error!(error = ?e, "LLM generation failed");
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Generation failed: {}", e)),
+                None,
+            )
+        })?;
+
+        // Extract text from response
+        let text = response
+            .outputs()
+            .first()
+            .map(|output| match output {
+                botticelli_core::Output::Text(t) => t.clone(),
+                _ => format!("{:?}", output),
+            })
+            .unwrap_or_else(|| "No text generated".to_string());
+
+        let tokens_used = response.usage().map(|u| *u.total_tokens() as u32);
+
+        debug!(response_len = text.len(), ?tokens_used, "Generated text");
+
+        Ok(Json(GenerateResult::new(text, model, tokens_used)))
     }
 
     /// Execute a single narrative act with an LLM.

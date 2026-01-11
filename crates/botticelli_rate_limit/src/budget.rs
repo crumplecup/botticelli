@@ -1,7 +1,7 @@
 //! Budget tracking for carousel operations.
 
-use crate::RateLimitConfig;
 use botticelli_error::{RateLimitError, RateLimitErrorKind};
+use botticelli_interface::Tier;
 use derive_getters::Getters;
 use std::time::{Duration, Instant};
 
@@ -10,9 +10,9 @@ use std::time::{Duration, Instant};
 /// Tracks token and request consumption across rate limit windows
 /// to ensure carousel operations stay within configured limits.
 #[derive(Debug, Clone)]
-pub struct Budget {
+pub struct Budget<T: Tier + std::fmt::Debug> {
     /// Rate limit configuration
-    config: RateLimitConfig,
+    config: T,
 
     /// Tokens consumed in current minute
     tokens_per_minute: u64,
@@ -33,10 +33,10 @@ pub struct Budget {
     day_window_start: Instant,
 }
 
-impl Budget {
+impl<T: Tier + std::fmt::Debug> Budget<T> {
     /// Creates a new budget tracker with the given rate limits.
     #[tracing::instrument]
-    pub fn new(config: RateLimitConfig) -> Self {
+    pub fn new(config: T) -> Self {
         let now = Instant::now();
         Self {
             config,
@@ -51,7 +51,7 @@ impl Budget {
 
     /// Gets the rate limit configuration.
     #[tracing::instrument(skip(self))]
-    pub fn config(&self) -> &RateLimitConfig {
+    pub fn config(&self) -> &T {
         &self.config
     }
 
@@ -82,13 +82,21 @@ impl Budget {
     pub fn can_afford(&mut self, tokens: u64) -> bool {
         self.reset_windows();
 
-        // Check minute limits
-        let tokens_ok_minute = self.tokens_per_minute + tokens <= *self.config.tokens_per_minute();
-        let requests_ok_minute = self.requests_per_minute < *self.config.requests_per_minute();
+        // Check minute limits (None = unlimited)
+        let tokens_ok_minute = self.config.tpm().map_or(true, |limit| {
+            self.tokens_per_minute + tokens <= limit
+        });
+        let requests_ok_minute = self.config.rpm().map_or(true, |limit| {
+            self.requests_per_minute < limit as u64
+        });
 
-        // Check day limits
-        let tokens_ok_day = self.tokens_per_day + tokens <= *self.config.tokens_per_day();
-        let requests_ok_day = self.requests_per_day < *self.config.requests_per_day();
+        // Check day limits (None = unlimited)
+        let tokens_ok_day = self.config.tpd().map_or(true, |limit| {
+            self.tokens_per_day + tokens <= limit
+        });
+        let requests_ok_day = self.config.rpd().map_or(true, |limit| {
+            self.requests_per_day < limit as u64
+        });
 
         tokens_ok_minute && requests_ok_minute && tokens_ok_day && requests_ok_day
     }
@@ -105,20 +113,20 @@ impl Budget {
                 requested_tokens: tokens,
                 available_tokens_minute: self
                     .config
-                    .tokens_per_minute()
-                    .saturating_sub(self.tokens_per_minute),
+                    .tpm()
+                    .map_or(u64::MAX, |limit| limit.saturating_sub(self.tokens_per_minute)),
                 available_tokens_day: self
                     .config
-                    .tokens_per_day()
-                    .saturating_sub(self.tokens_per_day),
+                    .tpd()
+                    .map_or(u64::MAX, |limit| limit.saturating_sub(self.tokens_per_day)),
                 available_requests_minute: self
                     .config
-                    .requests_per_minute()
-                    .saturating_sub(self.requests_per_minute),
+                    .rpm()
+                    .map_or(u64::MAX, |limit| (limit as u64).saturating_sub(self.requests_per_minute)),
                 available_requests_day: self
                     .config
-                    .requests_per_day()
-                    .saturating_sub(self.requests_per_day),
+                    .rpd()
+                    .map_or(u64::MAX, |limit| (limit as u64).saturating_sub(self.requests_per_day)),
             }));
         }
 
@@ -146,20 +154,20 @@ impl Budget {
         BudgetRemaining {
             tokens_per_minute: self
                 .config
-                .tokens_per_minute()
-                .saturating_sub(self.tokens_per_minute),
+                .tpm()
+                .map_or(u64::MAX, |limit| limit.saturating_sub(self.tokens_per_minute)),
             tokens_per_day: self
                 .config
-                .tokens_per_day()
-                .saturating_sub(self.tokens_per_day),
+                .tpd()
+                .map_or(u64::MAX, |limit| limit.saturating_sub(self.tokens_per_day)),
             requests_per_minute: self
                 .config
-                .requests_per_minute()
-                .saturating_sub(self.requests_per_minute),
+                .rpm()
+                .map_or(u64::MAX, |limit| (limit as u64).saturating_sub(self.requests_per_minute)),
             requests_per_day: self
                 .config
-                .requests_per_day()
-                .saturating_sub(self.requests_per_day),
+                .rpd()
+                .map_or(u64::MAX, |limit| (limit as u64).saturating_sub(self.requests_per_day)),
         }
     }
 }
