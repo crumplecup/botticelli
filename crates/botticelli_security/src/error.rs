@@ -101,16 +101,25 @@ pub struct SecurityError {
 impl SecurityError {
     /// Create a new security error with location tracking.
     #[track_caller]
+    #[tracing::instrument(skip(kind), fields(kind = ?kind))]
     pub fn new(kind: SecurityErrorKind) -> Self {
         let location = std::panic::Location::caller();
-        Self {
+        let error = Self {
             kind,
             line: location.line(),
             file: location.file(),
-        }
+        };
+        tracing::error!(
+            error_kind = ?error.kind,
+            line = error.line,
+            file = error.file,
+            "Security error created"
+        );
+        error
     }
 
     /// Get the error kind.
+    #[tracing::instrument(skip(self))]
     pub fn kind(&self) -> &SecurityErrorKind {
         &self.kind
     }

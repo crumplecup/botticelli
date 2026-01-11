@@ -104,18 +104,24 @@ pub struct ContentFilter {
 
 impl ContentFilter {
     /// Create a new content filter with the given configuration.
+    #[tracing::instrument(skip(config), fields(
+        pattern_count = config.prohibited_patterns.len(),
+        max_length = config.max_length
+    ))]
     pub fn new(config: ContentFilterConfig) -> SecurityResult<Self> {
         let mut prohibited_regex = Vec::new();
         for pattern in &config.prohibited_patterns {
             match Regex::new(pattern) {
                 Ok(regex) => prohibited_regex.push(regex),
                 Err(e) => {
+                    tracing::error!(pattern = %pattern, error = %e, "Invalid regex pattern");
                     return Err(SecurityError::new(SecurityErrorKind::Configuration(
                         format!("Invalid regex pattern '{}': {}", pattern, e),
                     )));
                 }
             }
         }
+        tracing::debug!(pattern_count = prohibited_regex.len(), "Compiled prohibited patterns");
 
         // Regex for Discord mentions: <@123456789012345678> or <@!123456789012345678>
         let mention_regex = Regex::new(r"<@!?\d{17,19}>").expect("Valid mention regex");
@@ -123,6 +129,7 @@ impl ContentFilter {
         // Simple URL regex
         let url_regex = Regex::new(r"https?://[^\s]+").expect("Valid URL regex");
 
+        tracing::debug!("Content filter created successfully");
         Ok(Self {
             config,
             prohibited_regex,
@@ -225,6 +232,7 @@ impl ContentFilter {
     }
 
     /// Extract domain from URL.
+    #[tracing::instrument(skip(self), fields(url))]
     fn extract_domain<'a>(&self, url: &'a str) -> Option<&'a str> {
         // Remove protocol
         let without_protocol = url

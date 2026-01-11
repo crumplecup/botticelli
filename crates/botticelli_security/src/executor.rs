@@ -17,6 +17,7 @@ use tracing::{debug, info, instrument, warn};
 /// 5. Approval workflow - Check if approval required/granted
 ///
 /// After passing all checks, the command is executed and logged.
+#[derive(derive_getters::Getters)]
 pub struct SecureExecutor<V: CommandValidator> {
     permission_checker: PermissionChecker,
     validator: V,
@@ -27,6 +28,7 @@ pub struct SecureExecutor<V: CommandValidator> {
 
 impl<V: CommandValidator> SecureExecutor<V> {
     /// Create a new secure executor.
+    #[tracing::instrument(skip_all)]
     pub fn new(
         permission_checker: PermissionChecker,
         validator: V,
@@ -34,6 +36,7 @@ impl<V: CommandValidator> SecureExecutor<V> {
         rate_limiter: RateLimiter,
         approval_workflow: ApprovalWorkflow,
     ) -> Self {
+        tracing::debug!("Creating secure executor");
         Self {
             permission_checker,
             validator,
@@ -109,30 +112,5 @@ impl<V: CommandValidator> SecureExecutor<V> {
 
         info!("All security checks passed");
         Ok(None)
-    }
-
-    /// Get the permission checker.
-    pub fn permission_checker(&self) -> &PermissionChecker {
-        &self.permission_checker
-    }
-
-    /// Get the validator.
-    pub fn validator(&self) -> &V {
-        &self.validator
-    }
-
-    /// Get the content filter.
-    pub fn content_filter(&self) -> &ContentFilter {
-        &self.content_filter
-    }
-
-    /// Get the rate limiter.
-    pub fn rate_limiter(&mut self) -> &mut RateLimiter {
-        &mut self.rate_limiter
-    }
-
-    /// Get the approval workflow.
-    pub fn approval_workflow(&mut self) -> &mut ApprovalWorkflow {
-        &mut self.approval_workflow
     }
 }

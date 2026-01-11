@@ -15,11 +15,14 @@ pub struct ValidationError {
 
 impl ValidationError {
     /// Create a new validation error.
+    #[tracing::instrument(fields(field, reason))]
     pub fn new(field: impl Into<String>, reason: impl Into<String>) -> Self {
-        Self {
+        let error = Self {
             field: field.into(),
             reason: reason.into(),
-        }
+        };
+        tracing::debug!(field = %error.field, reason = %error.reason, "Validation error created");
+        error
     }
 }
 
@@ -34,23 +37,28 @@ pub struct DiscordValidator;
 
 impl DiscordValidator {
     /// Create a new Discord validator.
+    #[tracing::instrument]
     pub fn new() -> Self {
+        tracing::debug!("Creating Discord validator");
         Self
     }
 
     /// Validate a Discord snowflake ID.
+    #[tracing::instrument(skip(self), fields(value))]
     fn validate_snowflake(&self, value: &str) -> bool {
         // Discord snowflakes are 17-19 digit integers
         value.len() >= 17 && value.len() <= 19 && value.chars().all(|c| c.is_ascii_digit())
     }
 
     /// Validate message content length.
+    #[tracing::instrument(skip(self), fields(content_len = content.len()))]
     fn validate_content_length(&self, content: &str) -> bool {
         // Discord message limit is 2000 characters
         !content.is_empty() && content.len() <= 2000
     }
 
     /// Validate channel name.
+    #[tracing::instrument(skip(self), fields(name))]
     fn validate_channel_name(&self, name: &str) -> bool {
         // Channel names: 1-100 chars, lowercase alphanumeric + hyphens/underscores
         !name.is_empty()
