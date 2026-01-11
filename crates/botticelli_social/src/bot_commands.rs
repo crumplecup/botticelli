@@ -34,6 +34,7 @@ use derive_getters::Getters;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use tracing::{debug, error, info, instrument, warn};
 
 /// Registry of bot command executors for multiple platforms.
 ///
@@ -57,8 +58,9 @@ pub struct BotCommandRegistryImpl {
 
 impl BotCommandRegistryImpl {
     /// Create a new empty registry with default cache.
+    #[instrument]
     pub fn new() -> Self {
-        tracing::debug!("Creating new BotCommandRegistryImpl");
+        debug!("Creating new BotCommandRegistryImpl");
         Self {
             executors: HashMap::new(),
             cache: Arc::new(Mutex::new(CommandCache::default())),
@@ -66,8 +68,9 @@ impl BotCommandRegistryImpl {
     }
 
     /// Create a new registry with custom cache.
+    #[instrument(skip(cache))]
     pub fn with_cache(cache: CommandCache) -> Self {
-        tracing::debug!("Creating new BotCommandRegistry with custom cache");
+        debug!("Creating new BotCommandRegistry with custom cache");
         Self {
             executors: HashMap::new(),
             cache: Arc::new(Mutex::new(cache)),
@@ -82,13 +85,14 @@ impl BotCommandRegistryImpl {
     /// let mut registry = BotCommandRegistryImpl::new();
     /// registry.register(DiscordCommandExecutor::new("TOKEN"));
     /// ```
+    #[instrument(skip(self, executor), fields(platform = %executor.platform()))]
     pub fn register<E>(&mut self, executor: E) -> &mut Self
     where
         E: BotCommandExecutor<Error = BotCommandError> + 'static,
     {
         let platform = executor.platform().to_string();
         let commands = executor.supported_commands();
-        tracing::info!(
+        info!(
             platform = %platform,
             commands = commands.len(),
             "Registering bot command executor"
@@ -98,8 +102,15 @@ impl BotCommandRegistryImpl {
     }
 
     /// Get executor for a platform.
+    #[instrument(skip(self))]
     pub fn get(&self, platform: &str) -> Option<&Arc<dyn BotCommandExecutor<Error = BotCommandError>>> {
-        self.executors.get(platform)
+        let result = self.executors.get(platform);
+        if result.is_some() {
+            debug!(platform, "Found executor");
+        } else {
+            debug!(platform, "Executor not found");
+        }
+        result
     }
 
     /// Execute a command on a platform with caching support.
@@ -135,14 +146,14 @@ impl BotCommandRegistryImpl {
         command: &str,
         args: &HashMap<String, JsonValue>,
     ) -> BotCommandResult<JsonValue> {
-        tracing::info!("Executing bot command via registry");
+        info!("Executing bot command via registry");
 
         // Check cache first
         {
             let mut cache = self.cache.lock().unwrap();
             if let Some(entry) = cache.get(platform, command, args) {
-                tracing::Span::current().record("cache_hit", true);
-                tracing::info!(
+                Span::current().record("cache_hit", true);
+                info!(
                     time_remaining = ?entry.time_remaining(),
                     "Cache hit, returning cached result"
                 );
@@ -150,10 +161,10 @@ impl BotCommandRegistryImpl {
             }
         }
 
-        tracing::Span::current().record("cache_hit", false);
+        Span::current().record("cache_hit", false);
 
         let executor = self.get(platform).ok_or_else(|| {
-            tracing::error!(
+            error!(
                 platform,
                 available_platforms = ?self.platforms(),
                 "Platform not found in registry"
@@ -175,13 +186,19 @@ impl BotCommandRegistryImpl {
     }
 
     /// List all registered platforms.
+    #[instrument(skip(self))]
     pub fn platforms(&self) -> Vec<String> {
-        self.executors.keys().cloned().collect()
+        let platforms = self.executors.keys().cloned().collect::<Vec<_>>();
+        debug!(count = platforms.len(), "Listing platforms");
+        platforms
     }
 
     /// Check if a platform is registered.
+    #[instrument(skip(self), fields(platform))]
     pub fn has_platform(&self, platform: &str) -> bool {
-        self.executors.contains_key(platform)
+        let exists = self.executors.contains_key(platform);
+        debug!(platform, exists, "Checking platform registration");
+        exists
     }
 }
 
