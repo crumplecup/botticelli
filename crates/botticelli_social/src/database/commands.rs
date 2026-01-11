@@ -269,10 +269,12 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
         "database"
     }
 
+    #[instrument(skip(self, command))]
     fn supports_command(&self, command: &str) -> bool {
         matches!(command, "update_table")
     }
 
+    #[instrument(skip(self))]
     fn supported_commands(&self) -> Vec<String> {
         vec!["update_table".to_string()]
     }

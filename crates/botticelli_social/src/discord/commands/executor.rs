@@ -159,6 +159,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
         Ok(result)
     }
 
+    #[instrument(skip(self, command))]
     fn supports_command(&self, command: &str) -> bool {
         matches!(
             command,
@@ -238,6 +239,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
         )
     }
 
+    #[instrument(skip(self))]
     fn supported_commands(&self) -> Vec<String> {
         vec![
             // Server
@@ -316,6 +318,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
         ]
     }
 
+    #[instrument(skip(self, command))]
     fn command_help(&self, command: &str) -> Option<String> {
         match command {
             "server.get_stats" => Some(

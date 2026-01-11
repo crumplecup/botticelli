@@ -25,6 +25,7 @@ pub struct DiscordGuildProcessor {
 
 impl DiscordGuildProcessor {
     /// Create a new guild processor.
+    #[instrument(skip(repository))]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -32,6 +33,7 @@ impl DiscordGuildProcessor {
 
 #[async_trait]
 impl ActProcessor for DiscordGuildProcessor {
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -92,6 +94,7 @@ pub struct DiscordUserProcessor {
 
 impl DiscordUserProcessor {
     /// Create a new user processor.
+    #[instrument(skip(repository))]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -99,6 +102,7 @@ impl DiscordUserProcessor {
 
 #[async_trait]
 impl ActProcessor for DiscordUserProcessor {
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -158,6 +162,7 @@ pub struct DiscordChannelProcessor {
 
 impl DiscordChannelProcessor {
     /// Create a new channel processor.
+    #[instrument(skip(repository))]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -165,6 +170,7 @@ impl DiscordChannelProcessor {
 
 #[async_trait]
 impl ActProcessor for DiscordChannelProcessor {
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -224,6 +230,7 @@ pub struct DiscordRoleProcessor {
 
 impl DiscordRoleProcessor {
     /// Create a new role processor.
+    #[instrument(skip(repository))]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -231,6 +238,7 @@ impl DiscordRoleProcessor {
 
 #[async_trait]
 impl ActProcessor for DiscordRoleProcessor {
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -291,6 +299,7 @@ pub struct DiscordGuildMemberProcessor {
 
 impl DiscordGuildMemberProcessor {
     /// Create a new guild member processor.
+    #[instrument(skip(repository))]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -298,6 +307,7 @@ impl DiscordGuildMemberProcessor {
 
 #[async_trait]
 impl ActProcessor for DiscordGuildMemberProcessor {
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -359,6 +369,7 @@ pub struct DiscordMemberRoleProcessor {
 
 impl DiscordMemberRoleProcessor {
     /// Create a new member role processor.
+    #[instrument(skip(repository))]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -366,6 +377,7 @@ impl DiscordMemberRoleProcessor {
 
 #[async_trait]
 impl ActProcessor for DiscordMemberRoleProcessor {
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
         let json_str = extract_json(&context.execution.response)?;
 
