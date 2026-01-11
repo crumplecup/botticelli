@@ -4,6 +4,8 @@
 //! 1. Parse-only tests: Fast validation that narrative files are syntactically correct
 //! 2. Integration tests: Full execution tests that actually call Discord APIs
 
+mod helpers;
+
 use std::{env, path::PathBuf};
 
 /// Helper to load environment variables from .env
@@ -25,18 +27,24 @@ fn get_test_narrative_path(name: &str) -> PathBuf {
 use botticelli_narrative::Narrative;
 
 /// Helper to load a narrative file for validation.
-fn load_narrative(relative_path: &str) -> Result<Narrative, Box<dyn std::error::Error>> {
+fn load_narrative(relative_path: &str) -> anyhow::Result<Narrative> {
+    tracing::debug!(path = %relative_path, "Loading narrative");
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     let narrative_path = format!("{}/tests/narratives/{}", manifest_dir, relative_path);
-    Ok(Narrative::from_file(&narrative_path)?)
+    let narrative = Narrative::from_file(&narrative_path)?;
+    tracing::debug!(acts = narrative.acts().len(), "Narrative loaded");
+    Ok(narrative)
 }
 
 macro_rules! parse_test {
     ($name:ident, $file:expr) => {
         #[test]
-        fn $name() -> Result<(), Box<dyn std::error::Error>> {
+        fn $name() -> anyhow::Result<()> {
+            helpers::init_test_tracing("info");
+            tracing::info!(test = stringify!($name), file = $file, "Starting parse test");
             let narrative = load_narrative($file)?;
             assert!(!narrative.acts().is_empty());
+            tracing::debug!(acts = narrative.acts().len(), "Validation passed");
             Ok(())
         }
     };
@@ -85,9 +93,14 @@ parse_test!(parse_events_get, "discord/events_get_test.toml");
 // ============================================================================
 
 /// Helper to run a test narrative
-async fn run_test_narrative(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+async fn run_test_narrative(name: &str) -> anyhow::Result<()> {
+    tracing::debug!(narrative = %name, "Running test narrative");
     let narrative_path = get_test_narrative_path(name);
+    let narrative_str = narrative_path.to_str()
+        .ok_or_else(|| anyhow::anyhow!("Invalid narrative path"))?;
 
+    tracing::debug!(path = %narrative_str, "Executing botticelli CLI");
+    
     // Use botticelli CLI to run the narrative
     let output = tokio::process::Command::new("cargo")
         .args([
@@ -101,7 +114,7 @@ async fn run_test_narrative(name: &str) -> Result<(), Box<dyn std::error::Error>
             "--",
             "run",
             "--narrative",
-            narrative_path.to_str().unwrap(),
+            narrative_str,
             "--process-discord",
         ])
         .output()
@@ -109,10 +122,11 @@ async fn run_test_narrative(name: &str) -> Result<(), Box<dyn std::error::Error>
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("Narrative {} failed:\n{}", name, stderr);
-        return Err(format!("Narrative execution failed: {}", stderr).into());
+        tracing::error!(narrative = %name, stderr = %stderr, "Narrative execution failed");
+        anyhow::bail!("Narrative execution failed: {}", stderr);
     }
 
+    tracing::debug!(narrative = %name, "Narrative execution succeeded");
     Ok(())
 }
 
@@ -121,11 +135,13 @@ macro_rules! integration_test {
         #[tokio::test]
         #[cfg_attr(not(feature = "discord"), ignore)]
         #[cfg_attr(not(feature = "api"), ignore)]
-        async fn $name() {
+        async fn $name() -> anyhow::Result<()> {
+            helpers::init_test_tracing("info");
+            tracing::info!(test = stringify!($name), narrative = $file, "Starting integration test");
             load_env();
-            run_test_narrative($file)
-                .await
-                .expect(&format!("{} narrative failed", $file));
+            run_test_narrative($file).await?;
+            tracing::info!(test = stringify!($name), "Integration test passed");
+            Ok(())
         }
     };
 }
