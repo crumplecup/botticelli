@@ -7,13 +7,18 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument, warn};
 
-/// List banned users in a server.
-///
-/// Command: `bans.list`
-/// Required arguments: `guild_id`
-/// Optional arguments: `limit` (default 100, max 1000)
-#[instrument(skip(http, args), fields(guild_id, limit, ban_count))]
-pub(super) async fn list(
+/// Helper type for moderation command operations.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Moderation;
+
+impl Moderation {
+    /// List banned users in a server.
+    ///
+    /// Command: `bans.list`
+    /// Required arguments: `guild_id`
+    /// Optional arguments: `limit` (default 100, max 1000)
+    #[instrument(skip(http, args), fields(guild_id, limit, ban_count))]
+    pub async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -60,13 +65,13 @@ pub(super) async fn list(
     Ok(serde_json::json!(bans_json))
 }
 
-/// Ban a member from the server.
-///
-/// Command: `members.ban`
-/// Required arguments: `guild_id`, `user_id`
-/// Optional arguments: `delete_message_days` (0-7, default 0)
-#[instrument(skip(http, args), fields(guild_id, user_id, delete_message_days))]
-pub(super) async fn ban(
+    /// Ban a member from the server.
+    ///
+    /// Command: `members.ban`
+    /// Required arguments: `guild_id`, `user_id`
+    /// Optional arguments: `delete_message_days` (0-7, default 0)
+    #[instrument(skip(http, args), fields(guild_id, user_id, delete_message_days))]
+    pub async fn ban(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -131,12 +136,12 @@ pub(super) async fn ban(
     }))
 }
 
-/// Unban a member from the server.
-///
-/// Command: `members.unban`
-/// Required arguments: `guild_id`, `user_id`
-#[instrument(skip(http, args), fields(guild_id, user_id))]
-pub(super) async fn unban(
+    /// Unban a member from the server.
+    ///
+    /// Command: `members.unban`
+    /// Required arguments: `guild_id`, `user_id`
+    #[instrument(skip(http, args), fields(guild_id, user_id))]
+    pub async fn unban(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -180,13 +185,13 @@ pub(super) async fn unban(
     }))
 }
 
-/// Kick a member from the server.
-///
-/// Command: `members.kick`
-/// Required arguments: `guild_id`, `user_id`
-/// Optional arguments: `reason`
-#[instrument(skip(http, args), fields(guild_id, user_id))]
-pub(super) async fn kick(
+    /// Kick a member from the server.
+    ///
+    /// Command: `members.kick`
+    /// Required arguments: `guild_id`, `user_id`
+    /// Optional arguments: `reason`
+    #[instrument(skip(http, args), fields(guild_id, user_id))]
+    pub async fn kick(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -237,6 +242,7 @@ pub(super) async fn kick(
         "guild_id": guild_id.to_string(),
         "user_id": user_id.to_string(),
     }))
+}
 }
 
 /// Parse guild_id from command arguments.

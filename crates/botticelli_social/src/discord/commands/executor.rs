@@ -4,10 +4,11 @@ use super::channels::Channels;
 use super::events::Events;
 use super::members::Members;
 use super::messages::Messages;
+use super::moderation::Moderation;
 use super::reactions::Reactions;
 use super::roles::Roles;
 use super::threads::Threads;
-use super::{forum, misc, moderation, server};
+use super::{forum, misc, server};
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -70,10 +71,10 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "voice_regions.list" => misc::voice_regions_list(&self.http, args).await?,
 
             // Moderation commands
-            "bans.list" => moderation::list(&self.http, args).await?,
-            "members.ban" => moderation::ban(&self.http, args).await?,
-            "members.unban" => moderation::unban(&self.http, args).await?,
-            "members.kick" => moderation::kick(&self.http, args).await?,
+            "bans.list" => Moderation::list(&self.http, args).await?,
+            "members.ban" => Moderation::ban(&self.http, args).await?,
+            "members.unban" => Moderation::unban(&self.http, args).await?,
+            "members.kick" => Moderation::kick(&self.http, args).await?,
 
             // Events commands
             "events.list" => Events::list(&self.http, args).await?,
