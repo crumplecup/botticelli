@@ -1,7 +1,7 @@
 //! Validation error types for TOML narrative validation.
 
 /// Result of validating a narrative TOML file.
-#[derive(Debug, Clone, derive_getters::Getters)]
+#[derive(Debug, Clone, Default, derive_getters::Getters)]
 pub struct ValidationResult {
     /// Validation errors (must be fixed)
     errors: Vec<ValidationError>,
@@ -13,10 +13,7 @@ impl ValidationResult {
     /// Creates a new validation result with no errors or warnings.
     #[tracing::instrument]
     pub fn new() -> Self {
-        Self {
-            errors: Vec::new(),
-            warnings: Vec::new(),
-        }
+        Self::default()
     }
 
     /// Returns true if validation passed (no errors).
@@ -79,15 +76,6 @@ impl ValidationResult {
 
         tracing::debug!(output_len = output.len(), "Formatted warnings");
         output
-    }
-}
-
-impl Default for ValidationResult {
-    fn default() -> Self {
-        Self {
-            errors: Vec::new(),
-            warnings: Vec::new(),
-        }
     }
 }
 
