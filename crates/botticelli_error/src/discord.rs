@@ -4,6 +4,7 @@
 //! Serenity API errors, connection issues, and Discord-specific validation errors.
 
 use derive_getters::Getters;
+use std::sync::Arc;
 
 /// Result type for Discord operations.
 pub type DiscordErrorResult<T> = Result<T, DiscordError>;
@@ -11,7 +12,7 @@ pub type DiscordErrorResult<T> = Result<T, DiscordError>;
 /// Discord error variants.
 ///
 /// Represents different error conditions that can occur during Discord operations.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display)]
+#[derive(Debug, Clone, derive_more::Display)]
 pub enum DiscordErrorKind {
     /// Serenity API error (e.g., HTTP error, gateway error, rate limit).
     #[display("Serenity API error: {_0}")]
@@ -48,6 +49,13 @@ pub enum DiscordErrorKind {
     /// Connection to Discord gateway failed.
     #[display("Connection failed: {_0}")]
     ConnectionFailed(String),
+
+    /// Connection to Discord gateway failed with source error preserved.
+    #[display("Connection failed: {}", source)]
+    ConnectionFailedWithSource {
+        /// Original connection error
+        source: Arc<dyn std::error::Error + Send + Sync>,
+    },
 
     /// Bot token is invalid or expired.
     #[display("Invalid or expired bot token")]
@@ -94,6 +102,14 @@ impl DiscordError {
             line: location.line(),
             file: location.file(),
         }
+    }
+
+    /// Create from a connection error with location tracking.
+    #[track_caller]
+    pub fn from_connection_error(error: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::new(DiscordErrorKind::ConnectionFailedWithSource {
+            source: Arc::new(error),
+        })
     }
 }
 

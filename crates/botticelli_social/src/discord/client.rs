@@ -67,12 +67,7 @@ impl BotticelliBot {
         let client = Client::builder(&token, intents)
             .event_handler(handler)
             .await
-            .map_err(|e| {
-                DiscordError::new(DiscordErrorKind::ConnectionFailed(format!(
-                    "Failed to build client: {}",
-                    e
-                )))
-            })?;
+            .map_err(DiscordError::from_connection_error)?;
 
         info!("Serenity client built successfully");
 
