@@ -54,7 +54,9 @@ pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use generate::GenerateTool;
 #[cfg(feature = "groq")]
+#[cfg(any())] // Disabled - see generate_with_backend.rs
 pub use generate_with_backend::GroqBackendFactory;
+#[cfg(any())] // Disabled - see generate_with_backend.rs
 pub use generate_with_backend::{
     BackendFactory, GenerateWithBackendRequest, GenerateWithBackendResponse,
     GenerateWithBackendTool,

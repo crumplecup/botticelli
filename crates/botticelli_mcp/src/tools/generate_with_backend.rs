@@ -42,6 +42,11 @@ pub struct GenerateWithBackendResponse {
 }
 
 /// Factory for creating LLM backend drivers.
+/// 
+/// DEPRECATED: This trait cannot be made object-safe with the current BotticelliDriver design.
+/// Use direct driver construction instead.
+#[deprecated(since = "0.1.0", note = "Cannot be made object-safe")]
+#[cfg(any())] // Disabled - cannot be made object-safe
 pub trait BackendFactory: Send + Sync {
     /// Create a driver for the specified backend and model.
     ///
@@ -54,14 +59,17 @@ pub trait BackendFactory: Send + Sync {
 /// Tool for generating text using different LLM backends.
 ///
 /// DEPRECATED: Use `BotticelliServer::generate` instead.
+/// Disabled due to trait object incompatibility with BotticelliDriver.
 #[deprecated(
     since = "0.1.0",
     note = "Use BotticelliServer::generate with appropriate model name instead"
 )]
+#[cfg(any())] // Disabled - BackendFactory trait cannot be made object-safe
 pub struct GenerateWithBackendTool {
     factory: Arc<dyn BackendFactory>,
 }
 
+#[cfg(any())] // Disabled - see struct definition
 impl GenerateWithBackendTool {
     /// Creates a new generate-with-backend tool.
     pub fn new(factory: Arc<dyn BackendFactory>) -> Self {
@@ -102,6 +110,7 @@ impl GenerateWithBackendTool {
 }
 
 #[cfg(feature = "groq")]
+#[cfg(any())] // Disabled - depends on disabled BackendFactory
 mod groq_factory {
     use super::*;
     use botticelli_models::GroqDriver;
