@@ -102,6 +102,13 @@ pub struct DiscordError {
     file: &'static str,
 }
 
+impl From<DiscordErrorKind> for DiscordError {
+    #[track_caller]
+    fn from(kind: DiscordErrorKind) -> Self {
+        Self::new(kind)
+    }
+}
+
 impl DiscordError {
     /// Create a new DiscordError with automatic location tracking.
     ///
