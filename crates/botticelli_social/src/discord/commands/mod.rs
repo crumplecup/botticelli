@@ -3,6 +3,7 @@
 //! This module implements the BotCommandExecutor trait for Discord,
 //! routing commands to domain-specific submodules.
 
+mod misc;
 mod server;
 
 use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
@@ -58,6 +59,14 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             // Server commands
             "server.get_stats" => server::get_stats(&self.http, args).await?,
 
+            // Misc commands
+            "emojis.list" => misc::emojis_list(&self.http, args).await?,
+            "stickers.list" => misc::stickers_list(&self.http, args).await?,
+            "invites.list" => misc::invites_list(&self.http, args).await?,
+            "webhooks.list" => misc::webhooks_list(&self.http, args).await?,
+            "integrations.list" => misc::integrations_list(&self.http, args).await?,
+            "voice_regions.list" => misc::voice_regions_list(&self.http, args).await?,
+
             // TODO: Add other commands as we migrate them
             
             _ => {
@@ -89,6 +98,13 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             command,
             // Server
             "server.get_stats"
+            // Misc
+            | "emojis.list"
+            | "stickers.list"
+            | "invites.list"
+            | "webhooks.list"
+            | "integrations.list"
+            | "voice_regions.list"
             // TODO: Add other commands as we migrate them
         )
     }
@@ -97,6 +113,13 @@ impl BotCommandExecutor for DiscordCommandExecutor {
         vec![
             // Server
             "server.get_stats".to_string(),
+            // Misc
+            "emojis.list".to_string(),
+            "stickers.list".to_string(),
+            "invites.list".to_string(),
+            "webhooks.list".to_string(),
+            "integrations.list".to_string(),
+            "voice_regions.list".to_string(),
             // TODO: Add other commands as we migrate them
         ]
     }
@@ -108,6 +131,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
                  Required arguments: guild_id"
                     .to_string(),
             ),
+            "emojis.list" => Some("List custom emojis\nRequired arguments: guild_id".to_string()),
+            "stickers.list" => Some("List custom stickers\nRequired arguments: guild_id".to_string()),
+            "invites.list" => Some("List active invites\nRequired arguments: guild_id".to_string()),
+            "webhooks.list" => Some("List webhooks\nRequired arguments: guild_id".to_string()),
+            "integrations.list" => Some("List integrations\nRequired arguments: guild_id".to_string()),
+            "voice_regions.list" => Some("List voice regions\nRequired arguments: guild_id".to_string()),
             // TODO: Add other commands as we migrate them
             _ => None,
         }
