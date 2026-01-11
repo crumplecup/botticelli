@@ -158,7 +158,7 @@ pub fn init_observability_with_config(config: ObservabilityConfig) -> Observabil
                 .build()
         }
         #[cfg(feature = "otel-otlp")]
-        ExporterBackend::Otlp { ref endpoint } => {
+        ExporterBackend::Otlp { endpoint } => {
             use opentelemetry_otlp::WithExportConfig;
 
             // Build OTLP span exporter with tonic
