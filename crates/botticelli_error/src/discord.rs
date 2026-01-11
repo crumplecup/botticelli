@@ -5,6 +5,9 @@
 
 use derive_getters::Getters;
 
+/// Result type for Discord operations.
+pub type DiscordErrorResult<T> = Result<T, DiscordError>;
+
 /// Discord error variants.
 ///
 /// Represents different error conditions that can occur during Discord operations.

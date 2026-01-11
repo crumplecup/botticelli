@@ -7,9 +7,10 @@ use crate::ModelsError;
 #[cfg(feature = "tui")]
 use crate::TuiError;
 use crate::{
-    BackendError, BuilderError, ChatError, ConfigError, EnvError, GeminiError, HttpError, IoError,
-    JsonError, McpError, NarrativeError, NotImplementedError, ObservabilityError, OpenAIError,
-    ProviderError, SecurityError, ServerError, StorageError, TokenCountingError,
+    BackendError, BuilderError, ChatError, ConfigError, DiscordError, EnvError, GeminiError,
+    HttpError, IoError, JsonError, McpError, NarrativeError, NotImplementedError,
+    ObservabilityError, OpenAIError, ProviderError, SecurityError, ServerError, StorageError,
+    TokenCountingError,
 };
 
 /// This is the foundation error enum. Additional variants will be added
@@ -98,6 +99,9 @@ pub enum BotticelliErrorKind {
     /// Security error
     #[from(SecurityError)]
     Security(SecurityError),
+    /// Discord integration error
+    #[from(DiscordError)]
+    Discord(DiscordError),
 }
 
 /// Botticelli error with kind discrimination.
