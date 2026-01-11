@@ -29,7 +29,7 @@
 use async_trait::async_trait;
 use botticelli_cache::CommandCache;
 use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
-pub use botticelli_interface::BotCommandExecutor;
+use botticelli_interface::BotCommandExecutor;
 use derive_getters::Getters;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
