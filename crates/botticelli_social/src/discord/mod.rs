@@ -50,6 +50,7 @@ mod conversions;
 mod handler;
 mod json_models;
 mod models;
+mod processors;
 mod repository;
 
 // Public re-exports
@@ -67,11 +68,11 @@ pub use models::{
     NewGuildBuilder, NewGuildMember, NewGuildMemberBuilder, NewRole, NewRoleBuilder, NewUser,
     NewUserBuilder, RoleRow, UserRow,
 };
-// pub use processors::{
-//     DiscordChannelProcessor, DiscordGuildMemberProcessor, DiscordGuildProcessor,
-//     DiscordMemberRoleProcessor, DiscordRoleProcessor, DiscordUserProcessor,
-// };
+pub use processors::{
+    DiscordChannelProcessor, DiscordGuildMemberProcessor, DiscordGuildProcessor,
+    DiscordMemberRoleProcessor, DiscordRoleProcessor, DiscordUserProcessor,
+};
 pub use repository::{DiscordRepository, DiscordResult};
 
 // TODO: Uncomment exports as modules are implemented
-// commands, poster
+// poster

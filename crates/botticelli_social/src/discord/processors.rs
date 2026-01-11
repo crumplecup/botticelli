@@ -4,7 +4,8 @@
 //! and insert them into the database using the DiscordRepository.
 
 use botticelli_error::BotticelliResult;
-use botticelli_narrative::{ActProcessor, ProcessorContext};
+use botticelli_interface::ActProcessor;
+use botticelli_narrative::ProcessorContext;
 use botticelli_narrative::extraction::{extract_json, parse_json};
 
 use crate::{
@@ -32,9 +33,11 @@ impl DiscordGuildProcessor {
 }
 
 #[async_trait]
-impl ActProcessor for DiscordGuildProcessor {
+impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
+    type Error = botticelli_error::BotticelliError;
+
     #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
+    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
         // Try parsing as array first, then single object
@@ -101,9 +104,10 @@ impl DiscordUserProcessor {
 }
 
 #[async_trait]
-impl ActProcessor for DiscordUserProcessor {
+impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
+    type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
+    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
         let users: Vec<DiscordUserJson> = if json_str.trim().starts_with('[') {
@@ -169,9 +173,10 @@ impl DiscordChannelProcessor {
 }
 
 #[async_trait]
-impl ActProcessor for DiscordChannelProcessor {
+impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
+    type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
+    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
         let channels: Vec<DiscordChannelJson> = if json_str.trim().starts_with('[') {
@@ -237,9 +242,10 @@ impl DiscordRoleProcessor {
 }
 
 #[async_trait]
-impl ActProcessor for DiscordRoleProcessor {
+impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
+    type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
+    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
         let roles: Vec<DiscordRoleJson> = if json_str.trim().starts_with('[') {
@@ -306,9 +312,10 @@ impl DiscordGuildMemberProcessor {
 }
 
 #[async_trait]
-impl ActProcessor for DiscordGuildMemberProcessor {
+impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
+    type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
+    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
         let members: Vec<DiscordGuildMemberJson> = if json_str.trim().starts_with('[') {
@@ -376,9 +383,10 @@ impl DiscordMemberRoleProcessor {
 }
 
 #[async_trait]
-impl ActProcessor for DiscordMemberRoleProcessor {
+impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
+    type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> BotticelliResult<()> {
+    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
         let member_roles: Vec<DiscordMemberRoleJson> = if json_str.trim().starts_with('[') {
