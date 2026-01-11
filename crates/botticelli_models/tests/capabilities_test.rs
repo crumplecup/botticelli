@@ -18,8 +18,23 @@ use botticelli_models::OllamaClient;
 #[test]
 #[cfg(feature = "anthropic")]
 fn test_anthropic_capabilities() {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Anthropic capabilities");
+    
     let client = AnthropicClient::new("test-key", "claude-3-5-sonnet-20241022");
     let caps = client.capabilities();
+    
+    tracing::debug!(
+        streaming = caps.streaming(),
+        tool_calling = caps.tool_calling(),
+        vision = caps.vision(),
+        audio = caps.audio(),
+        video = caps.video(),
+        embeddings = caps.embeddings(),
+        json_mode = caps.json_mode(),
+        batch = caps.batch_generation(),
+        "Anthropic capabilities"
+    );
 
     assert!(caps.streaming(), "Anthropic should support streaming");
     assert!(caps.tool_calling(), "Anthropic should support tool calling");
@@ -35,16 +50,33 @@ fn test_anthropic_capabilities() {
         !caps.batch_generation(),
         "Anthropic should not support batch generation"
     );
+    
+    tracing::info!("Anthropic capabilities test passed");
 }
 
 #[test]
 #[cfg(feature = "gemini")]
 fn test_gemini_capabilities() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Gemini capabilities");
+    
     // Load .env
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
     let caps = client.capabilities();
+    
+    tracing::debug!(
+        streaming = caps.supports_streaming(),
+        tool_calling = caps.supports_tool_calling(),
+        vision = caps.supports_vision(),
+        audio = caps.supports_audio(),
+        video = caps.supports_video(),
+        embeddings = caps.supports_embeddings(),
+        json_mode = caps.supports_json_mode(),
+        batch = caps.supports_batch(),
+        "Gemini capabilities"
+    );
 
     assert!(caps.supports_streaming(), "Gemini should support streaming");
     assert!(
@@ -63,14 +95,31 @@ fn test_gemini_capabilities() -> anyhow::Result<()> {
         !caps.supports_batch(),
         "Gemini should not support batch generation"
     );
+    
+    tracing::info!("Gemini capabilities test passed");
     Ok(())
 }
 
 #[test]
 #[cfg(feature = "ollama")]
 fn test_ollama_capabilities() -> Result<(), botticelli_error::ModelsError> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Ollama capabilities");
+    
     let client = OllamaClient::new("llama2")?;
     let caps = client.capabilities();
+    
+    tracing::debug!(
+        streaming = caps.streaming(),
+        tool_calling = caps.tool_calling(),
+        vision = caps.vision(),
+        audio = caps.audio(),
+        video = caps.video(),
+        embeddings = caps.embeddings(),
+        json_mode = caps.json_mode(),
+        batch = caps.batch_generation(),
+        "Ollama capabilities"
+    );
 
     assert!(caps.streaming(), "Ollama should support streaming");
     assert!(
@@ -86,14 +135,31 @@ fn test_ollama_capabilities() -> Result<(), botticelli_error::ModelsError> {
         !caps.batch_generation(),
         "Ollama should not support batch generation"
     );
+    
+    tracing::info!("Ollama capabilities test passed");
     Ok(())
 }
 
 #[test]
 #[cfg(feature = "groq")]
 fn test_groq_capabilities() -> Result<(), botticelli_error::ModelsError> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Groq capabilities");
+    
     let client = GroqDriver::with_api_key("test-key".to_string(), "llama3-8b-8192".to_string())?;
     let caps = client.capabilities();
+    
+    tracing::debug!(
+        streaming = caps.streaming(),
+        tool_calling = caps.tool_calling(),
+        vision = caps.vision(),
+        audio = caps.audio(),
+        video = caps.video(),
+        embeddings = caps.embeddings(),
+        json_mode = caps.json_mode(),
+        batch = caps.batch_generation(),
+        "Groq capabilities"
+    );
 
     assert!(!caps.streaming(), "Groq does not support real streaming");
     assert!(
@@ -109,17 +175,34 @@ fn test_groq_capabilities() -> Result<(), botticelli_error::ModelsError> {
         !caps.batch_generation(),
         "Groq should not support batch generation"
     );
+    
+    tracing::info!("Groq capabilities test passed");
     Ok(())
 }
 
 #[test]
 #[cfg(feature = "huggingface")]
 fn test_huggingface_capabilities() -> Result<(), botticelli_error::ModelsError> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing HuggingFace capabilities");
+    
     let client = HuggingFaceDriver::with_api_token(
         "test-key".to_string(),
         "meta-llama/Llama-2-7b-chat-hf".to_string(),
     )?;
     let caps = client.capabilities();
+    
+    tracing::debug!(
+        streaming = caps.streaming(),
+        tool_calling = caps.tool_calling(),
+        vision = caps.vision(),
+        audio = caps.audio(),
+        video = caps.video(),
+        embeddings = caps.embeddings(),
+        json_mode = caps.json_mode(),
+        batch = caps.batch_generation(),
+        "HuggingFace capabilities"
+    );
 
     assert!(
         !caps.streaming(),
@@ -141,5 +224,7 @@ fn test_huggingface_capabilities() -> Result<(), botticelli_error::ModelsError> 
         !caps.batch_generation(),
         "HuggingFace should not support batch generation"
     );
+    
+    tracing::info!("HuggingFace capabilities test passed");
     Ok(())
 }
