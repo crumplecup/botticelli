@@ -45,6 +45,11 @@ pub struct NewModelResponse {
 
 impl NewModelResponse {
     /// Create a new model response record from a request and response.
+    #[tracing::instrument(skip_all, fields(
+        message_count = request.messages().len(),
+        output_count = response.outputs().len(),
+        duration_ms
+    ))]
     pub fn new(
         provider: impl Into<String>,
         model_name: impl Into<String>,
@@ -52,7 +57,8 @@ impl NewModelResponse {
         response: &GenerateResponse,
         duration_ms: Option<i32>,
     ) -> Result<Self, serde_json::Error> {
-        Ok(Self {
+        tracing::debug!("Creating NewModelResponse from request/response");
+        let result = Self {
             provider: provider.into(),
             model_name: model_name.into(),
             request_messages: serde_json::to_value(request.messages())?,
@@ -62,10 +68,16 @@ impl NewModelResponse {
             response_outputs: serde_json::to_value(response.outputs())?,
             duration_ms,
             error_message: None,
-        })
+        };
+        tracing::debug!("Created NewModelResponse");
+        Ok(result)
     }
 
     /// Create a new error response record.
+    #[tracing::instrument(skip_all, fields(
+        message_count = request.messages().len(),
+        duration_ms
+    ))]
     pub fn error(
         provider: impl Into<String>,
         model_name: impl Into<String>,
@@ -73,7 +85,8 @@ impl NewModelResponse {
         error: impl std::fmt::Display,
         duration_ms: Option<i32>,
     ) -> Result<Self, serde_json::Error> {
-        Ok(Self {
+        tracing::debug!(error = %error, "Creating error NewModelResponse");
+        let result = Self {
             provider: provider.into(),
             model_name: model_name.into(),
             request_messages: serde_json::to_value(request.messages())?,
@@ -83,7 +96,9 @@ impl NewModelResponse {
             response_outputs: serde_json::json!([]),
             duration_ms,
             error_message: Some(error.to_string()),
-        })
+        };
+        tracing::debug!("Created error NewModelResponse");
+        Ok(result)
     }
 }
 
@@ -102,7 +117,9 @@ pub struct SerializableModelResponse {
 
 impl ModelResponse {
     /// Convert to a serializable format.
+    #[tracing::instrument(skip(self), fields(id = %self.id, has_error = self.error_message.is_some()))]
     pub fn to_serializable(&self) -> Result<SerializableModelResponse, serde_json::Error> {
+        tracing::debug!("Converting ModelResponse to serializable format");
         let messages: Vec<Message> = serde_json::from_value(self.request_messages.clone())?;
 
         let mut request_builder = GenerateRequest::builder().messages(messages);
@@ -133,6 +150,7 @@ impl ModelResponse {
             None
         };
 
+        tracing::debug!(id = %self.id, has_response = response.is_some(), "Converted to serializable");
         Ok(SerializableModelResponse {
             id: self.id.to_string(),
             created_at: self.created_at.to_string(),
