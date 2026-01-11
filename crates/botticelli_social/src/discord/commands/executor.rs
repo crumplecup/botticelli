@@ -5,11 +5,12 @@ use super::events::Events;
 use super::forum::Forum;
 use super::members::Members;
 use super::messages::Messages;
+use super::misc::Misc;
 use super::moderation::Moderation;
 use super::reactions::Reactions;
 use super::roles::Roles;
 use super::threads::Threads;
-use super::{misc, server};
+use super::server;
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -64,12 +65,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "server.get_stats" => server::get_stats(&self.http, args).await?,
 
             // Misc commands
-            "emojis.list" => misc::emojis_list(&self.http, args).await?,
-            "stickers.list" => misc::stickers_list(&self.http, args).await?,
-            "invites.list" => misc::invites_list(&self.http, args).await?,
-            "webhooks.list" => misc::webhooks_list(&self.http, args).await?,
-            "integrations.list" => misc::integrations_list(&self.http, args).await?,
-            "voice_regions.list" => misc::voice_regions_list(&self.http, args).await?,
+            "emojis.list" => Misc::emojis_list(&self.http, args).await?,
+            "stickers.list" => Misc::stickers_list(&self.http, args).await?,
+            "invites.list" => Misc::invites_list(&self.http, args).await?,
+            "webhooks.list" => Misc::webhooks_list(&self.http, args).await?,
+            "integrations.list" => Misc::integrations_list(&self.http, args).await?,
+            "voice_regions.list" => Misc::voice_regions_list(&self.http, args).await?,
 
             // Moderation commands
             "bans.list" => Moderation::list(&self.http, args).await?,

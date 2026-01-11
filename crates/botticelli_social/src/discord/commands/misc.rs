@@ -7,12 +7,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument};
 
-/// List custom emojis in a server.
-///
-/// Command: `emojis.list`
-/// Required arguments: `guild_id`
-#[instrument(skip(http, args), fields(guild_id, emoji_count))]
-pub(super) async fn emojis_list(
+/// Helper type for miscellaneous command operations.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Misc;
+
+impl Misc {
+    /// List custom emojis in a server.
+    ///
+    /// Command: `emojis.list`
+    /// Required arguments: `guild_id`
+    #[instrument(skip(http, args), fields(guild_id, emoji_count))]
+    pub async fn emojis_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -50,12 +55,12 @@ pub(super) async fn emojis_list(
     Ok(serde_json::json!(emojis_json))
 }
 
-/// List custom stickers in a server.
-///
-/// Command: `stickers.list`
-/// Required arguments: `guild_id`
-#[instrument(skip(http, args), fields(guild_id, sticker_count))]
-pub(super) async fn stickers_list(
+    /// List custom stickers in a server.
+    ///
+    /// Command: `stickers.list`
+    /// Required arguments: `guild_id`
+    #[instrument(skip(http, args), fields(guild_id, sticker_count))]
+    pub async fn stickers_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -93,12 +98,12 @@ pub(super) async fn stickers_list(
     Ok(serde_json::json!(stickers_json))
 }
 
-/// List active invites in a server.
-///
-/// Command: `invites.list`
-/// Required arguments: `guild_id`
-#[instrument(skip(http, args), fields(guild_id, invite_count))]
-pub(super) async fn invites_list(
+    /// List active invites in a server.
+    ///
+    /// Command: `invites.list`
+    /// Required arguments: `guild_id`
+    #[instrument(skip(http, args), fields(guild_id, invite_count))]
+    pub async fn invites_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -141,12 +146,12 @@ pub(super) async fn invites_list(
     Ok(serde_json::json!(invites_json))
 }
 
-/// List webhooks in a server.
-///
-/// Command: `webhooks.list`
-/// Required arguments: `guild_id`
-#[instrument(skip(http, args), fields(guild_id, webhook_count))]
-pub(super) async fn webhooks_list(
+    /// List webhooks in a server.
+    ///
+    /// Command: `webhooks.list`
+    /// Required arguments: `guild_id`
+    #[instrument(skip(http, args), fields(guild_id, webhook_count))]
+    pub async fn webhooks_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -183,12 +188,12 @@ pub(super) async fn webhooks_list(
     Ok(serde_json::json!(webhooks_json))
 }
 
-/// List integrations in a server.
-///
-/// Command: `integrations.list`
-/// Required arguments: `guild_id`
-#[instrument(skip(http, args), fields(guild_id, integration_count))]
-pub(super) async fn integrations_list(
+    /// List integrations in a server.
+    ///
+    /// Command: `integrations.list`
+    /// Required arguments: `guild_id`
+    #[instrument(skip(http, args), fields(guild_id, integration_count))]
+    pub async fn integrations_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -232,12 +237,12 @@ pub(super) async fn integrations_list(
     Ok(serde_json::json!(integrations_json))
 }
 
-/// List available voice regions for a server.
-///
-/// Command: `voice_regions.list`
-/// Required arguments: `guild_id`
-#[instrument(skip(http, args), fields(guild_id, region_count))]
-pub(super) async fn voice_regions_list(
+    /// List available voice regions for a server.
+    ///
+    /// Command: `voice_regions.list`
+    /// Required arguments: `guild_id`
+    #[instrument(skip(http, args), fields(guild_id, region_count))]
+    pub async fn voice_regions_list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -272,6 +277,7 @@ pub(super) async fn voice_regions_list(
     info!(region_count, "Successfully retrieved voice regions");
 
     Ok(serde_json::json!(regions_json))
+}
 }
 
 /// Parse guild_id from command arguments.
