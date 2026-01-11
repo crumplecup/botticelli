@@ -46,7 +46,6 @@ serenity = { version = "0.12", default-features = false, features = ["client", "
 dotenvy = "0.15"
 tokio = { workspace = true, features = ["full"] }
 botticelli_narrative = { workspace = true }
-botticelli = { path = "../../crates/botticelli", features = ["discord", "database"] }
 tracing-subscriber = { workspace = true }
 anyhow = { workspace = true }
 
@@ -56,3 +55,29 @@ discord = ["serenity", "database", "botticelli_error/discord"]
 database = ["dep:botticelli_database", "dep:botticelli_narrative", "dep:diesel", "dep:chrono"]
 # Empty feature flag for marking expensive API integration tests
 api = []
+
+# Test configurations with required features
+[[test]]
+name = "bot_commands_test"
+required-features = ["database"]
+
+[[test]]
+name = "secure_executor_test"
+required-features = ["database"]
+
+[[test]]
+name = "discord_command_test"
+required-features = ["discord"]
+
+[[test]]
+name = "discord_state_test"
+required-features = ["discord"]
+
+[[test]]
+name = "discord_write_operations_test"
+required-features = ["discord"]
+
+[[test]]
+name = "state_integration_test"
+required-features = ["discord"]
+
