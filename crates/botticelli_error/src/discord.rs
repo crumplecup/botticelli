@@ -86,9 +86,17 @@ pub enum DiscordErrorKind {
     #[display("Configuration error: {_0}")]
     ConfigurationError(String),
 
-    /// Data conversion/validation error (builder failures, invalid data).
-    #[display("Data conversion error: {_0}")]
-    DataConversionError(String),
+    /// Builder validation error (missing required fields, constraint violations).
+    ///
+    /// This indicates a programming error in builder usage, not a runtime data issue.
+    #[display("Builder validation failed: {_0}")]
+    BuilderValidationError(String),
+
+    /// Unsupported Discord entity type.
+    ///
+    /// Encountered a Discord type that cannot be processed (e.g., unsupported channel type).
+    #[display("Unsupported type: {_0}")]
+    UnsupportedType(String),
 }
 
 /// Discord error with source location tracking.
@@ -148,7 +156,7 @@ impl DiscordError {
             ConnectionFailed(_) | ConnectionFailedWithSource { .. } => Critical,
             InvalidToken => Critical,
             DatabaseError(_) => Critical,
-            DataConversionError(_) => Critical,
+            BuilderValidationError(_) => Critical,
             ConfigurationError(_) => Critical,
 
             // Warnings - log and continue
@@ -159,6 +167,7 @@ impl DiscordError {
             MessageSendFailed(_) => Warning,
             InteractionFailed(_) => Warning,
             InvalidId(_) => Warning,
+            UnsupportedType(_) => Warning,
 
             // Info - expected conditions
             SerenityError(_) => Info,
@@ -180,7 +189,7 @@ impl DiscordError {
 
             // Permanent errors - not retryable
             InvalidToken => false,
-            DataConversionError(_) => false,
+            BuilderValidationError(_) => false,
             GuildNotFound(_) => false,
             ChannelNotFound(_) => false,
             UserNotFound(_) => false,
@@ -190,6 +199,7 @@ impl DiscordError {
             MessageSendFailed(_) => false,
             InteractionFailed(_) => false,
             ConfigurationError(_) => false,
+            UnsupportedType(_) => false,
         }
     }
 

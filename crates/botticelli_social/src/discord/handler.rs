@@ -107,7 +107,7 @@ impl BotticelliHandler {
             .build();
 
         let new_guild = new_guild
-            .map_err(|e| crate::DiscordErrorKind::DataConversionError(e.to_string()).into())?;
+            .map_err(|e| crate::DiscordErrorKind::BuilderValidationError(e.to_string()).into())?;
 
         self.repository.store_guild(&new_guild).await?;
         debug!(guild_id = %guild.id, guild_name = %guild.name, "Stored guild");
@@ -137,7 +137,7 @@ impl BotticelliHandler {
             ),
             _ => {
                 return Err(crate::DiscordError::new(
-                    crate::DiscordErrorKind::DataConversionError("Unsupported channel type for storage".to_string())
+                    crate::DiscordErrorKind::UnsupportedType("Unsupported channel type for storage".to_string())
                 ));
             }
         };
@@ -181,7 +181,7 @@ impl BotticelliHandler {
         };
 
         let new_channel = new_channel
-            .map_err(|e| crate::DiscordErrorKind::DataConversionError(e.to_string()).into())?;
+            .map_err(|e| crate::DiscordErrorKind::BuilderValidationError(e.to_string()).into())?;
 
         self.repository.store_channel(&new_channel).await?;
         debug!(channel_id = id, "Stored channel");
@@ -212,7 +212,7 @@ impl BotticelliHandler {
             Ok(user) => user,
             Err(e) => {
                 return Err(crate::DiscordError::new(
-                    crate::DiscordErrorKind::DataConversionError(format!("Failed to build NewUser: {}", e))
+                    crate::DiscordErrorKind::BuilderValidationError(format!("Failed to build NewUser: {}", e))
                 ));
             }
         };
@@ -235,7 +235,7 @@ impl BotticelliHandler {
             .build();
 
         let new_member = new_member.map_err(|e| {
-            crate::DiscordErrorKind::DataConversionError(format!(
+            crate::DiscordErrorKind::BuilderValidationError(format!(
                 "Failed to build NewGuildMember: {}",
                 e
             ))
@@ -265,7 +265,7 @@ impl BotticelliHandler {
             .build();
 
         let new_role = new_role.map_err(|e| {
-            crate::DiscordErrorKind::DataConversionError(format!("Failed to build NewRole: {}", e))
+            crate::DiscordErrorKind::BuilderValidationError(format!("Failed to build NewRole: {}", e))
                 .into()
         })?;
 
