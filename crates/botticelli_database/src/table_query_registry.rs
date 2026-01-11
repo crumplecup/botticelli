@@ -12,6 +12,7 @@ pub struct DatabaseTableQueryRegistry {
 
 impl DatabaseTableQueryRegistry {
     /// Creates a new table query registry.
+    #[tracing::instrument(skip(executor))]
     pub fn new(executor: TableQueryExecutor) -> Self {
         Self { executor }
     }

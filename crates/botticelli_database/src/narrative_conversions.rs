@@ -179,6 +179,7 @@ pub fn input_to_new_row(
 }
 
 /// Get input type string for database.
+#[tracing::instrument(skip(input))]
 fn input_type_string(input: &Input) -> String {
     match input {
         Input::Text(_) => "text".to_string(),
@@ -231,6 +232,7 @@ pub fn rows_to_act_execution(
 }
 
 /// Convert ActInputRow to Input.
+#[tracing::instrument(skip(row), fields(input_type = %row.input_type, order = row.input_order))]
 fn row_to_input(row: ActInputRow) -> BotticelliResult<Input> {
     match row.input_type.as_str() {
         "text" => {

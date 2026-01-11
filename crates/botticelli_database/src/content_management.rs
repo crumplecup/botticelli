@@ -461,6 +461,14 @@ pub fn promote_content(
 }
 
 /// Helper to convert JSON value to SQL string.
+#[tracing::instrument(skip(value), fields(value_type = match value {
+    JsonValue::Null => "null",
+    JsonValue::Bool(_) => "bool",
+    JsonValue::Number(_) => "number",
+    JsonValue::String(_) => "string",
+    JsonValue::Array(_) => "array",
+    JsonValue::Object(_) => "object",
+}))]
 fn json_value_to_sql(value: &JsonValue) -> String {
     match value {
         JsonValue::Null => "NULL".to_string(),

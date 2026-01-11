@@ -16,6 +16,7 @@ pub struct TableQueryExecutor {
 
 impl TableQueryExecutor {
     /// Creates a new table query executor.
+    #[tracing::instrument(skip(connection))]
     pub fn new(connection: Arc<Mutex<PgConnection>>) -> Self {
         Self { connection }
     }
@@ -105,6 +106,7 @@ impl TableQueryExecutor {
     }
 
     /// Builds a SELECT query from the provided view.
+    #[tracing::instrument(skip(self, view), fields(table_name = %view.table_name()))]
     fn build_query(&self, view: &dyn botticelli_interface::TableView) -> DatabaseResult<String> {
         let table_name = view.table_name();
 
@@ -161,6 +163,7 @@ impl TableQueryExecutor {
     }
 
     /// Sanitizes a WHERE clause to prevent SQL injection.
+    #[tracing::instrument(skip(self), fields(clause_len = clause.len()))]
     fn sanitize_where_clause(&self, clause: &str) -> DatabaseResult<String> {
         // Basic SQL injection prevention
         // Check for dangerous patterns
@@ -177,6 +180,7 @@ impl TableQueryExecutor {
     }
 
     /// Executes a raw SQL query and returns results as JSON.
+    #[tracing::instrument(skip(self, conn), fields(query_len = query.len()))]
     fn execute_raw_query(
         &self,
         conn: &mut PgConnection,

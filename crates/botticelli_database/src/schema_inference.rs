@@ -22,6 +22,7 @@ pub struct ColumnDefinition {
 
 impl ColumnDefinition {
     /// Create a new column definition
+    #[tracing::instrument(skip(pg_type), fields(nullable))]
     pub fn new(pg_type: impl Into<String>, nullable: bool) -> Self {
         Self {
             pg_type: pg_type.into(),
@@ -31,6 +32,7 @@ impl ColumnDefinition {
     }
 
     /// Add an example value
+    #[tracing::instrument(skip(self, value))]
     pub fn add_example(&mut self, value: JsonValue) {
         self.examples.push(value);
     }
@@ -45,6 +47,7 @@ pub struct InferredSchema {
 
 impl InferredSchema {
     /// Create a new empty schema
+    #[tracing::instrument]
     pub fn new() -> Self {
         Self {
             fields: HashMap::new(),
@@ -52,6 +55,14 @@ impl InferredSchema {
     }
 
     /// Add a field from a JSON value
+    #[tracing::instrument(skip(self, value), fields(name, value_type = match value {
+        JsonValue::Null => "null",
+        JsonValue::Bool(_) => "bool",
+        JsonValue::Number(_) => "number",
+        JsonValue::String(_) => "string",
+        JsonValue::Array(_) => "array",
+        JsonValue::Object(_) => "object",
+    }))]
     pub fn add_field(&mut self, name: &str, value: &JsonValue) -> DatabaseResult<()> {
         let (pg_type, is_null) = infer_column_type(value);
 
@@ -95,11 +106,13 @@ impl InferredSchema {
     }
 
     /// Get the number of fields in the schema
+    #[tracing::instrument(skip(self))]
     pub fn field_count(&self) -> usize {
         self.fields.len()
     }
 
     /// Check if a field exists
+    #[tracing::instrument(skip(self), fields(name))]
     pub fn has_field(&self, name: &str) -> bool {
         self.fields.contains_key(name)
     }

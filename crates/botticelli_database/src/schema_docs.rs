@@ -70,6 +70,7 @@ const DISCORD_FIELD_DOCS: &[FieldDocumentation] = &[
 ];
 
 /// Generate human-readable documentation for a database column
+#[tracing::instrument(skip(column), fields(name = %column.name, data_type = %column.data_type))]
 fn document_column(column: &ColumnInfo) -> String {
     let base_type = format_data_type(&column.data_type, column.character_maximum_length);
 
@@ -118,7 +119,6 @@ fn format_data_type(pg_type: &str, max_length: Option<i32>) -> String {
 
 /// Generate LLM-friendly schema documentation from a table structure
 #[instrument(name = "schema_docs.generate_schema_prompt", skip(schema), fields(table = %schema.table_name, column_count = schema.columns.len()))]
-#[instrument(skip(schema))]
 pub fn generate_schema_prompt(schema: &TableSchema) -> String {
     let mut prompt = String::new();
 
