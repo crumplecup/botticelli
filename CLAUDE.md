@@ -95,6 +95,28 @@ Only run when:
 just test-api
 ```
 
+### Manual vs Automated Edits
+
+**Manual edits are faster, cheaper, and more reliable than sed/awk automation.**
+
+Reality check on "automation":
+- Slower (fixing broken output takes multiple rounds)
+- More expensive (tokens wasted on revert/fix cycles)
+- Lower quality (syntax errors, broken code)
+- More human work (manual cleanup, repeated review)
+
+Manual approach wins when:
+- Editing multiple similar locations (view file, targeted edits, verify)
+- Pattern is clear but context varies
+- Mistakes are costly to fix
+
+Use automation only for:
+- Truly mechanical transformations (e.g., renaming single identifier)
+- Single-pass changes with zero ambiguity
+- Operations you can verify programmatically before committing
+
+When tempted to automate: pause, view the file, make targeted edits. The "tedious" path is usually fastest.
+
 ---
 
 ## Type Construction
