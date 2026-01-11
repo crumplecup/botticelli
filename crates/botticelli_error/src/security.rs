@@ -125,12 +125,15 @@ impl SecurityError {
     }
 }
 
-/// Result type for security operations.
-pub type SecurityResult<T> = Result<T, SecurityError>;
-
 #[cfg(feature = "database")]
 impl From<diesel::result::Error> for SecurityError {
+    #[track_caller]
     fn from(err: diesel::result::Error) -> Self {
         SecurityError::new(SecurityErrorKind::Database(err.to_string()))
     }
 }
+
+crate::impl_error_from_kind!(SecurityErrorKind => SecurityError);
+
+/// Result type for security operations.
+pub type SecurityResult<T> = Result<T, SecurityError>;
