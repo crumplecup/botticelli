@@ -4,6 +4,7 @@
 //! routing commands to domain-specific submodules.
 
 mod events;
+mod forum;
 mod misc;
 mod moderation;
 mod server;
@@ -82,6 +83,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "events.edit" => events::edit(&self.http, args).await?,
             "events.delete" => events::delete(&self.http, args).await?,
 
+            // Forum commands
+            "forum.create_post" => forum::create_post(&self.http, args).await?,
+            "forum.list_posts" => forum::list_posts(&self.http, args).await?,
+            "forum.get_post" => forum::get_post(&self.http, args).await?,
+
             // TODO: Add other commands as we migrate them
             
             _ => {
@@ -131,6 +137,10 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             | "events.create"
             | "events.edit"
             | "events.delete"
+            // Forum
+            | "forum.create_post"
+            | "forum.list_posts"
+            | "forum.get_post"
             // TODO: Add other commands as we migrate them
         )
     }
@@ -157,6 +167,10 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "events.create".to_string(),
             "events.edit".to_string(),
             "events.delete".to_string(),
+            // Forum
+            "forum.create_post".to_string(),
+            "forum.list_posts".to_string(),
+            "forum.get_post".to_string(),
             // TODO: Add other commands as we migrate them
         ]
     }
@@ -183,6 +197,9 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "events.create" => Some("Create a scheduled event\nRequired arguments: guild_id, name, start_time, entity_type\nOptional: description, end_time, location, channel_id".to_string()),
             "events.edit" => Some("Edit a scheduled event\nRequired arguments: guild_id, event_id\nOptional: name, description, start_time, end_time, status".to_string()),
             "events.delete" => Some("Delete a scheduled event\nRequired arguments: guild_id, event_id".to_string()),
+            "forum.create_post" => Some("Create a forum post\nRequired arguments: channel_id, name, content\nOptional: auto_archive_duration".to_string()),
+            "forum.list_posts" => Some("List forum posts\nRequired arguments: channel_id".to_string()),
+            "forum.get_post" => Some("Get forum post details\nRequired arguments: thread_id".to_string()),
             // TODO: Add other commands as we migrate them
             _ => None,
         }
