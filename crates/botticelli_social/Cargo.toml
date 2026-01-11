@@ -47,6 +47,8 @@ dotenvy = "0.15"
 tokio = { workspace = true, features = ["full"] }
 botticelli_narrative = { workspace = true }
 botticelli = { path = "../../crates/botticelli", features = ["discord", "database"] }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
 
 [features]
 default = []

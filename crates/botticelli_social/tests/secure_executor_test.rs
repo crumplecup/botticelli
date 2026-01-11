@@ -1,5 +1,7 @@
 //! Tests for secure bot command executor.
 
+mod helpers;
+
 use async_trait::async_trait;
 use botticelli_cache::CommandCache;
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
@@ -82,6 +84,9 @@ fn create_test_executor() -> SecureBotCommandExecutor<DiscordValidator> {
 
 #[tokio::test]
 async fn test_secure_execution_success() {
+    helpers::init_test_tracing("debug");
+    tracing::info!("Testing secure execution success");
+
     let mut executor = create_test_executor();
     let mut args = HashMap::new();
     args.insert(
@@ -93,6 +98,12 @@ async fn test_secure_execution_success() {
         JsonValue::String("Hello, world!".to_string()),
     );
 
+    tracing::debug!(
+        command = "messages.send",
+        channel_id = "123456789012345678",
+        "Executing secure command"
+    );
+
     let result = executor
         .execute_secure("narrative1", "mock", "messages.send", &args)
         .await
@@ -100,6 +111,7 @@ async fn test_secure_execution_success() {
 
     match result {
         ExecutionResult::Success(json) => {
+            tracing::info!(?json, "Command succeeded");
             assert_eq!(json["status"], "sent");
         }
         ExecutionResult::ApprovalRequired(_) => panic!("Should not require approval"),
@@ -108,8 +120,13 @@ async fn test_secure_execution_success() {
 
 #[tokio::test]
 async fn test_secure_execution_permission_denied() {
+    helpers::init_test_tracing("debug");
+    tracing::info!("Testing permission denied");
+
     let mut executor = create_test_executor();
     let args = HashMap::new();
+
+    tracing::debug!(command = "forbidden.command", "Executing forbidden command");
 
     let result = executor
         .execute_secure("narrative1", "mock", "forbidden.command", &args)
@@ -117,6 +134,7 @@ async fn test_secure_execution_permission_denied() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
+    tracing::info!(?err, "Command denied as expected");
     assert!(matches!(
         err.kind(),
         BotCommandErrorKind::PermissionDenied { .. }
@@ -125,6 +143,9 @@ async fn test_secure_execution_permission_denied() {
 
 #[tokio::test]
 async fn test_secure_execution_validation_failed() {
+    helpers::init_test_tracing("debug");
+    tracing::info!("Testing validation failure");
+
     let mut executor = create_test_executor();
     let mut args = HashMap::new();
     // Use a valid channel ID for permissions, but content that's too long
@@ -137,12 +158,15 @@ async fn test_secure_execution_validation_failed() {
         JsonValue::String("x".repeat(2001)), // Exceeds 2000 char limit
     );
 
+    tracing::debug!(content_length = 2001, "Executing with invalid content length");
+
     let result = executor
         .execute_secure("narrative1", "mock", "messages.send", &args)
         .await;
 
     assert!(result.is_err());
     let err = result.unwrap_err();
+    tracing::info!(?err, "Validation failed as expected");
     assert!(matches!(
         err.kind(),
         BotCommandErrorKind::InvalidArgument { .. }
@@ -151,6 +175,9 @@ async fn test_secure_execution_validation_failed() {
 
 #[tokio::test]
 async fn test_secure_execution_content_violation() {
+    helpers::init_test_tracing("debug");
+    tracing::info!("Testing content violation");
+
     let mut executor = create_test_executor();
     let mut args = HashMap::new();
     args.insert(
@@ -162,12 +189,15 @@ async fn test_secure_execution_content_violation() {
         JsonValue::String("@everyone spam".to_string()),
     );
 
+    tracing::debug!(content = "@everyone spam", "Executing with forbidden content");
+
     let result = executor
         .execute_secure("narrative1", "mock", "messages.send", &args)
         .await;
 
     assert!(result.is_err());
     let err = result.unwrap_err();
+    tracing::info!(?err, "Content violation detected as expected");
     assert!(matches!(
         err.kind(),
         BotCommandErrorKind::InvalidArgument { .. }
@@ -176,6 +206,9 @@ async fn test_secure_execution_content_violation() {
 
 #[tokio::test]
 async fn test_secure_execution_rate_limit() {
+    helpers::init_test_tracing("debug");
+    tracing::info!("Testing rate limit");
+
     let mut executor = create_test_executor();
     let mut args = HashMap::new();
     args.insert(
@@ -187,14 +220,17 @@ async fn test_secure_execution_rate_limit() {
         JsonValue::String("Hello".to_string()),
     );
 
+    tracing::debug!("Exhausting rate limit (10 requests)");
     // Exhaust rate limit
-    for _ in 0..10 {
+    for i in 0..10 {
+        tracing::trace!(request_num = i + 1, "Executing request");
         executor
             .execute_secure("narrative1", "mock", "messages.send", &args)
             .await
             .unwrap();
     }
 
+    tracing::debug!("Attempting 11th request (should fail)");
     // 11th should fail
     let result = executor
         .execute_secure("narrative1", "mock", "messages.send", &args)
@@ -202,6 +238,7 @@ async fn test_secure_execution_rate_limit() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
+    tracing::info!(?err, "Rate limit triggered as expected");
     assert!(matches!(
         err.kind(),
         BotCommandErrorKind::RateLimitExceeded { .. }
@@ -210,6 +247,9 @@ async fn test_secure_execution_rate_limit() {
 
 #[tokio::test]
 async fn test_secure_execution_approval_required() {
+    helpers::init_test_tracing("debug");
+    tracing::info!("Testing approval workflow");
+
     // Create executor with approval required for messages.send
     let mut registry = BotCommandRegistryImpl::with_cache(CommandCache::default());
     registry.register(MockExecutor);
@@ -233,6 +273,7 @@ async fn test_secure_execution_approval_required() {
     // Configure approval workflow to require approval for messages.send
     let mut approval_workflow = ApprovalWorkflow::new();
     approval_workflow.set_requires_approval("mock.messages.send", true);
+    tracing::debug!("Configured approval workflow for messages.send");
 
     let mut executor = SecureBotCommandExecutor::new(
         registry,
@@ -253,6 +294,7 @@ async fn test_secure_execution_approval_required() {
         JsonValue::String("Hello".to_string()),
     );
 
+    tracing::debug!("Executing command requiring approval");
     let result = executor
         .execute_secure("narrative1", "mock", "messages.send", &args)
         .await
@@ -260,6 +302,7 @@ async fn test_secure_execution_approval_required() {
 
     match result {
         ExecutionResult::ApprovalRequired(action_id) => {
+            tracing::info!(action_id = %action_id, "Approval required as expected");
             assert!(!action_id.is_empty());
         }
         ExecutionResult::Success(_) => panic!("Should require approval"),
