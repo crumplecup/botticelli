@@ -114,14 +114,15 @@ impl DatabaseCommandExecutor {
 
         // Validate table is whitelisted
         if !self.is_table_allowed(table_name) {
-            return Err(BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+            return Err(BotCommandErrorKind::InvalidArgument {
                 command: "update_table".to_string(),
                 arg_name: "table_name".to_string(),
                 reason: format!(
                     "Table '{}' not in whitelist. Allowed tables: {:?}",
                     table_name, self.allowed_tables
                 ),
-            }));
+            }
+            .into());
         }
 
         // Extract WHERE clause
@@ -147,11 +148,12 @@ impl DatabaseCommandExecutor {
             })?;
 
         if updates.is_empty() {
-            return Err(BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+            return Err(BotCommandErrorKind::InvalidArgument {
                 command: "update_table".to_string(),
                 arg_name: "updates".to_string(),
                 reason: "Updates map cannot be empty".to_string(),
-            }));
+            }
+            .into());
         }
 
         // Extract optional limit
@@ -293,9 +295,11 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
         let result = match command {
             "update_table" => self.update_table(args).await?,
             _ => {
-                return Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
-                    format!("database.{}", command),
-                )));
+                return Err(BotCommandErrorKind::CommandNotFound(format!(
+                    "database.{}",
+                    command
+                ))
+                .into());
             }
         };
 

@@ -177,3 +177,10 @@ impl BotCommandError {
         })
     }
 }
+
+impl From<BotCommandErrorKind> for BotCommandError {
+    #[track_caller]
+    fn from(kind: BotCommandErrorKind) -> Self {
+        Self::new(kind)
+    }
+}
