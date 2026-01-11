@@ -84,12 +84,10 @@ impl BotticelliBot {
     pub async fn start(&mut self) -> Result<(), DiscordError> {
         info!("Starting Discord bot");
 
-        self.client.start().await.map_err(|e| {
-            DiscordError::new(DiscordErrorKind::ConnectionFailed(format!(
-                "Client error: {}",
-                e
-            )))
-        })?;
+        self.client
+            .start()
+            .await
+            .map_err(DiscordError::from_connection_error)?;
 
         Ok(())
     }
