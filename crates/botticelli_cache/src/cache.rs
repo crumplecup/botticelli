@@ -17,11 +17,13 @@ pub struct CacheEntry {
 
 impl CacheEntry {
     /// Check if this entry is expired.
+    #[tracing::instrument(skip(self))]
     pub fn is_expired(&self) -> bool {
         self.created_at.elapsed() > self.ttl
     }
 
     /// Get remaining time until expiration.
+    #[tracing::instrument(skip(self))]
     pub fn time_remaining(&self) -> Option<Duration> {
         self.ttl.checked_sub(self.created_at.elapsed())
     }
@@ -134,13 +136,13 @@ pub struct CommandCache {
 
 impl CommandCache {
     /// Create a new command cache with configuration.
+    #[tracing::instrument(skip(config), fields(
+        default_ttl = config.default_ttl,
+        max_size = config.max_size,
+        enabled = config.enabled
+    ))]
     pub fn new(config: CommandCacheConfig) -> Self {
-        tracing::debug!(
-            default_ttl = config.default_ttl,
-            max_size = config.max_size,
-            enabled = config.enabled,
-            "Creating new CommandCache"
-        );
+        tracing::debug!("Creating new CommandCache");
         Self {
             config,
             entries: HashMap::new(),
@@ -261,6 +263,7 @@ impl CommandCache {
     }
 
     /// Remove expired entries from cache.
+    #[tracing::instrument(skip(self), fields(cache_size = self.entries.len()))]
     pub fn cleanup_expired(&mut self) -> usize {
         let before = self.entries.len();
 
@@ -284,6 +287,7 @@ impl CommandCache {
     }
 
     /// Clear all cache entries.
+    #[tracing::instrument(skip(self), fields(cache_size = self.entries.len()))]
     pub fn clear(&mut self) {
         let count = self.entries.len();
         self.entries.clear();
@@ -292,11 +296,13 @@ impl CommandCache {
     }
 
     /// Get number of cached entries.
+    #[tracing::instrument(skip(self))]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
 
     /// Check if cache is empty.
+    #[tracing::instrument(skip(self))]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
