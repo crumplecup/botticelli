@@ -7,7 +7,7 @@
 use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
-use botticelli_narrative::validator::{ValidationConfig, validate_narrative_toml_with_config};
+use botticelli_narrative::validator::{ValidationConfig, Validator};
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
@@ -109,31 +109,33 @@ impl McpTool for ValidateNarrativeTool {
         };
 
         // Configure validation
-        let config = ValidationConfig {
-            validate_nested_narratives: validate_files,
-            validate_media_files: validate_files,
-            warn_unknown_models: validate_models,
-            warn_unused_resources: warn_unused,
-            base_dir: file_path
-                .and_then(|p| PathBuf::from(p).parent().map(|parent| parent.to_path_buf())),
-        };
+        let mut config = ValidationConfig::default();
+        config = config
+            .with_validate_nested_narratives(validate_files)
+            .with_validate_media_files(validate_files)
+            .with_warn_unknown_models(validate_models)
+            .with_warn_unused_resources(warn_unused);
+        
+        if let Some(p) = file_path.and_then(|p| PathBuf::from(p).parent().map(|parent| parent.to_path_buf())) {
+            config = config.with_base_dir(Some(p));
+        }
 
         // Validate
-        let result = validate_narrative_toml_with_config(&toml_content, &config);
+        let result = Validator::validate_toml_with_config(&toml_content, &config);
 
         // Format errors
         let errors: Vec<Value> = result
-            .errors
+            .errors()
             .iter()
             .map(|e| {
                 json!({
-                    "kind": format!("{:?}", e.kind),
-                    "message": e.message,
-                    "suggestion": e.suggestion,
-                    "location": e.location.as_ref().map(|loc| json!({
-                        "line": loc.line,
-                        "column": loc.column,
-                        "section": loc.section,
+                    "kind": format!("{:?}", e.kind()),
+                    "message": e.message(),
+                    "suggestion": e.suggestion(),
+                    "location": e.location().as_ref().map(|loc| json!({
+                        "line": loc.line(),
+                        "column": loc.column(),
+                        "section": loc.section(),
                     })),
                 })
             })
@@ -141,23 +143,23 @@ impl McpTool for ValidateNarrativeTool {
 
         // Format warnings
         let warnings: Vec<Value> = result
-            .warnings
+            .warnings()
             .iter()
             .map(|w| {
                 json!({
-                    "kind": format!("{:?}", w.kind),
-                    "message": w.message,
-                    "location": w.location.as_ref().map(|loc| json!({
-                        "line": loc.line,
-                        "column": loc.column,
-                        "section": loc.section,
+                    "kind": format!("{:?}", w.kind()),
+                    "message": w.message(),
+                    "location": w.location().as_ref().map(|loc| json!({
+                        "line": loc.line(),
+                        "column": loc.column(),
+                        "section": loc.section(),
                     })),
                 })
             })
             .collect();
 
         let is_valid = result.is_valid();
-        let has_warnings = !result.warnings.is_empty();
+        let has_warnings = !result.warnings().is_empty();
 
         Ok(json!({
             "valid": is_valid && (!strict || !has_warnings),

@@ -29,7 +29,7 @@ use crate::{
     ValidateNarrativeResult, ValidateNarrativeSessionParams, ValidateNarrativeSessionResult,
     ValidationError, ValidationIssue, ValidationLocation, ValidationSeverity, ValidationWarning,
 };
-use botticelli_narrative::validator::validate_narrative_toml;
+use botticelli_narrative::validator::{ValidationConfig, Validator};
 use rmcp::handler::server::tool::ToolRouter;
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ServerCapabilities;
@@ -1034,12 +1034,12 @@ impl BotticelliServer {
         let toml_with_comments = add_helpful_comments(&toml);
 
         // Validate
-        let validation = validate_narrative_toml(&toml);
+        let validation = Validator::validate_toml(&toml);
 
         debug!(
             valid = validation.is_valid(),
-            errors = validation.errors.len(),
-            warnings = validation.warnings.len(),
+            errors = validation.errors().len(),
+            warnings = validation.warnings().len(),
             fixes_applied = fixes_applied.len(),
             "Narrative generated and validated"
         );
@@ -1063,7 +1063,7 @@ impl BotticelliServer {
         } else {
             format!(
                 "Generated narrative has {} error(s) - see validation for details",
-                validation.errors.len()
+                validation.errors().len()
             )
         };
 
@@ -1130,7 +1130,7 @@ impl BotticelliServer {
         modified_toml = format_toml(&modified_toml);
 
         // Validate
-        let validation = validate_narrative_toml(&modified_toml);
+        let validation = Validator::validate_toml(&modified_toml);
 
         debug!(
             valid = validation.is_valid(),
@@ -1288,9 +1288,6 @@ impl BotticelliServer {
             strict,
         }): Parameters<ValidateNarrativeParams>,
     ) -> Result<Json<ValidateNarrativeResult>, rmcp::ErrorData> {
-        use botticelli_narrative::validator::{
-            ValidationConfig, validate_narrative_toml_with_config,
-        };
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
         use std::path::PathBuf;
@@ -1321,51 +1318,53 @@ impl BotticelliServer {
         };
 
         // Configure validation
-        let config = ValidationConfig {
-            validate_nested_narratives: validate_files,
-            validate_media_files: validate_files,
-            warn_unknown_models: validate_models,
-            warn_unused_resources: warn_unused,
-            base_dir: file_path
-                .and_then(|p| PathBuf::from(p).parent().map(|parent| parent.to_path_buf())),
-        };
+        let mut config = ValidationConfig::default();
+        config = config
+            .with_validate_nested_narratives(validate_files)
+            .with_validate_media_files(validate_files)
+            .with_warn_unknown_models(validate_models)
+            .with_warn_unused_resources(warn_unused);
+        
+        if let Some(p) = file_path.and_then(|p| PathBuf::from(p).parent().map(|parent| parent.to_path_buf())) {
+            config = config.with_base_dir(Some(p));
+        }
 
         // Validate
-        let result = validate_narrative_toml_with_config(&toml_content, &config);
+        let result = Validator::validate_toml_with_config(&toml_content, &config);
 
         // Convert errors
         let errors: Vec<ValidationError> = result
-            .errors
+            .errors()
             .iter()
             .map(|e| ValidationError {
-                kind: format!("{:?}", e.kind),
-                message: e.message.clone(),
-                suggestion: e.suggestion.clone(),
-                location: e.location.as_ref().map(|loc| ValidationLocation {
-                    line: loc.line,
-                    column: loc.column,
-                    section: loc.section.clone(),
+                kind: format!("{:?}", e.kind()),
+                message: e.message().clone(),
+                suggestion: e.suggestion().clone(),
+                location: e.location().as_ref().map(|loc| ValidationLocation {
+                    line: *loc.line(),
+                    column: *loc.column(),
+                    section: loc.section().clone(),
                 }),
             })
             .collect();
 
         // Convert warnings
         let warnings: Vec<ValidationWarning> = result
-            .warnings
+            .warnings()
             .iter()
             .map(|w| ValidationWarning {
-                kind: format!("{:?}", w.kind),
-                message: w.message.clone(),
-                location: w.location.as_ref().map(|loc| ValidationLocation {
-                    line: loc.line,
-                    column: loc.column,
-                    section: loc.section.clone(),
+                kind: format!("{:?}", w.kind()),
+                message: w.message().clone(),
+                location: w.location().as_ref().map(|loc| ValidationLocation {
+                    line: *loc.line(),
+                    column: *loc.column(),
+                    section: loc.section().clone(),
                 }),
             })
             .collect();
 
         let is_valid = result.is_valid();
-        let has_warnings = !result.warnings.is_empty();
+        let has_warnings = !result.warnings().is_empty();
         let valid = is_valid && (!strict || !has_warnings);
 
         debug!(
@@ -1883,15 +1882,11 @@ impl BotticelliServer {
 
         // Validate if requested
         let validation_errors = if validate {
-            use botticelli_narrative::validator::{
-                ValidationConfig, validate_narrative_toml_with_config,
-            };
-
             let config = ValidationConfig::default();
-            let result = validate_narrative_toml_with_config(&toml, &config);
+            let result = Validator::validate_toml_with_config(&toml, &config);
 
             if !result.is_valid() {
-                Some(result.errors.iter().map(|e| e.message.clone()).collect())
+                Some(result.errors().iter().map(|e| e.message().clone()).collect())
             } else {
                 None
             }

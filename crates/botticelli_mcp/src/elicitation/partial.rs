@@ -83,10 +83,9 @@ impl PartialNarrative {
     /// Converts to TOML and validates using existing validator.
     #[tracing::instrument(skip(self))]
     pub fn validate(&self) -> McpResult<botticelli_narrative::validator::ValidationResult> {
+        use botticelli_narrative::validator::Validator;
         let toml = self.to_toml()?;
-        Ok(botticelli_narrative::validator::validate_narrative_toml(
-            &toml,
-        ))
+        Ok(Validator::validate_toml(&toml))
     }
 
     /// Convert to TOML string.
@@ -169,7 +168,7 @@ impl PartialNarrative {
         if !validation.is_valid() {
             return Err(McpError::invalid_input(format!(
                 "Narrative validation failed: {} errors",
-                validation.errors.len()
+                validation.errors().len()
             )));
         }
 

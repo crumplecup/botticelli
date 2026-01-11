@@ -9,11 +9,11 @@ use serde_json::{Value, json};
 pub fn format_validation_result(validation: &ValidationResult) -> Value {
     json!({
         "valid": validation.is_valid(),
-        "errors": format_errors(&validation.errors),
-        "warnings": format_warnings(&validation.warnings),
+        "errors": format_errors(validation.errors()),
+        "warnings": format_warnings(validation.warnings()),
         "summary": create_summary(validation),
-        "has_critical_errors": has_critical_errors(&validation.errors),
-        "has_fixable_errors": has_fixable_errors(&validation.errors)
+        "has_critical_errors": has_critical_errors(validation.errors()),
+        "has_fixable_errors": has_fixable_errors(validation.errors())
     })
 }
 
@@ -22,20 +22,20 @@ fn format_errors(errors: &[ValidationError]) -> Vec<Value> {
     errors
         .iter()
         .map(|error| {
-            let priority = categorize_error_priority(&error.kind);
+            let priority = categorize_error_priority(error.kind());
             let fix = generate_fix_suggestion(error);
 
             json!({
-                "message": error.message,
-                "kind": format!("{:?}", error.kind),
+                "message": error.message(),
+                "kind": format!("{:?}", error.kind()),
                 "priority": priority,
-                "location": error.location.as_ref().map(|loc| json!({
-                    "line": loc.line,
-                    "column": loc.column,
-                    "section": loc.section,
+                "location": error.location().as_ref().map(|loc| json!({
+                    "line": loc.line(),
+                    "column": loc.column(),
+                    "section": loc.section(),
                 })),
-                "suggestion": error.suggestion.as_ref().or(fix.as_ref()),
-                "fixable": error.suggestion.is_some() || fix.is_some(),
+                "suggestion": error.suggestion().as_ref().or(fix.as_ref()),
+                "fixable": error.suggestion().is_some() || fix.is_some(),
             })
         })
         .collect()
@@ -47,14 +47,14 @@ fn format_warnings(warnings: &[ValidationWarning]) -> Vec<Value> {
         .iter()
         .map(|warning| {
             json!({
-                "message": warning.message,
-                "kind": format!("{:?}", warning.kind),
-                "location": warning.location.as_ref().map(|loc| json!({
-                    "line": loc.line,
-                    "column": loc.column,
-                    "section": loc.section,
+                "message": warning.message(),
+                "kind": format!("{:?}", warning.kind()),
+                "location": warning.location().as_ref().map(|loc| json!({
+                    "line": loc.line(),
+                    "column": loc.column(),
+                    "section": loc.section(),
                 })),
-                "severity": categorize_warning_severity(&warning.kind)
+                "severity": categorize_warning_severity(warning.kind())
             })
         })
         .collect()
@@ -62,12 +62,12 @@ fn format_warnings(warnings: &[ValidationWarning]) -> Vec<Value> {
 
 /// Create a summary of validation results.
 fn create_summary(validation: &ValidationResult) -> String {
-    let error_count = validation.errors.len();
-    let warning_count = validation.warnings.len();
+    let error_count = validation.errors().len();
+    let warning_count = validation.warnings().len();
     let fixable_count = validation
-        .errors
+        .errors()
         .iter()
-        .filter(|e| e.suggestion.is_some())
+        .filter(|e| e.suggestion().is_some())
         .count();
 
     if validation.is_valid() {
@@ -124,19 +124,19 @@ fn categorize_warning_severity(
 fn has_critical_errors(errors: &[ValidationError]) -> bool {
     errors
         .iter()
-        .any(|e| categorize_error_priority(&e.kind) == "critical")
+        .any(|e| categorize_error_priority(e.kind()) == "critical")
 }
 
 /// Check if errors have fix suggestions.
 fn has_fixable_errors(errors: &[ValidationError]) -> bool {
-    errors.iter().any(|e| e.suggestion.is_some())
+    errors.iter().any(|e| e.suggestion().is_some())
 }
 
 /// Generate fix suggestion for errors without one.
 fn generate_fix_suggestion(error: &ValidationError) -> Option<String> {
     use botticelli_narrative::validator::ValidationErrorKind;
 
-    match &error.kind {
+    match error.kind() {
         ValidationErrorKind::EmptyToc => Some(
             "Add at least one act name to the [toc] order array. Example: order = [\"act1\"]"
                 .to_string(),
