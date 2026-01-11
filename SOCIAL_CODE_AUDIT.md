@@ -3,15 +3,15 @@
 ## Summary
 
 Audit Date: 2026-01-11
-Status: **Needs Refactoring**
+Status: **In Progress - P0/P1/P2 Fixes Completed**
 
 ### Critical Issues Found
 
-1. **BotCommandExecutor trait should be in interface** (P0)
-2. **Discord commands.rs is 5189 lines** - massive violation (P0)
-3. **Public fields in database model structs** - should use getters (P1)
-4. **Error conversion loses source** - map_err throwing away errors (P1)
-5. **Manual Clone impl in TokenBucket resets Instant** - semantic bug (P2)
+1. ~~**BotCommandExecutor trait should be in interface** (P0)~~ ✅ **FIXED**
+2. **Discord commands.rs is 5189 lines** - massive violation (P0) - TODO
+3. ~~**Public fields in database model structs** - should use getters (P1)~~ ✅ **FIXED**
+4. **Error conversion loses source** - map_err throwing away errors (P1) - TODO
+5. ~~**Manual Clone impl in TokenBucket resets Instant** - semantic bug (P2)~~ ✅ **FIXED**
 
 ### Metrics
 
@@ -19,42 +19,81 @@ Status: **Needs Refactoring**
 - **Public Functions**: 58
 - **Instrumented Functions**: 91 (exceeds public - good!)
 - **Manual Constructors**: 0 (good - using derive_new/Setters)
-- **Public Fields**: 12 in database models (violates encapsulation)
+- ~~**Public Fields**: 12 in database models (violates encapsulation)~~ ✅ **FIXED** - all private with getters
+
+---
+
+## Completed Fixes
+
+### ✅ P0: BotCommandExecutor Trait Migration (COMPLETE)
+
+**Status**: Moved to `botticelli_interface` with associated Error type
+
+**What Was Done**:
+1. Created `botticelli_interface/src/executor/` module
+2. Added `BotCommandExecutor` trait with `type Error` associated type
+3. All implementations specify `type Error = BotCommandError`
+4. `SecureBotExecutor` wraps inner errors using new `ExecutionFailed` variant
+5. Registry constrains executors via `dyn BotCommandExecutor<Error = BotCommandError>`
+6. Updated all imports to use `botticelli_interface::BotCommandExecutor`
+7. Social crate no longer re-exports trait (prevents duplicate exports)
+
+**Testing**: All 38 tests passing, zero warnings
+
+**Commit**: c1f4884 "refactor(interface): Move BotCommandExecutor trait to interface crate"
+
+---
+
+### ✅ P1: Public Fields in Database Models (COMPLETE)
+
+**Status**: All fields made private with derive_getters
+
+**What Was Done**:
+1. Removed `pub` from 12 fields across GuildRow, UserRow, GuildMemberRow
+2. Diesel Queryable works fine with private fields
+3. derive_getters provides immutable access
+4. NewGuild/NewUser structs use `pub(crate)` for construction
+
+**Testing**: All tests passing
+
+**Commit**: Previous session
+
+---
+
+### ✅ P2: TokenBucket Clone Semantic Bug (COMPLETE)
+
+**Status**: Removed Clone from time-sensitive types
+
+**What Was Done**:
+1. Removed Clone from TokenBucket and RateLimiter
+2. Removed Clone from SecureExecutor (cascade)
+3. Tests configure before creation instead of cloning
+4. Fixed semantic bug where Clone reset Instant::now()
+
+**Testing**: All tests passing
+
+**Commit**: Previous session
 
 ---
 
 ## P0 Issues (Must Fix)
 
-### 1. BotCommandExecutor Trait in Wrong Crate
+### 1. ~~BotCommandExecutor Trait in Wrong Crate~~ ✅ FIXED
 
-**Location**: `src/bot_commands.rs:218-253`
+**Location**: ~~`src/bot_commands.rs:218-253`~~ → Now in `botticelli_interface/src/executor/bot_command.rs`
 
-**Problem**: `BotCommandExecutor` trait is defined in `botticelli_social` but should be in `botticelli_interface` alongside `BotCommandRegistry`.
+**Status**: ✅ **FIXED** - Trait moved to interface with associated Error type
 
-**Current**:
-```rust
-// src/bot_commands.rs
-#[async_trait]
-pub trait BotCommandExecutor: Send + Sync {
-    fn platform(&self) -> &str;
-    async fn execute(&self, command: &str, args: &HashMap<String, JsonValue>) 
-        -> BotCommandResult<JsonValue>;
-    // ... many more methods
-}
-```
+**Problem**: Trait was in implementation crate instead of interface crate.
 
-**Why This Matters**:
-- Interface traits should be in `botticelli_interface`
-- Social is a **concrete implementation**, not an abstraction layer
-- Other crates (narrative, actor) depend on the abstraction, not the impl
-- Current: interface → social (circular dependency risk)
-- Should be: interface → social, narrative → interface
+**Solution Implemented**:
+- Trait now in `botticelli_interface/src/executor/bot_command.rs`
+- Uses associated `Error` type pattern like `BotCommandRegistry`
+- Social crate imports but does not re-export (prevents duplicate exports)
+- All implementations provide `type Error = BotCommandError`
+- `SecureBotExecutor` wraps inner errors preserving error chain
 
-**Fix**:
-1. Move `BotCommandExecutor` trait to `botticelli_interface/src/repository/bot_command.rs`
-2. Keep only `DiscordCommandExecutor` (impl) in social
-3. Update `BotCommandRegistry` to use `BotCommandExecutor` from interface
-4. Social becomes pure implementation crate
+**See**: Commit c1f4884
 
 ---
 
@@ -129,52 +168,19 @@ Then commands/mod.rs routes to submodules.
 
 ## P1 Issues (Should Fix)
 
-### 3. Public Fields in Database Models
+### 3. ~~Public Fields in Database Models~~ ✅ FIXED
 
-**Location**: 
-- `src/discord/models/guild.rs:14-24` (GuildRow)
-- `src/discord/models/user.rs:14-26` (UserRow)
-- `src/discord/models/member.rs` (MemberRow)
+**Status**: ✅ **FIXED** - All fields now private with derive_getters
 
-**Problem**: Diesel Queryable structs have `pub` fields, violating encapsulation.
+**Problem**: Database model structs had public fields violating encapsulation.
 
-**Current**:
-```rust
-#[derive(Debug, Clone, Queryable, Identifiable, Selectable, derive_getters::Getters)]
-pub struct GuildRow {
-    pub id: i64,              // ❌ Public field
-    pub name: String,         // ❌ Public field
-    pub icon: Option<String>, // ❌ Public field
-    // ... more pub fields
-    
-    features: Option<Vec<Option<String>>>, // ✅ Private
-    description: Option<String>,           // ✅ Private
-}
-```
+**Solution Implemented**:
+- Removed `pub` from 12 fields across GuildRow, UserRow, GuildMemberRow
+- All fields now private with getter methods via derive_getters
+- Diesel Queryable works correctly with private fields
+- NewGuild/NewUser construction helpers use `pub(crate)`
 
-**Why This Matters**:
-- External crates can mutate fields directly
-- Breaks invariants (e.g., ID should never change)
-- No validation on field updates
-- Already has `derive_getters` - contradicts intent
-
-**Fix**:
-```rust
-#[derive(Debug, Clone, Queryable, Identifiable, Selectable, derive_getters::Getters)]
-pub struct GuildRow {
-    id: i64,              // ✅ Private with getter
-    name: String,         // ✅ Private with getter
-    icon: Option<String>, // ✅ Private with getter
-    // ... all private
-}
-
-// derive_getters provides:
-// guild.id() -> &i64
-// guild.name() -> &String
-// guild.icon() -> &Option<String>
-```
-
-Diesel Queryable works with private fields. Only needs public visibility during SQL mapping, not after construction.
+**See**: Previous session commits
 
 ---
 
@@ -241,106 +247,29 @@ serde_json::to_string(other)?  // ✅ Auto-converts to BotCommandError
 
 ---
 
-### 5. Error Types Should Be in _error Crate
+### 5. ~~Error Types Should Be in _error Crate~~ ✅ FIXED
 
-**Location**: `src/bot_commands.rs:40-163` (BotCommandError, BotCommandErrorKind)
+**Status**: ✅ **FIXED** - Errors moved to botticelli_error/src/social.rs
 
-**Problem**: Error types defined in implementation crate instead of dedicated error crate.
+**Problem**: Error types were in implementation crate instead of dedicated error crate.
 
-**Why This Matters**:
-- Error types are cross-cutting concerns
-- Multiple crates need to construct/handle these errors
-- Creates circular dependency if interface needs to reference social errors
-- Violates "errors in _error" pattern from other crates
+**Solution Implemented**:
+- Created `botticelli_error/src/social.rs` with BotCommandError types
+- Moved BotCommandError, BotCommandErrorKind, BotCommandResult
+- Added ExecutionFailed variant for wrapper errors
+- All imports updated to use `botticelli_error::BotCommandError`
 
-**Current Structure**:
-```
-botticelli_social/
-└── src/
-    ├── bot_commands.rs
-    │   ├── BotCommandError        // ❌ Should be in error crate
-    │   ├── BotCommandErrorKind     // ❌ Should be in error crate
-    │   ├── BotCommandExecutor      // ❌ Should be in interface
-    │   └── BotCommandRegistry      // ✅ OK (registry is impl)
-```
-
-**Should Be**:
-```
-botticelli_error/
-└── src/
-    └── social.rs                   // ✅ New module
-        ├── BotCommandError
-        └── BotCommandErrorKind
-
-botticelli_interface/
-└── src/
-    └── repository/
-        └── bot_command.rs
-            └── BotCommandExecutor  // ✅ Trait moved here
-
-botticelli_social/
-└── src/
-    ├── discord/
-    │   └── commands.rs
-    │       └── DiscordCommandExecutor  // ✅ Just impl
-    └── bot_commands.rs
-        └── BotCommandRegistry          // ✅ Registry impl
-```
-
-**Fix**:
-1. Create `botticelli_error/src/social.rs`
-2. Move `BotCommandError` and `BotCommandErrorKind` there
-3. Export from `botticelli_error` crate root
-4. Update imports in social to use `botticelli_error::BotCommandError`
+**See**: Commit c1f4884
 
 ---
 
 ## P2 Issues (Nice to Have)
 
-### 6. TokenBucket Clone Resets Instant
+### 6. ~~TokenBucket Clone Resets Instant~~ ✅ FIXED
 
-**Location**: `crates/botticelli_security/src/rate_limit.rs:50-69`
+**Status**: ✅ **FIXED** - Removed Clone from time-sensitive types
 
-**Problem**: Manual Clone impl resets `last_refill` to `Instant::now()` instead of cloning it.
-
-**Current**:
-```rust
-impl Clone for TokenBucket {
-    fn clone(&self) -> Self {
-        Self {
-            limit: self.limit.clone(),
-            tokens: self.tokens,
-            last_refill: Instant::now(),  // ❌ Resets to now
-        }
-    }
-}
-```
-
-**Why This Matters**:
-- Semantic surprise - Clone should preserve state
-- Cloned bucket has artificially recent `last_refill`
-- Leads to incorrect token refill calculations
-- Breaks rate limiting if bucket is cloned mid-usage
-
-**When This Could Break**:
-```rust
-let bucket = TokenBucket::new(limit);
-// Use bucket for 5 seconds
-let cloned = bucket.clone();
-// Cloned bucket thinks it was JUST created
-// Refill calculation will be wrong for next 5 seconds
-```
-
-**Fix Option 1** - Don't allow Clone:
-```rust
-// Remove Clone derive and manual impl
-#[derive(Debug)]  // No Clone
-struct TokenBucket {
-    // ... fields
-}
-```
-
-This is probably correct - rate limiters shouldn't be cloned. They track stateful time-based data.
+**Problem**: Manual Clone impl reset `last_refill` to `Instant::now()` breaking semantics.
 
 **Fix Option 2** - Clone properly with caveat:
 ```rust
@@ -408,25 +337,53 @@ Most likely candidates:
    - Test Diesel queries still work (they will)
 
 4. **Fix error source chain**:
-   - Add `#[from]` derives to BotCommandError
+## Remaining Work
+
+### High Priority (P0)
+
+1. **Split discord/commands.rs** (5189 lines):
+   - Create `commands/` directory with ~10 modules
+   - Group by domain: server, channels, members, roles, messages, etc.
+   - Each module 300-500 lines max
+   - Single concern per module
+
+### Medium Priority (P1)
+
+2. **Fix error source preservation**:
+   - Review map_err calls that discard source
+   - Add `#[from]` derives to BotCommandError where appropriate
    - Use `?` instead of `map_err` where possible
    - Preserve source errors in conversion
 
-5. **Move errors to botticelli_error**:
-   - Create `botticelli_error/src/social.rs`
-   - Move BotCommandError and BotCommandErrorKind
-   - Update social imports
+### Low Priority (P2)
 
-### Medium Priority (P2)
-
-6. **Fix TokenBucket Clone**:
-   - Remove Clone support (preferred)
-   - Or fix to preserve `last_refill` with big warning
-
-7. **Audit instrumentation coverage**:
+3. **Audit instrumentation coverage**:
    - Check discord/repository.rs
    - Check discord/conversions.rs
    - Add missing `#[instrument]` to public functions
+
+---
+
+## Progress Summary
+
+**Completed (3/5 critical issues)**:
+- ✅ P0: BotCommandExecutor trait moved to interface with associated Error type
+- ✅ P1: Public fields in database models fixed (all private with getters)  
+- ✅ P1: Error types moved to botticelli_error/src/social.rs
+- ✅ P2: TokenBucket Clone semantic bug fixed (removed Clone)
+
+**Remaining (2/5)**:
+- ⏳ P0: Split discord/commands.rs into modules (5189 lines)
+- ⏳ P1: Fix error conversions that lose source
+
+**Testing Status**: All 38 tests passing, zero warnings
+
+**Architecture Improvements**:
+- Proper crate boundaries: interface ← social (not circular)
+- Error types in dedicated error crate
+- Associated types in interface traits
+- Wrapper pattern preserves error chains
+- No duplicate exports across workspace
 
 ---
 
@@ -452,12 +409,13 @@ git diff --stat
 
 ## Notes
 
-- Good: Using derive_getters/setters instead of manual implementations
-- Good: High instrumentation coverage (91 spans for 58 public functions)
-- Good: No manual constructors found (all using derive_new/Setters)
-- Good: Proper error types with derive_more::Display + derive_more::Error
-- Bad: Massive 5189-line god object file
-- Bad: Traits and errors in wrong crates
-- Bad: Public fields breaking encapsulation
+- ✅ Good: Using derive_getters/setters instead of manual implementations
+- ✅ Good: High instrumentation coverage (91 spans for 58 public functions)
+- ✅ Good: No manual constructors found (all using derive_new/Setters)
+- ✅ Good: Proper error types with derive_more::Display + derive_more::Error
+- ✅ Good: Associated Error types in interface traits
+- ✅ Good: Proper crate boundaries (errors in _error, traits in _interface)
+- ⚠️ Bad: Massive 5189-line god object file (discord/commands.rs)
+- ⚠️ Bad: Some error conversions lose source
 
-This crate has **good practices** (derives, instrumentation) but **poor architecture** (wrong crate boundaries, giant files).
+**Overall**: Architecture significantly improved from audit start. Main remaining issue is the monolithic commands.rs file.
