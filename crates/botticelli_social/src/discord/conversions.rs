@@ -165,7 +165,7 @@ impl TryFrom<DiscordUserJson> for NewUser {
 impl TryFrom<DiscordChannelJson> for NewChannel {
     type Error = botticelli_error::BotticelliError;
 
-    #[instrument(skip(json), fields(channel_id = %json.id(), channel_name = %json.name(), guild_id = %json.guild_id()))]
+    #[instrument(skip(json), fields(channel_id = %json.id(), channel_name = ?json.name(), guild_id = ?json.guild_id()))]
     fn try_from(json: DiscordChannelJson) -> BotticelliResult<Self> {
         let channel_type = parse_channel_type(json.channel_type())?;
 

@@ -122,7 +122,7 @@ impl BotticelliBot {
         let client_handle = tokio::spawn(async move { client.start().await });
 
         // Monitor error channel
-        let error_result = tokio::select! {
+        tokio::select! {
             // Client task completed
             result = client_handle => {
                 match result {
@@ -149,31 +149,16 @@ impl BotticelliBot {
                     error = %err,
                     "Critical error in event handler, shutting down bot"
                 );
-                err
-            }
-        };
-
-        // Graceful shutdown: client task is still running
-        info!("Initiating graceful shutdown");
-        shard_manager.shutdown_all().await;
-
-        // Wait for client task to complete shutdown (with timeout)
-        match tokio::time::timeout(std::time::Duration::from_secs(10), client_handle).await {
-            Ok(Ok(Ok(()))) => {
-                info!("Client shutdown completed successfully");
-            }
-            Ok(Ok(Err(e))) => {
-                error!(error = %e, "Client failed during shutdown");
-            }
-            Ok(Err(e)) => {
-                error!(error = %e, "Client task panicked during shutdown");
-            }
-            Err(_) => {
-                error!("Client shutdown timed out after 10 seconds");
+                
+                // Graceful shutdown: signal client to stop
+                info!("Initiating graceful shutdown");
+                shard_manager.shutdown_all().await;
+                
+                // Client task continues running, we just return the error
+                // (the spawned task will complete in background)
+                return Err(err);
             }
         }
-
-        Err(error_result)
     }
 
     /// Get a reference to the repository for direct database access.

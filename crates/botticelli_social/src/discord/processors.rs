@@ -37,7 +37,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
     type Error = botticelli_error::BotticelliError;
 
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = "DiscordGuildProcessor"))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
+    async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = match Extract::json(&context.execution().response()) {
             Ok(s) => s,
             Err(e) => {
@@ -72,8 +72,8 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
 
         for (index, guild_json) in guilds.iter().enumerate() {
             debug!(
-                guild_id = guild_json.id,
-                guild_name = %guild_json.name,
+                guild_id = guild_json.id(),
+                guild_name = %guild_json.name(),
                 index = index,
                 "Converting and storing guild"
             );
@@ -82,8 +82,8 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
                 Ok(g) => g,
                 Err(e) => {
                     error!(
-                        guild_id = guild_json.id,
-                        guild_name = %guild_json.name,
+                        guild_id = guild_json.id(),
+                        guild_name = %guild_json.name(),
                         error = %e,
                         "Failed to convert guild JSON to database model"
                     );
@@ -107,7 +107,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
 
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
-    fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+    fn should_process(&self, context: &ProcessorContext) -> bool {
         // Process if act name suggests guild/server data
         let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("guild") || name_lower.contains("server");
@@ -150,7 +150,7 @@ impl DiscordUserProcessor {
 impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
+    async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(&context.execution().response())?;
 
         let users: Vec<DiscordUserJson> = if json_str.trim().starts_with('[') {
@@ -167,8 +167,8 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
 
         for user_json in users {
             debug!(
-                user_id = user_json.id,
-                username = %user_json.username,
+                user_id = user_json.id(),
+                username = %user_json.username(),
                 "Storing Discord user"
             );
 
@@ -185,7 +185,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
 
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
-    fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+    fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("user") || name_lower.contains("member");
 
@@ -228,7 +228,7 @@ impl DiscordChannelProcessor {
 impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
+    async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(&context.execution().response())?;
 
         let channels: Vec<DiscordChannelJson> = if json_str.trim().starts_with('[') {
@@ -245,9 +245,9 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
 
         for channel_json in channels {
             debug!(
-                channel_id = channel_json.id,
-                channel_type = %channel_json.channel_type,
-                channel_name = ?channel_json.name,
+                channel_id = channel_json.id(),
+                channel_type = %channel_json.channel_type(),
+                channel_name = ?channel_json.name(),
                 "Storing Discord channel"
             );
 
@@ -264,7 +264,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
 
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
-    fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+    fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("channel");
 
@@ -306,7 +306,7 @@ impl DiscordRoleProcessor {
 impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
+    async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(&context.execution().response())?;
 
         let roles: Vec<DiscordRoleJson> = if json_str.trim().starts_with('[') {
@@ -323,9 +323,9 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
 
         for role_json in roles {
             debug!(
-                role_id = role_json.id,
-                role_name = %role_json.name,
-                guild_id = role_json.guild_id,
+                role_id = role_json.id(),
+                role_name = %role_json.name(),
+                guild_id = role_json.guild_id(),
                 "Storing Discord role"
             );
 
@@ -341,7 +341,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
     }
 
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
-    fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+    fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("role");
 
@@ -384,7 +384,7 @@ impl DiscordGuildMemberProcessor {
 impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
+    async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(&context.execution().response())?;
 
         let members: Vec<DiscordGuildMemberJson> = if json_str.trim().starts_with('[') {
@@ -401,9 +401,9 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
 
         for member_json in members {
             debug!(
-                guild_id = member_json.guild_id,
-                user_id = member_json.user_id,
-                nick = ?member_json.nick,
+                guild_id = member_json.guild_id(),
+                user_id = member_json.user_id(),
+                nick = ?member_json.nick(),
                 "Storing Discord guild member"
             );
 
@@ -419,7 +419,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
     }
 
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
-    fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+    fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("member") && !name_lower.contains("role");
 
@@ -463,7 +463,7 @@ impl DiscordMemberRoleProcessor {
 impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
-    async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
+    async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(&context.execution().response())?;
 
         let member_roles: Vec<DiscordMemberRoleJson> = if json_str.trim().starts_with('[') {
@@ -480,9 +480,9 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
 
         for member_role_json in member_roles {
             debug!(
-                guild_id = member_role_json.guild_id,
-                user_id = member_role_json.user_id,
-                role_id = member_role_json.role_id,
+                guild_id = member_role_json.guild_id(),
+                user_id = member_role_json.user_id(),
+                role_id = member_role_json.role_id(),
                 "Storing Discord member role assignment"
             );
 
@@ -498,7 +498,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
     }
 
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
-    fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
+    fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();
         let name_match = name_lower.contains("member") && name_lower.contains("role");
 

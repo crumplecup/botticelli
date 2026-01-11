@@ -7,7 +7,7 @@ use crate::{
     ChannelType, DiscordRepository, NewChannelBuilder, NewGuildBuilder,
     NewGuildMemberBuilder, NewRoleBuilder, NewUserBuilder,
 };
-use botticelli_error::{DiscordError, DiscordErrorKind, DiscordResult};
+use botticelli_error::{DiscordError, DiscordErrorKind, DiscordErrorSeverity, DiscordResult};
 use botticelli_interface::{DiscordEventProcessor, EventResult};
 use chrono::NaiveDateTime;
 use serenity::all::{GuildId, Ready};
@@ -125,7 +125,7 @@ impl BotticelliHandler {
             .build();
 
         let new_guild = new_guild
-            .map_err(|e| crate::DiscordErrorKind::BuilderValidationError(e.to_string()).into())?;
+            .map_err(|e| DiscordError::new(DiscordErrorKind::BuilderValidationError(e.to_string())))?;
 
         self.repository.store_guild(&new_guild).await?;
         debug!(guild_id = %guild.id, guild_name = %guild.name, "Stored guild");
@@ -159,8 +159,8 @@ impl BotticelliHandler {
                 None,
             ),
             _ => {
-                return Err(crate::DiscordError::new(
-                    crate::DiscordErrorKind::UnsupportedType(
+                return Err(DiscordError::new(
+                    DiscordErrorKind::UnsupportedType(
                         "Unsupported channel type for storage".to_string(),
                     ),
                 ));
@@ -201,12 +201,11 @@ impl BotticelliHandler {
             Ok(channel) => channel,
             Err(e) => {
                 error!(channel_id = id, error = %e, "Failed to build NewChannel");
-                return;
+                return Err(DiscordError::new(
+                    DiscordErrorKind::BuilderValidationError(e.to_string())
+                ));
             }
         };
-
-        let new_channel = new_channel
-            .map_err(|e| crate::DiscordErrorKind::BuilderValidationError(e.to_string()).into())?;
 
         self.repository.store_channel(&new_channel).await?;
         debug!(channel_id = id, "Stored channel");
@@ -237,8 +236,8 @@ impl BotticelliHandler {
         let new_user = match new_user {
             Ok(user) => user,
             Err(e) => {
-                return Err(crate::DiscordError::new(
-                    crate::DiscordErrorKind::BuilderValidationError(format!(
+                return Err(DiscordError::new(
+                    DiscordErrorKind::BuilderValidationError(format!(
                         "Failed to build NewUser: {}",
                         e
                     )),
@@ -275,11 +274,10 @@ impl BotticelliHandler {
             .build();
 
         let new_member = new_member.map_err(|e| {
-            crate::DiscordErrorKind::BuilderValidationError(format!(
+            DiscordError::new(DiscordErrorKind::BuilderValidationError(format!(
                 "Failed to build NewGuildMember: {}",
                 e
-            ))
-            .into()
+            )))
         })?;
 
         self.repository.store_guild_member(&new_member).await?;
@@ -306,11 +304,10 @@ impl BotticelliHandler {
             .build();
 
         let new_role = new_role.map_err(|e| {
-            crate::DiscordErrorKind::BuilderValidationError(format!(
+            DiscordError::new(DiscordErrorKind::BuilderValidationError(format!(
                 "Failed to build NewRole: {}",
                 e
-            ))
-            .into()
+            )))
         })?;
 
         self.repository.store_role(&new_role).await?;
@@ -345,8 +342,8 @@ impl BotticelliHandler {
 // Implementation of our internal event processing trait
 #[async_trait]
 impl DiscordEventProcessor for BotticelliHandler {
-    type Error = crate::DiscordError;
-    type Severity = crate::DiscordErrorSeverity;
+    type Error = DiscordError;
+    type Severity = DiscordErrorSeverity;
     type Guild = serenity::model::guild::Guild;
     type Channel = serenity::model::channel::GuildChannel;
     type Member = serenity::model::guild::Member;
@@ -447,18 +444,14 @@ impl DiscordEventProcessor for BotticelliHandler {
         channel: &Self::Channel,
     ) -> EventResult<(), Self::Error> {
         debug!("Processing channel_create event");
-        self.store_channel(channel.guild_id, &Channel::Guild(channel.clone()))
+        self.store_channel(Some(channel.guild_id), &Channel::Guild(channel.clone()))
             .await
     }
 
     #[instrument(skip(self, member), fields(user_id = %member.user.id))]
     async fn process_member_add(&self, member: &Self::Member) -> EventResult<(), Self::Error> {
         debug!("Processing member_add event");
-        if let Some(guild_id) = member.guild_id {
-            self.store_member(guild_id, member).await
-        } else {
-            Ok(())
-        }
+        self.store_member(member.guild_id, member).await
     }
 
     #[instrument(skip(self, role), fields(role_id = %role.id, role_name = %role.name))]
