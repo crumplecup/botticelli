@@ -15,6 +15,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use std::sync::Arc;
+use tracing::{debug, error, info, instrument};
 
 /// Processor for Discord guild (server) data.
 ///
@@ -36,38 +37,69 @@ impl DiscordGuildProcessor {
 impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
     type Error = botticelli_error::BotticelliError;
 
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = "DiscordGuildProcessor"))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
-        let json_str = extract_json(&context.execution.response)?;
+        let json_str = match extract_json(&context.execution.response) {
+            Ok(s) => s,
+            Err(e) => {
+                error!(error = %e, "Failed to extract JSON from LLM response");
+                return Err(e);
+            }
+        };
 
         // Try parsing as array first, then single object
         let guilds: Vec<DiscordGuildJson> = if json_str.trim().starts_with('[') {
-            parse_json(&json_str)?
+            match parse_json(&json_str) {
+                Ok(g) => g,
+                Err(e) => {
+                    error!(error = %e, "Failed to parse guild array from JSON");
+                    return Err(e);
+                }
+            }
         } else {
-            vec![parse_json(&json_str)?]
+            match parse_json::<DiscordGuildJson>(&json_str) {
+                Ok(g) => vec![g],
+                Err(e) => {
+                    error!(error = %e, "Failed to parse single guild from JSON");
+                    return Err(e);
+                }
+            }
         };
 
-        tracing::info!(
-            act = %context.execution.act_name,
-            count = guilds.len(),
-            "Processing Discord guilds"
-        );
+        info!(count = guilds.len(), "Processing Discord guilds from LLM response");
 
-        for guild_json in guilds {
-            tracing::debug!(
+        for (index, guild_json) in guilds.iter().enumerate() {
+            debug!(
                 guild_id = guild_json.id,
                 guild_name = %guild_json.name,
-                "Storing Discord guild"
+                index = index,
+                "Converting and storing guild"
             );
 
-            let new_guild: NewGuild = guild_json.try_into()?;
-            self.repository.store_guild(&new_guild).await?;
+            let new_guild: NewGuild = match guild_json.clone().try_into() {
+                Ok(g) => g,
+                Err(e) => {
+                    error!(
+                        guild_id = guild_json.id,
+                        guild_name = %guild_json.name,
+                        error = %e,
+                        "Failed to convert guild JSON to database model"
+                    );
+                    return Err(e);
+                }
+            };
+
+            if let Err(e) = self.repository.store_guild(&new_guild).await {
+                error!(
+                    guild_id = new_guild.id(),
+                    error = %e,
+                    "Failed to store guild in database"
+                );
+                return Err(e.into());
+            }
         }
 
-        tracing::info!(
-            act = %context.execution.act_name,
-            "Discord guilds stored successfully"
-        );
+        info!(count = guilds.len(), "Successfully stored all guilds");
         Ok(())
     }
 
@@ -106,7 +138,7 @@ impl DiscordUserProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -116,14 +148,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
             vec![parse_json(&json_str)?]
         };
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             count = users.len(),
             "Processing Discord users"
         );
 
         for user_json in users {
-            tracing::debug!(
+            debug!(
                 user_id = user_json.id,
                 username = %user_json.username,
                 "Storing Discord user"
@@ -133,7 +165,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
             self.repository.store_user(&new_user).await?;
         }
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             "Discord users stored successfully"
         );
@@ -175,7 +207,7 @@ impl DiscordChannelProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -185,14 +217,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
             vec![parse_json(&json_str)?]
         };
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             count = channels.len(),
             "Processing Discord channels"
         );
 
         for channel_json in channels {
-            tracing::debug!(
+            debug!(
                 channel_id = channel_json.id,
                 channel_type = %channel_json.channel_type,
                 channel_name = ?channel_json.name,
@@ -203,7 +235,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
             self.repository.store_channel(&new_channel).await?;
         }
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             "Discord channels stored successfully"
         );
@@ -244,7 +276,7 @@ impl DiscordRoleProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -254,14 +286,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
             vec![parse_json(&json_str)?]
         };
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             count = roles.len(),
             "Processing Discord roles"
         );
 
         for role_json in roles {
-            tracing::debug!(
+            debug!(
                 role_id = role_json.id,
                 role_name = %role_json.name,
                 guild_id = role_json.guild_id,
@@ -272,7 +304,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
             self.repository.store_role(&new_role).await?;
         }
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             "Discord roles stored successfully"
         );
@@ -314,7 +346,7 @@ impl DiscordGuildMemberProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -324,14 +356,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
             vec![parse_json(&json_str)?]
         };
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             count = members.len(),
             "Processing Discord guild members"
         );
 
         for member_json in members {
-            tracing::debug!(
+            debug!(
                 guild_id = member_json.guild_id,
                 user_id = member_json.user_id,
                 nick = ?member_json.nick,
@@ -342,7 +374,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
             self.repository.store_guild_member(&new_member).await?;
         }
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             "Discord guild members stored successfully"
         );
@@ -385,7 +417,7 @@ impl DiscordMemberRoleProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name, processor = self.name()))]
     async fn process(&self, context: &ProcessorContext<'_>) -> Result<(), Self::Error> {
         let json_str = extract_json(&context.execution.response)?;
 
@@ -395,14 +427,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
             vec![parse_json(&json_str)?]
         };
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             count = member_roles.len(),
             "Processing Discord member role assignments"
         );
 
         for member_role_json in member_roles {
-            tracing::debug!(
+            debug!(
                 guild_id = member_role_json.guild_id,
                 user_id = member_role_json.user_id,
                 role_id = member_role_json.role_id,
@@ -413,7 +445,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
             self.repository.store_member_role(&new_member_role).await?;
         }
 
-        tracing::info!(
+        info!(
             act = %context.execution.act_name,
             "Discord member role assignments stored successfully"
         );
