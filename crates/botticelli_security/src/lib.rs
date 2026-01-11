@@ -21,15 +21,14 @@
 
 mod approval;
 mod content;
-mod error;
 mod executor;
 mod permission;
 mod rate_limit;
 mod validation;
 
 pub use approval::{ApprovalDecision, ApprovalWorkflow, PendingAction};
+pub use botticelli_error::{SecurityError, SecurityErrorKind, SecurityResult};
 pub use content::{ContentFilter, ContentFilterConfig, ContentViolation};
-pub use error::{SecurityError, SecurityErrorKind, SecurityResult};
 pub use executor::SecureExecutor;
 pub use permission::{CommandPermission, PermissionChecker, PermissionConfig, ResourcePermission};
 pub use rate_limit::{RateLimit, RateLimitExceeded, RateLimiter};

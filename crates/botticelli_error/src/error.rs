@@ -9,7 +9,7 @@ use crate::TuiError;
 use crate::{
     BackendError, BuilderError, ChatError, ConfigError, EnvError, GeminiError, HttpError, IoError,
     JsonError, McpError, NarrativeError, NotImplementedError, ObservabilityError, OpenAIError,
-    ProviderError, ServerError, StorageError, TokenCountingError,
+    ProviderError, SecurityError, ServerError, StorageError, TokenCountingError,
 };
 
 /// This is the foundation error enum. Additional variants will be added
@@ -95,6 +95,9 @@ pub enum BotticelliErrorKind {
     /// OpenAI-compatible API error
     #[from(OpenAIError)]
     OpenAI(OpenAIError),
+    /// Security error
+    #[from(SecurityError)]
+    Security(SecurityError),
 }
 
 /// Botticelli error with kind discrimination.

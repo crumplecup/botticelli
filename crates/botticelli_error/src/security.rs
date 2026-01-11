@@ -88,7 +88,7 @@ pub enum SecurityErrorKind {
 
 /// Security error with location tracking.
 #[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
-#[display("Security Error: {} at line {} in {}", kind, line, file)]
+#[display("Security: {} at {}:{}", kind, file, line)]
 pub struct SecurityError {
     /// The specific error kind
     pub kind: SecurityErrorKind,
