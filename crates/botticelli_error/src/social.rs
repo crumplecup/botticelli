@@ -5,12 +5,13 @@
 
 use derive_getters::Getters;
 use derive_more::{Display, Error};
+use std::sync::Arc;
 
 /// Result type for bot command operations.
 pub type BotCommandResult<T> = Result<T, BotCommandError>;
 
 /// Specific bot command error conditions.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Display)]
+#[derive(Debug, Clone, Display)]
 pub enum BotCommandErrorKind {
     /// Command not found or not supported.
     #[display("Command not found: {}", _0)]
@@ -112,15 +113,6 @@ pub enum BotCommandErrorKind {
         resource_type: String,
     },
 
-    /// Serialization/deserialization error.
-    #[display("Serialization error for '{}': {}", command, reason)]
-    SerializationError {
-        /// Command that had serialization error
-        command: String,
-        /// Reason for serialization failure
-        reason: String,
-    },
-
     /// Command execution failed in wrapped executor.
     #[display("Execution failed for '{}': {}", command, source)]
     ExecutionFailed {
@@ -128,6 +120,20 @@ pub enum BotCommandErrorKind {
         command: String,
         /// Source error from wrapped executor
         source: String,
+    },
+
+    /// Security policy violation with source error preserved.
+    #[display("Security violation: {}", source)]
+    SecurityViolation {
+        /// Original security error
+        source: Arc<dyn std::error::Error + Send + Sync>,
+    },
+
+    /// JSON serialization/deserialization error with source preserved.
+    #[display("Serialization failed: {}", source)]
+    SerializationFailed {
+        /// Original serialization error
+        source: Arc<dyn std::error::Error + Send + Sync>,
     },
 }
 
@@ -153,5 +159,21 @@ impl BotCommandError {
             line: location.line(),
             file: location.file(),
         }
+    }
+
+    /// Create from a security error with location tracking.
+    #[track_caller]
+    pub fn from_security_error(error: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::new(BotCommandErrorKind::SecurityViolation {
+            source: Arc::new(error),
+        })
+    }
+
+    /// Create from a serialization error with location tracking.
+    #[track_caller]
+    pub fn from_serialization_error(error: impl std::error::Error + Send + Sync + 'static) -> Self {
+        Self::new(BotCommandErrorKind::SerializationFailed {
+            source: Arc::new(error),
+        })
     }
 }

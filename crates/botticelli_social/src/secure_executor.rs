@@ -131,12 +131,8 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
                 JsonValue::Number(n) => n.to_string(),
                 JsonValue::Bool(b) => b.to_string(),
                 JsonValue::Null => "null".to_string(),
-                other => serde_json::to_string(other).map_err(|e| {
-                    BotCommandError::new(BotCommandErrorKind::SerializationError {
-                        command: "convert_args".to_string(),
-                        reason: format!("Failed to serialize argument '{}': {}", key, e),
-                    })
-                })?,
+                other => serde_json::to_string(other)
+                    .map_err(BotCommandError::from_serialization_error)?,
             };
             string_args.insert(key.clone(), string_value);
         }

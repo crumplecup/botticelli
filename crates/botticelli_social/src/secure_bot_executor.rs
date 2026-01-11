@@ -101,7 +101,7 @@ where
             .check_security(&self.narrative_id, command, &params)
             .map_err(|e| {
                 error!("Security check failed: {}", e);
-                security_error_to_bot_error(command, e)
+                BotCommandError::from_security_error(e)
             })?;
 
         // If approval required, return pending status
@@ -159,13 +159,7 @@ fn hashmap_to_params(
             JsonValue::Number(n) => n.to_string(),
             JsonValue::Bool(b) => b.to_string(),
             JsonValue::Null => continue,
-            _ => serde_json::to_string(value).map_err(|e| {
-                BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-                    command: "security_check".to_string(),
-                    arg_name: key.clone(),
-                    reason: format!("Failed to serialize argument: {}", e),
-                })
-            })?,
+            _ => serde_json::to_string(value).map_err(BotCommandError::from_serialization_error)?,
         };
         params.insert(key.clone(), value_str);
     }
