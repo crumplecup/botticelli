@@ -98,7 +98,12 @@ fn test_complete_generation() -> anyhow::Result<()> {
     // Start generation
     repo.start_generation(new_gen)?;
 
+    // Start generation
+    debug!("Starting generation");
+    repo.start_generation(new_gen)?;
+
     // Complete generation
+    debug!("Completing generation with success status");
     let update = UpdateContentGenerationRow {
         completed_at: Some(chrono::Utc::now()),
         row_count: Some(100),
@@ -111,28 +116,34 @@ fn test_complete_generation() -> anyhow::Result<()> {
     assert_eq!(updated.status(), "success");
     assert_eq!(updated.row_count(), &Some(100));
     assert_eq!(updated.generation_duration_ms(), &Some(5000));
+    debug!("Generation completed successfully");
 
     // Cleanup
+    debug!("Cleaning up test generation");
     repo.delete_generation(&table_name)?;
 
+    info!("Generation completion test passed");
     Ok(())
 }
 
 #[test]
 #[cfg(feature = "postgres")]
-fn test_list_generations() -> DatabaseResult<()> {
-    init_test_tracing();
-    info!("Starting test: test_list_generations");
+fn test_list_generations() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    use tracing::{debug, info};
+
+    info!("Testing generation listing with filters");
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(DatabaseError::from)?;
+    let mut conn = pool.get()?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
     // Create multiple generations
     let table1 = format!("test_table_{}", uuid::Uuid::new_v4().simple());
     let table2 = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    debug!(table1 = %table1, table2 = %table2, "Creating two test generations");
 
     let new_gen1 = NewContentGenerationRow {
         table_name: table1.clone(),
@@ -152,42 +163,52 @@ fn test_list_generations() -> DatabaseResult<()> {
 
     repo.start_generation(new_gen1)?;
     repo.start_generation(new_gen2)?;
+    debug!("Created two test generations");
 
     // List all generations
+    debug!("Listing all generations");
     let all = repo.list_generations(None, 100)?;
     assert!(
         all.len() >= 2,
         "Expected at least 2 generations, got {}",
         all.len()
     );
+    debug!(count = all.len(), "Listed all generations");
 
     // List only successful
+    debug!("Filtering for successful generations");
     let successful = repo.list_generations(Some("success".to_string()), 100)?;
     assert!(
         successful.iter().any(|g| g.table_name() == &table2),
         "Expected to find successful generation"
     );
+    debug!(success_count = successful.len(), "Listed successful generations");
 
     // Cleanup
+    debug!("Cleaning up test generations");
     repo.delete_generation(&table1).ok();
     repo.delete_generation(&table2).ok();
 
+    info!("Generation listing test passed");
     Ok(())
 }
 
 #[test]
 #[cfg(feature = "postgres")]
-fn test_get_last_successful() -> DatabaseResult<()> {
-    init_test_tracing();
-    info!("Starting test: test_get_last_successful");
+fn test_get_last_successful() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    use tracing::{debug, info};
+
+    info!("Testing retrieval of last successful generation");
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(DatabaseError::from)?;
+    let mut conn = pool.get()?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
     let table_name = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    debug!(table_name = %table_name, "Creating successful test generation");
     let new_gen = NewContentGenerationRow {
         table_name: table_name.clone(),
         narrative_file: "test.toml".to_string(),
@@ -197,8 +218,10 @@ fn test_get_last_successful() -> DatabaseResult<()> {
     };
 
     // Start and complete a successful generation
+    debug!("Starting generation");
     repo.start_generation(new_gen)?;
 
+    debug!("Completing generation with success");
     let update = UpdateContentGenerationRow {
         completed_at: Some(chrono::Utc::now()),
         row_count: Some(50),
@@ -210,6 +233,7 @@ fn test_get_last_successful() -> DatabaseResult<()> {
     repo.complete_generation(&table_name, update)?;
 
     // Get last successful
+    debug!("Retrieving last successful generation");
     let last = repo.get_last_successful()?;
     assert!(
         last.is_some(),
@@ -218,26 +242,32 @@ fn test_get_last_successful() -> DatabaseResult<()> {
 
     let last = last.unwrap();
     assert_eq!(last.status(), "success");
+    debug!(table = %last.table_name(), "Retrieved last successful generation");
 
     // Cleanup
+    debug!("Cleaning up test generation");
     repo.delete_generation(&table_name)?;
 
+    info!("Last successful generation test passed");
     Ok(())
 }
 
 #[test]
 #[cfg(feature = "postgres")]
-fn test_delete_generation() -> DatabaseResult<()> {
-    init_test_tracing();
-    info!("Starting test: test_delete_generation");
+fn test_delete_generation() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    use tracing::{debug, info};
+
+    info!("Testing generation deletion");
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(DatabaseError::from)?;
+    let mut conn = pool.get()?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
     let table_name = format!("test_table_{}", uuid::Uuid::new_v4().simple());
+    debug!(table_name = %table_name, "Creating test generation for deletion");
     let new_gen = NewContentGenerationRow {
         table_name: table_name.clone(),
         narrative_file: "test.toml".to_string(),
@@ -247,35 +277,45 @@ fn test_delete_generation() -> DatabaseResult<()> {
     };
 
     // Start generation
+    debug!("Starting generation");
     repo.start_generation(new_gen)?;
 
     // Delete generation
+    debug!("Deleting generation");
     repo.delete_generation(&table_name)?;
 
     // Verify deletion
+    debug!("Verifying generation was deleted");
     let result = repo.get_by_table_name(&table_name)?;
     assert!(result.is_none(), "Expected generation to be deleted");
+    debug!("Confirmed generation is deleted");
 
+    info!("Generation deletion test passed");
     Ok(())
 }
 
 #[test]
 #[cfg(feature = "postgres")]
-fn test_get_nonexistent_generation() -> DatabaseResult<()> {
-    init_test_tracing();
-    info!("Starting test: test_get_nonexistent_generation");
+fn test_get_nonexistent_generation() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    use tracing::{debug, info};
+
+    info!("Testing retrieval of nonexistent generation");
 
     let database_url = get_database_url();
     let pool = create_pool(&database_url)?;
-    let mut conn = pool.get().map_err(DatabaseError::from)?;
+    let mut conn = pool.get()?;
 
     let mut repo = PostgresContentGenerationRepository::new(&mut conn);
 
     let nonexistent_table = format!("nonexistent_{}", uuid::Uuid::new_v4().simple());
+    debug!(table = %nonexistent_table, "Attempting to retrieve nonexistent generation");
     let result = repo.get_by_table_name(&nonexistent_table)?;
 
     assert!(result.is_none(), "Expected None for nonexistent generation");
+    debug!("Confirmed nonexistent generation returns None");
 
+    info!("Nonexistent generation test passed");
     Ok(())
 }
 

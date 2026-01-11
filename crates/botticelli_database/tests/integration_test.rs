@@ -1,26 +1,12 @@
-use botticelli_database::{DatabaseContentRepository, DatabaseResult};
-use botticelli_error::{BotticelliResult, DatabaseError};
+mod helpers;
+
+use botticelli_database::DatabaseContentRepository;
 use botticelli_interface::ContentRepository;
 use diesel::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use std::env;
-use tracing::info;
 
-/// Initialize tracing for tests.
-///
-/// Uses try_init() to avoid panicking if already initialized.
-/// Logs are captured by test framework when tests fail.
-fn init_test_tracing() {
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("debug")),
-        )
-        .with_test_writer()
-        .try_init();
-}
-
-fn get_database_url() -> BotticelliResult<String> {
+fn get_database_url() -> anyhow::Result<String> {
     match env::var("DATABASE_URL") {
         Ok(url) => Ok(url),
         Err(_) => {
@@ -29,22 +15,26 @@ fn get_database_url() -> BotticelliResult<String> {
     }
 }
 
-fn create_pool(database_url: &str) -> DatabaseResult<Pool<ConnectionManager<PgConnection>>> {
+fn create_pool(database_url: &str) -> anyhow::Result<Pool<ConnectionManager<PgConnection>>> {
     let manager = ConnectionManager::<PgConnection>::new(database_url);
-    Pool::builder().build(manager).map_err(DatabaseError::from)
+    Ok(Pool::builder().build(manager)?)
 }
 
 #[tokio::test]
 #[cfg(feature = "postgres")]
-async fn test_content_repository_query() -> BotticelliResult<()> {
-    init_test_tracing();
-    info!("Starting test: test_content_repository_query");
+async fn test_content_repository_query() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    use tracing::{debug, info};
+
+    info!("Testing content_repository query with limit");
 
     let database_url = get_database_url()?;
+    debug!(database_url = %database_url, "Creating connection pool");
     let pool = create_pool(&database_url)?;
     let repo = DatabaseContentRepository::new(pool);
 
     // Test querying with limit
+    debug!(table = "generated_images", limit = 5, "Querying content table");
     let result = repo.query_content("generated_images", None, Some(5)).await;
 
     match result {
@@ -54,30 +44,35 @@ async fn test_content_repository_query() -> BotticelliResult<()> {
                 "Query should respect limit of 5, got {}",
                 rows.len()
             );
+            debug!(rows_returned = rows.len(), "Query successful");
         }
         Err(e) => {
             // Table might not exist in test database, that's ok
-            info!("Query failed (expected if table doesn't exist): {}", e);
+            info!(error = %e, "Query failed (expected if table doesn't exist)");
         }
     }
 
+    info!("content_repository_query test passed");
     Ok(())
 }
 
 #[tokio::test]
 #[cfg(feature = "postgres")]
-async fn test_content_repository_different_limits() -> BotticelliResult<()> {
-    init_test_tracing();
-    info!("Starting test: test_content_repository_different_limits");
+async fn test_content_repository_different_limits() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    use tracing::{debug, info};
+
+    info!("Testing content_repository with various limits");
 
     let database_url = get_database_url()?;
     let pool = create_pool(&database_url)?;
     let repo = DatabaseContentRepository::new(pool);
 
     let limits = vec![1, 5, 10, 50];
+    debug!(limits = ?limits, "Testing multiple limit values");
 
     for limit in limits {
-        info!("Testing query with limit: {}", limit);
+        debug!(limit = limit, "Querying with limit");
         let result = repo
             .query_content("generated_images", None, Some(limit))
             .await;
@@ -90,8 +85,12 @@ async fn test_content_repository_different_limits() -> BotticelliResult<()> {
                 limit,
                 rows.len()
             );
+            debug!(limit = limit, rows_returned = rows.len(), "Limit respected");
+        } else {
+            debug!(limit = limit, "Query failed (table may not exist)");
         }
     }
 
+    info!("content_repository_different_limits test passed");
     Ok(())
 }
