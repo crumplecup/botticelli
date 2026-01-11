@@ -72,6 +72,10 @@ pub enum DiscordErrorKind {
     /// Configuration error (missing env vars, invalid settings).
     #[display("Configuration error: {_0}")]
     ConfigurationError(String),
+
+    /// Data conversion/validation error (builder failures, invalid data).
+    #[display("Data conversion error: {_0}")]
+    DataConversionError(String),
 }
 
 /// Discord error with source location tracking.

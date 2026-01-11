@@ -56,7 +56,7 @@ impl BotticelliHandler {
     }
 
     /// Store a Discord guild in the database.
-    async fn store_guild(&self, guild: &Guild) {
+    async fn store_guild(&self, guild: &Guild) -> crate::DiscordResult<()> {
         let new_guild = NewGuildBuilder::default()
             .id(Self::to_db_id(guild.id.get()))
             .name(guild.name.clone())
@@ -105,26 +105,17 @@ impl BotticelliHandler {
             .bot_active(Some(true))
             .build();
 
-        let new_guild = match new_guild {
-            Ok(guild) => guild,
-            Err(e) => {
-                error!(guild_id = %guild.id, error = %e, "Failed to build NewGuild");
-                return;
-            }
-        };
+        let new_guild = new_guild.map_err(|e| {
+            crate::DiscordError::new(crate::DiscordErrorKind::DataConversionError(e.to_string()))
+        })?;
 
-        match self.repository.store_guild(&new_guild).await {
-            Ok(_) => {
-                debug!(guild_id = %guild.id, guild_name = %guild.name, "Stored guild");
-            }
-            Err(e) => {
-                error!(guild_id = %guild.id, error = %e, "Failed to store guild");
-            }
-        }
+        self.repository.store_guild(&new_guild).await?;
+        debug!(guild_id = %guild.id, guild_name = %guild.name, "Stored guild");
+        Ok(())
     }
 
     /// Store a Discord channel in the database.
-    async fn store_channel(&self, guild_id: Option<GuildId>, channel: &Channel) {
+    async fn store_channel(&self, guild_id: Option<GuildId>, channel: &Channel) -> crate::DiscordResult<()> {
         let (id, name, channel_type, position, topic, nsfw, parent_id) = match channel {
             Channel::Guild(gc) => (
                 Self::to_db_id(gc.id.get()),
@@ -145,8 +136,9 @@ impl BotticelliHandler {
                 None,
             ),
             _ => {
-                warn!("Unsupported channel type for storage");
-                return;
+                return Err(crate::DiscordError::new(
+                    crate::DiscordErrorKind::DataConversionError("Unsupported channel type for storage".to_string())
+                ));
             }
         };
 
@@ -188,18 +180,17 @@ impl BotticelliHandler {
             }
         };
 
-        match self.repository.store_channel(&new_channel).await {
-            Ok(_) => {
-                debug!(channel_id = id, "Stored channel");
-            }
-            Err(e) => {
-                error!(channel_id = id, error = %e, "Failed to store channel");
-            }
-        }
+        let new_channel = new_channel.map_err(|e| {
+            crate::DiscordError::new(crate::DiscordErrorKind::DataConversionError(e.to_string()))
+        })?;
+
+        self.repository.store_channel(&new_channel).await?;
+        debug!(channel_id = id, "Stored channel");
+        Ok(())
     }
 
     /// Store a Discord member in the database.
-    async fn store_member(&self, guild_id: GuildId, member: &Member) {
+    async fn store_member(&self, guild_id: GuildId, member: &Member) -> crate::DiscordResult<()> {
         // First store the user
         let new_user = NewUserBuilder::default()
             .id(Self::to_db_id(member.user.id.get()))
@@ -221,15 +212,13 @@ impl BotticelliHandler {
         let new_user = match new_user {
             Ok(user) => user,
             Err(e) => {
-                error!(user_id = %member.user.id, error = %e, "Failed to build NewUser");
-                return;
+                return Err(crate::DiscordError::new(
+                    crate::DiscordErrorKind::DataConversionError(format!("Failed to build NewUser: {}", e))
+                ));
             }
         };
 
-        if let Err(e) = self.repository.store_user(&new_user).await {
-            error!(user_id = %member.user.id, error = %e, "Failed to store user");
-            return;
-        }
+        self.repository.store_user(&new_user).await?;
 
         // Then store the guild member
         let new_member = NewGuildMemberBuilder::default()
@@ -246,35 +235,17 @@ impl BotticelliHandler {
             .communication_disabled_until(member.communication_disabled_until.as_ref().and_then(timestamp_to_naive))
             .build();
 
-        let new_member = match new_member {
-            Ok(member) => member,
-            Err(e) => {
-                error!(guild_id = %guild_id, user_id = %member.user.id, error = %e, "Failed to build NewGuildMember");
-                return;
-            }
-        };
+        let new_member = new_member.map_err(|e| {
+            crate::DiscordError::new(crate::DiscordErrorKind::DataConversionError(format!("Failed to build NewGuildMember: {}", e)))
+        })?;
 
-        match self.repository.store_guild_member(&new_member).await {
-            Ok(_) => {
-                debug!(
-                    guild_id = %guild_id,
-                    user_id = %member.user.id,
-                    "Stored guild member"
-                );
-            }
-            Err(e) => {
-                error!(
-                    guild_id = %guild_id,
-                    user_id = %member.user.id,
-                    error = %e,
-                    "Failed to store guild member"
-                );
-            }
-        }
+        self.repository.store_guild_member(&new_member).await?;
+        debug!(guild_id = %guild_id, user_id = %member.user.id, "Stored guild member");
+        Ok(())
     }
 
     /// Store a Discord role in the database.
-    async fn store_role(&self, guild_id: GuildId, role: &Role) {
+    async fn store_role(&self, guild_id: GuildId, role: &Role) -> crate::DiscordResult<()> {
         let new_role = NewRoleBuilder::default()
             .id(Self::to_db_id(role.id.get()))
             .guild_id(Self::to_db_id(guild_id.get()))
@@ -290,22 +261,13 @@ impl BotticelliHandler {
             .tags(None)
             .build();
 
-        let new_role = match new_role {
-            Ok(role) => role,
-            Err(e) => {
-                error!(role_id = %role.id, error = %e, "Failed to build NewRole");
-                return;
-            }
-        };
+        let new_role = new_role.map_err(|e| {
+            crate::DiscordError::new(crate::DiscordErrorKind::DataConversionError(format!("Failed to build NewRole: {}", e)))
+        })?;
 
-        match self.repository.store_role(&new_role).await {
-            Ok(_) => {
-                debug!(role_id = %role.id, role_name = %role.name, "Stored role");
-            }
-            Err(e) => {
-                error!(role_id = %role.id, error = %e, "Failed to store role");
-            }
-        }
+        self.repository.store_role(&new_role).await?;
+        debug!(role_id = %role.id, role_name = %role.name, "Stored role");
+        Ok(())
     }
 
     /// Map Serenity ChannelType to our ChannelType enum.
@@ -363,22 +325,30 @@ impl EventHandler for BotticelliHandler {
         );
 
         // Store the guild
-        self.store_guild(&guild).await;
+        if let Err(e) = self.store_guild(&guild).await {
+            error!(guild_id = %guild.id, error = %e, "Failed to store guild");
+            return;
+        }
 
         // Store all channels
         for channel in guild.channels.values() {
-            self.store_channel(Some(guild.id), &Channel::Guild(channel.clone()))
-                .await;
+            if let Err(e) = self.store_channel(Some(guild.id), &Channel::Guild(channel.clone())).await {
+                error!(guild_id = %guild.id, channel_id = %channel.id, error = %e, "Failed to store channel");
+            }
         }
 
         // Store all roles
         for role in guild.roles.values() {
-            self.store_role(guild.id, role).await;
+            if let Err(e) = self.store_role(guild.id, role).await {
+                error!(guild_id = %guild.id, role_id = %role.id, error = %e, "Failed to store role");
+            }
         }
 
         // Store all members
         for member in guild.members.values() {
-            self.store_member(guild.id, member).await;
+            if let Err(e) = self.store_member(guild.id, member).await {
+                error!(guild_id = %guild.id, user_id = %member.user.id, error = %e, "Failed to store member");
+            }
         }
 
         info!(guild_id = %guild.id, "Finished storing guild data");
