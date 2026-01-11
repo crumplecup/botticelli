@@ -119,12 +119,11 @@ where
         drop(secure_executor); // Release lock before executing
 
         // Wrapper converts inner error to BotCommandError (legitimate conversion)
-        let result = self.inner.execute(command, args).await.map_err(|e| {
-            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
-                command: command.to_string(),
-                source: e.to_string(),
-            })
-        })?;
+        let result = self
+            .inner
+            .execute(command, args)
+            .await
+            .map_err(|e| BotCommandError::from_api_error(command, e))?;
 
         info!("Command executed successfully");
         Ok(result)
