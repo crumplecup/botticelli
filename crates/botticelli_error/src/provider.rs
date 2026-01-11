@@ -59,10 +59,10 @@ impl Clone for ProviderSerdeJsonError {
     fn clone(&self) -> Self {
         // serde_json::Error is not Clone, reconstruct from message
         Self {
-            source: Box::new(serde_json::Error::io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("{:?}", self.source),
-            ))),
+            source: Box::new(serde_json::Error::io(std::io::Error::other(format!(
+                "{:?}",
+                self.source
+            )))),
             line: self.line,
             file: self.file,
         }

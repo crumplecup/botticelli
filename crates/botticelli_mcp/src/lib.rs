@@ -48,8 +48,8 @@ mod resources;
 mod rmcp_server;
 mod save_narrative;
 mod scene;
-mod session_tools;
 mod server_info;
+mod session_tools;
 pub mod tools;
 mod transport;
 mod validate_narrative;
@@ -86,6 +86,7 @@ pub use scene::{
     CreateSceneParams, CreateSceneResult, DeleteSceneParams, DeleteSceneResult, ListScenesParams,
     ListScenesResult, UpdateSceneParams, UpdateSceneResult,
 };
+pub use server_info::ServerInfoResult;
 pub use session_tools::{
     ApplyValidationFixesParams, ApplyValidationFixesResult, CarouselLevel, CarouselSummary,
     CreateNarrativeSessionParams, CreateNarrativeSessionResult, ElicitActParams, ElicitActResult,
@@ -95,37 +96,23 @@ pub use session_tools::{
     ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationIssue,
     ValidationSeverity,
 };
-pub use transport::InProcTransport;
-pub use validate_narrative::{
-    ValidateNarrativeParams, ValidateNarrativeResult, ValidationError, ValidationLocation,
-    ValidationWarning,
-};
-pub use server_info::ServerInfoResult;
 pub use tools::{
     Act, ActMetrics, EchoTool, ElicitActInput, ElicitActTool, ElicitMetadataInput,
     ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics,
     FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler, McpTool,
     MetricsSummary, NarrativeHelper, NarrativeRegistry, PrometheusMetrics, SamplingCoordinator,
     SamplingError, SamplingErrorKind, SamplingHelper, SamplingResult, ServerInfoTool,
-    StartNarrativeInput, StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
+    StartNarrativeInput, StartNarrativeTool, ToolRegistry,
+};
+pub use validate_narrative::{
+    ValidateNarrativeParams, ValidateNarrativeResult, ValidationError, ValidationLocation,
+    ValidationWarning,
 };
 
 #[cfg(feature = "discord")]
 pub use tools::{
     DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool, DiscordPostMessageTool,
 };
-
-// Export LLM tools based on features
-#[cfg(feature = "anthropic")]
-pub use tools::GenerateAnthropicTool;
-#[cfg(feature = "gemini")]
-pub use tools::GenerateGeminiTool;
-#[cfg(feature = "groq")]
-pub use tools::GenerateGroqTool;
-#[cfg(feature = "huggingface")]
-pub use tools::GenerateHuggingFaceTool;
-#[cfg(feature = "ollama")]
-pub use tools::GenerateOllamaTool;
 
 #[cfg(feature = "database")]
 pub use resources::ContentResource;

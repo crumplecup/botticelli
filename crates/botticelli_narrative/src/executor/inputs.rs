@@ -6,7 +6,6 @@ use crate::{ActConfig, CarouselConfig, NarrativeMetadata};
 use botticelli_core::{ActExecution, Input};
 use botticelli_error::{BotticelliResult, NarrativeError, NarrativeErrorKind};
 use botticelli_interface::{BotticelliDriver, NarrativeProvider};
-use botticelli_rate_limit::TierConfig;
 use serde_json::Value as JsonValue;
 use tracing::instrument;
 

@@ -5,7 +5,6 @@ use crate::{ActConfig, CarouselConfig, NarrativeMetadata, ProcessorContext};
 use botticelli_core::{ActExecution, Message, MessageBuilder};
 use botticelli_error::{BotticelliResult, NarrativeError, NarrativeErrorKind};
 use botticelli_interface::{BotticelliDriver, NarrativeProvider};
-use botticelli_rate_limit::TierConfig;
 use tracing::instrument;
 
 impl<D, BE> NarrativeExecutor<D, BE>
@@ -80,7 +79,7 @@ where
     #[instrument(skip(conversation_history), fields(act = act_name, history_len = conversation_history.len()))]
     pub(super) fn apply_history_retention(
         act_name: &str,
-        conversation_history: &mut Vec<Message>,
+        conversation_history: &mut [Message],
     ) -> BotticelliResult<()> {
         // Apply history retention policies to the user message we just processed
         // The user message is at conversation_history.len() - 2 (assistant message was just pushed)

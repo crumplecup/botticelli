@@ -4,6 +4,7 @@ use super::{
     TomlAct, TomlNarrativeDefinition, TomlNarrativeReference, definitions::*, narrative::*,
     utils::*,
 };
+use crate::toml_parser::narrative::TomlNarrativeBuilder;
 use botticelli_core::{HistoryRetention, Input, MediaSource};
 use botticelli_error::{IoError, NarrativeErrorKind, NarrativeResult};
 use serde::Deserialize;
@@ -167,18 +168,19 @@ impl TomlNarrativeFile {
                 let narrative_desc = def.description().clone().unwrap_or_default();
 
                 // Convert definition to TomlNarrative format
-                let meta = TomlNarrative::new(
-                    narrative_name,
-                    narrative_desc,
-                    def.template().clone(),
-                    def.target().clone(),
-                    *def.skip_content_generation(),
-                    def.carousel().clone(),
-                    def.model().clone(),
-                    *def.temperature(),
-                    *def.max_tokens(),
-                    def.budget().clone(),
-                );
+                let meta = TomlNarrativeBuilder::default()
+                    .name(narrative_name)
+                    .description(narrative_desc)
+                    .template(def.template().clone())
+                    .target(def.target().clone())
+                    .skip_content_generation(*def.skip_content_generation())
+                    .carousel(def.carousel().clone())
+                    .model(def.model().clone())
+                    .temperature(*def.temperature())
+                    .max_tokens(*def.max_tokens())
+                    .budget(def.budget().clone())
+                    .build()
+                    .expect("Valid TomlNarrative");
 
                 // Merge shared acts with definition-specific acts
                 let mut acts = self.acts.clone();

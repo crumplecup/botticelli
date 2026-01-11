@@ -12,7 +12,6 @@ use botticelli_error::{
 use botticelli_interface::{
     BotCommandRegistry, BotticelliDriver, NarrativeProvider, TableQueryRegistry,
 };
-use botticelli_rate_limit::TierConfig;
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Instant;
@@ -42,10 +41,7 @@ use tracing::instrument;
 #[derive(derive_getters::Getters)]
 pub struct NarrativeExecutor<D, BE = botticelli_error::NarrativeError>
 where
-    D: BotticelliDriver<
-            Request = GenerateRequest,
-            Response = botticelli_core::GenerateResponse,
-        >,
+    D: BotticelliDriver<Request = GenerateRequest, Response = botticelli_core::GenerateResponse>,
     BE: std::error::Error + Send + Sync + 'static,
 {
     pub(super) driver: D,
@@ -58,10 +54,7 @@ where
 
 impl<D, BE> NarrativeExecutor<D, BE>
 where
-    D: BotticelliDriver<
-            Request = GenerateRequest,
-            Response = botticelli_core::GenerateResponse,
-        >,
+    D: BotticelliDriver<Request = GenerateRequest, Response = botticelli_core::GenerateResponse>,
     BE: std::error::Error + Send + Sync + 'static,
 {
     /// Create a new narrative executor with the given LLM driver.
@@ -436,7 +429,8 @@ where
         );
 
         // Create carousel state with budget
-        let mut state = CarouselState::new(carousel_config.clone(), self.driver.rate_limits().clone());
+        let mut state =
+            CarouselState::new(carousel_config.clone(), self.driver.rate_limits().clone());
 
         let mut executions = Vec::new();
 

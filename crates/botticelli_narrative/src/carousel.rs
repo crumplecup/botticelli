@@ -2,7 +2,7 @@
 
 use botticelli_core::BudgetConfig;
 use botticelli_error::{NarrativeError, NarrativeErrorKind};
-use botticelli_rate_limit::{Budget, RateLimitConfig};
+use botticelli_rate_limit::Budget;
 use derive_getters::Getters;
 use derive_setters::Setters;
 use serde::{Deserialize, Serialize};

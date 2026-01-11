@@ -10,9 +10,23 @@
     feature = "huggingface",
     feature = "groq"
 ))]
-use botticelli_interface::ActProcessor;
-use botticelli_narrative::ProcessorContext;
 use botticelli_error::BotticelliError;
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "ollama",
+    feature = "huggingface",
+    feature = "groq"
+))]
+use botticelli_interface::ActProcessor;
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "ollama",
+    feature = "huggingface",
+    feature = "groq"
+))]
+use botticelli_narrative::ProcessorContext;
 
 #[cfg(any(
     feature = "gemini",

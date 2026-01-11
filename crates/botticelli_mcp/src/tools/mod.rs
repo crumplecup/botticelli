@@ -4,8 +4,6 @@ mod bot_commands;
 mod create_narrative;
 #[cfg(feature = "discord")]
 mod discord;
-#[cfg(feature = "discord")]
-mod discord_workflow;
 mod echo;
 mod elicitation;
 mod elicitation_primitives;
@@ -13,7 +11,6 @@ mod elicitation_tools;
 mod execute_act;
 mod execute_narrative;
 mod generate;
-mod generate_llm;
 mod get_narrative_state;
 mod metrics;
 mod modify_narrative;
@@ -28,9 +25,6 @@ mod sampling_session_manager;
 mod save_narrative;
 mod scene;
 mod server_info;
-#[cfg(feature = "discord")]
-mod social;
-mod validate_narrative;
 mod validate_narrative_session;
 
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
@@ -39,8 +33,6 @@ pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 pub use discord::{
     DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool, DiscordPostMessageTool,
 };
-#[cfg(feature = "discord")]
-pub use discord_workflow::DiscordContentWorkflowTool;
 pub use echo::EchoTool;
 pub use elicitation::{
     ApplyValidationFixesInput, ApplyValidationFixesOutput, CreateNarrativeSessionTool,
@@ -70,9 +62,6 @@ pub use narrative_processor::McpProcessorCollector;
 pub use prometheus::{MetricsSummary, PrometheusMetrics};
 // SaveNarrativeTool migrated to rmcp (save_narrative method in rmcp_server)
 pub use server_info::ServerInfoTool;
-#[cfg(feature = "discord")]
-pub use social::{DiscordBotCommandTool, DiscordPostTool};
-pub use validate_narrative::ValidateNarrativeTool;
 pub use validate_narrative_session::{ApplyValidationFixesTool, ValidateNarrativeSessionTool};
 
 // Export shared narrative utilities
@@ -83,18 +72,6 @@ pub use sampling::{
 };
 pub use sampling_session_manager::SamplingSessionManager;
 // scene module is now empty - all scene tools migrated to rmcp
-
-// Export LLM tools based on features
-#[cfg(feature = "anthropic")]
-pub use generate_llm::GenerateAnthropicTool;
-#[cfg(feature = "gemini")]
-pub use generate_llm::GenerateGeminiTool;
-#[cfg(feature = "groq")]
-pub use generate_llm::GenerateGroqTool;
-#[cfg(feature = "huggingface")]
-pub use generate_llm::GenerateHuggingFaceTool;
-#[cfg(feature = "ollama")]
-pub use generate_llm::GenerateOllamaTool;
 
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
@@ -191,9 +168,6 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(EchoTool));
         registry.register(Arc::new(ServerInfoTool));
 
-        // Validation tool
-        registry.register(Arc::new(ValidateNarrativeTool));
-
         // Narrative elicitation tools (LLM-driven creation)
         let narrative_registry = Arc::new(NarrativeRegistry::new());
         registry.register(Arc::new(CreateNarrativeSessionTool::new(
@@ -227,47 +201,6 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(GenerateTool));
         registry.register(Arc::new(ExecuteActTool::new()));
         registry.register(Arc::new(ExecuteNarrativeTool::new()));
-
-        // Execution tools (Phase 4 - Multi-backend LLM integration)
-        #[cfg(feature = "gemini")]
-        if let Ok(tool) = GenerateGeminiTool::new() {
-            registry.register(Arc::new(tool));
-            tracing::info!("Gemini generation tool registered");
-        } else {
-            tracing::warn!("Gemini not available (check GEMINI_API_KEY)");
-        }
-
-        #[cfg(feature = "anthropic")]
-        if let Ok(tool) = GenerateAnthropicTool::new() {
-            registry.register(Arc::new(tool));
-            tracing::info!("Anthropic generation tool registered");
-        } else {
-            tracing::warn!("Anthropic not available (check ANTHROPIC_API_KEY)");
-        }
-
-        #[cfg(feature = "ollama")]
-        if let Ok(tool) = GenerateOllamaTool::new() {
-            registry.register(Arc::new(tool));
-            tracing::info!("Ollama generation tool registered");
-        } else {
-            tracing::warn!("Ollama not available (check OLLAMA_HOST)");
-        }
-
-        #[cfg(feature = "huggingface")]
-        if let Ok(tool) = GenerateHuggingFaceTool::new() {
-            registry.register(Arc::new(tool));
-            tracing::info!("HuggingFace generation tool registered");
-        } else {
-            tracing::warn!("HuggingFace not available (check HUGGINGFACE_API_KEY)");
-        }
-
-        #[cfg(feature = "groq")]
-        if let Ok(tool) = GenerateGroqTool::new() {
-            registry.register(Arc::new(tool));
-            tracing::info!("Groq generation tool registered");
-        } else {
-            tracing::warn!("Groq not available (check GROQ_API_KEY)");
-        }
 
         // Database tool (feature-gated)
         // NOTE: Database tools require explicit configuration via builder

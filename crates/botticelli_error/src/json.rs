@@ -33,10 +33,7 @@ impl Clone for SerdeJsonError {
         // serde_json::Error is not Clone, so we reconstruct from the message
         let msg = format!("{:?}", self.source);
         Self {
-            source: Box::new(serde_json::Error::io(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                msg,
-            ))),
+            source: Box::new(serde_json::Error::io(std::io::Error::other(msg))),
             line: self.line,
             file: self.file,
         }

@@ -15,6 +15,7 @@ schemars = "1.0"  # For JsonSchema derives (matches rmcp)
 # Async runtime
 tokio = { workspace = true, features = ["full"] }
 async-trait = { workspace = true }
+tokio-util = { version = "0.7", optional = true }
 
 # Concurrent data structures
 dashmap = "6.1"
@@ -88,7 +89,13 @@ database = ["dep:botticelli_database", "dep:diesel"]
 discord = ["dep:botticelli_social"]
 
 # HTTP server
-http = ["dep:axum", "dep:tower", "dep:tower-http"]
+http = [
+    "dep:axum",
+    "dep:tower",
+    "dep:tower-http",
+    "dep:tokio-util",
+    "rmcp/transport-streamable-http-server",
+]
 
 # LLM backend features
 gemini = ["dep:botticelli_models", "botticelli_models/gemini"]
@@ -102,14 +109,14 @@ llm = ["gemini", "anthropic", "ollama", "huggingface", "groq"]
 execution = ["llm"]  # Enable execution features
 
 [[bin]]
-name = "botticelli-mcp-http"
-path = "src/bin/botticelli-mcp-http.rs"
-required-features = ["http", "database", "llm"]
-
-[[bin]]
 name = "botticelli-mcp"
 path = "src/bin/botticelli-mcp.rs"
-required-features = ["database", "llm"]
+required-features = ["llm"]
+
+[[bin]]
+name = "botticelli-mcp-http"
+path = "src/bin/botticelli-mcp-http.rs"
+required-features = ["http", "llm"]
 
 [package.metadata.docs.rs]
 all-features = true

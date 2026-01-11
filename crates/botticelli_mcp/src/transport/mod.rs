@@ -3,9 +3,6 @@
 mod http;
 mod in_proc;
 
-pub use http::HttpTransport;
-pub use in_proc::{InProcServerHandle, InProcTransport};
-
 use async_trait::async_trait;
 use botticelli_core::ToolDefinition;
 use serde_json::Value;

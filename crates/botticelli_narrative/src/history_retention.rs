@@ -213,7 +213,7 @@ impl HistoryRetention {
             | Input::Video { source, .. }
             | Input::Document { source, .. } => {
                 use botticelli_core::MediaSource;
-                let size = match source {
+                match source {
                     MediaSource::Binary(data) => {
                         debug!(
                             size = data.len(),
@@ -238,8 +238,7 @@ impl HistoryRetention {
                         );
                         0 // URL itself is small
                     }
-                };
-                size
+                }
             }
             Input::ToolCall { arguments, .. } => {
                 // Estimate size of arguments JSON

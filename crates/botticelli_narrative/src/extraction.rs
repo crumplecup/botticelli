@@ -375,9 +375,8 @@ impl Extract {
         debug!(toml_length = trimmed.len(), "Attempting TOML parse");
 
         toml::from_str(trimmed)
-            .map(|parsed| {
+            .inspect(|_| {
                 debug!("TOML parsed successfully");
-                parsed
             })
             .map_err(|e| {
                 let preview = trimmed

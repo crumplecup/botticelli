@@ -67,6 +67,7 @@ impl<'a> ProcessorContext<'a> {
 /// // Later, in the narrative executor
 /// registry.process(&context).await?;
 /// ```
+#[derive(Default)]
 pub struct ProcessorRegistry {
     processors: Vec<Box<dyn for<'a> ProcessorTrait<ProcessorContext<'a>>>>,
 }
@@ -100,14 +101,6 @@ where
 
     fn name(&self) -> &str {
         self.processor.name()
-    }
-}
-
-impl Default for ProcessorRegistry {
-    fn default() -> Self {
-        Self {
-            processors: Vec::new(),
-        }
     }
 }
 

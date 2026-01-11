@@ -83,20 +83,24 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
         self.reset_windows();
 
         // Check minute limits (None = unlimited)
-        let tokens_ok_minute = self.config.tpm().map_or(true, |limit| {
-            self.tokens_per_minute + tokens <= limit
-        });
-        let requests_ok_minute = self.config.rpm().map_or(true, |limit| {
-            self.requests_per_minute < limit as u64
-        });
+        let tokens_ok_minute = self
+            .config
+            .tpm()
+            .is_none_or(|limit| self.tokens_per_minute + tokens <= limit);
+        let requests_ok_minute = self
+            .config
+            .rpm()
+            .is_none_or(|limit| self.requests_per_minute < limit as u64);
 
         // Check day limits (None = unlimited)
-        let tokens_ok_day = self.config.tpd().map_or(true, |limit| {
-            self.tokens_per_day + tokens <= limit
-        });
-        let requests_ok_day = self.config.rpd().map_or(true, |limit| {
-            self.requests_per_day < limit as u64
-        });
+        let tokens_ok_day = self
+            .config
+            .tpd()
+            .is_none_or(|limit| self.tokens_per_day + tokens <= limit);
+        let requests_ok_day = self
+            .config
+            .rpd()
+            .is_none_or(|limit| self.requests_per_day < limit as u64);
 
         tokens_ok_minute && requests_ok_minute && tokens_ok_day && requests_ok_day
     }
@@ -111,22 +115,19 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
         if !self.can_afford(tokens) {
             return Err(RateLimitError::new(RateLimitErrorKind::BudgetExceeded {
                 requested_tokens: tokens,
-                available_tokens_minute: self
-                    .config
-                    .tpm()
-                    .map_or(u64::MAX, |limit| limit.saturating_sub(self.tokens_per_minute)),
+                available_tokens_minute: self.config.tpm().map_or(u64::MAX, |limit| {
+                    limit.saturating_sub(self.tokens_per_minute)
+                }),
                 available_tokens_day: self
                     .config
                     .tpd()
                     .map_or(u64::MAX, |limit| limit.saturating_sub(self.tokens_per_day)),
-                available_requests_minute: self
-                    .config
-                    .rpm()
-                    .map_or(u64::MAX, |limit| (limit as u64).saturating_sub(self.requests_per_minute)),
-                available_requests_day: self
-                    .config
-                    .rpd()
-                    .map_or(u64::MAX, |limit| (limit as u64).saturating_sub(self.requests_per_day)),
+                available_requests_minute: self.config.rpm().map_or(u64::MAX, |limit| {
+                    (limit as u64).saturating_sub(self.requests_per_minute)
+                }),
+                available_requests_day: self.config.rpd().map_or(u64::MAX, |limit| {
+                    (limit as u64).saturating_sub(self.requests_per_day)
+                }),
             }));
         }
 
@@ -152,22 +153,19 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
         self.reset_windows();
 
         BudgetRemaining {
-            tokens_per_minute: self
-                .config
-                .tpm()
-                .map_or(u64::MAX, |limit| limit.saturating_sub(self.tokens_per_minute)),
+            tokens_per_minute: self.config.tpm().map_or(u64::MAX, |limit| {
+                limit.saturating_sub(self.tokens_per_minute)
+            }),
             tokens_per_day: self
                 .config
                 .tpd()
                 .map_or(u64::MAX, |limit| limit.saturating_sub(self.tokens_per_day)),
-            requests_per_minute: self
-                .config
-                .rpm()
-                .map_or(u64::MAX, |limit| (limit as u64).saturating_sub(self.requests_per_minute)),
-            requests_per_day: self
-                .config
-                .rpd()
-                .map_or(u64::MAX, |limit| (limit as u64).saturating_sub(self.requests_per_day)),
+            requests_per_minute: self.config.rpm().map_or(u64::MAX, |limit| {
+                (limit as u64).saturating_sub(self.requests_per_minute)
+            }),
+            requests_per_day: self.config.rpd().map_or(u64::MAX, |limit| {
+                (limit as u64).saturating_sub(self.requests_per_day)
+            }),
         }
     }
 }

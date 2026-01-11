@@ -179,9 +179,8 @@ fn resolve_env_reference(env_var: &str) -> BotticelliResult<String> {
     tracing::debug!(env_var = %env_var, "Resolving environment variable");
 
     std::env::var(env_var)
-        .map(|value| {
+        .inspect(|value| {
             tracing::debug!(env_var = %env_var, value_len = value.len(), "Environment variable resolved");
-            value
         })
         .map_err(|e| {
             tracing::error!(env_var = %env_var, error = %e, "Environment variable not found");

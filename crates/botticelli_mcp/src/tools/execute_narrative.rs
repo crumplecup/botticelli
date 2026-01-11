@@ -122,12 +122,13 @@ impl ExecuteNarrativeTool {
     ) -> McpResult<Value>
     where
         D: BotticelliDriver<
-            Request = botticelli_core::GenerateRequest,
-            Response = botticelli_core::GenerateResponse,
-        > + Clone,
+                Request = botticelli_core::GenerateRequest,
+                Response = botticelli_core::GenerateResponse,
+            > + Clone,
     {
         debug!("Starting narrative execution");
-        let executor = NarrativeExecutor::new(driver);
+        let executor: NarrativeExecutor<D, botticelli_error::NarrativeError> =
+            NarrativeExecutor::new(driver);
 
         let execution = executor
             .execute_narrative_by_name(file_path, narrative_name)

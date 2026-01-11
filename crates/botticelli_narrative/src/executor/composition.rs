@@ -7,7 +7,6 @@ use botticelli_error::{
     BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
 };
 use botticelli_interface::BotticelliDriver;
-use botticelli_rate_limit::TierConfig;
 use tracing::instrument;
 
 impl<D, BE> NarrativeExecutor<D, BE>

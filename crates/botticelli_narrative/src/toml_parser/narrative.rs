@@ -5,31 +5,40 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 /// Root narrative metadata structure (for single narratives).
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters, derive_new::new)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, derive_builder::Builder)]
+#[builder(setter(into))]
 pub struct TomlNarrative {
     name: String,
     description: String,
     /// Optional template table to use as schema source for content generation
+    #[builder(default)]
     template: Option<String>,
     /// Optional target table name for content generation (overrides narrative name)
+    #[builder(default)]
     target: Option<String>,
     /// Optional flag to skip content generation (both template and inference modes)
     #[serde(default)]
+    #[builder(default)]
     skip_content_generation: bool,
     /// Optional carousel configuration
     #[serde(default)]
+    #[builder(default)]
     carousel: Option<crate::CarouselConfig>,
     /// Optional default model for all acts
     #[serde(default)]
+    #[builder(default)]
     model: Option<String>,
     /// Optional default temperature for all acts
     #[serde(default)]
+    #[builder(default)]
     temperature: Option<f32>,
     /// Optional default max_tokens for all acts
     #[serde(default)]
+    #[builder(default)]
     max_tokens: Option<u32>,
     /// Optional budget multipliers
     #[serde(default)]
+    #[builder(default)]
     budget: Option<botticelli_core::BudgetConfig>,
 }
 

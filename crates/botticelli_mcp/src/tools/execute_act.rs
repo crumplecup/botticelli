@@ -111,7 +111,6 @@ impl ExecuteActTool {
                 .map(Arc::new),
         }
     }
-
 }
 
 #[cfg(any(
@@ -134,9 +133,9 @@ impl ExecuteActTool {
     ) -> McpResult<Value>
     where
         D: botticelli_interface::BotticelliDriver<
-            Request = botticelli_core::GenerateRequest,
-            Response = botticelli_core::GenerateResponse,
-        >,
+                Request = botticelli_core::GenerateRequest,
+                Response = botticelli_core::GenerateResponse,
+            >,
     {
         use botticelli_core::{GenerateRequest, Input, MessageBuilder, Output, Role};
 
@@ -171,8 +170,8 @@ impl ExecuteActTool {
         let request = GenerateRequest::builder()
             .model(model.to_string())
             .messages(messages)
-            .max_tokens(max_tokens as usize)
-            .temperature(temperature)
+            .max_tokens(max_tokens)
+            .temperature(temperature as f32)
             .build()
             .map_err(|e| {
                 error!(error = ?e, "Failed to build request");
@@ -337,7 +336,16 @@ impl McpTool for ExecuteActTool {
         #[cfg(feature = "gemini")]
         if model.starts_with("gemini") || model.starts_with("models/gemini") {
             if let Some(driver) = self.gemini_driver.clone() {
-                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                return self
+                    .execute_with_driver(
+                        driver,
+                        prompt,
+                        model,
+                        max_tokens,
+                        temperature,
+                        system_prompt,
+                    )
+                    .await;
             } else {
                 return Err(McpError::backend_unavailable("Gemini"));
             }
@@ -346,16 +354,37 @@ impl McpTool for ExecuteActTool {
         #[cfg(feature = "anthropic")]
         if model.starts_with("claude") {
             if let Some(driver) = self.anthropic_driver.clone() {
-                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                return self
+                    .execute_with_driver(
+                        driver,
+                        prompt,
+                        model,
+                        max_tokens,
+                        temperature,
+                        system_prompt,
+                    )
+                    .await;
             } else {
                 return Err(McpError::backend_unavailable("Anthropic"));
             }
         }
 
         #[cfg(feature = "ollama")]
-        if model.starts_with("llama") || model.starts_with("mistral") || model.starts_with("codellama") {
+        if model.starts_with("llama")
+            || model.starts_with("mistral")
+            || model.starts_with("codellama")
+        {
             if let Some(driver) = self.ollama_driver.clone() {
-                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                return self
+                    .execute_with_driver(
+                        driver,
+                        prompt,
+                        model,
+                        max_tokens,
+                        temperature,
+                        system_prompt,
+                    )
+                    .await;
             } else {
                 return Err(McpError::backend_unavailable("Ollama"));
             }
@@ -364,7 +393,16 @@ impl McpTool for ExecuteActTool {
         #[cfg(feature = "huggingface")]
         if model.contains("huggingface") || model.contains("/") {
             if let Some(driver) = self.huggingface_driver.clone() {
-                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                return self
+                    .execute_with_driver(
+                        driver,
+                        prompt,
+                        model,
+                        max_tokens,
+                        temperature,
+                        system_prompt,
+                    )
+                    .await;
             } else {
                 return Err(McpError::backend_unavailable("HuggingFace"));
             }
@@ -373,7 +411,16 @@ impl McpTool for ExecuteActTool {
         #[cfg(feature = "groq")]
         if model.contains("groq") {
             if let Some(driver) = self.groq_driver.clone() {
-                return self.execute_with_driver(driver, prompt, model, max_tokens, temperature, system_prompt).await;
+                return self
+                    .execute_with_driver(
+                        driver,
+                        prompt,
+                        model,
+                        max_tokens,
+                        temperature,
+                        system_prompt,
+                    )
+                    .await;
             } else {
                 return Err(McpError::backend_unavailable("Groq"));
             }
