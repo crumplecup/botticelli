@@ -6,7 +6,7 @@
 //!
 //! # Architecture
 //!
-//! - `BotCommandExecutor` - Trait for platform-specific command execution
+//! - `BotCommandExecutor` - Trait for platform-specific command execution (from botticelli_interface)
 //! - `BotCommandRegistry` - Registry for managing multiple platform executors
 //! - `BotCommandError` - Error types for command execution failures
 //!
@@ -29,163 +29,11 @@
 use async_trait::async_trait;
 use botticelli_cache::CommandCache;
 use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+pub use botticelli_interface::BotCommandExecutor;
 use derive_getters::Getters;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-
-/// Executes bot commands for a specific platform.
-///
-/// Implementations handle platform-specific API calls and return structured
-/// JSON results that can be converted to text for LLM consumption.
-///
-/// # Tracing
-///
-/// All implementations MUST instrument the `execute` method with:
-/// - `#[instrument]` macro
-/// - Span fields: platform, command, arg_count
-/// - Debug events for key operations
-/// - Error events with context
-///
-/// # Example Implementation
-///
-/// ```rust,ignore
-/// pub struct DiscordCommandExecutor {
-///     http: Arc<Http>,
-/// }
-///
-/// #[async_trait]
-/// impl BotCommandExecutor for DiscordCommandExecutor {
-///     fn platform(&self) -> &str {
-///         "discord"
-///     }
-///     
-///     #[instrument(skip(self, args), fields(platform = "discord", command, arg_count = args.len()))]
-///     async fn execute(&self, command: &str, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
-///         match command {
-///             "server.get_stats" => self.server_get_stats(args).await,
-///             _ => Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(command.to_string()))),
-///         }
-///     }
-///     
-///     fn supports_command(&self, command: &str) -> bool {
-///         matches!(command, "server.get_stats" | "channels.list")
-///     }
-/// }
-/// ```
-#[async_trait]
-pub trait BotCommandExecutor: Send + Sync {
-    /// Returns the platform this executor handles (e.g., "discord", "slack").
-    fn platform(&self) -> &str;
-
-    /// Execute a command and return JSON result.
-    ///
-    /// # Arguments
-    ///
-    /// * `command` - Command string (e.g., "server.get_stats", "channels.list")
-    /// * `args` - Command arguments as JSON values
-    ///
-    /// # Returns
-    ///
-    /// JSON value representing the command result
-    ///
-    /// # Errors
-    ///
-    /// Returns error if:
-    /// - Command is not supported
-    /// - API call fails
-    /// - Authentication fails
-    /// - Rate limit exceeded
-    ///
-    /// # Tracing
-    ///
-    /// Must emit:
-    /// - info! at start with command name
-    /// - debug! for validation steps
-    /// - error! if execution fails with full context
-    /// - Record result_size in span
-    async fn execute(
-        &self,
-        command: &str,
-        args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue>;
-
-    /// Check if this executor supports a command.
-    fn supports_command(&self, command: &str) -> bool;
-
-    /// List all supported commands.
-    fn supported_commands(&self) -> Vec<String>;
-
-    // Message bulk operations
-    /// Bulk delete messages from a channel.
-    async fn messages_bulk_delete(
-        &self,
-        args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue>;
-
-    // Thread operations
-    /// Create a new thread.
-    async fn threads_create(
-        &self,
-        args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue>;
-
-    /// List threads in a guild or channel.
-    async fn threads_list(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue>;
-
-    /// Get thread information.
-    async fn threads_get(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue>;
-
-    /// Edit a thread.
-    async fn threads_edit(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue>;
-
-    /// Delete a thread.
-    async fn threads_delete(
-        &self,
-        args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue>;
-
-    /// Join a thread.
-    async fn threads_join(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue>;
-
-    /// Leave a thread.
-    async fn threads_leave(&self, args: &HashMap<String, JsonValue>)
-    -> BotCommandResult<JsonValue>;
-
-    /// Add a member to a thread.
-    async fn threads_add_member(
-        &self,
-        args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue>;
-
-    /// Remove a member from a thread.
-    async fn threads_remove_member(
-        &self,
-        args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue>;
-
-    // Reaction operations
-    /// List users who reacted with an emoji.
-    async fn reactions_list(
-        &self,
-        args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue>;
-
-    /// Clear all reactions from a message.
-    async fn reactions_clear(
-        &self,
-        args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue>;
-
-    /// Clear all reactions of a specific emoji from a message.
-    async fn reactions_clear_emoji(
-        &self,
-        args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue>;
-
-    /// Get command documentation.
-    fn command_help(&self, command: &str) -> Option<String>;
-}
 
 /// Registry of bot command executors for multiple platforms.
 ///
@@ -203,7 +51,7 @@ pub trait BotCommandExecutor: Send + Sync {
 /// ```
 #[derive(Getters)]
 pub struct BotCommandRegistryImpl {
-    executors: HashMap<String, Arc<dyn BotCommandExecutor>>,
+    executors: HashMap<String, Arc<dyn BotCommandExecutor<Error = BotCommandError>>>,
     cache: Arc<Mutex<CommandCache>>,
 }
 
@@ -234,7 +82,10 @@ impl BotCommandRegistryImpl {
     /// let mut registry = BotCommandRegistryImpl::new();
     /// registry.register(DiscordCommandExecutor::new("TOKEN"));
     /// ```
-    pub fn register<E: BotCommandExecutor + 'static>(&mut self, executor: E) -> &mut Self {
+    pub fn register<E>(&mut self, executor: E) -> &mut Self
+    where
+        E: BotCommandExecutor<Error = BotCommandError> + 'static,
+    {
         let platform = executor.platform().to_string();
         let commands = executor.supported_commands();
         tracing::info!(
@@ -247,7 +98,7 @@ impl BotCommandRegistryImpl {
     }
 
     /// Get executor for a platform.
-    pub fn get(&self, platform: &str) -> Option<&Arc<dyn BotCommandExecutor>> {
+    pub fn get(&self, platform: &str) -> Option<&Arc<dyn BotCommandExecutor<Error = BotCommandError>>> {
         self.executors.get(platform)
     }
 

@@ -1,6 +1,7 @@
 //! Database bot command executor.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandResult};
+use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_interface::BotCommandExecutor;
 use async_trait::async_trait;
 use botticelli_database::establish_connection;
 use diesel::prelude::*;
@@ -260,6 +261,8 @@ impl Default for DatabaseCommandExecutor {
 
 #[async_trait]
 impl BotCommandExecutor for DatabaseCommandExecutor {
+    type Error = BotCommandError;
+
     fn platform(&self) -> &str {
         "database"
     }
@@ -284,7 +287,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
         &self,
         command: &str,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         info!("Executing database bot command");
 
         let result = match command {
@@ -302,7 +305,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn messages_bulk_delete(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.messages_bulk_delete".to_string(),
         )))
@@ -311,7 +314,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn threads_create(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.threads_create".to_string(),
         )))
@@ -320,13 +323,13 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn threads_list(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.threads_list".to_string(),
         )))
     }
 
-    async fn threads_get(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+    async fn threads_get(&self, _args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.threads_get".to_string(),
         )))
@@ -335,7 +338,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn threads_edit(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.threads_edit".to_string(),
         )))
@@ -344,7 +347,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn threads_delete(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.threads_delete".to_string(),
         )))
@@ -353,7 +356,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn threads_join(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.threads_join".to_string(),
         )))
@@ -362,7 +365,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn threads_leave(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.threads_leave".to_string(),
         )))
@@ -371,7 +374,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn threads_add_member(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.threads_add_member".to_string(),
         )))
@@ -380,7 +383,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn threads_remove_member(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.threads_remove_member".to_string(),
         )))
@@ -389,7 +392,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn reactions_list(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.reactions_list".to_string(),
         )))
@@ -398,7 +401,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn reactions_clear(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.reactions_clear".to_string(),
         )))
@@ -407,7 +410,7 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
     async fn reactions_clear_emoji(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
             "database.reactions_clear_emoji".to_string(),
         )))

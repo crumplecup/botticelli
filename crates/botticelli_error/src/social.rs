@@ -120,6 +120,15 @@ pub enum BotCommandErrorKind {
         /// Reason for serialization failure
         reason: String,
     },
+
+    /// Command execution failed in wrapped executor.
+    #[display("Execution failed for '{}': {}", command, source)]
+    ExecutionFailed {
+        /// Command that failed
+        command: String,
+        /// Source error from wrapped executor
+        source: String,
+    },
 }
 
 /// Bot command error with location tracking.

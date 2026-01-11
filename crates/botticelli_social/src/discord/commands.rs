@@ -28,7 +28,8 @@
 //! let result = executor.execute("server.get_stats", &args).await?;
 //! ```
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandResult};
+use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_interface::BotCommandExecutor;
 use async_trait::async_trait;
 use botticelli_security::PermissionChecker;
 use derive_getters::Getters;
@@ -3892,6 +3893,8 @@ impl DiscordCommandExecutor {
 
 #[async_trait]
 impl BotCommandExecutor for DiscordCommandExecutor {
+    type Error = BotCommandError;
+
     fn platform(&self) -> &str {
         "discord"
     }
@@ -3910,7 +3913,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
         &self,
         command: &str,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         info!("Executing Discord bot command");
 
         let start = std::time::Instant::now();
@@ -4416,7 +4419,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     async fn messages_bulk_delete(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         let channel_id_str = args
             .get("channel_id")
             .and_then(|v| v.as_str())
@@ -4494,7 +4497,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     async fn threads_create(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         let channel_id_str = args
             .get("channel_id")
             .and_then(|v| v.as_str())
@@ -4548,7 +4551,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
 
     /// Execute: threads.list
     #[instrument(skip(self, args), fields(command = "threads.list", guild_id))]
-    async fn threads_list(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+    async fn threads_list(&self, args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
         let guild_id_str = args
             .get("guild_id")
             .and_then(|v| v.as_str())
@@ -4600,7 +4603,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
 
     /// Execute: threads.get
     #[instrument(skip(self, args), fields(command = "threads.get", thread_id))]
-    async fn threads_get(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+    async fn threads_get(&self, args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
         let thread_id_str = args
             .get("thread_id")
             .and_then(|v| v.as_str())
@@ -4644,7 +4647,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
 
     /// Execute: threads.edit
     #[instrument(skip(self, args), fields(command = "threads.edit", thread_id))]
-    async fn threads_edit(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+    async fn threads_edit(&self, args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
         let thread_id_str = args
             .get("thread_id")
             .and_then(|v| v.as_str())
@@ -4697,7 +4700,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     async fn threads_delete(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         let thread_id_str = args
             .get("thread_id")
             .and_then(|v| v.as_str())
@@ -4732,7 +4735,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
 
     /// Execute: threads.join
     #[instrument(skip(self, args), fields(command = "threads.join", thread_id))]
-    async fn threads_join(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+    async fn threads_join(&self, args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
         let thread_id_str = args
             .get("thread_id")
             .and_then(|v| v.as_str())
@@ -4770,7 +4773,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     async fn threads_leave(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         let thread_id_str = args
             .get("thread_id")
             .and_then(|v| v.as_str())
@@ -4811,7 +4814,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     async fn threads_add_member(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         let thread_id_str = args
             .get("thread_id")
             .and_then(|v| v.as_str())
@@ -4871,7 +4874,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     async fn threads_remove_member(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         let thread_id_str = args
             .get("thread_id")
             .and_then(|v| v.as_str())
@@ -4931,7 +4934,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     async fn reactions_list(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         let channel_id_str = args
             .get("channel_id")
             .and_then(|v| v.as_str())
@@ -5020,7 +5023,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     async fn reactions_clear(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         let channel_id_str = args
             .get("channel_id")
             .and_then(|v| v.as_str())
@@ -5080,7 +5083,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     async fn reactions_clear_emoji(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         let channel_id_str = args
             .get("channel_id")
             .and_then(|v| v.as_str())

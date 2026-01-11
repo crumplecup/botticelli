@@ -1,9 +1,9 @@
 //! Tests for bot command infrastructure.
 
 use async_trait::async_trait;
+use botticelli_interface::BotCommandExecutor;
 use botticelli_social::{
-    BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandRegistryImpl,
-    BotCommandResult,
+    BotCommandError, BotCommandErrorKind, BotCommandRegistryImpl,
 };
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -38,6 +38,8 @@ impl MockBotCommandExecutor {
 
 #[async_trait]
 impl BotCommandExecutor for MockBotCommandExecutor {
+    type Error = BotCommandError;
+
     fn platform(&self) -> &str {
         &self.platform_name
     }
@@ -46,7 +48,7 @@ impl BotCommandExecutor for MockBotCommandExecutor {
         &self,
         command: &str,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         self.responses.get(command).cloned().ok_or_else(|| {
             BotCommandError::new(BotCommandErrorKind::CommandNotFound(command.to_string()))
         })
@@ -67,88 +69,88 @@ impl BotCommandExecutor for MockBotCommandExecutor {
     async fn messages_bulk_delete(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"deleted": 5}))
     }
 
     async fn threads_create(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"thread_id": "123456"}))
     }
 
     async fn threads_list(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"threads": []}))
     }
 
-    async fn threads_get(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+    async fn threads_get(&self, _args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"thread_id": "123456"}))
     }
 
     async fn threads_edit(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_delete(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_join(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_leave(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_add_member(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_remove_member(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn reactions_list(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"reactions": []}))
     }
 
     async fn reactions_clear(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn reactions_clear_emoji(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 }

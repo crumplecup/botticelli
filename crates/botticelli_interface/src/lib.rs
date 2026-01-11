@@ -8,6 +8,7 @@ mod capabilities;
 mod chat_host;
 mod chat_service;
 mod driver;
+mod executor;
 mod health;
 mod media_storage;
 mod metadata;
@@ -26,6 +27,7 @@ pub use capabilities::{
 pub use chat_host::ChatHost;
 pub use chat_service::ChatService;
 pub use driver::BotticelliDriver;
+pub use executor::BotCommandExecutor;
 pub use health::Health;
 pub use media_storage::MediaStorage;
 pub use metadata::Metadata;

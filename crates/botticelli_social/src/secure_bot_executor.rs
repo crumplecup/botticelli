@@ -3,7 +3,8 @@
 //! This module integrates the security framework with bot command execution,
 //! providing a secure wrapper around platform-specific executors.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandResult};
+use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_interface::BotCommandExecutor;
 use async_trait::async_trait;
 use botticelli_security::{
     ApprovalWorkflow, CommandValidator, ContentFilter, PermissionChecker, RateLimiter,
@@ -80,12 +81,14 @@ where
     E: BotCommandExecutor + Send + Sync,
     V: CommandValidator + Send + Sync,
 {
+    type Error = BotCommandError;
+
     #[instrument(skip(self, args), fields(platform = self.inner.platform(), command, narrative_id = %self.narrative_id))]
     async fn execute(
         &self,
         command: &str,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         info!("Executing command through security pipeline");
 
         // Convert HashMap args to String params for security checks
@@ -115,7 +118,13 @@ where
         debug!("Security checks passed, executing command");
         drop(secure_executor); // Release lock before executing
 
-        let result = self.inner.execute(command, args).await?;
+        // Wrapper converts inner error to BotCommandError (legitimate conversion)
+        let result = self.inner.execute(command, args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: command.to_string(),
+                source: e.to_string(),
+            })
+        })?;
 
         info!("Command executed successfully");
         Ok(result)
@@ -140,80 +149,145 @@ where
     async fn messages_bulk_delete(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
-        self.inner.messages_bulk_delete(args).await
+    ) -> Result<JsonValue, Self::Error> {
+        self.inner.messages_bulk_delete(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "messages_bulk_delete".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
     async fn threads_create(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
-        self.inner.threads_create(args).await
+    ) -> Result<JsonValue, Self::Error> {
+        self.inner.threads_create(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "threads_create".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
-    async fn threads_list(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
-        self.inner.threads_list(args).await
+    async fn threads_list(&self, args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
+        self.inner.threads_list(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "threads_list".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
-    async fn threads_get(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
-        self.inner.threads_get(args).await
+    async fn threads_get(&self, args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
+        self.inner.threads_get(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "threads_get".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
-    async fn threads_edit(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
-        self.inner.threads_edit(args).await
+    async fn threads_edit(&self, args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
+        self.inner.threads_edit(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "threads_edit".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
     async fn threads_delete(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
-        self.inner.threads_delete(args).await
+    ) -> Result<JsonValue, Self::Error> {
+        self.inner.threads_delete(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "threads_delete".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
-    async fn threads_join(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
-        self.inner.threads_join(args).await
+    async fn threads_join(&self, args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
+        self.inner.threads_join(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "threads_join".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
     async fn threads_leave(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
-        self.inner.threads_leave(args).await
+    ) -> Result<JsonValue, Self::Error> {
+        self.inner.threads_leave(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "threads_leave".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
     async fn threads_add_member(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
-        self.inner.threads_add_member(args).await
+    ) -> Result<JsonValue, Self::Error> {
+        self.inner.threads_add_member(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "threads_add_member".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
     async fn threads_remove_member(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
-        self.inner.threads_remove_member(args).await
+    ) -> Result<JsonValue, Self::Error> {
+        self.inner.threads_remove_member(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "threads_remove_member".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
     async fn reactions_list(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
-        self.inner.reactions_list(args).await
+    ) -> Result<JsonValue, Self::Error> {
+        self.inner.reactions_list(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "reactions_list".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
     async fn reactions_clear(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
-        self.inner.reactions_clear(args).await
+    ) -> Result<JsonValue, Self::Error> {
+        self.inner.reactions_clear(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "reactions_clear".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 
     async fn reactions_clear_emoji(
         &self,
         args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
-        self.inner.reactions_clear_emoji(args).await
+    ) -> Result<JsonValue, Self::Error> {
+        self.inner.reactions_clear_emoji(args).await.map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::ExecutionFailed {
+                command: "reactions_clear_emoji".to_string(),
+                source: e.to_string(),
+            })
+        })
     }
 }
 

@@ -6,9 +6,10 @@ use botticelli_security::{
     ApprovalWorkflow, ContentFilter, ContentFilterConfig, DiscordValidator, PermissionChecker,
     PermissionConfig, RateLimit, RateLimiter, ResourcePermission,
 };
+use botticelli_interface::BotCommandExecutor;
 use botticelli_social::{
-    BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandRegistryImpl,
-    BotCommandResult, ExecutionResult, SecureBotCommandExecutor,
+    BotCommandError, BotCommandErrorKind, BotCommandRegistryImpl,
+    ExecutionResult, SecureBotCommandExecutor,
 };
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -18,6 +19,8 @@ struct MockExecutor;
 
 #[async_trait]
 impl BotCommandExecutor for MockExecutor {
+    type Error = BotCommandError;
+
     fn platform(&self) -> &str {
         "mock"
     }
@@ -26,7 +29,7 @@ impl BotCommandExecutor for MockExecutor {
         &self,
         command: &str,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         match command {
             "messages.send" => Ok(serde_json::json!({"status": "sent"})),
             _ => Err(BotCommandError::new(BotCommandErrorKind::CommandNotFound(
@@ -50,88 +53,88 @@ impl BotCommandExecutor for MockExecutor {
     async fn messages_bulk_delete(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"deleted": 5}))
     }
 
     async fn threads_create(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"thread_id": "123456"}))
     }
 
     async fn threads_list(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"threads": []}))
     }
 
-    async fn threads_get(&self, _args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+    async fn threads_get(&self, _args: &HashMap<String, JsonValue>) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"thread_id": "123456"}))
     }
 
     async fn threads_edit(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_delete(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_join(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_leave(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_add_member(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn threads_remove_member(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn reactions_list(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"reactions": []}))
     }
 
     async fn reactions_clear(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 
     async fn reactions_clear_emoji(
         &self,
         _args: &HashMap<String, JsonValue>,
-    ) -> BotCommandResult<JsonValue> {
+    ) -> Result<JsonValue, Self::Error> {
         Ok(serde_json::json!({"success": true}))
     }
 }
