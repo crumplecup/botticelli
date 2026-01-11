@@ -1,0 +1,387 @@
+//! Thread commands for Discord channels.
+//!
+//! This module handles thread operations such as creating, editing, deleting,
+//! and managing thread membership.
+
+use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use serde_json::Value as JsonValue;
+use serenity::all::{ChannelId, ChannelType, CreateThread, EditThread, GuildId, Http, UserId};
+use std::collections::HashMap;
+use std::sync::Arc;
+use tracing::{debug, error, info};
+
+/// Execute: threads.create
+///
+/// Create a new thread in a channel.
+pub(super) async fn create(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let channel_id_str = args
+        .get("channel_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("channel_id"))?;
+    let name = args
+        .get("name")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("name"))?;
+
+    let channel_id = parse_channel_id(channel_id_str)?;
+
+    info!(channel_id = %channel_id, name, "Creating thread");
+
+    let builder = CreateThread::new(name.to_string()).kind(ChannelType::PublicThread);
+
+    let thread = http
+        .create_thread(channel_id, &builder, None)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to create thread");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "threads.create".to_string(),
+                reason: format!("Failed to create thread: {}", e),
+            })
+        })?;
+
+    info!(thread_id = %thread.id, "Successfully created thread");
+    Ok(serde_json::json!({
+        "thread_id": thread.id.to_string(),
+        "name": thread.name,
+        "type": format!("{:?}", thread.kind)
+    }))
+}
+
+/// Execute: threads.list
+///
+/// List active threads in a guild.
+pub(super) async fn list(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let guild_id_str = args
+        .get("guild_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("guild_id"))?;
+
+    let guild_id = parse_guild_id(guild_id_str)?;
+
+    debug!(guild_id = %guild_id, "Listing threads");
+
+    let threads = http
+        .get_guild_active_threads(guild_id)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to list threads");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "threads.list".to_string(),
+                reason: format!("Failed to list threads: {}", e),
+            })
+        })?;
+
+    let thread_list: Vec<JsonValue> = threads
+        .threads
+        .iter()
+        .map(|thread| {
+            serde_json::json!({
+                "id": thread.id.to_string(),
+                "name": thread.name,
+                "type": format!("{:?}", thread.kind),
+                "parent_id": thread.parent_id.map(|id| id.to_string())
+            })
+        })
+        .collect();
+
+    info!(count = thread_list.len(), "Successfully listed threads");
+    Ok(serde_json::json!({
+        "threads": thread_list,
+        "count": thread_list.len()
+    }))
+}
+
+/// Execute: threads.get
+///
+/// Get specific thread details.
+pub(super) async fn get(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let thread_id_str = args
+        .get("thread_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("thread_id"))?;
+
+    let thread_id = parse_channel_id(thread_id_str)?;
+
+    debug!(thread_id = %thread_id, "Fetching thread");
+
+    let thread = http.get_channel(thread_id).await.map_err(|e| {
+        error!(error = %e, "Failed to get thread");
+        BotCommandError::new(BotCommandErrorKind::ApiError {
+            command: "threads.get".to_string(),
+            reason: format!("Failed to get thread: {}", e),
+        })
+    })?;
+
+    let guild_channel = thread.guild().ok_or_else(|| {
+        error!("Channel is not a guild channel");
+        BotCommandError::new(BotCommandErrorKind::ApiError {
+            command: "threads.get".to_string(),
+            reason: "Channel is not a guild channel".to_string(),
+        })
+    })?;
+
+    info!(thread_id = %thread_id, "Successfully retrieved thread");
+    Ok(serde_json::json!({
+        "id": guild_channel.id.to_string(),
+        "name": guild_channel.name,
+        "type": format!("{:?}", guild_channel.kind),
+        "parent_id": guild_channel.parent_id.map(|id| id.to_string())
+    }))
+}
+
+/// Execute: threads.edit
+///
+/// Edit thread properties.
+pub(super) async fn edit(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let thread_id_str = args
+        .get("thread_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("thread_id"))?;
+
+    let thread_id = parse_channel_id(thread_id_str)?;
+
+    info!(thread_id = %thread_id, "Editing thread");
+
+    let mut builder = EditThread::new();
+
+    if let Some(name) = args.get("name").and_then(|v| v.as_str()) {
+        builder = builder.name(name);
+    }
+    if let Some(archived) = args.get("archived").and_then(|v| v.as_bool()) {
+        builder = builder.archived(archived);
+    }
+    if let Some(locked) = args.get("locked").and_then(|v| v.as_bool()) {
+        builder = builder.locked(locked);
+    }
+
+    http.edit_thread(thread_id, &builder, None)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to edit thread");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "threads.edit".to_string(),
+                reason: format!("Failed to edit thread: {}", e),
+            })
+        })?;
+
+    info!(thread_id = %thread_id, "Successfully edited thread");
+    Ok(serde_json::json!({ "success": true }))
+}
+
+/// Execute: threads.delete
+///
+/// Delete a thread.
+pub(super) async fn delete(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let thread_id_str = args
+        .get("thread_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("thread_id"))?;
+
+    let thread_id = parse_channel_id(thread_id_str)?;
+
+    info!(thread_id = %thread_id, "Deleting thread");
+
+    http.delete_channel(thread_id, None)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to delete thread");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "threads.delete".to_string(),
+                reason: format!("Failed to delete thread: {}", e),
+            })
+        })?;
+
+    info!(thread_id = %thread_id, "Successfully deleted thread");
+    Ok(serde_json::json!({ "success": true }))
+}
+
+/// Execute: threads.join
+///
+/// Join a thread.
+pub(super) async fn join(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let thread_id_str = args
+        .get("thread_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("thread_id"))?;
+
+    let thread_id = parse_channel_id(thread_id_str)?;
+
+    info!(thread_id = %thread_id, "Joining thread");
+
+    http.join_thread_channel(thread_id)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to join thread");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "threads.join".to_string(),
+                reason: format!("Failed to join thread: {}", e),
+            })
+        })?;
+
+    info!(thread_id = %thread_id, "Successfully joined thread");
+    Ok(serde_json::json!({ "success": true }))
+}
+
+/// Execute: threads.leave
+///
+/// Leave a thread.
+pub(super) async fn leave(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let thread_id_str = args
+        .get("thread_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("thread_id"))?;
+
+    let thread_id = parse_channel_id(thread_id_str)?;
+
+    info!(thread_id = %thread_id, "Leaving thread");
+
+    http.leave_thread_channel(thread_id)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to leave thread");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "threads.leave".to_string(),
+                reason: format!("Failed to leave thread: {}", e),
+            })
+        })?;
+
+    info!(thread_id = %thread_id, "Successfully left thread");
+    Ok(serde_json::json!({ "success": true }))
+}
+
+/// Execute: threads.add_member
+///
+/// Add a member to a thread.
+pub(super) async fn add_member(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let thread_id_str = args
+        .get("thread_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("thread_id"))?;
+    let user_id_str = args
+        .get("user_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("user_id"))?;
+
+    let thread_id = parse_channel_id(thread_id_str)?;
+    let user_id = parse_user_id(user_id_str)?;
+
+    info!(thread_id = %thread_id, user_id = %user_id, "Adding member to thread");
+
+    http.add_thread_channel_member(thread_id, user_id)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to add member to thread");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "threads.add_member".to_string(),
+                reason: format!("Failed to add member to thread: {}", e),
+            })
+        })?;
+
+    info!("Successfully added member to thread");
+    Ok(serde_json::json!({ "success": true }))
+}
+
+/// Execute: threads.remove_member
+///
+/// Remove a member from a thread.
+pub(super) async fn remove_member(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let thread_id_str = args
+        .get("thread_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("thread_id"))?;
+    let user_id_str = args
+        .get("user_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("user_id"))?;
+
+    let thread_id = parse_channel_id(thread_id_str)?;
+    let user_id = parse_user_id(user_id_str)?;
+
+    info!(thread_id = %thread_id, user_id = %user_id, "Removing member from thread");
+
+    http.remove_thread_channel_member(thread_id, user_id)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to remove member from thread");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "threads.remove_member".to_string(),
+                reason: format!("Failed to remove member from thread: {}", e),
+            })
+        })?;
+
+    info!("Successfully removed member from thread");
+    Ok(serde_json::json!({ "success": true }))
+}
+
+// Helper functions
+
+fn missing_arg_error(arg_name: &str) -> BotCommandError {
+    BotCommandError::new(BotCommandErrorKind::MissingArgument {
+        command: "".to_string(),
+        arg_name: arg_name.to_string(),
+    })
+}
+
+fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
+    s.parse::<u64>()
+        .map(GuildId::new)
+        .map_err(|_| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "".to_string(),
+                arg_name: "guild_id".to_string(),
+                reason: "Invalid Discord ID format".to_string(),
+            })
+        })
+}
+
+fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
+    s.parse::<u64>()
+        .map(ChannelId::new)
+        .map_err(|_| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "".to_string(),
+                arg_name: "thread_id".to_string(),
+                reason: "Invalid Discord ID format".to_string(),
+            })
+        })
+}
+
+fn parse_user_id(s: &str) -> BotCommandResult<UserId> {
+    s.parse::<u64>()
+        .map(UserId::new)
+        .map_err(|_| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "".to_string(),
+                arg_name: "user_id".to_string(),
+                reason: "Invalid Discord ID format".to_string(),
+            })
+        })
+}

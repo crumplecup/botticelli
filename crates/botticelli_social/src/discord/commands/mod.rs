@@ -13,6 +13,7 @@ mod moderation;
 mod reactions;
 mod roles;
 mod server;
+mod threads;
 
 use crate::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
@@ -137,7 +138,16 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "messages.bulk_delete" => messages::bulk_delete(&self.http, args).await?,
             "messages.clear" => messages::clear(&self.http, args).await?,
 
-            // TODO: Add other commands as we migrate them
+            // Thread commands
+            "threads.create" => threads::create(&self.http, args).await?,
+            "threads.list" => threads::list(&self.http, args).await?,
+            "threads.get" => threads::get(&self.http, args).await?,
+            "threads.edit" => threads::edit(&self.http, args).await?,
+            "threads.delete" => threads::delete(&self.http, args).await?,
+            "threads.join" => threads::join(&self.http, args).await?,
+            "threads.leave" => threads::leave(&self.http, args).await?,
+            "threads.add_member" => threads::add_member(&self.http, args).await?,
+            "threads.remove_member" => threads::remove_member(&self.http, args).await?,
             
             _ => {
                 error!(
@@ -229,7 +239,16 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             | "messages.unpin"
             | "messages.bulk_delete"
             | "messages.clear"
-            // TODO: Add other commands as we migrate them
+            // Threads
+            | "threads.create"
+            | "threads.list"
+            | "threads.get"
+            | "threads.edit"
+            | "threads.delete"
+            | "threads.join"
+            | "threads.leave"
+            | "threads.add_member"
+            | "threads.remove_member"
         )
     }
 
@@ -298,7 +317,16 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "messages.unpin".to_string(),
             "messages.bulk_delete".to_string(),
             "messages.clear".to_string(),
-            // TODO: Add other commands as we migrate them
+            // Threads
+            "threads.create".to_string(),
+            "threads.list".to_string(),
+            "threads.get".to_string(),
+            "threads.edit".to_string(),
+            "threads.delete".to_string(),
+            "threads.join".to_string(),
+            "threads.leave".to_string(),
+            "threads.add_member".to_string(),
+            "threads.remove_member".to_string(),
         ]
     }
 
@@ -361,7 +389,15 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "messages.unpin" => Some("Unpin message\nRequired arguments: channel_id, message_id".to_string()),
             "messages.bulk_delete" => Some("Bulk delete messages\nRequired arguments: channel_id, message_ids (array, max 100)".to_string()),
             "messages.clear" => Some("Clear messages from channel\nRequired arguments: channel_id\nOptional: limit (max 100)".to_string()),
-            // TODO: Add other commands as we migrate them
+            "threads.create" => Some("Create thread\nRequired arguments: channel_id, name\nOptional: message_id, kind, auto_archive_duration, invitable".to_string()),
+            "threads.list" => Some("List active threads\nRequired arguments: guild_id".to_string()),
+            "threads.get" => Some("Get thread details\nRequired arguments: channel_id".to_string()),
+            "threads.edit" => Some("Edit thread properties\nRequired arguments: channel_id\nOptional: name, archived, auto_archive_duration, locked, invitable".to_string()),
+            "threads.delete" => Some("Delete thread\nRequired arguments: channel_id".to_string()),
+            "threads.join" => Some("Join thread\nRequired arguments: channel_id".to_string()),
+            "threads.leave" => Some("Leave thread\nRequired arguments: channel_id".to_string()),
+            "threads.add_member" => Some("Add member to thread\nRequired arguments: channel_id, user_id".to_string()),
+            "threads.remove_member" => Some("Remove member from thread\nRequired arguments: channel_id, user_id".to_string()),
             _ => None,
         }
     }
