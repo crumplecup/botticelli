@@ -9,8 +9,8 @@ use super::misc::Misc;
 use super::moderation::Moderation;
 use super::reactions::Reactions;
 use super::roles::Roles;
+use super::server::Server;
 use super::threads::Threads;
-use super::server;
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -62,7 +62,7 @@ impl BotCommandExecutor for DiscordCommandExecutor {
 
         let result = match command {
             // Server commands
-            "server.get_stats" => server::get_stats(&self.http, args).await?,
+            "server.get_stats" => Server::get_stats(&self.http, args).await?,
 
             // Misc commands
             "emojis.list" => Misc::emojis_list(&self.http, args).await?,

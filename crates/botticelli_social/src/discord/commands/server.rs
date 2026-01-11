@@ -7,12 +7,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument};
 
-/// Get server statistics.
-///
-/// Command: `server.get_stats`
-/// Required arguments: `guild_id`
-#[instrument(skip(http, args), fields(guild_id, member_count, channel_count))]
-pub(super) async fn get_stats(
+/// Helper type for server command operations.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Server;
+
+impl Server {
+    /// Get server statistics.
+    ///
+    /// Command: `server.get_stats`
+    /// Required arguments: `guild_id`
+    #[instrument(skip(http, args), fields(guild_id, member_count, channel_count))]
+    pub async fn get_stats(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -55,6 +60,7 @@ pub(super) async fn get_stats(
     info!(member_count, "Successfully retrieved guild stats");
 
     Ok(stats)
+}
 }
 
 /// Parse guild_id from command arguments.
