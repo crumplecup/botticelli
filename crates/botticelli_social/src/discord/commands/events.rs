@@ -1,0 +1,325 @@
+//! Scheduled events commands.
+
+use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use serde_json::Value as JsonValue;
+use serenity::all::{
+    CreateScheduledEvent, EditScheduledEvent, GuildId, Http, ScheduledEventId, ScheduledEventType,
+    Timestamp,
+};
+use std::collections::HashMap;
+use std::sync::Arc;
+use tracing::{debug, error, info};
+
+/// List scheduled events in a server.
+///
+/// Command: `events.list`
+/// Required arguments: `guild_id`
+pub(super) async fn list(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    debug!("Parsing guild_id argument");
+    let guild_id = parse_guild_id("events.list", args)?;
+
+    tracing::Span::current().record("guild_id", guild_id.get());
+    info!(guild_id = %guild_id, "Fetching scheduled events from Discord API");
+
+    // Fetch scheduled events
+    let events = http
+        .get_scheduled_events(guild_id, false)
+        .await
+        .map_err(|e| {
+            error!(guild_id = %guild_id, error = %e, "Failed to fetch events");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "events.list".to_string(),
+                reason: format!("Failed to fetch events: {}", e),
+            })
+        })?;
+
+    let event_count = events.len();
+    tracing::Span::current().record("event_count", event_count);
+
+    let events_json: Vec<JsonValue> = events
+        .into_iter()
+        .map(|event| {
+            serde_json::json!({
+                "id": event.id.to_string(),
+                "name": event.name,
+                "description": event.description,
+                "start_time": event.start_time.to_string(),
+                "end_time": event.end_time.map(|t| t.to_string()),
+                "status": format!("{:?}", event.status),
+                "kind": format!("{:?}", event.kind),
+                "user_count": event.user_count,
+            })
+        })
+        .collect();
+
+    info!(event_count, "Successfully retrieved events");
+
+    Ok(serde_json::json!(events_json))
+}
+
+/// Get details about a scheduled event.
+///
+/// Command: `events.get`
+/// Required arguments: `guild_id`, `event_id`
+pub(super) async fn get(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let guild_id_str = args
+        .get("guild_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("guild_id"))?;
+    let event_id_str = args
+        .get("event_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("event_id"))?;
+
+    let guild_id = parse_guild_id_str(guild_id_str)?;
+    let event_id = parse_event_id(event_id_str)?;
+
+    debug!("Getting scheduled event details");
+
+    let event = http
+        .get_scheduled_event(guild_id, event_id, false)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to get event");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "events.get".to_string(),
+                reason: format!("Failed to get event: {}", e),
+            })
+        })?;
+
+    debug!(name = %event.name, "Retrieved event");
+
+    Ok(serde_json::json!({
+        "id": event.id.to_string(),
+        "name": event.name,
+        "start_time": event.start_time.to_string(),
+        "description": event.description,
+    }))
+}
+
+/// Create a scheduled event.
+///
+/// Command: `events.create`
+/// Required arguments: `guild_id`, `name`, `start_time`
+/// Optional arguments: `description`, `end_time`, `location`
+pub(super) async fn create(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let guild_id_str = args
+        .get("guild_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("guild_id"))?;
+    let name = args
+        .get("name")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("name"))?;
+    let start_time_str = args
+        .get("start_time")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("start_time"))?;
+
+    let guild_id = parse_guild_id_str(guild_id_str)?;
+
+    info!(name, "Creating scheduled event");
+
+    let start_time = Timestamp::parse(start_time_str).map_err(|_| {
+        BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+            command: "events.create".to_string(),
+            arg_name: "start_time".to_string(),
+            reason: "Invalid ISO 8601 timestamp format".to_string(),
+        })
+    })?;
+
+    let mut builder = CreateScheduledEvent::new(ScheduledEventType::External, name, start_time);
+
+    if let Some(description) = args.get("description").and_then(|v| v.as_str()) {
+        builder = builder.description(description);
+    }
+
+    if let Some(end_time_str) = args.get("end_time").and_then(|v| v.as_str()) {
+        let end_time = Timestamp::parse(end_time_str).map_err(|_| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "events.create".to_string(),
+                arg_name: "end_time".to_string(),
+                reason: "Invalid ISO 8601 timestamp format".to_string(),
+            })
+        })?;
+        builder = builder.end_time(end_time);
+    }
+
+    if let Some(location) = args.get("location").and_then(|v| v.as_str()) {
+        builder = builder.location(location);
+    }
+
+    let event = http
+        .create_scheduled_event(guild_id, &builder, None)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to create event");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "events.create".to_string(),
+                reason: format!("Failed to create event: {}", e),
+            })
+        })?;
+
+    info!(event_id = %event.id, "Successfully created event");
+
+    Ok(serde_json::json!({
+        "event_id": event.id.to_string(),
+        "name": event.name,
+    }))
+}
+
+/// Edit a scheduled event.
+///
+/// Command: `events.edit`
+/// Required arguments: `guild_id`, `event_id`
+/// Optional arguments: `name`, `description`, `start_time`, `location`
+pub(super) async fn edit(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let guild_id_str = args
+        .get("guild_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("guild_id"))?;
+    let event_id_str = args
+        .get("event_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("event_id"))?;
+
+    let guild_id = parse_guild_id_str(guild_id_str)?;
+    let event_id = parse_event_id(event_id_str)?;
+
+    info!("Editing scheduled event");
+
+    let mut builder = EditScheduledEvent::new();
+
+    if let Some(name) = args.get("name").and_then(|v| v.as_str()) {
+        builder = builder.name(name);
+    }
+
+    if let Some(description) = args.get("description").and_then(|v| v.as_str()) {
+        builder = builder.description(description);
+    }
+
+    if let Some(start_time_str) = args.get("start_time").and_then(|v| v.as_str()) {
+        let start_time = Timestamp::parse(start_time_str).map_err(|_| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "events.edit".to_string(),
+                arg_name: "start_time".to_string(),
+                reason: "Invalid ISO 8601 timestamp format".to_string(),
+            })
+        })?;
+        builder = builder.start_time(start_time);
+    }
+
+    if let Some(location) = args.get("location").and_then(|v| v.as_str()) {
+        builder = builder.location(location);
+    }
+
+    http
+        .edit_scheduled_event(guild_id, event_id, &builder, None)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to edit event");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "events.edit".to_string(),
+                reason: format!("Failed to edit event: {}", e),
+            })
+        })?;
+
+    info!("Successfully edited event");
+
+    Ok(serde_json::json!({ "success": true }))
+}
+
+/// Delete a scheduled event.
+///
+/// Command: `events.delete`
+/// Required arguments: `guild_id`, `event_id`
+pub(super) async fn delete(
+    http: &Arc<Http>,
+    args: &HashMap<String, JsonValue>,
+) -> BotCommandResult<JsonValue> {
+    let guild_id_str = args
+        .get("guild_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("guild_id"))?;
+    let event_id_str = args
+        .get("event_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| missing_arg_error("event_id"))?;
+
+    let guild_id = parse_guild_id_str(guild_id_str)?;
+    let event_id = parse_event_id(event_id_str)?;
+
+    info!("Deleting scheduled event");
+
+    http
+        .delete_scheduled_event(guild_id, event_id)
+        .await
+        .map_err(|e| {
+            error!(error = %e, "Failed to delete event");
+            BotCommandError::new(BotCommandErrorKind::ApiError {
+                command: "events.delete".to_string(),
+                reason: format!("Failed to delete event: {}", e),
+            })
+        })?;
+
+    info!("Successfully deleted event");
+
+    Ok(serde_json::json!({ "success": true }))
+}
+
+// Helper functions
+
+fn missing_arg_error(arg_name: &str) -> BotCommandError {
+    BotCommandError::new(BotCommandErrorKind::MissingArgument {
+        command: "".to_string(),
+        arg_name: arg_name.to_string(),
+    })
+}
+
+fn parse_guild_id(command: &str, args: &HashMap<String, JsonValue>) -> BotCommandResult<GuildId> {
+    let guild_id_str = args
+        .get("guild_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| {
+            BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                command: command.to_string(),
+                arg_name: "guild_id".to_string(),
+            })
+        })?;
+
+    parse_guild_id_str(guild_id_str)
+}
+
+fn parse_guild_id_str(id_str: &str) -> BotCommandResult<GuildId> {
+    let id_u64: u64 = id_str.parse().map_err(|_| {
+        BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+            command: "".to_string(),
+            arg_name: "guild_id".to_string(),
+            reason: "Invalid Discord ID format".to_string(),
+        })
+    })?;
+    Ok(GuildId::new(id_u64))
+}
+
+fn parse_event_id(id_str: &str) -> BotCommandResult<ScheduledEventId> {
+    let id_u64: u64 = id_str.parse().map_err(|_| {
+        BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+            command: "".to_string(),
+            arg_name: "event_id".to_string(),
+            reason: "Invalid Discord ID format".to_string(),
+        })
+    })?;
+    Ok(ScheduledEventId::new(id_u64))
+}

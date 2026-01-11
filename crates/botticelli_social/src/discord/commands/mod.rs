@@ -3,11 +3,12 @@
 //! This module implements the BotCommandExecutor trait for Discord,
 //! routing commands to domain-specific submodules.
 
+mod events;
 mod misc;
 mod moderation;
 mod server;
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use crate::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
 use serde_json::Value as JsonValue;
@@ -74,6 +75,13 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "members.unban" => moderation::unban(&self.http, args).await?,
             "members.kick" => moderation::kick(&self.http, args).await?,
 
+            // Events commands
+            "events.list" => events::list(&self.http, args).await?,
+            "events.get" => events::get(&self.http, args).await?,
+            "events.create" => events::create(&self.http, args).await?,
+            "events.edit" => events::edit(&self.http, args).await?,
+            "events.delete" => events::delete(&self.http, args).await?,
+
             // TODO: Add other commands as we migrate them
             
             _ => {
@@ -117,6 +125,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             | "members.ban"
             | "members.unban"
             | "members.kick"
+            // Events
+            | "events.list"
+            | "events.get"
+            | "events.create"
+            | "events.edit"
+            | "events.delete"
             // TODO: Add other commands as we migrate them
         )
     }
@@ -137,6 +151,12 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "members.ban".to_string(),
             "members.unban".to_string(),
             "members.kick".to_string(),
+            // Events
+            "events.list".to_string(),
+            "events.get".to_string(),
+            "events.create".to_string(),
+            "events.edit".to_string(),
+            "events.delete".to_string(),
             // TODO: Add other commands as we migrate them
         ]
     }
@@ -158,6 +178,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "members.ban" => Some("Ban a member\nRequired arguments: guild_id, user_id\nOptional: delete_message_days".to_string()),
             "members.unban" => Some("Unban a member\nRequired arguments: guild_id, user_id".to_string()),
             "members.kick" => Some("Kick a member\nRequired arguments: guild_id, user_id\nOptional: reason".to_string()),
+            "events.list" => Some("List scheduled events\nRequired arguments: guild_id".to_string()),
+            "events.get" => Some("Get a scheduled event\nRequired arguments: guild_id, event_id".to_string()),
+            "events.create" => Some("Create a scheduled event\nRequired arguments: guild_id, name, start_time, entity_type\nOptional: description, end_time, location, channel_id".to_string()),
+            "events.edit" => Some("Edit a scheduled event\nRequired arguments: guild_id, event_id\nOptional: name, description, start_time, end_time, status".to_string()),
+            "events.delete" => Some("Delete a scheduled event\nRequired arguments: guild_id, event_id".to_string()),
             // TODO: Add other commands as we migrate them
             _ => None,
         }
