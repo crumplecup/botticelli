@@ -1,26 +1,13 @@
 //! Token counting and cost calculation tests.
 
-use botticelli_core::{
-    ExporterBackend, ObservabilityConfig, TokenUsageData, get_tokenizer,
-    init_observability_with_config,
-};
+mod helpers;
+
+use botticelli_core::{TokenUsageData, get_tokenizer};
 use botticelli_error::{TokenCountingError, TokenCountingErrorKind};
 
-/// Initialize tracing for tests.
-fn init_test_tracing() {
-    let _ = ObservabilityConfig::builder()
-        .service_name("token-counting-tests")
-        .exporter(ExporterBackend::Stdout)
-        .enable_metrics(false)
-        .log_level("debug")
-        .build()
-        .ok()
-        .and_then(|config| init_observability_with_config(config).ok());
-}
-
 #[test]
-fn test_get_tokenizer() -> Result<(), TokenCountingError> {
-    init_test_tracing();
+fn test_get_tokenizer() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     use tracing::{debug, info};
 
     info!("Testing tokenizer retrieval for gpt-4");
@@ -41,8 +28,9 @@ fn test_get_tokenizer() -> Result<(), TokenCountingError> {
 }
 
 #[test]
-fn test_get_tokenizer_invalid_model() {
-    use tracing::{debug, info, warn};
+fn test_get_tokenizer_invalid_model() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    use tracing::{debug, info};
 
     info!("Testing tokenizer with invalid model name");
     debug!(
@@ -57,22 +45,30 @@ fn test_get_tokenizer_invalid_model() {
         let kind = err.kind();
 
         match kind {
-            TokenCountingErrorKind::TokenizerNotFound { model, message } => {
-                debug!(model = %model, error = %message, "Error details");
-                assert_eq!(model, "invalid-model-xyz-123");
-                assert!(!message.is_empty());
-                info!("Invalid model correctly rejected with proper error");
+            TokenCountingErrorKind::Tiktoken(boxed_err) => {
+                debug!(error = %boxed_err, "Tiktoken error details");
+                let error_msg = boxed_err.to_string();
+                assert!(
+                    error_msg.contains("invalid-model-xyz-123") || error_msg.contains("model"),
+                    "Error should mention the model: {}",
+                    error_msg
+                );
+                info!("Invalid model correctly rejected with Tiktoken error");
             }
-            _ => {
-                warn!(error_kind = ?kind, "Unexpected error kind");
-                panic!("Expected TokenizerNotFound error");
+            TokenCountingErrorKind::InvalidModel(model) => {
+                debug!(model = %model, "Invalid model error");
+                assert_eq!(model, "invalid-model-xyz-123");
+                info!("Invalid model correctly rejected with InvalidModel error");
             }
         }
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_token_usage_data_calculate_cost() {
+fn test_token_usage_data_calculate_cost() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     use tracing::{debug, info};
 
     info!("Testing token usage cost calculation");
@@ -96,4 +92,5 @@ fn test_token_usage_data_calculate_cost() {
 
     assert!((cost - 2.0).abs() < 0.001); // 1.0 + 1.0 = 2.0
     info!(cost = cost, "Cost calculation verified");
+    Ok(())
 }

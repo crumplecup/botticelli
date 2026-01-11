@@ -3,61 +3,58 @@
 //! These tests manage global state (tracing subscriber) through a single
 //! orchestrator function that runs test scenarios serially.
 
+mod helpers;
+
 use botticelli_core::{
     ExporterBackend, ObservabilityConfig, init_observability_with_config, shutdown_observability,
 };
-use botticelli_error::ObservabilityError;
 
 /// Test that stdout exporter initializes without error.
-fn test_stdout_init() -> Result<(), ObservabilityError> {
+fn test_stdout_init() -> anyhow::Result<()> {
     let config = ObservabilityConfig::builder()
         .service_name("test-stdout-service")
         .exporter(ExporterBackend::Stdout)
         .enable_metrics(false)
-        .build()
-        .map_err(|e| ObservabilityError::from(e.to_string()))?;
+        .build()?;
 
     init_observability_with_config(config)?;
     Ok(())
 }
 
 /// Test that JSON log format works.
-fn test_json_logs() -> Result<(), ObservabilityError> {
+fn test_json_logs() -> anyhow::Result<()> {
     let config = ObservabilityConfig::builder()
         .service_name("test-json-service")
         .json_logs(true)
         .exporter(ExporterBackend::Stdout)
         .enable_metrics(false)
-        .build()
-        .map_err(|e| ObservabilityError::from(e.to_string()))?;
+        .build()?;
 
     init_observability_with_config(config)?;
     Ok(())
 }
 
 /// Test that custom log level is accepted.
-fn test_custom_log_level() -> Result<(), ObservabilityError> {
+fn test_custom_log_level() -> anyhow::Result<()> {
     let config = ObservabilityConfig::builder()
         .service_name("test-loglevel-service")
         .log_level("debug")
         .exporter(ExporterBackend::Stdout)
         .enable_metrics(false)
-        .build()
-        .map_err(|e| ObservabilityError::from(e.to_string()))?;
+        .build()?;
 
     init_observability_with_config(config)?;
     Ok(())
 }
 
 /// Test that invalid log level returns error before setting global state.
-fn test_invalid_log_level() -> Result<(), ObservabilityError> {
+fn test_invalid_log_level() -> anyhow::Result<()> {
     let config = ObservabilityConfig::builder()
         .service_name("test-invalid-service")
         .log_level("invalid!!!log@@@level") // Truly invalid syntax
         .exporter(ExporterBackend::Stdout)
         .enable_metrics(false)
-        .build()
-        .map_err(|e| ObservabilityError::from(e.to_string()))?;
+        .build()?;
 
     let result = init_observability_with_config(config);
     assert!(result.is_err(), "Should reject invalid log level");
@@ -75,15 +72,14 @@ fn test_invalid_log_level() -> Result<(), ObservabilityError> {
 
 #[cfg(feature = "otel-otlp")]
 /// Test OTLP with localhost endpoint (may fail to connect, shouldn't panic).
-fn test_otlp_localhost() -> Result<(), ObservabilityError> {
+fn test_otlp_localhost() -> anyhow::Result<()> {
     let config = ObservabilityConfig::builder()
         .service_name("test-otlp-service")
         .exporter(ExporterBackend::Otlp {
             endpoint: "http://localhost:4317".to_string(),
         })
         .enable_metrics(false)
-        .build()
-        .map_err(|e| ObservabilityError::from(e.to_string()))?;
+        .build()?;
 
     // Accept either success or connection error, just don't panic
     match init_observability_with_config(config) {
@@ -107,7 +103,7 @@ fn test_otlp_localhost() -> Result<(), ObservabilityError> {
 /// 2. Exercise tracing with actual log calls
 /// 3. Shutdown at end
 #[test]
-fn observability_initialization_scenarios() -> Result<(), ObservabilityError> {
+fn observability_initialization_scenarios() -> anyhow::Result<()> {
     use tracing::{debug, error, info, warn};
 
     // Test: First valid initialization (sets global state)

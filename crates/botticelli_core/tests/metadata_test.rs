@@ -1,10 +1,13 @@
 //! Tests for metadata and capabilities types.
 
+mod helpers;
+
 use botticelli_core::{Capabilities, ModelMetadataBuilder};
-use botticelli_error::{BuilderError, BuilderErrorKind};
 
 #[test]
-fn test_capabilities_from_metadata() -> Result<(), BuilderError> {
+fn test_capabilities_from_metadata() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    
     let metadata = ModelMetadataBuilder::default()
         .provider("test")
         .model("test-model".to_string())
@@ -19,8 +22,7 @@ fn test_capabilities_from_metadata() -> Result<(), BuilderError> {
         .supports_json_mode(false)
         .supports_embeddings(false)
         .supports_batch(true)
-        .build()
-        .map_err(|e| BuilderErrorKind::ValidationFailed(e.to_string()))?;
+        .build()?;
 
     let caps = Capabilities::from(&metadata);
 
@@ -37,7 +39,9 @@ fn test_capabilities_from_metadata() -> Result<(), BuilderError> {
 }
 
 #[test]
-fn test_capabilities_from_metadata_all_disabled() -> Result<(), BuilderError> {
+fn test_capabilities_from_metadata_all_disabled() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    
     let metadata = ModelMetadataBuilder::default()
         .provider("basic")
         .model("basic-model".to_string())
@@ -52,8 +56,7 @@ fn test_capabilities_from_metadata_all_disabled() -> Result<(), BuilderError> {
         .supports_json_mode(false)
         .supports_embeddings(false)
         .supports_batch(false)
-        .build()
-        .map_err(|e| BuilderErrorKind::ValidationFailed(e.to_string()))?;
+        .build()?;
 
     let caps = Capabilities::from(&metadata);
 
@@ -70,7 +73,9 @@ fn test_capabilities_from_metadata_all_disabled() -> Result<(), BuilderError> {
 }
 
 #[test]
-fn test_capabilities_from_metadata_all_enabled() -> Result<(), BuilderError> {
+fn test_capabilities_from_metadata_all_enabled() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    
     let metadata = ModelMetadataBuilder::default()
         .provider("advanced")
         .model("advanced-model".to_string())
@@ -85,8 +90,7 @@ fn test_capabilities_from_metadata_all_enabled() -> Result<(), BuilderError> {
         .supports_json_mode(true)
         .supports_embeddings(true)
         .supports_batch(true)
-        .build()
-        .map_err(|e| BuilderErrorKind::ValidationFailed(e.to_string()))?;
+        .build()?;
 
     let caps = Capabilities::from(&metadata);
 
