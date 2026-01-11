@@ -35,15 +35,15 @@ tracing = { workspace = true }
 
 # Derive macros
 derive_more = { workspace = true }
-derive-getters = "0.5"
-derive_setters = "0.1"
-derive_builder = "0.20"
+derive-getters = { workspace = true }
+derive_setters = { workspace = true }
+derive_builder = { workspace = true }
 
 # Discord integration (optional)
-serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"], optional = true }
+serenity = { workspace = true, optional = true }
 
 [dev-dependencies]
-dotenvy = "0.15"
+dotenvy = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 botticelli_narrative = { workspace = true }
 tracing-subscriber = { workspace = true }

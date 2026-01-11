@@ -89,7 +89,7 @@ botticelli_mcp_client = { path = "crates/botticelli_mcp_client", version = "0.2.
 botticelli_chat = { path = "crates/botticelli_chat", version = "0.2.0" }
 
 # Internal crates (Phase 7 facade)
-botticelli = { path = "crates/botticelli", version = "0.2.0" }
+botticelli = { path = "crates/botticelli", version = "0.2.0", default-features = false }
 
 # Common external dependencies (shared versions)
 tokio = { version = "1", features = ["full"] }
@@ -150,6 +150,9 @@ base64 = "0.22"
 
 # WebSocket for live APIs
 tokio-tungstenite = "0.28"
+
+# Discord integration
+serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"] }
 
 # Database
 diesel = { version = "2", features = [

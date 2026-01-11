@@ -9,41 +9,41 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-async-trait = "0.1"
+async-trait = { workspace = true }
 chrono = { workspace = true }
 clap = { version = "4", features = ["derive", "env"] }
 cron = "0.12"
-derive-getters = "0.5"
+derive-getters = { workspace = true }
 derive_more = { workspace = true }
-derive_setters = "0.1"
+derive_setters = { workspace = true }
 derive_builder = { workspace = true }
 diesel = { workspace = true }
 dotenvy = { workspace = true }
-r2d2 = "0.8"
+r2d2 = { workspace = true }
 ractor = { workspace = true }
-reqwest = { version = "0.12", features = ["json"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 tokio = { workspace = true }
-toml = "0.8"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+toml = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
-botticelli_core = { path = "../botticelli_core" }
-botticelli_database = { path = "../botticelli_database" }
-botticelli_error = { path = "../botticelli_error" }
-botticelli_interface = { path = "../botticelli_interface" }
-botticelli_models = { path = "../botticelli_models", features = ["gemini"] }
-botticelli_narrative = { path = "../botticelli_narrative", features = ["database"] }
-botticelli_server = { path = "../botticelli_server" }
-botticelli_social = { path = "../botticelli_social", features = ["database", "discord"], optional = true }
+botticelli_core = { workspace = true }
+botticelli_database = { workspace = true }
+botticelli_error = { workspace = true }
+botticelli_interface = { workspace = true }
+botticelli_models = { workspace = true, features = ["gemini"] }
+botticelli_narrative = { workspace = true, features = ["database"] }
+botticelli_server = { workspace = true }
+botticelli_social = { workspace = true, features = ["database", "discord"], optional = true }
 
 # Optional main crate for observability
-botticelli = { path = "../botticelli", optional = true, default-features = false }
+botticelli = { workspace = true, optional = true }
 
 # Optional Discord platform support
-serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"], optional = true }
-botticelli_mcp_client = { path = "../botticelli_mcp_client" }
+serenity = { workspace = true, optional = true }
+botticelli_mcp_client = { workspace = true }
 
 [features]
 default = []

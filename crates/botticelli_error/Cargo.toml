@@ -28,7 +28,7 @@ gemini-rust = { workspace = true, optional = true }
 tokio-tungstenite = { workspace = true, optional = true }
 tiktoken-rs = { workspace = true, optional = true }
 ollama-rs = { workspace = true, optional = true }
-serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"], optional = true }
+serenity = { workspace = true, optional = true }
 
 [features]
 default = []
