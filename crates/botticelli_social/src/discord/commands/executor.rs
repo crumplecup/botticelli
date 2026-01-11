@@ -1,12 +1,13 @@
 //! Discord command executor implementation.
 
 use super::channels::Channels;
+use super::events::Events;
 use super::members::Members;
 use super::messages::Messages;
 use super::reactions::Reactions;
 use super::roles::Roles;
 use super::threads::Threads;
-use super::{events, forum, misc, moderation, server};
+use super::{forum, misc, moderation, server};
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -75,11 +76,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "members.kick" => moderation::kick(&self.http, args).await?,
 
             // Events commands
-            "events.list" => events::list(&self.http, args).await?,
-            "events.get" => events::get(&self.http, args).await?,
-            "events.create" => events::create(&self.http, args).await?,
-            "events.edit" => events::edit(&self.http, args).await?,
-            "events.delete" => events::delete(&self.http, args).await?,
+            "events.list" => Events::list(&self.http, args).await?,
+            "events.get" => Events::get(&self.http, args).await?,
+            "events.create" => Events::create(&self.http, args).await?,
+            "events.edit" => Events::edit(&self.http, args).await?,
+            "events.delete" => Events::delete(&self.http, args).await?,
 
             // Forum commands
             "forum.create_post" => forum::create_post(&self.http, args).await?,

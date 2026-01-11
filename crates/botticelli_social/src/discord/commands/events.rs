@@ -10,12 +10,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument};
 
-/// List scheduled events in a server.
-///
-/// Command: `events.list`
-/// Required arguments: `guild_id`
-#[instrument(skip(http, args), fields(guild_id, event_count))]
-pub(super) async fn list(
+/// Helper type for event command operations.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Events;
+
+impl Events {
+    /// List scheduled events in a server.
+    ///
+    /// Command: `events.list`
+    /// Required arguments: `guild_id`
+    #[instrument(skip(http, args), fields(guild_id, event_count))]
+    pub async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -58,12 +63,12 @@ pub(super) async fn list(
     Ok(serde_json::json!(events_json))
 }
 
-/// Get details about a scheduled event.
-///
-/// Command: `events.get`
-/// Required arguments: `guild_id`, `event_id`
-#[instrument(skip(http, args), fields(guild_id, event_id))]
-pub(super) async fn get(
+    /// Get details about a scheduled event.
+    ///
+    /// Command: `events.get`
+    /// Required arguments: `guild_id`, `event_id`
+    #[instrument(skip(http, args), fields(guild_id, event_id))]
+    pub async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -101,13 +106,13 @@ pub(super) async fn get(
     }))
 }
 
-/// Create a scheduled event.
-///
-/// Command: `events.create`
-/// Required arguments: `guild_id`, `name`, `start_time`
-/// Optional arguments: `description`, `end_time`, `location`
-#[instrument(skip(http, args), fields(guild_id, name))]
-pub(super) async fn create(
+    /// Create a scheduled event.
+    ///
+    /// Command: `events.create`
+    /// Required arguments: `guild_id`, `name`, `start_time`
+    /// Optional arguments: `description`, `end_time`, `location`
+    #[instrument(skip(http, args), fields(guild_id, name))]
+    pub async fn create(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -175,13 +180,13 @@ pub(super) async fn create(
     }))
 }
 
-/// Edit a scheduled event.
-///
-/// Command: `events.edit`
-/// Required arguments: `guild_id`, `event_id`
-/// Optional arguments: `name`, `description`, `start_time`, `location`
-#[instrument(skip(http, args), fields(guild_id, event_id))]
-pub(super) async fn edit(
+    /// Edit a scheduled event.
+    ///
+    /// Command: `events.edit`
+    /// Required arguments: `guild_id`, `event_id`
+    /// Optional arguments: `name`, `description`, `start_time`, `location`
+    #[instrument(skip(http, args), fields(guild_id, event_id))]
+    pub async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -239,12 +244,12 @@ pub(super) async fn edit(
     Ok(serde_json::json!({ "success": true }))
 }
 
-/// Delete a scheduled event.
-///
-/// Command: `events.delete`
-/// Required arguments: `guild_id`, `event_id`
-#[instrument(skip(http, args), fields(guild_id, event_id))]
-pub(super) async fn delete(
+    /// Delete a scheduled event.
+    ///
+    /// Command: `events.delete`
+    /// Required arguments: `guild_id`, `event_id`
+    #[instrument(skip(http, args), fields(guild_id, event_id))]
+    pub async fn delete(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -275,6 +280,7 @@ pub(super) async fn delete(
     info!("Successfully deleted event");
 
     Ok(serde_json::json!({ "success": true }))
+}
 }
 
 // Helper functions
