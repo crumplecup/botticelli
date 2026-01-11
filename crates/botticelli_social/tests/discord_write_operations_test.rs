@@ -2,19 +2,26 @@
 //!
 //! These tests create, modify, and delete Discord resources to verify command functionality.
 
+#![cfg(feature = "discord")]
+
 mod discord_write_test_helpers;
+mod helpers;
 
 use discord_write_test_helpers::{WriteOperationTest, narrative_path};
 
 #[test]
-#[cfg_attr(not(feature = "discord"), ignore)]
-#[ignore = "TODO: Replace narrative source - test files don't exist in expected location"]
-fn test_channel_update() {
+#[cfg_attr(not(feature = "api"), ignore)]
+fn test_channel_update() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!(test = "test_channel_update", "Starting channel update test");
+    
     WriteOperationTest::new(
         narrative_path("write_tests/channel_create_setup"),
         narrative_path("write_tests/channel_update_test"),
     )
     .with_teardown(narrative_path("write_tests/channel_create_teardown"))
-    .run()
-    .expect("Channel update test failed");
+    .run()?;
+    
+    tracing::info!("Channel update test completed successfully");
+    Ok(())
 }

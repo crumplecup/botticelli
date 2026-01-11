@@ -43,7 +43,7 @@ fn test_state_persistence_basic() -> anyhow::Result<()> {
 
 #[test]
 #[cfg(feature = "discord")]
-#[ignore = "TODO: Replace narrative source - test files don't exist in expected location"]
+#[cfg_attr(not(feature = "api"), ignore)]
 fn test_state_persistence_across_narratives() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!(test = "test_state_persistence_across_narratives", "Starting cross-narrative persistence test");
