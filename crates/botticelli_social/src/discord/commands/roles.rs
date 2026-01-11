@@ -387,37 +387,19 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
 fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
     s.parse::<u64>()
         .map(GuildId::new)
-        .map_err(|_| {
-            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-                command: "".to_string(),
-                arg_name: "guild_id".to_string(),
-                reason: "Invalid Discord ID format".to_string(),
-            })
-        })
+        .map_err(|e| BotCommandError::from_parse_error("guild_id", e))
 }
 
 #[instrument(skip(s))]
 fn parse_role_id(s: &str) -> BotCommandResult<RoleId> {
     s.parse::<u64>()
         .map(RoleId::new)
-        .map_err(|_| {
-            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-                command: "".to_string(),
-                arg_name: "role_id".to_string(),
-                reason: "Invalid Discord ID format".to_string(),
-            })
-        })
+        .map_err(|e| BotCommandError::from_parse_error("role_id", e))
 }
 
 #[instrument(skip(s))]
 fn parse_user_id(s: &str) -> BotCommandResult<UserId> {
     s.parse::<u64>()
         .map(UserId::new)
-        .map_err(|_| {
-            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-                command: "".to_string(),
-                arg_name: "user_id".to_string(),
-                reason: "Invalid Discord ID format".to_string(),
-            })
-        })
+        .map_err(|e| BotCommandError::from_parse_error("user_id", e))
 }

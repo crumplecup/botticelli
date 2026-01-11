@@ -424,29 +424,18 @@ fn missing_arg_error(arg_name: &str) -> BotCommandError {
 }
 
 #[instrument(skip(s))]
+#[track_caller]
 fn parse_guild_id(s: &str) -> BotCommandResult<GuildId> {
     s.parse::<u64>()
         .map(GuildId::new)
-        .map_err(|_| {
-            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-                command: "".to_string(),
-                arg_name: "guild_id".to_string(),
-                reason: "Invalid Discord ID format".to_string(),
-            })
-        })
+        .map_err(|e| BotCommandError::from_parse_error("guild_id", e))
 }
 
 #[instrument(skip(s))]
 fn parse_channel_id(s: &str) -> BotCommandResult<ChannelId> {
     s.parse::<u64>()
         .map(ChannelId::new)
-        .map_err(|_| {
-            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-                command: "".to_string(),
-                arg_name: "channel_id".to_string(),
-                reason: "Invalid Discord ID format".to_string(),
-            })
-        })
+        .map_err(|e| BotCommandError::from_parse_error("channel_id", e))
 }
 
 #[instrument(skip(s))]

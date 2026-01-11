@@ -305,24 +305,16 @@ fn parse_guild_id(command: &str, args: &HashMap<String, JsonValue>) -> BotComman
 
 #[instrument(skip(id_str))]
 fn parse_guild_id_str(id_str: &str) -> BotCommandResult<GuildId> {
-    let id_u64: u64 = id_str.parse().map_err(|_| {
-        BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-            command: "".to_string(),
-            arg_name: "guild_id".to_string(),
-            reason: "Invalid Discord ID format".to_string(),
-        })
-    })?;
+    let id_u64: u64 = id_str
+        .parse()
+        .map_err(|e| BotCommandError::from_parse_error("guild_id", e))?;
     Ok(GuildId::new(id_u64))
 }
 
 #[instrument(skip(id_str))]
 fn parse_event_id(id_str: &str) -> BotCommandResult<ScheduledEventId> {
-    let id_u64: u64 = id_str.parse().map_err(|_| {
-        BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-            command: "".to_string(),
-            arg_name: "event_id".to_string(),
-            reason: "Invalid Discord ID format".to_string(),
-        })
-    })?;
+    let id_u64: u64 = id_str
+        .parse()
+        .map_err(|e| BotCommandError::from_parse_error("event_id", e))?;
     Ok(ScheduledEventId::new(id_u64))
 }

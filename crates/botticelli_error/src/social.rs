@@ -46,6 +46,15 @@ pub enum BotCommandErrorKind {
         reason: String,
     },
 
+    /// Invalid argument with source error preserved.
+    #[display("Invalid argument '{}': {}", arg_name, source)]
+    InvalidArgumentWithSource {
+        /// Name of the invalid argument
+        arg_name: String,
+        /// Original parse error
+        source: Arc<dyn std::error::Error + Send + Sync>,
+    },
+
     /// API call failed.
     #[display("API call failed for '{}': {}", command, reason)]
     ApiError {
@@ -194,6 +203,18 @@ impl BotCommandError {
     ) -> Self {
         Self::new(BotCommandErrorKind::ApiErrorWithSource {
             command: command.into(),
+            source: Arc::new(error),
+        })
+    }
+
+    /// Create from an invalid argument parse error with location tracking.
+    #[track_caller]
+    pub fn from_parse_error(
+        arg_name: impl Into<String>,
+        error: impl std::error::Error + Send + Sync + 'static,
+    ) -> Self {
+        Self::new(BotCommandErrorKind::InvalidArgumentWithSource {
+            arg_name: arg_name.into(),
             source: Arc::new(error),
         })
     }
