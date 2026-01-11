@@ -7,6 +7,7 @@ use crate::{
     ChannelType, DiscordRepository, NewChannelBuilder, NewGuildBuilder, NewGuildMemberBuilder,
     NewRoleBuilder, NewUserBuilder,
 };
+use botticelli_interface::{DiscordEventProcessor, EventResult};
 use chrono::NaiveDateTime;
 use serenity::all::{GuildId, Ready};
 use serenity::async_trait;
@@ -16,7 +17,7 @@ use serenity::model::channel::{Channel, GuildChannel};
 use serenity::model::gateway::GatewayIntents;
 use serenity::model::guild::{Guild, Member, Role};
 use std::sync::Arc;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 /// Convert Serenity Timestamp to Chrono NaiveDateTime
 fn timestamp_to_naive(ts: &Timestamp) -> Option<NaiveDateTime> {
@@ -294,27 +295,167 @@ impl BotticelliHandler {
     }
 }
 
+// Implementation of our internal event processing trait
+#[async_trait]
+impl DiscordEventProcessor for BotticelliHandler {
+    type Error = crate::DiscordError;
+    type Severity = crate::DiscordErrorSeverity;
+    type Guild = serenity::model::guild::Guild;
+    type Channel = serenity::model::channel::GuildChannel;
+    type Member = serenity::model::guild::Member;
+    type Role = serenity::model::guild::Role;
+    type User = serenity::model::user::CurrentUser;
+
+    fn error_severity(&self, error: &Self::Error) -> Self::Severity {
+        error.severity()
+    }
+
+    fn error_is_retryable(&self, error: &Self::Error) -> bool {
+        error.is_retryable()
+    }
+
+    fn error_context(&self, error: &Self::Error) -> String {
+        error.error_context()
+    }
+
+    #[instrument(skip(self, guild), fields(guild_id = %guild.id, guild_name = %guild.name))]
+    async fn process_guild_create(
+        &self,
+        guild: &Self::Guild,
+        is_new: Option<bool>,
+    ) -> EventResult<(), Self::Error> {
+        debug!(is_new = ?is_new, "Processing guild_create event");
+
+        // Critical: Store the guild first
+        self.store_guild(guild).await?;
+
+        // Best effort: Store all channels (collect errors)
+        let mut channel_errors = Vec::new();
+        for channel in guild.channels.values() {
+            if let Err(e) =
+                self.store_channel(Some(guild.id), &Channel::Guild(channel.clone())).await
+            {
+                use crate::DiscordErrorSeverity::*;
+                if self.error_severity(&e) == Critical {
+                    return Err(e);
+                }
+                channel_errors.push((channel.id, e));
+            }
+        }
+
+        // Best effort: Store all roles
+        let mut role_errors = Vec::new();
+        for role in guild.roles.values() {
+            if let Err(e) = self.store_role(guild.id, role).await {
+                use crate::DiscordErrorSeverity::*;
+                if self.error_severity(&e) == Critical {
+                    return Err(e);
+                }
+                role_errors.push((role.id, e));
+            }
+        }
+
+        // Best effort: Store all members
+        let mut member_errors = Vec::new();
+        for member in guild.members.values() {
+            if let Err(e) = self.store_member(guild.id, member).await {
+                use crate::DiscordErrorSeverity::*;
+                if self.error_severity(&e) == Critical {
+                    return Err(e);
+                }
+                member_errors.push((member.user.id, e));
+            }
+        }
+
+        // Log any warnings
+        if !channel_errors.is_empty() {
+            warn!(
+                guild_id = %guild.id,
+                failed_count = channel_errors.len(),
+                "Some channels failed to store"
+            );
+        }
+        if !role_errors.is_empty() {
+            warn!(
+                guild_id = %guild.id,
+                failed_count = role_errors.len(),
+                "Some roles failed to store"
+            );
+        }
+        if !member_errors.is_empty() {
+            warn!(
+                guild_id = %guild.id,
+                failed_count = member_errors.len(),
+                "Some members failed to store"
+            );
+        }
+
+        Ok(())
+    }
+
+    #[instrument(skip(self, channel), fields(channel_id = %channel.id, channel_name = %channel.name))]
+    async fn process_channel_create(
+        &self,
+        channel: &Self::Channel,
+    ) -> EventResult<(), Self::Error> {
+        debug!("Processing channel_create event");
+        self.store_channel(channel.guild_id, &Channel::Guild(channel.clone())).await
+    }
+
+    #[instrument(skip(self, member), fields(user_id = %member.user.id))]
+    async fn process_member_add(&self, member: &Self::Member) -> EventResult<(), Self::Error> {
+        debug!("Processing member_add event");
+        if let Some(guild_id) = member.guild_id {
+            self.store_member(guild_id, member).await
+        } else {
+            Ok(())
+        }
+    }
+
+    #[instrument(skip(self, role), fields(role_id = %role.id, role_name = %role.name))]
+    async fn process_role_create(&self, role: &Self::Role) -> EventResult<(), Self::Error> {
+        debug!("Processing role_create event");
+        self.store_role(role.guild_id, role).await
+    }
+
+    #[instrument(skip(self, user), fields(user_id = %user.id, username = %user.name))]
+    async fn process_ready(
+        &self,
+        user: &Self::User,
+        guild_count: usize,
+    ) -> EventResult<(), Self::Error> {
+        info!(
+            bot_user = %user.name,
+            bot_id = %user.id,
+            guilds = guild_count,
+            "Bot connected to Discord"
+        );
+        Ok(())
+    }
+}
+
 #[async_trait]
 impl EventHandler for BotticelliHandler {
     /// Called when the bot successfully connects to Discord.
     async fn ready(&self, _ctx: Context, ready: Ready) {
-        info!(
-            bot_user = %ready.user.name,
-            bot_id = %ready.user.id,
-            guilds = ready.guilds.len(),
-            "Bot connected to Discord"
-        );
-
         // The guilds in Ready are partial, we'll get full data via guild_create events
         for guild in &ready.guilds {
             debug!(guild_id = %guild.id, "Bot is in guild");
         }
+
+        if let Err(e) = self.process_ready(&ready.user, ready.guilds.len()).await {
+            error!(
+                error = %e,
+                context = %self.error_context(&e),
+                severity = ?self.error_severity(&e),
+                retryable = self.error_is_retryable(&e),
+                "Failed to process ready event"
+            );
+        }
     }
 
     /// Called when a guild becomes available or the bot joins a guild.
-    ///
-    /// This is where we store the full guild data including channels, roles, and members.
-    async fn guild_create(&self, _ctx: Context, guild: Guild, _is_new: Option<bool>) {
+    async fn guild_create(&self, _ctx: Context, guild: Guild, is_new: Option<bool>) {
         info!(
             guild_id = %guild.id,
             guild_name = %guild.name,
@@ -324,34 +465,16 @@ impl EventHandler for BotticelliHandler {
             "Guild available"
         );
 
-        // Store the guild
-        if let Err(e) = self.store_guild(&guild).await {
-            error!(guild_id = %guild.id, error = %e, "Failed to store guild");
-            return;
+        if let Err(e) = self.process_guild_create(&guild, is_new).await {
+            error!(
+                guild_id = %guild.id,
+                error = %e,
+                context = %self.error_context(&e),
+                severity = ?self.error_severity(&e),
+                retryable = self.error_is_retryable(&e),
+                "Failed to process guild_create event"
+            );
         }
-
-        // Store all channels
-        for channel in guild.channels.values() {
-            if let Err(e) = self.store_channel(Some(guild.id), &Channel::Guild(channel.clone())).await {
-                error!(guild_id = %guild.id, channel_id = %channel.id, error = %e, "Failed to store channel");
-            }
-        }
-
-        // Store all roles
-        for role in guild.roles.values() {
-            if let Err(e) = self.store_role(guild.id, role).await {
-                error!(guild_id = %guild.id, role_id = %role.id, error = %e, "Failed to store role");
-            }
-        }
-
-        // Store all members
-        for member in guild.members.values() {
-            if let Err(e) = self.store_member(guild.id, member).await {
-                error!(guild_id = %guild.id, user_id = %member.user.id, error = %e, "Failed to store member");
-            }
-        }
-
-        info!(guild_id = %guild.id, "Finished storing guild data");
     }
 
     /// Called when the bot leaves a guild or a guild becomes unavailable.
