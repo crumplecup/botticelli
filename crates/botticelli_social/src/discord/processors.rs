@@ -103,6 +103,8 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
         Ok(())
     }
 
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
         // Process if act name suggests guild/server data
         let name_lower = context.execution.act_name.to_lowercase();
@@ -111,7 +113,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
         // Or if response contains owner_id field (unique to guilds)
         let content_match = context.execution.response.contains("\"owner_id\"");
 
-        name_match || content_match
+        let should_process = name_match || content_match;
+        debug!(
+            name_match = name_match,
+            content_match = content_match,
+            should_process = should_process,
+            "Evaluated guild processor applicability"
+        );
+        should_process
     }
 
     fn name(&self) -> &str {
@@ -172,6 +181,8 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
         Ok(())
     }
 
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
         let name_lower = context.execution.act_name.to_lowercase();
         let name_match = name_lower.contains("user") || name_lower.contains("member");
@@ -180,7 +191,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
         let content_match = context.execution.response.contains("\"username\"")
             && !context.execution.response.contains("\"user_id\"");
 
-        name_match || content_match
+        let should_process = name_match || content_match;
+        debug!(
+            name_match = name_match,
+            content_match = content_match,
+            should_process = should_process,
+            "Evaluated user processor applicability"
+        );
+        should_process
     }
 
     fn name(&self) -> &str {
@@ -242,6 +260,8 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
         Ok(())
     }
 
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
         let name_lower = context.execution.act_name.to_lowercase();
         let name_match = name_lower.contains("channel");
@@ -249,7 +269,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
         // Channels have channel_type field
         let content_match = context.execution.response.contains("\"channel_type\"");
 
-        name_match || content_match
+        let should_process = name_match || content_match;
+        debug!(
+            name_match = name_match,
+            content_match = content_match,
+            should_process = should_process,
+            "Evaluated channel processor applicability"
+        );
+        should_process
     }
 
     fn name(&self) -> &str {
@@ -311,6 +338,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
         Ok(())
     }
 
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
         let name_lower = context.execution.act_name.to_lowercase();
         let name_match = name_lower.contains("role");
@@ -319,7 +347,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
         let content_match = context.execution.response.contains("\"permissions\"")
             && context.execution.response.contains("\"position\"");
 
-        name_match || content_match
+        let should_process = name_match || content_match;
+        debug!(
+            name_match = name_match,
+            content_match = content_match,
+            should_process = should_process,
+            "Evaluated role processor applicability"
+        );
+        should_process
     }
 
     fn name(&self) -> &str {
@@ -381,6 +416,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
         Ok(())
     }
 
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
         let name_lower = context.execution.act_name.to_lowercase();
         let name_match = name_lower.contains("member") && !name_lower.contains("role");
@@ -390,7 +426,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
             && context.execution.response.contains("\"user_id\"")
             && context.execution.response.contains("\"joined_at\"");
 
-        name_match || content_match
+        let should_process = name_match || content_match;
+        debug!(
+            name_match = name_match,
+            content_match = content_match,
+            should_process = should_process,
+            "Evaluated guild member processor applicability"
+        );
+        should_process
     }
 
     fn name(&self) -> &str {
@@ -452,6 +495,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
         Ok(())
     }
 
+    #[instrument(skip(self, context), fields(act = %context.execution.act_name))]
     fn should_process(&self, context: &ProcessorContext<'_>) -> bool {
         let name_lower = context.execution.act_name.to_lowercase();
         let name_match = name_lower.contains("member") && name_lower.contains("role");
@@ -462,7 +506,14 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
             && context.execution.response.contains("\"role_id\"")
             && context.execution.response.contains("\"assigned_at\"");
 
-        name_match || content_match
+        let should_process = name_match || content_match;
+        debug!(
+            name_match = name_match,
+            content_match = content_match,
+            should_process = should_process,
+            "Evaluated member role processor applicability"
+        );
+        should_process
     }
 
     fn name(&self) -> &str {
