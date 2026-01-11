@@ -19,6 +19,9 @@ use botticelli_models::GeminiClient;
 #[tokio::test]
 #[cfg(feature = "api")] // Requires GEMINI_API_KEY
 async fn test_gemini_2_0_flash() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Gemini 2.0 Flash");
+    
     let client = GeminiClient::new()?;
 
     let message = Message::builder()
@@ -32,9 +35,11 @@ async fn test_gemini_2_0_flash() -> anyhow::Result<()> {
         .max_tokens(10u32)
         .build()?;
 
+    tracing::debug!(model = "gemini-2.0-flash", max_tokens = 10, "Sending request");
     let response = client.generate(&request).await?;
     assert!(!response.outputs().is_empty());
-    tracing::info!("Test Gemini 2 0 Flash test passed");
+    
+    tracing::info!("Gemini 2.0 Flash test passed");
     Ok(())
 }
 
@@ -42,6 +47,9 @@ async fn test_gemini_2_0_flash() -> anyhow::Result<()> {
 #[tokio::test]
 #[cfg(feature = "api")] // Requires GEMINI_API_KEY
 async fn test_gemini_2_0_flash_lite() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing Gemini 2.0 Flash Lite");
+    
     let client = GeminiClient::new()?;
 
     let message = Message::builder()
@@ -55,9 +63,11 @@ async fn test_gemini_2_0_flash_lite() -> anyhow::Result<()> {
         .max_tokens(10u32)
         .build()?;
 
+    tracing::debug!(model = "gemini-2.0-flash-lite", max_tokens = 10, "Sending request");
     let response = client.generate(&request).await?;
     assert!(!response.outputs().is_empty());
-    tracing::info!("Test Gemini 2 0 Flash Lite test passed");
+    
+    tracing::info!("Gemini 2.0 Flash Lite test passed");
     Ok(())
 }
 
@@ -65,6 +75,9 @@ async fn test_gemini_2_0_flash_lite() -> anyhow::Result<()> {
 #[tokio::test]
 #[cfg(feature = "api")] // Requires GEMINI_API_KEY
 async fn test_mixed_2_0_and_2_5_models() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing mixed Gemini 2.0 and 2.5 models");
+    
     let client = GeminiClient::new()?;
 
     // Request 1: Use Gemini 2.0 Flash
@@ -79,6 +92,7 @@ async fn test_mixed_2_0_and_2_5_models() -> anyhow::Result<()> {
         .max_tokens(10u32)
         .build()?;
 
+    tracing::debug!(model = "gemini-2.0-flash", "Request 1");
     let response1 = client.generate(&request1).await?;
     assert!(!response1.outputs().is_empty());
 
@@ -94,6 +108,7 @@ async fn test_mixed_2_0_and_2_5_models() -> anyhow::Result<()> {
         .max_tokens(10u32)
         .build()?;
 
+    tracing::debug!(model = "gemini-2.5-flash", "Request 2");
     let response2 = client.generate(&request2).await?;
     assert!(!response2.outputs().is_empty());
 
@@ -109,9 +124,11 @@ async fn test_mixed_2_0_and_2_5_models() -> anyhow::Result<()> {
         .max_tokens(10u32)
         .build()?;
 
+    tracing::debug!(model = "gemini-2.0-flash-lite", "Request 3");
     let response3 = client.generate(&request3).await?;
     assert!(!response3.outputs().is_empty());
-    tracing::info!("Test Mixed 2 0 And 2 5 Models test passed");
+    
+    tracing::info!("Mixed 2.0 and 2.5 models test passed");
     Ok(())
 }
 
@@ -119,6 +136,9 @@ async fn test_mixed_2_0_and_2_5_models() -> anyhow::Result<()> {
 #[tokio::test]
 #[cfg(feature = "api")] // Requires GEMINI_API_KEY
 async fn test_explicit_models_prefix() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing explicit models/ prefix");
+    
     let client = GeminiClient::new()?;
 
     let message = Message::builder()
@@ -132,8 +152,10 @@ async fn test_explicit_models_prefix() -> anyhow::Result<()> {
         .max_tokens(10u32)
         .build()?;
 
+    tracing::debug!(model = "models/gemini-2.0-flash", "Sending request with explicit prefix");
     let response = client.generate(&request).await?;
     assert!(!response.outputs().is_empty());
-    tracing::info!("Test Explicit Models Prefix test passed");
+    
+    tracing::info!("Explicit models/ prefix test passed");
     Ok(())
 }
