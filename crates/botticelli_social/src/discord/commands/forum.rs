@@ -3,7 +3,7 @@
 //! This module handles forum-related operations such as creating posts,
 //! listing posts, and retrieving post details.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{
     AutoArchiveDuration, Channel, ChannelId, CreateForumPost, CreateMessage, Http,

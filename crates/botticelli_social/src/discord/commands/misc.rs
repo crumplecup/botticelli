@@ -1,6 +1,6 @@
 //! Miscellaneous Discord commands (webhooks, stickers, emojis, invites, integrations, voice regions).
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{GuildId, Http};
 use std::collections::HashMap;

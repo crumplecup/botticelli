@@ -1,7 +1,7 @@
 //! Discord command executor implementation.
 
 use super::{channels, events, forum, members, messages, misc, moderation, reactions, roles, server, threads};
-use crate::{BotCommandError, BotCommandErrorKind};
+use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
 use serde_json::Value as JsonValue;

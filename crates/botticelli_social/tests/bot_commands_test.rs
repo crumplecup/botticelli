@@ -1,10 +1,9 @@
 //! Tests for bot command infrastructure.
 
 use async_trait::async_trait;
+use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use botticelli_interface::BotCommandExecutor;
-use botticelli_social::{
-    BotCommandError, BotCommandErrorKind, BotCommandRegistryImpl,
-};
+use botticelli_social::BotCommandRegistryImpl;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 

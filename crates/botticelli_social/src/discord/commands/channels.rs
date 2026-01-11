@@ -3,7 +3,7 @@
 //! This module handles channel operations such as listing, creating,
 //! editing, deleting channels, and managing invites.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{ChannelId, ChannelType, CreateChannel, CreateInvite, EditChannel, GuildId, Http};
 use std::collections::HashMap;

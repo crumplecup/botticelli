@@ -3,7 +3,7 @@
 //! This module handles thread operations such as creating, editing, deleting,
 //! and managing thread membership.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{ChannelId, ChannelType, CreateThread, EditThread, GuildId, Http, UserId};
 use std::collections::HashMap;

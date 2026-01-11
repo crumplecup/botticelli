@@ -1,6 +1,6 @@
 //! Moderation commands (bans, kicks, timeouts).
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{GuildId, Http, UserId};
 use std::collections::HashMap;

@@ -3,7 +3,7 @@
 //! This module handles role management operations such as listing, creating,
 //! editing, deleting roles, and assigning/removing roles from members.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{EditRole, GuildId, Http, RoleId, UserId};
 use std::collections::HashMap;

@@ -3,7 +3,7 @@
 //! This module handles message operations such as sending, editing, deleting,
 //! listing, and bulk operations on messages.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{ChannelId, CreateMessage, EditMessage, Http, MessageId};
 use std::collections::HashMap;

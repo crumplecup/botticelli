@@ -1,6 +1,6 @@
 //! Database bot command executor.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use botticelli_interface::BotCommandExecutor;
 use async_trait::async_trait;
 use botticelli_database::establish_connection;

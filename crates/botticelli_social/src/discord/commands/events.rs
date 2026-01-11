@@ -1,6 +1,6 @@
 //! Scheduled events commands.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{
     CreateScheduledEvent, EditScheduledEvent, GuildId, Http, ScheduledEventId, ScheduledEventType,

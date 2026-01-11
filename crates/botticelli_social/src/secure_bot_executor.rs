@@ -3,7 +3,7 @@
 //! This module integrates the security framework with bot command execution,
 //! providing a secure wrapper around platform-specific executors.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use botticelli_interface::BotCommandExecutor;
 use async_trait::async_trait;
 use botticelli_security::{

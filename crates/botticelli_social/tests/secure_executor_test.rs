@@ -2,15 +2,13 @@
 
 use async_trait::async_trait;
 use botticelli_cache::CommandCache;
+use botticelli_error::{BotCommandError, BotCommandErrorKind};
+use botticelli_interface::BotCommandExecutor;
 use botticelli_security::{
     ApprovalWorkflow, ContentFilter, ContentFilterConfig, DiscordValidator, PermissionChecker,
     PermissionConfig, RateLimit, RateLimiter, ResourcePermission,
 };
-use botticelli_interface::BotCommandExecutor;
-use botticelli_social::{
-    BotCommandError, BotCommandErrorKind, BotCommandRegistryImpl,
-    ExecutionResult, SecureBotCommandExecutor,
-};
+use botticelli_social::{BotCommandRegistryImpl, ExecutionResult, SecureBotCommandExecutor};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 

@@ -3,7 +3,7 @@
 //! This module handles message reaction operations such as adding, removing,
 //! listing, and clearing reactions.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{ChannelId, Http, MessageId, ReactionType, UserId};
 use std::collections::HashMap;

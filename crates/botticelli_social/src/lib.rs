@@ -43,8 +43,6 @@ mod discord;
 #[cfg(feature = "database")]
 pub use bot_commands::BotCommandRegistryImpl;
 #[cfg(feature = "database")]
-pub use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
-#[cfg(feature = "database")]
 pub use database::DatabaseCommandExecutor;
 
 // Export secure executor (requires database feature)

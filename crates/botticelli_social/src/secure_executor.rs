@@ -4,7 +4,8 @@
 //! to provide permission checking, input validation, content filtering,
 //! rate limiting, and approval workflows.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandRegistryImpl, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use crate::BotCommandRegistryImpl;
 use async_trait::async_trait;
 use botticelli_interface::BotCommandRegistry;
 use botticelli_security::{

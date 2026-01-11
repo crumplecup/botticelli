@@ -3,7 +3,7 @@
 //! This module handles member operations such as listing, getting details,
 //! editing member properties, and managing timeouts.
 
-use crate::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use serde_json::Value as JsonValue;
 use serenity::all::{EditMember, GuildId, Http, RoleId, Timestamp, UserId};
 use std::collections::HashMap;
