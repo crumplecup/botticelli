@@ -38,6 +38,7 @@ struct CacheKey {
 }
 
 impl CacheKey {
+    #[tracing::instrument(skip(args), fields(platform, command, arg_count = args.len()))]
     fn new(platform: &str, command: &str, args: &HashMap<String, JsonValue>) -> Self {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
@@ -53,10 +54,13 @@ impl CacheKey {
             }
         }
 
+        let args_hash = hasher.finish();
+        tracing::debug!(args_hash, "Generated cache key");
+
         Self {
             platform: platform.to_string(),
             command: command.to_string(),
-            args_hash: hasher.finish(),
+            args_hash,
         }
     }
 }
@@ -308,6 +312,7 @@ impl CommandCache {
     }
 
     /// Evict least recently used entry.
+    #[tracing::instrument(skip(self), fields(cache_size = self.entries.len()))]
     fn evict_lru(&mut self) {
         if let Some(key) = self.access_order.first().cloned() {
             tracing::debug!(
