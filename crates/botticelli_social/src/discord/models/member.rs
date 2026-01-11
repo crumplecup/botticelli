@@ -15,9 +15,9 @@ use diesel::prelude::*;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct GuildMemberRow {
     /// Guild ID
-    pub guild_id: i64,
+    guild_id: i64,
     /// User ID
-    pub user_id: i64,
+    user_id: i64,
 
     // Member-specific data
     nick: Option<String>,

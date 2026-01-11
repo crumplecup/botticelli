@@ -26,7 +26,7 @@ use tracing::{debug, error, info, instrument, warn};
 /// 5. Approval workflow
 #[derive(Getters, derive_setters::Setters)]
 #[setters(prefix = "with_")]
-pub struct SecureBotCommandExecutor<V: CommandValidator + Clone> {
+pub struct SecureBotCommandExecutor<V: CommandValidator> {
     /// Bot command registry for executing commands.
     #[setters(doc = "Sets the bot command registry")]
     registry: BotCommandRegistryImpl,
@@ -36,7 +36,7 @@ pub struct SecureBotCommandExecutor<V: CommandValidator + Clone> {
     security: SecureExecutor<V>,
 }
 
-impl<V: CommandValidator + Clone> SecureBotCommandExecutor<V> {
+impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     /// Create a new secure bot command executor.
     pub fn new(
         registry: BotCommandRegistryImpl,
@@ -216,7 +216,7 @@ pub enum ExecutionResult {
 
 // Implement BotCommandRegistry trait for narrative integration
 #[async_trait]
-impl<V: CommandValidator + Clone + Send + Sync> BotCommandRegistry for SecureBotCommandExecutor<V> {
+impl<V: CommandValidator + Send + Sync> BotCommandRegistry for SecureBotCommandExecutor<V> {
     type Error = BotCommandError;
 
     async fn execute(

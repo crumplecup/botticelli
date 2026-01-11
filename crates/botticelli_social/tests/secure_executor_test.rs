@@ -297,21 +297,38 @@ async fn test_secure_execution_rate_limit() {
 
 #[tokio::test]
 async fn test_secure_execution_approval_required() {
-    let mut executor = create_test_executor();
+    // Create executor with approval required for messages.send
+    let mut registry = BotCommandRegistryImpl::with_cache(CommandCache::default());
+    registry.register(MockExecutor);
+
+    let resource_perm = ResourcePermission::new()
+        .with_allowed_ids(["123456789012345678".to_string()].into_iter().collect());
+
+    let mut resources = HashMap::new();
+    resources.insert("channel".to_string(), resource_perm);
+
+    let perm_config = PermissionConfig::new()
+        .with_allowed_commands(["mock.messages.send".to_string()].into_iter().collect())
+        .with_resources(resources);
+
+    let permission_checker = PermissionChecker::new(perm_config);
+    let validator = DiscordValidator::new();
+    let content_filter = ContentFilter::new(ContentFilterConfig::default()).unwrap();
+    let mut rate_limiter = RateLimiter::new();
+    rate_limiter.add_limit("mock.messages.send", RateLimit::strict(10, 60));
     
-    // Clone the security and modify it
-    let modified_security = executor.security().clone()
-        .with_approval_workflow(
-            executor.security()
-                .approval_workflow()
-                .clone()
-                .with_requires_approval(HashMap::from([
-                    ("mock.messages.send".to_string(), true)
-                ]))
-        );
-    
-    // Update executor with modified security
-    executor = executor.with_security(modified_security);
+    // Configure approval workflow to require approval for messages.send
+    let mut approval_workflow = ApprovalWorkflow::new();
+    approval_workflow.set_requires_approval("mock.messages.send", true);
+
+    let mut executor = SecureBotCommandExecutor::new(
+        registry,
+        permission_checker,
+        validator,
+        content_filter,
+        rate_limiter,
+        approval_workflow,
+    );
 
     let mut args = HashMap::new();
     args.insert(

@@ -11,19 +11,19 @@ use diesel::prelude::*;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct UserRow {
     /// User ID
-    pub id: i64,
+    id: i64,
     /// Username
-    pub username: String,
+    username: String,
     /// Legacy discriminator
-    pub discriminator: Option<String>,
+    discriminator: Option<String>,
     /// Display name
-    pub global_name: Option<String>,
+    global_name: Option<String>,
     /// Avatar hash
-    pub avatar: Option<String>,
+    avatar: Option<String>,
     /// Banner hash
-    pub banner: Option<String>,
+    banner: Option<String>,
     /// Accent color
-    pub accent_color: Option<i32>,
+    accent_color: Option<i32>,
 
     // Account flags
     bot: Option<bool>,

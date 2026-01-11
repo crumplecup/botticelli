@@ -26,7 +26,7 @@ use tracing::{debug, error, info, instrument};
 pub struct SecureBotExecutor<E, V>
 where
     E: BotCommandExecutor,
-    V: CommandValidator + Clone,
+    V: CommandValidator,
 {
     inner: E,
     secure_executor: Arc<Mutex<SecureExecutor<V>>>,
@@ -36,7 +36,7 @@ where
 impl<E, V> SecureBotExecutor<E, V>
 where
     E: BotCommandExecutor,
-    V: CommandValidator + Clone,
+    V: CommandValidator,
 {
     /// Create a new secure bot executor.
     pub fn new(
@@ -78,7 +78,7 @@ where
 impl<E, V> BotCommandExecutor for SecureBotExecutor<E, V>
 where
     E: BotCommandExecutor + Send + Sync,
-    V: CommandValidator + Clone + Send + Sync,
+    V: CommandValidator + Send + Sync,
 {
     #[instrument(skip(self, args), fields(platform = self.inner.platform(), command, narrative_id = %self.narrative_id))]
     async fn execute(

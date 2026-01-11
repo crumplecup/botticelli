@@ -11,17 +11,17 @@ use diesel::prelude::*;
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct GuildRow {
     /// Guild ID
-    pub id: i64,
+    id: i64,
     /// Guild name
-    pub name: String,
+    name: String,
     /// Guild icon hash
-    pub icon: Option<String>,
+    icon: Option<String>,
     /// Guild banner hash
-    pub banner: Option<String>,
+    banner: Option<String>,
     /// Guild invite splash hash
-    pub splash: Option<String>,
+    splash: Option<String>,
     /// Guild owner user ID
-    pub owner_id: i64,
+    owner_id: i64,
 
     // Guild features
     features: Option<Vec<Option<String>>>,
