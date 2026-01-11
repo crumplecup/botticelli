@@ -68,6 +68,7 @@ impl PostgresNarrativeRepository {
     /// # Note
     /// The connection is wrapped in Arc<Mutex> to allow async access.
     /// For better performance with concurrent access, consider using a connection pool.
+    #[tracing::instrument(skip(conn, storage))]
     pub fn new(
         conn: PgConnection,
         storage: Arc<
@@ -85,6 +86,7 @@ impl PostgresNarrativeRepository {
     }
 
     /// Create a repository from an Arc<Mutex<PgConnection>> (for sharing connections).
+    #[tracing::instrument(skip(conn, storage))]
     pub fn from_arc(
         conn: Arc<Mutex<PgConnection>>,
         storage: Arc<
@@ -109,7 +111,9 @@ impl NarrativeRepository for PostgresNarrativeRepository {
     type Summary = ExecutionSummary;
     type Status = ExecutionStatus;
 
+    #[tracing::instrument(skip(self, execution), fields(act_count = execution.act_executions().len()))]
     async fn save_execution(&self, execution: &Self::Execution) -> Result<i32, Self::Error> {
+        tracing::debug!("Saving narrative execution");
         let mut conn = self.conn.lock().await;
 
         // Use a transaction for atomicity
@@ -122,6 +126,7 @@ impl NarrativeRepository for PostgresNarrativeRepository {
                     .get_result(conn)?;
 
             let execution_id = execution_row.id;
+            tracing::debug!(execution_id, "Inserted narrative execution");
 
             // Insert all acts
             for act in execution.act_executions() {
@@ -145,12 +150,21 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             Ok(execution_id)
         });
 
-        result.map_err(|e| {
-            BotticelliError::from(BackendError::new(format!("Transaction failed: {}", e)))
-        })
+        match result {
+            Ok(id) => {
+                tracing::info!(execution_id = id, "Saved narrative execution");
+                Ok(id)
+            }
+            Err(e) => {
+                tracing::error!(error = ?e, "Failed to save execution");
+                Err(BotticelliError::from(BackendError::new(format!("Transaction failed: {}", e))))
+            }
+        }
     }
 
+    #[tracing::instrument(skip(self), fields(id))]
     async fn load_execution(&self, id: i32) -> BotticelliResult<NarrativeExecution> {
+        tracing::debug!("Loading narrative execution");
         let mut conn = self.conn.lock().await;
 
         // Load the narrative execution
@@ -158,6 +172,7 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             .find(id)
             .first(&mut *conn)
             .map_err(|e| {
+                tracing::error!(error = ?e, "Failed to load narrative execution");
                 BotticelliError::from(BackendError::new(format!(
                     "Failed to load narrative execution {}: {}",
                     id, e
@@ -169,21 +184,27 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             .order(act_executions::sequence_number.asc())
             .load(&mut *conn)
             .map_err(|e| {
+                tracing::error!(error = ?e, "Failed to load act executions");
                 BotticelliError::from(BackendError::new(format!(
                     "Failed to load act executions: {}",
                     e
                 )))
             })?;
 
+        tracing::debug!(act_count = act_rows.len(), "Loaded act executions");
+
         // Load all inputs for all acts
         let input_rows: Vec<ActInputRow> = ActInputRow::belonging_to(&act_rows)
             .load(&mut *conn)
             .map_err(|e| {
+                tracing::error!(error = ?e, "Failed to load act inputs");
                 BotticelliError::from(BackendError::new(format!(
                     "Failed to load act inputs: {}",
                     e
                 )))
             })?;
+
+        tracing::debug!(input_count = input_rows.len(), "Loaded act inputs");
 
         // Group inputs by act
         let inputs_by_act =
@@ -204,6 +225,7 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             act_executions.push(act);
         }
 
+        tracing::info!(id, act_count = act_executions.len(), "Loaded narrative execution");
         Ok(rows_to_narrative_execution(
             &execution_row,
             execution_row.narrative_name.clone(),
@@ -211,10 +233,17 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         ))
     }
 
+    #[tracing::instrument(skip(self, filter), fields(
+        narrative_name = ?filter.narrative_name(),
+        status = ?filter.status(),
+        offset = ?filter.offset(),
+        limit = ?filter.limit()
+    ))]
     async fn list_executions(
         &self,
         filter: &ExecutionFilter,
     ) -> BotticelliResult<Vec<ExecutionSummary>> {
+        tracing::debug!("Listing executions with filter");
         let mut conn = self.conn.lock().await;
 
         let mut query = narrative_executions::table.into_boxed();
@@ -244,11 +273,14 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         }
 
         let execution_rows: Vec<NarrativeExecutionRow> = query.load(&mut *conn).map_err(|e| {
+            tracing::error!(error = ?e, "Failed to list executions");
             BotticelliError::from(BackendError::new(format!(
                 "Failed to list executions: {}",
                 e
             )))
         })?;
+
+        tracing::debug!(row_count = execution_rows.len(), "Loaded execution rows");
 
         // Count acts for each execution
         let mut summaries = Vec::new();
@@ -258,6 +290,7 @@ impl NarrativeRepository for PostgresNarrativeRepository {
                 .count()
                 .get_result(&mut *conn)
                 .map_err(|e| {
+                    tracing::error!(error = ?e, "Failed to count acts");
                     BotticelliError::from(BackendError::new(format!("Failed to count acts: {}", e)))
                 })?;
 
@@ -271,10 +304,13 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             ));
         }
 
+        tracing::info!(summary_count = summaries.len(), "Listed executions");
         Ok(summaries)
     }
 
+    #[tracing::instrument(skip(self), fields(id, status = ?status))]
     async fn update_status(&self, id: i32, status: ExecutionStatus) -> BotticelliResult<()> {
+        tracing::debug!("Updating execution status");
         let mut conn = self.conn.lock().await;
 
         let status_str = status_to_string(status);
@@ -290,36 +326,44 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             ))
             .execute(&mut *conn)
             .map_err(|e| {
+                tracing::error!(error = ?e, "Failed to update execution status");
                 BotticelliError::from(BackendError::new(format!(
                     "Failed to update execution status: {}",
                     e
                 )))
             })?;
 
+        tracing::info!(id, "Updated execution status");
         Ok(())
     }
 
+    #[tracing::instrument(skip(self), fields(id))]
     async fn delete_execution(&self, id: i32) -> BotticelliResult<()> {
+        tracing::debug!("Deleting execution");
         let mut conn = self.conn.lock().await;
 
         diesel::delete(narrative_executions::table.find(id))
             .execute(&mut *conn)
             .map_err(|e| {
+                tracing::error!(error = ?e, "Failed to delete execution");
                 BotticelliError::from(BackendError::new(format!(
                     "Failed to delete execution: {}",
                     e
                 )))
             })?;
 
+        tracing::info!(id, "Deleted execution");
         Ok(())
     }
 
     // Media storage methods
+    #[tracing::instrument(skip(self, data, metadata), fields(size = data.len(), media_type = %metadata.media_type()))]
     async fn store_media(
         &self,
         data: &[u8],
         metadata: &botticelli_storage::MediaMetadata,
     ) -> BotticelliResult<botticelli_storage::MediaReference> {
+        tracing::debug!("Storing media");
         use crate::schema::media_references;
         use sha2::{Digest, Sha256};
 
@@ -327,6 +371,7 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         let mut hasher = Sha256::new();
         hasher.update(data);
         let hash = format!("{:x}", hasher.finalize());
+        tracing::debug!(hash = %hash, "Computed content hash");
 
         // Check if already exists
         if let Some(existing) = self.get_media_by_hash(&hash).await? {
@@ -376,6 +421,7 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             .values(&new_row)
             .execute(&mut *conn)
             .map_err(|e| {
+                tracing::error!(error = ?e, "Failed to save media reference");
                 BotticelliError::from(BackendError::new(format!(
                     "Failed to save media reference: {}",
                     e
@@ -393,17 +439,23 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         Ok(reference)
     }
 
+    #[tracing::instrument(skip(self, reference), fields(id = %reference.id(), hash = %reference.content_hash()))]
     async fn load_media(
         &self,
         reference: &botticelli_storage::MediaReference,
     ) -> BotticelliResult<Vec<u8>> {
-        self.storage.retrieve(reference).await
+        tracing::debug!("Loading media");
+        let data = self.storage.retrieve(reference).await?;
+        tracing::info!(size = data.len(), "Loaded media");
+        Ok(data)
     }
 
+    #[tracing::instrument(skip(self), fields(hash = content_hash))]
     async fn get_media_by_hash(
         &self,
         content_hash: &str,
     ) -> BotticelliResult<Option<botticelli_storage::MediaReference>> {
+        tracing::debug!("Looking up media by hash");
         use crate::schema::media_references;
 
         let mut conn = self.conn.lock().await;
@@ -423,12 +475,15 @@ impl NarrativeRepository for PostgresNarrativeRepository {
                 .first(&mut *conn)
                 .optional()
                 .map_err(|e| {
+                    tracing::error!(error = ?e, "Failed to query media by hash");
                     BotticelliError::from(BackendError::new(format!(
                         "Failed to query media by hash: {}",
                         e
                     )))
                 })?;
 
+        let found = result.is_some();
+        tracing::debug!(found, "Media lookup complete");
         Ok(result.map(
             |(id, media_type_str, mime_type, size_bytes, hash, backend, path)| {
                 botticelli_storage::MediaReferenceBuilder::default()
@@ -489,25 +544,32 @@ impl botticelli_interface::NarrativeRegistryOperations for PostgresNarrativeRepo
 impl NarrativeStorageOperations for PostgresNarrativeRepository {
     type Error = BotticelliError;
 
+    #[tracing::instrument(skip(self), fields(pattern = ?_pattern))]
     async fn list_narratives(&self, _pattern: Option<&str>) -> BotticelliResult<Vec<String>> {
+        tracing::debug!("Listing narratives from database");
         // For database implementation, we list narrative IDs from the database
         let mut conn = self.conn.lock().await;
         let results: Vec<i32> = narrative_executions::table
             .select(narrative_executions::id)
             .load(&mut *conn as &mut PgConnection)
             .map_err(|e| {
+                tracing::error!(error = ?e, "Failed to list narrative IDs");
                 BotticelliError::from(BackendError::new(format!(
                     "Failed to list narrative IDs: {}",
                     e
                 )))
             })?;
 
+        tracing::info!(count = results.len(), "Listed narratives");
         Ok(results.iter().map(|id| id.to_string()).collect())
     }
 
+    #[tracing::instrument(skip(self), fields(filename))]
     async fn load_narrative(&self, filename: &str) -> BotticelliResult<Value> {
+        tracing::debug!("Loading narrative by filename");
         // Parse filename as narrative ID
         let id: i32 = filename.parse().map_err(|e| {
+            tracing::error!(error = ?e, "Invalid narrative ID");
             BotticelliError::from(BackendError::new(format!(
                 "Invalid narrative ID '{}': {}",
                 filename, e
@@ -515,30 +577,46 @@ impl NarrativeStorageOperations for PostgresNarrativeRepository {
         })?;
 
         let execution = self.load_execution(id).await?;
-        serde_json::to_value(&execution).map_err(|e| {
+        let value = serde_json::to_value(&execution).map_err(|e| {
+            tracing::error!(error = ?e, "Failed to serialize narrative");
             BotticelliError::from(BackendError::new(format!(
                 "Failed to serialize narrative: {}",
                 e
             )))
-        })
+        })?;
+
+        tracing::info!(id, "Loaded narrative");
+        Ok(value)
     }
 
+    #[tracing::instrument(skip(self, toml_content), fields(content_len = toml_content.len()))]
     async fn validate_narrative(&self, toml_content: &str) -> BotticelliResult<Value> {
+        tracing::debug!("Validating narrative TOML");
         // For database implementation, validate TOML can be parsed
-        toml::from_str::<Value>(toml_content)
-            .map_err(|e| BotticelliError::from(BackendError::new(format!("Invalid TOML: {}", e))))
+        let value = toml::from_str::<Value>(toml_content)
+            .map_err(|e| {
+                tracing::error!(error = ?e, "Invalid TOML");
+                BotticelliError::from(BackendError::new(format!("Invalid TOML: {}", e)))
+            })?;
+
+        tracing::info!("Validated narrative TOML");
+        Ok(value)
     }
 
+    #[tracing::instrument(skip(self, toml_content), fields(content_len = toml_content.len(), name_override = ?_name_override))]
     async fn parse_narrative(
         &self,
         toml_content: &str,
         _name_override: Option<&str>,
     ) -> BotticelliResult<Value> {
+        tracing::debug!("Parsing narrative TOML");
         // Parse TOML content
         let parsed: Value = toml::from_str(toml_content).map_err(|e| {
+            tracing::error!(error = ?e, "Failed to parse TOML");
             BotticelliError::from(BackendError::new(format!("Failed to parse TOML: {}", e)))
         })?;
 
+        tracing::info!("Parsed narrative TOML");
         Ok(parsed)
     }
 }
