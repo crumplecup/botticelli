@@ -19,10 +19,8 @@ use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
 /// Convert Serenity Timestamp to Chrono NaiveDateTime
-fn timestamp_to_naive(ts: &Timestamp) -> NaiveDateTime {
-    chrono::DateTime::from_timestamp(ts.unix_timestamp(), 0)
-        .expect("Timestamp should be valid")
-        .naive_utc()
+fn timestamp_to_naive(ts: &Timestamp) -> Option<NaiveDateTime> {
+    chrono::DateTime::from_timestamp(ts.unix_timestamp(), 0).map(|dt| dt.naive_utc())
 }
 
 /// Event handler for the Botticelli Discord bot.
@@ -103,10 +101,17 @@ impl BotticelliHandler {
             .max_video_channel_users(guild.max_video_channel_users.map(|c| c as i32))
             .large(Some(guild.large))
             .unavailable(Some(guild.unavailable))
-            .joined_at(Some(timestamp_to_naive(&guild.joined_at)))
+            .joined_at(timestamp_to_naive(&guild.joined_at))
             .bot_active(Some(true))
-            .build()
-            .expect("NewGuild builder should succeed with valid data");
+            .build();
+
+        let new_guild = match new_guild {
+            Ok(guild) => guild,
+            Err(e) => {
+                error!(guild_id = %guild.id, error = %e, "Failed to build NewGuild");
+                return;
+            }
+        };
 
         match self.repository.store_guild(&new_guild).await {
             Ok(_) => {
@@ -173,8 +178,15 @@ impl BotticelliHandler {
             .last_message_at(None)
             .last_read_message_id(None)
             .bot_has_access(Some(true))
-            .build()
-            .expect("Valid channel");
+            .build();
+
+        let new_channel = match new_channel {
+            Ok(channel) => channel,
+            Err(e) => {
+                error!(channel_id = id, error = %e, "Failed to build NewChannel");
+                return;
+            }
+        };
 
         match self.repository.store_channel(&new_channel).await {
             Ok(_) => {
@@ -204,8 +216,15 @@ impl BotticelliHandler {
             .locale(None)
             .premium_type(None)
             .public_flags(None)
-            .build()
-            .expect("Valid user");
+            .build();
+
+        let new_user = match new_user {
+            Ok(user) => user,
+            Err(e) => {
+                error!(user_id = %member.user.id, error = %e, "Failed to build NewUser");
+                return;
+            }
+        };
 
         if let Err(e) = self.repository.store_user(&new_user).await {
             error!(user_id = %member.user.id, error = %e, "Failed to store user");
@@ -218,25 +237,22 @@ impl BotticelliHandler {
             .user_id(Self::to_db_id(member.user.id.get()))
             .nick(member.nick.clone())
             .avatar(member.avatar.map(|a| a.to_string()))
-            .joined_at(
-                member
-                    .joined_at
-                    .as_ref()
-                    .map_or_else(|| chrono::Utc::now().naive_utc(), timestamp_to_naive),
-            )
-            .premium_since(member.premium_since.as_ref().map(timestamp_to_naive))
+            .joined_at(member.joined_at.as_ref().and_then(timestamp_to_naive).unwrap_or_else(|| chrono::Utc::now().naive_utc()))
+            .premium_since(member.premium_since.as_ref().and_then(timestamp_to_naive))
             .deaf(Some(member.deaf))
             .mute(Some(member.mute))
             .pending(Some(member.pending))
             .left_at(None)
-            .communication_disabled_until(
-                member
-                    .communication_disabled_until
-                    .as_ref()
-                    .map(timestamp_to_naive),
-            )
-            .build()
-            .expect("Valid guild member");
+            .communication_disabled_until(member.communication_disabled_until.as_ref().and_then(timestamp_to_naive))
+            .build();
+
+        let new_member = match new_member {
+            Ok(member) => member,
+            Err(e) => {
+                error!(guild_id = %guild_id, user_id = %member.user.id, error = %e, "Failed to build NewGuildMember");
+                return;
+            }
+        };
 
         match self.repository.store_guild_member(&new_member).await {
             Ok(_) => {
@@ -272,8 +288,15 @@ impl BotticelliHandler {
             .icon(role.icon.map(|i| i.to_string()))
             .unicode_emoji(role.unicode_emoji.clone())
             .tags(None)
-            .build()
-            .expect("Valid role");
+            .build();
+
+        let new_role = match new_role {
+            Ok(role) => role,
+            Err(e) => {
+                error!(role_id = %role.id, error = %e, "Failed to build NewRole");
+                return;
+            }
+        };
 
         match self.repository.store_role(&new_role).await {
             Ok(_) => {
