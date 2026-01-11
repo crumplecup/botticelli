@@ -9,8 +9,9 @@ use chrono::NaiveDateTime;
 
 use crate::{
     ChannelType, DiscordChannelJson, DiscordGuildJson, DiscordGuildMemberJson,
-    DiscordMemberRoleJson, DiscordRoleJson, DiscordUserJson, NewChannel, NewGuild, NewGuildBuilder,
-    NewGuildMember, NewRole, NewUser,
+    DiscordMemberRoleJson, DiscordRoleJson, DiscordUserJson, NewChannel, NewChannelBuilder,
+    NewGuild, NewGuildBuilder, NewGuildMember, NewGuildMemberBuilder, NewRole, NewRoleBuilder,
+    NewUser, NewUserBuilder,
 };
 
 /// Parse an ISO 8601 timestamp string to NaiveDateTime.
@@ -134,28 +135,23 @@ impl TryFrom<DiscordUserJson> for NewUser {
     type Error = botticelli_error::BotticelliError;
 
     fn try_from(json: DiscordUserJson) -> BotticelliResult<Self> {
-        Ok(NewUser {
-            id: *json.id(),
-            username: json.username().clone(),
-            discriminator: json.discriminator().clone(),
-            global_name: json.global_name().clone(),
-            avatar: json.avatar().clone(),
-            banner: None,       // Not in JSON model
-            accent_color: None, // Not in JSON model
-
-            // Account flags
-            bot: *json.bot(),
-            system: None,      // Not in JSON model
-            mfa_enabled: None, // Not in JSON model
-            verified: None,    // Not in JSON model
-
-            // Premium status
-            premium_type: *json.premium_type(),
-            public_flags: None, // Not in JSON model
-
-            // Locale
-            locale: json.locale().clone(),
-        })
+        Ok(NewUserBuilder::default()
+            .id(*json.id())
+            .username(json.username().clone())
+            .discriminator(json.discriminator().clone())
+            .global_name(json.global_name().clone())
+            .avatar(json.avatar().clone())
+            .banner(None)
+            .accent_color(None)
+            .bot(*json.bot())
+            .system(None)
+            .mfa_enabled(None)
+            .verified(None)
+            .premium_type(*json.premium_type())
+            .public_flags(None)
+            .locale(json.locale().clone())
+            .build()
+            .expect("Valid user"))
     }
 }
 
@@ -165,47 +161,36 @@ impl TryFrom<DiscordChannelJson> for NewChannel {
     fn try_from(json: DiscordChannelJson) -> BotticelliResult<Self> {
         let channel_type = parse_channel_type(json.channel_type())?;
 
-        Ok(NewChannel {
-            id: *json.id(),
-            guild_id: *json.guild_id(),
-            name: json.name().clone(),
-            channel_type,
-            position: *json.position(),
-
-            // Topic and description
-            topic: json.topic().clone(),
-
-            // Channel settings
-            nsfw: *json.nsfw(),
-            rate_limit_per_user: *json.rate_limit_per_user(),
-            bitrate: *json.bitrate(),
-            user_limit: *json.user_limit(),
-
-            // Thread-specific
-            parent_id: *json.parent_id(),
-            owner_id: None,              // Not in JSON model
-            message_count: None,         // Not in JSON model
-            member_count: None,          // Not in JSON model
-            archived: None,              // Not in JSON model
-            auto_archive_duration: None, // Not in JSON model
-            archive_timestamp: None,     // Not in JSON model
-            locked: None,                // Not in JSON model
-            invitable: None,             // Not in JSON model
-
-            // Forum-specific
-            available_tags: None,            // Not in JSON model
-            default_reaction_emoji: None,    // Not in JSON model
-            default_thread_rate_limit: None, // Not in JSON model
-            default_sort_order: None,        // Not in JSON model
-            default_forum_layout: None,      // Not in JSON model
-
-            // Timestamps
-            last_message_at: None, // Not in JSON model
-
-            // Bot tracking
-            last_read_message_id: None, // Not in JSON model
-            bot_has_access: None,       // Not in JSON model
-        })
+        Ok(NewChannelBuilder::default()
+            .id(*json.id())
+            .guild_id(*json.guild_id())
+            .name(json.name().clone())
+            .channel_type(channel_type)
+            .position(*json.position())
+            .topic(json.topic().clone())
+            .nsfw(*json.nsfw())
+            .rate_limit_per_user(*json.rate_limit_per_user())
+            .bitrate(*json.bitrate())
+            .user_limit(*json.user_limit())
+            .parent_id(*json.parent_id())
+            .owner_id(None)
+            .message_count(None)
+            .member_count(None)
+            .archived(None)
+            .auto_archive_duration(None)
+            .archive_timestamp(None)
+            .locked(None)
+            .invitable(None)
+            .available_tags(None)
+            .default_reaction_emoji(None)
+            .default_thread_rate_limit(None)
+            .default_sort_order(None)
+            .default_forum_layout(None)
+            .last_message_at(None)
+            .last_read_message_id(None)
+            .bot_has_access(None)
+            .build()
+            .expect("Valid channel"))
     }
 }
 
@@ -213,22 +198,21 @@ impl TryFrom<DiscordRoleJson> for NewRole {
     type Error = botticelli_error::BotticelliError;
 
     fn try_from(json: DiscordRoleJson) -> BotticelliResult<Self> {
-        Ok(NewRole {
-            id: *json.id(),
-            guild_id: *json.guild_id(),
-            name: json.name().clone(),
-            color: json.color().unwrap_or(0), // Default to no color
-            hoist: *json.hoist(),
-            icon: json.icon().clone(),
-            unicode_emoji: json.unicode_emoji().clone(),
-            position: *json.position(),
-            permissions: *json.permissions(),
-            managed: *json.managed(),
-            mentionable: *json.mentionable(),
-
-            // Role tags
-            tags: None, // Not in JSON model
-        })
+        Ok(NewRoleBuilder::default()
+            .id(*json.id())
+            .guild_id(*json.guild_id())
+            .name(json.name().clone())
+            .color(json.color().unwrap_or(0))
+            .hoist(*json.hoist())
+            .icon(json.icon().clone())
+            .unicode_emoji(json.unicode_emoji().clone())
+            .position(*json.position())
+            .permissions(*json.permissions())
+            .managed(*json.managed())
+            .mentionable(*json.mentionable())
+            .tags(None)
+            .build()
+            .expect("Valid role"))
     }
 }
 
@@ -243,27 +227,20 @@ impl TryFrom<DiscordGuildMemberJson> for NewGuildMember {
             .map(|s| parse_iso_timestamp(s))
             .transpose()?;
 
-        Ok(NewGuildMember {
-            guild_id: *json.guild_id(),
-            user_id: *json.user_id(),
-
-            // Member-specific data
-            nick: json.nick().clone(),
-            avatar: json.avatar().clone(),
-
-            // Timestamps
-            joined_at,
-            premium_since,
-            communication_disabled_until: None, // Not in JSON model
-
-            // Flags
-            deaf: *json.deaf(),
-            mute: *json.mute(),
-            pending: *json.pending(),
-
-            // left_at is None for new members
-            left_at: None,
-        })
+        Ok(NewGuildMemberBuilder::default()
+            .guild_id(*json.guild_id())
+            .user_id(*json.user_id())
+            .nick(json.nick().clone())
+            .avatar(json.avatar().clone())
+            .joined_at(joined_at)
+            .premium_since(premium_since)
+            .communication_disabled_until(None)
+            .deaf(*json.deaf())
+            .mute(*json.mute())
+            .pending(*json.pending())
+            .left_at(None)
+            .build()
+            .expect("Valid guild member"))
     }
 }
 

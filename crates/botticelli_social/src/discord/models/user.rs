@@ -48,27 +48,27 @@ pub struct UserRow {
 /// Insertable struct for discord_users table.
 ///
 /// Used to create new user records in the database.
-#[derive(Debug, Clone, Insertable, derive_getters::Getters)]
+#[derive(Debug, Clone, Insertable, derive_getters::Getters, derive_builder::Builder)]
 #[diesel(table_name = botticelli_database::schema::discord_users)]
 pub struct NewUser {
-    pub(crate) id: i64,
-    pub(crate) username: String,
-    pub(crate) discriminator: Option<String>,
-    pub(crate) global_name: Option<String>,
-    pub(crate) avatar: Option<String>,
-    pub(crate) banner: Option<String>,
-    pub(crate) accent_color: Option<i32>,
+    id: i64,
+    username: String,
+    discriminator: Option<String>,
+    global_name: Option<String>,
+    avatar: Option<String>,
+    banner: Option<String>,
+    accent_color: Option<i32>,
 
     // Account flags
-    pub(crate) bot: Option<bool>,
-    pub(crate) system: Option<bool>,
-    pub(crate) mfa_enabled: Option<bool>,
-    pub(crate) verified: Option<bool>,
+    bot: Option<bool>,
+    system: Option<bool>,
+    mfa_enabled: Option<bool>,
+    verified: Option<bool>,
 
     // Premium status
-    pub(crate) premium_type: Option<i16>,
-    pub(crate) public_flags: Option<i32>,
+    premium_type: Option<i16>,
+    public_flags: Option<i32>,
 
     // Locale
-    pub(crate) locale: Option<String>,
+    locale: Option<String>,
 }

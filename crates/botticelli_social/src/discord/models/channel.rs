@@ -159,46 +159,46 @@ pub struct ChannelRow {
 /// Insertable struct for discord_channels table.
 ///
 /// Used to create new channel records in the database.
-#[derive(Debug, Clone, Insertable, derive_getters::Getters)]
+#[derive(Debug, Clone, Insertable, derive_getters::Getters, derive_builder::Builder)]
 #[diesel(table_name = botticelli_database::schema::discord_channels)]
 pub struct NewChannel {
-    pub(crate) id: i64,
-    pub(crate) guild_id: Option<i64>,
-    pub(crate) name: Option<String>,
-    pub(crate) channel_type: ChannelType,
-    pub(crate) position: Option<i32>,
+    id: i64,
+    guild_id: Option<i64>,
+    name: Option<String>,
+    channel_type: ChannelType,
+    position: Option<i32>,
 
     // Topic and description
-    pub(crate) topic: Option<String>,
+    topic: Option<String>,
 
     // Channel settings
-    pub(crate) nsfw: Option<bool>,
-    pub(crate) rate_limit_per_user: Option<i32>,
-    pub(crate) bitrate: Option<i32>,
-    pub(crate) user_limit: Option<i32>,
+    nsfw: Option<bool>,
+    rate_limit_per_user: Option<i32>,
+    bitrate: Option<i32>,
+    user_limit: Option<i32>,
 
     // Thread-specific
-    pub(crate) parent_id: Option<i64>,
-    pub(crate) owner_id: Option<i64>,
-    pub(crate) message_count: Option<i32>,
-    pub(crate) member_count: Option<i32>,
-    pub(crate) archived: Option<bool>,
-    pub(crate) auto_archive_duration: Option<i32>,
-    pub(crate) archive_timestamp: Option<NaiveDateTime>,
-    pub(crate) locked: Option<bool>,
-    pub(crate) invitable: Option<bool>,
+    parent_id: Option<i64>,
+    owner_id: Option<i64>,
+    message_count: Option<i32>,
+    member_count: Option<i32>,
+    archived: Option<bool>,
+    auto_archive_duration: Option<i32>,
+    archive_timestamp: Option<NaiveDateTime>,
+    locked: Option<bool>,
+    invitable: Option<bool>,
 
     // Forum-specific
-    pub(crate) available_tags: Option<JsonValue>,
-    pub(crate) default_reaction_emoji: Option<JsonValue>,
-    pub(crate) default_thread_rate_limit: Option<i32>,
-    pub(crate) default_sort_order: Option<i16>,
-    pub(crate) default_forum_layout: Option<i16>,
+    available_tags: Option<JsonValue>,
+    default_reaction_emoji: Option<JsonValue>,
+    default_thread_rate_limit: Option<i32>,
+    default_sort_order: Option<i16>,
+    default_forum_layout: Option<i16>,
 
     // Timestamps (last_message_at can be set)
-    pub(crate) last_message_at: Option<NaiveDateTime>,
+    last_message_at: Option<NaiveDateTime>,
 
     // Bot tracking
-    pub(crate) last_read_message_id: Option<i64>,
-    pub(crate) bot_has_access: Option<bool>,
+    last_read_message_id: Option<i64>,
+    bot_has_access: Option<bool>,
 }

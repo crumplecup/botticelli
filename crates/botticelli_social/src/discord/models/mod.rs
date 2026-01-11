@@ -15,8 +15,8 @@ mod role;
 mod user;
 
 // Re-export all types
-pub use channel::{ChannelRow, ChannelType, NewChannel};
+pub use channel::{ChannelRow, ChannelType, NewChannel, NewChannelBuilder};
 pub use guild::{GuildRow, NewGuild, NewGuildBuilder};
-pub use member::{GuildMemberRow, NewGuildMember};
-pub use role::{NewRole, RoleRow};
-pub use user::{NewUser, UserRow};
+pub use member::{GuildMemberRow, NewGuildMember, NewGuildMemberBuilder};
+pub use role::{NewRole, NewRoleBuilder, RoleRow};
+pub use user::{NewUser, NewUserBuilder, UserRow};

@@ -42,26 +42,26 @@ pub struct GuildMemberRow {
 /// Insertable struct for discord_guild_members table.
 ///
 /// Used to create new guild member records in the database.
-#[derive(Debug, Clone, Insertable, derive_getters::Getters)]
+#[derive(Debug, Clone, Insertable, derive_getters::Getters, derive_builder::Builder)]
 #[diesel(table_name = botticelli_database::schema::discord_guild_members)]
 pub struct NewGuildMember {
-    pub(crate) guild_id: i64,
-    pub(crate) user_id: i64,
+    guild_id: i64,
+    user_id: i64,
 
     // Member-specific data
-    pub(crate) nick: Option<String>,
-    pub(crate) avatar: Option<String>,
+    nick: Option<String>,
+    avatar: Option<String>,
 
     // Timestamps
-    pub(crate) joined_at: NaiveDateTime,
-    pub(crate) premium_since: Option<NaiveDateTime>,
-    pub(crate) communication_disabled_until: Option<NaiveDateTime>,
+    joined_at: NaiveDateTime,
+    premium_since: Option<NaiveDateTime>,
+    communication_disabled_until: Option<NaiveDateTime>,
 
     // Flags
-    pub(crate) deaf: Option<bool>,
-    pub(crate) mute: Option<bool>,
-    pub(crate) pending: Option<bool>,
+    deaf: Option<bool>,
+    mute: Option<bool>,
+    pending: Option<bool>,
 
     // left_at is set when member leaves
-    pub(crate) left_at: Option<NaiveDateTime>,
+    left_at: Option<NaiveDateTime>,
 }

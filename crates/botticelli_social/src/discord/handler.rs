@@ -4,7 +4,8 @@
 //! and persist data to the database.
 
 use crate::{
-    ChannelType, DiscordRepository, NewChannel, NewGuildBuilder, NewGuildMember, NewRole, NewUser,
+    ChannelType, DiscordRepository, NewChannel, NewChannelBuilder, NewGuildBuilder,
+    NewGuildMember, NewGuildMemberBuilder, NewRole, NewRoleBuilder, NewUser, NewUserBuilder,
 };
 use chrono::NaiveDateTime;
 use serenity::all::{GuildId, Ready};
@@ -144,35 +145,36 @@ impl BotticelliHandler {
             }
         };
 
-        let new_channel = NewChannel {
-            id,
-            guild_id: guild_id.map(|g| Self::to_db_id(g.get())),
-            name,
-            channel_type,
-            position,
-            topic,
-            nsfw,
-            rate_limit_per_user: None,
-            bitrate: None,
-            user_limit: None,
-            parent_id,
-            owner_id: None,
-            message_count: None,
-            member_count: None,
-            archived: None,
-            auto_archive_duration: None,
-            archive_timestamp: None,
-            locked: None,
-            invitable: None,
-            available_tags: None,
-            default_reaction_emoji: None,
-            default_thread_rate_limit: None,
-            default_sort_order: None,
-            default_forum_layout: None,
-            last_message_at: None,
-            last_read_message_id: None,
-            bot_has_access: Some(true),
-        };
+        let new_channel = NewChannelBuilder::default()
+            .id(id)
+            .guild_id(guild_id.map(|g| Self::to_db_id(g.get())))
+            .name(name)
+            .channel_type(channel_type)
+            .position(position)
+            .topic(topic)
+            .nsfw(nsfw)
+            .rate_limit_per_user(None)
+            .bitrate(None)
+            .user_limit(None)
+            .parent_id(parent_id)
+            .owner_id(None)
+            .message_count(None)
+            .member_count(None)
+            .archived(None)
+            .auto_archive_duration(None)
+            .archive_timestamp(None)
+            .locked(None)
+            .invitable(None)
+            .available_tags(None)
+            .default_reaction_emoji(None)
+            .default_thread_rate_limit(None)
+            .default_sort_order(None)
+            .default_forum_layout(None)
+            .last_message_at(None)
+            .last_read_message_id(None)
+            .bot_has_access(Some(true))
+            .build()
+            .expect("Valid channel");
 
         match self.repository.store_channel(&new_channel).await {
             Ok(_) => {
@@ -187,22 +189,23 @@ impl BotticelliHandler {
     /// Store a Discord member in the database.
     async fn store_member(&self, guild_id: GuildId, member: &Member) {
         // First store the user
-        let new_user = NewUser {
-            id: Self::to_db_id(member.user.id.get()),
-            username: member.user.name.clone(),
-            discriminator: member.user.discriminator.map(|d| d.get().to_string()),
-            global_name: member.user.global_name.clone(),
-            avatar: member.user.avatar.map(|a| a.to_string()),
-            bot: Some(member.user.bot),
-            system: Some(member.user.system),
-            mfa_enabled: None,
-            verified: None,
-            banner: member.user.banner.map(|b| b.to_string()),
-            accent_color: member.user.accent_colour.map(|c| c.0 as i32),
-            locale: None,
-            premium_type: None,
-            public_flags: None,
-        };
+        let new_user = NewUserBuilder::default()
+            .id(Self::to_db_id(member.user.id.get()))
+            .username(member.user.name.clone())
+            .discriminator(member.user.discriminator.map(|d| d.get().to_string()))
+            .global_name(member.user.global_name.clone())
+            .avatar(member.user.avatar.map(|a| a.to_string()))
+            .bot(Some(member.user.bot))
+            .system(Some(member.user.system))
+            .mfa_enabled(None)
+            .verified(None)
+            .banner(member.user.banner.map(|b| b.to_string()))
+            .accent_color(member.user.accent_colour.map(|c| c.0 as i32))
+            .locale(None)
+            .premium_type(None)
+            .public_flags(None)
+            .build()
+            .expect("Valid user");
 
         if let Err(e) = self.repository.store_user(&new_user).await {
             error!(user_id = %member.user.id, error = %e, "Failed to store user");
@@ -210,25 +213,30 @@ impl BotticelliHandler {
         }
 
         // Then store the guild member
-        let new_member = NewGuildMember {
-            guild_id: Self::to_db_id(guild_id.get()),
-            user_id: Self::to_db_id(member.user.id.get()),
-            nick: member.nick.clone(),
-            avatar: member.avatar.map(|a| a.to_string()),
-            joined_at: member
-                .joined_at
-                .as_ref()
-                .map_or_else(|| chrono::Utc::now().naive_utc(), timestamp_to_naive),
-            premium_since: member.premium_since.as_ref().map(timestamp_to_naive),
-            deaf: Some(member.deaf),
-            mute: Some(member.mute),
-            pending: Some(member.pending),
-            left_at: None,
-            communication_disabled_until: member
-                .communication_disabled_until
-                .as_ref()
-                .map(timestamp_to_naive),
-        };
+        let new_member = NewGuildMemberBuilder::default()
+            .guild_id(Self::to_db_id(guild_id.get()))
+            .user_id(Self::to_db_id(member.user.id.get()))
+            .nick(member.nick.clone())
+            .avatar(member.avatar.map(|a| a.to_string()))
+            .joined_at(
+                member
+                    .joined_at
+                    .as_ref()
+                    .map_or_else(|| chrono::Utc::now().naive_utc(), timestamp_to_naive),
+            )
+            .premium_since(member.premium_since.as_ref().map(timestamp_to_naive))
+            .deaf(Some(member.deaf))
+            .mute(Some(member.mute))
+            .pending(Some(member.pending))
+            .left_at(None)
+            .communication_disabled_until(
+                member
+                    .communication_disabled_until
+                    .as_ref()
+                    .map(timestamp_to_naive),
+            )
+            .build()
+            .expect("Valid guild member");
 
         match self.repository.store_guild_member(&new_member).await {
             Ok(_) => {
@@ -251,20 +259,21 @@ impl BotticelliHandler {
 
     /// Store a Discord role in the database.
     async fn store_role(&self, guild_id: GuildId, role: &Role) {
-        let new_role = NewRole {
-            id: Self::to_db_id(role.id.get()),
-            guild_id: Self::to_db_id(guild_id.get()),
-            name: role.name.clone(),
-            color: role.colour.0 as i32,
-            position: role.position as i32,
-            permissions: role.permissions.bits() as i64,
-            hoist: Some(role.hoist),
-            managed: Some(role.managed),
-            mentionable: Some(role.mentionable),
-            icon: role.icon.map(|i| i.to_string()),
-            unicode_emoji: role.unicode_emoji.clone(),
-            tags: None,
-        };
+        let new_role = NewRoleBuilder::default()
+            .id(Self::to_db_id(role.id.get()))
+            .guild_id(Self::to_db_id(guild_id.get()))
+            .name(role.name.clone())
+            .color(role.colour.0 as i32)
+            .position(role.position as i32)
+            .permissions(role.permissions.bits() as i64)
+            .hoist(Some(role.hoist))
+            .managed(Some(role.managed))
+            .mentionable(Some(role.mentionable))
+            .icon(role.icon.map(|i| i.to_string()))
+            .unicode_emoji(role.unicode_emoji.clone())
+            .tags(None)
+            .build()
+            .expect("Valid role");
 
         match self.repository.store_role(&new_role).await {
             Ok(_) => {
