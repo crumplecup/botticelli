@@ -41,10 +41,9 @@ mod discord;
 
 // Export bot command infrastructure (requires database feature)
 #[cfg(feature = "database")]
-pub use bot_commands::{
-    BotCommandError, BotCommandErrorKind, BotCommandExecutor, BotCommandRegistryImpl,
-    BotCommandResult,
-};
+pub use bot_commands::{BotCommandExecutor, BotCommandRegistryImpl};
+#[cfg(feature = "database")]
+pub use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 #[cfg(feature = "database")]
 pub use database::DatabaseCommandExecutor;
 
