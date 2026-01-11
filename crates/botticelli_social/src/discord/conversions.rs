@@ -6,6 +6,7 @@
 
 use botticelli_error::{BackendError, BotticelliResult};
 use chrono::NaiveDateTime;
+use tracing::{debug, instrument};
 
 use crate::{
     ChannelType, DiscordChannelJson, DiscordGuildJson, DiscordGuildMemberJson,
@@ -24,6 +25,7 @@ use crate::{
 /// # Errors
 ///
 /// Returns an error if the timestamp string cannot be parsed.
+#[instrument(skip(s))]
 #[track_caller]
 pub fn parse_iso_timestamp(s: &str) -> BotticelliResult<NaiveDateTime> {
     // Try parsing with timezone first (strip the Z and parse as naive)
@@ -56,6 +58,7 @@ pub fn parse_iso_timestamp(s: &str) -> BotticelliResult<NaiveDateTime> {
 /// # Errors
 ///
 /// Returns an error if the channel type string is not recognized.
+#[instrument(skip(s))]
 #[track_caller]
 pub fn parse_channel_type(s: &str) -> BotticelliResult<ChannelType> {
     match s {
@@ -80,6 +83,7 @@ pub fn parse_channel_type(s: &str) -> BotticelliResult<ChannelType> {
 ///
 /// The database schema uses `Vec<Option<String>>` for the features field,
 /// so we wrap each string in Some().
+#[instrument(skip(features))]
 fn convert_features(features: &[String]) -> Vec<Option<String>> {
     features.iter().map(|s| Some(s.clone())).collect()
 }
@@ -91,7 +95,9 @@ fn convert_features(features: &[String]) -> Vec<Option<String>> {
 impl TryFrom<DiscordGuildJson> for NewGuild {
     type Error = botticelli_error::BotticelliError;
 
+    #[instrument(skip(json), fields(guild_id = %json.id(), guild_name = %json.name()))]
     fn try_from(json: DiscordGuildJson) -> BotticelliResult<Self> {
+        debug!("Converting Discord guild JSON to database model");
         let mut builder = NewGuildBuilder::default();
         builder.id(*json.id());
         builder.name(json.name().clone());
@@ -134,6 +140,7 @@ impl TryFrom<DiscordGuildJson> for NewGuild {
 impl TryFrom<DiscordUserJson> for NewUser {
     type Error = botticelli_error::BotticelliError;
 
+    #[instrument(skip(json), fields(user_id = %json.id(), username = %json.username()))]
     fn try_from(json: DiscordUserJson) -> BotticelliResult<Self> {
         NewUserBuilder::default()
             .id(*json.id())
@@ -158,6 +165,7 @@ impl TryFrom<DiscordUserJson> for NewUser {
 impl TryFrom<DiscordChannelJson> for NewChannel {
     type Error = botticelli_error::BotticelliError;
 
+    #[instrument(skip(json), fields(channel_id = %json.id(), channel_name = %json.name(), guild_id = %json.guild_id()))]
     fn try_from(json: DiscordChannelJson) -> BotticelliResult<Self> {
         let channel_type = parse_channel_type(json.channel_type())?;
 
@@ -197,6 +205,7 @@ impl TryFrom<DiscordChannelJson> for NewChannel {
 impl TryFrom<DiscordRoleJson> for NewRole {
     type Error = botticelli_error::BotticelliError;
 
+    #[instrument(skip(json), fields(role_id = %json.id(), role_name = %json.name(), guild_id = %json.guild_id()))]
     fn try_from(json: DiscordRoleJson) -> BotticelliResult<Self> {
         NewRoleBuilder::default()
             .id(*json.id())
@@ -219,6 +228,7 @@ impl TryFrom<DiscordRoleJson> for NewRole {
 impl TryFrom<DiscordGuildMemberJson> for NewGuildMember {
     type Error = botticelli_error::BotticelliError;
 
+    #[instrument(skip(json), fields(guild_id = %json.guild_id(), user_id = %json.user_id()))]
     fn try_from(json: DiscordGuildMemberJson) -> BotticelliResult<Self> {
         let joined_at = parse_iso_timestamp(json.joined_at())?;
         let premium_since = json
@@ -260,6 +270,7 @@ pub struct NewMemberRole {
 impl TryFrom<DiscordMemberRoleJson> for NewMemberRole {
     type Error = botticelli_error::BotticelliError;
 
+    #[instrument(skip(json), fields(guild_id = %json.guild_id(), user_id = %json.user_id(), role_id = %json.role_id()))]
     fn try_from(json: DiscordMemberRoleJson) -> BotticelliResult<Self> {
         let assigned_at = parse_iso_timestamp(json.assigned_at())?;
 
