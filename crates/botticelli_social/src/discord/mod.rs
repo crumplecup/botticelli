@@ -54,7 +54,7 @@ mod processors;
 mod repository;
 
 // Public re-exports
-pub use botticelli_error::{DiscordError, DiscordErrorKind, DiscordErrorResult};
+pub use botticelli_error::{DiscordError, DiscordErrorKind, DiscordErrorResult, DiscordResult};
 pub use client::BotticelliBot;
 pub use commands::DiscordCommandExecutor;
 pub use conversions::{NewMemberRole, parse_channel_type, parse_iso_timestamp};
@@ -72,7 +72,4 @@ pub use processors::{
     DiscordChannelProcessor, DiscordGuildMemberProcessor, DiscordGuildProcessor,
     DiscordMemberRoleProcessor, DiscordRoleProcessor, DiscordUserProcessor,
 };
-pub use repository::{DiscordRepository, DiscordResult};
-
-// TODO: Uncomment exports as modules are implemented
-// poster
+pub use repository::DiscordRepository;

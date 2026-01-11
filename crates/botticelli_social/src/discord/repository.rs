@@ -7,7 +7,7 @@ use botticelli_database::schema::{
     discord_channels, discord_guild_members, discord_guilds, discord_member_roles, discord_roles,
     discord_users,
 };
-use botticelli_error::DatabaseError;
+use botticelli_error::{DatabaseError, DiscordError, DiscordErrorKind};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use std::sync::Arc;
@@ -20,8 +20,7 @@ use super::models::{
     RoleRow, UserRow,
 };
 
-/// Result type for Discord repository operations.
-pub type DiscordResult<T> = Result<T, DatabaseError>;
+use crate::DiscordResult;
 
 /// PostgreSQL repository for Discord data.
 ///
@@ -95,7 +94,7 @@ impl DiscordRepository {
                 discord_guilds::updated_at.eq(diesel::dsl::now),
             ))
             .get_result(&mut *conn)
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// Get a guild by ID.
@@ -107,7 +106,7 @@ impl DiscordRepository {
             .find(guild_id)
             .first(&mut *conn)
             .optional()
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// List all active guilds (where bot_active = true and left_at is null).
@@ -120,7 +119,7 @@ impl DiscordRepository {
             .filter(discord_guilds::left_at.is_null())
             .order(discord_guilds::name.asc())
             .load(&mut *conn)
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// Mark a guild as left (soft delete).
@@ -134,7 +133,7 @@ impl DiscordRepository {
                 discord_guilds::bot_active.eq(false),
             ))
             .execute(&mut *conn)
-            .map_err(DatabaseError::from)?;
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))?;
 
         Ok(())
     }
@@ -161,7 +160,7 @@ impl DiscordRepository {
                 discord_users::updated_at.eq(diesel::dsl::now),
             ))
             .get_result(&mut *conn)
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// Get a user by ID.
@@ -173,7 +172,7 @@ impl DiscordRepository {
             .find(user_id)
             .first(&mut *conn)
             .optional()
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     // ============================================================================
@@ -199,7 +198,7 @@ impl DiscordRepository {
                 discord_channels::updated_at.eq(diesel::dsl::now),
             ))
             .get_result(&mut *conn)
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// Get a channel by ID.
@@ -211,7 +210,7 @@ impl DiscordRepository {
             .find(channel_id)
             .first(&mut *conn)
             .optional()
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// List all channels in a guild.
@@ -223,7 +222,7 @@ impl DiscordRepository {
             .filter(discord_channels::guild_id.eq(guild_id))
             .order(discord_channels::position.asc())
             .load(&mut *conn)
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     // ============================================================================
@@ -252,7 +251,7 @@ impl DiscordRepository {
                 discord_guild_members::updated_at.eq(diesel::dsl::now),
             ))
             .get_result(&mut *conn)
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// Get a guild member by guild ID and user ID.
@@ -269,7 +268,7 @@ impl DiscordRepository {
             .filter(discord_guild_members::user_id.eq(user_id))
             .first(&mut *conn)
             .optional()
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// List all active members in a guild (where left_at is null).
@@ -282,7 +281,7 @@ impl DiscordRepository {
             .filter(discord_guild_members::left_at.is_null())
             .order(discord_guild_members::joined_at.asc())
             .load(&mut *conn)
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// Mark a guild member as left (soft delete).
@@ -297,7 +296,7 @@ impl DiscordRepository {
         )
         .set(discord_guild_members::left_at.eq(diesel::dsl::now))
         .execute(&mut *conn)
-        .map_err(DatabaseError::from)?;
+        .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))?;
 
         Ok(())
     }
@@ -325,7 +324,7 @@ impl DiscordRepository {
                 discord_roles::updated_at.eq(diesel::dsl::now),
             ))
             .get_result(&mut *conn)
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// Get a role by ID.
@@ -337,7 +336,7 @@ impl DiscordRepository {
             .find(role_id)
             .first(&mut *conn)
             .optional()
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// List all roles in a guild ordered by position.
@@ -349,7 +348,7 @@ impl DiscordRepository {
             .filter(discord_roles::guild_id.eq(guild_id))
             .order(discord_roles::position.desc())
             .load(&mut *conn)
-            .map_err(DatabaseError::from)
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))
     }
 
     /// Store a member role assignment in the database.
@@ -372,7 +371,7 @@ impl DiscordRepository {
                 discord_member_roles::assigned_by.eq(*member_role.assigned_by()),
             ))
             .execute(&mut *conn)
-            .map_err(DatabaseError::from)?;
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))?;
 
         Ok(())
     }
@@ -402,7 +401,7 @@ impl DiscordRepository {
             ))
             .do_nothing()
             .execute(&mut *conn)
-            .map_err(DatabaseError::from)?;
+            .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))?;
 
         Ok(())
     }
@@ -424,7 +423,7 @@ impl DiscordRepository {
                 .filter(discord_member_roles::role_id.eq(role_id)),
         )
         .execute(&mut *conn)
-        .map_err(DatabaseError::from)?;
+        .map_err(|e| DiscordError::new(DiscordErrorKind::DatabaseError(e.to_string())))?;
 
         Ok(())
     }
