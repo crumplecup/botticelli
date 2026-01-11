@@ -3,12 +3,12 @@
 //! This module integrates the security framework with bot command execution,
 //! providing a secure wrapper around platform-specific executors.
 
-use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_error::{BotCommandError, BotCommandResult};
 use botticelli_interface::BotCommandExecutor;
 use async_trait::async_trait;
 use botticelli_security::{
     ApprovalWorkflow, CommandValidator, ContentFilter, PermissionChecker, RateLimiter,
-    SecureExecutor, SecurityError,
+    SecureExecutor,
 };
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -40,6 +40,7 @@ where
     V: CommandValidator,
 {
     /// Create a new secure bot executor.
+    #[instrument(skip(inner, permission_checker, validator, content_filter, rate_limiter, approval_workflow), fields(narrative_id))]
     pub fn new(
         inner: E,
         permission_checker: PermissionChecker,
@@ -49,6 +50,7 @@ where
         approval_workflow: ApprovalWorkflow,
         narrative_id: String,
     ) -> Self {
+        debug!("Creating secure bot executor");
         let secure_executor = SecureExecutor::new(
             permission_checker,
             validator,
@@ -65,11 +67,13 @@ where
     }
 
     /// Get reference to inner executor.
+    #[instrument(skip(self))]
     pub fn inner(&self) -> &E {
         &self.inner
     }
 
     /// Get mutable reference to inner executor.
+    #[instrument(skip(self))]
     pub fn inner_mut(&mut self) -> &mut E {
         &mut self.inner
     }
@@ -129,20 +133,32 @@ where
         Ok(result)
     }
 
+    #[instrument(skip(self))]
     fn platform(&self) -> &str {
-        self.inner.platform()
+        let platform = self.inner.platform();
+        debug!(platform, "Getting platform");
+        platform
     }
 
+    #[instrument(skip(self))]
     fn supported_commands(&self) -> Vec<String> {
-        self.inner.supported_commands()
+        let commands = self.inner.supported_commands();
+        debug!(count = commands.len(), "Getting supported commands");
+        commands
     }
 
+    #[instrument(skip(self), fields(command))]
     fn supports_command(&self, command: &str) -> bool {
-        self.inner.supports_command(command)
+        let supported = self.inner.supports_command(command);
+        debug!(command, supported, "Checking command support");
+        supported
     }
 
+    #[instrument(skip(self), fields(command))]
     fn command_help(&self, command: &str) -> Option<String> {
-        self.inner.command_help(command)
+        let help = self.inner.command_help(command);
+        debug!(command, has_help = help.is_some(), "Getting command help");
+        help
     }
 }
 
@@ -151,6 +167,7 @@ where
 fn hashmap_to_params(
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<HashMap<String, String>> {
+    debug!("Converting args to params");
     let mut params = HashMap::new();
 
     for (key, value) in args {
@@ -164,51 +181,6 @@ fn hashmap_to_params(
         params.insert(key.clone(), value_str);
     }
 
+    debug!(param_count = params.len(), "Converted args to params");
     Ok(params)
-}
-
-/// Convert security error to bot command error.
-fn security_error_to_bot_error(command: &str, error: SecurityError) -> BotCommandError {
-    let kind = match error.kind() {
-        botticelli_security::SecurityErrorKind::PermissionDenied { command: _, reason } => {
-            BotCommandErrorKind::PermissionDenied {
-                command: command.to_string(),
-                reason: reason.clone(),
-            }
-        }
-        botticelli_security::SecurityErrorKind::ResourceAccessDenied { resource, reason } => {
-            BotCommandErrorKind::PermissionDenied {
-                command: command.to_string(),
-                reason: format!("Resource '{}': {}", resource, reason),
-            }
-        }
-        botticelli_security::SecurityErrorKind::ValidationFailed { field, reason } => {
-            BotCommandErrorKind::InvalidArgument {
-                command: command.to_string(),
-                arg_name: field.clone(),
-                reason: reason.clone(),
-            }
-        }
-        botticelli_security::SecurityErrorKind::ContentViolation { reason } => {
-            BotCommandErrorKind::ContentFiltered {
-                command: command.to_string(),
-                reason: reason.clone(),
-            }
-        }
-        botticelli_security::SecurityErrorKind::RateLimitExceeded {
-            operation: _,
-            reason: _,
-            limit: _,
-            window_secs,
-        } => BotCommandErrorKind::RateLimitExceeded {
-            command: command.to_string(),
-            retry_after: *window_secs,
-        },
-        _ => BotCommandErrorKind::ApiError {
-            command: command.to_string(),
-            reason: error.to_string(),
-        },
-    };
-
-    BotCommandError::new(kind)
 }
