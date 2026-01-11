@@ -33,6 +33,7 @@ pub trait CommandValidator {
 }
 
 /// Discord-specific command validator.
+#[derive(Debug, Clone)]
 pub struct DiscordValidator;
 
 impl DiscordValidator {

@@ -58,6 +58,16 @@ struct TokenBucket {
     last_refill: Instant,
 }
 
+impl Clone for TokenBucket {
+    fn clone(&self) -> Self {
+        Self {
+            limit: self.limit.clone(),
+            tokens: self.tokens,
+            last_refill: Instant::now(), // Reset to now for cloned instance
+        }
+    }
+}
+
 impl TokenBucket {
     /// Create a new token bucket.
     #[tracing::instrument(skip(limit), fields(max_tokens = limit.max_tokens, burst = limit.burst))]
@@ -115,6 +125,7 @@ impl TokenBucket {
 }
 
 /// Rate limiter for tracking multiple operations.
+#[derive(Debug, Clone)]
 pub struct RateLimiter {
     /// Rate limits by operation name
     limits: HashMap<String, RateLimit>,

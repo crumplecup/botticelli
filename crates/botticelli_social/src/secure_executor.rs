@@ -6,7 +6,7 @@
 
 use crate::{BotCommandError, BotCommandErrorKind, BotCommandRegistryImpl, BotCommandResult};
 use async_trait::async_trait;
-use botticelli_narrative::BotCommandRegistry;
+use botticelli_interface::BotCommandRegistry;
 use botticelli_security::{
     ApprovalWorkflow, CommandValidator, ContentFilter, PermissionChecker, RateLimiter,
     SecureExecutor, SecurityError, SecurityErrorKind,
@@ -24,13 +24,19 @@ use tracing::{debug, error, info, instrument, warn};
 /// 3. Content filtering
 /// 4. Rate limiting
 /// 5. Approval workflow
-#[derive(Getters)]
-pub struct SecureBotCommandExecutor<V: CommandValidator> {
+#[derive(Getters, derive_setters::Setters)]
+#[setters(prefix = "with_")]
+pub struct SecureBotCommandExecutor<V: CommandValidator + Clone> {
+    /// Bot command registry for executing commands.
+    #[setters(doc = "Sets the bot command registry")]
     registry: BotCommandRegistryImpl,
+    
+    /// Security executor for security pipeline.
+    #[setters(doc = "Sets the security executor")]
     security: SecureExecutor<V>,
 }
 
-impl<V: CommandValidator> SecureBotCommandExecutor<V> {
+impl<V: CommandValidator + Clone> SecureBotCommandExecutor<V> {
     /// Create a new secure bot command executor.
     pub fn new(
         registry: BotCommandRegistryImpl,
@@ -104,13 +110,13 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
         }
     }
 
-    /// Get mutable access to the approval workflow for manual approval operations.
-    pub fn approval_workflow(&mut self) -> &mut ApprovalWorkflow {
+    /// Get immutable access to the approval workflow.
+    pub fn approval_workflow(&self) -> &ApprovalWorkflow {
         self.security.approval_workflow()
     }
 
-    /// Get mutable access to the rate limiter for configuration.
-    pub fn rate_limiter(&mut self) -> &mut RateLimiter {
+    /// Get immutable access to the rate limiter.
+    pub fn rate_limiter(&self) -> &RateLimiter {
         self.security.rate_limiter()
     }
 
@@ -210,18 +216,17 @@ pub enum ExecutionResult {
 
 // Implement BotCommandRegistry trait for narrative integration
 #[async_trait]
-impl<V: CommandValidator + Send + Sync> BotCommandRegistry for SecureBotCommandExecutor<V> {
+impl<V: CommandValidator + Clone + Send + Sync> BotCommandRegistry for SecureBotCommandExecutor<V> {
+    type Error = BotCommandError;
+
     async fn execute(
         &self,
         platform: &str,
         command: &str,
         args: &HashMap<String, JsonValue>,
-    ) -> Result<JsonValue, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<JsonValue, Self::Error> {
         // Note: This implementation bypasses security for backward compatibility
         // Use execute_secure() for secured execution
-        self.registry
-            .execute(platform, command, args)
-            .await
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+        self.registry.execute(platform, command, args).await
     }
 }

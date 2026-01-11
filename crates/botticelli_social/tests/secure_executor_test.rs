@@ -298,9 +298,20 @@ async fn test_secure_execution_rate_limit() {
 #[tokio::test]
 async fn test_secure_execution_approval_required() {
     let mut executor = create_test_executor();
-    executor
-        .approval_workflow()
-        .set_requires_approval("mock.messages.send", true);
+    
+    // Clone the security and modify it
+    let modified_security = executor.security().clone()
+        .with_approval_workflow(
+            executor.security()
+                .approval_workflow()
+                .clone()
+                .with_requires_approval(HashMap::from([
+                    ("mock.messages.send".to_string(), true)
+                ]))
+        );
+    
+    // Update executor with modified security
+    executor = executor.with_security(modified_security);
 
     let mut args = HashMap::new();
     args.insert(

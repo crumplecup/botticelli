@@ -17,16 +17,31 @@ use tracing::{debug, info, instrument, warn};
 /// 5. Approval workflow - Check if approval required/granted
 ///
 /// After passing all checks, the command is executed and logged.
-#[derive(derive_getters::Getters)]
-pub struct SecureExecutor<V: CommandValidator> {
+#[derive(Clone, derive_getters::Getters, derive_setters::Setters)]
+#[setters(prefix = "with_")]
+pub struct SecureExecutor<V: CommandValidator + Clone> {
+    /// Permission checker for command and resource permissions.
+    #[setters(doc = "Sets the permission checker")]
     permission_checker: PermissionChecker,
+    
+    /// Command validator for input validation.
+    #[setters(doc = "Sets the command validator")]
     validator: V,
+    
+    /// Content filter for AI-generated content.
+    #[setters(doc = "Sets the content filter")]
     content_filter: ContentFilter,
+    
+    /// Rate limiter for command rate limiting.
+    #[setters(doc = "Sets the rate limiter")]
     rate_limiter: RateLimiter,
+    
+    /// Approval workflow for command approvals.
+    #[setters(doc = "Sets the approval workflow")]
     approval_workflow: ApprovalWorkflow,
 }
 
-impl<V: CommandValidator> SecureExecutor<V> {
+impl<V: CommandValidator + Clone> SecureExecutor<V> {
     /// Create a new secure executor.
     #[tracing::instrument(skip_all)]
     pub fn new(

@@ -106,10 +106,14 @@ impl PendingAction {
 }
 
 /// Approval workflow manager.
+#[derive(Debug, Clone, derive_setters::Setters)]
+#[setters(prefix = "with_")]
 pub struct ApprovalWorkflow {
     /// Pending actions by ID
+    #[setters(doc = "Sets the pending actions")]
     pending: HashMap<String, PendingAction>,
     /// Commands that require approval
+    #[setters(doc = "Sets the commands that require approval")]
     requires_approval: HashMap<String, bool>,
 }
 
