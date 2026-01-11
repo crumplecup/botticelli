@@ -3,14 +3,14 @@
 ## Summary
 
 Audit Date: 2026-01-11
-Status: **In Progress - All P0 Issues Fixed, P1 Remaining**
+Status: **Complete - All P0 and P1 Issues Fixed ✅**
 
 ### Critical Issues Found
 
 1. ~~**BotCommandExecutor trait should be in interface** (P0)~~ ✅ **FIXED**
 2. ~~**Discord commands.rs is 5189 lines** - massive violation (P0)~~ ✅ **FIXED**
 3. ~~**Public fields in database model structs** - should use getters (P1)~~ ✅ **FIXED**
-4. **Error conversion loses source** - map_err throwing away errors (P1) - TODO
+4. ~~**Error conversion loses source** - map_err throwing away errors (P1)~~ ✅ **FIXED**
 5. ~~**Manual Clone impl in TokenBucket resets Instant** - semantic bug (P2)~~ ✅ **FIXED**
 
 ### Metrics
@@ -188,66 +188,45 @@ src/discord/commands/
 
 ---
 
-### 4. Error Conversions Lose Source
+### 4. ~~Error Conversions Lose Source~~ ✅ FIXED
 
-**Location**: 
-- `src/secure_bot_executor.rs:99-102`
-- `src/secure_executor.rs:134-139`
+**Status**: ✅ **FIXED** - Error sources preserved with Arc<dyn Error>
 
-**Problem**: `map_err` creates new error, discarding source error chain.
+**Problem**: `map_err` created new errors, discarding source error chain.
 
-**Current**:
-```rust
-// src/secure_bot_executor.rs:99
-.map_err(|e| {
-    error!("Security check failed: {}", e);
-    security_error_to_bot_error(command, e)  // ❌ Loses source error
-})?;
+**Solution Implemented**:
+1. Added two new BotCommandErrorKind variants:
+   - `SecurityViolation { source: Arc<dyn Error + Send + Sync> }`
+   - `SerializationFailed { source: Arc<dyn Error + Send + Sync> }`
 
-// src/secure_executor.rs:134
-other => serde_json::to_string(other).map_err(|e| {
-    BotCommandError::new(BotCommandErrorKind::SerializationError {
-        command: "convert_args".to_string(),
-        reason: format!("Failed to serialize argument '{}': {}", key, e),
-        // ❌ Error message embedded as string - source lost
-    })
-})?,
-```
+2. Helper methods for conversion with location tracking:
+   - `BotCommandError::from_security_error(error)`
+   - `BotCommandError::from_serialization_error(error)`
 
-**Why This Matters**:
-- Stack traces stop at conversion point
-- Can't access underlying error for debugging
-- Violates error chaining best practices
-- Makes root cause analysis impossible
+3. Updated all map_err calls to use helpers:
+   ```rust
+   // Before: ❌ Lost source error
+   .map_err(|e| BotCommandError::new(BotCommandErrorKind::SerializationError {
+       command: "cmd".to_string(),
+       reason: e.to_string(), // String only!
+   }))?
 
-**Fix Option 1** - Add source field to ErrorKind:
-```rust
-#[derive(Debug, Display)]
-pub enum BotCommandErrorKind {
-    SerializationError {
-        command: String,
-        reason: String,
-        source: Box<dyn std::error::Error + Send + Sync>,  // ✅ Keep source
-    },
-}
-```
+   // After: ✅ Preserves source error  
+   .map_err(BotCommandError::from_serialization_error)?
+   ```
 
-**Fix Option 2** - Use derive_more::From:
-```rust
-use derive_more::From;
+4. Arc allows wrapping non-Clone errors (serde_json::Error, SecurityError)
 
-#[derive(Debug, Display, Error, From)]
-pub enum BotCommandError {
-    Security(SecurityError),           // ✅ Automatic From impl
-    Serialization(serde_json::Error),  // ✅ Automatic From impl
-    Command(BotCommandErrorKind),
-}
+**Benefits**:
+- Full error chain preserved
+- Stack traces complete
+- Original error accessible via source field
+- Location tracking still works (#[track_caller])
+- Zero additional runtime cost
 
-// Then just use ?:
-serde_json::to_string(other)?  // ✅ Auto-converts to BotCommandError
-```
+**Testing**: All tests passing
 
-**Best**: Use Option 2 for automatic error propagation with source preservation.
+**Commit**: 1cd40a6 "fix(error): Preserve error sources with Arc for better debugging"
 
 ---
 
