@@ -10,11 +10,16 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument};
 
-/// Execute: members.list
-///
-/// List members in a guild.
-#[instrument(skip(http, args), fields(guild_id, limit, member_count))]
-pub(super) async fn list(
+/// Helper type for member command operations.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Members;
+
+impl Members {
+    /// Execute: members.list
+    ///
+    /// List members in a guild.
+    #[instrument(skip(http, args), fields(guild_id, limit, member_count))]
+    pub async fn list(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -73,11 +78,11 @@ pub(super) async fn list(
     Ok(serde_json::json!(members_json))
 }
 
-/// Execute: members.get
-///
-/// Get specific member details.
-#[instrument(skip(http, args), fields(guild_id, user_id))]
-pub(super) async fn get(
+    /// Execute: members.get
+    ///
+    /// Get specific member details.
+    #[instrument(skip(http, args), fields(guild_id, user_id))]
+    pub async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -125,11 +130,11 @@ pub(super) async fn get(
     }))
 }
 
-/// Execute: members.edit
-///
-/// Edit member properties.
-#[instrument(skip(http, args), fields(guild_id, user_id))]
-pub(super) async fn edit(
+    /// Execute: members.edit
+    ///
+    /// Edit member properties.
+    #[instrument(skip(http, args), fields(guild_id, user_id))]
+    pub async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -207,11 +212,11 @@ pub(super) async fn edit(
     }))
 }
 
-/// Execute: members.timeout
-///
-/// Apply timeout to a member.
-#[instrument(skip(http, args), fields(guild_id, user_id, duration_seconds))]
-pub(super) async fn timeout(
+    /// Execute: members.timeout
+    ///
+    /// Apply timeout to a member.
+    #[instrument(skip(http, args), fields(guild_id, user_id, duration_seconds))]
+    pub async fn timeout(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -280,11 +285,11 @@ pub(super) async fn timeout(
     }))
 }
 
-/// Execute: members.remove_timeout
-///
-/// Remove timeout from a member.
-#[instrument(skip(http, args), fields(guild_id, user_id))]
-pub(super) async fn remove_timeout(
+    /// Execute: members.remove_timeout
+    ///
+    /// Remove timeout from a member.
+    #[instrument(skip(http, args), fields(guild_id, user_id))]
+    pub async fn remove_timeout(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -320,6 +325,7 @@ pub(super) async fn remove_timeout(
         "user_id": user_id_str,
         "timeout_removed": true,
     }))
+}
 }
 
 // Helper functions

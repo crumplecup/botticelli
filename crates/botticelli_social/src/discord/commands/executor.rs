@@ -1,10 +1,11 @@
 //! Discord command executor implementation.
 
 use super::channels::Channels;
+use super::members::Members;
 use super::messages::Messages;
 use super::roles::Roles;
 use super::threads::Threads;
-use super::{events, forum, members, misc, moderation, reactions, server};
+use super::{events, forum, misc, moderation, reactions, server};
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -101,11 +102,11 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "roles.remove" => Roles::remove(&self.http, args).await?,
 
             // Member commands (non-moderation)
-            "members.list" => members::list(&self.http, args).await?,
-            "members.get" => members::get(&self.http, args).await?,
-            "members.edit" => members::edit(&self.http, args).await?,
-            "members.timeout" => members::timeout(&self.http, args).await?,
-            "members.remove_timeout" => members::remove_timeout(&self.http, args).await?,
+            "members.list" => Members::list(&self.http, args).await?,
+            "members.get" => Members::get(&self.http, args).await?,
+            "members.edit" => Members::edit(&self.http, args).await?,
+            "members.timeout" => Members::timeout(&self.http, args).await?,
+            "members.remove_timeout" => Members::remove_timeout(&self.http, args).await?,
 
             // Channel commands
             "channels.list" => Channels::list(&self.http, args).await?,
