@@ -7,7 +7,7 @@ use crate::{BotticelliHandler, DiscordError, DiscordErrorKind, DiscordRepository
 use diesel::pg::PgConnection;
 use serenity::Client;
 use std::sync::Arc;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Mutex};
 use tracing::{error, info, instrument};
 
 /// Main Discord bot client for Botticelli.
@@ -32,8 +32,8 @@ use tracing::{error, info, instrument};
 /// }
 /// ```
 pub struct BotticelliBot {
-    /// Serenity client instance
-    client: Client,
+    /// Serenity client instance (wrapped for task safety)
+    client: Arc<Mutex<Option<Client>>>,
     /// Database repository for direct database access
     repository: Arc<DiscordRepository>,
     /// Receiver for critical errors from event handlers
@@ -79,7 +79,7 @@ impl BotticelliBot {
         info!("Serenity client built successfully");
 
         Ok(Self {
-            client,
+            client: Arc::new(Mutex::new(Some(client))),
             repository,
             error_rx,
         })
@@ -93,6 +93,12 @@ impl BotticelliBot {
     /// Critical errors (database connection loss, invalid token, etc.) will
     /// cause the bot to shut down gracefully and return the error.
     ///
+    /// # Cancellation Safety
+    ///
+    /// This method spawns the client in a separate task to ensure graceful
+    /// shutdown on critical errors. The error channel monitoring does not
+    /// cause cancellation of the client future.
+    ///
     /// # Errors
     /// Returns an error if:
     /// - The client fails to start
@@ -102,21 +108,36 @@ impl BotticelliBot {
     pub async fn start(&mut self) -> Result<(), DiscordError> {
         info!("Starting Discord bot");
 
-        // Start client in background task
-        let client_future = self.client.start();
+        // Take client from Option for spawned task (cancellation safety)
+        let client_arc = self.client.clone();
+        let mut client = client_arc
+            .lock()
+            .await
+            .take()
+            .expect("Client already started");
 
-        // Monitor both client and error channel
-        tokio::select! {
-            // Client exited (normally or with error)
-            result = client_future => {
+        // Spawn client in separate task to prevent cancellation
+        let shard_manager = client.shard_manager.clone();
+        let client_handle = tokio::spawn(async move { client.start().await });
+
+        // Monitor error channel
+        let error_result = tokio::select! {
+            // Client task completed
+            result = client_handle => {
                 match result {
-                    Ok(()) => {
+                    Ok(Ok(())) => {
                         info!("Discord client shut down normally");
-                        Ok(())
+                        return Ok(());
+                    }
+                    Ok(Err(e)) => {
+                        error!(error = %e, "Discord client failed");
+                        return Err(DiscordError::from_connection_error(e));
                     }
                     Err(e) => {
-                        error!(error = %e, "Discord client failed");
-                        Err(DiscordError::from_connection_error(e))
+                        error!(error = %e, "Client task panicked");
+                        return Err(DiscordError::new(
+                            DiscordErrorKind::ConnectionFailed(format!("Client task panicked: {}", e))
+                        ));
                     }
                 }
             }
@@ -127,14 +148,36 @@ impl BotticelliBot {
                     error = %err,
                     "Critical error in event handler, shutting down bot"
                 );
+                err
+            }
+        };
 
-                // Attempt graceful shutdown
-                info!("Initiating graceful shutdown");
-                self.client.shard_manager.shutdown_all().await;
+        // Graceful shutdown: client task is still running
+        info!("Initiating graceful shutdown");
+        shard_manager.shutdown_all().await;
 
-                Err(err)
+        // Wait for client task to complete shutdown (with timeout)
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            client_handle,
+        )
+        .await
+        {
+            Ok(Ok(Ok(()))) => {
+                info!("Client shutdown completed successfully");
+            }
+            Ok(Ok(Err(e))) => {
+                error!(error = %e, "Client failed during shutdown");
+            }
+            Ok(Err(e)) => {
+                error!(error = %e, "Client task panicked during shutdown");
+            }
+            Err(_) => {
+                error!("Client shutdown timed out after 10 seconds");
             }
         }
+
+        Err(error_result)
     }
 
     /// Get a reference to the repository for direct database access.
@@ -149,15 +192,25 @@ impl BotticelliBot {
     /// This allows bot commands to share the bot's authentication and HTTP client,
     /// coordinating rate limits and reducing connections.
     ///
+    /// # Panics
+    ///
+    /// Panics if called after start() or if client was already taken.
+    ///
     /// # Example
     ///
     /// ```rust,ignore
     /// use botticelli_social::{BotticelliBot, DiscordCommandExecutor};
     ///
     /// let bot = BotticelliBot::new(token, conn).await?;
-    /// let executor = DiscordCommandExecutor::with_http_client(bot.http_client());
+    /// let executor = DiscordCommandExecutor::with_http_client(bot.http_client().await);
     /// ```
-    pub fn http_client(&self) -> Arc<serenity::http::Http> {
-        self.client.http.clone()
+    pub async fn http_client(&self) -> Arc<serenity::http::Http> {
+        self.client
+            .lock()
+            .await
+            .as_ref()
+            .expect("Client not initialized or already started")
+            .http
+            .clone()
     }
 }
