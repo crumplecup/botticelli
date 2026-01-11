@@ -51,7 +51,7 @@ impl BotCommandExecutor for MockExecutor {
     }
 }
 
-fn create_test_executor() -> SecureBotCommandExecutor<DiscordValidator> {
+fn create_test_executor() -> anyhow::Result<SecureBotCommandExecutor<DiscordValidator>> {
     let mut registry = BotCommandRegistryImpl::with_cache(CommandCache::default());
     registry.register(MockExecutor);
 
@@ -67,27 +67,27 @@ fn create_test_executor() -> SecureBotCommandExecutor<DiscordValidator> {
 
     let permission_checker = PermissionChecker::new(perm_config);
     let validator = DiscordValidator::new();
-    let content_filter = ContentFilter::new(ContentFilterConfig::default()).unwrap();
+    let content_filter = ContentFilter::new(ContentFilterConfig::default())?;
     let mut rate_limiter = RateLimiter::new();
     rate_limiter.add_limit("mock.messages.send", RateLimit::strict(10, 60));
     let approval_workflow = ApprovalWorkflow::new();
 
-    SecureBotCommandExecutor::new(
+    Ok(SecureBotCommandExecutor::new(
         registry,
         permission_checker,
         validator,
         content_filter,
         rate_limiter,
         approval_workflow,
-    )
+    ))
 }
 
 #[tokio::test]
-async fn test_secure_execution_success() {
+async fn test_secure_execution_success() -> anyhow::Result<()> {
     helpers::init_test_tracing("debug");
     tracing::info!("Testing secure execution success");
 
-    let mut executor = create_test_executor();
+    let mut executor = create_test_executor()?;
     let mut args = HashMap::new();
     args.insert(
         "channel_id".to_string(),
@@ -106,8 +106,7 @@ async fn test_secure_execution_success() {
 
     let result = executor
         .execute_secure("narrative1", "mock", "messages.send", &args)
-        .await
-        .unwrap();
+        .await?;
 
     match result {
         ExecutionResult::Success(json) => {
@@ -116,14 +115,16 @@ async fn test_secure_execution_success() {
         }
         ExecutionResult::ApprovalRequired(_) => panic!("Should not require approval"),
     }
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_secure_execution_permission_denied() {
+async fn test_secure_execution_permission_denied() -> anyhow::Result<()> {
     helpers::init_test_tracing("debug");
     tracing::info!("Testing permission denied");
 
-    let mut executor = create_test_executor();
+    let mut executor = create_test_executor()?;
     let args = HashMap::new();
 
     tracing::debug!(command = "forbidden.command", "Executing forbidden command");
@@ -139,14 +140,16 @@ async fn test_secure_execution_permission_denied() {
         err.kind(),
         BotCommandErrorKind::PermissionDenied { .. }
     ));
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_secure_execution_validation_failed() {
+async fn test_secure_execution_validation_failed() -> anyhow::Result<()> {
     helpers::init_test_tracing("debug");
     tracing::info!("Testing validation failure");
 
-    let mut executor = create_test_executor();
+    let mut executor = create_test_executor()?;
     let mut args = HashMap::new();
     // Use a valid channel ID for permissions, but content that's too long
     args.insert(
@@ -174,14 +177,16 @@ async fn test_secure_execution_validation_failed() {
         err.kind(),
         BotCommandErrorKind::InvalidArgument { .. }
     ));
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_secure_execution_content_violation() {
+async fn test_secure_execution_content_violation() -> anyhow::Result<()> {
     helpers::init_test_tracing("debug");
     tracing::info!("Testing content violation");
 
-    let mut executor = create_test_executor();
+    let mut executor = create_test_executor()?;
     let mut args = HashMap::new();
     args.insert(
         "channel_id".to_string(),
@@ -208,14 +213,16 @@ async fn test_secure_execution_content_violation() {
         err.kind(),
         BotCommandErrorKind::InvalidArgument { .. }
     ));
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_secure_execution_rate_limit() {
+async fn test_secure_execution_rate_limit() -> anyhow::Result<()> {
     helpers::init_test_tracing("debug");
     tracing::info!("Testing rate limit");
 
-    let mut executor = create_test_executor();
+    let mut executor = create_test_executor()?;
     let mut args = HashMap::new();
     args.insert(
         "channel_id".to_string(),
@@ -232,8 +239,7 @@ async fn test_secure_execution_rate_limit() {
         tracing::trace!(request_num = i + 1, "Executing request");
         executor
             .execute_secure("narrative1", "mock", "messages.send", &args)
-            .await
-            .unwrap();
+            .await?;
     }
 
     tracing::debug!("Attempting 11th request (should fail)");
@@ -249,10 +255,12 @@ async fn test_secure_execution_rate_limit() {
         err.kind(),
         BotCommandErrorKind::RateLimitExceeded { .. }
     ));
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_secure_execution_approval_required() {
+async fn test_secure_execution_approval_required() -> anyhow::Result<()> {
     helpers::init_test_tracing("debug");
     tracing::info!("Testing approval workflow");
 
@@ -272,7 +280,7 @@ async fn test_secure_execution_approval_required() {
 
     let permission_checker = PermissionChecker::new(perm_config);
     let validator = DiscordValidator::new();
-    let content_filter = ContentFilter::new(ContentFilterConfig::default()).unwrap();
+    let content_filter = ContentFilter::new(ContentFilterConfig::default())?;
     let mut rate_limiter = RateLimiter::new();
     rate_limiter.add_limit("mock.messages.send", RateLimit::strict(10, 60));
 
@@ -303,8 +311,7 @@ async fn test_secure_execution_approval_required() {
     tracing::debug!("Executing command requiring approval");
     let result = executor
         .execute_secure("narrative1", "mock", "messages.send", &args)
-        .await
-        .unwrap();
+        .await?;
 
     match result {
         ExecutionResult::ApprovalRequired(action_id) => {
@@ -313,4 +320,6 @@ async fn test_secure_execution_approval_required() {
         }
         ExecutionResult::Success(_) => panic!("Should require approval"),
     }
+
+    Ok(())
 }
