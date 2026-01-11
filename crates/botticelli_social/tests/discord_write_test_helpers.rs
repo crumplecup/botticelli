@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 /// Result type for test operations
-pub type TestResult = Result<(), Box<dyn std::error::Error>>;
+pub type TestResult = anyhow::Result<()>;
 
 /// Helper for running narrative-based write operation tests
 pub struct WriteOperationTest {
@@ -34,16 +34,19 @@ impl WriteOperationTest {
     /// Run the complete test cycle
     pub fn run(&self) -> TestResult {
         // Run setup
+        tracing::debug!("Running setup narrative");
         self.run_narrative(&self.setup_narrative, "Setup")?;
 
         // Run test
+        tracing::debug!("Running test narrative");
         let test_result = self.run_narrative(&self.test_narrative, "Test");
 
         // Run teardown if specified
-        if let Some(teardown) = &self.teardown_narrative
-            && let Err(e) = self.run_narrative(teardown, "Teardown")
-        {
-            eprintln!("Warning: Teardown failed: {}", e);
+        if let Some(teardown) = &self.teardown_narrative {
+            tracing::debug!("Running teardown narrative");
+            if let Err(e) = self.run_narrative(teardown, "Teardown") {
+                tracing::warn!(error = %e, "Teardown failed");
+            }
         }
 
         test_result
@@ -51,14 +54,15 @@ impl WriteOperationTest {
 
     /// Run a single narrative using just command
     fn run_narrative(&self, path: &std::path::Path, stage: &str) -> TestResult {
-        println!("\n=== Running {} narrative: {} ===", stage, path.display());
+        tracing::info!(stage = %stage, path = %path.display(), "Running narrative");
 
         // Extract just the narrative name from the path
         let narrative_name = path
             .file_stem()
             .and_then(|s| s.to_str())
-            .ok_or("Invalid narrative path")?;
+            .ok_or_else(|| anyhow::anyhow!("Invalid narrative path"))?;
 
+        tracing::debug!(name = %narrative_name, "Executing just narrate");
         let output = Command::new("just")
             .arg("narrate")
             .arg(narrative_name)
@@ -67,13 +71,19 @@ impl WriteOperationTest {
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            return Err(format!(
+            tracing::error!(
+                stage = %stage, 
+                stdout = %stdout, 
+                stderr = %stderr, 
+                "Narrative failed"
+            );
+            anyhow::bail!(
                 "{} narrative failed:\nStdout: {}\nStderr: {}",
                 stage, stdout, stderr
-            )
-            .into());
+            );
         }
 
+        tracing::debug!(stage = %stage, "Narrative completed successfully");
         Ok(())
     }
 }
