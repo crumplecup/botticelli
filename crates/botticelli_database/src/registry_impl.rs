@@ -73,11 +73,10 @@ impl RegistryOperations for ActorRow {
     #[tracing::instrument(skip(self))]
     fn to_json(&self) -> BotticelliResult<Value> {
         tracing::debug!(id = %self.id, "Converting ActorRow to JSON");
-        serde_json::to_value(self)
-            .map_err(|e| {
-                tracing::error!(error = %e, "Failed to serialize ActorRow");
-                McpError::new(McpErrorKind::ExecutionError(e.to_string())).into()
-            })
+        serde_json::to_value(self).map_err(|e| {
+            tracing::error!(error = %e, "Failed to serialize ActorRow");
+            McpError::new(McpErrorKind::ExecutionError(e.to_string())).into()
+        })
     }
 
     #[tracing::instrument(skip(self, args), fields(has_name = args.get("name").is_some(), has_description = args.get("description").is_some()))]
@@ -179,11 +178,10 @@ impl RegistryOperations for ContentEntry {
     #[tracing::instrument(skip(self))]
     fn to_json(&self) -> BotticelliResult<Value> {
         tracing::debug!(id = %self.id, "Converting ContentEntry to JSON");
-        serde_json::to_value(self)
-            .map_err(|e| {
-                tracing::error!(error = %e, "Failed to serialize ContentEntry");
-                McpError::new(McpErrorKind::ExecutionError(e.to_string())).into()
-            })
+        serde_json::to_value(self).map_err(|e| {
+            tracing::error!(error = %e, "Failed to serialize ContentEntry");
+            McpError::new(McpErrorKind::ExecutionError(e.to_string())).into()
+        })
     }
 
     #[tracing::instrument(skip(self, args), fields(has_title = args.get("title").is_some(), has_content_type = args.get("content_type").is_some(), has_data = args.get("data").is_some()))]

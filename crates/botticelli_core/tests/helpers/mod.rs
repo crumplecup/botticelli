@@ -27,8 +27,7 @@ pub fn init_test_tracing(fallback_level: &str) {
         // Load .env file if present (for local development)
         let _ = dotenvy::dotenv();
 
-        let log_level = std::env::var("RUST_LOG")
-            .unwrap_or_else(|_| fallback_level.to_string());
+        let log_level = std::env::var("RUST_LOG").unwrap_or_else(|_| fallback_level.to_string());
 
         let _ = ObservabilityConfig::builder()
             .service_name("core-tests")

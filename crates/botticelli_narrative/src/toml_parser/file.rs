@@ -1,8 +1,8 @@
 //! TOML file structure and reference resolution.
 
 use super::{
-    definitions::*, narrative::*, utils::*, TomlAct, TomlNarrativeDefinition,
-    TomlNarrativeReference,
+    TomlAct, TomlNarrativeDefinition, TomlNarrativeReference, definitions::*, narrative::*,
+    utils::*,
 };
 use botticelli_core::{HistoryRetention, Input, MediaSource};
 use botticelli_error::{IoError, NarrativeErrorKind, NarrativeResult};
@@ -93,7 +93,10 @@ impl TomlNarrativeFile {
                 (narrative.as_ref().as_ref(), toc.as_ref(), None)
             }
             TomlNarrativeData::Multi { narrative } => {
-                debug!(narrative_count = narrative.len(), "Processing multi-narrative file");
+                debug!(
+                    narrative_count = narrative.len(),
+                    "Processing multi-narrative file"
+                );
                 (None, None, Some(narrative))
             }
         };
@@ -124,7 +127,11 @@ impl TomlNarrativeFile {
                         input_type: "narrative".to_string(),
                     }
                 })?;
-                debug!(act_count = self.acts.len(), toc_length = toc.order().len(), "Resolved single narrative");
+                debug!(
+                    act_count = self.acts.len(),
+                    toc_length = toc.order().len(),
+                    "Resolved single narrative"
+                );
                 Ok((single.clone(), toc.clone(), self.acts.clone()))
             }
 
@@ -179,7 +186,11 @@ impl TomlNarrativeFile {
 
                 // Convert toc Vec to TomlToc::Array
                 let toc = TomlToc::Array(def.toc().clone());
-                debug!(act_count = acts.len(), toc_length = toc.order().len(), "Narrative entry processed");
+                debug!(
+                    act_count = acts.len(),
+                    toc_length = toc.order().len(),
+                    "Narrative entry processed"
+                );
                 Ok((meta, toc, acts))
             }
             TomlNarrativeEntry::Reference(_) => {
@@ -231,7 +242,10 @@ impl TomlNarrativeFile {
                 error!(category, "Unknown reference category");
                 Err(NarrativeErrorKind::InvalidReferenceFormat {
                     reference: reference.to_string(),
-                    reason: format!("unknown category '{}', must be 'bots', 'tables', 'media', or 'narratives'", category),
+                    reason: format!(
+                        "unknown category '{}', must be 'bots', 'tables', 'media', or 'narratives'",
+                        category
+                    ),
                 }
                 .into())
             }
@@ -411,7 +425,7 @@ impl TomlNarrativeFile {
     #[instrument(skip(self), fields(name))]
     fn resolve_narrative_reference(&self, name: &str) -> NarrativeResult<Input> {
         debug!(%name, "Resolving narrative reference");
-        
+
         // Get the multi-narrative map if it exists
         let multi_map = match &self.narrative_data {
             TomlNarrativeData::Multi { narrative } => narrative,
@@ -424,7 +438,7 @@ impl TomlNarrativeFile {
                 .into());
             }
         };
-        
+
         let narrative_entry = multi_map.get(name).ok_or_else(|| {
             error!(%name, "Narrative not found");
             NarrativeErrorKind::ResourceNotFound {

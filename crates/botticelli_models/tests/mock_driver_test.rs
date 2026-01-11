@@ -117,9 +117,13 @@ impl BotticelliDriver for MockDriver {
 async fn test_mock_driver_basic() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing basic mock driver functionality");
-    
+
     let mock = MockDriver::new("mock_provider", "mock_model");
-    tracing::debug!(provider = "mock_provider", model = "mock_model", "Created mock driver");
+    tracing::debug!(
+        provider = "mock_provider",
+        model = "mock_model",
+        "Created mock driver"
+    );
 
     // Configure response
     let response = GenerateResponse::builder()
@@ -165,7 +169,7 @@ async fn test_mock_driver_basic() -> anyhow::Result<()> {
 async fn test_mock_driver_error() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing mock driver error simulation");
-    
+
     let mock = MockDriver::new("mock_provider", "mock_model");
 
     // Configure error
@@ -185,7 +189,7 @@ async fn test_mock_driver_error() -> anyhow::Result<()> {
     let result = mock.generate(&request).await;
     assert!(result.is_err());
     tracing::debug!("Mock correctly returned error");
-    
+
     let call_count = mock.call_count().await;
     assert_eq!(call_count, 1);
     tracing::debug!(call_count, "Verified call count");
@@ -200,7 +204,7 @@ async fn test_mock_driver_error() -> anyhow::Result<()> {
 async fn test_mock_driver_multiple_calls() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing multiple mock driver calls");
-    
+
     let mock = MockDriver::new("test", "test");
 
     let response = GenerateResponse::builder()

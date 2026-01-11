@@ -4,7 +4,9 @@ use super::core::NarrativeExecutor;
 use super::utils;
 use crate::{ActConfig, CarouselConfig, NarrativeMetadata};
 use botticelli_core::{GenerateRequest, Input, Message, MessageBuilder, Role};
-use botticelli_error::{BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind};
+use botticelli_error::{
+    BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
+};
 use botticelli_interface::{BotticelliDriver, NarrativeProvider};
 use botticelli_rate_limit::TierConfig;
 use std::time::Instant;
@@ -41,10 +43,10 @@ where
     ) -> BotticelliResult<LlmActResult>
     where
         N: NarrativeProvider<
-            Metadata = NarrativeMetadata,
-            ActConfig = ActConfig,
-            CarouselConfig = CarouselConfig,
-        > + ?Sized,
+                Metadata = NarrativeMetadata,
+                ActConfig = ActConfig,
+                CarouselConfig = CarouselConfig,
+            > + ?Sized,
     {
         tracing::debug!(
             processed_inputs_count = processed_inputs.len(),
@@ -110,10 +112,7 @@ where
         }
 
         let request = request_builder.build().map_err(|e| {
-            BotticelliError::from(BackendError::new(format!(
-                "Failed to build request: {}",
-                e
-            )))
+            BotticelliError::from(BackendError::new(format!("Failed to build request: {}", e)))
         })?;
 
         // Call the LLM
@@ -131,9 +130,11 @@ where
         let response = {
             let _enter = llm_span.enter();
             tracing::info!("Calling LLM API");
-            let result = self.driver.generate(&request).await.map_err(|e| {
-                BotticelliError::from(BackendError::new(e.to_string()))
-            })?;
+            let result = self
+                .driver
+                .generate(&request)
+                .await
+                .map_err(|e| BotticelliError::from(BackendError::new(e.to_string())))?;
             let act_duration = act_start.elapsed();
 
             tracing::info!(

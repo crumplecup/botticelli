@@ -8,7 +8,7 @@ use botticelli_narrative::validator::{ValidationErrorKind, Validator};
 fn test_valid_narrative() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing valid narrative TOML");
-    
+
     let toml = r#"
         [narrative]
         name = "test"
@@ -22,15 +22,19 @@ fn test_valid_narrative() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated TOML");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated TOML"
+    );
+
     assert!(
         result.is_valid(),
         "Expected valid narrative, got errors: {:?}",
         result.errors()
     );
     assert!(result.warnings().is_empty());
-    
+
     tracing::info!("Valid narrative test passed");
     Ok(())
 }
@@ -39,7 +43,7 @@ fn test_valid_narrative() -> anyhow::Result<()> {
 fn test_array_of_tables_acts_error() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing array of tables [[acts]] error detection");
-    
+
     let toml = r#"
         [narrative]
         name = "test"
@@ -54,8 +58,12 @@ fn test_array_of_tables_acts_error() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated TOML with [[acts]]");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated TOML with [[acts]]"
+    );
+
     assert!(!result.is_valid());
     // Should have at least one error for [[acts]]
     assert!(!result.errors().is_empty());
@@ -70,7 +78,7 @@ fn test_array_of_tables_acts_error() -> anyhow::Result<()> {
         result.errors()
     );
     assert!(syntax_error.unwrap().suggestion().is_some());
-    
+
     tracing::info!("Array of tables [[acts]] error test passed");
     Ok(())
 }
@@ -79,7 +87,7 @@ fn test_array_of_tables_acts_error() -> anyhow::Result<()> {
 fn test_missing_toc_error() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing missing [toc] section error");
-    
+
     let toml = r#"
         [narrative]
         name = "test"
@@ -90,8 +98,12 @@ fn test_missing_toc_error() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated TOML without [toc]");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated TOML without [toc]"
+    );
+
     assert!(!result.is_valid());
     assert_eq!(result.errors().len(), 1);
     assert!(matches!(
@@ -99,7 +111,7 @@ fn test_missing_toc_error() -> anyhow::Result<()> {
         ValidationErrorKind::MissingSection
     ));
     assert!(result.errors()[0].message().contains("toc"));
-    
+
     tracing::info!("Missing [toc] error test passed");
     Ok(())
 }
@@ -108,7 +120,7 @@ fn test_missing_toc_error() -> anyhow::Result<()> {
 fn test_empty_toc_error() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing empty toc.order error");
-    
+
     let toml = r#"
         [narrative]
         name = "test"
@@ -122,15 +134,19 @@ fn test_empty_toc_error() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated TOML with empty order");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated TOML with empty order"
+    );
+
     assert!(!result.is_valid());
     assert_eq!(result.errors().len(), 1);
     assert!(matches!(
         result.errors()[0].kind(),
         ValidationErrorKind::EmptyToc
     ));
-    
+
     tracing::info!("Empty toc error test passed");
     Ok(())
 }
@@ -139,7 +155,7 @@ fn test_empty_toc_error() -> anyhow::Result<()> {
 fn test_missing_act_error() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing missing act definition error");
-    
+
     let toml = r#"
         [narrative]
         name = "test"
@@ -153,8 +169,12 @@ fn test_missing_act_error() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated TOML with missing act");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated TOML with missing act"
+    );
+
     assert!(!result.is_valid());
     assert_eq!(result.errors().len(), 1);
     assert!(matches!(
@@ -162,7 +182,7 @@ fn test_missing_act_error() -> anyhow::Result<()> {
         ValidationErrorKind::MissingAct
     ));
     assert!(result.errors()[0].message().contains("act2"));
-    
+
     tracing::info!("Missing act error test passed");
     Ok(())
 }
@@ -171,7 +191,7 @@ fn test_missing_act_error() -> anyhow::Result<()> {
 fn test_undefined_bot_reference() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing undefined bot reference error");
-    
+
     let toml = r#"
         [narrative]
         name = "test"
@@ -189,8 +209,12 @@ fn test_undefined_bot_reference() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated TOML with undefined bot");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated TOML with undefined bot"
+    );
+
     assert!(!result.is_valid());
     assert_eq!(result.errors().len(), 1);
     assert!(matches!(
@@ -206,7 +230,7 @@ fn test_undefined_bot_reference() -> anyhow::Result<()> {
             .unwrap()
             .contains("get_stats")
     );
-    
+
     tracing::info!("Undefined bot reference error test passed");
     Ok(())
 }
@@ -215,7 +239,7 @@ fn test_undefined_bot_reference() -> anyhow::Result<()> {
 fn test_valid_bot_reference() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing valid bot reference");
-    
+
     let toml = r#"
         [narrative]
         name = "test"
@@ -233,14 +257,18 @@ fn test_valid_bot_reference() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated TOML with valid bot ref");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated TOML with valid bot ref"
+    );
+
     assert!(
         result.is_valid(),
         "Expected valid narrative, got errors: {:?}",
         result.errors()
     );
-    
+
     tracing::info!("Valid bot reference test passed");
     Ok(())
 }
@@ -249,7 +277,7 @@ fn test_valid_bot_reference() -> anyhow::Result<()> {
 fn test_valid_array_act() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing valid array act with multiple inputs");
-    
+
     let toml = r#"
         [narrative]
         name = "test"
@@ -270,14 +298,18 @@ fn test_valid_array_act() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated TOML with array act");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated TOML with array act"
+    );
+
     assert!(
         result.is_valid(),
         "Expected valid narrative, got errors: {:?}",
         result.errors()
     );
-    
+
     tracing::info!("Valid array act test passed");
     Ok(())
 }
@@ -286,7 +318,7 @@ fn test_valid_array_act() -> anyhow::Result<()> {
 fn test_multi_narrative_valid() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing valid multi-narrative TOML");
-    
+
     let toml = r#"
         [narratives.first]
         description = "First narrative"
@@ -304,14 +336,18 @@ fn test_multi_narrative_valid() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated multi-narrative TOML");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated multi-narrative TOML"
+    );
+
     assert!(
         result.is_valid(),
         "Expected valid narrative, got errors: {:?}",
         result.errors()
     );
-    
+
     tracing::info!("Multi-narrative valid test passed");
     Ok(())
 }
@@ -320,7 +356,7 @@ fn test_multi_narrative_valid() -> anyhow::Result<()> {
 fn test_multi_narrative_empty_toc() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing multi-narrative with empty toc error");
-    
+
     let toml = r#"
         [narratives.first]
         description = "First narrative"
@@ -328,8 +364,12 @@ fn test_multi_narrative_empty_toc() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated multi-narrative with empty toc");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated multi-narrative with empty toc"
+    );
+
     assert!(!result.is_valid());
     assert_eq!(result.errors().len(), 1);
     assert!(matches!(
@@ -337,7 +377,7 @@ fn test_multi_narrative_empty_toc() -> anyhow::Result<()> {
         ValidationErrorKind::EmptyToc
     ));
     assert!(result.errors()[0].message().contains("first"));
-    
+
     tracing::info!("Multi-narrative empty toc error test passed");
     Ok(())
 }
@@ -346,7 +386,7 @@ fn test_multi_narrative_empty_toc() -> anyhow::Result<()> {
 fn test_multi_narrative_missing_act() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing multi-narrative with missing act error");
-    
+
     let toml = r#"
         [narratives.first]
         description = "First narrative"
@@ -357,8 +397,12 @@ fn test_multi_narrative_missing_act() -> anyhow::Result<()> {
     "#;
 
     let result = Validator::validate_toml(toml);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validated multi-narrative with missing act");
-    
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validated multi-narrative with missing act"
+    );
+
     assert!(!result.is_valid());
     assert_eq!(result.errors().len(), 1);
     assert!(matches!(
@@ -367,7 +411,7 @@ fn test_multi_narrative_missing_act() -> anyhow::Result<()> {
     ));
     assert!(result.errors()[0].message().contains("missing_act"));
     assert!(result.errors()[0].message().contains("first"));
-    
+
     tracing::info!("Multi-narrative missing act error test passed");
     Ok(())
 }

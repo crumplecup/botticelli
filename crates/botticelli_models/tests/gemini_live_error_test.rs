@@ -2,7 +2,6 @@
 
 mod helpers;
 
-
 // Error handling tests for Gemini Live API.
 //
 // Tests various error conditions including invalid models, connection issues,
@@ -29,7 +28,7 @@ use std::time::Instant;
 async fn test_live_api_invalid_model() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Live API with invalid model");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -47,7 +46,10 @@ async fn test_live_api_invalid_model() -> anyhow::Result<()> {
         .build()?;
 
     // Should fail gracefully
-    tracing::debug!(model = "models/nonexistent-live-model", "Attempting invalid model");
+    tracing::debug!(
+        model = "models/nonexistent-live-model",
+        "Attempting invalid model"
+    );
     let result = client.generate(&request).await;
 
     // We expect an error since the model doesn't exist
@@ -68,7 +70,7 @@ async fn test_live_api_invalid_model() -> anyhow::Result<()> {
 async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Live API rate limiting");
-    
+
     let _ = dotenvy::dotenv();
 
     // Create client with very low rate limit (2 messages per minute)
@@ -102,7 +104,10 @@ async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
     session2.close().await.ok();
 
     let elapsed_before_third = start.elapsed();
-    tracing::debug!(elapsed_secs = elapsed_before_third.as_secs(), "Time before third message");
+    tracing::debug!(
+        elapsed_secs = elapsed_before_third.as_secs(),
+        "Time before third message"
+    );
     println!("Time before third message: {:?}", elapsed_before_third);
 
     // Third message - should block and wait for window reset
@@ -119,7 +124,10 @@ async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
     session3.close().await.ok();
 
     let total_elapsed = start.elapsed();
-    tracing::debug!(total_secs = total_elapsed.as_secs(), "Total time for 3 messages");
+    tracing::debug!(
+        total_secs = total_elapsed.as_secs(),
+        "Total time for 3 messages"
+    );
     println!("Total time for 3 messages: {:?}", total_elapsed);
 
     // Third message should have been delayed by rate limiting
@@ -139,7 +147,7 @@ async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
 async fn test_live_api_empty_message() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Live API with empty message");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiLiveClient::new()?;
@@ -179,7 +187,7 @@ async fn test_live_api_empty_message() -> anyhow::Result<()> {
 async fn test_live_api_very_long_message() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Live API with very long message");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiLiveClient::new()?;
@@ -217,7 +225,7 @@ async fn test_live_api_very_long_message() -> anyhow::Result<()> {
 async fn test_unified_client_handles_live_model_errors() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing unified client with live model errors");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -241,7 +249,10 @@ async fn test_unified_client_handles_live_model_errors() -> anyhow::Result<()> {
     // May succeed with minimal output or fail - either is acceptable
     match result {
         Ok(response) => {
-            tracing::debug!(output_count = response.outputs().len(), "Zero max_tokens handled");
+            tracing::debug!(
+                output_count = response.outputs().len(),
+                "Zero max_tokens handled"
+            );
             println!("Zero max_tokens handled: {:?}", response.outputs());
         }
         Err(e) => {
@@ -259,7 +270,7 @@ async fn test_unified_client_handles_live_model_errors() -> anyhow::Result<()> {
 async fn test_live_rate_limiter_concurrent_sessions() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing live rate limiter with concurrent sessions");
-    
+
     let _ = dotenvy::dotenv();
 
     // Create shared rate limiter
@@ -272,14 +283,21 @@ async fn test_live_rate_limiter_concurrent_sessions() -> anyhow::Result<()> {
     for i in 1..=5 {
         rate_limiter.acquire().await;
         let elapsed = start.elapsed();
-        tracing::debug!(message_num = i, elapsed_ms = elapsed.as_millis(), "Message sent");
+        tracing::debug!(
+            message_num = i,
+            elapsed_ms = elapsed.as_millis(),
+            "Message sent"
+        );
         println!("Message {} sent at {:?}", i, elapsed);
         rate_limiter.record();
 
         // After 3 messages, should start blocking
         if i == 4 {
             // Should have waited for rate limit
-            tracing::debug!(wait_time_ms = elapsed.as_millis(), "Fourth message required waiting");
+            tracing::debug!(
+                wait_time_ms = elapsed.as_millis(),
+                "Fourth message required waiting"
+            );
             println!("Fourth message required waiting: {:?}", elapsed);
         }
     }
@@ -304,7 +322,7 @@ async fn test_live_rate_limiter_concurrent_sessions() -> anyhow::Result<()> {
 async fn test_streaming_error_recovery() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing streaming error recovery");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;

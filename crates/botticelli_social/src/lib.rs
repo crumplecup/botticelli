@@ -58,8 +58,8 @@ pub use discord::{
     DiscordChannelProcessor, DiscordCommandExecutor, DiscordGuildJson, DiscordGuildMemberJson,
     DiscordGuildMemberProcessor, DiscordGuildProcessor, DiscordMemberRoleJson,
     DiscordMemberRoleProcessor, DiscordRepository, DiscordRoleJson, DiscordRoleProcessor,
-    DiscordUserJson, DiscordUserProcessor, GuildMemberRow, GuildRow, NewChannel,
-    NewChannelBuilder, NewGuild, NewGuildBuilder, NewGuildMember, NewGuildMemberBuilder,
-    NewMemberRole, NewRole, NewRoleBuilder, NewUser, NewUserBuilder, RoleRow, UserRow,
-    parse_channel_type, parse_iso_timestamp,
+    DiscordUserJson, DiscordUserProcessor, GuildMemberRow, GuildRow, NewChannel, NewChannelBuilder,
+    NewGuild, NewGuildBuilder, NewGuildMember, NewGuildMemberBuilder, NewMemberRole, NewRole,
+    NewRoleBuilder, NewUser, NewUserBuilder, RoleRow, UserRow, parse_channel_type,
+    parse_iso_timestamp,
 };

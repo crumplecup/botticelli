@@ -43,40 +43,42 @@ impl ContentRepository for DatabaseContentRepository {
         let schema = schema.clone();
         let pool = self.pool.clone();
 
-        let result = tokio::task::spawn_blocking(move || -> Result<String, botticelli_error::DatabaseError> {
-            let mut conn = pool.get().map_err(|e| {
-                tracing::error!(error = %e, "Failed to get connection from pool");
-                botticelli_error::DatabaseError::new(
-                    botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
-                )
-            })?;
-
-            // Extract fields from schema
-            let template_source = schema
-                .get("template_source")
-                .and_then(|v| v.as_str())
-                .ok_or_else(|| {
-                    tracing::error!("Schema missing template_source field");
+        let result = tokio::task::spawn_blocking(
+            move || -> Result<String, botticelli_error::DatabaseError> {
+                let mut conn = pool.get().map_err(|e| {
+                    tracing::error!(error = %e, "Failed to get connection from pool");
                     botticelli_error::DatabaseError::new(
-                        botticelli_error::DatabaseErrorKind::Query(
-                            "Schema must contain 'template_source' field".to_string(),
-                        ),
+                        botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
                     )
                 })?;
 
-            let narrative_file = schema.get("narrative_file").and_then(|v| v.as_str());
-            let description = schema.get("description").and_then(|v| v.as_str());
+                // Extract fields from schema
+                let template_source = schema
+                    .get("template_source")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| {
+                        tracing::error!("Schema missing template_source field");
+                        botticelli_error::DatabaseError::new(
+                            botticelli_error::DatabaseErrorKind::Query(
+                                "Schema must contain 'template_source' field".to_string(),
+                            ),
+                        )
+                    })?;
 
-            crate::schema_reflection::create_content_table(
-                &mut conn,
-                &table_name_owned,
-                template_source,
-                narrative_file,
-                description,
-            )?;
+                let narrative_file = schema.get("narrative_file").and_then(|v| v.as_str());
+                let description = schema.get("description").and_then(|v| v.as_str());
 
-            Ok(format!("Table '{}' created successfully", table_name_owned))
-        })
+                crate::schema_reflection::create_content_table(
+                    &mut conn,
+                    &table_name_owned,
+                    template_source,
+                    narrative_file,
+                    description,
+                )?;
+
+                Ok(format!("Table '{}' created successfully", table_name_owned))
+            },
+        )
         .await
         .map_err(|e| {
             tracing::error!(error = %e, "Task failed");
@@ -100,15 +102,17 @@ impl ContentRepository for DatabaseContentRepository {
         let content = content.clone();
         let pool = self.pool.clone();
 
-        let id = tokio::task::spawn_blocking(move || -> Result<i32, botticelli_error::BotticelliError> {
-            let mut conn = pool.get().map_err(|e| {
-                tracing::error!(error = %e, "Failed to get connection from pool");
-                botticelli_error::BotticelliError::from(botticelli_error::DatabaseError::new(
-                    botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
-                ))
-            })?;
-            crate::content_management::insert_content(&mut conn, &table_name_owned, &content)
-        })
+        let id = tokio::task::spawn_blocking(
+            move || -> Result<i32, botticelli_error::BotticelliError> {
+                let mut conn = pool.get().map_err(|e| {
+                    tracing::error!(error = %e, "Failed to get connection from pool");
+                    botticelli_error::BotticelliError::from(botticelli_error::DatabaseError::new(
+                        botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
+                    ))
+                })?;
+                crate::content_management::insert_content(&mut conn, &table_name_owned, &content)
+            },
+        )
         .await
         .map_err(|e| {
             tracing::error!(error = %e, "Task failed");
@@ -133,20 +137,22 @@ impl ContentRepository for DatabaseContentRepository {
         let filter = filter.map(|s| s.to_string());
         let pool = self.pool.clone();
 
-        let results = tokio::task::spawn_blocking(move || -> Result<Vec<serde_json::Value>, botticelli_error::BotticelliError> {
-            let mut conn = pool.get().map_err(|e| {
-                tracing::error!(error = %e, "Failed to get connection from pool");
-                botticelli_error::BotticelliError::from(botticelli_error::DatabaseError::new(
-                    botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
-                ))
-            })?;
-            crate::content_management::query_content(
-                &mut conn,
-                &table_name_owned,
-                filter.as_deref(),
-                limit,
-            )
-        })
+        let results = tokio::task::spawn_blocking(
+            move || -> Result<Vec<serde_json::Value>, botticelli_error::BotticelliError> {
+                let mut conn = pool.get().map_err(|e| {
+                    tracing::error!(error = %e, "Failed to get connection from pool");
+                    botticelli_error::BotticelliError::from(botticelli_error::DatabaseError::new(
+                        botticelli_error::DatabaseErrorKind::Connection(e.to_string()),
+                    ))
+                })?;
+                crate::content_management::query_content(
+                    &mut conn,
+                    &table_name_owned,
+                    filter.as_deref(),
+                    limit,
+                )
+            },
+        )
         .await
         .map_err(|e| {
             tracing::error!(error = %e, "Task failed");

@@ -157,7 +157,10 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             }
             Err(e) => {
                 tracing::error!(error = ?e, "Failed to save execution");
-                Err(BotticelliError::from(BackendError::new(format!("Transaction failed: {}", e))))
+                Err(BotticelliError::from(BackendError::new(format!(
+                    "Transaction failed: {}",
+                    e
+                ))))
             }
         }
     }
@@ -225,7 +228,11 @@ impl NarrativeRepository for PostgresNarrativeRepository {
             act_executions.push(act);
         }
 
-        tracing::info!(id, act_count = act_executions.len(), "Loaded narrative execution");
+        tracing::info!(
+            id,
+            act_count = act_executions.len(),
+            "Loaded narrative execution"
+        );
         Ok(rows_to_narrative_execution(
             &execution_row,
             execution_row.narrative_name.clone(),
@@ -593,11 +600,10 @@ impl NarrativeStorageOperations for PostgresNarrativeRepository {
     async fn validate_narrative(&self, toml_content: &str) -> BotticelliResult<Value> {
         tracing::debug!("Validating narrative TOML");
         // For database implementation, validate TOML can be parsed
-        let value = toml::from_str::<Value>(toml_content)
-            .map_err(|e| {
-                tracing::error!(error = ?e, "Invalid TOML");
-                BotticelliError::from(BackendError::new(format!("Invalid TOML: {}", e)))
-            })?;
+        let value = toml::from_str::<Value>(toml_content).map_err(|e| {
+            tracing::error!(error = ?e, "Invalid TOML");
+            BotticelliError::from(BackendError::new(format!("Invalid TOML: {}", e)))
+        })?;
 
         tracing::info!("Validated narrative TOML");
         Ok(value)

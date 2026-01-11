@@ -2,7 +2,6 @@
 
 mod helpers;
 
-
 // Tests for Gemini 2.0 model compatibility.
 //
 // These tests validate that older Gemini 2.0 models work correctly
@@ -21,7 +20,7 @@ use botticelli_models::GeminiClient;
 async fn test_gemini_2_0_flash() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Gemini 2.0 Flash");
-    
+
     let client = GeminiClient::new()?;
 
     let message = Message::builder()
@@ -35,10 +34,14 @@ async fn test_gemini_2_0_flash() -> anyhow::Result<()> {
         .max_tokens(10u32)
         .build()?;
 
-    tracing::debug!(model = "gemini-2.0-flash", max_tokens = 10, "Sending request");
+    tracing::debug!(
+        model = "gemini-2.0-flash",
+        max_tokens = 10,
+        "Sending request"
+    );
     let response = client.generate(&request).await?;
     assert!(!response.outputs().is_empty());
-    
+
     tracing::info!("Gemini 2.0 Flash test passed");
     Ok(())
 }
@@ -49,7 +52,7 @@ async fn test_gemini_2_0_flash() -> anyhow::Result<()> {
 async fn test_gemini_2_0_flash_lite() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Gemini 2.0 Flash Lite");
-    
+
     let client = GeminiClient::new()?;
 
     let message = Message::builder()
@@ -63,10 +66,14 @@ async fn test_gemini_2_0_flash_lite() -> anyhow::Result<()> {
         .max_tokens(10u32)
         .build()?;
 
-    tracing::debug!(model = "gemini-2.0-flash-lite", max_tokens = 10, "Sending request");
+    tracing::debug!(
+        model = "gemini-2.0-flash-lite",
+        max_tokens = 10,
+        "Sending request"
+    );
     let response = client.generate(&request).await?;
     assert!(!response.outputs().is_empty());
-    
+
     tracing::info!("Gemini 2.0 Flash Lite test passed");
     Ok(())
 }
@@ -77,7 +84,7 @@ async fn test_gemini_2_0_flash_lite() -> anyhow::Result<()> {
 async fn test_mixed_2_0_and_2_5_models() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing mixed Gemini 2.0 and 2.5 models");
-    
+
     let client = GeminiClient::new()?;
 
     // Request 1: Use Gemini 2.0 Flash
@@ -127,7 +134,7 @@ async fn test_mixed_2_0_and_2_5_models() -> anyhow::Result<()> {
     tracing::debug!(model = "gemini-2.0-flash-lite", "Request 3");
     let response3 = client.generate(&request3).await?;
     assert!(!response3.outputs().is_empty());
-    
+
     tracing::info!("Mixed 2.0 and 2.5 models test passed");
     Ok(())
 }
@@ -138,7 +145,7 @@ async fn test_mixed_2_0_and_2_5_models() -> anyhow::Result<()> {
 async fn test_explicit_models_prefix() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing explicit models/ prefix");
-    
+
     let client = GeminiClient::new()?;
 
     let message = Message::builder()
@@ -152,10 +159,13 @@ async fn test_explicit_models_prefix() -> anyhow::Result<()> {
         .max_tokens(10u32)
         .build()?;
 
-    tracing::debug!(model = "models/gemini-2.0-flash", "Sending request with explicit prefix");
+    tracing::debug!(
+        model = "models/gemini-2.0-flash",
+        "Sending request with explicit prefix"
+    );
     let response = client.generate(&request).await?;
     assert!(!response.outputs().is_empty());
-    
+
     tracing::info!("Explicit models/ prefix test passed");
     Ok(())
 }

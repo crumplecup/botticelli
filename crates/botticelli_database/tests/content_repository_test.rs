@@ -227,7 +227,10 @@ async fn test_insert_special_characters() -> anyhow::Result<()> {
     let content = json!({
         "text": special_text
     });
-    debug!(text_length = special_text.len(), "Inserting content with special characters");
+    debug!(
+        text_length = special_text.len(),
+        "Inserting content with special characters"
+    );
 
     repo.insert_content(&table_name, &content).await?;
     debug!("Content with special characters inserted");

@@ -144,7 +144,11 @@ async fn test_update_execution_status() -> anyhow::Result<()> {
     debug!(execution_id = id, "Execution saved");
 
     // Update status to failed
-    debug!(execution_id = id, status = "Failed", "Updating execution status");
+    debug!(
+        execution_id = id,
+        status = "Failed",
+        "Updating execution status"
+    );
     repo.update_status(id, ExecutionStatus::Failed).await?;
     debug!("Status updated successfully");
 
@@ -189,7 +193,10 @@ async fn test_delete_execution() -> anyhow::Result<()> {
     debug!("Execution deleted");
 
     // Verify deletion - should fail to load
-    debug!(execution_id = id, "Verifying deletion by attempting to load");
+    debug!(
+        execution_id = id,
+        "Verifying deletion by attempting to load"
+    );
     let result = repo.load_execution(id).await;
     assert!(
         result.is_err(),
@@ -220,7 +227,11 @@ async fn test_list_executions_with_filter() -> anyhow::Result<()> {
     // Save and update status to completed
     debug!("Saving execution");
     let id = repo.save_execution(&execution).await?;
-    debug!(execution_id = id, status = "Completed", "Updating status to completed");
+    debug!(
+        execution_id = id,
+        status = "Completed",
+        "Updating status to completed"
+    );
     repo.update_status(id, ExecutionStatus::Completed).await?;
 
     // Filter by completed status
@@ -233,7 +244,10 @@ async fn test_list_executions_with_filter() -> anyhow::Result<()> {
     let found = summaries.iter().any(|s| s.narrative_name() == &name);
 
     assert!(found, "Expected to find completed execution");
-    debug!(count = summaries.len(), "Found completed execution in filtered list");
+    debug!(
+        count = summaries.len(),
+        "Found completed execution in filtered list"
+    );
 
     // Cleanup
     debug!(execution_id = id, "Cleaning up test execution");

@@ -103,7 +103,10 @@ impl<'a> ContentGenerationRepository for PostgresContentGenerationRepository<'a>
                 DatabaseError::new(DatabaseErrorKind::Query(e.to_string()))
             })?;
 
-        debug!(found = result.is_some(), "Last successful generation query complete");
+        debug!(
+            found = result.is_some(),
+            "Last successful generation query complete"
+        );
         Ok(result)
     }
 

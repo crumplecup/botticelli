@@ -19,51 +19,48 @@ impl Moderation {
     /// Optional arguments: `limit` (default 100, max 1000)
     #[instrument(skip(http, args), fields(guild_id, limit, ban_count))]
     pub async fn list(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    debug!("Parsing guild_id argument");
-    let guild_id = parse_guild_id("bans.list", args)?;
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        debug!("Parsing guild_id argument");
+        let guild_id = parse_guild_id("bans.list", args)?;
 
-    // Parse optional limit parameter
-    let limit = args
-        .get("limit")
-        .and_then(|v| v.as_u64())
-        .map(|l| l.min(1000) as u8);
+        // Parse optional limit parameter
+        let limit = args
+            .get("limit")
+            .and_then(|v| v.as_u64())
+            .map(|l| l.min(1000) as u8);
 
-    tracing::Span::current().record("guild_id", guild_id.get());
-    if let Some(limit) = limit {
-        tracing::Span::current().record("limit", limit);
-    }
-    info!(guild_id = %guild_id, ?limit, "Fetching bans from Discord API");
+        tracing::Span::current().record("guild_id", guild_id.get());
+        if let Some(limit) = limit {
+            tracing::Span::current().record("limit", limit);
+        }
+        info!(guild_id = %guild_id, ?limit, "Fetching bans from Discord API");
 
-    // Fetch bans
-    let bans = http
-        .get_bans(guild_id, None, limit)
-        .await
-        .map_err(|e| {
+        // Fetch bans
+        let bans = http.get_bans(guild_id, None, limit).await.map_err(|e| {
             error!(guild_id = %guild_id, error = %e, "Failed to fetch bans");
             BotCommandError::from_api_error("bans.list", e)
         })?;
 
-    let ban_count = bans.len();
-    tracing::Span::current().record("ban_count", ban_count);
+        let ban_count = bans.len();
+        tracing::Span::current().record("ban_count", ban_count);
 
-    let bans_json: Vec<JsonValue> = bans
-        .into_iter()
-        .map(|ban| {
-            serde_json::json!({
-                "user_id": ban.user.id.to_string(),
-                "username": ban.user.name,
-                "reason": ban.reason,
+        let bans_json: Vec<JsonValue> = bans
+            .into_iter()
+            .map(|ban| {
+                serde_json::json!({
+                    "user_id": ban.user.id.to_string(),
+                    "username": ban.user.name,
+                    "reason": ban.reason,
+                })
             })
-        })
-        .collect();
+            .collect();
 
-    info!(ban_count, "Successfully retrieved bans");
+        info!(ban_count, "Successfully retrieved bans");
 
-    Ok(serde_json::json!(bans_json))
-}
+        Ok(serde_json::json!(bans_json))
+    }
 
     /// Ban a member from the server.
     ///
@@ -72,69 +69,69 @@ impl Moderation {
     /// Optional arguments: `delete_message_days` (0-7, default 0)
     #[instrument(skip(http, args), fields(guild_id, user_id, delete_message_days))]
     pub async fn ban(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    debug!("Parsing arguments for members.ban");
-    let guild_id = parse_guild_id("members.ban", args)?;
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        debug!("Parsing arguments for members.ban");
+        let guild_id = parse_guild_id("members.ban", args)?;
 
-    let user_id_str = args
-        .get("user_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            BotCommandError::new(BotCommandErrorKind::MissingArgument {
+        let user_id_str = args
+            .get("user_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "members.ban".to_string(),
+                    arg_name: "user_id".to_string(),
+                })
+            })?;
+
+        let user_id = user_id_str.parse::<u64>().map_err(|e| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
                 command: "members.ban".to_string(),
                 arg_name: "user_id".to_string(),
+                reason: format!("Invalid user ID format: {}", e),
             })
         })?;
+        let user_id = UserId::new(user_id);
 
-    let user_id = user_id_str.parse::<u64>().map_err(|e| {
-        BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-            command: "members.ban".to_string(),
-            arg_name: "user_id".to_string(),
-            reason: format!("Invalid user ID format: {}", e),
-        })
-    })?;
-    let user_id = UserId::new(user_id);
+        let delete_message_days = args
+            .get("delete_message_days")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(0)
+            .min(7) as u8;
 
-    let delete_message_days = args
-        .get("delete_message_days")
-        .and_then(|v| v.as_u64())
-        .unwrap_or(0)
-        .min(7) as u8;
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("user_id", user_id.get());
+        tracing::Span::current().record("delete_message_days", delete_message_days);
 
-    tracing::Span::current().record("guild_id", guild_id.get());
-    tracing::Span::current().record("user_id", user_id.get());
-    tracing::Span::current().record("delete_message_days", delete_message_days);
+        warn!(
+            guild_id = %guild_id,
+            user_id = %user_id,
+            delete_message_days,
+            "Banning member from Discord guild"
+        );
 
-    warn!(
-        guild_id = %guild_id,
-        user_id = %user_id,
-        delete_message_days,
-        "Banning member from Discord guild"
-    );
+        // Ban the member
+        guild_id
+            .ban(http, user_id, delete_message_days)
+            .await
+            .map_err(|e| {
+                error!(
+                    guild_id = %guild_id,
+                    user_id = %user_id,
+                    error = %e,
+                    "Failed to ban member"
+                );
+                BotCommandError::from_api_error("members.ban", e)
+            })?;
 
-    // Ban the member
-    guild_id
-        .ban(http, user_id, delete_message_days)
-        .await
-        .map_err(|e| {
-            error!(
-                guild_id = %guild_id,
-                user_id = %user_id,
-                error = %e,
-                "Failed to ban member"
-            );
-            BotCommandError::from_api_error("members.ban", e)
-        })?;
+        info!(user_id = %user_id, "Successfully banned member");
 
-    info!(user_id = %user_id, "Successfully banned member");
-
-    Ok(serde_json::json!({
-        "user_id": user_id.to_string(),
-        "banned": true,
-    }))
-}
+        Ok(serde_json::json!({
+            "user_id": user_id.to_string(),
+            "banned": true,
+        }))
+    }
 
     /// Unban a member from the server.
     ///
@@ -142,48 +139,47 @@ impl Moderation {
     /// Required arguments: `guild_id`, `user_id`
     #[instrument(skip(http, args), fields(guild_id, user_id))]
     pub async fn unban(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let guild_id = parse_guild_id("members.unban", args)?;
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        let guild_id = parse_guild_id("members.unban", args)?;
 
-    let user_id_str = args
-        .get("user_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| {
-            BotCommandError::new(BotCommandErrorKind::MissingArgument {
+        let user_id_str = args
+            .get("user_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::MissingArgument {
+                    command: "members.unban".to_string(),
+                    arg_name: "user_id".to_string(),
+                })
+            })?;
+        let user_id: u64 = user_id_str.parse().map_err(|_| {
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
                 command: "members.unban".to_string(),
                 arg_name: "user_id".to_string(),
+                reason: "Invalid Discord ID format".to_string(),
             })
         })?;
-    let user_id: u64 = user_id_str.parse().map_err(|_| {
-        BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-            command: "members.unban".to_string(),
-            arg_name: "user_id".to_string(),
-            reason: "Invalid Discord ID format".to_string(),
-        })
-    })?;
 
-    tracing::Span::current().record("guild_id", guild_id.get());
-    tracing::Span::current().record("user_id", user_id);
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("user_id", user_id);
 
-    info!(guild_id = %guild_id, user_id, "Unbanning member via Discord API");
+        info!(guild_id = %guild_id, user_id, "Unbanning member via Discord API");
 
-    http
-        .remove_ban(guild_id, UserId::new(user_id), None)
-        .await
-        .map_err(|e| {
-            error!(guild_id = %guild_id, user_id, error = %e, "Failed to unban member");
-            BotCommandError::from_api_error("members.unban", e)
-        })?;
+        http.remove_ban(guild_id, UserId::new(user_id), None)
+            .await
+            .map_err(|e| {
+                error!(guild_id = %guild_id, user_id, error = %e, "Failed to unban member");
+                BotCommandError::from_api_error("members.unban", e)
+            })?;
 
-    info!("Successfully unbanned member");
-    Ok(serde_json::json!({
-        "unbanned": true,
-        "guild_id": guild_id.to_string(),
-        "user_id": user_id.to_string(),
-    }))
-}
+        info!("Successfully unbanned member");
+        Ok(serde_json::json!({
+            "unbanned": true,
+            "guild_id": guild_id.to_string(),
+            "user_id": user_id.to_string(),
+        }))
+    }
 
     /// Kick a member from the server.
     ///
@@ -192,57 +188,56 @@ impl Moderation {
     /// Optional arguments: `reason`
     #[instrument(skip(http, args), fields(guild_id, user_id))]
     pub async fn kick(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let guild_id = parse_guild_id("members.kick", args)?;
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        let guild_id = parse_guild_id("members.kick", args)?;
 
-    let user_id_value = args.get("user_id").ok_or_else(|| {
-        BotCommandError::new(BotCommandErrorKind::MissingArgument {
-            command: "members.kick".to_string(),
-            arg_name: "user_id".to_string(),
-        })
-    })?;
-
-    let user_id: u64 = user_id_value
-        .as_str()
-        .ok_or_else(|| {
-            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+        let user_id_value = args.get("user_id").ok_or_else(|| {
+            BotCommandError::new(BotCommandErrorKind::MissingArgument {
                 command: "members.kick".to_string(),
                 arg_name: "user_id".to_string(),
-                reason: "Must be a string".to_string(),
-            })
-        })?
-        .parse()
-        .map_err(|_| {
-            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-                command: "members.kick".to_string(),
-                arg_name: "user_id".to_string(),
-                reason: "Invalid Discord ID format".to_string(),
             })
         })?;
 
-    let reason = args.get("reason").and_then(|v| v.as_str());
+        let user_id: u64 = user_id_value
+            .as_str()
+            .ok_or_else(|| {
+                BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                    command: "members.kick".to_string(),
+                    arg_name: "user_id".to_string(),
+                    reason: "Must be a string".to_string(),
+                })
+            })?
+            .parse()
+            .map_err(|_| {
+                BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                    command: "members.kick".to_string(),
+                    arg_name: "user_id".to_string(),
+                    reason: "Invalid Discord ID format".to_string(),
+                })
+            })?;
 
-    tracing::Span::current().record("guild_id", guild_id.get());
-    tracing::Span::current().record("user_id", user_id);
-    info!(guild_id = %guild_id, user_id, ?reason, "Kicking member via Discord API");
+        let reason = args.get("reason").and_then(|v| v.as_str());
 
-    http
-        .kick_member(guild_id, user_id.into(), reason)
-        .await
-        .map_err(|e| {
-            error!(guild_id = %guild_id, user_id, error = %e, "Failed to kick member");
-            BotCommandError::from_api_error("members.kick", e)
-        })?;
+        tracing::Span::current().record("guild_id", guild_id.get());
+        tracing::Span::current().record("user_id", user_id);
+        info!(guild_id = %guild_id, user_id, ?reason, "Kicking member via Discord API");
 
-    info!("Successfully kicked member");
-    Ok(serde_json::json!({
-        "kicked": true,
-        "guild_id": guild_id.to_string(),
-        "user_id": user_id.to_string(),
-    }))
-}
+        http.kick_member(guild_id, user_id.into(), reason)
+            .await
+            .map_err(|e| {
+                error!(guild_id = %guild_id, user_id, error = %e, "Failed to kick member");
+                BotCommandError::from_api_error("members.kick", e)
+            })?;
+
+        info!("Successfully kicked member");
+        Ok(serde_json::json!({
+            "kicked": true,
+            "guild_id": guild_id.to_string(),
+            "user_id": user_id.to_string(),
+        }))
+    }
 }
 
 /// Parse guild_id from command arguments.

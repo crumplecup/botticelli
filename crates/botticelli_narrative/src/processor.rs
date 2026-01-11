@@ -50,7 +50,6 @@ impl<'a> ProcessorContext<'a> {
     }
 }
 
-
 /// Registry of act processors with smart routing.
 ///
 /// The registry manages multiple processors and routes act executions
@@ -81,10 +80,18 @@ struct ProcessorAdapter<P> {
 #[async_trait::async_trait]
 impl<'ctx, P> ProcessorTrait<ProcessorContext<'ctx>> for ProcessorAdapter<P>
 where
-    P: for<'a> ActProcessor<ProcessorContext<'a>, Error = botticelli_error::BotticelliError> + Send + Sync,
+    P: for<'a> ActProcessor<ProcessorContext<'a>, Error = botticelli_error::BotticelliError>
+        + Send
+        + Sync,
 {
-    async fn process(&self, context: &ProcessorContext<'ctx>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        self.processor.process(context).await.map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+    async fn process(
+        &self,
+        context: &ProcessorContext<'ctx>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        self.processor
+            .process(context)
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
     }
 
     fn should_process(&self, context: &ProcessorContext<'ctx>) -> bool {
@@ -116,9 +123,13 @@ impl ProcessorRegistry {
     /// match an act, all matching processors will be called.
     pub fn register<P>(&mut self, processor: P)
     where
-        P: for<'a> ActProcessor<ProcessorContext<'a>, Error = botticelli_error::BotticelliError> + Send + Sync + 'static,
+        P: for<'a> ActProcessor<ProcessorContext<'a>, Error = botticelli_error::BotticelliError>
+            + Send
+            + Sync
+            + 'static,
     {
-        self.processors.push(Box::new(ProcessorAdapter { processor }));
+        self.processors
+            .push(Box::new(ProcessorAdapter { processor }));
     }
 
     /// Process an act execution with all matching processors.
@@ -162,10 +173,7 @@ impl ProcessorRegistry {
                     );
                     errors.push(format!("{}: {}", processor.name(), e));
                 } else {
-                    tracing::debug!(
-                        processor = processor.name(),
-                        "Processor succeeded"
-                    );
+                    tracing::debug!(processor = processor.name(), "Processor succeeded");
                 }
             }
         }

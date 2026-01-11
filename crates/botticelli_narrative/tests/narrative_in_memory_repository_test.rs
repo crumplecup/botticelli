@@ -10,7 +10,7 @@ use botticelli_narrative::InMemoryNarrativeRepository;
 async fn test_save_and_list() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing save and list executions in memory");
-    
+
     let repo = InMemoryNarrativeRepository::new();
     tracing::debug!("Created in-memory repository");
 
@@ -25,9 +25,9 @@ async fn test_save_and_list() -> anyhow::Result<()> {
 
     let results = repo.list_executions(&filter).await?;
     tracing::debug!(result_count = results.len(), "Listed executions");
-    
+
     assert_eq!(results.len(), 1);
-    
+
     tracing::info!("Save and list executions test passed");
     Ok(())
 }

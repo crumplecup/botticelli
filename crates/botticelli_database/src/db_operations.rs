@@ -136,7 +136,11 @@ impl DatabaseRegistryOperations for DbOperationsImpl {
             }).collect::<Vec<_>>()
         });
 
-        tracing::info!(table, column_count = schema.columns.len(), "Retrieved schema");
+        tracing::info!(
+            table,
+            column_count = schema.columns.len(),
+            "Retrieved schema"
+        );
         Ok(schema_json)
     }
 
@@ -158,7 +162,8 @@ impl DatabaseRegistryOperations for DbOperationsImpl {
         tracing::debug!(table_name, status_filter, limit, "Querying content");
         let rows = crate::list_content(&mut conn, table_name, status_filter, limit as usize)?;
 
-        let results = rows.into_iter()
+        let results = rows
+            .into_iter()
             .map(|row| {
                 serde_json::to_value(&row).map_err(|e| {
                     tracing::error!(error = %e, "Failed to serialize row");

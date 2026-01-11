@@ -184,7 +184,10 @@ impl MultiNarrative {
             narratives.insert(name.clone(), narrative);
         }
 
-        debug!(loaded_count = narratives.len(), "All narratives loaded with database support");
+        debug!(
+            loaded_count = narratives.len(),
+            "All narratives loaded with database support"
+        );
 
         // Verify the requested narrative exists
         if !narratives.contains_key(narrative_name) {
@@ -244,7 +247,8 @@ impl NarrativeProvider for MultiNarrative {
 
     #[instrument(skip(self), fields(act_name))]
     fn get_act_config(&self, act_name: &str) -> Option<Self::ActConfig> {
-        let result = self.narratives
+        let result = self
+            .narratives
             .get(&self.active_narrative)
             .and_then(|n| n.get_act_config(act_name));
         debug!(found = result.is_some(), "Act config lookup");
@@ -266,18 +270,23 @@ impl NarrativeProvider for MultiNarrative {
     }
 
     #[instrument(skip(self), fields(narrative_name))]
-    fn resolve_narrative(&self, narrative_name: &str) -> Option<&dyn NarrativeProvider<
-        Metadata = Self::Metadata,
-        ActConfig = Self::ActConfig,
-        CarouselConfig = Self::CarouselConfig,
-    >> {
-        let result = self.narratives
-            .get(narrative_name)
-            .map(|n| n as &dyn NarrativeProvider<
+    fn resolve_narrative(
+        &self,
+        narrative_name: &str,
+    ) -> Option<
+        &dyn NarrativeProvider<
+            Metadata = Self::Metadata,
+            ActConfig = Self::ActConfig,
+            CarouselConfig = Self::CarouselConfig,
+        >,
+    > {
+        let result = self.narratives.get(narrative_name).map(|n| {
+            n as &dyn NarrativeProvider<
                 Metadata = NarrativeMetadata,
                 ActConfig = ActConfig,
                 CarouselConfig = CarouselConfig,
-            >);
+            >
+        });
         debug!(found = result.is_some(), "Narrative resolution");
         result
     }

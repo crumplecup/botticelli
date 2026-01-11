@@ -27,16 +27,19 @@ where
     ) -> BotticelliResult<()>
     where
         N: NarrativeProvider<
-            Metadata = NarrativeMetadata,
-            ActConfig = ActConfig,
-            CarouselConfig = CarouselConfig,
-        > + ?Sized,
+                Metadata = NarrativeMetadata,
+                ActConfig = ActConfig,
+                CarouselConfig = CarouselConfig,
+            > + ?Sized,
     {
         let Some(registry) = &self.processor_registry else {
             return Ok(());
         };
 
-        tracing::info!(processors = registry.len(), "Processing act with registered processors");
+        tracing::info!(
+            processors = registry.len(),
+            "Processing act with registered processors"
+        );
 
         // Determine if this is the last act in the narrative
         let is_last_act = sequence_number == narrative.act_names().len() - 1;
@@ -125,10 +128,7 @@ where
     #[instrument(skip(act_executions), fields(act_count = act_executions.len()))]
     pub(super) fn calculate_total_metrics(
         act_executions: &[ActExecution],
-    ) -> (
-        Option<botticelli_core::TokenUsageData>,
-        Option<u64>,
-    ) {
+    ) -> (Option<botticelli_core::TokenUsageData>, Option<u64>) {
         let total_token_usage = act_executions
             .iter()
             .filter_map(|act| act.token_usage().as_ref())

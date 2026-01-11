@@ -34,7 +34,11 @@ async fn test_content_repository_query() -> anyhow::Result<()> {
     let repo = DatabaseContentRepository::new(pool);
 
     // Test querying with limit
-    debug!(table = "generated_images", limit = 5, "Querying content table");
+    debug!(
+        table = "generated_images",
+        limit = 5,
+        "Querying content table"
+    );
     let result = repo.query_content("generated_images", None, Some(5)).await;
 
     match result {

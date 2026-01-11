@@ -3,7 +3,9 @@
 use super::core::NarrativeExecutor;
 use crate::{ActConfig, MultiNarrative};
 use botticelli_core::{ActExecution, ActExecutionBuilder, Input, Message, MessageBuilder, Role};
-use botticelli_error::{BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind};
+use botticelli_error::{
+    BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
+};
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::TierConfig;
 use tracing::instrument;

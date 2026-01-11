@@ -158,7 +158,10 @@ async fn test_secure_execution_validation_failed() {
         JsonValue::String("x".repeat(2001)), // Exceeds 2000 char limit
     );
 
-    tracing::debug!(content_length = 2001, "Executing with invalid content length");
+    tracing::debug!(
+        content_length = 2001,
+        "Executing with invalid content length"
+    );
 
     let result = executor
         .execute_secure("narrative1", "mock", "messages.send", &args)
@@ -189,7 +192,10 @@ async fn test_secure_execution_content_violation() {
         JsonValue::String("@everyone spam".to_string()),
     );
 
-    tracing::debug!(content = "@everyone spam", "Executing with forbidden content");
+    tracing::debug!(
+        content = "@everyone spam",
+        "Executing with forbidden content"
+    );
 
     let result = executor
         .execute_secure("narrative1", "mock", "messages.send", &args)
@@ -269,7 +275,7 @@ async fn test_secure_execution_approval_required() {
     let content_filter = ContentFilter::new(ContentFilterConfig::default()).unwrap();
     let mut rate_limiter = RateLimiter::new();
     rate_limiter.add_limit("mock.messages.send", RateLimit::strict(10, 60));
-    
+
     // Configure approval workflow to require approval for messages.send
     let mut approval_workflow = ApprovalWorkflow::new();
     approval_workflow.set_requires_approval("mock.messages.send", true);

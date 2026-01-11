@@ -411,7 +411,8 @@ pub(super) fn resolve_template(
                 )))
             })?;
 
-        let replacement = resolve_reference(reference, act_executions, current_index, state_manager)?;
+        let replacement =
+            resolve_reference(reference, act_executions, current_index, state_manager)?;
         result = result.replace(placeholder, &replacement);
     }
 

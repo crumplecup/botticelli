@@ -2,7 +2,6 @@
 
 mod helpers;
 
-
 // Tests for the Gemini client implementation.
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
@@ -24,11 +23,11 @@ fn test_gemini_error_display() {
     let error = GeminiError::new(GeminiErrorKind::MissingApiKey);
     let display = format!("{}", error);
     tracing::debug!(error_display = %error, "Created error with display formatting");
-    
+
     assert!(display.contains("GEMINI_API_KEY environment variable not set"));
     assert!(display.contains("Gemini Error:"));
     assert!(display.contains("at line"));
-    
+
     tracing::info!("Gemini error display test passed");
 }
 
@@ -60,12 +59,15 @@ fn test_gemini_error_kind_display() {
         ),
     ];
 
-    tracing::debug!(case_count = cases.len(), "Testing error kind display formats");
+    tracing::debug!(
+        case_count = cases.len(),
+        "Testing error kind display formats"
+    );
     for (kind, expected) in cases {
         let display = format!("{}", kind);
         assert_eq!(display, expected, "Error kind display mismatch");
     }
-    
+
     tracing::info!("Gemini error kind display test passed");
 }
 
@@ -75,14 +77,18 @@ fn test_gemini_error_source_location_tracking() {
     tracing::info!("Testing Gemini error source location tracking");
 
     let error = GeminiError::new(GeminiErrorKind::MissingApiKey);
-    tracing::debug!(line = error.line, file = error.file, "Captured error location");
-    
+    tracing::debug!(
+        line = error.line,
+        file = error.file,
+        "Captured error location"
+    );
+
     assert!(error.line > 0, "Error should capture line number");
     assert!(
         error.file.contains("gemini.rs"),
         "Error should capture file name"
     );
-    
+
     tracing::info!("Gemini error source location tracking test passed");
 }
 
@@ -112,7 +118,7 @@ fn test_simple_text_request_structure() -> anyhow::Result<()> {
         temperature = ?request.temperature(),
         "Created request"
     );
-    
+
     assert_eq!(request.messages().len(), 1);
     assert_eq!(*request.max_tokens(), Some(100));
     assert_eq!(*request.temperature(), Some(0.7));
@@ -142,8 +148,11 @@ fn test_multi_message_request_structure() -> anyhow::Result<()> {
         .messages(vec![message1, message2])
         .build()?;
 
-    tracing::debug!(message_count = request.messages().len(), "Created multi-message request");
-    
+    tracing::debug!(
+        message_count = request.messages().len(),
+        "Created multi-message request"
+    );
+
     assert_eq!(request.messages().len(), 2);
     assert_eq!(request.messages()[0].role(), &Role::System);
     assert_eq!(request.messages()[1].role(), &Role::User);
@@ -163,15 +172,15 @@ fn test_gemini_error_to_botticelli_error_conversion() {
 
     let gemini_error = GeminiError::new(GeminiErrorKind::MissingApiKey);
     tracing::debug!("Created GeminiError, converting to BotticelliError");
-    
+
     let botticelli_error: BotticelliError = gemini_error.into();
 
     let display = format!("{}", botticelli_error);
     tracing::debug!(converted_error = %botticelli_error, "Converted error");
-    
+
     assert!(display.contains("Botticelli Error:"));
     assert!(display.contains("Gemini Error:"));
-    
+
     tracing::info!("Gemini error to Botticelli error conversion test passed");
 }
 
@@ -185,11 +194,11 @@ fn test_error_kind_comparison() {
     let error2 = GeminiError::new(GeminiErrorKind::MissingApiKey);
 
     tracing::debug!("Created two errors with same kind");
-    
+
     // Both should have same kind
     assert!(format!("{}", error1.kind).contains("GEMINI_API_KEY"));
     assert!(format!("{}", error2.kind).contains("GEMINI_API_KEY"));
-    
+
     tracing::info!("Error kind comparison test passed");
 }
 
@@ -208,9 +217,13 @@ fn test_error_kind_comparison() {
 fn test_real_api_call() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing real API call with Gemini");
-    
+
     let client = GeminiClient::new()?;
-    tracing::debug!(provider = client.provider_name(), model = client.model_name(), "Created GeminiClient");
+    tracing::debug!(
+        provider = client.provider_name(),
+        model = client.model_name(),
+        "Created GeminiClient"
+    );
 
     let message = Message::builder()
         .role(Role::User)
@@ -223,7 +236,11 @@ fn test_real_api_call() -> anyhow::Result<()> {
         .temperature(0.0)
         .build()?;
 
-    tracing::debug!(max_tokens = 10, temperature = 0.0, "Sending generation request");
+    tracing::debug!(
+        max_tokens = 10,
+        temperature = 0.0,
+        "Sending generation request"
+    );
     let rt = tokio::runtime::Runtime::new()?;
     let response = rt.block_on(async { client.generate(&request).await })?;
 
@@ -246,11 +263,15 @@ fn test_real_api_call() -> anyhow::Result<()> {
 fn test_client_creation() -> Result<(), botticelli_error::BotticelliError> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Gemini client creation");
-    
+
     dotenvy::dotenv().ok();
 
     let client = GeminiClient::new()?;
-    tracing::debug!(provider = client.provider_name(), model = client.model_name(), "Created GeminiClient");
+    tracing::debug!(
+        provider = client.provider_name(),
+        model = client.model_name(),
+        "Created GeminiClient"
+    );
 
     assert_eq!(client.provider_name(), "gemini");
     assert_eq!(client.model_name(), "gemini-2.5-flash");
@@ -263,7 +284,10 @@ fn test_client_creation() -> Result<(), botticelli_error::BotticelliError> {
 
     // Test vision trait
     assert_eq!(client.max_images_per_request(), 16);
-    tracing::debug!(max_images = client.max_images_per_request(), "Verified vision trait");
+    tracing::debug!(
+        max_images = client.max_images_per_request(),
+        "Verified vision trait"
+    );
 
     tracing::info!("Client creation test passed");
     Ok(())

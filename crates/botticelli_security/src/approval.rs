@@ -296,7 +296,11 @@ impl ApprovalWorkflow {
         self.pending.retain(|_, action| !action.is_expired());
         let removed = before - self.pending.len();
         if removed > 0 {
-            tracing::info!(removed, remaining = self.pending.len(), "Cleaned up expired actions");
+            tracing::info!(
+                removed,
+                remaining = self.pending.len(),
+                "Cleaned up expired actions"
+            );
         }
         removed
     }

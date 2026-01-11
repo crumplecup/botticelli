@@ -13,11 +13,14 @@ use botticelli_models::HuggingFaceDriver;
 async fn test_huggingface_basic_generation() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing HuggingFace basic generation");
-    
+
     dotenvy::dotenv().ok();
 
     let driver = HuggingFaceDriver::new("meta-llama/Llama-3.2-1B-Instruct".to_string())?;
-    tracing::debug!(model = "meta-llama/Llama-3.2-1B-Instruct", "Created HuggingFaceDriver");
+    tracing::debug!(
+        model = "meta-llama/Llama-3.2-1B-Instruct",
+        "Created HuggingFaceDriver"
+    );
 
     let message = Message::builder()
         .role(Role::User)
@@ -49,7 +52,7 @@ async fn test_huggingface_basic_generation() -> anyhow::Result<()> {
 async fn test_huggingface_small_models() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing HuggingFace small models");
-    
+
     dotenvy::dotenv().ok();
 
     let models = vec![
@@ -78,7 +81,11 @@ async fn test_huggingface_small_models() -> anyhow::Result<()> {
             Ok(response) => {
                 println!("  ✓ {} works", model);
                 assert!(!response.outputs().is_empty());
-                tracing::debug!(model, output_count = response.outputs().len(), "Model test succeeded");
+                tracing::debug!(
+                    model,
+                    output_count = response.outputs().len(),
+                    "Model test succeeded"
+                );
             }
             Err(e) => {
                 println!("  ✗ {} failed: {}", model, e);

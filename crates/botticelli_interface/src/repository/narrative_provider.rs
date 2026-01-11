@@ -50,11 +50,16 @@ pub trait NarrativeProvider: Send + Sync {
     /// # Returns
     ///
     /// Returns the referenced narrative if it exists, `None` otherwise.
-    fn resolve_narrative(&self, _narrative_name: &str) -> Option<&dyn NarrativeProvider<
-        Metadata = Self::Metadata,
-        ActConfig = Self::ActConfig,
-        CarouselConfig = Self::CarouselConfig,
-    >> {
+    fn resolve_narrative(
+        &self,
+        _narrative_name: &str,
+    ) -> Option<
+        &dyn NarrativeProvider<
+            Metadata = Self::Metadata,
+            ActConfig = Self::ActConfig,
+            CarouselConfig = Self::CarouselConfig,
+        >,
+    > {
         None // Default implementation for single narratives
     }
 

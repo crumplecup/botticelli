@@ -145,95 +145,101 @@ impl Validator {
         config: &ValidationConfig,
         result: &mut ValidationResult,
     ) {
-    let table = match parsed.as_table() {
-        Some(t) => t,
-        None => {
-            tracing::error!("TOML root is not a table");
+        let table = match parsed.as_table() {
+            Some(t) => t,
+            None => {
+                tracing::error!("TOML root is not a table");
+                result.add_error(ValidationError::new(
+                    ValidationErrorKind::InvalidSyntax,
+                    None,
+                    "TOML root must be a table".to_string(),
+                    None,
+                ));
+                return;
+            }
+        };
+
+        // Check for [narrative] section
+        let has_narrative = table.contains_key("narrative");
+        let has_narratives = table.contains_key("narratives");
+
+        tracing::Span::current().record("has_narrative", has_narrative);
+        tracing::Span::current().record("has_narratives", has_narratives);
+        tracing::debug!(has_narrative, has_narratives, "Detected narrative sections");
+
+        if !has_narrative && !has_narratives {
+            tracing::error!("No narrative section found");
             result.add_error(ValidationError::new(
-                ValidationErrorKind::InvalidSyntax,
-                None,
-                "TOML root must be a table".to_string(),
-                None,
-            ));
-            return;
-        }
-    };
-
-    // Check for [narrative] section
-    let has_narrative = table.contains_key("narrative");
-    let has_narratives = table.contains_key("narratives");
-    
-    tracing::Span::current().record("has_narrative", has_narrative);
-    tracing::Span::current().record("has_narratives", has_narratives);
-    tracing::debug!(has_narrative, has_narratives, "Detected narrative sections");
-
-    if !has_narrative && !has_narratives {
-        tracing::error!("No narrative section found");
-        result.add_error(ValidationError::new(
             ValidationErrorKind::MissingSection,
             None,
             "Missing [narrative] or [narratives] section".to_string(),
             Some("Add a [narrative] section:\n\n[narrative]\nname = \"my_narrative\"\ndescription = \"...\"".to_string()),
         ));
-        return;
-    }
-
-    // Validate model names if enabled
-    if *config.warn_unknown_models() {
-        if has_narrative && let Some(narrative) = table.get("narrative").and_then(|v| v.as_table())
-        {
-            ModelValidator::validate_name(narrative, "narrative", result);
+            return;
         }
-        if has_narratives
-            && let Some(narratives) = table.get("narratives").and_then(|v| v.as_table())
-        {
-            for (name, narrative_value) in narratives {
-                if let Some(narrative_table) = narrative_value.as_table() {
-                    ModelValidator::validate_name(
-                        narrative_table,
-                        &format!("narratives.{}", name),
-                        result,
-                    );
+
+        // Validate model names if enabled
+        if *config.warn_unknown_models() {
+            if has_narrative
+                && let Some(narrative) = table.get("narrative").and_then(|v| v.as_table())
+            {
+                ModelValidator::validate_name(narrative, "narrative", result);
+            }
+            if has_narratives
+                && let Some(narratives) = table.get("narratives").and_then(|v| v.as_table())
+            {
+                for (name, narrative_value) in narratives {
+                    if let Some(narrative_table) = narrative_value.as_table() {
+                        ModelValidator::validate_name(
+                            narrative_table,
+                            &format!("narratives.{}", name),
+                            result,
+                        );
+                    }
+                }
+            }
+            // Check acts for model overrides
+            if let Some(acts) = table.get("acts").and_then(|v| v.as_table()) {
+                for (act_name, act_value) in acts {
+                    if let Some(act_table) = act_value.as_table() {
+                        ModelValidator::validate_name(
+                            act_table,
+                            &format!("acts.{}", act_name),
+                            result,
+                        );
+                    }
                 }
             }
         }
-        // Check acts for model overrides
-        if let Some(acts) = table.get("acts").and_then(|v| v.as_table()) {
-            for (act_name, act_value) in acts {
-                if let Some(act_table) = act_value.as_table() {
-                    ModelValidator::validate_name(act_table, &format!("acts.{}", act_name), result);
-                }
-            }
+
+        // Collect resources for reference validation and unused detection
+        let resources = ResourceValidator::collect(table);
+        let resource_count =
+            resources.bots().len() + resources.tables().len() + resources.media().len();
+        tracing::Span::current().record("resource_count", resource_count);
+        tracing::debug!(
+            bots = resources.bots().len(),
+            tables = resources.tables().len(),
+            media = resources.media().len(),
+            "Collected resources"
+        );
+
+        // For single narrative files, validate toc and acts
+        if has_narrative {
+            StructureValidator::validate_single(table, &resources, result);
         }
-    }
 
-    // Collect resources for reference validation and unused detection
-    let resources = ResourceValidator::collect(table);
-    let resource_count = resources.bots().len() + resources.tables().len() + resources.media().len();
-    tracing::Span::current().record("resource_count", resource_count);
-    tracing::debug!(
-        bots = resources.bots().len(),
-        tables = resources.tables().len(),
-        media = resources.media().len(),
-        "Collected resources"
-    );
+        // For multi-narrative files, each narrative has its own toc
+        if has_narratives {
+            StructureValidator::validate_multi(table, &resources, result);
+        }
 
-    // For single narrative files, validate toc and acts
-    if has_narrative {
-        StructureValidator::validate_single(table, &resources, result);
-    }
+        // Check for unused resources if enabled
+        if *config.warn_unused_resources() {
+            Analyzer::check_unused_resources(&resources, result);
+        }
 
-    // For multi-narrative files, each narrative has its own toc
-    if has_narratives {
-        StructureValidator::validate_multi(table, &resources, result);
-    }
-
-    // Check for unused resources if enabled
-    if *config.warn_unused_resources() {
-        Analyzer::check_unused_resources(&resources, result);
-    }
-
-    // Check for circular dependencies in narrative references
-    Analyzer::check_circular_dependencies(table, result);
+        // Check for circular dependencies in narrative references
+        Analyzer::check_circular_dependencies(table, result);
     }
 }

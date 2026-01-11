@@ -241,7 +241,10 @@ impl StorageActor {
         &self,
     ) -> BotticelliResult<diesel::r2d2::PooledConnection<ConnectionManager<PgConnection>>> {
         tracing::debug!("Getting connection from pool");
-        Ok(self.pool.get().map_err(botticelli_error::DatabaseError::from)?)
+        Ok(self
+            .pool
+            .get()
+            .map_err(botticelli_error::DatabaseError::from)?)
     }
 }
 
@@ -473,7 +476,10 @@ impl StorageActor {
         // Query schema to get column types and constraints
         let schema = reflect_table_schema(&mut conn, &table_name)?;
         tracing::Span::current().record("column_count", schema.columns.len());
-        tracing::debug!(column_count = schema.columns.len(), "Reflected table schema");
+        tracing::debug!(
+            column_count = schema.columns.len(),
+            "Reflected table schema"
+        );
 
         let column_types: std::collections::HashMap<_, _> = schema
             .columns
@@ -489,7 +495,10 @@ impl StorageActor {
             .map(|col| col.name.as_str())
             .collect();
 
-        tracing::debug!(required_count = required_columns.len(), "Identified required columns");
+        tracing::debug!(
+            required_count = required_columns.len(),
+            "Identified required columns"
+        );
 
         // Build INSERT statement dynamically
         let obj = json_data

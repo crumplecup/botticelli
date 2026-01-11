@@ -22,8 +22,7 @@ impl SyntaxValidator {
                 result.add_error(ValidationError::new(
                     ValidationErrorKind::InvalidSyntax,
                     None,
-                    "Found [[acts]] but acts should be a table of tables, not an array"
-                        .to_string(),
+                    "Found [[acts]] but acts should be a table of tables, not an array".to_string(),
                     Some(
                         "Use one of these formats:\n\n\
                         1. Inline table syntax (recommended for simple prompts):\n\

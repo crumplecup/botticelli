@@ -266,7 +266,10 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         self.media_storage.write().await.insert(id, data.to_vec());
 
         // Index by hash for deduplication
-        self.media_by_hash.write().await.insert(hash.clone(), reference.clone());
+        self.media_by_hash
+            .write()
+            .await
+            .insert(hash.clone(), reference.clone());
 
         info!(
             id = %id,
@@ -283,7 +286,7 @@ impl NarrativeRepository for InMemoryNarrativeRepository {
         use tracing::{debug, error};
 
         let storage = self.media_storage.read().await;
-        
+
         match storage.get(reference.id()) {
             Some(data) => {
                 debug!(size = data.len(), "Retrieved media");

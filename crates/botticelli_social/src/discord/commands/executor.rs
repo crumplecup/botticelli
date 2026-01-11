@@ -11,8 +11,8 @@ use super::reactions::Reactions;
 use super::roles::Roles;
 use super::server::Server;
 use super::threads::Threads;
-use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
+use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use botticelli_interface::BotCommandExecutor;
 use serde_json::Value as JsonValue;
 use serenity::all::Http;
@@ -144,12 +144,9 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "threads.leave" => Threads::leave(&self.http, args).await?,
             "threads.add_member" => Threads::add_member(&self.http, args).await?,
             "threads.remove_member" => Threads::remove_member(&self.http, args).await?,
-            
+
             _ => {
-                error!(
-                    command,
-                    "Command not found or not yet migrated"
-                );
+                error!(command, "Command not found or not yet migrated");
                 return Err(BotCommandErrorKind::CommandNotFound(command.to_string()).into());
             }
         };
@@ -329,9 +326,10 @@ impl BotCommandExecutor for DiscordCommandExecutor {
     #[instrument(skip(self, command))]
     fn command_help(&self, command: &str) -> Option<String> {
         let help: &'static str = match command {
-            "server.get_stats" => 
+            "server.get_stats" => {
                 "Get server statistics (member count, channels, etc.)\n\
-                 Required arguments: guild_id",
+                 Required arguments: guild_id"
+            }
             "emojis.list" => "List custom emojis\nRequired arguments: guild_id",
             "stickers.list" => "List custom stickers\nRequired arguments: guild_id",
             "invites.list" => "List active invites\nRequired arguments: guild_id",
@@ -339,60 +337,118 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "integrations.list" => "List integrations\nRequired arguments: guild_id",
             "voice_regions.list" => "List voice regions\nRequired arguments: guild_id",
             "bans.list" => "List banned users\nRequired arguments: guild_id\nOptional: limit",
-            "members.ban" => "Ban a member\nRequired arguments: guild_id, user_id\nOptional: delete_message_days",
+            "members.ban" => {
+                "Ban a member\nRequired arguments: guild_id, user_id\nOptional: delete_message_days"
+            }
             "members.unban" => "Unban a member\nRequired arguments: guild_id, user_id",
-            "members.kick" => "Kick a member\nRequired arguments: guild_id, user_id\nOptional: reason",
+            "members.kick" => {
+                "Kick a member\nRequired arguments: guild_id, user_id\nOptional: reason"
+            }
             "events.list" => "List scheduled events\nRequired arguments: guild_id",
             "events.get" => "Get a scheduled event\nRequired arguments: guild_id, event_id",
-            "events.create" => "Create a scheduled event\nRequired arguments: guild_id, name, start_time, entity_type\nOptional: description, end_time, location, channel_id",
-            "events.edit" => "Edit a scheduled event\nRequired arguments: guild_id, event_id\nOptional: name, description, start_time, end_time, status",
+            "events.create" => {
+                "Create a scheduled event\nRequired arguments: guild_id, name, start_time, entity_type\nOptional: description, end_time, location, channel_id"
+            }
+            "events.edit" => {
+                "Edit a scheduled event\nRequired arguments: guild_id, event_id\nOptional: name, description, start_time, end_time, status"
+            }
             "events.delete" => "Delete a scheduled event\nRequired arguments: guild_id, event_id",
-            "forum.create_post" => "Create a forum post\nRequired arguments: channel_id, name, content\nOptional: auto_archive_duration",
+            "forum.create_post" => {
+                "Create a forum post\nRequired arguments: channel_id, name, content\nOptional: auto_archive_duration"
+            }
             "forum.list_posts" => "List forum posts\nRequired arguments: channel_id",
             "forum.get_post" => "Get forum post details\nRequired arguments: thread_id",
-            "reactions.add" => "Add reaction to message\nRequired arguments: channel_id, message_id, emoji",
-            "reactions.remove" => "Remove reaction from message\nRequired arguments: channel_id, message_id, emoji, user_id",
-            "reactions.list" => "List users who reacted\nRequired arguments: channel_id, message_id, emoji\nOptional: limit",
+            "reactions.add" => {
+                "Add reaction to message\nRequired arguments: channel_id, message_id, emoji"
+            }
+            "reactions.remove" => {
+                "Remove reaction from message\nRequired arguments: channel_id, message_id, emoji, user_id"
+            }
+            "reactions.list" => {
+                "List users who reacted\nRequired arguments: channel_id, message_id, emoji\nOptional: limit"
+            }
             "reactions.clear" => "Clear all reactions\nRequired arguments: channel_id, message_id",
-            "reactions.clear_emoji" => "Clear specific emoji reactions\nRequired arguments: channel_id, message_id, emoji",
+            "reactions.clear_emoji" => {
+                "Clear specific emoji reactions\nRequired arguments: channel_id, message_id, emoji"
+            }
             "roles.list" => "List all roles in guild\nRequired arguments: guild_id",
             "roles.get" => "Get role details\nRequired arguments: guild_id, role_id",
-            "roles.create" => "Create new role\nRequired arguments: guild_id, name\nOptional: color, hoist, mentionable",
-            "roles.edit" => "Edit role properties\nRequired arguments: guild_id, role_id\nOptional: name, color, hoist, mentionable",
+            "roles.create" => {
+                "Create new role\nRequired arguments: guild_id, name\nOptional: color, hoist, mentionable"
+            }
+            "roles.edit" => {
+                "Edit role properties\nRequired arguments: guild_id, role_id\nOptional: name, color, hoist, mentionable"
+            }
             "roles.delete" => "Delete role\nRequired arguments: guild_id, role_id",
-            "roles.assign" => "Assign role to member\nRequired arguments: guild_id, user_id, role_id",
-            "roles.remove" => "Remove role from member\nRequired arguments: guild_id, user_id, role_id",
-            "members.list" => "List guild members\nRequired arguments: guild_id\nOptional: limit (max 1000)",
+            "roles.assign" => {
+                "Assign role to member\nRequired arguments: guild_id, user_id, role_id"
+            }
+            "roles.remove" => {
+                "Remove role from member\nRequired arguments: guild_id, user_id, role_id"
+            }
+            "members.list" => {
+                "List guild members\nRequired arguments: guild_id\nOptional: limit (max 1000)"
+            }
             "members.get" => "Get member details\nRequired arguments: guild_id, user_id",
-            "members.edit" => "Edit member properties\nRequired arguments: guild_id, user_id\nOptional: nickname, mute, deafen, roles",
-            "members.timeout" => "Timeout member\nRequired arguments: guild_id, user_id, duration_seconds (max 28 days)",
-            "members.remove_timeout" => "Remove member timeout\nRequired arguments: guild_id, user_id",
+            "members.edit" => {
+                "Edit member properties\nRequired arguments: guild_id, user_id\nOptional: nickname, mute, deafen, roles"
+            }
+            "members.timeout" => {
+                "Timeout member\nRequired arguments: guild_id, user_id, duration_seconds (max 28 days)"
+            }
+            "members.remove_timeout" => {
+                "Remove member timeout\nRequired arguments: guild_id, user_id"
+            }
             "channels.list" => "List all channels\nRequired arguments: guild_id",
             "channels.get" => "Get channel details\nRequired arguments: guild_id, channel_id",
-            "channels.create" => "Create new channel\nRequired arguments: guild_id, name, kind\nOptional: topic, position, nsfw",
-            "channels.edit" => "Edit channel properties\nRequired arguments: channel_id\nOptional: name, topic, nsfw, position, bitrate, user_limit",
+            "channels.create" => {
+                "Create new channel\nRequired arguments: guild_id, name, kind\nOptional: topic, position, nsfw"
+            }
+            "channels.edit" => {
+                "Edit channel properties\nRequired arguments: channel_id\nOptional: name, topic, nsfw, position, bitrate, user_limit"
+            }
             "channels.delete" => "Delete channel\nRequired arguments: guild_id, channel_id",
-            "channels.get_or_create" => "Get or create channel\nRequired arguments: guild_id, name\nOptional: channel_type, topic, position, nsfw",
-            "channels.create_invite" => "Create invite link\nRequired arguments: channel_id\nOptional: max_age, max_uses, temporary",
+            "channels.get_or_create" => {
+                "Get or create channel\nRequired arguments: guild_id, name\nOptional: channel_type, topic, position, nsfw"
+            }
+            "channels.create_invite" => {
+                "Create invite link\nRequired arguments: channel_id\nOptional: max_age, max_uses, temporary"
+            }
             "channels.typing" => "Trigger typing indicator\nRequired arguments: channel_id",
-            "messages.send" => "Send message\nRequired arguments: channel_id, content\nOptional: tts",
+            "messages.send" => {
+                "Send message\nRequired arguments: channel_id, content\nOptional: tts"
+            }
             "messages.get" => "Get message details\nRequired arguments: channel_id, message_id",
-            "messages.list" => "List messages\nRequired arguments: channel_id\nOptional: limit (max 100)",
+            "messages.list" => {
+                "List messages\nRequired arguments: channel_id\nOptional: limit (max 100)"
+            }
             "messages.edit" => "Edit message\nRequired arguments: channel_id, message_id, content",
-            "messages.delete" => "Delete message\nRequired arguments: channel_id, message_id\nOptional: reason",
+            "messages.delete" => {
+                "Delete message\nRequired arguments: channel_id, message_id\nOptional: reason"
+            }
             "messages.pin" => "Pin message\nRequired arguments: channel_id, message_id",
             "messages.unpin" => "Unpin message\nRequired arguments: channel_id, message_id",
-            "messages.bulk_delete" => "Bulk delete messages\nRequired arguments: channel_id, message_ids (array, max 100)",
-            "messages.clear" => "Clear messages from channel\nRequired arguments: channel_id\nOptional: limit (max 100)",
-            "threads.create" => "Create thread\nRequired arguments: channel_id, name\nOptional: message_id, kind, auto_archive_duration, invitable",
+            "messages.bulk_delete" => {
+                "Bulk delete messages\nRequired arguments: channel_id, message_ids (array, max 100)"
+            }
+            "messages.clear" => {
+                "Clear messages from channel\nRequired arguments: channel_id\nOptional: limit (max 100)"
+            }
+            "threads.create" => {
+                "Create thread\nRequired arguments: channel_id, name\nOptional: message_id, kind, auto_archive_duration, invitable"
+            }
             "threads.list" => "List active threads\nRequired arguments: guild_id",
             "threads.get" => "Get thread details\nRequired arguments: channel_id",
-            "threads.edit" => "Edit thread properties\nRequired arguments: channel_id\nOptional: name, archived, auto_archive_duration, locked, invitable",
+            "threads.edit" => {
+                "Edit thread properties\nRequired arguments: channel_id\nOptional: name, archived, auto_archive_duration, locked, invitable"
+            }
             "threads.delete" => "Delete thread\nRequired arguments: channel_id",
             "threads.join" => "Join thread\nRequired arguments: channel_id",
             "threads.leave" => "Leave thread\nRequired arguments: channel_id",
             "threads.add_member" => "Add member to thread\nRequired arguments: channel_id, user_id",
-            "threads.remove_member" => "Remove member from thread\nRequired arguments: channel_id, user_id",
+            "threads.remove_member" => {
+                "Remove member from thread\nRequired arguments: channel_id, user_id"
+            }
             _ => return None,
         };
         Some(help.to_string())

@@ -1,6 +1,8 @@
 //! Resource collection and reference validation.
 
-use botticelli_error::{ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult};
+use botticelli_error::{
+    ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult,
+};
 use std::collections::HashSet;
 use tracing::instrument;
 

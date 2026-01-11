@@ -4,9 +4,9 @@
 //! to provide permission checking, input validation, content filtering,
 //! rate limiting, and approval workflows.
 
-use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use crate::BotCommandRegistryImpl;
 use async_trait::async_trait;
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use botticelli_interface::BotCommandRegistry;
 use botticelli_security::{
     ApprovalWorkflow, CommandValidator, ContentFilter, PermissionChecker, RateLimiter,
@@ -31,7 +31,7 @@ pub struct SecureBotCommandExecutor<V: CommandValidator> {
     /// Bot command registry for executing commands.
     #[setters(doc = "Sets the bot command registry")]
     registry: BotCommandRegistryImpl,
-    
+
     /// Security executor for security pipeline.
     #[setters(doc = "Sets the security executor")]
     security: SecureExecutor<V>,
@@ -141,7 +141,6 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     }
 
     /// Convert security error to bot command error.
-    #[allow(unreachable_patterns)]
     fn convert_security_error(error: SecurityError, command_name: &str) -> BotCommandError {
         match error.kind {
             SecurityErrorKind::PermissionDenied { command, reason } => {
@@ -193,11 +192,13 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
                     reason: format!("Configuration error: {}", msg),
                 })
             }
-            // Catch-all for feature-gated variants
-            _ => BotCommandError::new(BotCommandErrorKind::ApiError {
-                command: command_name.to_string(),
-                reason: format!("Security error: {}", error.kind),
-            }),
+            #[cfg(feature = "database")]
+            SecurityErrorKind::Database(msg) => {
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: command_name.to_string(),
+                    reason: format!("Database error: {}", msg),
+                })
+            }
         }
     }
 }

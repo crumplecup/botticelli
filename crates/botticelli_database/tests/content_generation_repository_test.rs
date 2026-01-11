@@ -182,7 +182,10 @@ fn test_list_generations() -> anyhow::Result<()> {
         successful.iter().any(|g| g.table_name() == &table2),
         "Expected to find successful generation"
     );
-    debug!(success_count = successful.len(), "Listed successful generations");
+    debug!(
+        success_count = successful.len(),
+        "Listed successful generations"
+    );
 
     // Cleanup
     debug!("Cleaning up test generations");

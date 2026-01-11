@@ -26,7 +26,7 @@ async fn test_store_and_retrieve() -> anyhow::Result<()> {
 
     let data = b"Hello, world!";
     debug!(size = data.len(), "Creating test data");
-    
+
     let metadata = MediaMetadataBuilder::default()
         .media_type(MediaType::Image)
         .mime_type("image/png")
@@ -76,11 +76,19 @@ async fn test_deduplication() -> anyhow::Result<()> {
     // Store same data twice
     debug!("Storing content first time");
     let ref1 = storage.store(data, &metadata).await?;
-    debug!(hash = ref1.content_hash(), path = ref1.storage_path(), "First store complete");
-    
+    debug!(
+        hash = ref1.content_hash(),
+        path = ref1.storage_path(),
+        "First store complete"
+    );
+
     debug!("Storing same content second time");
     let ref2 = storage.store(data, &metadata).await?;
-    debug!(hash = ref2.content_hash(), path = ref2.storage_path(), "Second store complete");
+    debug!(
+        hash = ref2.content_hash(),
+        path = ref2.storage_path(),
+        "Second store complete"
+    );
 
     // Should have same hash and path
     debug!("Verifying deduplication");
@@ -114,7 +122,11 @@ async fn test_hash_verification() -> anyhow::Result<()> {
 
     debug!("Storing original content");
     let reference = storage.store(data, &metadata).await?;
-    debug!(hash = reference.content_hash(), path = reference.storage_path(), "Content stored");
+    debug!(
+        hash = reference.content_hash(),
+        path = reference.storage_path(),
+        "Content stored"
+    );
 
     // Corrupt the file
     let path = std::path::Path::new(reference.storage_path());
@@ -154,8 +166,12 @@ async fn test_delete() -> anyhow::Result<()> {
 
     debug!("Storing content");
     let reference = storage.store(data, &metadata).await?;
-    debug!(hash = reference.content_hash(), path = reference.storage_path(), "Content stored");
-    
+    debug!(
+        hash = reference.content_hash(),
+        path = reference.storage_path(),
+        "Content stored"
+    );
+
     debug!("Verifying content exists");
     assert!(storage.exists(&reference).await?);
     debug!("Content exists confirmed");
@@ -163,7 +179,7 @@ async fn test_delete() -> anyhow::Result<()> {
     debug!("Deleting content");
     storage.delete(&reference).await?;
     debug!("Delete operation complete");
-    
+
     debug!("Verifying content no longer exists");
     assert!(!storage.exists(&reference).await?);
     debug!("Content deletion confirmed");
@@ -197,7 +213,10 @@ async fn test_not_found() -> anyhow::Result<()> {
         .media_type(MediaType::Image)
         .mime_type("image/png")
         .build()?;
-    debug!(path = fake_reference.storage_path(), "Fake reference created");
+    debug!(
+        path = fake_reference.storage_path(),
+        "Fake reference created"
+    );
 
     debug!("Attempting to retrieve non-existent content");
     let result = storage.retrieve(&fake_reference).await;
@@ -233,7 +252,10 @@ async fn test_content_addressable_structure() -> anyhow::Result<()> {
     debug!("Verifying path structure");
     let components: Vec<_> = path.components().collect();
     assert!(components.len() >= 4);
-    debug!(component_count = components.len(), "Path components verified");
+    debug!(
+        component_count = components.len(),
+        "Path components verified"
+    );
 
     // Last component should be the full hash
     let filename = path
@@ -241,7 +263,11 @@ async fn test_content_addressable_structure() -> anyhow::Result<()> {
         .and_then(|f| f.to_str())
         .ok_or_else(|| anyhow::anyhow!("Invalid filename"))?;
     assert_eq!(filename, reference.content_hash());
-    debug!(filename = filename, hash = reference.content_hash(), "Filename matches hash");
+    debug!(
+        filename = filename,
+        hash = reference.content_hash(),
+        "Filename matches hash"
+    );
 
     // Should be in images subdirectory
     assert!(reference.storage_path().contains("images"));
@@ -270,7 +296,7 @@ async fn test_no_direct_urls() -> anyhow::Result<()> {
     debug!("Storing content");
     let reference = storage.store(data, &metadata).await?;
     debug!(hash = reference.content_hash(), "Content stored");
-    
+
     debug!("Requesting URL with 1 hour TTL");
     let url = storage
         .get_url(&reference, std::time::Duration::from_secs(3600))

@@ -103,7 +103,10 @@ impl BotCommandRegistryImpl {
 
     /// Get executor for a platform.
     #[instrument(skip(self))]
-    pub fn get(&self, platform: &str) -> Option<&Arc<dyn BotCommandExecutor<Error = BotCommandError>>> {
+    pub fn get(
+        &self,
+        platform: &str,
+    ) -> Option<&Arc<dyn BotCommandExecutor<Error = BotCommandError>>> {
         let result = self.executors.get(platform);
         if result.is_some() {
             debug!(platform, "Found executor");

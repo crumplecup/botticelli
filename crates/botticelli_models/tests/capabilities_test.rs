@@ -20,10 +20,10 @@ use botticelli_models::OllamaClient;
 fn test_anthropic_capabilities() {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Anthropic capabilities");
-    
+
     let client = AnthropicClient::new("test-key", "claude-3-5-sonnet-20241022");
     let caps = client.capabilities();
-    
+
     tracing::debug!(
         streaming = caps.streaming(),
         tool_calling = caps.tool_calling(),
@@ -50,7 +50,7 @@ fn test_anthropic_capabilities() {
         !caps.batch_generation(),
         "Anthropic should not support batch generation"
     );
-    
+
     tracing::info!("Anthropic capabilities test passed");
 }
 
@@ -59,13 +59,13 @@ fn test_anthropic_capabilities() {
 fn test_gemini_capabilities() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Gemini capabilities");
-    
+
     // Load .env
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
     let caps = client.capabilities();
-    
+
     tracing::debug!(
         streaming = caps.supports_streaming(),
         tool_calling = caps.supports_tool_calling(),
@@ -95,7 +95,7 @@ fn test_gemini_capabilities() -> anyhow::Result<()> {
         !caps.supports_batch(),
         "Gemini should not support batch generation"
     );
-    
+
     tracing::info!("Gemini capabilities test passed");
     Ok(())
 }
@@ -105,10 +105,10 @@ fn test_gemini_capabilities() -> anyhow::Result<()> {
 fn test_ollama_capabilities() -> Result<(), botticelli_error::ModelsError> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Ollama capabilities");
-    
+
     let client = OllamaClient::new("llama2")?;
     let caps = client.capabilities();
-    
+
     tracing::debug!(
         streaming = caps.streaming(),
         tool_calling = caps.tool_calling(),
@@ -135,7 +135,7 @@ fn test_ollama_capabilities() -> Result<(), botticelli_error::ModelsError> {
         !caps.batch_generation(),
         "Ollama should not support batch generation"
     );
-    
+
     tracing::info!("Ollama capabilities test passed");
     Ok(())
 }
@@ -145,10 +145,10 @@ fn test_ollama_capabilities() -> Result<(), botticelli_error::ModelsError> {
 fn test_groq_capabilities() -> Result<(), botticelli_error::ModelsError> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Groq capabilities");
-    
+
     let client = GroqDriver::with_api_key("test-key".to_string(), "llama3-8b-8192".to_string())?;
     let caps = client.capabilities();
-    
+
     tracing::debug!(
         streaming = caps.streaming(),
         tool_calling = caps.tool_calling(),
@@ -175,7 +175,7 @@ fn test_groq_capabilities() -> Result<(), botticelli_error::ModelsError> {
         !caps.batch_generation(),
         "Groq should not support batch generation"
     );
-    
+
     tracing::info!("Groq capabilities test passed");
     Ok(())
 }
@@ -185,13 +185,13 @@ fn test_groq_capabilities() -> Result<(), botticelli_error::ModelsError> {
 fn test_huggingface_capabilities() -> Result<(), botticelli_error::ModelsError> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing HuggingFace capabilities");
-    
+
     let client = HuggingFaceDriver::with_api_token(
         "test-key".to_string(),
         "meta-llama/Llama-2-7b-chat-hf".to_string(),
     )?;
     let caps = client.capabilities();
-    
+
     tracing::debug!(
         streaming = caps.streaming(),
         tool_calling = caps.tool_calling(),
@@ -224,7 +224,7 @@ fn test_huggingface_capabilities() -> Result<(), botticelli_error::ModelsError> 
         !caps.batch_generation(),
         "HuggingFace should not support batch generation"
     );
-    
+
     tracing::info!("HuggingFace capabilities test passed");
     Ok(())
 }

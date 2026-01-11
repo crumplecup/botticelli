@@ -111,7 +111,12 @@ pub enum NarrativeErrorKind {
         reason: String,
     },
     /// Wrong entry type found
-    #[display("Reference '{}' resolves to {} but expected {}", reference, found, expected)]
+    #[display(
+        "Reference '{}' resolves to {} but expected {}",
+        reference,
+        found,
+        expected
+    )]
     WrongReferenceType {
         /// The reference string
         reference: String,

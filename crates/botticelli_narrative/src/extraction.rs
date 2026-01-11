@@ -372,32 +372,31 @@ impl Extract {
         use tracing::{debug, error};
 
         let trimmed = toml_str.trim();
-        debug!(
-            toml_length = trimmed.len(),
-            "Attempting TOML parse"
-        );
+        debug!(toml_length = trimmed.len(), "Attempting TOML parse");
 
-        toml::from_str(trimmed).map(|parsed| {
-            debug!("TOML parsed successfully");
-            parsed
-        }).map_err(|e| {
-            let preview = trimmed
-                .char_indices()
-                .take(100)
-                .last()
-                .map(|(idx, _)| &trimmed[..=idx])
-                .unwrap_or(trimmed);
-            error!(
-                error = %e,
-                toml_preview = %preview,
-                "TOML parsing failed"
-            );
-            botticelli_error::BackendError::new(format!(
-                "Failed to parse TOML: {} (TOML: {}...)",
-                e, preview
-            ))
-            .into()
-        })
+        toml::from_str(trimmed)
+            .map(|parsed| {
+                debug!("TOML parsed successfully");
+                parsed
+            })
+            .map_err(|e| {
+                let preview = trimmed
+                    .char_indices()
+                    .take(100)
+                    .last()
+                    .map(|(idx, _)| &trimmed[..=idx])
+                    .unwrap_or(trimmed);
+                error!(
+                    error = %e,
+                    toml_preview = %preview,
+                    "TOML parsing failed"
+                );
+                botticelli_error::BackendError::new(format!(
+                    "Failed to parse TOML: {} (TOML: {}...)",
+                    e, preview
+                ))
+                .into()
+            })
     }
 }
 

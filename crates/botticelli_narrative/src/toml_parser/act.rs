@@ -1,6 +1,6 @@
 //! Act types and conversion logic.
 
-use super::{utils::*, TomlInput, TomlNarrativeFile};
+use super::{TomlInput, TomlNarrativeFile, utils::*};
 use crate::ActConfig;
 use botticelli_core::Input;
 use botticelli_error::{NarrativeErrorKind, NarrativeResult};

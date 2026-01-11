@@ -3,9 +3,9 @@
 //! This module integrates the security framework with bot command execution,
 //! providing a secure wrapper around platform-specific executors.
 
+use async_trait::async_trait;
 use botticelli_error::{BotCommandError, BotCommandResult};
 use botticelli_interface::BotCommandExecutor;
-use async_trait::async_trait;
 use botticelli_security::{
     ApprovalWorkflow, CommandValidator, ContentFilter, PermissionChecker, RateLimiter,
     SecureExecutor,
@@ -40,7 +40,17 @@ where
     V: CommandValidator,
 {
     /// Create a new secure bot executor.
-    #[instrument(skip(inner, permission_checker, validator, content_filter, rate_limiter, approval_workflow), fields(narrative_id))]
+    #[instrument(
+        skip(
+            inner,
+            permission_checker,
+            validator,
+            content_filter,
+            rate_limiter,
+            approval_workflow
+        ),
+        fields(narrative_id)
+    )]
     pub fn new(
         inner: E,
         permission_checker: PermissionChecker,

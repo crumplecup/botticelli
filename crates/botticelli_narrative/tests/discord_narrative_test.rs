@@ -8,7 +8,7 @@ use botticelli_narrative::Narrative;
 async fn test_welcome_content_generation_loads() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing welcome content generation narrative loads");
-    
+
     dotenvy::dotenv().ok();
 
     // Load narrative from file (relative to workspace root)
@@ -18,7 +18,7 @@ async fn test_welcome_content_generation_loads() -> anyhow::Result<()> {
         manifest_dir
     );
     tracing::debug!(path = %narrative_path, "Loading narrative from file");
-    
+
     let narrative = Narrative::from_file(&narrative_path)?;
 
     // Verify basic structure
@@ -38,14 +38,14 @@ async fn test_welcome_content_generation_loads() -> anyhow::Result<()> {
 async fn test_publish_welcome_loads() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing publish welcome narrative loads");
-    
+
     dotenvy::dotenv().ok();
 
     // Load narrative from file (relative to workspace root)
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     let narrative_path = format!("{}/narratives/discord/publish_welcome.toml", manifest_dir);
     tracing::debug!(path = %narrative_path, "Loading narrative from file");
-    
+
     let narrative = Narrative::from_file(&narrative_path)?;
 
     // Verify basic structure

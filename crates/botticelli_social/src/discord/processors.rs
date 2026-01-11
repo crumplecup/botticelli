@@ -66,7 +66,10 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
             }
         };
 
-        info!(count = guilds.len(), "Processing Discord guilds from LLM response");
+        info!(
+            count = guilds.len(),
+            "Processing Discord guilds from LLM response"
+        );
 
         for (index, guild_json) in guilds.iter().enumerate() {
             debug!(
@@ -520,4 +523,3 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
         "DiscordMemberRoleProcessor"
     }
 }
-

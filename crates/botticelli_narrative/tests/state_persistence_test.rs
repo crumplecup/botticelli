@@ -8,7 +8,7 @@ use tempfile::TempDir;
 fn test_state_manager_save_and_load() -> BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing state manager save and load");
-    
+
     let temp_dir = TempDir::new().map_err(|e| ConfigError::new(e.to_string()))?;
     let manager = StateManager::new(temp_dir.path())?;
     let scope = StateScope::Global;
@@ -37,7 +37,7 @@ fn test_state_manager_save_and_load() -> BotticelliResult<()> {
 fn test_state_manager_persistence_across_runs() -> BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing state persistence across multiple runs");
-    
+
     let temp_dir = TempDir::new().map_err(|e| ConfigError::new(e.to_string()))?;
     let manager = StateManager::new(temp_dir.path())?;
     let scope = StateScope::Narrative("test".to_string());
@@ -85,7 +85,7 @@ fn test_state_manager_persistence_across_runs() -> BotticelliResult<()> {
 fn test_cli_workflow_simulation() -> BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing CLI workflow simulation");
-    
+
     let temp_dir = TempDir::new().map_err(|e| ConfigError::new(e.to_string()))?;
     let state_dir = temp_dir.path();
     tracing::debug!(state_dir = ?state_dir, "Created temp state directory");

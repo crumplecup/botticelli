@@ -20,7 +20,7 @@ use std::path::Path;
 async fn test_narrative_multi_model_execution() -> BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing multi-model narrative execution");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -32,7 +32,10 @@ async fn test_narrative_multi_model_execution() -> BotticelliResult<()> {
     tracing::debug!(path = ?narrative_path, name = narrative.metadata().name(), "Loaded narrative");
 
     let execution = executor.execute(&narrative).await?;
-    tracing::debug!(act_count = execution.act_executions().len(), "Executed narrative");
+    tracing::debug!(
+        act_count = execution.act_executions().len(),
+        "Executed narrative"
+    );
 
     // Should have executed the enabled acts (currently 4: flash_20, flash_lite_20, flash_25, flash_lite_25)
     assert!(
@@ -57,7 +60,7 @@ async fn test_narrative_multi_model_execution() -> BotticelliResult<()> {
             idx,
             act.act_name()
         );
-        
+
         tracing::debug!(
             act_index = idx,
             act_name = act.act_name(),

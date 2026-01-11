@@ -2,7 +2,6 @@
 
 mod helpers;
 
-
 // Tests for Gemini streaming support.
 //
 // These tests verify that streaming works with both standard and live models.
@@ -20,7 +19,7 @@ use helpers::create_test_request;
 async fn test_streaming_basic() -> botticelli_error::BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing basic streaming functionality");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -50,7 +49,11 @@ async fn test_streaming_basic() -> botticelli_error::BotticelliResult<()> {
 
     assert!(!chunks.is_empty(), "Should receive at least one chunk");
     assert!(saw_final, "Should see final chunk");
-    tracing::debug!(chunk_count = chunks.len(), saw_final, "Collected streaming chunks");
+    tracing::debug!(
+        chunk_count = chunks.len(),
+        saw_final,
+        "Collected streaming chunks"
+    );
 
     // Concatenate all text
     let full_text: String = chunks
@@ -76,14 +79,17 @@ async fn test_streaming_basic() -> botticelli_error::BotticelliResult<()> {
 async fn test_streaming_with_standard_model() -> botticelli_error::BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing streaming with standard model");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
 
     // Explicitly use standard flash model
     let request = create_test_request("Say 'ok'", Some("gemini-2.0-flash".to_string()), Some(10));
-    tracing::debug!(model = "gemini-2.0-flash", "Starting streaming request with standard model");
+    tracing::debug!(
+        model = "gemini-2.0-flash",
+        "Starting streaming request with standard model"
+    );
 
     let mut stream = client.generate_stream(&request).await?;
 
@@ -99,7 +105,10 @@ async fn test_streaming_with_standard_model() -> botticelli_error::BotticelliRes
     }
 
     assert!(!chunks.is_empty(), "Should receive chunks");
-    tracing::debug!(chunk_count = chunks.len(), "Collected chunks from standard model");
+    tracing::debug!(
+        chunk_count = chunks.len(),
+        "Collected chunks from standard model"
+    );
 
     let full_text: String = chunks
         .iter()
@@ -111,7 +120,10 @@ async fn test_streaming_with_standard_model() -> botticelli_error::BotticelliRes
 
     println!("Standard model result: {}", full_text);
     assert!(!full_text.is_empty(), "Should have generated text");
-    tracing::debug!(text_length = full_text.len(), "Standard model generated text");
+    tracing::debug!(
+        text_length = full_text.len(),
+        "Standard model generated text"
+    );
 
     tracing::info!("Streaming with standard model test passed");
     Ok(())
@@ -122,7 +134,7 @@ async fn test_streaming_with_standard_model() -> botticelli_error::BotticelliRes
 async fn test_streaming_with_live_model() -> botticelli_error::BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing streaming with live model (model doesn't exist)");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -133,7 +145,10 @@ async fn test_streaming_with_live_model() -> botticelli_error::BotticelliResult<
         Some("gemini-2.5-flash-live".to_string()),
         Some(10),
     );
-    tracing::debug!(model = "gemini-2.5-flash-live", "Attempting streaming request with live model");
+    tracing::debug!(
+        model = "gemini-2.5-flash-live",
+        "Attempting streaming request with live model"
+    );
 
     let mut stream = client.generate_stream(&request).await?;
 
@@ -149,7 +164,10 @@ async fn test_streaming_with_live_model() -> botticelli_error::BotticelliResult<
     }
 
     assert!(!chunks.is_empty(), "Live model should stream chunks");
-    tracing::debug!(chunk_count = chunks.len(), "Collected chunks from live model");
+    tracing::debug!(
+        chunk_count = chunks.len(),
+        "Collected chunks from live model"
+    );
 
     let full_text: String = chunks
         .iter()
@@ -172,7 +190,7 @@ async fn test_streaming_with_live_model() -> botticelli_error::BotticelliResult<
 async fn test_streaming_finish_reasons() -> botticelli_error::BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing streaming finish reasons");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -203,7 +221,7 @@ async fn test_streaming_finish_reasons() -> botticelli_error::BotticelliResult<(
 
     println!("Finish reason: {:?}", final_chunk.finish_reason());
     tracing::debug!(finish_reason = ?final_chunk.finish_reason(), "Received finish reason");
-    
+
     tracing::info!("Streaming finish reasons test passed");
     Ok(())
 }
@@ -213,7 +231,7 @@ async fn test_streaming_finish_reasons() -> botticelli_error::BotticelliResult<(
 async fn test_streaming_vs_non_streaming_consistency() -> botticelli_error::BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing streaming vs non-streaming consistency");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -274,7 +292,7 @@ async fn test_streaming_vs_non_streaming_consistency() -> botticelli_error::Bott
 async fn test_rate_limit_comparison() -> botticelli_error::BotticelliResult<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing rate limit comparison (obsolete - live models don't exist)");
-    
+
     // DEPRECATED: This test compared rate limits between standard and "live" models.
     // Investigation on 2025-01-17 confirmed that no "live" models exist in the Gemini API.
     // The model "gemini-2.0-flash-live" returns 404 NOT_FOUND from Google's servers.

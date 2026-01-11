@@ -120,42 +120,42 @@ pub trait DiscordEventProcessor {
     ///
     /// Must implement std::error::Error + Send + Sync for async compatibility.
     type Error: std::error::Error + Send + Sync;
-    
+
     /// Severity type for error classification.
     ///
     /// Implementation defines the severity levels (e.g., Critical/Warning/Info).
     type Severity;
-    
+
     /// Guild type (allows different representations: Serenity, mock, etc.)
     type Guild;
-    
+
     /// Channel type
     type Channel;
-    
+
     /// Member type
     type Member;
-    
+
     /// Role type
     type Role;
-    
+
     /// User type
     type User;
-    
+
     /// Get the severity level for an error.
     ///
     /// Used by the framework to decide whether to abort or continue processing.
     fn error_severity(&self, error: &Self::Error) -> Self::Severity;
-    
+
     /// Check if an error is retryable.
     ///
     /// Used for retry logic, circuit breakers, etc.
     fn error_is_retryable(&self, error: &Self::Error) -> bool;
-    
+
     /// Get human-readable context for an error.
     ///
     /// Used for logging and diagnostics.
     fn error_context(&self, error: &Self::Error) -> String;
-    
+
     /// Process a guild_create event.
     ///
     /// This should store the guild and all its entities (channels, roles, members).
@@ -169,37 +169,29 @@ pub trait DiscordEventProcessor {
         guild: &Self::Guild,
         is_new: Option<bool>,
     ) -> EventResult<(), Self::Error>;
-    
+
     /// Process a channel_create event.
     ///
     /// # Errors
     ///
     /// Returns an error if the channel cannot be stored.
-    async fn process_channel_create(
-        &self,
-        channel: &Self::Channel,
-    ) -> EventResult<(), Self::Error>;
-    
+    async fn process_channel_create(&self, channel: &Self::Channel)
+    -> EventResult<(), Self::Error>;
+
     /// Process a guild_member_addition event.
     ///
     /// # Errors
     ///
     /// Returns an error if the member cannot be stored.
-    async fn process_member_add(
-        &self,
-        member: &Self::Member,
-    ) -> EventResult<(), Self::Error>;
-    
+    async fn process_member_add(&self, member: &Self::Member) -> EventResult<(), Self::Error>;
+
     /// Process a role_create event.
     ///
     /// # Errors
     ///
     /// Returns an error if the role cannot be stored.
-    async fn process_role_create(
-        &self,
-        role: &Self::Role,
-    ) -> EventResult<(), Self::Error>;
-    
+    async fn process_role_create(&self, role: &Self::Role) -> EventResult<(), Self::Error>;
+
     /// Process when bot connects (ready event).
     ///
     /// # Errors

@@ -53,7 +53,7 @@ async fn test_acquire_releases_on_drop() -> anyhow::Result<()> {
         limiter.try_acquire(1).is_some(),
         "Should acquire after drop"
     );
-    
+
     tracing::info!("Acquire releases on drop test passed");
     Ok(())
 }
@@ -75,7 +75,7 @@ async fn test_rpm_limiting() -> anyhow::Result<()> {
         limiter.try_acquire(1).is_none(),
         "Third request should be rate limited"
     );
-    
+
     tracing::info!("RPM limiting test passed");
     Ok(())
 }
@@ -90,9 +90,13 @@ async fn test_unlimited_tier() -> anyhow::Result<()> {
 
     tracing::debug!("Making 100 requests");
     for i in 0..100 {
-        assert!(limiter.try_acquire(1).is_some(), "Request {} should not be limited", i);
+        assert!(
+            limiter.try_acquire(1).is_some(),
+            "Request {} should not be limited",
+            i
+        );
     }
-    
+
     tracing::info!("Unlimited tier test passed");
     Ok(())
 }
@@ -113,7 +117,7 @@ async fn test_tpm_limiting() -> anyhow::Result<()> {
 
     tracing::debug!("Third request should exceed TPM");
     assert!(limiter.try_acquire(1).is_none(), "Should be TPM limited");
-    
+
     tracing::info!("TPM limiting test passed");
     Ok(())
 }

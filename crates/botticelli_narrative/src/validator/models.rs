@@ -1,6 +1,8 @@
 //! Model name validation and fuzzy matching.
 
-use botticelli_error::{ValidationLocation, ValidationResult, ValidationWarning, ValidationWarningKind};
+use botticelli_error::{
+    ValidationLocation, ValidationResult, ValidationWarning, ValidationWarningKind,
+};
 use tracing::instrument;
 
 /// Known model names for validation.

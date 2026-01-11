@@ -1,9 +1,9 @@
 //! Database bot command executor.
 
-use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
-use botticelli_interface::BotCommandExecutor;
 use async_trait::async_trait;
 use botticelli_database::establish_connection;
+use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
+use botticelli_interface::BotCommandExecutor;
 use diesel::prelude::*;
 use serde_json::{Value as JsonValue, json};
 use std::collections::{HashMap, HashSet};
@@ -297,11 +297,9 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
         let result = match command {
             "update_table" => self.update_table(args).await?,
             _ => {
-                return Err(BotCommandErrorKind::CommandNotFound(format!(
-                    "database.{}",
-                    command
-                ))
-                .into());
+                return Err(
+                    BotCommandErrorKind::CommandNotFound(format!("database.{}", command)).into(),
+                );
             }
         };
 

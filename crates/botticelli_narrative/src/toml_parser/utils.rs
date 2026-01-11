@@ -33,9 +33,8 @@ pub(super) fn find_file_recursive(
     } else if let Some(start) = start_dir {
         start.to_path_buf()
     } else {
-        std::env::current_dir().map_err(|e| {
-            NarrativeError::new(NarrativeErrorKind::Io(IoError::from(e)))
-        })?
+        std::env::current_dir()
+            .map_err(|e| NarrativeError::new(NarrativeErrorKind::Io(IoError::from(e))))?
     };
 
     debug!(search_base = %base_dir.display(), "Starting file search");

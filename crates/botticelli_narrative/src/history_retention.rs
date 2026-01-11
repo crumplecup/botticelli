@@ -10,13 +10,13 @@
 //! use botticelli_core::Input;
 //!
 //! let input = Input::Text("large content".repeat(1000));
-//! 
+//!
 //! // Check if input needs summarization
 //! if HistoryRetention::should_auto_summarize(&input) {
 //!     let summary = HistoryRetention::summarize_input(&input);
 //!     println!("Summarized: {}", summary);
 //! }
-//! 
+//!
 //! // Apply retention policies to a vec of inputs
 //! let inputs = vec![input];
 //! let retained = HistoryRetention::apply_retention(&inputs);
@@ -65,87 +65,87 @@ impl HistoryRetention {
     /// ```
     #[instrument(skip(input), fields(input_type = ?std::mem::discriminant(input)))]
     pub fn summarize_input(input: &Input) -> String {
-    match input {
-        Input::Table {
-            table_name,
-            limit,
-            offset,
-            ..
-        } => {
-            let rows_info = limit
-                .map(|l| format!("{} rows queried", l))
-                .unwrap_or_else(|| "all rows".to_string());
-            let offset_info = offset
-                .map(|o| format!(", offset {}", o))
-                .unwrap_or_default();
-            let summary = format!("[Table: {}, {}{}]", table_name, rows_info, offset_info);
-            debug!(summary = %summary, "Generated table summary");
-            summary
-        }
-        Input::Text(content) => {
-            if content.len() > 1000 {
-                let size_kb = content.len() / 1024;
-                let summary = format!("[Text: ~{}KB]", size_kb);
-                debug!(summary = %summary, original_size = content.len(), "Generated text summary");
+        match input {
+            Input::Table {
+                table_name,
+                limit,
+                offset,
+                ..
+            } => {
+                let rows_info = limit
+                    .map(|l| format!("{} rows queried", l))
+                    .unwrap_or_else(|| "all rows".to_string());
+                let offset_info = offset
+                    .map(|o| format!(", offset {}", o))
+                    .unwrap_or_default();
+                let summary = format!("[Table: {}, {}{}]", table_name, rows_info, offset_info);
+                debug!(summary = %summary, "Generated table summary");
                 summary
-            } else {
-                debug!(size = content.len(), "Text is small, keeping as-is");
-                content.clone()
             }
-        }
-        Input::Narrative { name, .. } => {
-            let summary = format!("[Nested narrative: {}]", name);
-            debug!(summary = %summary, "Generated narrative summary");
-            summary
-        }
-        Input::BotCommand {
-            platform, command, ..
-        } => {
-            let summary = format!("[Bot command: {}.{}]", platform, command);
-            debug!(summary = %summary, "Generated bot command summary");
-            summary
-        }
-        Input::Image { mime, .. } => {
-            let mime_str = mime.as_deref().unwrap_or("unknown");
-            let summary = format!("[Image: {}]", mime_str);
-            debug!(summary = %summary, "Generated image summary");
-            summary
-        }
-        Input::Audio { mime, .. } => {
-            let mime_str = mime.as_deref().unwrap_or("unknown");
-            let summary = format!("[Audio: {}]", mime_str);
-            debug!(summary = %summary, "Generated audio summary");
-            summary
-        }
-        Input::Video { mime, .. } => {
-            let mime_str = mime.as_deref().unwrap_or("unknown");
-            let summary = format!("[Video: {}]", mime_str);
-            debug!(summary = %summary, "Generated video summary");
-            summary
-        }
-        Input::Document { mime, .. } => {
-            let mime_str = mime.as_deref().unwrap_or("unknown");
-            let summary = format!("[Document: {}]", mime_str);
-            debug!(summary = %summary, "Generated document summary");
-            summary
-        }
-        Input::ToolCall { name, .. } => {
-            // Tool calls are structural and should not be summarized
-            let summary = format!("[Tool call: {}]", name);
-            debug!(summary = %summary, "Tool call (no summarization)");
-            summary
-        }
-        Input::ToolResult {
-            tool_call_id,
-            is_error,
-            ..
-        } => {
-            // Tool results are structural and should not be summarized
-            let status = if *is_error { "error" } else { "success" };
-            let summary = format!("[Tool result: {} ({})]", tool_call_id, status);
-            debug!(summary = %summary, "Tool result (no summarization)");
-            summary
-        }
+            Input::Text(content) => {
+                if content.len() > 1000 {
+                    let size_kb = content.len() / 1024;
+                    let summary = format!("[Text: ~{}KB]", size_kb);
+                    debug!(summary = %summary, original_size = content.len(), "Generated text summary");
+                    summary
+                } else {
+                    debug!(size = content.len(), "Text is small, keeping as-is");
+                    content.clone()
+                }
+            }
+            Input::Narrative { name, .. } => {
+                let summary = format!("[Nested narrative: {}]", name);
+                debug!(summary = %summary, "Generated narrative summary");
+                summary
+            }
+            Input::BotCommand {
+                platform, command, ..
+            } => {
+                let summary = format!("[Bot command: {}.{}]", platform, command);
+                debug!(summary = %summary, "Generated bot command summary");
+                summary
+            }
+            Input::Image { mime, .. } => {
+                let mime_str = mime.as_deref().unwrap_or("unknown");
+                let summary = format!("[Image: {}]", mime_str);
+                debug!(summary = %summary, "Generated image summary");
+                summary
+            }
+            Input::Audio { mime, .. } => {
+                let mime_str = mime.as_deref().unwrap_or("unknown");
+                let summary = format!("[Audio: {}]", mime_str);
+                debug!(summary = %summary, "Generated audio summary");
+                summary
+            }
+            Input::Video { mime, .. } => {
+                let mime_str = mime.as_deref().unwrap_or("unknown");
+                let summary = format!("[Video: {}]", mime_str);
+                debug!(summary = %summary, "Generated video summary");
+                summary
+            }
+            Input::Document { mime, .. } => {
+                let mime_str = mime.as_deref().unwrap_or("unknown");
+                let summary = format!("[Document: {}]", mime_str);
+                debug!(summary = %summary, "Generated document summary");
+                summary
+            }
+            Input::ToolCall { name, .. } => {
+                // Tool calls are structural and should not be summarized
+                let summary = format!("[Tool call: {}]", name);
+                debug!(summary = %summary, "Tool call (no summarization)");
+                summary
+            }
+            Input::ToolResult {
+                tool_call_id,
+                is_error,
+                ..
+            } => {
+                // Tool results are structural and should not be summarized
+                let status = if *is_error { "error" } else { "success" };
+                let summary = format!("[Tool result: {} ({})]", tool_call_id, status);
+                debug!(summary = %summary, "Tool result (no summarization)");
+                summary
+            }
         }
     }
 
@@ -186,60 +186,72 @@ impl HistoryRetention {
     /// This is used to determine if an input should be auto-summarized.
     #[instrument(skip(input), fields(input_type = ?std::mem::discriminant(input)))]
     fn estimate_input_size(input: &Input) -> usize {
-    let size = match input {
-        Input::Text(content) => {
-            debug!(size = content.len(), "Text input size");
-            content.len()
-        }
-        Input::Table { .. } => {
-            // Estimate table size (conservative: assume 1KB per row * limit)
-            // Actual size will be determined after query execution
-            // For now, return 0 to avoid premature summarization
-            debug!("Table input - size unknown until execution");
-            0
-        }
-        Input::BotCommand { .. } => {
-            // Bot commands are typically small
-            debug!("Bot command - estimated at 100 bytes");
-            100
-        }
-        Input::Narrative { .. } => {
-            // Narrative size unknown until execution
-            debug!("Narrative input - size unknown until execution");
-            0
-        }
-        Input::Image { source, .. }
-        | Input::Audio { source, .. }
-        | Input::Video { source, .. }
-        | Input::Document { source, .. } => {
-            use botticelli_core::MediaSource;
-            let size = match source {
-                MediaSource::Binary(data) => {
-                    debug!(size = data.len(), source_type = "binary", "Media input size");
-                    data.len()
-                }
-                MediaSource::Base64(data) => {
-                    debug!(size = data.len(), source_type = "base64", "Media input size");
-                    data.len()
-                }
-                MediaSource::Url(url) => {
-                    debug!(url_len = url.len(), source_type = "url", "Media URL (content remote)");
-                    0 // URL itself is small
-                }
-            };
-            size
-        }
-        Input::ToolCall { arguments, .. } => {
-            // Estimate size of arguments JSON
-            let size = arguments.to_string().len();
-            debug!(size, "Tool call arguments size");
-            size
-        }
-        Input::ToolResult { content, .. } => {
-            // Tool results are typically small
-            debug!(size = content.len(), "Tool result size");
-            content.len()
-        }
+        let size = match input {
+            Input::Text(content) => {
+                debug!(size = content.len(), "Text input size");
+                content.len()
+            }
+            Input::Table { .. } => {
+                // Estimate table size (conservative: assume 1KB per row * limit)
+                // Actual size will be determined after query execution
+                // For now, return 0 to avoid premature summarization
+                debug!("Table input - size unknown until execution");
+                0
+            }
+            Input::BotCommand { .. } => {
+                // Bot commands are typically small
+                debug!("Bot command - estimated at 100 bytes");
+                100
+            }
+            Input::Narrative { .. } => {
+                // Narrative size unknown until execution
+                debug!("Narrative input - size unknown until execution");
+                0
+            }
+            Input::Image { source, .. }
+            | Input::Audio { source, .. }
+            | Input::Video { source, .. }
+            | Input::Document { source, .. } => {
+                use botticelli_core::MediaSource;
+                let size = match source {
+                    MediaSource::Binary(data) => {
+                        debug!(
+                            size = data.len(),
+                            source_type = "binary",
+                            "Media input size"
+                        );
+                        data.len()
+                    }
+                    MediaSource::Base64(data) => {
+                        debug!(
+                            size = data.len(),
+                            source_type = "base64",
+                            "Media input size"
+                        );
+                        data.len()
+                    }
+                    MediaSource::Url(url) => {
+                        debug!(
+                            url_len = url.len(),
+                            source_type = "url",
+                            "Media URL (content remote)"
+                        );
+                        0 // URL itself is small
+                    }
+                };
+                size
+            }
+            Input::ToolCall { arguments, .. } => {
+                // Estimate size of arguments JSON
+                let size = arguments.to_string().len();
+                debug!(size, "Tool call arguments size");
+                size
+            }
+            Input::ToolResult { content, .. } => {
+                // Tool results are typically small
+                debug!(size = content.len(), "Tool result size");
+                content.len()
+            }
         };
 
         debug!(estimated_size = size, "Input size estimated");

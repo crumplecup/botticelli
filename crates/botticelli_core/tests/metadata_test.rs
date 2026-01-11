@@ -7,7 +7,7 @@ use botticelli_core::{Capabilities, ModelMetadataBuilder};
 #[test]
 fn test_capabilities_from_metadata() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
-    
+
     let metadata = ModelMetadataBuilder::default()
         .provider("test")
         .model("test-model".to_string())
@@ -41,7 +41,7 @@ fn test_capabilities_from_metadata() -> anyhow::Result<()> {
 #[test]
 fn test_capabilities_from_metadata_all_disabled() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
-    
+
     let metadata = ModelMetadataBuilder::default()
         .provider("basic")
         .model("basic-model".to_string())
@@ -75,7 +75,7 @@ fn test_capabilities_from_metadata_all_disabled() -> anyhow::Result<()> {
 #[test]
 fn test_capabilities_from_metadata_all_enabled() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
-    
+
     let metadata = ModelMetadataBuilder::default()
         .provider("advanced")
         .model("advanced-model".to_string())

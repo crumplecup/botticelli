@@ -32,11 +32,7 @@ impl Analyzer {
                 tracing::debug!(bot = %bot, "Unused bot resource");
                 result.add_warning(ValidationWarning::new(
                     ValidationWarningKind::UnusedResource,
-                    Some(ValidationLocation::new(
-                        0,
-                        0,
-                        Some(format!("bots.{}", bot)),
-                    )),
+                    Some(ValidationLocation::new(0, 0, Some(format!("bots.{}", bot)))),
                     format!("Bot '{}' is defined but never used", bot),
                 ));
             }

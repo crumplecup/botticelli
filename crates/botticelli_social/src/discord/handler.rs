@@ -133,7 +133,11 @@ impl BotticelliHandler {
 
     /// Store a Discord channel in the database.
     #[instrument(skip(self, guild_id, channel), fields(guild_id = ?guild_id))]
-    async fn store_channel(&self, guild_id: Option<GuildId>, channel: &Channel) -> crate::DiscordResult<()> {
+    async fn store_channel(
+        &self,
+        guild_id: Option<GuildId>,
+        channel: &Channel,
+    ) -> crate::DiscordResult<()> {
         let (id, name, channel_type, position, topic, nsfw, parent_id) = match channel {
             Channel::Guild(gc) => (
                 Self::to_db_id(gc.id.get()),
@@ -155,7 +159,9 @@ impl BotticelliHandler {
             ),
             _ => {
                 return Err(crate::DiscordError::new(
-                    crate::DiscordErrorKind::UnsupportedType("Unsupported channel type for storage".to_string())
+                    crate::DiscordErrorKind::UnsupportedType(
+                        "Unsupported channel type for storage".to_string(),
+                    ),
                 ));
             }
         };
@@ -231,7 +237,10 @@ impl BotticelliHandler {
             Ok(user) => user,
             Err(e) => {
                 return Err(crate::DiscordError::new(
-                    crate::DiscordErrorKind::BuilderValidationError(format!("Failed to build NewUser: {}", e))
+                    crate::DiscordErrorKind::BuilderValidationError(format!(
+                        "Failed to build NewUser: {}",
+                        e
+                    )),
                 ));
             }
         };
@@ -244,13 +253,24 @@ impl BotticelliHandler {
             .user_id(Self::to_db_id(member.user.id.get()))
             .nick(member.nick.clone())
             .avatar(member.avatar.map(|a| a.to_string()))
-            .joined_at(member.joined_at.as_ref().and_then(timestamp_to_naive).unwrap_or_else(|| chrono::Utc::now().naive_utc()))
+            .joined_at(
+                member
+                    .joined_at
+                    .as_ref()
+                    .and_then(timestamp_to_naive)
+                    .unwrap_or_else(|| chrono::Utc::now().naive_utc()),
+            )
             .premium_since(member.premium_since.as_ref().and_then(timestamp_to_naive))
             .deaf(Some(member.deaf))
             .mute(Some(member.mute))
             .pending(Some(member.pending))
             .left_at(None)
-            .communication_disabled_until(member.communication_disabled_until.as_ref().and_then(timestamp_to_naive))
+            .communication_disabled_until(
+                member
+                    .communication_disabled_until
+                    .as_ref()
+                    .and_then(timestamp_to_naive),
+            )
             .build();
 
         let new_member = new_member.map_err(|e| {
@@ -285,8 +305,11 @@ impl BotticelliHandler {
             .build();
 
         let new_role = new_role.map_err(|e| {
-            crate::DiscordErrorKind::BuilderValidationError(format!("Failed to build NewRole: {}", e))
-                .into()
+            crate::DiscordErrorKind::BuilderValidationError(format!(
+                "Failed to build NewRole: {}",
+                e
+            ))
+            .into()
         })?;
 
         self.repository.store_role(&new_role).await?;
@@ -355,8 +378,9 @@ impl DiscordEventProcessor for BotticelliHandler {
         // Best effort: Store all channels (collect errors)
         let mut channel_errors = Vec::new();
         for channel in guild.channels.values() {
-            if let Err(e) =
-                self.store_channel(Some(guild.id), &Channel::Guild(channel.clone())).await
+            if let Err(e) = self
+                .store_channel(Some(guild.id), &Channel::Guild(channel.clone()))
+                .await
             {
                 use crate::DiscordErrorSeverity;
                 if self.error_severity(&e) == DiscordErrorSeverity::Critical {
@@ -422,7 +446,8 @@ impl DiscordEventProcessor for BotticelliHandler {
         channel: &Self::Channel,
     ) -> EventResult<(), Self::Error> {
         debug!("Processing channel_create event");
-        self.store_channel(channel.guild_id, &Channel::Guild(channel.clone())).await
+        self.store_channel(channel.guild_id, &Channel::Guild(channel.clone()))
+            .await
     }
 
     #[instrument(skip(self, member), fields(user_id = %member.user.id))]

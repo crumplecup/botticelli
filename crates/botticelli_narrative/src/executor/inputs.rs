@@ -104,11 +104,13 @@ where
                         error = %e,
                         "Required bot command failed, halting execution"
                     );
-                    Err(NarrativeError::new(NarrativeErrorKind::BotCommandFailed(format!(
-                        "Required command '{}' failed: {}",
-                        command, e
-                    )))
-                    .into())
+                    Err(
+                        NarrativeError::new(NarrativeErrorKind::BotCommandFailed(format!(
+                            "Required command '{}' failed: {}",
+                            command, e
+                        )))
+                        .into(),
+                    )
                 } else {
                     tracing::warn!(
                         platform = %platform,
@@ -122,7 +124,6 @@ where
             }
         }
     }
-
 
     /// Process a table query input by building and executing the query.
     /// Returns Some(Input::Text) if successful, None if table not found (treated as optional).
@@ -203,11 +204,13 @@ where
                         error = %e,
                         "Table query failed"
                     );
-                    Err(NarrativeError::new(NarrativeErrorKind::TableQueryFailed(format!(
-                        "Table query '{}' failed: {}",
-                        params.table_name, e
-                    )))
-                    .into())
+                    Err(
+                        NarrativeError::new(NarrativeErrorKind::TableQueryFailed(format!(
+                            "Table query '{}' failed: {}",
+                            params.table_name, e
+                        )))
+                        .into(),
+                    )
                 }
             }
         }
@@ -223,10 +226,10 @@ where
     ) -> BotticelliResult<()>
     where
         N: NarrativeProvider<
-            Metadata = NarrativeMetadata,
-            ActConfig = ActConfig,
-            CarouselConfig = CarouselConfig,
-        > + ?Sized,
+                Metadata = NarrativeMetadata,
+                ActConfig = ActConfig,
+                CarouselConfig = CarouselConfig,
+            > + ?Sized,
     {
         tracing::debug!(
             name = %name,
@@ -290,9 +293,10 @@ where
                     error = %e,
                     "Nested narrative execution failed"
                 );
-                NarrativeError::new(NarrativeErrorKind::NestedNarrativeExecutionFailed(
-                    format!("Nested narrative '{}' execution failed: {}", name, e),
-                ))
+                NarrativeError::new(NarrativeErrorKind::NestedNarrativeExecutionFailed(format!(
+                    "Nested narrative '{}' execution failed: {}",
+                    name, e
+                )))
             })?;
 
         tracing::info!(
@@ -323,10 +327,10 @@ where
     ) -> BotticelliResult<(Vec<Input>, Option<JsonValue>)>
     where
         N: NarrativeProvider<
-            Metadata = NarrativeMetadata,
-            ActConfig = ActConfig,
-            CarouselConfig = CarouselConfig,
-        > + ?Sized,
+                Metadata = NarrativeMetadata,
+                ActConfig = ActConfig,
+                CarouselConfig = CarouselConfig,
+            > + ?Sized,
     {
         tracing::debug!("Processing inputs for act");
         let mut processed = Vec::new();

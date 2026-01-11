@@ -7,7 +7,7 @@ use crate::{BotticelliHandler, DiscordError, DiscordErrorKind, DiscordRepository
 use diesel::pg::PgConnection;
 use serenity::Client;
 use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 use tracing::{error, info, instrument};
 
 /// Main Discord bot client for Botticelli.
@@ -157,12 +157,7 @@ impl BotticelliBot {
         shard_manager.shutdown_all().await;
 
         // Wait for client task to complete shutdown (with timeout)
-        match tokio::time::timeout(
-            std::time::Duration::from_secs(10),
-            client_handle,
-        )
-        .await
-        {
+        match tokio::time::timeout(std::time::Duration::from_secs(10), client_handle).await {
             Ok(Ok(Ok(()))) => {
                 info!("Client shutdown completed successfully");
             }

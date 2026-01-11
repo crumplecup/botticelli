@@ -26,72 +26,76 @@ impl Messages {
         http: &Arc<Http>,
         args: &HashMap<String, JsonValue>,
     ) -> BotCommandResult<JsonValue> {
-    let channel_id_str = args
-        .get("channel_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("channel_id"))?;
-    let content = args
-        .get("content")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("content"))?;
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("channel_id"))?;
+        let content = args
+            .get("content")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("content"))?;
 
-    let channel_id = parse_channel_id(channel_id_str)?;
-    let tts = args.get("tts").and_then(|v| v.as_bool()).unwrap_or(false);
+        let channel_id = parse_channel_id(channel_id_str)?;
+        let tts = args.get("tts").and_then(|v| v.as_bool()).unwrap_or(false);
 
-    tracing::Span::current().record("channel_id", channel_id.get());
-    tracing::Span::current().record("content_len", content.len());
-    tracing::Span::current().record("tts", tts);
-    info!(
-        channel_id = %channel_id,
-        content_len = content.len(),
-        tts,
-        "Sending message"
-    );
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("content_len", content.len());
+        tracing::Span::current().record("tts", tts);
+        info!(
+            channel_id = %channel_id,
+            content_len = content.len(),
+            tts,
+            "Sending message"
+        );
 
-    const MAX_MESSAGE_LENGTH: usize = 2000;
+        const MAX_MESSAGE_LENGTH: usize = 2000;
 
-    if content.len() <= MAX_MESSAGE_LENGTH {
-        let message = channel_id
-            .send_message(http, CreateMessage::new().content(content).tts(tts))
-            .await
-            .map_err(|e| {
-                error!(error = %e, "Failed to send message");
-                BotCommandError::from_api_error("messages.send", e)
-            })?;
-
-        info!(message_id = %message.id, "Successfully sent message");
-        Ok(serde_json::json!({
-            "id": message.id.to_string(),
-            "channel_id": message.channel_id.to_string(),
-            "content": message.content,
-            "timestamp": message.timestamp.to_rfc3339(),
-            "tts": message.tts,
-        }))
-    } else {
-        let mut message_ids = Vec::new();
-        let chunks: Vec<&str> = content
-            .as_bytes()
-            .chunks(MAX_MESSAGE_LENGTH)
-            .map(|chunk| std::str::from_utf8(chunk).unwrap_or(""))
-            .collect();
-
-        for chunk in chunks {
+        if content.len() <= MAX_MESSAGE_LENGTH {
             let message = channel_id
-                .send_message(http, CreateMessage::new().content(chunk).tts(tts))
+                .send_message(http, CreateMessage::new().content(content).tts(tts))
                 .await
                 .map_err(|e| {
-                    error!(error = %e, "Failed to send message chunk");
+                    error!(error = %e, "Failed to send message");
                     BotCommandError::from_api_error("messages.send", e)
                 })?;
-            message_ids.push(message.id.to_string());
-        }
 
-        info!(count = message_ids.len(), "Successfully sent multi-part message");
-        Ok(serde_json::json!({
-            "message_ids": message_ids,
-            "channel_id": channel_id.to_string(),
-            "parts": message_ids.len(),
-        }))
+            info!(message_id = %message.id, "Successfully sent message");
+            Ok(serde_json::json!({
+                "id": message.id.to_string(),
+                "channel_id": message.channel_id.to_string(),
+                "content": message.content,
+                "timestamp": message.timestamp.to_rfc3339(),
+                "tts": message.tts,
+            }))
+        } else {
+            let mut message_ids = Vec::new();
+            let chunks: Vec<&str> = content
+                .as_bytes()
+                .chunks(MAX_MESSAGE_LENGTH)
+                .map(|chunk| std::str::from_utf8(chunk).unwrap_or(""))
+                .collect();
+
+            for chunk in chunks {
+                let message = channel_id
+                    .send_message(http, CreateMessage::new().content(chunk).tts(tts))
+                    .await
+                    .map_err(|e| {
+                        error!(error = %e, "Failed to send message chunk");
+                        BotCommandError::from_api_error("messages.send", e)
+                    })?;
+                message_ids.push(message.id.to_string());
+            }
+
+            info!(
+                count = message_ids.len(),
+                "Successfully sent multi-part message"
+            );
+            Ok(serde_json::json!({
+                "message_ids": message_ids,
+                "channel_id": channel_id.to_string(),
+                "parts": message_ids.len(),
+            }))
+        }
     }
 
     /// Execute: messages.get
@@ -99,57 +103,57 @@ impl Messages {
     /// Get a specific message.
     #[instrument(skip(http, args), fields(channel_id, message_id))]
     pub async fn get(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let channel_id_str = args
-        .get("channel_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("channel_id"))?;
-    let message_id_str = args
-        .get("message_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("message_id"))?;
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("channel_id"))?;
+        let message_id_str = args
+            .get("message_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("message_id"))?;
 
-    let channel_id = parse_channel_id(channel_id_str)?;
-    let message_id = parse_message_id(message_id_str)?;
+        let channel_id = parse_channel_id(channel_id_str)?;
+        let message_id = parse_message_id(message_id_str)?;
 
-    tracing::Span::current().record("channel_id", channel_id.get());
-    tracing::Span::current().record("message_id", message_id.get());
-    debug!(channel_id = %channel_id, message_id = %message_id, "Fetching message");
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("message_id", message_id.get());
+        debug!(channel_id = %channel_id, message_id = %message_id, "Fetching message");
 
-    let message = http
-        .get_message(channel_id, message_id)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to fetch message");
-            BotCommandError::from_api_error("messages.get", e)
-        })?;
+        let message = http
+            .get_message(channel_id, message_id)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to fetch message");
+                BotCommandError::from_api_error("messages.get", e)
+            })?;
 
-    info!("Successfully retrieved message");
-    Ok(serde_json::json!({
-        "id": message.id.to_string(),
-        "content": message.content,
-        "author": {
-            "id": message.author.id.to_string(),
-            "name": message.author.name,
-            "discriminator": message.author.discriminator,
-            "bot": message.author.bot,
-        },
-        "timestamp": message.timestamp.to_string(),
-        "edited_timestamp": message.edited_timestamp.map(|t| t.to_string()),
-        "tts": message.tts,
-        "mention_everyone": message.mention_everyone,
-        "mentions": message.mentions.iter().map(|u| u.id.to_string()).collect::<Vec<_>>(),
-        "attachments": message.attachments.len(),
-        "embeds": message.embeds.len(),
-        "reactions": message.reactions.iter().map(|r| serde_json::json!({
-            "emoji": r.reaction_type.to_string(),
-            "count": r.count,
-        })).collect::<Vec<_>>(),
-        "pinned": message.pinned,
-    }))
-}
+        info!("Successfully retrieved message");
+        Ok(serde_json::json!({
+            "id": message.id.to_string(),
+            "content": message.content,
+            "author": {
+                "id": message.author.id.to_string(),
+                "name": message.author.name,
+                "discriminator": message.author.discriminator,
+                "bot": message.author.bot,
+            },
+            "timestamp": message.timestamp.to_string(),
+            "edited_timestamp": message.edited_timestamp.map(|t| t.to_string()),
+            "tts": message.tts,
+            "mention_everyone": message.mention_everyone,
+            "mentions": message.mentions.iter().map(|u| u.id.to_string()).collect::<Vec<_>>(),
+            "attachments": message.attachments.len(),
+            "embeds": message.embeds.len(),
+            "reactions": message.reactions.iter().map(|r| serde_json::json!({
+                "emoji": r.reaction_type.to_string(),
+                "count": r.count,
+            })).collect::<Vec<_>>(),
+            "pinned": message.pinned,
+        }))
+    }
 
     /// Execute: messages.list
     ///
@@ -158,53 +162,56 @@ impl Messages {
     pub async fn list(
         http: &Arc<Http>,
         args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let channel_id_str = args
-        .get("channel_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("channel_id"))?;
+    ) -> BotCommandResult<JsonValue> {
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("channel_id"))?;
 
-    let channel_id = parse_channel_id(channel_id_str)?;
-    let limit = args
-        .get("limit")
-        .and_then(|v| v.as_u64())
-        .map(|l| l.min(100) as u8)
-        .unwrap_or(50);
+        let channel_id = parse_channel_id(channel_id_str)?;
+        let limit = args
+            .get("limit")
+            .and_then(|v| v.as_u64())
+            .map(|l| l.min(100) as u8)
+            .unwrap_or(50);
 
-    tracing::Span::current().record("channel_id", channel_id.get());
-    tracing::Span::current().record("limit", limit);
-    debug!(channel_id = %channel_id, limit, "Fetching messages");
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("limit", limit);
+        debug!(channel_id = %channel_id, limit, "Fetching messages");
 
-    let messages = http
-        .get_messages(channel_id, None, Some(limit))
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to fetch messages");
-            BotCommandError::from_api_error("messages.list", e)
-        })?;
+        let messages = http
+            .get_messages(channel_id, None, Some(limit))
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to fetch messages");
+                BotCommandError::from_api_error("messages.list", e)
+            })?;
 
-    let messages_json: Vec<JsonValue> = messages
-        .into_iter()
-        .map(|m| {
-            serde_json::json!({
-                "id": m.id.to_string(),
-                "content": m.content,
-                "author": {
-                    "id": m.author.id.to_string(),
-                    "name": m.author.name,
-                    "bot": m.author.bot,
-                },
-                "timestamp": m.timestamp.to_string(),
-                "attachments": m.attachments.len(),
-                "embeds": m.embeds.len(),
+        let messages_json: Vec<JsonValue> = messages
+            .into_iter()
+            .map(|m| {
+                serde_json::json!({
+                    "id": m.id.to_string(),
+                    "content": m.content,
+                    "author": {
+                        "id": m.author.id.to_string(),
+                        "name": m.author.name,
+                        "bot": m.author.bot,
+                    },
+                    "timestamp": m.timestamp.to_string(),
+                    "attachments": m.attachments.len(),
+                    "embeds": m.embeds.len(),
+                })
             })
-        })
-        .collect();
+            .collect();
 
-    tracing::Span::current().record("message_count", messages_json.len());
-    info!(message_count = messages_json.len(), "Successfully retrieved messages");
-    Ok(serde_json::json!(messages_json))
-}
+        tracing::Span::current().record("message_count", messages_json.len());
+        info!(
+            message_count = messages_json.len(),
+            "Successfully retrieved messages"
+        );
+        Ok(serde_json::json!(messages_json))
+    }
 
     /// Execute: messages.edit
     ///
@@ -213,43 +220,43 @@ impl Messages {
     pub async fn edit(
         http: &Arc<Http>,
         args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let channel_id_str = args
-        .get("channel_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("channel_id"))?;
-    let message_id_str = args
-        .get("message_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("message_id"))?;
-    let content = args
-        .get("content")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("content"))?;
+    ) -> BotCommandResult<JsonValue> {
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("channel_id"))?;
+        let message_id_str = args
+            .get("message_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("message_id"))?;
+        let content = args
+            .get("content")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("content"))?;
 
-    let channel_id = parse_channel_id(channel_id_str)?;
-    let message_id = parse_message_id(message_id_str)?;
+        let channel_id = parse_channel_id(channel_id_str)?;
+        let message_id = parse_message_id(message_id_str)?;
 
-    tracing::Span::current().record("channel_id", channel_id.get());
-    tracing::Span::current().record("message_id", message_id.get());
-    info!(channel_id = %channel_id, message_id = %message_id, "Editing message");
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("message_id", message_id.get());
+        info!(channel_id = %channel_id, message_id = %message_id, "Editing message");
 
-    let builder = EditMessage::new().content(content);
-    let edited_message = http
-        .edit_message(channel_id, message_id, &builder, Vec::new())
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to edit message");
-            BotCommandError::from_api_error("messages.edit", e)
-        })?;
+        let builder = EditMessage::new().content(content);
+        let edited_message = http
+            .edit_message(channel_id, message_id, &builder, Vec::new())
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to edit message");
+                BotCommandError::from_api_error("messages.edit", e)
+            })?;
 
-    info!("Successfully edited message");
-    Ok(serde_json::json!({
-        "id": edited_message.id.to_string(),
-        "content": edited_message.content,
-        "edited_timestamp": edited_message.edited_timestamp.map(|t| t.to_string()),
-    }))
-}
+        info!("Successfully edited message");
+        Ok(serde_json::json!({
+            "id": edited_message.id.to_string(),
+            "content": edited_message.content,
+            "edited_timestamp": edited_message.edited_timestamp.map(|t| t.to_string()),
+        }))
+    }
 
     /// Execute: messages.delete
     ///
@@ -258,38 +265,38 @@ impl Messages {
     pub async fn delete(
         http: &Arc<Http>,
         args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let channel_id_str = args
-        .get("channel_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("channel_id"))?;
-    let message_id_str = args
-        .get("message_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("message_id"))?;
+    ) -> BotCommandResult<JsonValue> {
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("channel_id"))?;
+        let message_id_str = args
+            .get("message_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("message_id"))?;
 
-    let channel_id = parse_channel_id(channel_id_str)?;
-    let message_id = parse_message_id(message_id_str)?;
-    let reason = args.get("reason").and_then(|v| v.as_str());
+        let channel_id = parse_channel_id(channel_id_str)?;
+        let message_id = parse_message_id(message_id_str)?;
+        let reason = args.get("reason").and_then(|v| v.as_str());
 
-    tracing::Span::current().record("channel_id", channel_id.get());
-    tracing::Span::current().record("message_id", message_id.get());
-    info!(channel_id = %channel_id, message_id = %message_id, ?reason, "Deleting message");
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("message_id", message_id.get());
+        info!(channel_id = %channel_id, message_id = %message_id, ?reason, "Deleting message");
 
-    http.delete_message(channel_id, message_id, reason)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to delete message");
-            BotCommandError::from_api_error("messages.delete", e)
-        })?;
+        http.delete_message(channel_id, message_id, reason)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to delete message");
+                BotCommandError::from_api_error("messages.delete", e)
+            })?;
 
-    info!("Successfully deleted message");
-    Ok(serde_json::json!({
-        "deleted": true,
-        "channel_id": channel_id.to_string(),
-        "message_id": message_id.to_string(),
-    }))
-}
+        info!("Successfully deleted message");
+        Ok(serde_json::json!({
+            "deleted": true,
+            "channel_id": channel_id.to_string(),
+            "message_id": message_id.to_string(),
+        }))
+    }
 
     /// Execute: messages.pin
     ///
@@ -298,37 +305,37 @@ impl Messages {
     pub async fn pin(
         http: &Arc<Http>,
         args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let channel_id_str = args
-        .get("channel_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("channel_id"))?;
-    let message_id_str = args
-        .get("message_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("message_id"))?;
+    ) -> BotCommandResult<JsonValue> {
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("channel_id"))?;
+        let message_id_str = args
+            .get("message_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("message_id"))?;
 
-    let channel_id = parse_channel_id(channel_id_str)?;
-    let message_id = parse_message_id(message_id_str)?;
+        let channel_id = parse_channel_id(channel_id_str)?;
+        let message_id = parse_message_id(message_id_str)?;
 
-    tracing::Span::current().record("channel_id", channel_id.get());
-    tracing::Span::current().record("message_id", message_id.get());
-    info!(channel_id = %channel_id, message_id = %message_id, "Pinning message");
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("message_id", message_id.get());
+        info!(channel_id = %channel_id, message_id = %message_id, "Pinning message");
 
-    http.pin_message(channel_id, message_id, None)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to pin message");
-            BotCommandError::from_api_error("messages.pin", e)
-        })?;
+        http.pin_message(channel_id, message_id, None)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to pin message");
+                BotCommandError::from_api_error("messages.pin", e)
+            })?;
 
-    info!("Successfully pinned message");
-    Ok(serde_json::json!({
-        "pinned": true,
-        "channel_id": channel_id.to_string(),
-        "message_id": message_id.to_string(),
-    }))
-}
+        info!("Successfully pinned message");
+        Ok(serde_json::json!({
+            "pinned": true,
+            "channel_id": channel_id.to_string(),
+            "message_id": message_id.to_string(),
+        }))
+    }
 
     /// Execute: messages.unpin
     ///
@@ -337,37 +344,37 @@ impl Messages {
     pub async fn unpin(
         http: &Arc<Http>,
         args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let channel_id_str = args
-        .get("channel_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("channel_id"))?;
-    let message_id_str = args
-        .get("message_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("message_id"))?;
+    ) -> BotCommandResult<JsonValue> {
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("channel_id"))?;
+        let message_id_str = args
+            .get("message_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("message_id"))?;
 
-    let channel_id = parse_channel_id(channel_id_str)?;
-    let message_id = parse_message_id(message_id_str)?;
+        let channel_id = parse_channel_id(channel_id_str)?;
+        let message_id = parse_message_id(message_id_str)?;
 
-    tracing::Span::current().record("channel_id", channel_id.get());
-    tracing::Span::current().record("message_id", message_id.get());
-    info!(channel_id = %channel_id, message_id = %message_id, "Unpinning message");
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("message_id", message_id.get());
+        info!(channel_id = %channel_id, message_id = %message_id, "Unpinning message");
 
-    http.unpin_message(channel_id, message_id, None)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to unpin message");
-            BotCommandError::from_api_error("messages.unpin", e)
-        })?;
+        http.unpin_message(channel_id, message_id, None)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to unpin message");
+                BotCommandError::from_api_error("messages.unpin", e)
+            })?;
 
-    info!("Successfully unpinned message");
-    Ok(serde_json::json!({
-        "unpinned": true,
-        "channel_id": channel_id.to_string(),
-        "message_id": message_id.to_string(),
-    }))
-}
+        info!("Successfully unpinned message");
+        Ok(serde_json::json!({
+            "unpinned": true,
+            "channel_id": channel_id.to_string(),
+            "message_id": message_id.to_string(),
+        }))
+    }
 
     /// Execute: messages.bulk_delete
     ///
@@ -376,82 +383,85 @@ impl Messages {
     pub async fn bulk_delete(
         http: &Arc<Http>,
         args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let channel_id_str = args
-        .get("channel_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("channel_id"))?;
-    let message_ids_array = args
-        .get("message_ids")
-        .and_then(|v| v.as_array())
-        .ok_or_else(|| missing_arg_error("message_ids"))?;
+    ) -> BotCommandResult<JsonValue> {
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("channel_id"))?;
+        let message_ids_array = args
+            .get("message_ids")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| missing_arg_error("message_ids"))?;
 
-    let channel_id = parse_channel_id(channel_id_str)?;
+        let channel_id = parse_channel_id(channel_id_str)?;
 
-    let message_ids: Result<Vec<u64>, _> = message_ids_array
-        .iter()
-        .map(|v| {
-            v.as_str()
-                .ok_or_else(|| {
-                    BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-                        command: "messages.bulk_delete".to_string(),
-                        arg_name: "message_ids".to_string(),
-                        reason: "All message IDs must be strings".to_string(),
-                    })
-                })
-                .and_then(|s| {
-                    s.parse::<u64>().map_err(|_| {
+        let message_ids: Result<Vec<u64>, _> = message_ids_array
+            .iter()
+            .map(|v| {
+                v.as_str()
+                    .ok_or_else(|| {
                         BotCommandError::new(BotCommandErrorKind::InvalidArgument {
                             command: "messages.bulk_delete".to_string(),
                             arg_name: "message_ids".to_string(),
-                            reason: "Invalid Discord ID format".to_string(),
+                            reason: "All message IDs must be strings".to_string(),
                         })
                     })
-                })
-        })
-        .collect();
+                    .and_then(|s| {
+                        s.parse::<u64>().map_err(|_| {
+                            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                                command: "messages.bulk_delete".to_string(),
+                                arg_name: "message_ids".to_string(),
+                                reason: "Invalid Discord ID format".to_string(),
+                            })
+                        })
+                    })
+            })
+            .collect();
 
-    let message_ids = message_ids?;
+        let message_ids = message_ids?;
 
-    if message_ids.len() > 100 {
-        return Err(BotCommandErrorKind::InvalidArgument {
-            command: "messages.bulk_delete".to_string(),
-            arg_name: "message_ids".to_string(),
-            reason: "Cannot delete more than 100 messages at once".to_string(),
+        if message_ids.len() > 100 {
+            return Err(BotCommandErrorKind::InvalidArgument {
+                command: "messages.bulk_delete".to_string(),
+                arg_name: "message_ids".to_string(),
+                reason: "Cannot delete more than 100 messages at once".to_string(),
+            }
+            .into());
         }
-        .into());
-    }
 
-    tracing::Span::current().record("channel_id", channel_id.get());
-    tracing::Span::current().record("count", message_ids.len());
-    warn!(
-        channel_id = %channel_id,
-        count = message_ids.len(),
-        "Bulk deleting messages"
-    );
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("count", message_ids.len());
+        warn!(
+            channel_id = %channel_id,
+            count = message_ids.len(),
+            "Bulk deleting messages"
+        );
 
-    let message_ids_json = serde_json::to_value(&message_ids).map_err(|e| {
-        error!(error = %e, "Failed to serialize message IDs");
-        BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-            command: "messages.bulk_delete".to_string(),
-            arg_name: "message_ids".to_string(),
-            reason: format!("Failed to serialize message IDs: {}", e),
-        })
-    })?;
-
-    http.delete_messages(channel_id, &message_ids_json, None)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to bulk delete messages");
-            BotCommandError::from_api_error("messages.bulk_delete", e)
+        let message_ids_json = serde_json::to_value(&message_ids).map_err(|e| {
+            error!(error = %e, "Failed to serialize message IDs");
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "messages.bulk_delete".to_string(),
+                arg_name: "message_ids".to_string(),
+                reason: format!("Failed to serialize message IDs: {}", e),
+            })
         })?;
 
-    info!(count = message_ids.len(), "Successfully bulk deleted messages");
-    Ok(serde_json::json!({
-        "deleted": message_ids.len(),
-        "channel_id": channel_id.to_string(),
-    }))
-}
+        http.delete_messages(channel_id, &message_ids_json, None)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to bulk delete messages");
+                BotCommandError::from_api_error("messages.bulk_delete", e)
+            })?;
+
+        info!(
+            count = message_ids.len(),
+            "Successfully bulk deleted messages"
+        );
+        Ok(serde_json::json!({
+            "deleted": message_ids.len(),
+            "channel_id": channel_id.to_string(),
+        }))
+    }
 
     /// Execute: messages.clear
     ///
@@ -460,63 +470,63 @@ impl Messages {
     pub async fn clear(
         http: &Arc<Http>,
         args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
-    let channel_id_str = args
-        .get("channel_id")
-        .and_then(|v| v.as_str())
-        .ok_or_else(|| missing_arg_error("channel_id"))?;
+    ) -> BotCommandResult<JsonValue> {
+        let channel_id_str = args
+            .get("channel_id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| missing_arg_error("channel_id"))?;
 
-    let channel_id = parse_channel_id(channel_id_str)?;
-    let limit = args
-        .get("limit")
-        .and_then(|v| v.as_u64())
-        .map(|l| l.min(100) as u8)
-        .unwrap_or(100);
+        let channel_id = parse_channel_id(channel_id_str)?;
+        let limit = args
+            .get("limit")
+            .and_then(|v| v.as_u64())
+            .map(|l| l.min(100) as u8)
+            .unwrap_or(100);
 
-    tracing::Span::current().record("channel_id", channel_id.get());
-    tracing::Span::current().record("limit", limit);
-    warn!(channel_id = %channel_id, limit, "Clearing messages");
+        tracing::Span::current().record("channel_id", channel_id.get());
+        tracing::Span::current().record("limit", limit);
+        warn!(channel_id = %channel_id, limit, "Clearing messages");
 
-    let messages = http
-        .get_messages(channel_id, None, Some(limit))
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to fetch messages for clearing");
-            BotCommandError::from_api_error("messages.clear", e)
+        let messages = http
+            .get_messages(channel_id, None, Some(limit))
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to fetch messages for clearing");
+                BotCommandError::from_api_error("messages.clear", e)
+            })?;
+
+        let message_ids: Vec<u64> = messages.iter().map(|m| m.id.get()).collect();
+
+        if message_ids.is_empty() {
+            info!("No messages to clear");
+            return Ok(serde_json::json!({
+                "deleted": 0,
+                "channel_id": channel_id.to_string(),
+            }));
+        }
+
+        let message_ids_json = serde_json::to_value(&message_ids).map_err(|e| {
+            error!(error = %e, "Failed to serialize message IDs");
+            BotCommandError::new(BotCommandErrorKind::InvalidArgument {
+                command: "messages.clear".to_string(),
+                arg_name: "message_ids".to_string(),
+                reason: format!("Failed to serialize message IDs: {}", e),
+            })
         })?;
 
-    let message_ids: Vec<u64> = messages.iter().map(|m| m.id.get()).collect();
+        http.delete_messages(channel_id, &message_ids_json, None)
+            .await
+            .map_err(|e| {
+                error!(error = %e, "Failed to clear messages");
+                BotCommandError::from_api_error("messages.clear", e)
+            })?;
 
-    if message_ids.is_empty() {
-        info!("No messages to clear");
-        return Ok(serde_json::json!({
-            "deleted": 0,
+        info!(count = message_ids.len(), "Successfully cleared messages");
+        Ok(serde_json::json!({
+            "deleted": message_ids.len(),
             "channel_id": channel_id.to_string(),
-        }));
+        }))
     }
-
-    let message_ids_json = serde_json::to_value(&message_ids).map_err(|e| {
-        error!(error = %e, "Failed to serialize message IDs");
-        BotCommandError::new(BotCommandErrorKind::InvalidArgument {
-            command: "messages.clear".to_string(),
-            arg_name: "message_ids".to_string(),
-            reason: format!("Failed to serialize message IDs: {}", e),
-        })
-    })?;
-
-    http.delete_messages(channel_id, &message_ids_json, None)
-        .await
-        .map_err(|e| {
-            error!(error = %e, "Failed to clear messages");
-            BotCommandError::from_api_error("messages.clear", e)
-        })?;
-
-    info!(count = message_ids.len(), "Successfully cleared messages");
-    Ok(serde_json::json!({
-        "deleted": message_ids.len(),
-        "channel_id": channel_id.to_string(),
-    }))
-}
 }
 
 // Helper functions

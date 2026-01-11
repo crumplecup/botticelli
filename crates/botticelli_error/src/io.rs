@@ -35,7 +35,9 @@ impl From<std::io::Error> for IoError {
 // Manual implementations for traits that io::Error doesn't implement
 impl PartialEq for IoError {
     fn eq(&self, other: &Self) -> bool {
-        self.line == other.line && self.file == other.file && self.source.kind() == other.source.kind()
+        self.line == other.line
+            && self.file == other.file
+            && self.source.kind() == other.source.kind()
     }
 }
 
@@ -57,7 +59,10 @@ impl PartialOrd for IoError {
 
 impl Ord for IoError {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (self.file, self.line, self.source.kind())
-            .cmp(&(other.file, other.line, other.source.kind()))
+        (self.file, self.line, self.source.kind()).cmp(&(
+            other.file,
+            other.line,
+            other.source.kind(),
+        ))
     }
 }

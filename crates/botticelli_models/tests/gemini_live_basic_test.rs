@@ -9,11 +9,9 @@
 //! This appears to be a timing or protocol issue with the Live API handshake.
 //! Tests are currently ignored until the handshake issue is resolved.
 
-
 #![cfg(feature = "gemini")]
 
 mod helpers;
-
 
 use botticelli_models::{GeminiLiveClient, GenerationConfig};
 use futures_util::StreamExt;
@@ -23,7 +21,7 @@ use futures_util::StreamExt;
 async fn test_live_api_connection() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Live API connection");
-    
+
     // Load environment variables
     let _ = dotenvy::dotenv();
 
@@ -44,7 +42,7 @@ async fn test_live_api_connection() -> anyhow::Result<()> {
 async fn test_live_api_basic_generation() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Live API basic generation");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiLiveClient::new()?;
@@ -80,7 +78,7 @@ async fn test_live_api_basic_generation() -> anyhow::Result<()> {
 async fn test_live_api_streaming() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Live API streaming");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiLiveClient::new()?;
@@ -140,7 +138,7 @@ async fn test_live_api_streaming() -> anyhow::Result<()> {
 async fn test_live_api_multiple_turns() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Live API multiple turns");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiLiveClient::new()?;
@@ -156,14 +154,22 @@ async fn test_live_api_multiple_turns() -> anyhow::Result<()> {
     tracing::debug!("Sending turn 1");
     let response1 = session.send_text("Say 'Hello'").await?;
     assert!(!response1.is_empty());
-    tracing::debug!(turn = 1, response_len = response1.len(), "Received response");
+    tracing::debug!(
+        turn = 1,
+        response_len = response1.len(),
+        "Received response"
+    );
     println!("Turn 1: {}", response1);
 
     // Second turn (same session)
     tracing::debug!("Sending turn 2");
     let response2 = session.send_text("Say 'Goodbye'").await?;
     assert!(!response2.is_empty());
-    tracing::debug!(turn = 2, response_len = response2.len(), "Received response");
+    tracing::debug!(
+        turn = 2,
+        response_len = response2.len(),
+        "Received response"
+    );
     println!("Turn 2: {}", response2);
 
     session.close().await?;

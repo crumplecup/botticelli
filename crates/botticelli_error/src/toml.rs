@@ -35,8 +35,8 @@ impl From<toml::de::Error> for TomlError {
 // Manual implementations for traits that toml::de::Error doesn't implement
 impl PartialEq for TomlError {
     fn eq(&self, other: &Self) -> bool {
-        self.line == other.line 
-            && self.file == other.file 
+        self.line == other.line
+            && self.file == other.file
             && format!("{}", self.source) == format!("{}", other.source)
     }
 }
@@ -59,7 +59,10 @@ impl PartialOrd for TomlError {
 
 impl Ord for TomlError {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (self.file, self.line, format!("{}", self.source))
-            .cmp(&(other.file, other.line, format!("{}", other.source)))
+        (self.file, self.line, format!("{}", self.source)).cmp(&(
+            other.file,
+            other.line,
+            format!("{}", other.source),
+        ))
     }
 }

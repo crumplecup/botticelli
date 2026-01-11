@@ -6,7 +6,6 @@
 //!
 //! Run with: cargo test --package botticelli_models --features ollama
 
-
 #![cfg(feature = "ollama")]
 
 mod helpers;
@@ -21,7 +20,7 @@ use botticelli_models::OllamaClient;
 async fn test_ollama_basic_generation() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Ollama basic generation");
-    
+
     let client = OllamaClient::new("llama2")?;
     tracing::debug!(model = "llama2", "Created OllamaClient");
 
@@ -44,7 +43,7 @@ async fn test_ollama_basic_generation() -> anyhow::Result<()> {
     assert!(!response.outputs().is_empty());
     println!("Response: {:?}", response.outputs());
     tracing::debug!(output_count = response.outputs().len(), "Received response");
-    
+
     tracing::info!("Ollama basic generation test passed");
     Ok(())
 }
@@ -54,9 +53,12 @@ async fn test_ollama_basic_generation() -> anyhow::Result<()> {
 async fn test_ollama_model_validation() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Ollama model validation (nonexistent model)");
-    
+
     let client = OllamaClient::new("nonexistent_model")?;
-    tracing::debug!(model = "nonexistent_model", "Created OllamaClient with nonexistent model");
+    tracing::debug!(
+        model = "nonexistent_model",
+        "Created OllamaClient with nonexistent model"
+    );
 
     // Should fail - model doesn't exist
     tracing::debug!("Attempting to validate nonexistent model");
@@ -67,7 +69,7 @@ async fn test_ollama_model_validation() -> anyhow::Result<()> {
         assert!(matches!(e.kind(), OllamaErrorKind::ModelNotFound(_)));
         tracing::debug!(error_kind = ?e.kind(), "Validation correctly failed with ModelNotFound");
     }
-    
+
     tracing::info!("Ollama model validation test passed");
     Ok(())
 }
@@ -77,10 +79,14 @@ async fn test_ollama_model_validation() -> anyhow::Result<()> {
 async fn test_ollama_server_not_running() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Ollama server not running");
-    
+
     // Use non-standard port where Ollama is unlikely to be running
     let client = OllamaClient::new_with_url("llama2", "http://localhost:11435")?;
-    tracing::debug!(model = "llama2", url = "http://localhost:11435", "Created OllamaClient with non-standard port");
+    tracing::debug!(
+        model = "llama2",
+        url = "http://localhost:11435",
+        "Created OllamaClient with non-standard port"
+    );
 
     tracing::debug!("Attempting to validate (should fail - server not running)");
     let result = client.validate().await;
@@ -90,7 +96,7 @@ async fn test_ollama_server_not_running() -> anyhow::Result<()> {
         assert!(matches!(e.kind(), OllamaErrorKind::ServerNotRunning(_)));
         tracing::debug!(error_kind = ?e.kind(), "Validation correctly failed with ServerNotRunning");
     }
-    
+
     tracing::info!("Ollama server not running test passed");
     Ok(())
 }
@@ -100,7 +106,7 @@ async fn test_ollama_server_not_running() -> anyhow::Result<()> {
 async fn test_ollama_multi_message_conversation() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Ollama multi-message conversation");
-    
+
     let client = OllamaClient::new("llama2")?;
     tracing::debug!(model = "llama2", "Created OllamaClient");
 
@@ -121,7 +127,10 @@ async fn test_ollama_multi_message_conversation() -> anyhow::Result<()> {
     ];
 
     let request = GenerateRequest::builder().messages(messages).build()?;
-    tracing::debug!(message_count = request.messages().len(), "Created multi-message request");
+    tracing::debug!(
+        message_count = request.messages().len(),
+        "Created multi-message request"
+    );
 
     tracing::debug!("Sending generation request");
     let response = client.generate(&request).await?;
@@ -129,7 +138,7 @@ async fn test_ollama_multi_message_conversation() -> anyhow::Result<()> {
     assert!(!response.outputs().is_empty());
     println!("Response: {:?}", response.outputs());
     tracing::debug!(output_count = response.outputs().len(), "Received response");
-    
+
     tracing::info!("Ollama multi-message conversation test passed");
     Ok(())
 }

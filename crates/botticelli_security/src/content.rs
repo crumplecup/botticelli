@@ -121,7 +121,10 @@ impl ContentFilter {
                 }
             }
         }
-        tracing::debug!(pattern_count = prohibited_regex.len(), "Compiled prohibited patterns");
+        tracing::debug!(
+            pattern_count = prohibited_regex.len(),
+            "Compiled prohibited patterns"
+        );
 
         // Regex for Discord mentions: <@123456789012345678> or <@!123456789012345678>
         let mention_regex = Regex::new(r"<@!?\d{17,19}>").expect("Valid mention regex");

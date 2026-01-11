@@ -30,8 +30,7 @@ pub fn init_test_tracing(fallback_level: &str) {
         let _ = dotenvy::dotenv();
 
         // Initialize tracing subscriber
-        let filter = std::env::var("RUST_LOG")
-            .unwrap_or_else(|_| fallback_level.to_string());
+        let filter = std::env::var("RUST_LOG").unwrap_or_else(|_| fallback_level.to_string());
 
         tracing_subscriber::fmt()
             .with_env_filter(filter)

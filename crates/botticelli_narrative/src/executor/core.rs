@@ -9,7 +9,9 @@ use botticelli_core::{GenerateRequest, Input, Message, MessageBuilder, Role};
 use botticelli_error::{
     BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
 };
-use botticelli_interface::{BotCommandRegistry, BotticelliDriver, NarrativeProvider, TableQueryRegistry};
+use botticelli_interface::{
+    BotCommandRegistry, BotticelliDriver, NarrativeProvider, TableQueryRegistry,
+};
 use botticelli_rate_limit::TierConfig;
 use std::future::Future;
 use std::pin::Pin;
@@ -50,7 +52,8 @@ where
     pub(super) driver: D,
     pub(super) processor_registry: Option<ProcessorRegistry>,
     pub(super) bot_registry: Option<Box<dyn BotCommandRegistry<Error = BE>>>,
-    pub(super) table_registry: Option<Box<dyn TableQueryRegistry<Error = botticelli_error::DatabaseError>>>,
+    pub(super) table_registry:
+        Option<Box<dyn TableQueryRegistry<Error = botticelli_error::DatabaseError>>>,
     pub(super) state_manager: Option<StateManager>,
 }
 
@@ -125,10 +128,10 @@ where
     ) -> Pin<Box<dyn Future<Output = BotticelliResult<NarrativeExecution>> + Send + 'a>>
     where
         N: NarrativeProvider<
-            Metadata = NarrativeMetadata,
-            ActConfig = ActConfig,
-            CarouselConfig = CarouselConfig,
-        > + ?Sized,
+                Metadata = NarrativeMetadata,
+                ActConfig = ActConfig,
+                CarouselConfig = CarouselConfig,
+            > + ?Sized,
     {
         Box::pin(async move { self.execute_impl(narrative).await })
     }
@@ -214,16 +217,13 @@ where
             has_state_manager = self.state_manager.is_some(),
         )
     )]
-    async fn execute_impl<N>(
-        &self,
-        narrative: &N,
-    ) -> BotticelliResult<NarrativeExecution>
+    async fn execute_impl<N>(&self, narrative: &N) -> BotticelliResult<NarrativeExecution>
     where
         N: NarrativeProvider<
-            Metadata = NarrativeMetadata,
-            ActConfig = ActConfig,
-            CarouselConfig = CarouselConfig,
-        > + ?Sized,
+                Metadata = NarrativeMetadata,
+                ActConfig = ActConfig,
+                CarouselConfig = CarouselConfig,
+            > + ?Sized,
     {
         tracing::info!("Starting narrative execution");
         self.execute_impl_with_multi(narrative, None).await
@@ -249,10 +249,10 @@ where
     ) -> BotticelliResult<NarrativeExecution>
     where
         N: NarrativeProvider<
-            Metadata = NarrativeMetadata,
-            ActConfig = ActConfig,
-            CarouselConfig = CarouselConfig,
-        > + ?Sized,
+                Metadata = NarrativeMetadata,
+                ActConfig = ActConfig,
+                CarouselConfig = CarouselConfig,
+            > + ?Sized,
     {
         let start_time = Instant::now();
         tracing::info!("Starting narrative execution with multi-narrative context");
@@ -277,7 +277,7 @@ where
                 let (act_execution, message) = self
                     .execute_narrative_composition(act_name, &config, multi, sequence_number)
                     .await?;
-                
+
                 act_executions.push(act_execution);
                 conversation_history.push(message);
                 continue;
@@ -299,8 +299,14 @@ where
             let (response_text, model, temperature, max_tokens, token_usage, duration) =
                 if has_text_prompt {
                     // This act needs an LLM response
-                    self.execute_llm_act::<N>(act_name, narrative, &config, processed_inputs.clone(), &mut conversation_history)
-                        .await?
+                    self.execute_llm_act::<N>(
+                        act_name,
+                        narrative,
+                        &config,
+                        processed_inputs.clone(),
+                        &mut conversation_history,
+                    )
+                    .await?
                 } else {
                     // Action-only act - no LLM call needed
                     tracing::debug!(
@@ -407,16 +413,13 @@ where
     /// - Budget cannot be created from rate limits
     /// - Any iteration fails (if continue_on_error is false)
     #[tracing::instrument(skip(self, narrative), fields(narrative_name = narrative.name()))]
-    pub async fn execute_carousel<N>(
-        &self,
-        narrative: &N,
-    ) -> BotticelliResult<CarouselResult>
+    pub async fn execute_carousel<N>(&self, narrative: &N) -> BotticelliResult<CarouselResult>
     where
         N: NarrativeProvider<
-            Metadata = NarrativeMetadata,
-            ActConfig = ActConfig,
-            CarouselConfig = CarouselConfig,
-        > + ?Sized,
+                Metadata = NarrativeMetadata,
+                ActConfig = ActConfig,
+                CarouselConfig = CarouselConfig,
+            > + ?Sized,
     {
         // Get carousel config from narrative
         let carousel_config = narrative.carousel_config().ok_or_else(|| {

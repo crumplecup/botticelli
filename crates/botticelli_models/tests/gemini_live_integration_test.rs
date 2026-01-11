@@ -2,7 +2,6 @@
 
 mod helpers;
 
-
 // Integration tests for unified GeminiClient with Live API routing.
 //
 // These tests verify that GeminiClient correctly routes live models to the Live API
@@ -28,7 +27,7 @@ use futures_util::StreamExt;
 async fn test_gemini_client_routes_to_live_api() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing GeminiClient routes to Live API");
-    
+
     // Load environment variables
     let _ = dotenvy::dotenv();
 
@@ -48,7 +47,10 @@ async fn test_gemini_client_routes_to_live_api() -> anyhow::Result<()> {
         .build()?;
 
     // Call generate - should route to Live API
-    tracing::debug!(model = "models/gemini-2.0-flash-exp", "Calling generate (should route to Live API)");
+    tracing::debug!(
+        model = "models/gemini-2.0-flash-exp",
+        "Calling generate (should route to Live API)"
+    );
     let response = client.generate(&request).await?;
 
     // Verify we got a response
@@ -65,7 +67,7 @@ async fn test_gemini_client_routes_to_live_api() -> anyhow::Result<()> {
 async fn test_gemini_client_streaming_routes_to_live_api() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing GeminiClient streaming routes to Live API");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -83,7 +85,10 @@ async fn test_gemini_client_streaming_routes_to_live_api() -> anyhow::Result<()>
         .build()?;
 
     // Call generate_stream - should route to Live API
-    tracing::debug!(model = "models/gemini-2.0-flash-exp", "Calling generate_stream (should route to Live API)");
+    tracing::debug!(
+        model = "models/gemini-2.0-flash-exp",
+        "Calling generate_stream (should route to Live API)"
+    );
     let mut stream = client.generate_stream(&request).await?;
 
     let mut chunks = Vec::new();
@@ -119,7 +124,7 @@ async fn test_gemini_client_streaming_routes_to_live_api() -> anyhow::Result<()>
 async fn test_gemini_client_detects_live_models() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing GeminiClient detects live models");
-    
+
     let _ = dotenvy::dotenv();
 
     let client = GeminiClient::new()?;
@@ -136,7 +141,10 @@ async fn test_gemini_client_detects_live_models() -> anyhow::Result<()> {
         .max_tokens(5u32)
         .build()?;
 
-    tracing::debug!(model = "models/gemini-2.0-flash-exp", "Testing -exp model (should route to Live API)");
+    tracing::debug!(
+        model = "models/gemini-2.0-flash-exp",
+        "Testing -exp model (should route to Live API)"
+    );
     let response_exp = client.generate(&request_exp).await?;
     assert!(!response_exp.outputs().is_empty());
     tracing::debug!("-exp model routed correctly");
@@ -155,7 +163,10 @@ async fn test_gemini_client_detects_live_models() -> anyhow::Result<()> {
         .build()?;
 
     // This might fail if the model doesn't exist, so we just verify it attempts to use Live API
-    tracing::debug!(model = "models/gemini-2.0-flash-live", "Testing -live model (should route to Live API)");
+    tracing::debug!(
+        model = "models/gemini-2.0-flash-live",
+        "Testing -live model (should route to Live API)"
+    );
     let result = client.generate(&request_live).await;
     // We don't assert success here because the model might not exist
     if result.is_err() {

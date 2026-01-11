@@ -13,7 +13,7 @@ use botticelli_models::GroqDriver;
 async fn test_groq_basic_generation() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Groq basic generation");
-    
+
     dotenvy::dotenv().ok();
 
     let driver = GroqDriver::new("llama-3.1-8b-instant".to_string())?;
@@ -49,7 +49,7 @@ async fn test_groq_basic_generation() -> anyhow::Result<()> {
 async fn test_groq_small_models() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Groq small models");
-    
+
     dotenvy::dotenv().ok();
 
     let models = vec!["llama-3.1-8b-instant", "llama-3.3-70b-versatile"];
@@ -75,7 +75,11 @@ async fn test_groq_small_models() -> anyhow::Result<()> {
             Ok(response) => {
                 println!("  ✓ {} works", model);
                 assert!(!response.outputs().is_empty());
-                tracing::debug!(model, output_count = response.outputs().len(), "Model test succeeded");
+                tracing::debug!(
+                    model,
+                    output_count = response.outputs().len(),
+                    "Model test succeeded"
+                );
             }
             Err(e) => {
                 println!("  ✗ {} failed: {}", model, e);

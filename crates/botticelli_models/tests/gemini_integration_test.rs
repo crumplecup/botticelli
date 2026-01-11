@@ -2,7 +2,6 @@
 
 mod helpers;
 
-
 // Tests for Gemini model selection functionality.
 //
 // These tests validate that the GeminiClient correctly uses the model
@@ -16,7 +15,6 @@ mod helpers;
 // Most tests use MockGeminiClient for fast, deterministic testing without API calls.
 // A small number of integration tests (marked with `#[cfg_attr(not(feature = "api"), ignore)]`)
 // hit the real Gemini API to validate end-to-end behavior.
-
 
 use botticelli_core::{GenerateRequest, Input, Message, Role};
 use botticelli_interface::BotticelliDriver;
@@ -81,7 +79,7 @@ fn test_mock_provider_name() {
 async fn test_default_model_usage() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing default model usage");
-    
+
     let client = GeminiClient::new()?;
 
     // The default model should be gemini-2.0-flash-lite (for development)
@@ -114,7 +112,7 @@ async fn test_default_model_usage() -> anyhow::Result<()> {
 async fn test_model_override_in_request() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing model override in request");
-    
+
     let client = GeminiClient::new()?;
 
     // Request should use gemini-2.5-flash-lite, not the default
@@ -129,7 +127,11 @@ async fn test_model_override_in_request() -> anyhow::Result<()> {
         .model("gemini-2.5-flash-lite".to_string()) // Override default
         .build()?;
 
-    tracing::debug!(override_model = "gemini-2.5-flash-lite", default_model = client.model_name(), "Using model override");
+    tracing::debug!(
+        override_model = "gemini-2.5-flash-lite",
+        default_model = client.model_name(),
+        "Using model override"
+    );
     let response = client.generate(&request).await?;
 
     // Verify we got a response
@@ -151,7 +153,7 @@ async fn test_model_override_in_request() -> anyhow::Result<()> {
 async fn test_gemini_2_5_model_override() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing Gemini 2.5 model override");
-    
+
     let client = GeminiClient::new()?;
 
     let message = Message::builder()
@@ -181,7 +183,7 @@ async fn test_gemini_2_5_model_override() -> anyhow::Result<()> {
 async fn test_multiple_model_requests() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing multiple requests with different models");
-    
+
     let client = GeminiClient::new()?;
 
     // Request 1: Use lite model
@@ -196,7 +198,11 @@ async fn test_multiple_model_requests() -> anyhow::Result<()> {
         .model("gemini-2.5-flash-lite".to_string())
         .build()?;
 
-    tracing::debug!(request = 1, model = "gemini-2.5-flash-lite", "Sending request");
+    tracing::debug!(
+        request = 1,
+        model = "gemini-2.5-flash-lite",
+        "Sending request"
+    );
     let response1 = client.generate(&request1).await?;
     assert!(!response1.outputs().is_empty());
 

@@ -11,7 +11,7 @@ use std::time::Duration;
 fn test_cache_insert_and_get() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing cache insert and get operations");
-    
+
     let config = CommandCacheConfig::default()
         .with_default_ttl(10)
         .with_max_size(100);
@@ -32,7 +32,7 @@ fn test_cache_insert_and_get() -> anyhow::Result<()> {
     // Non-existent command should return None
     assert!(cache.get("discord", "other.command", &args).is_none());
     tracing::debug!("Verified non-existent entry returns None");
-    
+
     tracing::info!("Cache insert and get test passed");
     Ok(())
 }
@@ -41,7 +41,7 @@ fn test_cache_insert_and_get() -> anyhow::Result<()> {
 fn test_cache_expiration() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing cache expiration");
-    
+
     let config = CommandCacheConfig::default().with_default_ttl(1); // 1 second TTL
     let mut cache = CommandCache::new(config);
     tracing::debug!(ttl_seconds = 1, "Created cache with short TTL");
@@ -60,7 +60,7 @@ fn test_cache_expiration() -> anyhow::Result<()> {
     // Should be expired now
     assert!(cache.get("discord", "test.command", &args).is_none());
     tracing::debug!("Verified entry expired");
-    
+
     tracing::info!("Cache expiration test passed");
     Ok(())
 }
@@ -69,7 +69,7 @@ fn test_cache_expiration() -> anyhow::Result<()> {
 fn test_cache_clear() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing cache clear operation");
-    
+
     let config = CommandCacheConfig::default();
     let mut cache = CommandCache::new(config);
 
@@ -91,7 +91,7 @@ fn test_cache_clear() -> anyhow::Result<()> {
     assert!(cache.get("discord", "cmd1", &args1).is_none());
     assert!(cache.get("discord", "cmd2", &args2).is_none());
     tracing::debug!("Verified cache is empty");
-    
+
     tracing::info!("Cache clear test passed");
     Ok(())
 }
@@ -100,7 +100,7 @@ fn test_cache_clear() -> anyhow::Result<()> {
 fn test_cache_len() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing cache length tracking");
-    
+
     let config = CommandCacheConfig::default();
     let mut cache = CommandCache::new(config);
 
@@ -120,7 +120,7 @@ fn test_cache_len() -> anyhow::Result<()> {
     cache.insert("discord", "cmd2", &args2, json!("result2"), None);
     assert_eq!(cache.len(), 2);
     tracing::debug!(cache_len = 2, "Added second entry");
-    
+
     tracing::info!("Cache length test passed");
     Ok(())
 }
@@ -129,7 +129,7 @@ fn test_cache_len() -> anyhow::Result<()> {
 fn test_cache_is_empty() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing cache is_empty check");
-    
+
     let config = CommandCacheConfig::default();
     let mut cache = CommandCache::new(config);
 
@@ -146,7 +146,7 @@ fn test_cache_is_empty() -> anyhow::Result<()> {
     cache.clear();
     assert!(cache.is_empty());
     tracing::debug!("Verified cache empty after clear");
-    
+
     tracing::info!("Cache is_empty test passed");
     Ok(())
 }
@@ -155,7 +155,7 @@ fn test_cache_is_empty() -> anyhow::Result<()> {
 fn test_cache_update_existing_key() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing cache update of existing key");
-    
+
     let config = CommandCacheConfig::default();
     let mut cache = CommandCache::new(config);
 
@@ -172,7 +172,7 @@ fn test_cache_update_existing_key() -> anyhow::Result<()> {
     let entry = cache.get("discord", "cmd1", &args);
     assert_eq!(entry.unwrap().value(), &json!("result2"));
     tracing::debug!("Updated and verified new value");
-    
+
     tracing::info!("Cache update existing key test passed");
     Ok(())
 }
@@ -181,7 +181,7 @@ fn test_cache_update_existing_key() -> anyhow::Result<()> {
 fn test_cache_cleanup_expired_entries() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing cleanup of expired entries");
-    
+
     let config = CommandCacheConfig::default().with_default_ttl(1);
     let mut cache = CommandCache::new(config);
     tracing::debug!(ttl_seconds = 1, "Created cache with short TTL");
@@ -206,7 +206,7 @@ fn test_cache_cleanup_expired_entries() -> anyhow::Result<()> {
     assert_eq!(removed, 2);
     assert_eq!(cache.len(), 0);
     tracing::debug!(removed_count = removed, "Cleaned up expired entries");
-    
+
     tracing::info!("Cache cleanup expired entries test passed");
     Ok(())
 }
@@ -215,7 +215,7 @@ fn test_cache_cleanup_expired_entries() -> anyhow::Result<()> {
 fn test_cache_lru_eviction() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing LRU eviction behavior");
-    
+
     let config = CommandCacheConfig::default().with_max_size(2);
     let mut cache = CommandCache::new(config);
     tracing::debug!(max_size = 2, "Created cache with small max size");
@@ -242,7 +242,7 @@ fn test_cache_lru_eviction() -> anyhow::Result<()> {
     assert!(cache.get("discord", "cmd2", &args2).is_some());
     assert!(cache.get("discord", "cmd3", &args3).is_some());
     tracing::debug!("Verified cmd1 evicted, cmd2 and cmd3 present");
-    
+
     tracing::info!("LRU eviction test passed");
     Ok(())
 }

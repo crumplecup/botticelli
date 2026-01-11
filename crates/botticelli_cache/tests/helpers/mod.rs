@@ -11,9 +11,8 @@ static INIT: Once = Once::new();
 pub fn init_test_tracing(fallback_level: &str) {
     INIT.call_once(|| {
         let _ = dotenvy::dotenv();
-        
-        let env_filter = std::env::var("RUST_LOG")
-            .unwrap_or_else(|_| fallback_level.to_string());
+
+        let env_filter = std::env::var("RUST_LOG").unwrap_or_else(|_| fallback_level.to_string());
 
         tracing_subscriber::fmt()
             .with_env_filter(env_filter)

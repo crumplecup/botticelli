@@ -20,7 +20,12 @@ impl ValidationResult {
     #[tracing::instrument(skip(self))]
     pub fn is_valid(&self) -> bool {
         let is_valid = self.errors().is_empty();
-        tracing::debug!(is_valid, error_count = self.errors().len(), warning_count = self.warnings().len(), "Validation result checked");
+        tracing::debug!(
+            is_valid,
+            error_count = self.errors().len(),
+            warning_count = self.warnings().len(),
+            "Validation result checked"
+        );
         is_valid
     }
 

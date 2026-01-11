@@ -12,7 +12,7 @@ use botticelli_narrative::NarrativeSource;
 fn test_single_narrative_file_loads_as_single() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing single narrative file loads as Single variant");
-        
+
     // Single-narrative TOML file should always load as Single variant
     let toml = r#"
 [narrative]
@@ -51,7 +51,7 @@ content = "Say hello"
             panic!("Expected Single, got MultiWithContext");
         }
     }
-    
+
     tracing::info!("Single narrative file loads as Single variant test passed");
     Ok(())
 }
@@ -60,7 +60,7 @@ content = "Say hello"
 fn test_multi_narrative_without_composition_extracts_single() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing multi-narrative without composition extracts as Single");
-    
+
     // Multi-narrative file where the specified narrative has no composition
     // should extract as Single (no context overhead)
     let toml = r#"
@@ -108,7 +108,7 @@ content = "Do something else"
             panic!("Expected Single, got MultiWithContext");
         }
     }
-    
+
     tracing::info!("Multi-narrative without composition extracts as Single test passed");
     Ok(())
 }
@@ -117,7 +117,7 @@ content = "Do something else"
 fn test_multi_narrative_with_composition_preserves_context() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing multi-narrative with composition preserves context");
-    
+
     // Multi-narrative file where the specified narrative uses composition
     // should preserve full MultiWithContext
     let toml = r#"
@@ -171,7 +171,7 @@ toc = ["work"]
             panic!("Expected MultiWithContext, got Single");
         }
     }
-    
+
     tracing::info!("Multi-narrative with composition preserves context test passed");
     Ok(())
 }
@@ -180,7 +180,7 @@ toc = ["work"]
 fn test_composition_with_multiple_references() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing composition with multiple narrative references");
-    
+
     // Narrative with multiple composition acts should preserve context
     let toml = r#"
 [acts.step1]
@@ -237,7 +237,7 @@ toc = ["work"]
     } else {
         panic!("Expected MultiWithContext");
     }
-    
+
     tracing::info!("Composition with multiple references test passed");
     Ok(())
 }
@@ -246,7 +246,7 @@ toc = ["work"]
 fn test_mixed_acts_with_composition() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing mixed regular and composition acts");
-    
+
     // Narrative with both regular acts and composition acts should preserve context
     let toml = r#"
 [acts.regular1]
@@ -293,7 +293,7 @@ toc = ["help"]
     // Should preserve context because of the composed act
     assert!(source.has_composition_context());
     tracing::debug!("Verified context preserved for mixed acts");
-    
+
     tracing::info!("Mixed regular and composition acts test passed");
     Ok(())
 }
@@ -302,7 +302,7 @@ toc = ["help"]
 fn test_narrative_source_get_narrative() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing NarrativeSource get_narrative() method");
-    
+
     let toml = r#"
 [narrative.test]
 name = "test_narrative"
@@ -326,7 +326,7 @@ content = "Test"
     let narrative = source.get_narrative()?;
     assert_eq!(narrative.name(), "test_narrative");
     tracing::debug!(name = narrative.name(), "Retrieved narrative");
-    
+
     tracing::info!("NarrativeSource get_narrative() test passed");
     Ok(())
 }
@@ -335,7 +335,7 @@ content = "Test"
 fn test_narrative_source_name() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing NarrativeSource name() method");
-    
+
     let toml = r#"
 [narrative]
 name = "my_narrative"
@@ -360,7 +360,7 @@ content = "Test"
 
     assert_eq!(source.name(), "my_narrative");
     tracing::debug!(name = source.name(), "Retrieved source name");
-    
+
     tracing::info!("NarrativeSource name() test passed");
     Ok(())
 }
@@ -369,7 +369,7 @@ content = "Test"
 fn test_multi_narrative_requires_name() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing multi-narrative requires name parameter");
-    
+
     let toml = r#"
 [acts.act]
 model = "gemini-2.0-flash-exp"
@@ -404,7 +404,7 @@ toc = ["act"]
         err_msg
     );
     tracing::debug!("Verified error message contains 'Multiple narratives found'");
-    
+
     tracing::info!("Multi-narrative requires name test passed");
     Ok(())
 }
@@ -413,7 +413,7 @@ toc = ["act"]
 fn test_get_multi_context_returns_none_for_single() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing get_multi_context() returns None for Single variant");
-    
+
     let toml = r#"
 [narrative]
 name = "single"
@@ -438,7 +438,7 @@ content = "Test"
 
     assert!(source.get_multi_context().is_none());
     tracing::debug!("Verified get_multi_context() returns None for Single");
-    
+
     tracing::info!("get_multi_context() returns None for Single test passed");
     Ok(())
 }
@@ -447,7 +447,7 @@ content = "Test"
 fn test_get_multi_context_returns_some_for_composition() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing get_multi_context() returns Some for composition");
-    
+
     let toml = r#"
 [acts.comp]
 narrative_ref = "sub"
@@ -477,7 +477,7 @@ toc = ["work"]
 
     assert!(source.get_multi_context().is_some());
     tracing::debug!("Verified get_multi_context() returns Some for composition");
-    
+
     tracing::info!("get_multi_context() returns Some for composition test passed");
     Ok(())
 }

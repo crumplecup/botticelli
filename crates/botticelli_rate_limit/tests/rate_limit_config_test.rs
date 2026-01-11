@@ -26,7 +26,7 @@ fn test_load_bundled_defaults() -> anyhow::Result<()> {
     assert_eq!(free_tier.rpm(), Some(10));
     assert_eq!(free_tier.tpm(), Some(250_000));
     assert_eq!(free_tier.rpd(), Some(250));
-    
+
     tracing::info!("Bundled defaults test passed");
     Ok(())
 }
@@ -56,7 +56,7 @@ fn test_tier_config_implements_tier_trait() -> anyhow::Result<()> {
     assert_eq!(tier_config.cost_per_million_input_tokens(), Some(1.0));
     assert_eq!(tier_config.cost_per_million_output_tokens(), Some(2.0));
     assert_eq!(tier_config.name(), "Test Tier");
-    
+
     tracing::info!("TierConfig Tier trait test passed");
     Ok(())
 }
@@ -75,7 +75,7 @@ fn test_get_tier_with_default() -> anyhow::Result<()> {
 
     tracing::debug!(tier_name = tier.name(), "Validating default tier");
     assert_eq!(tier.name(), "Free");
-    
+
     tracing::info!("Get tier with default test passed");
     Ok(())
 }
@@ -94,7 +94,7 @@ fn test_get_tier_with_specific_name() -> anyhow::Result<()> {
 
     tracing::debug!(tier_name = tier.name(), "Validating specific tier");
     assert_eq!(tier.name(), "Pay-as-you-go");
-    
+
     tracing::info!("Get tier with specific name test passed");
     Ok(())
 }
@@ -135,7 +135,7 @@ tpm = 999_000
     assert_eq!(tier.name(), "Custom Tier");
     assert_eq!(tier.rpm(), Some(42));
     assert_eq!(tier.tpm(), Some(999_000));
-    
+
     tracing::info!("Config from file test passed");
     Ok(())
 }

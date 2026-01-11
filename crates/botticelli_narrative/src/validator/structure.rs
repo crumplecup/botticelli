@@ -1,7 +1,12 @@
 //! Narrative structure validation.
 
-use super::{extraction::DataExtractor, resources::{ResourceRegistry, ResourceValidator}};
-use botticelli_error::{ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult};
+use super::{
+    extraction::DataExtractor,
+    resources::{ResourceRegistry, ResourceValidator},
+};
+use botticelli_error::{
+    ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult,
+};
 use tracing::instrument;
 
 /// Unit struct providing structure validation methods.
@@ -28,9 +33,7 @@ impl StructureValidator {
                 ValidationErrorKind::MissingSection,
                 None,
                 "Missing [toc] section".to_string(),
-                Some(
-                    "Add a table of contents:\n\n[toc]\norder = [\"act1\", \"act2\"]".to_string(),
-                ),
+                Some("Add a table of contents:\n\n[toc]\norder = [\"act1\", \"act2\"]".to_string()),
             ));
             return;
         }
@@ -45,9 +48,7 @@ impl StructureValidator {
                 ValidationErrorKind::EmptyToc,
                 None,
                 "Table of contents is empty".to_string(),
-                Some(
-                    "Add at least one act to toc.order:\n\n[toc]\norder = [\"act1\"]".to_string(),
-                ),
+                Some("Add at least one act to toc.order:\n\n[toc]\norder = [\"act1\"]".to_string()),
             ));
             return;
         }

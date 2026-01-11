@@ -24,16 +24,16 @@ use tracing::{debug, info, instrument, warn};
 pub struct SecureExecutor<V: CommandValidator> {
     /// Permission checker for command and resource permissions.
     permission_checker: PermissionChecker,
-    
+
     /// Command validator for input validation.
     validator: V,
-    
+
     /// Content filter for AI-generated content.
     content_filter: ContentFilter,
-    
+
     /// Rate limiter for command rate limiting.
     rate_limiter: RateLimiter,
-    
+
     /// Approval workflow for command approvals.
     approval_workflow: ApprovalWorkflow,
 }
