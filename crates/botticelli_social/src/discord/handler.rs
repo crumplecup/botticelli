@@ -4,8 +4,8 @@
 //! and persist data to the database.
 
 use crate::{
-    ChannelType, DiscordRepository, NewChannelBuilder, NewGuildBuilder, NewGuildMemberBuilder,
-    NewRoleBuilder, NewUserBuilder,
+    ChannelType, DiscordError, DiscordRepository, NewChannelBuilder, NewGuildBuilder,
+    NewGuildMemberBuilder, NewRoleBuilder, NewUserBuilder,
 };
 use botticelli_interface::{DiscordEventProcessor, EventResult};
 use chrono::NaiveDateTime;
@@ -17,6 +17,7 @@ use serenity::model::channel::{Channel, GuildChannel};
 use serenity::model::gateway::GatewayIntents;
 use serenity::model::guild::{Guild, Member, Role};
 use std::sync::Arc;
+use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
 
 /// Convert Serenity Timestamp to Chrono NaiveDateTime
@@ -28,15 +29,30 @@ fn timestamp_to_naive(ts: &Timestamp) -> Option<NaiveDateTime> {
 ///
 /// Implements Serenity's EventHandler trait to respond to Discord events
 /// and persist data to the database via DiscordRepository.
+///
+/// Critical errors are sent to an error channel for the bot runtime to handle,
+/// allowing graceful shutdown or recovery on database/connection failures.
 pub struct BotticelliHandler {
     /// Repository for database operations
     repository: Arc<DiscordRepository>,
+    /// Channel for sending critical errors back to bot runtime
+    error_tx: mpsc::UnboundedSender<DiscordError>,
 }
 
 impl BotticelliHandler {
-    /// Create a new BotticelliHandler with the given repository.
-    pub fn new(repository: Arc<DiscordRepository>) -> Self {
-        Self { repository }
+    /// Create a new BotticelliHandler with the given repository and error channel.
+    ///
+    /// # Arguments
+    /// * `repository` - Database repository for Discord entities
+    /// * `error_tx` - Channel sender for critical errors that should abort the bot
+    pub fn new(
+        repository: Arc<DiscordRepository>,
+        error_tx: mpsc::UnboundedSender<DiscordError>,
+    ) -> Self {
+        Self {
+            repository,
+            error_tx,
+        }
     }
 
     /// Required gateway intents for the bot.
@@ -447,13 +463,25 @@ impl EventHandler for BotticelliHandler {
         }
 
         if let Err(e) = self.process_ready(&ready.user, ready.guilds.len()).await {
+            let severity = self.error_severity(&e);
+            let retryable = self.error_is_retryable(&e);
+            let context = self.error_context(&e);
+
             error!(
                 error = %e,
-                context = %self.error_context(&e),
-                severity = ?self.error_severity(&e),
-                retryable = self.error_is_retryable(&e),
+                context = %context,
+                severity = ?severity,
+                retryable = retryable,
                 "Failed to process ready event"
             );
+
+            // Send critical errors to runtime for handling
+            use crate::DiscordErrorSeverity::*;
+            if severity == Critical {
+                if let Err(send_err) = self.error_tx.send(e) {
+                    error!(error = %send_err, "Failed to send critical error to runtime");
+                }
+            }
         }
     }
 
@@ -469,14 +497,26 @@ impl EventHandler for BotticelliHandler {
         );
 
         if let Err(e) = self.process_guild_create(&guild, is_new).await {
+            let severity = self.error_severity(&e);
+            let retryable = self.error_is_retryable(&e);
+            let context = self.error_context(&e);
+
             error!(
                 guild_id = %guild.id,
                 error = %e,
-                context = %self.error_context(&e),
-                severity = ?self.error_severity(&e),
-                retryable = self.error_is_retryable(&e),
+                context = %context,
+                severity = ?severity,
+                retryable = retryable,
                 "Failed to process guild_create event"
             );
+
+            // Send critical errors to runtime for handling
+            use crate::DiscordErrorSeverity::*;
+            if severity == Critical {
+                if let Err(send_err) = self.error_tx.send(e) {
+                    error!(error = %send_err, "Failed to send critical error to runtime");
+                }
+            }
         }
     }
 

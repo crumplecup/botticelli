@@ -7,12 +7,14 @@ use crate::{BotticelliHandler, DiscordError, DiscordErrorKind, DiscordRepository
 use diesel::pg::PgConnection;
 use serenity::Client;
 use std::sync::Arc;
-use tracing::{info, instrument};
+use tokio::sync::mpsc;
+use tracing::{error, info, instrument};
 
 /// Main Discord bot client for Botticelli.
 ///
 /// Manages the Serenity client connection and integrates with the database
-/// via DiscordRepository.
+/// via DiscordRepository. Critical errors from event handlers are sent through
+/// an error channel for graceful handling.
 ///
 /// # Example
 /// ```no_run
@@ -34,6 +36,8 @@ pub struct BotticelliBot {
     client: Client,
     /// Database repository for direct database access
     repository: Arc<DiscordRepository>,
+    /// Receiver for critical errors from event handlers
+    error_rx: mpsc::UnboundedReceiver<DiscordError>,
 }
 
 impl BotticelliBot {
@@ -55,8 +59,11 @@ impl BotticelliBot {
         // Wrap connection in Arc<Mutex> for async access
         let repository = Arc::new(DiscordRepository::new(conn));
 
+        // Create error channel for critical errors from event handlers
+        let (error_tx, error_rx) = mpsc::unbounded_channel();
+
         // Create event handler
-        let handler = BotticelliHandler::new(repository.clone());
+        let handler = BotticelliHandler::new(repository.clone(), error_tx);
 
         // Get required gateway intents
         let intents = BotticelliHandler::intents();
@@ -71,25 +78,63 @@ impl BotticelliBot {
 
         info!("Serenity client built successfully");
 
-        Ok(Self { client, repository })
+        Ok(Self {
+            client,
+            repository,
+            error_rx,
+        })
     }
 
     /// Start the Discord bot.
     ///
-    /// This method blocks until the bot is shut down (e.g., via Ctrl+C).
+    /// This method blocks until the bot is shut down (e.g., via Ctrl+C) or
+    /// a critical error occurs in an event handler.
+    ///
+    /// Critical errors (database connection loss, invalid token, etc.) will
+    /// cause the bot to shut down gracefully and return the error.
     ///
     /// # Errors
-    /// Returns an error if the client fails to start or encounters a fatal error.
+    /// Returns an error if:
+    /// - The client fails to start
+    /// - A critical error occurs in an event handler
+    /// - A fatal network/gateway error occurs
     #[instrument(skip(self))]
     pub async fn start(&mut self) -> Result<(), DiscordError> {
         info!("Starting Discord bot");
 
-        self.client
-            .start()
-            .await
-            .map_err(DiscordError::from_connection_error)?;
+        // Start client in background task
+        let client_future = self.client.start();
 
-        Ok(())
+        // Monitor both client and error channel
+        tokio::select! {
+            // Client exited (normally or with error)
+            result = client_future => {
+                match result {
+                    Ok(()) => {
+                        info!("Discord client shut down normally");
+                        Ok(())
+                    }
+                    Err(e) => {
+                        error!(error = %e, "Discord client failed");
+                        Err(DiscordError::from_connection_error(e))
+                    }
+                }
+            }
+
+            // Critical error from event handler
+            Some(err) = self.error_rx.recv() => {
+                error!(
+                    error = %err,
+                    "Critical error in event handler, shutting down bot"
+                );
+
+                // Attempt graceful shutdown
+                info!("Initiating graceful shutdown");
+                self.client.shard_manager.shutdown_all().await;
+
+                Err(err)
+            }
+        }
     }
 
     /// Get a reference to the repository for direct database access.
