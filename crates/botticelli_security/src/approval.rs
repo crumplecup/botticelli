@@ -44,6 +44,7 @@ pub struct PendingAction {
 
 impl PendingAction {
     /// Create a new pending action.
+    #[tracing::instrument(fields(id, narrative_id, command, param_count = params.len()))]
     pub fn new(
         id: impl Into<String>,
         narrative_id: impl Into<String>,
@@ -57,7 +58,7 @@ impl PendingAction {
             .as_secs();
         let expires_at = now + 24 * 60 * 60; // 24 hours
 
-        Self {
+        let action = Self {
             id: id.into(),
             narrative_id: narrative_id.into(),
             command: command.into(),
@@ -68,10 +69,13 @@ impl PendingAction {
             decision: ApprovalDecision::Pending,
             decision_reason: None,
             decided_by: None,
-        }
+        };
+        tracing::debug!(action_id = %action.id, expires_at, "Pending action created");
+        action
     }
 
     /// Check if the action has expired.
+    #[tracing::instrument(skip(self), fields(action_id = %self.id))]
     pub fn is_expired(&self) -> bool {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -81,16 +85,22 @@ impl PendingAction {
     }
 
     /// Approve the action.
+    #[tracing::instrument(skip(self, approved_by), fields(action_id = %self.id))]
     pub fn approve(&mut self, approved_by: impl Into<String>, reason: Option<String>) {
+        let approver = approved_by.into();
+        tracing::info!(approved_by = %approver, "Action approved");
         self.decision = ApprovalDecision::Approved;
-        self.decided_by = Some(approved_by.into());
+        self.decided_by = Some(approver);
         self.decision_reason = reason;
     }
 
     /// Deny the action.
+    #[tracing::instrument(skip(self, denied_by), fields(action_id = %self.id))]
     pub fn deny(&mut self, denied_by: impl Into<String>, reason: Option<String>) {
+        let denier = denied_by.into();
+        tracing::info!(denied_by = %denier, "Action denied");
         self.decision = ApprovalDecision::Denied;
-        self.decided_by = Some(denied_by.into());
+        self.decided_by = Some(denier);
         self.decision_reason = reason;
     }
 }
@@ -105,7 +115,9 @@ pub struct ApprovalWorkflow {
 
 impl ApprovalWorkflow {
     /// Create a new approval workflow.
+    #[tracing::instrument]
     pub fn new() -> Self {
+        tracing::debug!("Creating approval workflow");
         Self {
             pending: HashMap::new(),
             requires_approval: HashMap::new(),
@@ -113,11 +125,15 @@ impl ApprovalWorkflow {
     }
 
     /// Configure whether a command requires approval.
+    #[tracing::instrument(skip(self), fields(command, required))]
     pub fn set_requires_approval(&mut self, command: impl Into<String>, required: bool) {
-        self.requires_approval.insert(command.into(), required);
+        let cmd = command.into();
+        tracing::debug!(command = %cmd, required, "Setting approval requirement");
+        self.requires_approval.insert(cmd, required);
     }
 
     /// Check if a command requires approval.
+    #[tracing::instrument(skip(self), fields(command))]
     pub fn requires_approval(&self, command: &str) -> bool {
         self.requires_approval
             .get(command)
@@ -157,16 +173,19 @@ impl ApprovalWorkflow {
     }
 
     /// Get a pending action by ID.
+    #[tracing::instrument(skip(self), fields(action_id = id))]
     pub fn get_pending_action(&self, id: &str) -> Option<&PendingAction> {
         self.pending.get(id)
     }
 
     /// Get a mutable pending action by ID.
+    #[tracing::instrument(skip(self), fields(action_id = id))]
     pub fn get_pending_action_mut(&mut self, id: &str) -> Option<&mut PendingAction> {
         self.pending.get_mut(id)
     }
 
     /// List all pending actions for a narrative.
+    #[tracing::instrument(skip(self), fields(narrative_id))]
     pub fn list_pending_actions(&self, narrative_id: &str) -> Vec<&PendingAction> {
         self.pending
             .values()
@@ -267,12 +286,13 @@ impl ApprovalWorkflow {
     }
 
     /// Clean up expired actions.
+    #[tracing::instrument(skip(self), fields(pending_count = self.pending.len()))]
     pub fn cleanup_expired(&mut self) -> usize {
         let before = self.pending.len();
         self.pending.retain(|_, action| !action.is_expired());
         let removed = before - self.pending.len();
         if removed > 0 {
-            debug!(removed, "Cleaned up expired actions");
+            tracing::info!(removed, remaining = self.pending.len(), "Cleaned up expired actions");
         }
         removed
     }
