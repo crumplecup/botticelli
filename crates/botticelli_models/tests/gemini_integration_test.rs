@@ -31,6 +31,8 @@ use helpers::mock_gemini::MockGeminiClient;
 #[tokio::test]
 async fn test_mock_model_basic_generate() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Mock Model Basic Generate");
+
     let mock = MockGeminiClient::new_success("Mock response");
 
     let message = Message::builder()
@@ -45,6 +47,7 @@ async fn test_mock_model_basic_generate() -> anyhow::Result<()> {
 
     let response = mock.generate(&request).await?;
     assert!(!response.outputs().is_empty());
+    tracing::info!("Test Mock Model Basic Generate test passed");
     Ok(())
 }
 
@@ -52,6 +55,8 @@ async fn test_mock_model_basic_generate() -> anyhow::Result<()> {
 #[test]
 fn test_mock_model_name() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Mock Model Name");
+
     let mock = MockGeminiClient::new_success("test");
     assert_eq!(mock.model_name(), "mock-gemini");
 }
@@ -60,6 +65,8 @@ fn test_mock_model_name() {
 #[test]
 fn test_mock_provider_name() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Mock Provider Name");
+
     let mock = MockGeminiClient::new_success("test");
     assert_eq!(mock.provider_name(), "mock-gemini");
 }
@@ -91,6 +98,7 @@ async fn test_default_model_usage() -> anyhow::Result<()> {
 
     // Should get a response (validates default model works)
     assert!(!response.outputs().is_empty());
+    tracing::info!("Test Default Model Usage test passed");
     Ok(())
 }
 
@@ -118,6 +126,7 @@ async fn test_model_override_in_request() -> anyhow::Result<()> {
 
     // Verify we got a response
     assert!(!response.outputs().is_empty());
+    tracing::info!("Test Model Override In Request test passed");
     Ok(())
 
     // TODO: Once fixed, this should validate the correct model was used.
@@ -148,6 +157,7 @@ async fn test_gemini_2_5_model_override() -> anyhow::Result<()> {
     let response = client.generate(&request).await?;
 
     assert!(!response.outputs().is_empty());
+    tracing::info!("Test Gemini 2 5 Model Override test passed");
     Ok(())
 }
 
@@ -203,5 +213,6 @@ async fn test_multiple_model_requests() -> anyhow::Result<()> {
 
     let response3 = client.generate(&request3).await?;
     assert!(!response3.outputs().is_empty());
+    tracing::info!("Test Multiple Model Requests test passed");
     Ok(())
 }

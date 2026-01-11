@@ -34,6 +34,7 @@ async fn test_gemini_2_0_flash() -> anyhow::Result<()> {
 
     let response = client.generate(&request).await?;
     assert!(!response.outputs().is_empty());
+    tracing::info!("Test Gemini 2 0 Flash test passed");
     Ok(())
 }
 
@@ -56,6 +57,7 @@ async fn test_gemini_2_0_flash_lite() -> anyhow::Result<()> {
 
     let response = client.generate(&request).await?;
     assert!(!response.outputs().is_empty());
+    tracing::info!("Test Gemini 2 0 Flash Lite test passed");
     Ok(())
 }
 
@@ -109,6 +111,7 @@ async fn test_mixed_2_0_and_2_5_models() -> anyhow::Result<()> {
 
     let response3 = client.generate(&request3).await?;
     assert!(!response3.outputs().is_empty());
+    tracing::info!("Test Mixed 2 0 And 2 5 Models test passed");
     Ok(())
 }
 
@@ -131,5 +134,6 @@ async fn test_explicit_models_prefix() -> anyhow::Result<()> {
 
     let response = client.generate(&request).await?;
     assert!(!response.outputs().is_empty());
+    tracing::info!("Test Explicit Models Prefix test passed");
     Ok(())
 }

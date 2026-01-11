@@ -19,6 +19,8 @@ use botticelli_models::GeminiClient;
 #[test]
 fn test_gemini_error_display() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Gemini Error Display");
+
     let error = GeminiError::new(GeminiErrorKind::MissingApiKey);
     let display = format!("{}", error);
     assert!(display.contains("GEMINI_API_KEY environment variable not set"));
@@ -29,6 +31,8 @@ fn test_gemini_error_display() {
 #[test]
 fn test_gemini_error_kind_display() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Gemini Error Kind Display");
+
     let cases = vec![
         (
             GeminiErrorKind::MissingApiKey,
@@ -61,6 +65,8 @@ fn test_gemini_error_kind_display() {
 #[test]
 fn test_gemini_error_source_location_tracking() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Gemini Error Source Location Tracking");
+
     let error = GeminiError::new(GeminiErrorKind::MissingApiKey);
     assert!(error.line > 0, "Error should capture line number");
     assert!(
@@ -76,6 +82,8 @@ fn test_gemini_error_source_location_tracking() {
 #[test]
 fn test_simple_text_request_structure() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Simple Text Request Structure");
+
     let message = Message::builder()
         .role(Role::User)
         .content(vec![Input::Text("Hello, world!".to_string())])
@@ -91,12 +99,15 @@ fn test_simple_text_request_structure() -> anyhow::Result<()> {
     assert_eq!(*request.max_tokens(), Some(100));
     assert_eq!(*request.temperature(), Some(0.7));
 
+    tracing::info!("Test Simple Text Request Structure test passed");
     Ok(())
 }
 
 #[test]
 fn test_multi_message_request_structure() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Multi Message Request Structure");
+
     let message1 = Message::builder()
         .role(Role::System)
         .content(vec![Input::Text(
@@ -117,6 +128,7 @@ fn test_multi_message_request_structure() -> anyhow::Result<()> {
     assert_eq!(request.messages()[0].role(), &Role::System);
     assert_eq!(request.messages()[1].role(), &Role::User);
 
+    tracing::info!("Test Multi Message Request Structure test passed");
     Ok(())
 }
 
@@ -127,6 +139,8 @@ fn test_multi_message_request_structure() -> anyhow::Result<()> {
 #[test]
 fn test_gemini_error_to_botticelli_error_conversion() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Gemini Error To Botticelli Error Conversion");
+
     let gemini_error = GeminiError::new(GeminiErrorKind::MissingApiKey);
     let botticelli_error: BotticelliError = gemini_error.into();
 
@@ -138,6 +152,8 @@ fn test_gemini_error_to_botticelli_error_conversion() {
 #[test]
 fn test_error_kind_comparison() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Error Kind Comparison");
+
     // Test that errors can be compared
     let error1 = GeminiError::new(GeminiErrorKind::MissingApiKey);
     let error2 = GeminiError::new(GeminiErrorKind::MissingApiKey);
@@ -181,6 +197,7 @@ fn test_real_api_call() -> anyhow::Result<()> {
         "Should have at least one output"
     );
 
+    tracing::info!("Test Real Api Call test passed");
     Ok(())
 }
 
@@ -206,5 +223,6 @@ fn test_client_creation() -> Result<(), botticelli_error::BotticelliError> {
     // Test vision trait
     assert_eq!(client.max_images_per_request(), 16);
 
+    tracing::info!("Test Client Creation test passed");
     Ok(())
 }

@@ -37,6 +37,7 @@ async fn test_ollama_basic_generation() -> anyhow::Result<()> {
 
     assert!(!response.outputs().is_empty());
     println!("Response: {:?}", response.outputs());
+    tracing::info!("Test Ollama Basic Generation test passed");
     Ok(())
 }
 
@@ -52,6 +53,7 @@ async fn test_ollama_model_validation() -> anyhow::Result<()> {
     if let Err(e) = result {
         assert!(matches!(e.kind(), OllamaErrorKind::ModelNotFound(_)));
     }
+    tracing::info!("Test Ollama Model Validation test passed");
     Ok(())
 }
 
@@ -67,6 +69,7 @@ async fn test_ollama_server_not_running() -> anyhow::Result<()> {
     if let Err(e) = result {
         assert!(matches!(e.kind(), OllamaErrorKind::ServerNotRunning(_)));
     }
+    tracing::info!("Test Ollama Server Not Running test passed");
     Ok(())
 }
 
@@ -96,5 +99,6 @@ async fn test_ollama_multi_message_conversation() -> anyhow::Result<()> {
 
     assert!(!response.outputs().is_empty());
     println!("Response: {:?}", response.outputs());
+    tracing::info!("Test Ollama Multi Message Conversation test passed");
     Ok(())
 }

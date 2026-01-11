@@ -60,6 +60,7 @@ async fn test_streaming_basic() -> botticelli_error::BotticelliResult<()> {
     // Should have generated some text
     assert!(!full_text.is_empty(), "Response should contain text");
 
+    tracing::info!("Test Streaming Basic test passed");
     Ok(())
 }
 
@@ -99,6 +100,7 @@ async fn test_streaming_with_standard_model() -> botticelli_error::BotticelliRes
     println!("Standard model result: {}", full_text);
     assert!(!full_text.is_empty(), "Should have generated text");
 
+    tracing::info!("Test Streaming With Standard Model test passed");
     Ok(())
 }
 
@@ -142,6 +144,7 @@ async fn test_streaming_with_live_model() -> botticelli_error::BotticelliResult<
     println!("Live model result: {}", full_text);
     assert!(!full_text.is_empty(), "Live model should generate text");
 
+    tracing::info!("Test Streaming With Live Model test passed");
     Ok(())
 }
 
@@ -176,6 +179,7 @@ async fn test_streaming_finish_reasons() -> botticelli_error::BotticelliResult<(
     );
 
     println!("Finish reason: {:?}", final_chunk.finish_reason());
+    tracing::info!("Test Streaming Finish Reasons test passed");
     Ok(())
 }
 
@@ -226,6 +230,7 @@ async fn test_streaming_vs_non_streaming_consistency() -> botticelli_error::Bott
     // Note: Content might differ slightly due to randomness,
     // but both should have generated something meaningful
 
+    tracing::info!("Test Streaming Vs Non Streaming Consistency test passed");
     Ok(())
 }
 
@@ -301,5 +306,6 @@ async fn test_rate_limit_comparison() -> botticelli_error::BotticelliResult<()> 
         live_success
     );
 
+    tracing::info!("Test Rate Limit Comparison test passed");
     Ok(())
 }

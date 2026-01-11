@@ -7,6 +7,8 @@ use botticelli_models::{
 #[test]
 fn test_loyal_first_moves_down_in_family() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Loyal First Moves Down In Family");
+
     let bounds = ModelBounds::none();
     let mut selector = ModelSelector::new(
         bounds,
@@ -26,6 +28,8 @@ fn test_loyal_first_moves_down_in_family() {
 #[test]
 fn test_loyal_first_tries_friendly_when_no_lower() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Loyal First Tries Friendly When No Lower");
+
     let bounds = ModelBounds::lower_bound(ModelId::Gemini(GeminiModel::Gemini25FlashLite));
 
     let mut selector = ModelSelector::new(
@@ -48,6 +52,8 @@ fn test_loyal_first_tries_friendly_when_no_lower() {
 #[test]
 fn test_friendly_first_tries_lateral_move() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Friendly First Tries Lateral Move");
+
     let bounds = ModelBounds::none();
     let mut selector = ModelSelector::new(
         bounds,
@@ -68,6 +74,8 @@ fn test_friendly_first_tries_lateral_move() {
 #[test]
 fn test_respects_upper_bound() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Respects Upper Bound");
+
     let bounds = ModelBounds::upper_bound(ModelId::Gemini(GeminiModel::Gemini25Flash));
 
     let mut selector = ModelSelector::new(
@@ -93,6 +101,8 @@ fn test_respects_upper_bound() {
 #[test]
 fn test_respects_lower_bound() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Respects Lower Bound");
+
     let bounds = ModelBounds::lower_bound(ModelId::Gemini(GeminiModel::Gemini25Flash));
 
     let mut selector = ModelSelector::new(
@@ -119,6 +129,8 @@ fn test_respects_lower_bound() {
 #[test]
 fn test_non_rate_limit_error_returns_none() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Non Rate Limit Error Returns None");
+
     let bounds = ModelBounds::none();
     let mut selector = ModelSelector::new(
         bounds,
@@ -135,6 +147,8 @@ fn test_non_rate_limit_error_returns_none() {
 #[test]
 fn test_select_next_tracks_rate_limit() {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing Test Select Next Tracks Rate Limit");
+
     let bounds = ModelBounds::none();
     let mut selector = ModelSelector::new(
         bounds,

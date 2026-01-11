@@ -30,6 +30,7 @@ async fn test_live_api_connection() -> anyhow::Result<()> {
     // Connect to Live API with minimal config
     let _session = client.connect("models/gemini-2.0-flash-exp").await?;
 
+    tracing::info!("Test Live Api Connection test passed");
     Ok(())
 }
 
@@ -59,6 +60,7 @@ async fn test_live_api_basic_generation() -> anyhow::Result<()> {
 
     // Close session
     session.close().await?;
+    tracing::info!("Test Live Api Basic Generation test passed");
     Ok(())
 }
 
@@ -112,6 +114,7 @@ async fn test_live_api_streaming() -> anyhow::Result<()> {
     );
 
     // Stream is dropped here, which closes the WebSocket session
+    tracing::info!("Test Live Api Streaming test passed");
     Ok(())
 }
 
@@ -140,5 +143,6 @@ async fn test_live_api_multiple_turns() -> anyhow::Result<()> {
     println!("Turn 2: {}", response2);
 
     session.close().await?;
+    tracing::info!("Test Live Api Multiple Turns test passed");
     Ok(())
 }

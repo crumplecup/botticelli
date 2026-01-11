@@ -54,6 +54,7 @@ async fn test_live_api_invalid_model() -> anyhow::Result<()> {
         println!("Expected error for invalid model: {}", e);
     }
 
+    tracing::info!("Test Live Api Invalid Model test passed");
     Ok(())
 }
 
@@ -115,6 +116,7 @@ async fn test_live_api_rate_limiting() -> anyhow::Result<()> {
         "Rate limiting should have caused a delay"
     );
 
+    tracing::info!("Test Live Api Rate Limiting test passed");
     Ok(())
 }
 
@@ -148,6 +150,7 @@ async fn test_live_api_empty_message() -> anyhow::Result<()> {
 
     session.close().await.ok();
 
+    tracing::info!("Test Live Api Empty Message test passed");
     Ok(())
 }
 
@@ -180,6 +183,7 @@ async fn test_live_api_very_long_message() -> anyhow::Result<()> {
 
     session.close().await.ok();
 
+    tracing::info!("Test Live Api Very Long Message test passed");
     Ok(())
 }
 
@@ -215,6 +219,7 @@ async fn test_unified_client_handles_live_model_errors() -> anyhow::Result<()> {
         }
     }
 
+    tracing::info!("Test Unified Client Handles Live Model Errors test passed");
     Ok(())
 }
 
@@ -252,6 +257,7 @@ async fn test_live_rate_limiter_concurrent_sessions() -> anyhow::Result<()> {
         "Should have experienced rate limiting delay"
     );
 
+    tracing::info!("Test Live Rate Limiter Concurrent Sessions test passed");
     Ok(())
 }
 
@@ -299,5 +305,6 @@ async fn test_streaming_error_recovery() -> anyhow::Result<()> {
     // Should have received at least one chunk
     assert!(chunk_count > 0, "Should receive at least one chunk");
 
+    tracing::info!("Test Streaming Error Recovery test passed");
     Ok(())
 }

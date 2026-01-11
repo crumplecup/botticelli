@@ -116,7 +116,10 @@ impl BotticelliDriver for MockDriver {
 #[tokio::test]
 async fn test_mock_driver_basic() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing basic mock driver functionality");
+    
     let mock = MockDriver::new("mock_provider", "mock_model");
+    tracing::debug!(provider = "mock_provider", model = "mock_model", "Created mock driver");
 
     // Configure response
     let response = GenerateResponse::builder()
@@ -125,6 +128,7 @@ async fn test_mock_driver_basic() -> anyhow::Result<()> {
         .build()?;
 
     mock.set_response(response).await;
+    tracing::debug!("Configured mock response");
 
     // Use the mock
     assert_eq!(mock.provider_name(), "mock_provider");
@@ -136,8 +140,10 @@ async fn test_mock_driver_basic() -> anyhow::Result<()> {
         .build()?;
 
     let request = GenerateRequest::builder().messages(vec![message]).build()?;
+    tracing::debug!("Created generate request");
 
     let response = mock.generate(&request).await?;
+    tracing::debug!(output_count = response.outputs().len(), "Received response");
 
     assert_eq!(response.outputs().len(), 1);
     match &response.outputs()[0] {
@@ -145,8 +151,12 @@ async fn test_mock_driver_basic() -> anyhow::Result<()> {
         _ => panic!("Expected text output"),
     }
 
-    assert_eq!(mock.call_count().await, 1);
+    let call_count = mock.call_count().await;
+    tracing::debug!(call_count, "Mock driver call count");
+    assert_eq!(call_count, 1);
 
+    tracing::info!("Basic mock driver test passed");
+    tracing::info!("Test Mock Driver Basic test passed");
     Ok(())
 }
 
@@ -154,6 +164,8 @@ async fn test_mock_driver_basic() -> anyhow::Result<()> {
 #[tokio::test]
 async fn test_mock_driver_error() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing mock driver error simulation");
+    
     let mock = MockDriver::new("mock_provider", "mock_model");
 
     // Configure error
@@ -161,6 +173,7 @@ async fn test_mock_driver_error() -> anyhow::Result<()> {
         "Simulated error".to_string(),
     )))
     .await;
+    tracing::debug!("Configured mock to return error");
 
     let message = Message::builder()
         .role(Role::User)
@@ -171,8 +184,14 @@ async fn test_mock_driver_error() -> anyhow::Result<()> {
 
     let result = mock.generate(&request).await;
     assert!(result.is_err());
-    assert_eq!(mock.call_count().await, 1);
+    tracing::debug!("Mock correctly returned error");
+    
+    let call_count = mock.call_count().await;
+    assert_eq!(call_count, 1);
+    tracing::debug!(call_count, "Verified call count");
 
+    tracing::info!("Mock driver error test passed");
+    tracing::info!("Test Mock Driver Error test passed");
     Ok(())
 }
 
@@ -180,6 +199,8 @@ async fn test_mock_driver_error() -> anyhow::Result<()> {
 #[tokio::test]
 async fn test_mock_driver_multiple_calls() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
+    tracing::info!("Testing multiple mock driver calls");
+    
     let mock = MockDriver::new("test", "test");
 
     let response = GenerateResponse::builder()
@@ -198,8 +219,12 @@ async fn test_mock_driver_multiple_calls() -> anyhow::Result<()> {
     for i in 1..=3 {
         mock.set_response(response.clone()).await;
         let _ = mock.generate(&request).await?;
-        assert_eq!(mock.call_count().await, i);
+        let call_count = mock.call_count().await;
+        tracing::debug!(iteration = i, call_count, "Completed call");
+        assert_eq!(call_count, i);
     }
 
+    tracing::info!("Multiple calls test passed");
+    tracing::info!("Test Mock Driver Multiple Calls test passed");
     Ok(())
 }

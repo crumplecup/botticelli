@@ -51,6 +51,7 @@ async fn test_gemini_client_routes_to_live_api() -> anyhow::Result<()> {
     assert!(!response.outputs().is_empty());
     println!("Live API response: {:?}", response.outputs());
 
+    tracing::info!("Test Gemini Client Routes To Live Api test passed");
     Ok(())
 }
 
@@ -98,6 +99,7 @@ async fn test_gemini_client_streaming_routes_to_live_api() -> anyhow::Result<()>
 
     println!("Total chunks received: {}", chunks.len());
 
+    tracing::info!("Test Gemini Client Streaming Routes To Live Api test passed");
     Ok(())
 }
 
@@ -140,5 +142,6 @@ async fn test_gemini_client_detects_live_models() -> anyhow::Result<()> {
     let _ = client.generate(&request_live).await;
     // We don't assert success here because the model might not exist
 
+    tracing::info!("Test Gemini Client Detects Live Models test passed");
     Ok(())
 }
