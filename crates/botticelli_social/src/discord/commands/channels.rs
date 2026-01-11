@@ -10,14 +10,22 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, error, info, instrument, warn};
 
-/// Execute: channels.list
+/// Channel command namespace.
 ///
-/// List all channels in a guild.
-#[instrument(skip(http, args), fields(guild_id, channel_count))]
-pub(super) async fn list(
-    http: &Arc<Http>,
-    args: &HashMap<String, JsonValue>,
-) -> BotCommandResult<JsonValue> {
+/// This zero-sized type provides a clean namespace for channel-related
+/// Discord commands without polluting the module with free functions.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Channels;
+
+impl Channels {
+    /// Execute: channels.list
+    ///
+    /// List all channels in a guild.
+    #[instrument(skip(http, args), fields(guild_id, channel_count))]
+    pub async fn list(
+        http: &Arc<Http>,
+        args: &HashMap<String, JsonValue>,
+    ) -> BotCommandResult<JsonValue> {
     let guild_id_str = args
         .get("guild_id")
         .and_then(|v| v.as_str())
@@ -57,7 +65,7 @@ pub(super) async fn list(
 ///
 /// Get specific channel details.
 #[instrument(skip(http, args), fields(guild_id, channel_id))]
-pub(super) async fn get(
+    pub async fn get(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -111,7 +119,7 @@ pub(super) async fn get(
 ///
 /// Create a new channel in the guild.
 #[instrument(skip(http, args), fields(guild_id, name, kind))]
-pub(super) async fn create(
+    pub async fn create(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -166,7 +174,7 @@ pub(super) async fn create(
 ///
 /// Edit channel properties.
 #[instrument(skip(http, args), fields(channel_id))]
-pub(super) async fn edit(
+    pub async fn edit(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -224,7 +232,7 @@ pub(super) async fn edit(
 ///
 /// Delete a channel.
 #[instrument(skip(http, args), fields(guild_id, channel_id))]
-pub(super) async fn delete(
+    pub async fn delete(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -260,7 +268,7 @@ pub(super) async fn delete(
 ///
 /// Get a channel by name, or create it if it doesn't exist.
 #[instrument(skip(http, args), fields(guild_id, name, existed))]
-pub(super) async fn get_or_create(
+    pub async fn get_or_create(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -335,7 +343,7 @@ pub(super) async fn get_or_create(
 ///
 /// Create an invite link for a channel.
 #[instrument(skip(http, args), fields(channel_id, max_age, max_uses))]
-pub(super) async fn create_invite(
+    pub async fn create_invite(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -386,7 +394,7 @@ pub(super) async fn create_invite(
 ///
 /// Trigger typing indicator in a channel.
 #[instrument(skip(http, args), fields(channel_id))]
-pub(super) async fn typing(
+    pub async fn typing(
     http: &Arc<Http>,
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<JsonValue> {
@@ -410,6 +418,7 @@ pub(super) async fn typing(
         "channel_id": channel_id_str,
         "typing": true,
     }))
+}
 }
 
 // Helper functions

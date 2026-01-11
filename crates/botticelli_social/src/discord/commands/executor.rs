@@ -1,6 +1,7 @@
 //! Discord command executor implementation.
 
-use super::{channels, events, forum, members, messages, misc, moderation, reactions, roles, server, threads};
+use super::channels::Channels;
+use super::{events, forum, members, messages, misc, moderation, reactions, roles, server, threads};
 use botticelli_error::{BotCommandError, BotCommandErrorKind};
 use async_trait::async_trait;
 use botticelli_interface::BotCommandExecutor;
@@ -104,14 +105,14 @@ impl BotCommandExecutor for DiscordCommandExecutor {
             "members.remove_timeout" => members::remove_timeout(&self.http, args).await?,
 
             // Channel commands
-            "channels.list" => channels::list(&self.http, args).await?,
-            "channels.get" => channels::get(&self.http, args).await?,
-            "channels.create" => channels::create(&self.http, args).await?,
-            "channels.edit" => channels::edit(&self.http, args).await?,
-            "channels.delete" => channels::delete(&self.http, args).await?,
-            "channels.get_or_create" => channels::get_or_create(&self.http, args).await?,
-            "channels.create_invite" => channels::create_invite(&self.http, args).await?,
-            "channels.typing" => channels::typing(&self.http, args).await?,
+            "channels.list" => Channels::list(&self.http, args).await?,
+            "channels.get" => Channels::get(&self.http, args).await?,
+            "channels.create" => Channels::create(&self.http, args).await?,
+            "channels.edit" => Channels::edit(&self.http, args).await?,
+            "channels.delete" => Channels::delete(&self.http, args).await?,
+            "channels.get_or_create" => Channels::get_or_create(&self.http, args).await?,
+            "channels.create_invite" => Channels::create_invite(&self.http, args).await?,
+            "channels.typing" => Channels::typing(&self.http, args).await?,
 
             // Message commands
             "messages.send" => messages::send(&self.http, args).await?,

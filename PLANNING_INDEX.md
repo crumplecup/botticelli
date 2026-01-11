@@ -331,3 +331,4 @@ This index tracks all planning documents in the workspace. When documents are co
 **Last Updated**: 2025-12-30
 **Recent Cleanup**: Archived 32 planning documents (CHAT, TUI, RMCP, MCP, elicitation completed work)
 **Active Focus**: RMCP tool migration (81% complete), trait-based architecture, elicitation refactoring
+- DISCORD_COMMANDS_HELPER_TYPE_REFACTOR.md
