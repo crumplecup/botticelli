@@ -22,6 +22,7 @@ use tiktoken_rs::CoreBPE;
 /// let tokens = encoder.encode_with_special_tokens("Hello, world!");
 /// assert!(!tokens.is_empty());
 /// ```
+#[tracing::instrument]
 pub fn get_tokenizer(model: &str) -> TokenCountingResult<Arc<CoreBPE>> {
     tiktoken_rs::get_bpe_from_model(model)
         .map(Arc::new)

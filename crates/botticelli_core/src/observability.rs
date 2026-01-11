@@ -25,6 +25,7 @@ impl ExporterBackend {
     /// Reads `OTEL_EXPORTER` and `OTEL_EXPORTER_OTLP_ENDPOINT` environment variables:
     /// - "stdout" → Stdout (default if unset)
     /// - "otlp" → Otlp (requires `otel-otlp` feature, reads endpoint from env)
+    #[tracing::instrument]
     pub fn from_env() -> Self {
         match env::var("OTEL_EXPORTER")
             .unwrap_or_else(|_| "stdout".to_string())
@@ -81,6 +82,7 @@ impl ObservabilityConfig {
     /// - Metrics: enabled
     ///
     /// For more control, use `ObservabilityConfig::builder()`.
+    #[tracing::instrument(skip(service_name))]
     pub fn new(service_name: impl Into<String>) -> Self {
         Self::builder()
             .service_name(service_name)
@@ -89,6 +91,7 @@ impl ObservabilityConfig {
     }
 
     /// Creates a builder for ObservabilityConfig.
+    #[tracing::instrument]
     pub fn builder() -> ObservabilityConfigBuilder {
         ObservabilityConfigBuilder::default()
     }
@@ -113,6 +116,7 @@ impl Default for ObservabilityConfig {
 /// # Errors
 ///
 /// Returns an error if initialization fails.
+#[tracing::instrument]
 pub fn init_observability() -> ObservabilityResult<()> {
     init_observability_with_config(ObservabilityConfig::default())
 }
@@ -133,6 +137,7 @@ pub fn init_observability() -> ObservabilityResult<()> {
 /// # Errors
 ///
 /// Returns an error if tracer provider, exporter, or filter initialization fails.
+#[tracing::instrument]
 pub fn init_observability_with_config(config: ObservabilityConfig) -> ObservabilityResult<()> {
     // Create resource with service metadata
     let resource = Resource::builder()
@@ -301,6 +306,7 @@ fn init_metrics(resource: &Resource, config: &ObservabilityConfig) -> Observabil
 /// This ensures all spans and metrics are flushed before exit.
 /// In OpenTelemetry SDK v0.31+, providers flush automatically on drop,
 /// so this is primarily for API compatibility.
+#[tracing::instrument]
 pub fn shutdown_observability() {
     // Providers are dropped automatically and flush on drop
     // This includes both tracer and meter providers

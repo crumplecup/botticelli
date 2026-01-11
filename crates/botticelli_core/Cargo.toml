@@ -39,3 +39,7 @@ botticelli_interface = { workspace = true }
 futures = { workspace = true, optional = true }
 reqwest = { workspace = true, features = ["json"], optional = true }
 tiktoken-rs = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
+dotenvy = { workspace = true }

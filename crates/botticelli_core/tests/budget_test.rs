@@ -1,25 +1,12 @@
 //! Budget configuration validation and calculation tests.
 
-use botticelli_core::{
-    BudgetConfig, BudgetConfigBuilderError, ExporterBackend, ObservabilityConfig,
-    init_observability_with_config,
-};
+mod helpers;
 
-/// Initialize tracing for tests.
-fn init_test_tracing() {
-    let _ = ObservabilityConfig::builder()
-        .service_name("budget-tests")
-        .exporter(ExporterBackend::Stdout)
-        .enable_metrics(false)
-        .log_level("debug")
-        .build()
-        .ok()
-        .and_then(|config| init_observability_with_config(config).ok());
-}
+use botticelli_core::{BudgetConfig, BudgetConfigBuilderError};
 
 #[test]
-fn validate_rejects_invalid_multipliers() -> Result<(), BudgetConfigBuilderError> {
-    init_test_tracing();
+fn validate_rejects_invalid_multipliers() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     use tracing::{debug, info};
 
     info!("Testing budget validation with invalid multipliers");
@@ -53,7 +40,8 @@ fn validate_rejects_invalid_multipliers() -> Result<(), BudgetConfigBuilderError
 }
 
 #[test]
-fn validate_accepts_valid_multipliers() -> Result<(), BudgetConfigBuilderError> {
+fn validate_accepts_valid_multipliers() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     use tracing::{debug, info};
 
     info!("Testing budget validation with valid multipliers");
@@ -71,7 +59,8 @@ fn validate_accepts_valid_multipliers() -> Result<(), BudgetConfigBuilderError> 
 }
 
 #[test]
-fn apply_methods_scale_correctly() -> Result<(), BudgetConfigBuilderError> {
+fn apply_methods_scale_correctly() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     use tracing::{debug, info};
 
     info!("Testing budget scaling calculations");
@@ -96,7 +85,8 @@ fn apply_methods_scale_correctly() -> Result<(), BudgetConfigBuilderError> {
 }
 
 #[test]
-fn merge_takes_minimum() -> Result<(), BudgetConfigBuilderError> {
+fn merge_takes_minimum() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
     use tracing::{debug, info};
 
     info!("Testing budget merge operation");
