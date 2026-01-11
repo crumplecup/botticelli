@@ -37,6 +37,7 @@ pub struct RoleRow {
 /// Insertable struct for discord_roles table.
 ///
 /// Used to create new role records in the database.
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Insertable, derive_getters::Getters, derive_builder::Builder)]
 #[diesel(table_name = botticelli_database::schema::discord_roles)]
 pub struct NewRole {

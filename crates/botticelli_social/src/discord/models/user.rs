@@ -48,6 +48,7 @@ pub struct UserRow {
 /// Insertable struct for discord_users table.
 ///
 /// Used to create new user records in the database.
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Insertable, derive_getters::Getters, derive_builder::Builder)]
 #[diesel(table_name = botticelli_database::schema::discord_users)]
 pub struct NewUser {

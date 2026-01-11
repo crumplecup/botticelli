@@ -42,6 +42,7 @@ pub struct GuildMemberRow {
 /// Insertable struct for discord_guild_members table.
 ///
 /// Used to create new guild member records in the database.
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Insertable, derive_getters::Getters, derive_builder::Builder)]
 #[diesel(table_name = botticelli_database::schema::discord_guild_members)]
 pub struct NewGuildMember {

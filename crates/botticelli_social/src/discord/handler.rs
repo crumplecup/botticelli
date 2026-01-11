@@ -4,8 +4,8 @@
 //! and persist data to the database.
 
 use crate::{
-    ChannelType, DiscordRepository, NewChannel, NewChannelBuilder, NewGuildBuilder,
-    NewGuildMember, NewGuildMemberBuilder, NewRole, NewRoleBuilder, NewUser, NewUserBuilder,
+    ChannelType, DiscordRepository, NewChannelBuilder, NewGuildBuilder, NewGuildMemberBuilder,
+    NewRoleBuilder, NewUserBuilder,
 };
 use chrono::NaiveDateTime;
 use serenity::all::{GuildId, Ready};
