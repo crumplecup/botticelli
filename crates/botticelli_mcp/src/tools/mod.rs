@@ -119,6 +119,11 @@ impl ToolRegistry {
         }
     }
 
+    /// Get the metrics collector, if configured.
+    pub fn metrics(&self) -> Option<&Arc<crate::PrometheusMetrics>> {
+        self.metrics.as_ref()
+    }
+
     /// Registers a tool.
     pub fn register(&mut self, tool: Arc<dyn McpTool>) {
         self.tools.insert(tool.name().to_string(), tool);
@@ -240,21 +245,6 @@ impl Default for ToolRegistry {
                 tracing::info!("Discord get channels tool registered");
             } else {
                 tracing::warn!("Discord get channels not available (check DISCORD_TOKEN)");
-            }
-
-            // Social media integration tools (Phase 5)
-            if let Ok(discord_token) = std::env::var("DISCORD_TOKEN") {
-                if let Ok(tool) = DiscordBotCommandTool::new(discord_token.clone()) {
-                    registry.register(Arc::new(tool));
-                    tracing::info!("Discord bot command tool registered");
-                }
-
-                if let Ok(tool) = DiscordPostTool::new(discord_token) {
-                    registry.register(Arc::new(tool));
-                    tracing::info!("Discord post tool registered");
-                }
-            } else {
-                tracing::warn!("Discord bot tools not available (check DISCORD_TOKEN)");
             }
         }
 

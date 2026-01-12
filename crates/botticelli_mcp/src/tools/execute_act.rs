@@ -21,16 +21,6 @@ use tracing::{debug, error, instrument};
     feature = "huggingface",
     feature = "groq"
 ))]
-use botticelli_core::{GenerateRequest, Input, MessageBuilder, Output, Role};
-
-#[cfg(any(
-    feature = "gemini",
-    feature = "anthropic",
-    feature = "ollama",
-    feature = "huggingface",
-    feature = "groq"
-))]
-use botticelli_interface::BotticelliDriver;
 
 #[cfg(any(
     feature = "gemini",
@@ -137,16 +127,14 @@ impl ExecuteActTool {
                 Response = botticelli_core::GenerateResponse,
             >,
     {
-        use botticelli_core::{GenerateRequest, Input, MessageBuilder, Output, Role};
-
         // Build messages
         let mut messages = Vec::new();
 
         if let Some(sys) = system_prompt {
             messages.push(
-                MessageBuilder::default()
-                    .role(Role::System)
-                    .content(vec![Input::Text(sys.to_string())])
+                botticelli_core::MessageBuilder::default()
+                    .role(botticelli_core::Role::System)
+                    .content(vec![botticelli_core::Input::Text(sys.to_string())])
                     .build()
                     .map_err(|e| {
                         error!(error = ?e, "Failed to build system message");
@@ -156,9 +144,9 @@ impl ExecuteActTool {
         }
 
         messages.push(
-            MessageBuilder::default()
-                .role(Role::User)
-                .content(vec![Input::Text(prompt.to_string())])
+            botticelli_core::MessageBuilder::default()
+                .role(botticelli_core::Role::User)
+                .content(vec![botticelli_core::Input::Text(prompt.to_string())])
                 .build()
                 .map_err(|e| {
                     error!(error = ?e, "Failed to build user message");
@@ -167,7 +155,7 @@ impl ExecuteActTool {
         );
 
         // Build request
-        let request = GenerateRequest::builder()
+        let request = botticelli_core::GenerateRequest::builder()
             .model(model.to_string())
             .messages(messages)
             .max_tokens(max_tokens)
@@ -189,7 +177,7 @@ impl ExecuteActTool {
             .outputs()
             .iter()
             .filter_map(|output| {
-                if let Output::Text(t) = output {
+                if let botticelli_core::Output::Text(t) = output {
                     Some(t.as_str())
                 } else {
                     None

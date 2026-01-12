@@ -36,10 +36,29 @@ use rmcp::model::ServerCapabilities;
 use rmcp::{ServerHandler, tool, tool_handler, tool_router};
 use std::path::Path;
 use std::sync::Arc;
-use tracing::{debug, instrument};
+use tracing::{debug, error, instrument};
 
 #[cfg(feature = "database")]
 use botticelli_interface::DatabaseRegistryOperations;
+
+/// Helper function to convert any error to rmcp::ErrorData while preserving error details in logs.
+///
+/// This logs the full error with context before converting to ErrorData, ensuring we don't
+/// lose debugging information even though rmcp::ErrorData only stores a message.
+fn to_mcp_error<E: std::fmt::Display + std::fmt::Debug>(err: E, context: &str) -> rmcp::ErrorData {
+    use rmcp::model::ErrorCode;
+    use std::borrow::Cow;
+
+    // Log the full error with debug representation
+    error!(error = ?err, context = context, "Error occurred");
+
+    // Convert to ErrorData with context
+    rmcp::ErrorData::new(
+        ErrorCode::INTERNAL_ERROR,
+        Cow::Owned(format!("{}: {}", context, err)),
+        None,
+    )
+}
 
 /// Botticelli MCP server using rmcp.
 ///
@@ -378,11 +397,11 @@ impl BotticelliServer {
 
         #[cfg(not(feature = "database"))]
         {
-            return Err(rmcp::ErrorData::new(
+            Err(rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
                 Cow::Borrowed("Database feature not enabled"),
                 None,
-            ));
+            ))
         }
 
         #[cfg(feature = "database")]
@@ -403,13 +422,10 @@ impl BotticelliServer {
 
             // Execute query
             let query = format!("SELECT * FROM {} LIMIT {}", table, limit);
-            let rows = db_ops.execute_query(&query).await.map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Query failed: {}", e)),
-                    None,
-                )
-            })?;
+            let rows = db_ops
+                .execute_query(&query)
+                .await
+                .map_err(|e| to_mcp_error(e, "Query failed"))?;
 
             debug!(count = rows.len(), "Retrieved rows from database");
 
@@ -460,25 +476,17 @@ impl BotticelliServer {
 
         match format {
             MetricsFormat::Prometheus => {
-                let metrics_text = metrics.export_prometheus().map_err(|e| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Owned(format!("Failed to export prometheus metrics: {}", e)),
-                        None,
-                    )
-                })?;
+                let metrics_text = metrics
+                    .export_prometheus()
+                    .map_err(|e| to_mcp_error(e, "Failed to export Prometheus metrics"))?;
 
                 let result = ExportMetricsResult::prometheus(metrics_text);
                 Ok(Json(result))
             }
             MetricsFormat::Summary => {
-                let summary = metrics.summary().map_err(|e| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Owned(format!("Failed to get metrics summary: {}", e)),
-                        None,
-                    )
-                })?;
+                let summary = metrics
+                    .summary()
+                    .map_err(|e| to_mcp_error(e, "Failed to get metrics summary"))?;
 
                 let result = ExportMetricsResult::summary(
                     summary.total_executions,
@@ -530,13 +538,10 @@ impl BotticelliServer {
         })?;
 
         // Ask for text input
-        let text = dialog.ask_text(&prompt).await.map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Dialog error: {}", e)),
-                None,
-            )
-        })?;
+        let text = dialog
+            .ask_text(&prompt)
+            .await
+            .map_err(|e| to_mcp_error(e, "Dialog error"))?;
 
         debug!(response_len = text.len(), "Received text input");
 
@@ -586,13 +591,7 @@ impl BotticelliServer {
         let confirmed = dialog
             .ask_confirmation(&prompt, default)
             .await
-            .map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Dialog error: {}", e)),
-                    None,
-                )
-            })?;
+            .map_err(|e| to_mcp_error(e, "Dialog error"))?;
 
         debug!(confirmed, "Received boolean confirmation");
 
@@ -649,13 +648,10 @@ impl BotticelliServer {
         })?;
 
         // Ask for number input
-        let number = dialog.ask_number(&prompt, min, max).await.map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Dialog error: {}", e)),
-                None,
-            )
-        })?;
+        let number = dialog
+            .ask_number(&prompt, min, max)
+            .await
+            .map_err(|e| to_mcp_error(e, "Dialog error"))?;
 
         debug!(number, "Received numeric input");
 
@@ -719,13 +715,7 @@ impl BotticelliServer {
         let index = dialog
             .ask_choice(&prompt, &option_refs)
             .await
-            .map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Dialog error: {}", e)),
-                    None,
-                )
-            })?;
+            .map_err(|e| to_mcp_error(e, "Dialog error"))?;
 
         // Get selected option
         let selected = options.get(index).ok_or_else(|| {
@@ -997,9 +987,6 @@ impl BotticelliServer {
             save_to,
         }): Parameters<ModifyNarrativeParams>,
     ) -> Result<Json<ModifyNarrativeResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         debug!(modification = %modification, has_save_path = save_to.is_some(), "Modifying narrative");
 
         // Apply modification
@@ -1028,13 +1015,9 @@ impl BotticelliServer {
         // Optionally save to file
         let mut saved_to = None;
         if let Some(path) = save_to {
-            tokio::fs::write(&path, &modified_toml).await.map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Failed to save file: {}", e)),
-                    None,
-                )
-            })?;
+            tokio::fs::write(&path, &modified_toml)
+                .await
+                .map_err(|e| to_mcp_error(e, "Failed to save file"))?;
             saved_to = Some(path);
             debug!(
                 path = saved_to.as_ref().unwrap(),
@@ -1113,25 +1096,17 @@ impl BotticelliServer {
         // Create parent directories if needed
         if let Some(parent) = path.parent() {
             if !parent.exists() {
-                tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Owned(format!("Failed to create directories: {}", e)),
-                        None,
-                    )
-                })?;
+                tokio::fs::create_dir_all(parent)
+                    .await
+                    .map_err(|e| to_mcp_error(e, "Failed to create directories"))?;
                 debug!(path = ?parent, "Created parent directories");
             }
         }
 
         // Write file
-        tokio::fs::write(path, &narrative_toml).await.map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Failed to write file: {}", e)),
-                None,
-            )
-        })?;
+        tokio::fs::write(path, &narrative_toml)
+            .await
+            .map_err(|e| to_mcp_error(e, "Failed to write file"))?;
 
         debug!(path = %file_path, "Narrative saved to file");
 
@@ -1188,13 +1163,9 @@ impl BotticelliServer {
         let toml_content = if let Some(c) = content {
             c
         } else if let Some(ref path) = file_path {
-            tokio::fs::read_to_string(path).await.map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INVALID_PARAMS,
-                    Cow::Owned(format!("Failed to read file '{}': {}", path, e)),
-                    None,
-                )
-            })?
+            tokio::fs::read_to_string(path)
+                .await
+                .map_err(|e| to_mcp_error(e, &format!("Failed to read file '{}'", path)))?
         } else {
             return Err(rmcp::ErrorData::new(
                 ErrorCode::INVALID_PARAMS,
@@ -1478,66 +1449,39 @@ impl BotticelliServer {
                 Response = botticelli_core::GenerateResponse,
             >,
     {
-        use botticelli_core::{GenerateRequest, Input, MessageBuilder, Role};
-        use botticelli_interface::BotticelliDriver;
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         // Build request
         let mut messages = Vec::new();
 
         if let Some(sys_prompt) = system_prompt {
             messages.push(
-                MessageBuilder::default()
-                    .role(Role::System)
-                    .content(vec![Input::Text(sys_prompt)])
+                botticelli_core::MessageBuilder::default()
+                    .role(botticelli_core::Role::System)
+                    .content(vec![botticelli_core::Input::Text(sys_prompt)])
                     .build()
-                    .map_err(|e| {
-                        rmcp::ErrorData::new(
-                            ErrorCode::INTERNAL_ERROR,
-                            Cow::Owned(format!("Failed to build system message: {}", e)),
-                            None,
-                        )
-                    })?,
+                    .map_err(|e| to_mcp_error(e, "Failed to build system message"))?,
             );
         }
 
         messages.push(
-            MessageBuilder::default()
-                .role(Role::User)
-                .content(vec![Input::Text(prompt.clone())])
+            botticelli_core::MessageBuilder::default()
+                .role(botticelli_core::Role::User)
+                .content(vec![botticelli_core::Input::Text(prompt.clone())])
                 .build()
-                .map_err(|e| {
-                    rmcp::ErrorData::new(
-                        ErrorCode::INTERNAL_ERROR,
-                        Cow::Owned(format!("Failed to build user message: {}", e)),
-                        None,
-                    )
-                })?,
+                .map_err(|e| to_mcp_error(e, "Failed to build user message"))?,
         );
 
-        let request = GenerateRequest::builder()
+        let request = botticelli_core::GenerateRequest::builder()
             .messages(messages)
             .max_tokens(max_tokens)
             .temperature(temperature)
             .build()
-            .map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Failed to build request: {}", e)),
-                    None,
-                )
-            })?;
+            .map_err(|e| to_mcp_error(e, "Failed to build request"))?;
 
         // Execute generation
-        let response = driver.generate(&request).await.map_err(|e| {
-            tracing::error!(error = ?e, "LLM generation failed");
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Generation failed: {}", e)),
-                None,
-            )
-        })?;
+        let response = driver
+            .generate(&request)
+            .await
+            .map_err(|e| to_mcp_error(e, "Generation failed"))?;
 
         // Extract text from response
         let text = response
@@ -1774,9 +1718,6 @@ impl BotticelliServer {
             default_temperature,
         }): Parameters<ElicitMetadataParams>,
     ) -> Result<Json<ElicitMetadataResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         debug!(narrative_id, "Updating narrative metadata");
 
         // Update fields if provided
@@ -1790,13 +1731,7 @@ impl BotticelliServer {
                     "temperature": default_temperature,
                 }),
             )
-            .map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INVALID_PARAMS,
-                    Cow::Owned(format!("Failed to update metadata: {}", e)),
-                    None,
-                )
-            })?;
+            .map_err(|e| to_mcp_error(e, "Failed to update metadata"))?;
 
         debug!(narrative_id, "Metadata updated");
 
@@ -1830,19 +1765,13 @@ impl BotticelliServer {
             temperature,
         }): Parameters<ElicitActParams>,
     ) -> Result<Json<ElicitActResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         debug!(narrative_id, act_name, "Eliciting act");
 
         // Get current narrative
-        let mut partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INVALID_PARAMS,
-                Cow::Owned(format!("Narrative not found: {}", e)),
-                None,
-            )
-        })?;
+        let mut partial = self
+            .narrative_registry
+            .get(&narrative_id)
+            .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
         // Check if act exists
         let status = if partial.acts.contains_key(&act_name) {
@@ -1891,28 +1820,17 @@ impl BotticelliServer {
             validate,
         }): Parameters<FinalizeNarrativeParams>,
     ) -> Result<Json<FinalizeNarrativeResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         debug!(narrative_id, validate, "Finalizing narrative");
 
         // Get narrative
-        let partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INVALID_PARAMS,
-                Cow::Owned(format!("Narrative not found: {}", e)),
-                None,
-            )
-        })?;
+        let partial = self
+            .narrative_registry
+            .get(&narrative_id)
+            .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
         // Convert to TOML
-        let toml = toml::to_string_pretty(&partial).map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Failed to serialize to TOML: {}", e)),
-                None,
-            )
-        })?;
+        let toml = toml::to_string_pretty(&partial)
+            .map_err(|e| to_mcp_error(e, "Failed to serialize to TOML"))?;
 
         // Validate if requested
         let validation_errors = if validate {
@@ -1969,19 +1887,13 @@ impl BotticelliServer {
             format,
         }): Parameters<GetNarrativeStateParams>,
     ) -> Result<Json<GetNarrativeStateResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         debug!(narrative_id, ?format, "Getting narrative state");
 
         // Get narrative
-        let partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INVALID_PARAMS,
-                Cow::Owned(format!("Narrative not found: {}", e)),
-                None,
-            )
-        })?;
+        let partial = self
+            .narrative_registry
+            .get(&narrative_id)
+            .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
         // Calculate state
         let acts_count = partial.acts.len();
@@ -2008,13 +1920,10 @@ impl BotticelliServer {
 
         // Generate TOML if requested
         let toml = if matches!(format, StateFormat::Toml) {
-            Some(toml::to_string_pretty(&partial).map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Failed to convert to TOML: {}", e)),
-                    None,
-                )
-            })?)
+            Some(
+                toml::to_string_pretty(&partial)
+                    .map_err(|e| to_mcp_error(e, "Failed to convert to TOML"))?,
+            )
         } else {
             None
         };
@@ -2060,19 +1969,13 @@ impl BotticelliServer {
             strict,
         }): Parameters<ValidateNarrativeSessionParams>,
     ) -> Result<Json<ValidateNarrativeSessionResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         debug!(narrative_id, strict, "Validating narrative session");
 
         // Get narrative
-        let partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INVALID_PARAMS,
-                Cow::Owned(format!("Narrative not found: {}", e)),
-                None,
-            )
-        })?;
+        let partial = self
+            .narrative_registry
+            .get(&narrative_id)
+            .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
         let mut errors = Vec::new();
         let mut warnings = Vec::new();
@@ -2261,13 +2164,10 @@ impl BotticelliServer {
 
         // Count remaining errors by validating
         let remaining_errors = {
-            let partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Failed to retrieve updated narrative: {}", e)),
-                    None,
-                )
-            })?;
+            let partial = self
+                .narrative_registry
+                .get(&narrative_id)
+                .map_err(|e| to_mcp_error(e, "Failed to retrieve updated narrative"))?;
 
             let mut errors = 0;
 
@@ -2525,13 +2425,10 @@ impl BotticelliServer {
             ));
         }
 
-        let message: serde_json::Value = response.json().await.map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Failed to parse Discord response: {}", e)),
-                None,
-            )
-        })?;
+        let message: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| to_mcp_error(e, "Failed to parse Discord response"))?;
 
         let message_id = message["id"].as_str().unwrap_or("unknown").to_string();
         let timestamp = message["timestamp"]
@@ -2621,13 +2518,10 @@ impl BotticelliServer {
             ));
         }
 
-        let messages: Vec<serde_json::Value> = response.json().await.map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Failed to parse Discord response: {}", e)),
-                None,
-            )
-        })?;
+        let messages: Vec<serde_json::Value> = response
+            .json()
+            .await
+            .map_err(|e| to_mcp_error(e, "Failed to parse Discord response"))?;
 
         let formatted_messages: Vec<DiscordMessageInfo> = messages
             .into_iter()
@@ -2706,13 +2600,7 @@ impl BotticelliServer {
             .header("User-Agent", "Botticelli-MCP/0.2.0")
             .send()
             .await
-            .map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Discord API request failed: {}", e)),
-                    None,
-                )
-            })?;
+            .map_err(|e| to_mcp_error(e, "Discord API request failed"))?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -2724,13 +2612,10 @@ impl BotticelliServer {
             ));
         }
 
-        let guild: serde_json::Value = response.json().await.map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Failed to parse Discord response: {}", e)),
-                None,
-            )
-        })?;
+        let guild: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| to_mcp_error(e, "Failed to parse Discord response"))?;
 
         let name = guild["name"].as_str().unwrap_or("Unknown").to_string();
         let member_count = guild["approximate_member_count"].as_u64();
@@ -2793,13 +2678,7 @@ impl BotticelliServer {
             .header("User-Agent", "Botticelli-MCP/0.2.0")
             .send()
             .await
-            .map_err(|e| {
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Discord API request failed: {}", e)),
-                    None,
-                )
-            })?;
+            .map_err(|e| to_mcp_error(e, "Discord API request failed"))?;
 
         if !response.status().is_success() {
             let status = response.status();
@@ -2811,13 +2690,10 @@ impl BotticelliServer {
             ));
         }
 
-        let channels: Vec<serde_json::Value> = response.json().await.map_err(|e| {
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Failed to parse Discord response: {}", e)),
-                None,
-            )
-        })?;
+        let channels: Vec<serde_json::Value> = response
+            .json()
+            .await
+            .map_err(|e| to_mcp_error(e, "Failed to parse Discord response"))?;
 
         let formatted_channels: Vec<DiscordChannelInfo> = channels
             .into_iter()
@@ -3078,7 +2954,6 @@ fn remove_act(toml: &str, modification: &str) -> Result<(String, String), rmcp::
         let after_act = &modification[idx + 3..];
         // Skip whitespace and get the next word
         after_act
-            .trim()
             .split_whitespace()
             .next()
             .unwrap_or("unknown")

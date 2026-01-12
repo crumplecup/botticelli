@@ -35,7 +35,6 @@ use botticelli_narrative::ProcessorContext;
     feature = "huggingface",
     feature = "groq"
 ))]
-use botticelli_error::BotticelliResult;
 
 #[cfg(any(
     feature = "gemini",

@@ -12,15 +12,6 @@ pub struct CreateNarrativeSessionParams {
     pub description: String,
 }
 
-/// Detected act information from description analysis.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
-#[schemars(description = "Information about a detected act in the narrative")]
-pub struct DetectedAct {
-    /// Act name.
-    #[schemars(description = "Name of the detected act")]
-    pub name: String,
-}
-
 /// Analysis of the user's description.
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 #[schemars(description = "Analysis of the user's narrative description")]
@@ -181,11 +172,12 @@ pub struct FinalizeNarrativeResult {
 }
 
 /// Output format for narrative state.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "lowercase")]
 #[schemars(description = "Format for narrative state output")]
 pub enum StateFormat {
     /// Brief summary only.
+    #[default]
     #[schemars(description = "Brief summary of the narrative")]
     Summary,
     /// Full state information.
@@ -194,12 +186,6 @@ pub enum StateFormat {
     /// TOML representation.
     #[schemars(description = "TOML representation of the narrative")]
     Toml,
-}
-
-impl Default for StateFormat {
-    fn default() -> Self {
-        Self::Summary
-    }
 }
 
 /// Summary of narrative state.

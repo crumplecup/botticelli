@@ -578,7 +578,7 @@ lint-md:
     markdownlint-cli2 "**/*.md" "#target" "#node_modules"
 
 # Test various feature gate combinations (requires cargo-hack)
-check-features:
+check-features package='':
     #!/usr/bin/env bash
     set -e
     command -v cargo-hack >/dev/null 2>&1 || (echo "❌ cargo-hack not installed. Run: cargo install cargo-hack" && exit 1)
@@ -587,7 +587,7 @@ check-features:
     rm -f "$LOG_FILE"
     
     # Run feature gate checks and capture output
-    if ./scripts/feature-gate-check.sh 2>&1 | tee "$LOG_FILE"; then
+    if ./scripts/feature-gate-check.sh "{{ package }}" 2>&1 | tee "$LOG_FILE"; then
         if [ -s "$LOG_FILE" ] && grep -qE "^(warning:|error:|\s+\^|error\[)" "$LOG_FILE"; then
             echo "⚠️  Feature gate checks completed with warnings/errors. See: $LOG_FILE"
             exit 1

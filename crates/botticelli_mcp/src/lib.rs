@@ -39,7 +39,6 @@ mod elicit_number;
 mod elicit_select;
 mod elicit_text;
 mod elicitation;
-mod errors;
 mod execution;
 mod export_metrics;
 mod modify_narrative;
@@ -51,7 +50,6 @@ mod scene;
 mod server_info;
 mod session_tools;
 pub mod tools;
-mod transport;
 mod validate_narrative;
 
 pub use conversation::{Attachment, ConversationSession, ConversationTurn, SessionState};
@@ -71,7 +69,6 @@ pub use elicit_text::{ElicitTextParams, ElicitTextResult};
 pub use elicitation::{
     ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
 };
-pub use errors::ToolError;
 pub use execution::{
     ExecuteActParams, ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult,
     GenerateParams, GenerateResult,

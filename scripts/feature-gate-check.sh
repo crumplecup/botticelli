@@ -1,10 +1,21 @@
 #!/bin/bash
 # Feature Gate Testing Script
 # Tests various feature combinations to ensure clean compilation
+#
+# Usage: ./feature-gate-check.sh [package]
+#   package - Optional specific package to test (e.g., botticelli_mcp)
 
 set -e
 
-echo "=== Feature Gate Testing ==="
+# Parse optional package argument
+PACKAGE="$1"
+PACKAGE_FLAG=""
+if [ -n "$PACKAGE" ]; then
+    PACKAGE_FLAG="-p $PACKAGE"
+    echo "=== Feature Gate Testing for $PACKAGE ==="
+else
+    echo "=== Feature Gate Testing (workspace) ==="
+fi
 echo ""
 
 # Colors for output
@@ -29,25 +40,53 @@ run_test() {
     echo ""
 }
 
-# 1. No default features
-run_test "no-default-features" \
-    cargo check --workspace --no-default-features
+# Determine scope: workspace or package
+if [ -n "$PACKAGE" ]; then
+    # Package-specific tests
+    # 1. No default features
+    run_test "no-default-features" \
+        cargo check $PACKAGE_FLAG --no-default-features
 
-# 2. Default features only
-run_test "default-features" \
-    cargo check --workspace
+    # 2. Default features only
+    run_test "default-features" \
+        cargo check $PACKAGE_FLAG
 
-# 3. All features
-run_test "all-features" \
-    cargo check --workspace --all-features
+    # 3. All features
+    run_test "all-features" \
+        cargo check $PACKAGE_FLAG --all-features
 
-# 4. Individual critical features
-echo -e "${YELLOW}Testing individual features...${NC}"
+    # 4. Clippy checks
+    echo -e "${YELLOW}Running clippy checks...${NC}"
 
-run_test "gemini only" \
-    cargo check --workspace --no-default-features --features gemini
+    run_test "clippy no-default-features" \
+        cargo clippy $PACKAGE_FLAG --no-default-features -- -D warnings
 
-run_test "database only" \
+    run_test "clippy default-features" \
+        cargo clippy $PACKAGE_FLAG -- -D warnings
+
+    run_test "clippy all-features" \
+        cargo clippy $PACKAGE_FLAG --all-features -- -D warnings
+else
+    # Workspace-wide tests
+    # 1. No default features
+    run_test "no-default-features" \
+        cargo check --workspace --no-default-features
+
+    # 2. Default features only
+    run_test "default-features" \
+        cargo check --workspace
+
+    # 3. All features
+    run_test "all-features" \
+        cargo check --workspace --all-features
+
+    # 4. Individual critical features
+    echo -e "${YELLOW}Testing individual features...${NC}"
+
+    run_test "gemini only" \
+        cargo check --workspace --no-default-features --features gemini
+
+    run_test "database only" \
     cargo check --workspace --no-default-features --features database
 
 run_test "discord only" \
@@ -77,8 +116,9 @@ run_test "clippy no-default-features" \
 run_test "clippy default-features" \
     cargo clippy --workspace -- -D warnings
 
-run_test "clippy all-features" \
-    cargo clippy --workspace --all-features -- -D warnings
+    run_test "clippy all-features" \
+        cargo clippy --workspace --all-features -- -D warnings
+fi
 
 # Summary
 echo ""

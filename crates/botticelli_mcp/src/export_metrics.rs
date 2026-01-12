@@ -4,19 +4,14 @@ use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Output format for metrics export.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum MetricsFormat {
     /// Full Prometheus text format
+    #[default]
     Prometheus,
     /// Quick statistics summary
     Summary,
-}
-
-impl Default for MetricsFormat {
-    fn default() -> Self {
-        Self::Prometheus
-    }
 }
 
 /// Parameters for exporting metrics.
