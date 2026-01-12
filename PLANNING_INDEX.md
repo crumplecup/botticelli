@@ -348,3 +348,18 @@ This index tracks all planning documents in the workspace. When documents are co
 **Recent Cleanup**: Archived 32 planning documents (CHAT, TUI, RMCP, MCP, elicitation completed work)
 **Active Focus**: RMCP tool migration (81% complete), trait-based architecture, elicitation refactoring
 - DISCORD_COMMANDS_HELPER_TYPE_REFACTOR.md
+
+### Code Quality & Audits
+
+- **BOTTICELLI_MCP_COMPREHENSIVE_AUDIT.md** - `current` (2026-01-12) **�� COMPREHENSIVE AUDIT**
+  - Systematic audit of entire botticelli_mcp crate (10,103 lines, 61 files)
+  - Found 29 violations across critical/high/medium priority
+  - Critical: SamplingError missing derive_more::Error trait
+  - High: 9 public functions missing #[instrument] (DialogResource, ConversationSession)
+  - High: rmcp_server.rs still 2,721 lines (needs module split)
+  - Medium: SamplingError should be in botticelli_error crate
+  - Medium: 12 registry methods + 9 helper functions missing instrumentation
+  - Lessons learned: Must audit systematically, check every file, verify error patterns
+  - Comparison to previous audit shows improved thoroughness
+  - Status: 📋 Active - ready for systematic fixes
+
