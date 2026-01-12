@@ -181,6 +181,26 @@ mockall = "0.14"
 # Elicitation framework
 elicitation = "0.2"
 
+# MCP (Model Context Protocol)
+rmcp = "0.12.0"
+rmcp-macros = "0.12.0"
+mcp-spec = "0.1.0"
+schemars = "1.0"
+
+# HTTP server and middleware
+axum = "0.7"
+tower = "0.5"
+tower-http = "0.5"
+
+# Tokio utilities
+tokio-util = "0.7"
+
+# Concurrent data structures
+dashmap = "6.1"
+
+# Test utilities
+tokio-test = "0.4"
+
 # The profile that 'dist' will build with
 [profile.dist]
 inherits = "release"

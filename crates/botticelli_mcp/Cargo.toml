@@ -8,17 +8,17 @@ description = "Model Context Protocol (MCP) server for Botticelli"
 
 [dependencies]
 # MCP SDK - using official rmcp
-rmcp = { version = "0.12.0", features = ["server"] }
-rmcp-macros = "0.12.0"
-schemars = "1.0"  # For JsonSchema derives (matches rmcp)
+rmcp = { workspace = true, features = ["server"] }
+rmcp-macros = { workspace = true }
+schemars = { workspace = true }
 
 # Async runtime
 tokio = { workspace = true }
 async-trait = { workspace = true }
-tokio-util = { version = "0.7", optional = true }
+tokio-util = { workspace = true, optional = true }
 
 # Concurrent data structures
-dashmap = "6.1"
+dashmap = { workspace = true }
 
 # Serialization
 serde = { workspace = true }
@@ -49,9 +49,9 @@ uuid = { workspace = true }
 reqwest = { workspace = true }
 
 # HTTP server (for HTTP transport)
-axum = { version = "0.7", optional = true }
-tower = { version = "0.5", optional = true }
-tower-http = { version = "0.5", features = ["cors", "trace"], optional = true }
+axum = { workspace = true, optional = true }
+tower = { workspace = true, optional = true }
+tower-http = { workspace = true, features = ["cors", "trace"], optional = true }
 
 # Internal dependencies
 botticelli_core = { workspace = true }
@@ -62,7 +62,7 @@ botticelli_rate_limit = { workspace = true }
 botticelli_database = { workspace = true, optional = true }
 botticelli_models = { workspace = true, optional = true }
 botticelli_social = { workspace = true, optional = true, features = ["discord"] }
-mcp-spec = "0.1.0"
+mcp-spec = { workspace = true }
 
 # Elicitation framework
 elicitation = { workspace = true }
@@ -71,7 +71,7 @@ elicitation = { workspace = true }
 diesel = { workspace = true, optional = true }
 
 [dev-dependencies]
-tokio-test = "0.4"
+tokio-test = { workspace = true }
 reqwest = { workspace = true }
 futures = { workspace = true }
 tempfile = { workspace = true }
