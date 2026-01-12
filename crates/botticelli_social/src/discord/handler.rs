@@ -497,10 +497,9 @@ impl EventHandler for BotticelliHandler {
 
             // Send critical errors to runtime for handling
             use botticelli_error::DiscordErrorSeverity;
-            if severity == DiscordErrorSeverity::Critical {
-                if let Err(send_err) = self.error_tx.send(e) {
+            if severity == DiscordErrorSeverity::Critical
+                && let Err(send_err) = self.error_tx.send(e) {
                     error!(error = %send_err, "Failed to send critical error to runtime");
-                }
             }
         }
     }
@@ -533,10 +532,9 @@ impl EventHandler for BotticelliHandler {
 
             // Send critical errors to runtime for handling
             use botticelli_error::DiscordErrorSeverity;
-            if severity == DiscordErrorSeverity::Critical {
-                if let Err(send_err) = self.error_tx.send(e) {
+            if severity == DiscordErrorSeverity::Critical
+                && let Err(send_err) = self.error_tx.send(e) {
                     error!(error = %send_err, "Failed to send critical error to runtime");
-                }
             }
         }
     }

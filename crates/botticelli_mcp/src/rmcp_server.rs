@@ -1392,11 +1392,11 @@ impl BotticelliServer {
                 }
             }
 
-            return Err(rmcp::ErrorData::new(
+            Err(rmcp::ErrorData::new(
                 ErrorCode::INVALID_PARAMS,
                 Cow::Owned(format!("No driver available for model: {}", model)),
                 None,
-            ));
+            ))
         }
 
         #[cfg(not(any(

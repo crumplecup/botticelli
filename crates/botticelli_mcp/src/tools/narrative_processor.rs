@@ -35,7 +35,6 @@ use botticelli_narrative::ProcessorContext;
     feature = "huggingface",
     feature = "groq"
 ))]
-
 #[cfg(any(
     feature = "gemini",
     feature = "anthropic",

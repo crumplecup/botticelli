@@ -21,7 +21,6 @@ use tracing::{debug, error, instrument};
     feature = "huggingface",
     feature = "groq"
 ))]
-
 #[cfg(any(
     feature = "gemini",
     feature = "anthropic",

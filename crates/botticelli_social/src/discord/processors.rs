@@ -37,7 +37,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
 
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = "DiscordGuildProcessor"))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
-        let json_str = match Extract::json(&context.execution().response()) {
+        let json_str = match Extract::json(context.execution().response()) {
             Ok(s) => s,
             Err(e) => {
                 error!(error = %e, "Failed to extract JSON from LLM response");
@@ -150,7 +150,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
-        let json_str = Extract::json(&context.execution().response())?;
+        let json_str = Extract::json(context.execution().response())?;
 
         let users: Vec<DiscordUserJson> = if json_str.trim().starts_with('[') {
             Extract::parse_json(&json_str)?
@@ -228,7 +228,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
-        let json_str = Extract::json(&context.execution().response())?;
+        let json_str = Extract::json(context.execution().response())?;
 
         let channels: Vec<DiscordChannelJson> = if json_str.trim().starts_with('[') {
             Extract::parse_json(&json_str)?
@@ -306,7 +306,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
-        let json_str = Extract::json(&context.execution().response())?;
+        let json_str = Extract::json(context.execution().response())?;
 
         let roles: Vec<DiscordRoleJson> = if json_str.trim().starts_with('[') {
             Extract::parse_json(&json_str)?
@@ -384,7 +384,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
-        let json_str = Extract::json(&context.execution().response())?;
+        let json_str = Extract::json(context.execution().response())?;
 
         let members: Vec<DiscordGuildMemberJson> = if json_str.trim().starts_with('[') {
             Extract::parse_json(&json_str)?
@@ -463,7 +463,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
     type Error = botticelli_error::BotticelliError;
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
-        let json_str = Extract::json(&context.execution().response())?;
+        let json_str = Extract::json(context.execution().response())?;
 
         let member_roles: Vec<DiscordMemberRoleJson> = if json_str.trim().starts_with('[') {
             Extract::parse_json(&json_str)?
