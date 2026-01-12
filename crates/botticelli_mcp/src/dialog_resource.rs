@@ -4,6 +4,7 @@ use crate::elicitation::dialog::ElicitationDialog;
 use botticelli_error::BotticelliResult;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tracing::instrument;
 
 /// Shared dialog resource for MCP tools.
 ///
@@ -38,6 +39,7 @@ impl DialogResource {
     }
 
     /// Ask for free-form text input.
+    #[instrument(skip(self), fields(prompt))]
     pub async fn ask_text(&self, prompt: &str) -> BotticelliResult<String> {
         self.dialog.lock().await.ask_text(prompt).await
     }
@@ -45,16 +47,19 @@ impl DialogResource {
     /// Ask user to choose from a list of options.
     ///
     /// Returns the index of the selected option.
+    #[instrument(skip(self), fields(prompt, option_count = options.len()))]
     pub async fn ask_choice(&self, prompt: &str, options: &[&str]) -> BotticelliResult<usize> {
         self.dialog.lock().await.ask_choice(prompt, options).await
     }
 
     /// Ask for a number within a range.
+    #[instrument(skip(self), fields(prompt, min, max))]
     pub async fn ask_number(&self, prompt: &str, min: i64, max: i64) -> BotticelliResult<i64> {
         self.dialog.lock().await.ask_number(prompt, min, max).await
     }
 
     /// Ask for confirmation (yes/no).
+    #[instrument(skip(self), fields(prompt, default))]
     pub async fn ask_confirmation(&self, prompt: &str, default: bool) -> BotticelliResult<bool> {
         self.dialog
             .lock()

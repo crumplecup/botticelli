@@ -223,15 +223,16 @@ pub enum SamplingResult {
 }
 
 /// Errors from sampling operations.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+/// Sampling error with location tracking.
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Sampling: {} at {}:{}", kind, file, line)]
 pub struct SamplingError {
     /// Error kind
-    pub kind: SamplingErrorKind,
+    kind: SamplingErrorKind,
     /// Line number
-    pub line: u32,
+    line: u32,
     /// File name
-    pub file: &'static str,
+    file: &'static str,
 }
 
 /// Types of sampling errors.
