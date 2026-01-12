@@ -2,7 +2,7 @@
 //!
 //! Tests the HTTP transport with actual HTTP requests.
 
-#[cfg(feature = "streamable-http")]
+#[cfg(feature = "http")]
 mod http_tests {
     use serde_json::json;
     use std::time::Duration;
@@ -212,7 +212,7 @@ mod http_tests {
 fn manual_http_test_instructions() {
     println!("\n=== Manual HTTP Server Test ===");
     println!("1. Start the HTTP server:");
-    println!("   cargo run --bin botticelli-mcp-pmcp-http --features streamable-http,database,llm");
+    println!("   cargo run --bin botticelli-mcp-pmcp-http --features http,database,llm");
     println!("\n2. In another terminal, test with curl:");
     println!("   curl -X POST http://localhost:8080/mcp \\");
     println!("     -H 'Content-Type: application/json' \\");

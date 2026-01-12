@@ -88,7 +88,7 @@ pub async fn minimal_event_loop<B: Backend>(
                     info!("🚀 Auto-starting MCP server...");
 
                     // Start MCP server in background
-                    #[cfg(feature = "streamable-http")]
+                    #[cfg(feature = "http")]
                     {
                         use botticelli_mcp::run_pmcp_http_server;
 
@@ -123,18 +123,18 @@ pub async fn minimal_event_loop<B: Backend>(
                                 warn!("❌ MCP server failed to start: {}", e);
                                 warn!("💡 You can start it manually:");
                                 warn!(
-                                    "   cargo run --bin botticelli-mcp-pmcp-http --features streamable-http"
+                                    "   cargo run --bin botticelli-mcp-pmcp-http --features http"
                                 );
                             }
                         }
                     }
 
-                    #[cfg(not(feature = "streamable-http"))]
+                    #[cfg(not(feature = "http"))]
                     {
                         warn!("❌ Cannot auto-start server: streamable-http feature not enabled");
                         warn!("💡 Start server manually:");
                         warn!(
-                            "   cargo run --bin botticelli-mcp-pmcp-http --features streamable-http"
+                            "   cargo run --bin botticelli-mcp-pmcp-http --features http"
                         );
                         warn!("💡 Or enable streamable-http feature in botticelli_tui");
                     }
@@ -200,7 +200,7 @@ pub async fn minimal_event_loop<B: Backend>(
                             Err(e) => {
                                 warn!(error = ?e, "Failed to send to MCP server at {}", mcp_url);
                                 warn!(
-                                    "💡 Is the MCP server running? Check: cargo run --bin botticelli-mcp-pmcp-http --features streamable-http"
+                                    "💡 Is the MCP server running? Check: cargo run --bin botticelli-mcp-pmcp-http --features http"
                                 );
 
                                 if let Err(e) = bg_tx

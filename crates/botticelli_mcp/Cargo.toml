@@ -79,9 +79,6 @@ tempfile = { workspace = true }
 [features]
 default = []
 
-# Legacy feature - kept for backward compatibility, no longer used
-streamable-http = []
-
 # Database integration
 database = ["dep:botticelli_database", "dep:diesel"]
 

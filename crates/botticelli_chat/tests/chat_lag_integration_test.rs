@@ -22,7 +22,7 @@ fn test_actual_chat_keyboard_lag_with_logs() {
         eprintln!("⚠️  MCP server not running on http://localhost:8080");
         eprintln!("💡 Start in another terminal:");
         eprintln!(
-            "   cargo run --bin botticelli-mcp-pmcp-http --features database,gemini,groq,streamable-http"
+            "   cargo run --bin botticelli-mcp-pmcp-http --features database,gemini,groq,http"
         );
         panic!("MCP server required for integration test");
     }

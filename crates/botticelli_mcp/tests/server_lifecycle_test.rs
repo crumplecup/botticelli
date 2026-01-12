@@ -31,7 +31,7 @@ fn init_tracing() {
 /// Helper to start the HTTP server as a background task.
 ///
 /// Returns port number on success.
-#[cfg(feature = "streamable-http")]
+#[cfg(feature = "http")]
 async fn start_http_server() -> Result<u16, Box<dyn std::error::Error>> {
     use botticelli_mcp::run_pmcp_http_server;
     use std::sync::atomic::{AtomicU16, Ordering};
@@ -77,7 +77,7 @@ async fn start_http_server() -> Result<u16, Box<dyn std::error::Error>> {
 
 /// Test HTTP server lifecycle with full workflow.
 #[tokio::test]
-#[cfg(feature = "streamable-http")]
+#[cfg(feature = "http")]
 async fn test_http_server_lifecycle() {
     init_tracing();
 
@@ -197,7 +197,7 @@ async fn test_http_server_lifecycle() {
 
 /// Test HTTP server error handling.
 #[tokio::test]
-#[cfg(feature = "streamable-http")]
+#[cfg(feature = "http")]
 async fn test_http_server_error_handling() {
     init_tracing();
 
@@ -272,7 +272,7 @@ async fn test_http_server_error_handling() {
 
 /// Test HTTP server handles concurrent requests.
 #[tokio::test]
-#[cfg(feature = "streamable-http")]
+#[cfg(feature = "http")]
 async fn test_http_server_concurrent_requests() {
     init_tracing();
 
@@ -363,7 +363,7 @@ async fn test_http_server_concurrent_requests() {
 /// This test simply verifies the server task spawns without panicking.
 /// Communication tests are handled by other tests.
 #[tokio::test]
-#[cfg(feature = "streamable-http")]
+#[cfg(feature = "http")]
 async fn test_http_server_startup() {
     init_tracing();
 
@@ -390,7 +390,7 @@ async fn test_http_server_startup() {
 
 /// Test HTTP server version information.
 #[tokio::test]
-#[cfg(feature = "streamable-http")]
+#[cfg(feature = "http")]
 async fn test_http_server_version() {
     let port = match start_http_server().await {
         Ok(p) => p,
