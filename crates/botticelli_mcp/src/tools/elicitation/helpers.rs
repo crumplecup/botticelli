@@ -190,6 +190,7 @@ impl ElicitationHelper {
     }
 
     /// Creates an error for missing required field.
+    #[instrument]
     #[track_caller]
     pub fn missing_field(field: &str) -> McpError {
         McpError::new(McpErrorKind::InvalidInput(format!(
@@ -199,6 +200,7 @@ impl ElicitationHelper {
     }
 
     /// Creates an error for invalid field value.
+    #[instrument]
     #[track_caller]
     pub fn invalid_value(field: &str, reason: &str) -> McpError {
         McpError::new(McpErrorKind::InvalidInput(format!(
@@ -208,6 +210,7 @@ impl ElicitationHelper {
     }
 
     /// Creates a serialization error.
+    #[instrument]
     #[track_caller]
     pub fn serialization_error(message: &str) -> McpError {
         McpError::new(McpErrorKind::SerializationError(message.to_string()))

@@ -15,6 +15,7 @@ pub struct NarrativeRegistry<T: RegistryOperations<Key = String>> {
 
 impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
     /// Create a new empty registry.
+    #[tracing::instrument]
     pub fn new() -> Self {
         Self {
             narratives: Arc::new(RwLock::new(HashMap::new())),
@@ -98,6 +99,7 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
     /// # Errors
     ///
     /// Returns error if narrative doesn't exist.
+    #[tracing::instrument(skip(self))]
     pub fn get_narrative(&self, key: &str) -> McpResult<T>
     where
         T: Clone,
@@ -110,6 +112,7 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
     /// # Errors
     ///
     /// Returns error if narrative doesn't exist or update fails.
+    #[tracing::instrument(skip(self, update_fn))]
     pub fn update_narrative<F>(&self, key: &str, update_fn: F) -> McpResult<()>
     where
         F: FnOnce(&mut T) -> McpResult<()>,
@@ -123,6 +126,7 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
     }
 
     /// Create a new session (alias for `add`).
+    #[tracing::instrument(skip(self, item))]
     pub fn create_session(&self, item: T) -> String
     where
         T: Clone,
@@ -165,6 +169,7 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
     /// Get count of active sessions.
     ///
     /// Useful for monitoring and testing.
+    #[tracing::instrument(skip(self))]
     pub fn session_count(&self) -> usize {
         let narratives = self.narratives.read().expect("Registry lock poisoned");
         narratives.len()
@@ -184,10 +189,12 @@ where
 {
     type Error = botticelli_error::BotticelliError;
 
+    #[tracing::instrument(skip(self))]
     fn get_narrative(&self, id: &str) -> Result<T, Self::Error> {
         self.get(id).map_err(Into::into)
     }
 
+    #[tracing::instrument(skip(self, updater))]
     fn update_narrative<F>(&self, id: &str, updater: F) -> Result<(), Self::Error>
     where
         F: FnOnce(&mut T) -> Result<(), Self::Error>,
@@ -203,14 +210,17 @@ where
         updater(narrative)
     }
 
+    #[tracing::instrument(skip(self))]
     fn remove_narrative(&self, id: &str) -> Result<Option<T>, Self::Error> {
         Ok(self.remove(id))
     }
 
+    #[tracing::instrument(skip(self, narrative))]
     fn add_narrative(&self, narrative: T) -> String {
         self.add(narrative)
     }
 
+    #[tracing::instrument(skip(self))]
     fn get_narrative_state(&self, id: &str) -> Result<serde_json::Value, Self::Error> {
         let narrative: T = self
             .get(id)
@@ -221,6 +231,7 @@ where
         })
     }
 
+    #[tracing::instrument(skip(self))]
     fn validate_narrative(&self, _id: &str) -> Result<serde_json::Value, Self::Error> {
         // TODO: Implement proper validation
         Ok(serde_json::json!({
@@ -228,6 +239,7 @@ where
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     fn list_narrative_ids(&self) -> Vec<String> {
         self.list_keys()
     }
