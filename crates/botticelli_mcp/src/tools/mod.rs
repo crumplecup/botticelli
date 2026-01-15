@@ -66,11 +66,12 @@ pub use validate_narrative_session::{ApplyValidationFixesTool, ValidateNarrative
 
 // Export shared narrative utilities
 pub use narrative_utils::{Act, NarrativeHelper};
-pub use sampling::{
-    LlmSampler, SamplingCoordinator, SamplingHelper,
-    SamplingResult,
-};
+pub use sampling::{SamplingCoordinator, SamplingHelper, SamplingResult};
 pub use sampling_session_manager::SamplingSessionManager;
+
+// Re-export LlmSamplerOperations for convenience
+pub use botticelli_interface::LlmSamplerOperations;
+
 // scene module is now empty - all scene tools migrated to rmcp
 
 use async_trait::async_trait;

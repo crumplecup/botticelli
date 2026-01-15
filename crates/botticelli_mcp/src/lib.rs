@@ -94,7 +94,7 @@ pub use session_tools::{
 pub use tools::{
     Act, ActMetrics, EchoTool, ElicitActInput, ElicitActTool, ElicitMetadataInput,
     ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics,
-    FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler, McpTool,
+    FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSamplerOperations, McpTool,
     MetricsSummary, NarrativeHelper, NarrativeRegistry, PrometheusMetrics, SamplingCoordinator,
     SamplingHelper, SamplingResult, ServerInfoTool, ToolRegistry,
 };

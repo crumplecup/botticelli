@@ -1,6 +1,7 @@
-use crate::{ConversationSession, ConversationTurn, LlmSampler};
-use botticelli_core::ToolDefinition;
-use botticelli_error::{BotticelliResult, ChatError};
+use crate::{ConversationSession, ConversationTurn};
+use botticelli_core::{GenerateResponse, ToolCall, ToolDefinition, ToolResult};
+use botticelli_error::{BotticelliResult, ChatError, SamplingError};
+use botticelli_interface::LlmSamplerOperations;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, instrument};
@@ -23,13 +24,24 @@ impl SamplingSessionManager {
 
     /// Start a new sampling session.
     #[instrument(skip(self, sampler, system_prompt, user_message))]
-    pub async fn start_session(
+    pub async fn start_session<S>(
         &self,
-        sampler: Arc<dyn LlmSampler>,
+        sampler: Arc<S>,
         system_prompt: impl Into<String>,
         user_message: impl Into<String>,
         available_tools: &[ToolDefinition],
-    ) -> BotticelliResult<ConversationSession> {
+    ) -> BotticelliResult<ConversationSession>
+    where
+        S: LlmSamplerOperations<
+            Session = ConversationSession,
+            ToolDefinition = ToolDefinition,
+            Response = GenerateResponse,
+            Result = crate::SamplingResult,
+            Error = SamplingError,
+            ToolCall = ToolCall,
+            ToolResult = ToolResult,
+        > + 'static,
+    {
         debug!("Starting new sampling session");
 
         // Create session with user message

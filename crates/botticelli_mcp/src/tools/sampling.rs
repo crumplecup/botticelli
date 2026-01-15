@@ -1,18 +1,38 @@
-use crate::{ConversationSession, ConversationTurn, SessionState, ToolRegistry};
+use crate::{ConversationSession, ConversationTurn, ToolRegistry};
 use botticelli_core::{GenerateResponse, ToolCall, ToolDefinition, ToolResult};
-use botticelli_error::{BotticelliResult, SamplingError, SamplingErrorKind};
+use botticelli_error::{BotticelliResult, SamplingError};
+use botticelli_interface::LlmSamplerOperations;
 use std::sync::Arc;
 use tracing::instrument;
 
 /// Coordinates LLM sampling for narrative generation.
 pub struct SamplingCoordinator {
-    sampler: Arc<dyn LlmSampler>,
+    sampler: Arc<dyn LlmSamplerOperations<
+        Session = ConversationSession,
+        ToolDefinition = ToolDefinition,
+        Response = GenerateResponse,
+        Result = SamplingResult,
+        Error = SamplingError,
+        ToolCall = ToolCall,
+        ToolResult = ToolResult,
+    >>,
     tool_registry: Arc<ToolRegistry>,
 }
 
 impl SamplingCoordinator {
     /// Create a new sampling coordinator.
-    pub fn new(sampler: Arc<dyn LlmSampler>, tool_registry: Arc<ToolRegistry>) -> Self {
+    pub fn new(
+        sampler: Arc<dyn LlmSamplerOperations<
+            Session = ConversationSession,
+            ToolDefinition = ToolDefinition,
+            Response = GenerateResponse,
+            Result = SamplingResult,
+            Error = SamplingError,
+            ToolCall = ToolCall,
+            ToolResult = ToolResult,
+        >>,
+        tool_registry: Arc<ToolRegistry>,
+    ) -> Self {
         Self {
             sampler,
             tool_registry,
@@ -92,123 +112,6 @@ impl SamplingCoordinator {
     /// Get reference to the tool registry.
     pub fn tool_registry(&self) -> &Arc<ToolRegistry> {
         &self.tool_registry
-    }
-}
-
-/// Trait for LLM sampling with tool support.
-///
-/// Provides both low-level (single generation) and high-level (full session)
-/// interfaces for maximum flexibility.
-#[async_trait::async_trait]
-pub trait LlmSampler: Send + Sync {
-    /// Low-level: Generate a single response with optional tools.
-    ///
-    /// This is the core primitive. The high-level `sample()` method
-    /// is built on top of this by calling it in a loop.
-    async fn generate(
-        &self,
-        session: &ConversationSession,
-        available_tools: &[ToolDefinition],
-    ) -> Result<GenerateResponse, SamplingError>;
-
-    /// High-level: Run a complete sampling session.
-    ///
-    /// Starts with the initial session state and runs until:
-    /// - The model stops calling tools (returns text)
-    /// - Maximum turns reached
-    /// - Error occurs
-    ///
-    /// Default implementation uses generate() in a loop, but can be
-    /// overridden for custom behavior (streaming, custom termination, etc.)
-    async fn sample(
-        &self,
-        session: &mut ConversationSession,
-        available_tools: &[ToolDefinition],
-    ) -> Result<SamplingResult, SamplingError> {
-        while session.is_active() {
-            // Generate next response
-            let response = self.generate(session, available_tools).await?;
-
-            // Process response based on outputs
-            let has_tool_calls = !response.outputs().is_empty()
-                && response
-                    .outputs()
-                    .iter()
-                    .any(|o| matches!(o, botticelli_core::Output::ToolCalls(_)));
-
-            if has_tool_calls {
-                // Extract tool calls from outputs
-                let mut all_calls = vec![];
-                let mut thinking_text = String::new();
-
-                for output in response.outputs() {
-                    match output {
-                        botticelli_core::Output::Text(text) => {
-                            if !thinking_text.is_empty() {
-                                thinking_text.push(' ');
-                            }
-                            thinking_text.push_str(text);
-                        }
-                        botticelli_core::Output::ToolCalls(calls) => {
-                            all_calls.extend(calls.clone());
-                        }
-                        _ => {}
-                    }
-                }
-
-                let thinking = if thinking_text.is_empty() {
-                    None
-                } else {
-                    Some(thinking_text)
-                };
-
-                session.add_turn(ConversationTurn::AssistantToolCalls {
-                    calls: all_calls.clone(),
-                    thinking,
-                });
-
-                // Execute tools
-                let results = self.execute_tools(&all_calls).await?;
-                session.add_turn(ConversationTurn::ToolResults { results });
-
-                // Continue loop for next turn
-            } else {
-                // Model is done (no tool calls)
-                let text = response
-                    .outputs()
-                    .iter()
-                    .filter_map(|o| match o {
-                        botticelli_core::Output::Text(t) => Some(t.as_str()),
-                        _ => None,
-                    })
-                    .collect::<Vec<_>>()
-                    .join(" ");
-
-                if !text.is_empty() {
-                    session.add_turn(ConversationTurn::AssistantMessage {
-                        content: text.clone(),
-                    });
-                }
-
-                session.state = SessionState::Completed;
-                return Ok(SamplingResult::Completed {
-                    final_response: text,
-                });
-            }
-        }
-
-        // Session ended without completion
-        Err(SamplingError::new(SamplingErrorKind::MaxTurnsExceeded {
-            max: session.max_turns,
-        }))
-    }
-
-    /// Execute tool calls and return results.
-    ///
-    /// Default implementation returns errors - must be overridden
-    /// to provide actual tool execution.
-    async fn execute_tools(&self, _calls: &[ToolCall]) -> Result<Vec<ToolResult>, SamplingError> {
-        Err(SamplingError::new(SamplingErrorKind::NoToolRegistry))
     }
 }
 
