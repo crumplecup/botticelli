@@ -366,16 +366,16 @@ impl BotticelliServer {
 
         // Initialize session state
         let mut partial = crate::PartialNarrative::new();
-        partial.description = Some(description.clone());
-        partial.name = Some(suggested_name.clone());
+        partial.with_description(Some(description.clone()));
+        partial.with_name(Some(suggested_name.clone()));
 
         // Add acts
         for act in &acts {
-            partial.acts.insert(
+            partial.acts_mut().insert(
                 act.name.clone(),
                 crate::PartialAct::new(act.prompt.clone(), None, None, vec![], None),
             );
-            partial.act_order.push(act.name.clone());
+            partial.act_order_mut().push(act.name.clone());
         }
 
         // Store in registry (returns the narrative name as the key/ID)

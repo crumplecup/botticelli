@@ -396,16 +396,16 @@ impl BotticelliServer {
             .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
         // Calculate state
-        let acts_count = partial.acts.len();
-        let acts: Vec<String> = partial.act_order.clone();
+        let acts_count = partial.acts().len();
+        let acts: Vec<String> = partial.act_order().clone();
         let has_carousel =
-            partial.carousel.is_some() || partial.acts.values().any(|act| act.carousel.is_some());
+            partial.carousel().is_some() || partial.acts().values().any(|act| act.carousel().is_some());
 
         let metadata_complete =
-            partial.name.is_some() && partial.description.is_some() && partial.model.is_some();
+            partial.name().is_some() && partial.description().is_some() && partial.model().is_some();
         let acts_complete =
-            !partial.acts.is_empty() && partial.acts.values().all(|act| !act.prompt.is_empty());
-        let inputs_partial = partial.acts.values().any(|act| !act.inputs.is_empty());
+            !partial.acts().is_empty() && partial.acts().values().all(|act| !act.prompt().is_empty());
+        let inputs_partial = partial.acts().values().any(|act| !act.inputs().is_empty());
 
         let mut completeness_score = 0;
         if metadata_complete {
@@ -438,7 +438,7 @@ impl BotticelliServer {
         Ok(Json(GetNarrativeStateResult {
             narrative_id,
             state: NarrativeStateSummary {
-                name: partial.name.clone(),
+                name: partial.name().clone(),
                 acts_count,
                 acts,
                 completeness: format!("{}%", completeness_score),
@@ -466,7 +466,7 @@ impl BotticelliServer {
         let mut warnings = Vec::new();
 
         // Validate name
-        if partial.name.is_none() || partial.name.as_ref().is_some_and(|n| n.is_empty()) {
+        if partial.name().is_none() || partial.name().as_ref().is_some_and(|n| n.is_empty()) {
             errors.push(ValidationIssue {
                 severity: ValidationSeverity::Critical,
                 field: "name".to_string(),
@@ -477,8 +477,8 @@ impl BotticelliServer {
         }
 
         // Validate description
-        if partial.description.is_none()
-            || partial.description.as_ref().is_some_and(|d| d.is_empty())
+        if partial.description().is_none()
+            || partial.description().as_ref().is_some_and(|d| d.is_empty())
         {
             errors.push(ValidationIssue {
                 severity: ValidationSeverity::High,
@@ -490,7 +490,7 @@ impl BotticelliServer {
         }
 
         // Validate model
-        if partial.model.is_none() {
+        if partial.model().is_none() {
             warnings.push(ValidationIssue {
                 severity: ValidationSeverity::Medium,
                 field: "model".to_string(),
@@ -501,7 +501,7 @@ impl BotticelliServer {
         }
 
         // Validate acts
-        if partial.acts.is_empty() {
+        if partial.acts().is_empty() {
             errors.push(ValidationIssue {
                 severity: ValidationSeverity::Critical,
                 field: "acts".to_string(),
@@ -510,8 +510,8 @@ impl BotticelliServer {
                 auto_fixable: false,
             });
         } else {
-            for (act_name, act) in &partial.acts {
-                if act.prompt.is_empty() {
+            for (act_name, act) in partial.acts() {
+                if act.prompt().is_empty() {
                     errors.push(ValidationIssue {
                         severity: ValidationSeverity::High,
                         field: format!("acts.{}.prompt", act_name),
@@ -521,7 +521,7 @@ impl BotticelliServer {
                     });
                 }
 
-                if strict && act.model.is_none() && partial.model.is_none() {
+                if strict && act.model().is_none() && partial.model().is_none() {
                     warnings.push(ValidationIssue {
                         severity: ValidationSeverity::Low,
                         field: format!("acts.{}.model", act_name),
@@ -535,9 +535,9 @@ impl BotticelliServer {
 
         // Calculate completeness
         let metadata_complete =
-            partial.name.is_some() && partial.description.is_some() && partial.model.is_some();
+            partial.name().is_some() && partial.description().is_some() && partial.model().is_some();
         let acts_complete =
-            !partial.acts.is_empty() && partial.acts.values().all(|act| !act.prompt.is_empty());
+            !partial.acts().is_empty() && partial.acts().values().all(|act| !act.prompt().is_empty());
 
         let mut completeness_score = 0;
         if metadata_complete {
@@ -613,18 +613,18 @@ impl BotticelliServer {
         let fix_all = fix_types.contains(&"all".to_string());
 
         if fix_all || fix_types.contains(&"missing_defaults".to_string()) {
-            if partial.model.is_none() {
-                partial.model = Some("gemini-2.0-flash-exp".to_string());
+            if partial.model().is_none() {
+                partial.with_model(Some("gemini-2.0-flash-exp".to_string()));
                 fixes_applied.push("Set default model to gemini-2.0-flash-exp".to_string());
             }
 
-            if partial.temperature.is_none() {
-                partial.temperature = Some(0.7);
+            if partial.temperature().is_none() {
+                partial.with_temperature(Some(0.7));
                 fixes_applied.push("Set default temperature to 0.7".to_string());
             }
 
-            if partial.max_tokens.is_none() {
-                partial.max_tokens = Some(1000);
+            if partial.max_tokens().is_none() {
+                partial.with_max_tokens(Some(1000));
                 fixes_applied.push("Set default max_tokens to 1000".to_string());
             }
         }
@@ -641,21 +641,21 @@ impl BotticelliServer {
 
             let mut errors = 0;
 
-            if partial.name.is_none() || partial.name.as_ref().is_some_and(|n| n.is_empty()) {
+            if partial.name().is_none() || partial.name().as_ref().is_some_and(|n| n.is_empty()) {
                 errors += 1;
             }
 
-            if partial.description.is_none()
-                || partial.description.as_ref().is_some_and(|d| d.is_empty())
+            if partial.description().is_none()
+                || partial.description().as_ref().is_some_and(|d| d.is_empty())
             {
                 errors += 1;
             }
 
-            if partial.acts.is_empty() {
+            if partial.acts().is_empty() {
                 errors += 1;
             } else {
-                for act in partial.acts.values() {
-                    if act.prompt.is_empty() {
+                for act in partial.acts().values() {
+                    if act.prompt().is_empty() {
                         errors += 1;
                     }
                 }

@@ -1,7 +1,7 @@
 //! Dialog resource for sharing ElicitationDialog across MCP tools.
 
-use crate::elicitation::dialog::ElicitationDialog;
-use botticelli_error::BotticelliResult;
+use botticelli_error::{BotticelliError, BotticelliResult};
+use botticelli_interface::ElicitationDialog;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::instrument;
@@ -15,10 +15,12 @@ use tracing::instrument;
 /// # Example
 ///
 /// ```no_run
-/// use botticelli_mcp::{DialogResource, ElicitationDialog};
+/// use botticelli_mcp::DialogResource;
+/// use botticelli_interface::ElicitationDialog;
+/// use botticelli_error::BotticelliError;
 /// use std::sync::Arc;
 ///
-/// async fn example(dialog: Box<dyn ElicitationDialog>) {
+/// async fn example(dialog: Box<dyn ElicitationDialog<Error = BotticelliError>>) {
 ///     let resource = Arc::new(DialogResource::new(dialog));
 ///
 ///     // Use in multiple tools
@@ -27,12 +29,12 @@ use tracing::instrument;
 /// ```
 #[derive(Clone)]
 pub struct DialogResource {
-    dialog: Arc<Mutex<Box<dyn ElicitationDialog>>>,
+    dialog: Arc<Mutex<Box<dyn ElicitationDialog<Error = BotticelliError>>>>,
 }
 
 impl DialogResource {
     /// Create a new dialog resource wrapping an ElicitationDialog.
-    pub fn new(dialog: Box<dyn ElicitationDialog>) -> Self {
+    pub fn new(dialog: Box<dyn ElicitationDialog<Error = BotticelliError>>) -> Self {
         Self {
             dialog: Arc::new(Mutex::new(dialog)),
         }

@@ -113,7 +113,7 @@ where
             .update_narrative(&input.narrative_id, |partial| -> Result<(), _> {
                 match input.level {
                     CarouselLevel::Narrative => {
-                        partial.carousel = Some(carousel_config.clone());
+                        partial.with_carousel(Some(carousel_config.clone()));
                         Ok(())
                     }
                     CarouselLevel::Act => {
@@ -128,13 +128,16 @@ where
                             }
                         };
 
-                        if let Some(act) = partial.acts.get_mut(act_name) {
-                            act.carousel = Some(carousel_config.clone());
-                            Ok(())
-                        } else {
-                            Err(botticelli_error::BotticelliError::from(
+                        match partial.acts().get(act_name) {
+                            Some(act) => {
+                                let mut updated_act = act.clone();
+                                updated_act.set_carousel(Some(carousel_config.clone()));
+                                partial.acts_mut().insert(act_name.clone(), updated_act);
+                                Ok(())
+                            }
+                            None => Err(botticelli_error::BotticelliError::from(
                                 McpError::invalid_input(format!("Act '{}' not found", act_name)),
-                            ))
+                            )),
                         }
                     }
                 }

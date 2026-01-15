@@ -92,7 +92,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialN
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
 
-    if partial.name.is_none() || partial.name.as_ref().is_none_or(|n| n.is_empty()) {
+    if partial.name().is_none() || partial.name().as_ref().is_none_or(|n| n.is_empty()) {
         errors.push(ValidationIssue {
             severity: Severity::Critical,
             field: "name".to_string(),
@@ -102,7 +102,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialN
         });
     }
 
-    if partial.description.is_none() || partial.description.as_ref().is_none_or(|d| d.is_empty()) {
+    if partial.description().is_none() || partial.description().as_ref().is_none_or(|d| d.is_empty()) {
         errors.push(ValidationIssue {
             severity: Severity::High,
             field: "description".to_string(),
@@ -112,7 +112,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialN
         });
     }
 
-    if partial.acts.is_empty() {
+    if partial.acts().is_empty() {
         errors.push(ValidationIssue {
             severity: Severity::Critical,
             field: "acts".to_string(),
@@ -122,8 +122,8 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialN
         });
     }
 
-    for (act_name, act) in &partial.acts {
-        if act.prompt.is_empty() {
+    for (act_name, act) in partial.acts() {
+        if act.prompt().is_empty() {
             errors.push(ValidationIssue {
                 severity: Severity::Critical,
                 field: format!("acts.{}.prompt", act_name),
@@ -133,7 +133,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialN
             });
         }
 
-        if act.inputs.is_empty() {
+        if act.inputs().is_empty() {
             warnings.push(ValidationIssue {
                 severity: Severity::Low,
                 field: format!("acts.{}.inputs", act_name),
@@ -144,7 +144,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialN
         }
     }
 
-    if partial.act_order.is_empty() && !partial.acts.is_empty() {
+    if partial.act_order().is_empty() && !partial.acts().is_empty() {
         warnings.push(ValidationIssue {
             severity: Severity::Medium,
             field: "act_order".to_string(),
@@ -154,7 +154,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialN
         });
     }
 
-    if partial.model.is_none() {
+    if partial.model().is_none() {
         warnings.push(ValidationIssue {
             severity: Severity::Medium,
             field: "model".to_string(),
@@ -165,10 +165,10 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<crate::PartialN
     }
 
     let metadata_complete =
-        partial.name.is_some() && partial.description.is_some() && partial.model.is_some();
+        partial.name().is_some() && partial.description().is_some() && partial.model().is_some();
     let acts_complete =
-        !partial.acts.is_empty() && partial.acts.values().all(|act| !act.prompt.is_empty());
-    let inputs_partial = partial.acts.values().any(|act| !act.inputs.is_empty());
+        !partial.acts().is_empty() && partial.acts().values().all(|act| !act.prompt().is_empty());
+    let inputs_partial = partial.acts().values().any(|act| !act.inputs().is_empty());
 
     let metadata_status = if metadata_complete {
         "complete"
@@ -224,19 +224,19 @@ pub async fn apply_validation_fixes<R: ElicitationRegistryOperations<crate::Part
             let fix_all = input.fix_types.contains(&"all".to_string());
 
             if fix_all || input.fix_types.contains(&"missing_defaults".to_string()) {
-                if partial.model.is_none() {
-                    partial.model = Some("claude-3-5-sonnet-20241022".to_string());
+                if partial.model().is_none() {
+                    partial.with_model(Some("claude-3-5-sonnet-20241022".to_string()));
                     fixes_applied
                         .push("Set default model to claude-3-5-sonnet-20241022".to_string());
                 }
 
-                if partial.temperature.is_none() {
-                    partial.temperature = Some(0.7);
+                if partial.temperature().is_none() {
+                    partial.with_temperature(Some(0.7));
                     fixes_applied.push("Set default temperature to 0.7".to_string());
                 }
 
-                if partial.max_tokens.is_none() {
-                    partial.max_tokens = Some(1000);
+                if partial.max_tokens().is_none() {
+                    partial.with_max_tokens(Some(1000));
                     fixes_applied.push("Set default max_tokens to 1000".to_string());
                 }
             }

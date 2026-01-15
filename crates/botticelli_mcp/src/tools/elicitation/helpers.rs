@@ -135,10 +135,10 @@ impl ElicitationHelper {
     pub fn validate_metadata(partial: &PartialNarrative) -> Vec<String> {
         let mut missing = Vec::new();
 
-        if partial.name.is_none() {
+        if partial.name().is_none() {
             missing.push("name".to_string());
         }
-        if partial.description.is_none() {
+        if partial.description().is_none() {
             missing.push("description".to_string());
         }
 
@@ -150,7 +150,7 @@ impl ElicitationHelper {
     pub fn metadata_warnings(partial: &PartialNarrative) -> Vec<String> {
         let mut warnings = Vec::new();
 
-        if let Some(name) = &partial.name {
+        if let Some(name) = partial.name() {
             if !Self::is_valid_name(name) {
                 warnings.push("Name contains invalid characters".to_string());
             }
@@ -166,13 +166,13 @@ impl ElicitationHelper {
     pub fn validate_complete(partial: &PartialNarrative) -> Vec<String> {
         let mut errors = Vec::new();
 
-        if partial.name.is_none() {
+        if partial.name().is_none() {
             errors.push("Missing narrative name".to_string());
         }
-        if partial.description.is_none() {
+        if partial.description().is_none() {
             errors.push("Missing narrative description".to_string());
         }
-        if partial.acts.is_empty() {
+        if partial.acts().is_empty() {
             errors.push("No acts defined".to_string());
         }
 

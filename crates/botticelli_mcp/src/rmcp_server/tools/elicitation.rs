@@ -212,15 +212,15 @@ impl BotticelliServer {
             .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
         // Check if act exists
-        let status = if partial.acts.contains_key(&act_name) {
+        let status = if partial.acts().contains_key(&act_name) {
             "updated"
         } else {
-            partial.act_order.push(act_name.clone());
+            partial.act_order_mut().push(act_name.clone());
             "created"
         };
 
         // Create or update act
-        partial.acts.insert(
+        partial.acts_mut().insert(
             act_name.clone(),
             crate::PartialAct::new(prompt, model, temperature, vec![], None),
         );
@@ -299,7 +299,7 @@ impl BotticelliServer {
         // Apply carousel based on level
         match level {
             CarouselLevel::Narrative => {
-                partial.carousel = Some(carousel_config);
+                partial.with_carousel(Some(carousel_config));
             }
             CarouselLevel::Act => {
                 let act_name_ref = act_name.as_ref().ok_or_else(|| {
@@ -310,14 +310,19 @@ impl BotticelliServer {
                     )
                 })?;
 
-                if let Some(act) = partial.acts.get_mut(act_name_ref) {
-                    act.carousel = Some(carousel_config);
-                } else {
-                    return Err(rmcp::ErrorData::new(
-                        ErrorCode::INVALID_PARAMS,
-                        Cow::Owned(format!("Act '{}' not found", act_name_ref)),
-                        None,
-                    ));
+                match partial.acts().get(act_name_ref) {
+                    Some(act) => {
+                        let mut updated_act = act.clone();
+                        updated_act.set_carousel(Some(carousel_config));
+                        partial.acts_mut().insert(act_name_ref.clone(), updated_act);
+                    }
+                    None => {
+                        return Err(rmcp::ErrorData::new(
+                            ErrorCode::INVALID_PARAMS,
+                            Cow::Owned(format!("Act '{}' not found", act_name_ref)),
+                            None,
+                        ));
+                    }
                 }
             }
         }

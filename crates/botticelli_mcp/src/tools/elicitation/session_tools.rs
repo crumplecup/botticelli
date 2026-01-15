@@ -1,7 +1,7 @@
 //! MCP tools for session-based narrative elicitation.
 
 use crate::NarrativeHelper;
-use crate::elicitation::{PartialAct, PartialNarrative};
+use crate::{PartialAct, PartialNarrative};
 use crate::tools::McpTool;
 use crate::tools::elicitation::PartialNarrativeRegistry;
 use async_trait::async_trait;
@@ -70,16 +70,16 @@ impl McpTool for CreateNarrativeSessionTool {
 
         // Initialize session state
         let mut partial = PartialNarrative::new();
-        partial.description = Some(description.to_string());
-        partial.name = Some(suggested_name.clone());
+        partial.with_description(Some(description.to_string()));
+        partial.with_name(Some(suggested_name.clone()));
 
         // Add acts
         for act in &acts {
-            partial.acts.insert(
+            partial.acts_mut().insert(
                 act.name.clone(),
                 PartialAct::new(act.prompt.clone(), None, None, vec![], None),
             );
-            partial.act_order.push(act.name.clone());
+            partial.act_order_mut().push(act.name.clone());
         }
 
         let narrative_id = self.registry.create_session(partial);
@@ -161,19 +161,19 @@ impl McpTool for ElicitMetadataTool {
         self.registry
             .update_narrative(&narrative_id.to_string(), |partial| {
                 if let Some(name) = input.get("name").and_then(|v| v.as_str()) {
-                    partial.name = Some(name.to_string());
+                    partial.with_name(Some(name.to_string()));
                 }
 
                 if let Some(desc) = input.get("description").and_then(|v| v.as_str()) {
-                    partial.description = Some(desc.to_string());
+                    partial.with_description(Some(desc.to_string()));
                 }
 
                 if let Some(model) = input.get("default_model").and_then(|v| v.as_str()) {
-                    partial.model = Some(model.to_string());
+                    partial.with_model(Some(model.to_string()));
                 }
 
                 if let Some(temp) = input.get("default_temperature").and_then(|v| v.as_f64()) {
-                    partial.temperature = Some(temp);
+                    partial.with_temperature(Some(temp));
                 }
 
                 Ok(())
@@ -271,16 +271,16 @@ impl McpTool for ElicitActTool {
         // Add to registry
         self.registry
             .update_narrative(&narrative_id.to_string(), |partial| {
-                partial.acts.insert(act_name.to_string(), act.clone());
-                if !partial.act_order.contains(&act_name.to_string()) {
-                    partial.act_order.push(act_name.to_string());
+                partial.acts_mut().insert(act_name.to_string(), act.clone());
+                if !partial.act_order().contains(&act_name.to_string()) {
+                    partial.act_order_mut().push(act_name.to_string());
                 }
                 Ok(())
             })?;
 
         // Get updated count
         let partial = self.registry.get_narrative(&narrative_id.to_string())?;
-        let acts_count = partial.acts.len();
+        let acts_count = partial.acts().len();
 
         debug!(narrative_id = %narrative_id, act_name, "Act updated");
 

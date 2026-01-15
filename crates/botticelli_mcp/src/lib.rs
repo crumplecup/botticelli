@@ -38,10 +38,10 @@ mod elicit_bool;
 mod elicit_number;
 mod elicit_select;
 mod elicit_text;
-mod elicitation;
 mod execution;
 mod export_metrics;
 mod modify_narrative;
+mod partial;
 mod query_content;
 mod resources;
 mod rmcp_server;
@@ -66,9 +66,7 @@ pub use elicit_bool::{ElicitBoolParams, ElicitBoolResult};
 pub use elicit_number::{ElicitNumberParams, ElicitNumberResult};
 pub use elicit_select::{ElicitSelectParams, ElicitSelectResult};
 pub use elicit_text::{ElicitTextParams, ElicitTextResult};
-pub use elicitation::{
-    ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
-};
+pub use partial::{PartialAct, PartialNarrative, PartialNarrativeBuilder};
 pub use execution::{
     ExecuteActParams, ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult,
     GenerateParams, GenerateResult,
