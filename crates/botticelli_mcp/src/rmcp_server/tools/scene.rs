@@ -11,6 +11,7 @@ use rmcp::handler::server::wrapper::{Json, Parameters};
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    /// Create a new scene in a narrative.
     #[instrument(skip(self), fields(narrative_id, scene_name, has_description = description.is_some()))]
     pub async fn create_scene(
         &self,
@@ -36,6 +37,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// List all scenes in a narrative.
     #[instrument(skip(self), fields(narrative_id))]
     pub async fn list_scenes(
         &self,
@@ -47,6 +49,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// Update an existing scene.
     #[instrument(skip(self, updates), fields(scene_id))]
     pub async fn update_scene(
         &self,
@@ -58,6 +61,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// Delete a scene from a narrative.
     #[instrument(skip(self), fields(scene_id))]
     pub async fn delete_scene(
         &self,

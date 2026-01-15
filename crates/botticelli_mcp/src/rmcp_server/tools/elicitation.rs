@@ -14,6 +14,7 @@ use rmcp::handler::server::wrapper::{Json, Parameters};
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    /// Prompt user for text input.
     #[instrument(skip(self, prompt), fields(prompt_len = prompt.len()))]
     pub async fn elicit_text(
         &self,
@@ -45,6 +46,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// Prompt user for yes/no input.
     #[instrument(skip(self, prompt), fields(prompt_len = prompt.len(), default))]
     pub async fn elicit_bool(
         &self,
@@ -76,6 +78,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// Prompt user for numeric input within a range.
     #[instrument(skip(self, prompt), fields(prompt_len = prompt.len(), min, max))]
     pub async fn elicit_number(
         &self,
@@ -116,6 +119,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// Prompt user to select from a list of options.
     #[instrument(skip(self, prompt, options), fields(prompt_len = prompt.len(), option_count = options.len()))]
     pub async fn elicit_select(
         &self,
@@ -168,6 +172,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// Update narrative metadata (name, description, defaults).
     #[instrument(skip(self), fields(narrative_id, name, description))]
     pub async fn elicit_metadata(
         &self,
@@ -202,6 +207,7 @@ impl BotticelliServer {
         }))
     }
     
+    /// Elicit and refine a narrative act's content.
     #[instrument(skip(self, prompt), fields(narrative_id, act_name, prompt_len = prompt.len()))]
     pub async fn elicit_act(
         &self,
@@ -247,6 +253,7 @@ impl BotticelliServer {
         }))
     }
     
+    /// Run iterative carousel refinement on narrative acts.
     #[instrument(skip(self), fields(narrative_id))]
     pub async fn elicit_carousel(
         &self,

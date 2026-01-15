@@ -12,6 +12,7 @@ use rmcp::handler::server::wrapper::{Json, Parameters};
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    /// Echo back the provided message.
     #[instrument(skip(self), fields(message))]
     pub async fn echo(
         &self,
@@ -25,6 +26,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// Get server information including version and tool count.
     #[instrument(skip(self))]
     pub async fn server_info(&self) -> Result<Json<ServerInfoResult>, rmcp::ErrorData> {
         debug!("Retrieving server information");
@@ -39,6 +41,7 @@ impl BotticelliServer {
         Ok(result)
     }
     
+    /// Query content from the database.
     #[instrument(skip(self), fields(table, limit))]
     pub async fn query_content(
         &self,
@@ -88,6 +91,7 @@ impl BotticelliServer {
         }
     }
     
+    /// Export metrics in the requested format.
     #[instrument(skip(self), fields(format = ?format))]
     pub async fn export_metrics(
         &self,

@@ -23,6 +23,7 @@ use std::path::Path;
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    /// Create a new narrative from a description using LLM analysis.
     #[instrument(skip(self, description), fields(name, description_len = description.len(), has_model = default_model.is_some()))]
     pub async fn create_narrative(
         &self,
@@ -114,6 +115,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// Modify an existing narrative TOML with natural language instructions.
     #[instrument(skip(self, narrative_toml, modification), fields(toml_len = narrative_toml.len(), modification_len = modification.len(), has_save_path = save_to.is_some()))]
     pub async fn modify_narrative(
         &self,
@@ -171,6 +173,7 @@ impl BotticelliServer {
         Ok(Json(result))
     }
     
+    /// Save narrative TOML content to a file.
     #[instrument(skip(self, narrative_toml), fields(toml_len = narrative_toml.len(), path = %file_path, overwrite))]
     pub async fn save_narrative(
         &self,
@@ -333,6 +336,7 @@ impl BotticelliServer {
         Ok(Json(ValidateNarrativeResult::new(valid, errors, warnings)))
     }
     
+    /// Finalize a narrative session and convert to TOML.
     #[instrument(skip(self), fields(narrative_id, validate))]
     pub async fn finalize_narrative(
         &self,
@@ -387,6 +391,7 @@ impl BotticelliServer {
         }))
     }
     
+    /// Get the current state of a narrative session.
     #[instrument(skip(self), fields(narrative_id, format = ?format))]
     pub async fn get_narrative_state(
         &self,
@@ -456,6 +461,7 @@ impl BotticelliServer {
         }))
     }
     
+    /// Validate a narrative session and report issues.
     #[instrument(skip(self), fields(narrative_id, strict))]
     pub async fn validate_narrative_session(
         &self,
@@ -583,6 +589,7 @@ impl BotticelliServer {
         }))
     }
     
+    /// Apply automatic fixes to a narrative session based on validation results.
     #[instrument(skip(self, fix_types), fields(narrative_id, fix_count = fix_types.len(), confirm))]
     pub async fn apply_validation_fixes(
         &self,

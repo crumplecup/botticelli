@@ -14,6 +14,7 @@ use rmcp::handler::server::wrapper::{Json, Parameters};
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    /// Post a message to a Discord channel.
     #[instrument(skip(self, content), fields(channel_id, content_len = content.len()))]
     pub async fn discord_post_message(
         &self,
@@ -105,6 +106,7 @@ impl BotticelliServer {
         }))
     }
     
+    /// Get recent messages from a Discord channel.
     #[instrument(skip(self), fields(channel_id, limit))]
     pub async fn discord_get_messages(
         &self,
@@ -190,6 +192,7 @@ impl BotticelliServer {
         }))
     }
     
+    /// Get information about a Discord guild (server).
     #[instrument(skip(self), fields(guild_id))]
     pub async fn discord_get_guild_info(
         &self,

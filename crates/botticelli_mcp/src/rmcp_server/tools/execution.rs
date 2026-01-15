@@ -13,6 +13,7 @@ use rmcp::handler::server::wrapper::{Json, Parameters};
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    /// Generate text using an LLM with the provided prompt.
     #[instrument(skip(self, prompt), fields(model, max_tokens, temperature, prompt_len = prompt.len()))]
     pub async fn generate(
         &self,
@@ -259,6 +260,7 @@ impl BotticelliServer {
         Ok(Json(GenerateResult::new(text, model, tokens_used)))
     }
     
+    /// Execute a single narrative act with context.
     #[instrument(skip(self, prompt, context), fields(model, max_tokens, prompt_len = prompt.len(), has_context = context.is_some()))]
     pub async fn execute_act(
         &self,
@@ -297,6 +299,7 @@ impl BotticelliServer {
         )))
     }
     
+    /// Execute a complete narrative from a TOML file.
     #[instrument(skip(self, prompt), fields(narrative_path, model, max_tokens, prompt_len = prompt.len()))]
     pub async fn execute_narrative(
         &self,
@@ -347,6 +350,7 @@ impl BotticelliServer {
         )))
     }
     
+    /// Create a new narrative session from a description.
     #[instrument(skip(self, description), fields(description_len = description.len()))]
     pub async fn create_narrative_session(
         &self,
