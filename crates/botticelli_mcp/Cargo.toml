@@ -30,6 +30,7 @@ derive_more = { workspace = true }
 derive_builder = { workspace = true }
 derive-getters = { workspace = true }
 derive-new = { workspace = true }
+derive_setters = { workspace = true }
 anyhow = { workspace = true }
 
 # Tracing
