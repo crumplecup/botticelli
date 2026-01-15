@@ -92,11 +92,11 @@ pub use session_tools::{
     ValidationSeverity,
 };
 pub use tools::{
-    Act, ActMetrics, EchoTool, ElicitActInput, ElicitActTool, ElicitMetadataInput,
-    ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics,
-    FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSamplerOperations, McpTool,
+    Act, ActMetrics, ElicitActInput, ElicitMetadataInput,
+    ElicitationHelper, ExecutionMetrics,
+    FinalizeNarrativeInput, LlmSamplerOperations,
     MetricsSummary, NarrativeHelper, NarrativeRegistry, PrometheusMetrics, SamplingCoordinator,
-    SamplingHelper, SamplingResult, ServerInfoTool, ToolRegistry,
+    SamplingHelper, SamplingResult, ToolRegistry,
 };
 pub use validate_narrative::{
     ValidateNarrativeParams, ValidateNarrativeResult, ValidationError, ValidationLocation,

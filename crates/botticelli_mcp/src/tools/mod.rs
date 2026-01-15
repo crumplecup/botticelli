@@ -2,16 +2,9 @@
 
 mod bot_commands;
 mod create_narrative;
-#[cfg(feature = "discord")]
-mod discord;
-mod echo;
 mod elicitation;
 mod elicitation_primitives;
 mod elicitation_tools;
-mod execute_act;
-mod execute_narrative;
-mod generate;
-mod get_narrative_state;
 mod metrics;
 mod modify_narrative;
 mod narrative;
@@ -23,30 +16,16 @@ mod prometheus;
 mod sampling;
 mod sampling_session_manager;
 mod save_narrative;
-mod scene;
-mod server_info;
-mod validate_narrative_session;
 
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
-// CreateNarrativeTool migrated to rmcp (create_narrative method in rmcp_server)
-#[cfg(feature = "discord")]
-pub use discord::{
-    DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool, DiscordPostMessageTool,
-};
-pub use echo::EchoTool;
+// All tool structs migrated to rmcp - tools now accessed via ToolRegistry delegation
 pub use elicitation::{
-    ApplyValidationFixesInput, ApplyValidationFixesOutput, CreateNarrativeSessionTool,
-    ElicitActTool, ElicitCarouselTool, ElicitMetadataTool, ElicitationHelper,
-    FinalizeNarrativeTool, GetNarrativeStateInput, GetNarrativeStateOutput, NarrativeRegistry,
+    ApplyValidationFixesInput, ApplyValidationFixesOutput,
+    ElicitationHelper,
+    GetNarrativeStateInput, GetNarrativeStateOutput, NarrativeRegistry,
     PartialNarrativeRegistry, ValidateNarrativeInput, ValidateNarrativeOutput,
 };
-// elicitation_primitives module is now empty - all primitives migrated to rmcp
-pub use execute_act::ExecuteActTool;
-pub use execute_narrative::ExecuteNarrativeTool;
-pub use generate::GenerateTool;
-pub use get_narrative_state::GetNarrativeStateTool;
 pub use metrics::{ActMetrics, ExecutionMetrics};
-// ModifyNarrativeTool migrated to rmcp (modify_narrative method in rmcp_server)
 pub use narrative_creation::{
     ElicitActInput, ElicitMetadataInput, FinalizeNarrativeInput, StartNarrativeInput,
     StartNarrativeTool,
@@ -60,9 +39,6 @@ pub use narrative_creation::{
 ))]
 pub use narrative_processor::McpProcessorCollector;
 pub use prometheus::{MetricsSummary, PrometheusMetrics};
-// SaveNarrativeTool migrated to rmcp (save_narrative method in rmcp_server)
-pub use server_info::ServerInfoTool;
-pub use validate_narrative_session::{ApplyValidationFixesTool, ValidateNarrativeSessionTool};
 
 // Export shared narrative utilities
 pub use narrative_utils::{Act, NarrativeHelper};
@@ -74,27 +50,10 @@ pub use botticelli_interface::LlmSamplerOperations;
 
 // scene module is now empty - all scene tools migrated to rmcp
 
-use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
 use serde_json::Value;
 use std::sync::Arc;
 use tracing::{debug, instrument, trace, warn};
-
-/// Trait for MCP tools.
-#[async_trait]
-pub trait McpTool: Send + Sync {
-    /// Returns the tool name.
-    fn name(&self) -> &str;
-
-    /// Returns the tool description for the LLM.
-    fn description(&self) -> &str;
-
-    /// Returns the input schema as JSON Schema.
-    fn input_schema(&self) -> Value;
-
-    /// Executes the tool with the given input.
-    async fn execute(&self, input: Value) -> McpResult<Value>;
-}
 
 /// Registry for managing MCP tools.
 ///
