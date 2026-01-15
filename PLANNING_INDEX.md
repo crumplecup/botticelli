@@ -351,6 +351,18 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ### Code Quality & Audits
 
+- **RMCP_MIGRATION_COMPLETION.md** - `current` (2026-01-15) **🎯 MIGRATION COMPLETION PLAN**
+  - Complete 5-phase plan to finish rmcp migration and fix code quality issues
+  - Phase 0: Architectural foundation (move errors/traits to proper crates)
+  - Phase 1: ToolRegistry refactor (delegate to rmcp handlers)
+  - Phase 2: Delete legacy McpTool infrastructure
+  - Phase 3: Migrate remaining tools (elicitation session tools)
+  - Phase 4: Code quality fixes (tests, imports, instrumentation)
+  - Phase 5: Documentation and final verification
+  - Estimated time: 12-16 hours total
+  - Deliverables: Zero duplication, single source of truth, ~3000 lines removed
+  - Status: 📋 Ready for execution
+
 - **BOTTICELLI_MCP_COMPREHENSIVE_AUDIT.md** - `current` (2026-01-12) **�� COMPREHENSIVE AUDIT**
   - Systematic audit of entire botticelli_mcp crate (10,103 lines, 61 files)
   - Found 29 violations across critical/high/medium priority
@@ -361,5 +373,5 @@ This index tracks all planning documents in the workspace. When documents are co
   - Medium: 12 registry methods + 9 helper functions missing instrumentation
   - Lessons learned: Must audit systematically, check every file, verify error patterns
   - Comparison to previous audit shows improved thoroughness
-  - Status: 📋 Active - ready for systematic fixes
+  - Status: 📋 Active - superseded by RMCP_MIGRATION_COMPLETION.md
 
