@@ -9,9 +9,10 @@ use crate::{
     QueryContentParams, QueryContentResult, ServerInfoResult,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use tracing::debug;
+use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    #[instrument(skip(self), fields(message))]
     pub async fn echo(
         &self,
         Parameters(EchoParams { message }): Parameters<EchoParams>,
@@ -23,6 +24,8 @@ impl BotticelliServer {
         debug!(result = ?result, "Echo completed successfully");
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self))]
     pub async fn server_info(&self) -> Result<Json<ServerInfoResult>, rmcp::ErrorData> {
         debug!("Retrieving server information");
 
@@ -35,6 +38,8 @@ impl BotticelliServer {
         debug!(tool_count = result.0.tool_count, "Server info retrieved");
         Ok(result)
     }
+    
+    #[instrument(skip(self), fields(table, limit))]
     pub async fn query_content(
         &self,
         Parameters(QueryContentParams { table, limit }): Parameters<QueryContentParams>,
@@ -82,6 +87,8 @@ impl BotticelliServer {
             Ok(Json(result))
         }
     }
+    
+    #[instrument(skip(self), fields(format = ?format))]
     pub async fn export_metrics(
         &self,
         Parameters(ExportMetricsParams { format }): Parameters<ExportMetricsParams>,

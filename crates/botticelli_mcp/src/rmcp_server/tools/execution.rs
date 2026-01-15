@@ -10,9 +10,10 @@ use crate::{
     GenerateResult, NarrativeAnalysis,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use tracing::debug;
+use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    #[instrument(skip(self, prompt), fields(model, max_tokens, temperature, prompt_len = prompt.len()))]
     pub async fn generate(
         &self,
         Parameters(GenerateParams {
@@ -257,6 +258,8 @@ impl BotticelliServer {
 
         Ok(Json(GenerateResult::new(text, model, tokens_used)))
     }
+    
+    #[instrument(skip(self, prompt, context), fields(model, max_tokens, prompt_len = prompt.len(), has_context = context.is_some()))]
     pub async fn execute_act(
         &self,
         Parameters(ExecuteActParams {
@@ -293,6 +296,8 @@ impl BotticelliServer {
             true,
         )))
     }
+    
+    #[instrument(skip(self, prompt), fields(narrative_path, model, max_tokens, prompt_len = prompt.len()))]
     pub async fn execute_narrative(
         &self,
         Parameters(ExecuteNarrativeParams {
@@ -341,6 +346,8 @@ impl BotticelliServer {
             None,
         )))
     }
+    
+    #[instrument(skip(self, description), fields(description_len = description.len()))]
     pub async fn create_narrative_session(
         &self,
         Parameters(CreateNarrativeSessionParams { description }): Parameters<

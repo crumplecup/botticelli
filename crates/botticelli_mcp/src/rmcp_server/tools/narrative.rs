@@ -20,9 +20,10 @@ use crate::{
 use botticelli_narrative::validator::{ValidationConfig, Validator};
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use std::path::Path;
-use tracing::debug;
+use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    #[instrument(skip(self, description), fields(name, description_len = description.len(), has_model = default_model.is_some()))]
     pub async fn create_narrative(
         &self,
         Parameters(CreateNarrativeParams {
@@ -112,6 +113,8 @@ impl BotticelliServer {
 
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self, narrative_toml, modification), fields(toml_len = narrative_toml.len(), modification_len = modification.len(), has_save_path = save_to.is_some()))]
     pub async fn modify_narrative(
         &self,
         Parameters(ModifyNarrativeParams {
@@ -167,6 +170,8 @@ impl BotticelliServer {
         let result = ModifyNarrativeResult::new(modified_toml, validation_json, changes, saved_to);
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self, narrative_toml), fields(toml_len = narrative_toml.len(), path = %file_path, overwrite))]
     pub async fn save_narrative(
         &self,
         Parameters(SaveNarrativeParams {
@@ -327,6 +332,8 @@ impl BotticelliServer {
 
         Ok(Json(ValidateNarrativeResult::new(valid, errors, warnings)))
     }
+    
+    #[instrument(skip(self), fields(narrative_id, validate))]
     pub async fn finalize_narrative(
         &self,
         Parameters(FinalizeNarrativeParams {
@@ -379,6 +386,8 @@ impl BotticelliServer {
             validation_errors,
         }))
     }
+    
+    #[instrument(skip(self), fields(narrative_id, format = ?format))]
     pub async fn get_narrative_state(
         &self,
         Parameters(GetNarrativeStateParams {
@@ -446,6 +455,8 @@ impl BotticelliServer {
             toml,
         }))
     }
+    
+    #[instrument(skip(self), fields(narrative_id, strict))]
     pub async fn validate_narrative_session(
         &self,
         Parameters(ValidateNarrativeSessionParams {
@@ -571,6 +582,8 @@ impl BotticelliServer {
             auto_fixable_count,
         }))
     }
+    
+    #[instrument(skip(self, fix_types), fields(narrative_id, fix_count = fix_types.len(), confirm))]
     pub async fn apply_validation_fixes(
         &self,
         Parameters(ApplyValidationFixesParams {
