@@ -11,9 +11,10 @@ use crate::{
     DiscordPostMessageResult,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use tracing::debug;
+use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    #[instrument(skip(self, content), fields(channel_id, content_len = content.len()))]
     pub async fn discord_post_message(
         &self,
         Parameters(DiscordPostMessageParams {
@@ -103,6 +104,8 @@ impl BotticelliServer {
             timestamp,
         }))
     }
+    
+    #[instrument(skip(self), fields(channel_id, limit))]
     pub async fn discord_get_messages(
         &self,
         Parameters(DiscordGetMessagesParams { channel_id, limit }): Parameters<
@@ -186,6 +189,8 @@ impl BotticelliServer {
             messages: formatted_messages,
         }))
     }
+    
+    #[instrument(skip(self), fields(guild_id))]
     pub async fn discord_get_guild_info(
         &self,
         Parameters(DiscordGetGuildInfoParams { guild_id }): Parameters<DiscordGetGuildInfoParams>,
@@ -249,6 +254,7 @@ impl BotticelliServer {
     }
 
     /// List channels in a Discord guild.
+    #[instrument(skip(self), fields(guild_id))]
     pub async fn discord_get_channels(
         &self,
         Parameters(DiscordGetChannelsParams { guild_id }): Parameters<DiscordGetChannelsParams>,

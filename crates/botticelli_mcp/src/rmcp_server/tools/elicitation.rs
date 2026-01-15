@@ -11,9 +11,10 @@ use crate::{
     ElicitSelectResult, ElicitTextParams, ElicitTextResult,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use tracing::debug;
+use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    #[instrument(skip(self, prompt), fields(prompt_len = prompt.len()))]
     pub async fn elicit_text(
         &self,
         Parameters(ElicitTextParams { prompt }): Parameters<ElicitTextParams>,
@@ -43,6 +44,8 @@ impl BotticelliServer {
         let result = ElicitTextResult::new(text);
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self, prompt), fields(prompt_len = prompt.len(), default))]
     pub async fn elicit_bool(
         &self,
         Parameters(ElicitBoolParams { prompt, default }): Parameters<ElicitBoolParams>,
@@ -72,6 +75,8 @@ impl BotticelliServer {
         let result = ElicitBoolResult::new(confirmed);
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self, prompt), fields(prompt_len = prompt.len(), min, max))]
     pub async fn elicit_number(
         &self,
         Parameters(ElicitNumberParams { prompt, min, max }): Parameters<ElicitNumberParams>,
@@ -110,6 +115,8 @@ impl BotticelliServer {
         let result = ElicitNumberResult::new(number);
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self, prompt, options), fields(prompt_len = prompt.len(), option_count = options.len()))]
     pub async fn elicit_select(
         &self,
         Parameters(ElicitSelectParams { prompt, options }): Parameters<ElicitSelectParams>,
@@ -160,6 +167,8 @@ impl BotticelliServer {
         let result = ElicitSelectResult::new(selected.clone());
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self), fields(narrative_id, name, description))]
     pub async fn elicit_metadata(
         &self,
         Parameters(ElicitMetadataParams {
@@ -192,6 +201,8 @@ impl BotticelliServer {
             status: "updated".to_string(),
         }))
     }
+    
+    #[instrument(skip(self, prompt), fields(narrative_id, act_name, prompt_len = prompt.len()))]
     pub async fn elicit_act(
         &self,
         Parameters(ElicitActParams {
@@ -235,6 +246,8 @@ impl BotticelliServer {
             status: status.to_string(),
         }))
     }
+    
+    #[instrument(skip(self), fields(narrative_id))]
     pub async fn elicit_carousel(
         &self,
         Parameters(ElicitCarouselParams {

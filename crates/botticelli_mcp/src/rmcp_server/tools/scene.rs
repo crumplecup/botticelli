@@ -8,9 +8,10 @@ use crate::{
     ListScenesResult, UpdateSceneParams, UpdateSceneResult,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use tracing::debug;
+use tracing::{debug, instrument};
 
 impl BotticelliServer {
+    #[instrument(skip(self), fields(narrative_id, scene_name, has_description = description.is_some()))]
     pub async fn create_scene(
         &self,
         Parameters(CreateSceneParams {
@@ -34,6 +35,8 @@ impl BotticelliServer {
         let result = CreateSceneResult::new(scene_id, narrative_id, scene_name, description);
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self), fields(narrative_id))]
     pub async fn list_scenes(
         &self,
         Parameters(ListScenesParams { narrative_id }): Parameters<ListScenesParams>,
@@ -43,6 +46,8 @@ impl BotticelliServer {
         let result = ListScenesResult::new(narrative_id, vec![]);
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self, updates), fields(scene_id))]
     pub async fn update_scene(
         &self,
         Parameters(UpdateSceneParams { scene_id, updates }): Parameters<UpdateSceneParams>,
@@ -52,6 +57,8 @@ impl BotticelliServer {
         let result = UpdateSceneResult::new(scene_id, updates);
         Ok(Json(result))
     }
+    
+    #[instrument(skip(self), fields(scene_id))]
     pub async fn delete_scene(
         &self,
         Parameters(DeleteSceneParams { scene_id }): Parameters<DeleteSceneParams>,
