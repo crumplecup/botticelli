@@ -1,6 +1,6 @@
 use crate::{ConversationSession, ConversationTurn, SessionState, ToolRegistry};
 use botticelli_core::{GenerateResponse, ToolCall, ToolDefinition, ToolResult};
-use botticelli_error::BotticelliResult;
+use botticelli_error::{BotticelliResult, SamplingError, SamplingErrorKind};
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -220,71 +220,6 @@ pub enum SamplingResult {
         /// Final response from the assistant
         final_response: String,
     },
-}
-
-/// Errors from sampling operations.
-/// Sampling error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
-#[display("Sampling: {} at {}:{}", kind, file, line)]
-pub struct SamplingError {
-    /// Error kind
-    kind: SamplingErrorKind,
-    /// Line number
-    line: u32,
-    /// File name
-    file: &'static str,
-}
-
-/// Types of sampling errors.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
-pub enum SamplingErrorKind {
-    /// Max turns exceeded
-    #[display("Max turns exceeded: {}", max)]
-    MaxTurnsExceeded {
-        /// Maximum turns allowed
-        max: usize,
-    },
-
-    /// Tool execution failed
-    #[display("Tool execution failed: {} - {}", tool_name, reason)]
-    ToolExecutionFailed {
-        /// Tool name
-        tool_name: String,
-        /// Reason for failure
-        reason: String,
-    },
-
-    /// Unknown tool
-    #[display("Unknown tool: {}", name)]
-    UnknownTool {
-        /// Tool name
-        name: String,
-    },
-
-    /// Provider error
-    #[display("Provider error: {}", _0)]
-    ProviderError(String),
-
-    /// No tool registry configured
-    #[display("No tool registry configured")]
-    NoToolRegistry,
-
-    /// Request building failed
-    #[display("Request building failed: {}", _0)]
-    RequestBuildingFailed(String),
-}
-
-impl SamplingError {
-    /// Create a new sampling error with location tracking.
-    #[track_caller]
-    pub fn new(kind: SamplingErrorKind) -> Self {
-        let loc = std::panic::Location::caller();
-        Self {
-            kind,
-            line: loc.line(),
-            file: loc.file(),
-        }
-    }
 }
 
 // Import PartialNarrative

@@ -67,7 +67,7 @@ pub use validate_narrative_session::{ApplyValidationFixesTool, ValidateNarrative
 // Export shared narrative utilities
 pub use narrative_utils::{Act, NarrativeHelper};
 pub use sampling::{
-    LlmSampler, SamplingCoordinator, SamplingError, SamplingErrorKind, SamplingHelper,
+    LlmSampler, SamplingCoordinator, SamplingHelper,
     SamplingResult,
 };
 pub use sampling_session_manager::SamplingSessionManager;

@@ -213,6 +213,6 @@ impl ElicitationHelper {
     #[instrument]
     #[track_caller]
     pub fn serialization_error(message: &str) -> McpError {
-        McpError::new(McpErrorKind::SerializationError(message.to_string()))
+        McpError::new(McpErrorKind::InvalidInput(format!("Serialization error: {}", message)))
     }
 }

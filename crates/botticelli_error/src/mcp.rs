@@ -1,8 +1,87 @@
 //! MCP-specific error types.
 
+/// Serde JSON error with source tracking.
+#[cfg(feature = "serde_json")]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[display("JSON serialization error: {:?} at {}:{}", source, file, line)]
+pub struct SerdeJsonError {
+    /// The serde_json error source
+    source: Box<serde_json::Error>,
+    /// Line number where error was created
+    line: u32,
+    /// File where error was created
+    file: &'static str,
+}
+
+#[cfg(feature = "serde_json")]
+impl SerdeJsonError {
+    /// Create a new SerdeJsonError with automatic location tracking.
+    #[track_caller]
+    pub fn new(err: serde_json::Error) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            source: Box::new(err),
+            line: location.line(),
+            file: location.file(),
+        }
+    }
+}
+
+#[cfg(feature = "serde_json")]
+impl Clone for SerdeJsonError {
+    fn clone(&self) -> Self {
+        // serde_json::Error doesn't implement Clone, recreate from message
+        // We use io::Error as a workaround since serde_json::Error can wrap it
+        let message = self.source.to_string();
+        let io_err = std::io::Error::new(std::io::ErrorKind::Other, message);
+        let json_err = serde_json::Error::io(io_err);
+        Self {
+            source: Box::new(json_err),
+            line: self.line,
+            file: self.file,
+        }
+    }
+}
+
+#[cfg(feature = "serde_json")]
+impl PartialEq for SerdeJsonError {
+    fn eq(&self, other: &Self) -> bool {
+        // Compare by string representation since serde_json::Error doesn't impl PartialEq
+        self.source.to_string() == other.source.to_string()
+            && self.line == other.line
+            && self.file == other.file
+    }
+}
+
+#[cfg(feature = "serde_json")]
+impl Eq for SerdeJsonError {}
+
+#[cfg(feature = "serde_json")]
+impl std::hash::Hash for SerdeJsonError {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.source.to_string().hash(state);
+        self.line.hash(state);
+        self.file.hash(state);
+    }
+}
+
 /// MCP error kinds.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
 pub enum McpErrorKind {
+    /// JSON serialization/deserialization error
+    #[cfg(feature = "serde_json")]
+    #[display("JSON error: {}", _0)]
+    Json(SerdeJsonError),
+    
+    /// RMCP protocol error (message + code)
+    #[display("RMCP error: {} (code {})", message, code)]
+    Rmcp {
+        /// Error code
+        code: i32,
+        /// Error message
+        message: String,
+    },
+    
     /// Tool not found
     #[display("Tool not found: {}", _0)]
     ToolNotFound(String),
@@ -41,12 +120,24 @@ pub enum McpErrorKind {
     /// Unsupported model
     #[display("Unsupported model: {}", _0)]
     UnsupportedModel(String),
-    /// Serialization error
-    #[display("Serialization error: {}", _0)]
-    SerializationError(String),
     /// Mutex poisoned (internal error)
     #[display("Mutex poisoned: {}", _0)]
     MutexPoisoned(String),
+}
+
+/// From implementations for automatic error conversion
+#[cfg(feature = "serde_json")]
+impl From<serde_json::Error> for McpErrorKind {
+    fn from(err: serde_json::Error) -> Self {
+        Self::Json(SerdeJsonError::new(err))
+    }
+}
+
+#[cfg(feature = "serde_json")]
+impl From<SerdeJsonError> for McpErrorKind {
+    fn from(err: SerdeJsonError) -> Self {
+        Self::Json(err)
+    }
 }
 
 /// MCP error with location tracking.

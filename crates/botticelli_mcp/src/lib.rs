@@ -96,8 +96,7 @@ pub use tools::{
     ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics,
     FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler, McpTool,
     MetricsSummary, NarrativeHelper, NarrativeRegistry, PrometheusMetrics, SamplingCoordinator,
-    SamplingError, SamplingErrorKind, SamplingHelper, SamplingResult, ServerInfoTool,
-    StartNarrativeInput, StartNarrativeTool, ToolRegistry,
+    SamplingHelper, SamplingResult, ServerInfoTool, ToolRegistry,
 };
 pub use validate_narrative::{
     ValidateNarrativeParams, ValidateNarrativeResult, ValidationError, ValidationLocation,

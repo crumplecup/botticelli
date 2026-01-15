@@ -1,5 +1,69 @@
 //! Chat-specific error types.
 
+/// Sampling error kinds.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+pub enum SamplingErrorKind {
+    /// Max turns exceeded
+    #[display("Max turns exceeded: {}", max)]
+    MaxTurnsExceeded {
+        /// Maximum turns allowed
+        max: usize,
+    },
+
+    /// Tool execution failed
+    #[display("Tool execution failed: {} - {}", tool_name, reason)]
+    ToolExecutionFailed {
+        /// Tool name
+        tool_name: String,
+        /// Reason for failure
+        reason: String,
+    },
+
+    /// Unknown tool
+    #[display("Unknown tool: {}", name)]
+    UnknownTool {
+        /// Tool name
+        name: String,
+    },
+
+    /// Provider error
+    #[display("Provider error: {}", _0)]
+    ProviderError(String),
+
+    /// No tool registry configured
+    #[display("No tool registry configured")]
+    NoToolRegistry,
+
+    /// Request building failed
+    #[display("Request building failed: {}", _0)]
+    RequestBuildingFailed(String),
+}
+
+/// Sampling error with location tracking.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[display("Sampling: {} at {}:{}", kind, file, line)]
+pub struct SamplingError {
+    /// Error kind
+    kind: SamplingErrorKind,
+    /// Line number
+    line: u32,
+    /// File name
+    file: &'static str,
+}
+
+impl SamplingError {
+    /// Create a new sampling error with location tracking.
+    #[track_caller]
+    pub fn new(kind: SamplingErrorKind) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind,
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
+}
+
 /// Chat error kinds.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
 pub enum ChatErrorKind {
@@ -46,7 +110,20 @@ pub enum ChatErrorKind {
     IoError(String),
     /// Sampling error
     #[display("Sampling error: {}", _0)]
-    SamplingError(String),
+    Sampling(SamplingError),
+}
+
+/// From implementation for automatic conversion
+impl From<SamplingError> for ChatErrorKind {
+    fn from(err: SamplingError) -> Self {
+        Self::Sampling(err)
+    }
+}
+
+impl From<SamplingErrorKind> for ChatErrorKind {
+    fn from(kind: SamplingErrorKind) -> Self {
+        Self::Sampling(SamplingError::new(kind))
+    }
 }
 
 /// Chat error with location tracking.

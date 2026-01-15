@@ -66,7 +66,7 @@ mod validation;
 
 pub use backend::BackendError;
 pub use builder::{BuilderError, BuilderErrorKind};
-pub use chat::{ChatError, ChatErrorKind, ChatResult};
+pub use chat::{ChatError, ChatErrorKind, ChatResult, SamplingError, SamplingErrorKind};
 pub use config::ConfigError;
 #[cfg(feature = "database")]
 pub use database::{DatabaseError, DatabaseErrorKind, DieselConnectionError, DieselError};
@@ -81,6 +81,8 @@ pub use io::IoError;
 #[cfg(feature = "serde_json")]
 pub use json::SerdeJsonError as JsonSerdeJsonError;
 pub use json::{JsonError, JsonErrorKind};
+#[cfg(feature = "serde_json")]
+pub use mcp::SerdeJsonError as McpSerdeJsonError;
 pub use mcp::{McpError, McpErrorKind, McpResult};
 #[cfg(feature = "anthropic")]
 pub use models::{AnthropicError, AnthropicErrorKind};
