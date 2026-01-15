@@ -23,7 +23,7 @@ use botticelli_interface::DatabaseRegistryOperations;
 /// ```
 #[derive(Clone)]
 pub struct BotticelliServer {
-    pub(super) tool_router: ToolRouter<Self>,
+    pub(crate) tool_router: ToolRouter<Self>,
 
     #[cfg(feature = "database")]
     pub(super) db_ops: Option<

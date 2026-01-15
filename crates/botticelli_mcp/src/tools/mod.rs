@@ -77,8 +77,8 @@ pub use botticelli_interface::LlmSamplerOperations;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
 use serde_json::Value;
-use std::collections::HashMap;
 use std::sync::Arc;
+use tracing::{debug, instrument, trace, warn};
 
 /// Trait for MCP tools.
 #[async_trait]
@@ -97,163 +97,220 @@ pub trait McpTool: Send + Sync {
 }
 
 /// Registry for managing MCP tools.
+///
+/// Delegates tool execution to the rmcp BotticelliServer.
 #[derive(Clone)]
 pub struct ToolRegistry {
-    tools: HashMap<String, Arc<dyn McpTool>>,
-    metrics: Option<Arc<crate::PrometheusMetrics>>,
+    server: Arc<crate::BotticelliServer>,
 }
 
 impl ToolRegistry {
-    /// Creates a new tool registry.
-    pub fn new() -> Self {
-        Self {
-            tools: HashMap::new(),
-            metrics: None,
-        }
-    }
-
-    /// Creates a new tool registry with metrics collection.
-    pub fn with_metrics(metrics: Arc<crate::PrometheusMetrics>) -> Self {
-        Self {
-            tools: HashMap::new(),
-            metrics: Some(metrics),
-        }
-    }
-
-    /// Get the metrics collector, if configured.
-    pub fn metrics(&self) -> Option<&Arc<crate::PrometheusMetrics>> {
-        self.metrics.as_ref()
-    }
-
-    /// Registers a tool.
-    pub fn register(&mut self, tool: Arc<dyn McpTool>) {
-        self.tools.insert(tool.name().to_string(), tool);
-    }
-
-    /// Gets a tool by name.
-    pub fn get(&self, name: &str) -> Option<Arc<dyn McpTool>> {
-        self.tools.get(name).cloned()
-    }
-
-    /// Lists all registered tools.
-    pub fn list(&self) -> Vec<Arc<dyn McpTool>> {
-        self.tools.values().cloned().collect()
-    }
-
-    /// Executes a tool by name.
-    pub async fn execute(&self, name: &str, input: Value) -> McpResult<Value> {
-        let tool = self
-            .get(name)
-            .ok_or_else(|| McpError::tool_not_found(name.to_string()))?;
-
-        tool.execute(input).await
+    /// Creates a new tool registry that delegates to the given server.
+    pub fn new(server: Arc<crate::BotticelliServer>) -> Self {
+        Self { server }
     }
 
     /// Get tool definitions for LLM function calling.
     ///
-    /// Converts all registered tools into the format expected by LLMs.
+    /// Retrieves all registered tools from the rmcp ToolRouter.
+    #[instrument(skip(self))]
     pub fn tool_definitions(&self) -> Vec<botticelli_core::ToolDefinition> {
-        self.tools
-            .values()
+        debug!("Retrieving tool definitions from rmcp ToolRouter");
+        
+        let tools = self.server.tool_router.list_all()
+            .into_iter()
             .map(|tool| {
+                trace!(
+                    tool_name = %tool.name,
+                    has_description = tool.description.is_some(),
+                    "Converting tool info to ToolDefinition"
+                );
+                
                 botticelli_core::ToolDefinition::new(
-                    tool.name().to_string(),
-                    tool.description().to_string(),
-                    tool.input_schema(),
+                    tool.name.into_owned(),
+                    tool.description.map(|d| d.into_owned()).unwrap_or_default(),
+                    serde_json::to_value(&*tool.input_schema).unwrap(),
                 )
             })
-            .collect()
+            .collect::<Vec<_>>();
+        
+        debug!(tool_count = tools.len(), "Retrieved tool definitions");
+        tools
     }
-}
 
-impl Default for ToolRegistry {
-    fn default() -> Self {
-        let mut registry = Self::new();
-
-        // Core tools
-        registry.register(Arc::new(EchoTool));
-        registry.register(Arc::new(ServerInfoTool));
-
-        // Narrative elicitation tools (LLM-driven creation)
-        let narrative_registry = Arc::new(NarrativeRegistry::new());
-        registry.register(Arc::new(CreateNarrativeSessionTool::new(
-            narrative_registry.clone(),
-        )));
-        registry.register(Arc::new(ElicitMetadataTool::new(
-            narrative_registry.clone(),
-        )));
-        registry.register(Arc::new(ElicitActTool::new(narrative_registry.clone())));
-        registry.register(Arc::new(FinalizeNarrativeTool::new(
-            narrative_registry.clone(),
-        )));
-
-        // Tools that need Arc-wrapped registry
-        registry.register(Arc::new(ElicitCarouselTool::new(
-            narrative_registry.clone(),
-        )));
-        registry.register(Arc::new(GetNarrativeStateTool::new(
-            narrative_registry.clone(),
-        )));
-        registry.register(Arc::new(ValidateNarrativeSessionTool::new(
-            narrative_registry.clone(),
-        )));
-        registry.register(Arc::new(ApplyValidationFixesTool::new(narrative_registry)));
-
-        // Narrative generation tools migrated to rmcp (create_narrative, modify_narrative, save_narrative)
-
-        // Scene management tools migrated to rmcp (create_scene, list_scenes, update_scene, delete_scene)
-
-        // Execution tools (Phase 2 & 3)
-        registry.register(Arc::new(GenerateTool));
-        registry.register(Arc::new(ExecuteActTool::new()));
-        registry.register(Arc::new(ExecuteNarrativeTool::new()));
-
-        // Database tool (feature-gated)
-        // NOTE: Database tools require explicit configuration via builder
-        // They are not registered in Default implementation
-
-        // Discord tools (feature-gated)
-        #[cfg(feature = "discord")]
-        {
-            use crate::tools::{
-                DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool,
-                DiscordPostMessageTool,
-            };
-
-            if let Ok(tool) = DiscordPostMessageTool::new() {
-                registry.register(Arc::new(tool));
-                tracing::info!("Discord post message tool registered");
-            } else {
-                tracing::warn!("Discord post message not available (check DISCORD_TOKEN)");
+    /// Executes a tool by name, delegating to rmcp handlers.
+    #[instrument(skip(self, input), fields(tool_name = name))]
+    pub async fn execute(&self, name: &str, input: Value) -> McpResult<Value> {
+        debug!(tool_name = name, "Executing tool via rmcp delegation");
+        
+        // Delegate to rmcp handler based on tool name
+        match name {
+            // Core tools
+            "echo" => {
+                debug!("Delegating to echo handler");
+                self.server.echo(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
             }
-
-            if let Ok(tool) = DiscordGetMessagesTool::new() {
-                registry.register(Arc::new(tool));
-                tracing::info!("Discord get messages tool registered");
-            } else {
-                tracing::warn!("Discord get messages not available (check DISCORD_TOKEN)");
+            
+            "server_info" => {
+                debug!("Delegating to server_info handler");
+                self.server.server_info()
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
             }
-
-            if let Ok(tool) = DiscordGetGuildInfoTool::new() {
-                registry.register(Arc::new(tool));
-                tracing::info!("Discord get guild info tool registered");
-            } else {
-                tracing::warn!("Discord get guild info not available (check DISCORD_TOKEN)");
+            
+            // Narrative tools
+            "create_narrative" => {
+                debug!("Delegating to create_narrative handler");
+                self.server.create_narrative(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
             }
-
-            if let Ok(tool) = DiscordGetChannelsTool::new() {
-                registry.register(Arc::new(tool));
-                tracing::info!("Discord get channels tool registered");
-            } else {
-                tracing::warn!("Discord get channels not available (check DISCORD_TOKEN)");
+            
+            "modify_narrative" => {
+                debug!("Delegating to modify_narrative handler");
+                self.server.modify_narrative(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "save_narrative" => {
+                debug!("Delegating to save_narrative handler");
+                self.server.save_narrative(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "validate_narrative" => {
+                debug!("Delegating to validate_narrative handler");
+                self.server.validate_narrative(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            // Execution tools
+            "execute_act" => {
+                debug!("Delegating to execute_act handler");
+                self.server.execute_act(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "execute_narrative" => {
+                debug!("Delegating to execute_narrative handler");
+                self.server.execute_narrative(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "generate" => {
+                debug!("Delegating to generate handler");
+                self.server.generate(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            // Discord tools (feature-gated)
+            #[cfg(feature = "discord")]
+            "discord_post_message" => {
+                debug!("Delegating to discord_post_message handler");
+                self.server.discord_post_message(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            #[cfg(feature = "discord")]
+            "discord_get_messages" => {
+                debug!("Delegating to discord_get_messages handler");
+                self.server.discord_get_messages(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            #[cfg(feature = "discord")]
+            "discord_get_guild_info" => {
+                debug!("Delegating to discord_get_guild_info handler");
+                self.server.discord_get_guild_info(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            #[cfg(feature = "discord")]
+            "discord_get_channels" => {
+                debug!("Delegating to discord_get_channels handler");
+                self.server.discord_get_channels(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            // Database tool (feature-gated)
+            #[cfg(feature = "database")]
+            "query_content" => {
+                debug!("Delegating to query_content handler");
+                self.server.query_content(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            _ => {
+                warn!(tool_name = name, "Unknown tool requested");
+                Err(McpError::tool_not_found(name))
             }
         }
-
-        tracing::info!(
-            "ToolRegistry initialized with {} tools",
-            registry.tools.len()
-        );
-        registry
     }
 }
 
@@ -261,11 +318,11 @@ impl Default for ToolRegistry {
 impl ToolRegistry {
     /// Gets the number of registered tools.
     pub fn len(&self) -> usize {
-        self.tools.len()
+        self.server.tool_router.list_all().len()
     }
 
     /// Returns true if no tools are registered.
     pub fn is_empty(&self) -> bool {
-        self.tools.is_empty()
+        self.server.tool_router.list_all().is_empty()
     }
 }
