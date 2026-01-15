@@ -244,6 +244,51 @@ impl ToolRegistry {
                 .map_err(|e| McpError::execution_failed(e.message.to_string()))
             }
             
+            // Elicitation session tools
+            "create_narrative_session" => {
+                debug!("Delegating to create_narrative_session handler");
+                self.server.create_narrative_session(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "elicit_metadata" => {
+                debug!("Delegating to elicit_metadata handler");
+                self.server.elicit_metadata(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "elicit_act" => {
+                debug!("Delegating to elicit_act handler");
+                self.server.elicit_act(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "finalize_narrative" => {
+                debug!("Delegating to finalize_narrative handler");
+                self.server.finalize_narrative(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
             // Discord tools (feature-gated)
             #[cfg(feature = "discord")]
             "discord_post_message" => {
