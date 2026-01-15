@@ -23,45 +23,23 @@ pub struct CreateNarrativeParams {
 }
 
 /// Result from creating a narrative.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, JsonSchema, derive_new::new, derive_getters::Getters)]
 pub struct CreateNarrativeResult {
     /// Generated narrative TOML
-    pub toml: String,
+    toml: String,
 
     /// TOML with helpful comments added
-    pub toml_with_comments: String,
+    toml_with_comments: String,
 
     /// Validation results
-    pub validation: Value,
+    validation: Value,
 
     /// Human-readable summary
-    pub summary: String,
+    summary: String,
 
     /// List of auto-fixes that were applied
-    pub auto_fixes_applied: Vec<String>,
+    auto_fixes_applied: Vec<String>,
 
     /// Number of acts in the narrative
-    pub act_count: usize,
-}
-
-impl CreateNarrativeResult {
-    /// Create a new narrative creation result.
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        toml: String,
-        toml_with_comments: String,
-        validation: Value,
-        summary: String,
-        auto_fixes_applied: Vec<String>,
-        act_count: usize,
-    ) -> Self {
-        Self {
-            toml,
-            toml_with_comments,
-            validation,
-            summary,
-            auto_fixes_applied,
-            act_count,
-        }
-    }
+    act_count: usize,
 }
