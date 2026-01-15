@@ -371,3 +371,14 @@ impl ToolRegistry {
         self.server.tool_router.list_all().is_empty()
     }
 }
+
+impl Default for ToolRegistry {
+    /// Creates a default tool registry with an unconfigured server.
+    ///
+    /// Use `ToolRegistry::new()` with a configured server for production.
+    fn default() -> Self {
+        Self {
+            server: Arc::new(crate::BotticelliServer::builder().build()),
+        }
+    }
+}
