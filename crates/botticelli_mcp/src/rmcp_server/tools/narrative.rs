@@ -12,16 +12,15 @@ use crate::{
     ApplyValidationFixesParams, ApplyValidationFixesResult, CreateNarrativeParams,
     CreateNarrativeResult, FinalizeNarrativeParams, FinalizeNarrativeResult,
     GetNarrativeStateParams, GetNarrativeStateResult, ModifyNarrativeParams,
-    ModifyNarrativeResult, NarrativeAnalysis, NarrativeStateSummary, SaveNarrativeParams,
+    ModifyNarrativeResult, NarrativeStateSummary, SaveNarrativeParams,
     SaveNarrativeResult, StateFormat, ValidateNarrativeParams, ValidateNarrativeResult,
     ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationError,
     ValidationIssue, ValidationLocation, ValidationSeverity, ValidationWarning,
 };
 use botticelli_narrative::validator::{ValidationConfig, Validator};
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use rmcp::tool;
 use std::path::Path;
-use tracing::{debug, instrument};
+use tracing::debug;
 
 impl BotticelliServer {
     pub async fn create_narrative(

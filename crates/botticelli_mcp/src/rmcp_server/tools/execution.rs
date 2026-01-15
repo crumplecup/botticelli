@@ -2,7 +2,7 @@
 //!
 //! Tools for generating content and executing narrative acts.
 
-use super::super::helpers::{default_model, to_mcp_error};
+use super::super::helpers::default_model;
 use super::super::server::BotticelliServer;
 use crate::{
     CreateNarrativeSessionParams, CreateNarrativeSessionResult, ExecuteActParams,
@@ -10,8 +10,7 @@ use crate::{
     GenerateResult, NarrativeAnalysis,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use rmcp::tool;
-use tracing::{debug, instrument};
+use tracing::debug;
 
 impl BotticelliServer {
     pub async fn generate(
@@ -21,7 +20,7 @@ impl BotticelliServer {
             model,
             max_tokens,
             temperature,
-            system_prompt,
+            system_prompt: _,
         }): Parameters<GenerateParams>,
     ) -> Result<Json<GenerateResult>, rmcp::ErrorData> {
         debug!(%model, max_tokens, temperature, "Generating text");
@@ -264,8 +263,8 @@ impl BotticelliServer {
             prompt,
             model,
             max_tokens,
-            temperature,
-            system_prompt,
+            temperature: _,
+            system_prompt: _,
             context,
         }): Parameters<ExecuteActParams>,
     ) -> Result<Json<ExecuteActResult>, rmcp::ErrorData> {

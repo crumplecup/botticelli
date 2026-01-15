@@ -2,15 +2,13 @@
 //!
 //! CRUD operations for narrative scenes.
 
-use super::super::helpers::to_mcp_error;
 use super::super::server::BotticelliServer;
 use crate::{
     CreateSceneParams, CreateSceneResult, DeleteSceneParams, DeleteSceneResult, ListScenesParams,
     ListScenesResult, UpdateSceneParams, UpdateSceneResult,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use rmcp::tool;
-use tracing::{debug, instrument};
+use tracing::debug;
 
 impl BotticelliServer {
     pub async fn create_scene(

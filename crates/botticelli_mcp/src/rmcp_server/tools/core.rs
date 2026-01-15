@@ -9,8 +9,7 @@ use crate::{
     QueryContentParams, QueryContentResult, ServerInfoResult,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use rmcp::tool;
-use tracing::{debug, instrument};
+use tracing::debug;
 
 impl BotticelliServer {
     pub async fn echo(
