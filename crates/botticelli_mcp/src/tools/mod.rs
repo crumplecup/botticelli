@@ -289,6 +289,144 @@ impl ToolRegistry {
                 .map_err(|e| McpError::execution_failed(e.message.to_string()))
             }
             
+            "elicit_carousel" => {
+                debug!("Delegating to elicit_carousel handler");
+                self.server.elicit_carousel(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "get_narrative_state" => {
+                debug!("Delegating to get_narrative_state handler");
+                self.server.get_narrative_state(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "validate_narrative_session" => {
+                debug!("Delegating to validate_narrative_session handler");
+                self.server.validate_narrative_session(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "apply_validation_fixes" => {
+                debug!("Delegating to apply_validation_fixes handler");
+                self.server.apply_validation_fixes(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            // Elicitation primitive tools
+            "elicit_text" => {
+                debug!("Delegating to elicit_text handler");
+                self.server.elicit_text(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "elicit_bool" => {
+                debug!("Delegating to elicit_bool handler");
+                self.server.elicit_bool(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "elicit_number" => {
+                debug!("Delegating to elicit_number handler");
+                self.server.elicit_number(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            "elicit_select" => {
+                debug!("Delegating to elicit_select handler");
+                self.server.elicit_select(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            // Scene management tools (feature-gated)
+            #[cfg(feature = "database")]
+            "create_scene" => {
+                debug!("Delegating to create_scene handler");
+                self.server.create_scene(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            #[cfg(feature = "database")]
+            "list_scenes" => {
+                debug!("Delegating to list_scenes handler");
+                self.server.list_scenes(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            #[cfg(feature = "database")]
+            "update_scene" => {
+                debug!("Delegating to update_scene handler");
+                self.server.update_scene(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            #[cfg(feature = "database")]
+            "delete_scene" => {
+                debug!("Delegating to delete_scene handler");
+                self.server.delete_scene(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
             // Discord tools (feature-gated)
             #[cfg(feature = "discord")]
             "discord_post_message" => {
@@ -343,6 +481,18 @@ impl ToolRegistry {
             "query_content" => {
                 debug!("Delegating to query_content handler");
                 self.server.query_content(rmcp::handler::server::wrapper::Parameters(
+                    serde_json::from_value(input)
+                        .map_err(|e| McpError::invalid_input(e.to_string()))?,
+                ))
+                .await
+                .map(|json| serde_json::to_value(json.0).unwrap())
+                .map_err(|e| McpError::execution_failed(e.message.to_string()))
+            }
+            
+            // Metrics tool
+            "export_metrics" => {
+                debug!("Delegating to export_metrics handler");
+                self.server.export_metrics(rmcp::handler::server::wrapper::Parameters(
                     serde_json::from_value(input)
                         .map_err(|e| McpError::invalid_input(e.to_string()))?,
                 ))
