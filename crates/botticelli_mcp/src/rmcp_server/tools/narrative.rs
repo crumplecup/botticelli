@@ -238,6 +238,8 @@ impl BotticelliServer {
         let result = SaveNarrativeResult::new(absolute_path, narrative_toml.len(), existed);
         Ok(Json(result))
     }
+    
+    /// Validate narrative TOML file structure and content.
     pub async fn validate_narrative(
         &self,
         Parameters(ValidateNarrativeParams {
