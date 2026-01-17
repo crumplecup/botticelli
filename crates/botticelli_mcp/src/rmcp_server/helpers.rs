@@ -64,22 +64,16 @@ pub(super) fn generate_narrative_toml(
 [narrative]
 name = "{name}"
 description = "{description}"
-
-[defaults]
 model = "{model}"
 temperature = {temperature}
 
-[[acts]]
-name = "act1"
-prompt = "Complete first step: [describe step 1]"
+[toc]
+order = ["act1", "act2", "act3"]
 
-[[acts]]
-name = "act2"
-prompt = "Complete second step: [describe step 2]"
-
-[[acts]]
-name = "act3"
-prompt = "Complete final step: [describe step 3]"
+[acts]
+act1 = "Complete first step: [describe step 1]"
+act2 = "Complete second step: [describe step 2]"
+act3 = "Complete final step: [describe step 3]"
 "#
         )
     } else {
@@ -91,14 +85,14 @@ prompt = "Complete final step: [describe step 3]"
 [narrative]
 name = "{name}"
 description = "{description}"
-
-[defaults]
 model = "{model}"
 temperature = {temperature}
 
-[[acts]]
-name = "main"
-prompt = "{description}"
+[toc]
+order = ["main"]
+
+[acts]
+main = "{description}"
 "#
         )
     };
@@ -156,50 +150,71 @@ fn add_act(toml: &str, modification: &str) -> Result<(String, String), rmcp::Err
 
     let act_name = extract_act_name_from_mod(modification);
 
-    // Find last [[acts]] section
+    // Find [acts] section and [toc] section
     let lines: Vec<&str> = toml.lines().collect();
-    let mut last_acts_end = 0;
-
+    let mut acts_start = None;
+    let mut toc_start = None;
+    
     for (i, line) in lines.iter().enumerate() {
-        if line.starts_with("[[acts]]") {
-            // Find the end of this acts section
-            for j in (i + 1)..lines.len() {
-                if lines[j].starts_with("[[") || lines[j].starts_with("[") {
-                    last_acts_end = j;
-                    break;
-                }
-                if j == lines.len() - 1 {
-                    last_acts_end = lines.len();
+        if line.trim() == "[acts]" {
+            acts_start = Some(i);
+        }
+        if line.trim() == "[toc]" {
+            toc_start = Some(i);
+        }
+    }
+
+    let acts_start = acts_start.ok_or_else(|| {
+        rmcp::ErrorData::new(
+            ErrorCode::INTERNAL_ERROR,
+            Cow::Borrowed("Could not find [acts] section in TOML"),
+            None,
+        )
+    })?;
+
+    // Find end of [acts] section (next section or EOF)
+    let mut acts_end = lines.len();
+    for i in (acts_start + 1)..lines.len() {
+        if lines[i].starts_with('[') && !lines[i].starts_with("# [") {
+            acts_end = i;
+            break;
+        }
+    }
+
+    // Insert new act before the end of acts section
+    let new_act = format!("{} = \"[Describe what this act should do]\"", act_name);
+    
+    let mut result = Vec::new();
+    result.extend_from_slice(&lines[..acts_end]);
+    result.push(new_act.as_str());
+    result.extend_from_slice(&lines[acts_end..]);
+
+    // Update [toc] order if present
+    let mut modified = result.join("\n");
+    if let Some(toc_idx) = toc_start {
+        // Find the order line
+        for i in (toc_idx + 1)..result.len() {
+            if result[i].trim().starts_with("order = ") {
+                // Extract existing order
+                let order_line = result[i].trim();
+                if let Some(start) = order_line.find('[') {
+                    if let Some(end) = order_line.find(']') {
+                        let current_acts = &order_line[start + 1..end];
+                        let new_order = if current_acts.trim().is_empty() {
+                            format!("order = [\"{}\"]", act_name)
+                        } else {
+                            format!("order = [{}, \"{}\"]", current_acts, act_name)
+                        };
+                        result[i] = Box::leak(new_order.into_boxed_str());
+                        modified = result.join("\n");
+                        break;
+                    }
                 }
             }
         }
     }
 
-    if last_acts_end == 0 {
-        return Err(rmcp::ErrorData::new(
-            ErrorCode::INTERNAL_ERROR,
-            Cow::Borrowed("Could not find acts section in TOML"),
-            None,
-        ));
-    }
-
-    // Insert new act after last act
-    let new_act = format!(
-        r#"
-[[acts]]
-name = "{}"
-prompt = "[Describe what this act should do]"
-"#,
-        act_name
-    );
-
-    let mut result = lines[..last_acts_end].to_vec();
-    result.push(&new_act);
-    result.extend_from_slice(&lines[last_acts_end..]);
-
-    let modified = result.join("\n");
     let change = format!("Added act '{}'", act_name);
-
     Ok((modified, change))
 }
 
@@ -211,23 +226,48 @@ fn remove_act(toml: &str, modification: &str) -> Result<(String, String), rmcp::
 
     let act_name = extract_act_name_from_mod(modification);
 
-    // Find and remove the specified act
     let lines: Vec<&str> = toml.lines().collect();
-    let mut in_target_act = false;
     let mut result = Vec::new();
     let mut removed = false;
+    let mut in_acts = false;
+    let mut in_toc = false;
 
     for line in lines {
-        if line.starts_with("[[acts]]") {
-            in_target_act = false;
+        if line.trim() == "[acts]" {
+            in_acts = true;
+            in_toc = false;
+            result.push(line);
+            continue;
         }
-        if line.contains(&format!(r#"name = "{}""#, act_name)) && in_target_act {
+        if line.trim() == "[toc]" {
+            in_toc = true;
+            in_acts = false;
+            result.push(line);
+            continue;
+        }
+        if line.starts_with('[') && !line.starts_with("# [") {
+            in_acts = false;
+            in_toc = false;
+            result.push(line);
+            continue;
+        }
+
+        // Remove act from [acts] section
+        if in_acts && line.trim().starts_with(&format!("{} = ", act_name)) {
             removed = true;
             continue;
         }
-        if !in_target_act {
-            result.push(line);
+
+        // Remove act from [toc] order
+        if in_toc && line.trim().starts_with("order = ") {
+            let updated = line.replace(&format!("\"{}\", ", act_name), "")
+                .replace(&format!(", \"{}\"", act_name), "")
+                .replace(&format!("\"{}\"", act_name), "");
+            result.push(Box::leak(updated.into_boxed_str()));
+            continue;
         }
+
+        result.push(line);
     }
 
     if !removed {
