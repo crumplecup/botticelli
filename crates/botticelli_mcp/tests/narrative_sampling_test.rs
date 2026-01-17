@@ -1,3 +1,5 @@
+mod helpers;
+
 use botticelli_error::McpResult;
 use botticelli_interface::RegistryOperations;
 use botticelli_mcp::NarrativeRegistry;
@@ -50,6 +52,9 @@ impl TestNarrativeState {
 /// Test basic narrative creation workflow
 #[test]
 fn test_create_narrative_workflow() {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing narrative creation workflow");
+
     let registry = NarrativeRegistry::new();
 
     // Create a narrative session
@@ -65,6 +70,7 @@ fn test_create_narrative_workflow() {
     );
 
     let narrative_id = registry.create_session(initial_state.clone());
+    tracing::debug!(narrative_id = %narrative_id, "Created narrative session");
 
     // Verify we can retrieve it
     let retrieved = registry.get(&narrative_id);
@@ -74,13 +80,19 @@ fn test_create_narrative_workflow() {
 
     // Verify active sessions
     let sessions = registry.list_keys();
+    tracing::debug!(session_count = sessions.len(), "Active sessions");
     assert_eq!(sessions.len(), 1);
     assert!(sessions.contains(&narrative_id));
+
+    tracing::info!("Narrative creation workflow test passed");
 }
 
 /// Test adding acts to narrative
 #[test]
 fn test_add_act_workflow() {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing add act workflow");
+
     let registry = NarrativeRegistry::new();
 
     // Create narrative with empty acts array
@@ -96,6 +108,7 @@ fn test_add_act_workflow() {
     };
 
     let narrative_id = registry.create_session(initial_state);
+    tracing::debug!(narrative_id = %narrative_id, "Created narrative");
 
     // Simulate adding an act
     let mut current_state = registry.get(&narrative_id).unwrap();
@@ -106,16 +119,22 @@ fn test_add_act_workflow() {
     }));
 
     registry.update(&narrative_id, current_state.clone());
+    tracing::debug!("Added act to narrative");
 
     // Verify act was added
     let updated_state = registry.get(&narrative_id).unwrap();
     assert_eq!(updated_state.data["acts"].as_array().unwrap().len(), 1);
     assert_eq!(updated_state.data["acts"][0]["title"], "Act 1");
+
+    tracing::info!("Add act workflow test passed");
 }
 
 /// Test adding inputs to narrative
 #[test]
 fn test_add_input_workflow() {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing add input workflow");
+
     let registry = NarrativeRegistry::new();
 
     let initial_data = json!({
@@ -130,6 +149,7 @@ fn test_add_input_workflow() {
     };
 
     let narrative_id = registry.create_session(initial_state);
+    tracing::debug!(narrative_id = %narrative_id, "Created narrative");
 
     // Simulate adding a text input
     let mut current_state = registry.get(&narrative_id).unwrap();
@@ -140,16 +160,22 @@ fn test_add_input_workflow() {
     }));
 
     registry.update(&narrative_id, current_state.clone());
+    tracing::debug!("Added input to narrative");
 
     // Verify input was added
     let updated_state = registry.get(&narrative_id).unwrap();
     assert_eq!(updated_state.data["inputs"].as_array().unwrap().len(), 1);
     assert_eq!(updated_state.data["inputs"][0]["content"], "Hello world");
+
+    tracing::info!("Add input workflow test passed");
 }
 
 /// Test validation workflow
 #[test]
 fn test_validation_workflow() {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validation workflow");
+
     let registry = NarrativeRegistry::new();
 
     // Create narrative with required components
@@ -170,6 +196,7 @@ fn test_validation_workflow() {
     };
 
     let narrative_id = registry.create_session(complete_state);
+    tracing::debug!(narrative_id = %narrative_id, "Created complete narrative");
 
     // Validate structure
     let state = registry.get(&narrative_id).unwrap();
@@ -177,11 +204,16 @@ fn test_validation_workflow() {
     assert!(state.data.get("description").is_some());
     assert!(state.data["acts"].as_array().unwrap().len() > 0);
     assert!(state.data["inputs"].as_array().unwrap().len() > 0);
+
+    tracing::info!("Validation workflow test passed");
 }
 
 /// Test finalization workflow
 #[test]
 fn test_finalization_workflow() {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing finalization workflow");
+
     let registry = NarrativeRegistry::new();
 
     // Create complete narrative ready for finalization
@@ -200,10 +232,12 @@ fn test_finalization_workflow() {
     });
 
     let narrative_id = registry.create_session(complete_state);
+    tracing::debug!(narrative_id = %narrative_id, "Created narrative for finalization");
 
     // Simulate finalization by removing from registry
     let finalized_state = registry.remove(&narrative_id);
     assert!(finalized_state.is_some());
+    tracing::debug!("Removed narrative from registry");
 
     // Verify it's no longer in active sessions
     assert!(!registry.list_keys().contains(&narrative_id));
@@ -214,11 +248,16 @@ fn test_finalization_workflow() {
     assert!(state["acts"].as_array().unwrap().len() > 0);
     assert!(state["inputs"].as_array().unwrap().len() > 0);
     assert!(state["carousels"].as_array().unwrap().len() > 0);
+
+    tracing::info!("Finalization workflow test passed");
 }
 
 /// Test multi-session management
 #[test]
 fn test_multi_session_management() {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing multi-session management");
+
     let registry = NarrativeRegistry::new();
 
     let state1 = json!({"title": "Story 1"});
@@ -228,12 +267,14 @@ fn test_multi_session_management() {
     let id1 = registry.create_session(state1);
     let id2 = registry.create_session(state2);
     let id3 = registry.create_session(state3);
+    tracing::debug!(session_count = 3, "Created sessions");
 
     // Verify all sessions exist
     assert_eq!(registry.session_count(), 3);
 
     // Remove one session
     registry.remove(&id2);
+    tracing::debug!("Removed one session");
     assert_eq!(registry.session_count(), 2);
 
     // Verify remaining sessions
@@ -243,5 +284,8 @@ fn test_multi_session_management() {
 
     // Clear all
     registry.clear();
+    tracing::debug!("Cleared all sessions");
     assert_eq!(registry.session_count(), 0);
+
+    tracing::info!("Multi-session management test passed");
 }
