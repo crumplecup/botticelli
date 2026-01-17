@@ -1,19 +1,24 @@
 //! Tests for Phase 2 enhanced validation features.
 
-use botticelli_mcp::tools::McpTool;
-use botticelli_mcp::{CreateNarrativeTool, ModifyNarrativeTool};
+mod helpers;
+
+use botticelli_mcp::ToolRegistry;
 use serde_json::json;
 
 #[tokio::test]
-async fn test_create_narrative_includes_auto_fixes() {
-    let tool = CreateNarrativeTool;
+async fn test_create_narrative_includes_auto_fixes() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing create narrative includes auto fixes");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Analyze data",
         "name": "test_narrative"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received result with auto fixes");
 
     // Check that auto_fixes_applied field exists
     assert!(
@@ -28,18 +33,25 @@ async fn test_create_narrative_includes_auto_fixes() {
         .unwrap();
     // Should have at least formatting improvements
     assert!(!fixes.is_empty(), "Should report auto-fixes applied");
+
+    tracing::info!("Auto fixes test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_create_narrative_includes_comments_version() {
-    let tool = CreateNarrativeTool;
+async fn test_create_narrative_includes_comments_version() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing create narrative includes comments version");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Fetch data and analyze it",
         "name": "analysis"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received result with comments");
 
     // Check both TOML versions exist
     assert!(result.get("toml").is_some(), "Should have clean TOML");
@@ -66,18 +78,25 @@ async fn test_create_narrative_includes_comments_version() {
         toml_with_comments.contains("# Narrative metadata"),
         "Commented TOML should have section comments"
     );
+
+    tracing::info!("Comments version test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validation_includes_priorities() {
-    let tool = CreateNarrativeTool;
+async fn test_validation_includes_priorities() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validation includes priorities");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Test narrative",
         "name": "test"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received result with validation");
 
     let validation = result.get("validation").unwrap();
 
@@ -103,18 +122,25 @@ async fn test_validation_includes_priorities() {
         validation.get("has_fixable_errors").is_some(),
         "Should have fixable errors flag"
     );
+
+    tracing::info!("Validation priorities test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validation_summary_uses_emojis() {
-    let tool = CreateNarrativeTool;
+async fn test_validation_summary_uses_emojis() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validation summary uses emojis");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Simple test",
         "name": "emoji_test"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received result with emoji summary");
 
     let validation = result.get("validation").unwrap();
     let summary = validation.get("summary").unwrap().as_str().unwrap();
@@ -126,18 +152,25 @@ async fn test_validation_summary_uses_emojis() {
             "Valid narrative summary should have ✅"
         );
     }
+
+    tracing::info!("Emoji summary test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_toml_formatting_improves_structure() {
-    let tool = CreateNarrativeTool;
+async fn test_toml_formatting_improves_structure() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing TOML formatting improves structure");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Format test narrative",
         "name": "format_test"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received formatted result");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
 
@@ -158,18 +191,25 @@ async fn test_toml_formatting_improves_structure() {
         !toml.contains("\n\n\n\n\n"),
         "TOML should not have excessive blank lines"
     );
+
+    tracing::info!("TOML formatting test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_create_narrative_returns_act_count() {
-    let tool = CreateNarrativeTool;
+async fn test_create_narrative_returns_act_count() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing create narrative returns act count");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Fetch data, then analyze it, then report results",
         "name": "multi_act"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received result with act count");
 
     // Should include act_count field
     assert!(
@@ -182,11 +222,17 @@ async fn test_create_narrative_returns_act_count() {
         act_count >= 2,
         "Should have at least 2 acts from description"
     );
+
+    tracing::info!("Act count test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_modify_narrative_includes_auto_fixes_in_changes() {
-    let tool = ModifyNarrativeTool;
+async fn test_modify_narrative_includes_auto_fixes_in_changes() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing modify narrative includes auto fixes in changes");
+
+    let registry = ToolRegistry::default();
 
     // Create a narrative with potential issues
     let existing_toml = r#"[narrative]
@@ -203,7 +249,8 @@ act1 = "Test act""#;
         "modification": "Add act that does analysis"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("modify_narrative", input).await?;
+    tracing::debug!(?result, "Received modified result with auto fixes");
 
     let changes = result.get("changes").unwrap().as_array().unwrap();
 
@@ -220,12 +267,17 @@ act1 = "Test act""#;
     if existing_toml.contains(",]") {
         assert!(has_auto_fix_info, "Should mention trailing comma auto-fix");
     }
+
+    tracing::info!("Auto fixes in changes test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validation_errors_have_priorities() {
-    // Test with intentionally broken TOML to trigger validation errors
-    let tool = ModifyNarrativeTool;
+async fn test_validation_errors_have_priorities() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validation errors have priorities");
+
+    let registry = ToolRegistry::default();
 
     let broken_toml = r#"[narrative]
 name = "broken"
@@ -240,7 +292,8 @@ order = []
         "modification": "Set temperature to 0.5"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("modify_narrative", input).await?;
+    tracing::debug!(?result, "Received result with validation errors");
 
     let validation = result.get("validation").unwrap();
     let errors = validation.get("errors").unwrap().as_array().unwrap();
@@ -259,11 +312,17 @@ order = []
             "Priority should be valid level"
         );
     }
+
+    tracing::info!("Validation priorities test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validation_errors_include_suggestions() {
-    let tool = ModifyNarrativeTool;
+async fn test_validation_errors_include_suggestions() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validation errors include suggestions");
+
+    let registry = ToolRegistry::default();
 
     // Empty TOC should trigger an error with suggestion
     let toml_with_empty_toc = r#"[narrative]
@@ -280,7 +339,8 @@ analyze = "Analyze data""#;
         "modification": "Change model to Gemini"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("modify_narrative", input).await?;
+    tracing::debug!(?result, "Received result with error suggestions");
 
     let validation = result.get("validation").unwrap();
     let errors = validation.get("errors").unwrap().as_array().unwrap();
@@ -296,11 +356,17 @@ analyze = "Analyze data""#;
             "At least one error should have a fix suggestion"
         );
     }
+
+    tracing::info!("Error suggestions test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_auto_fix_adds_missing_sections() {
-    let tool = CreateNarrativeTool;
+async fn test_auto_fix_adds_missing_sections() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing auto fix adds missing sections");
+
+    let registry = ToolRegistry::default();
 
     // Create a simple narrative - auto-fix will ensure all sections exist
     let input = json!({
@@ -308,7 +374,8 @@ async fn test_auto_fix_adds_missing_sections() {
         "name": "auto_fix_test"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received result with auto fixes");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
     let auto_fixes = result
@@ -327,11 +394,17 @@ async fn test_auto_fix_adds_missing_sections() {
 
     // Should report fixes applied
     assert!(!auto_fixes.is_empty(), "Should report auto-fixes applied");
+
+    tracing::info!("Auto fix sections test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_auto_fix_generates_toc_from_acts() {
-    let tool = ModifyNarrativeTool;
+async fn test_auto_fix_generates_toc_from_acts() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing auto fix generates TOC from acts");
+
+    let registry = ToolRegistry::default();
 
     // TOML with acts but no TOC
     let toml_no_toc = r#"[narrative]
@@ -347,7 +420,8 @@ report = "Report findings""#;
         "modification": "Use Claude model"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("modify_narrative", input).await?;
+    tracing::debug!(?result, "Received result with generated TOC");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
 
@@ -357,11 +431,17 @@ report = "Report findings""#;
         toml.contains("fetch") && toml.contains("analyze") && toml.contains("report"),
         "TOC should include all act names"
     );
+
+    tracing::info!("Auto fix TOC generation test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_auto_fix_removes_trailing_commas() {
-    let tool = ModifyNarrativeTool;
+async fn test_auto_fix_removes_trailing_commas() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing auto fix removes trailing commas");
+
+    let registry = ToolRegistry::default();
 
     let toml_with_trailing = r#"[narrative]
 name = "test"
@@ -378,7 +458,8 @@ act2 = "Second""#;
         "modification": "Set temperature to 0.7"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("modify_narrative", input).await?;
+    tracing::debug!(?result, "Received result with trailing comma fix");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
     let changes = result.get("changes").unwrap().as_array().unwrap();
@@ -402,18 +483,24 @@ act2 = "Second""#;
         mentions_trailing_comma,
         "Changes should mention trailing comma fix"
     );
+
+    tracing::info!("Trailing comma removal test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_comments_include_all_section_types() {
-    let tool = CreateNarrativeTool;
+async fn test_comments_include_all_section_types() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing comments include all section types");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Test all comment types",
         "name": "comment_test"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
 
     let toml_with_comments = result.get("toml_with_comments").unwrap().as_str().unwrap();
 
@@ -436,11 +523,17 @@ async fn test_comments_include_all_section_types() {
         toml_with_comments.contains("# Act definitions"),
         "Should have [acts] comment"
     );
+
+    tracing::info!("Comments test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validation_summary_indicates_fixable_errors() {
-    let tool = ModifyNarrativeTool;
+async fn test_validation_summary_indicates_fixable_errors() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validation summary indicates fixable errors");
+
+    let registry = ToolRegistry::default();
 
     // Create TOML with fixable error (empty TOC)
     let toml_with_fixable_error = r#"[narrative]
@@ -457,7 +550,8 @@ analyze = "Analyze""#;
         "modification": "Add act that reports results"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("modify_narrative", input).await?;
+    tracing::debug!(?result, "Received result with fixable errors");
 
     let validation = result.get("validation").unwrap();
     let summary = validation.get("summary").unwrap().as_str().unwrap();
@@ -469,18 +563,25 @@ analyze = "Analyze""#;
             "Summary should indicate errors"
         );
     }
+
+    tracing::info!("Fixable errors summary test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_enhanced_summary_shows_fix_counts() {
-    let tool = CreateNarrativeTool;
+async fn test_enhanced_summary_shows_fix_counts() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing enhanced summary shows fix counts");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Create narrative with multiple acts",
         "name": "fix_count_test"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received result with summary");
 
     let summary = result.get("summary").unwrap().as_str().unwrap();
 
@@ -502,4 +603,7 @@ async fn test_enhanced_summary_shows_fix_counts() {
             "Summary should mention auto-fixes when multiple applied"
         );
     }
+
+    tracing::info!("Fix counts summary test passed");
+    Ok(())
 }
