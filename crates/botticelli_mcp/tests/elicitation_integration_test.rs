@@ -1,9 +1,15 @@
 //! Integration tests for primitive elicitation tools with InProcTransport.
 //!
+//! **OBSOLETE**: These tests use the old pmcp protocol, InProcTransport, and
+//! DialogResource which have been replaced by rmcp. All tests marked as
+//! ignored pending removal.
+//!
 //! Tests Phase 3 of ELICITATION_MCP_INTEGRATION_PLAN.md:
 //! - Primitive tools work with mock dialog
 //! - InProcTransport enables in-process communication
 //! - Full MCP protocol flow from client to dialog
+
+#![cfg_attr(test, allow(unused))]
 
 use async_trait::async_trait;
 use botticelli_error::BotticelliResult;
@@ -143,6 +149,7 @@ fn build_server_with_dialog(dialog: Arc<DialogResource>) -> Server {
     builder.build().expect("Failed to build server")
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_elicit_text_integration() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -179,6 +186,7 @@ async fn test_elicit_text_integration() {
     assert_eq!(tool_result, "Hello from test");
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_elicit_select_integration() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -217,6 +225,7 @@ async fn test_elicit_select_integration() {
     assert_eq!(tool_result, "Option B");
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_elicit_number_integration() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -256,6 +265,7 @@ async fn test_elicit_number_integration() {
     assert_eq!(tool_result, 75);
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_elicit_bool_integration() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -294,6 +304,7 @@ async fn test_elicit_bool_integration() {
     assert_eq!(tool_result, false);
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_all_primitive_tools_available() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -337,6 +348,7 @@ async fn test_all_primitive_tools_available() {
     );
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_sequential_tool_calls() {
     let _ = tracing_subscriber::fmt::try_init();

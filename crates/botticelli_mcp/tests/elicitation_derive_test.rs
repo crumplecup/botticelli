@@ -1,7 +1,13 @@
 //! Tests for elicitation crate derive macros with primitive tools.
 //!
+//! **OBSOLETE**: These tests use the old pmcp protocol, InProcTransport, and
+//! register_all_tools() which have been replaced by rmcp and ToolRegistry.
+//! All tests marked as ignored pending removal.
+//!
 //! Verifies Phase 3 integration: elicitation crate's #[derive(Elicit)] works
 //! with our primitive tools via InProcTransport.
+
+#![cfg_attr(test, allow(unused))]
 
 use async_trait::async_trait;
 use botticelli_error::BotticelliResult;
@@ -139,6 +145,7 @@ async fn setup_client_with_dialog(dialog: MockDialog) -> Client<InProcTransport>
     client
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_select_paradigm_with_derive() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -155,6 +162,7 @@ async fn test_select_paradigm_with_derive() {
     assert_eq!(result, TestChoice::OptionB);
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_select_first_option() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -170,6 +178,7 @@ async fn test_select_first_option() {
     assert_eq!(result, TestChoice::OptionA);
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_select_last_option() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -185,6 +194,7 @@ async fn test_select_last_option() {
     assert_eq!(result, TestChoice::OptionC);
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_survey_paradigm_with_bool() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -201,6 +211,7 @@ async fn test_survey_paradigm_with_bool() {
     assert_eq!(result.enabled, true);
 }
 
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_survey_paradigm_with_false() {
     let _ = tracing_subscriber::fmt::try_init();

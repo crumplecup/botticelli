@@ -1,8 +1,12 @@
 //! Integration tests for PMCP HTTP server.
 //!
+//! **OBSOLETE**: These tests use the old pmcp protocol and run_pmcp_http_server()
+//! which have been replaced by rmcp. All tests marked as ignored pending removal.
+//!
 //! Tests the HTTP transport with actual HTTP requests.
 
 #[cfg(feature = "http")]
+#[ignore = "Uses obsolete pmcp HTTP protocol - marked for removal"]
 mod http_tests {
     use serde_json::json;
     use std::time::Duration;

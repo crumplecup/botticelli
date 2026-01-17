@@ -1,9 +1,15 @@
 //! Tests for in-process MCP transport.
+//!
+//! **OBSOLETE**: These tests use the old pmcp protocol and InProcTransport API
+//! which have been replaced by rmcp. Marked as ignored pending removal or rewrite.
 
 use botticelli_mcp::InProcTransport;
 use pmcp::Server;
 
 /// Test that we can create paired transports without panicking.
+///
+/// **OBSOLETE**: InProcTransport::pair() removed in rmcp migration.
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_in_proc_transport_pair_creation() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -14,6 +20,9 @@ async fn test_in_proc_transport_pair_creation() {
 }
 
 /// Test that we can spawn a server with the transport.
+///
+/// **OBSOLETE**: pmcp::Server and InProcTransport::spawn_server() removed in rmcp migration.
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_in_proc_transport_server_spawn() {
     let _ = tracing_subscriber::fmt::try_init();
@@ -38,6 +47,9 @@ async fn test_in_proc_transport_server_spawn() {
 }
 
 /// Test that InProcTransport implements required traits.
+///
+/// **OBSOLETE**: InProcTransport removed in rmcp migration.
+#[ignore = "Uses obsolete InProcTransport API - marked for removal"]
 #[test]
 fn test_in_proc_transport_traits() {
     // This is a compile-time test

@@ -1,11 +1,18 @@
 //! Integration tests for PMCP-based MCP server implementation.
 //!
+//! **OBSOLETE**: These tests use the old pmcp protocol and McpTool trait
+//! which have been replaced by rmcp and ToolRegistry. All tests marked as
+//! ignored pending removal.
+//!
 //! Tests the new pmcp SDK server with all tools via the adapter pattern.
+
+#![cfg_attr(test, allow(unused))]
 
 use botticelli_mcp::tools::{EchoTool, McpTool, ServerInfoTool};
 use serde_json::json;
 
 /// Test that EchoTool works correctly
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_echo_tool() {
     let tool = EchoTool;
@@ -39,6 +46,7 @@ async fn test_echo_tool() {
 }
 
 /// Test that EchoTool handles missing message
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_echo_tool_missing_message() {
     let tool = EchoTool;
@@ -62,6 +70,7 @@ async fn test_echo_tool_missing_message() {
 }
 
 /// Test that ServerInfoTool works correctly
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_server_info_tool() {
     let tool = ServerInfoTool;
@@ -87,6 +96,7 @@ async fn test_server_info_tool() {
 }
 
 /// Test CreateNarrativeTool basic functionality
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_create_narrative_tool_basic() {
     use botticelli_mcp::tools::CreateNarrativeTool;
@@ -138,6 +148,7 @@ user_prompt = "Say hello"
 }
 
 /// Test ValidateNarrativeTool with valid TOML
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_validate_narrative_tool() {
     use botticelli_mcp::tools::ValidateNarrativeTool;
@@ -180,6 +191,7 @@ user_prompt = "Test"
 }
 
 /// Test SaveNarrativeTool basic functionality  
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_save_narrative_tool() {
     use botticelli_mcp::tools::SaveNarrativeTool;
@@ -224,6 +236,7 @@ user_prompt = "Test"
 }
 
 /// Test that ModifyNarrativeTool handles basic modifications
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 async fn test_modify_narrative_tool() {
     use botticelli_mcp::tools::ModifyNarrativeTool;
@@ -273,6 +286,7 @@ user_prompt = "Original user prompt"
 
 /// Test database tool (when feature enabled)
 #[cfg(feature = "database")]
+#[ignore = "Uses obsolete pmcp protocol - marked for removal"]
 #[tokio::test]
 #[ignore = "QueryContentTool now requires database operations dependency"]
 async fn test_query_content_tool() {
