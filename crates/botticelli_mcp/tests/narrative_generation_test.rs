@@ -1,19 +1,24 @@
 //! Integration tests for narrative generation tools.
 
-use botticelli_mcp::tools::McpTool;
-use botticelli_mcp::{CreateNarrativeTool, ModifyNarrativeTool, SaveNarrativeTool};
+mod helpers;
+
+use botticelli_mcp::ToolRegistry;
 use serde_json::json;
 
 #[tokio::test]
-async fn test_create_simple_narrative() {
-    let tool = CreateNarrativeTool;
+async fn test_create_simple_narrative() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing simple narrative creation");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Analyze user feedback and generate a summary",
         "name": "feedback_analysis"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received result");
 
     // Check structure
     assert!(result.get("toml").is_some(), "Missing TOML output");
@@ -36,11 +41,17 @@ async fn test_create_simple_narrative() {
         toml.contains("name = \"feedback_analysis\""),
         "Missing narrative name"
     );
+
+    tracing::info!("Simple narrative creation test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_create_with_model() {
-    let tool = CreateNarrativeTool;
+async fn test_create_with_model() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing narrative creation with custom model");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Fetch data, analyze it, and post results",
@@ -49,7 +60,8 @@ async fn test_create_with_model() {
         "default_temperature": 0.7
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received result with custom model");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
     assert!(
@@ -60,18 +72,25 @@ async fn test_create_with_model() {
         toml.contains("temperature = 0.7"),
         "Missing temperature configuration"
     );
+
+    tracing::info!("Custom model configuration test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_create_multiple_acts() {
-    let tool = CreateNarrativeTool;
+async fn test_create_multiple_acts() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing narrative with multiple acts");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "description": "Fetch data, then analyze it, then generate report, then send email",
         "name": "reporting_workflow"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("create_narrative", input).await?;
+    tracing::debug!(?result, "Received multi-act narrative");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
 
@@ -82,11 +101,17 @@ async fn test_create_multiple_acts() {
         toml.contains("generate") || toml.contains("report"),
         "Missing report act"
     );
+
+    tracing::info!("Multiple acts test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_modify_change_model() {
-    let tool = ModifyNarrativeTool;
+async fn test_modify_change_model() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing narrative modification - change model");
+
+    let registry = ToolRegistry::default();
 
     let existing_toml = r#"[narrative]
 name = "test"
@@ -105,7 +130,8 @@ analyze = "Analyze the data"
         "modification": "Change model to Claude"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("modify_narrative", input).await?;
+    tracing::debug!(?result, "Received modified narrative");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
     assert!(
@@ -115,11 +141,17 @@ analyze = "Analyze the data"
 
     let changes = result.get("changes").unwrap().as_array().unwrap();
     assert!(!changes.is_empty(), "Should report changes");
+
+    tracing::info!("Model change test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_modify_add_act() {
-    let tool = ModifyNarrativeTool;
+async fn test_modify_add_act() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing narrative modification - add act");
+
+    let registry = ToolRegistry::default();
 
     let existing_toml = r#"[narrative]
 name = "test"
@@ -137,7 +169,8 @@ analyze = "Analyze the data"
         "modification": "Add act that summarizes the results"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("modify_narrative", input).await?;
+    tracing::debug!(?result, "Received modified narrative with new act");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
     assert!(toml.contains("summarizes"), "New act should be added");
@@ -150,11 +183,17 @@ analyze = "Analyze the data"
         .iter()
         .any(|change| change.as_str().unwrap().contains("Added act"));
     assert!(has_add_act, "Should indicate act was added");
+
+    tracing::info!("Add act test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_modify_set_temperature() {
-    let tool = ModifyNarrativeTool;
+async fn test_modify_set_temperature() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing narrative modification - set temperature");
+
+    let registry = ToolRegistry::default();
 
     let existing_toml = r#"[narrative]
 name = "test"
@@ -172,18 +211,25 @@ analyze = "Analyze the data"
         "modification": "Set temperature to 0.3"
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("modify_narrative", input).await?;
+    tracing::debug!(?result, "Received modified narrative with temperature");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
     assert!(
         toml.contains("temperature = 0.3"),
         "Temperature should be set"
     );
+
+    tracing::info!("Set temperature test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_save_narrative() {
-    let tool = SaveNarrativeTool;
+async fn test_save_narrative() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing narrative save");
+
+    let registry = ToolRegistry::default();
 
     let toml_content = r#"[narrative]
 name = "test_save"
@@ -209,7 +255,8 @@ analyze = "Analyze"
         "overwrite": false
     });
 
-    let result = tool.execute(input).await.expect("Tool execution failed");
+    let result = registry.execute("save_narrative", input).await?;
+    tracing::debug!(?result, "Received save result");
 
     assert_eq!(
         result.get("status").unwrap().as_str().unwrap(),
@@ -223,24 +270,36 @@ analyze = "Analyze"
 
     // Clean up
     std::fs::remove_file(&file_path).ok();
+
+    tracing::info!("Save narrative test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_save_rejects_non_toml_extension() {
-    let tool = SaveNarrativeTool;
+async fn test_save_rejects_non_toml_extension() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing save rejection of non-TOML extension");
+
+    let registry = ToolRegistry::default();
 
     let input = json!({
         "narrative_toml": "[narrative]\nname = \"test\"",
         "file_path": "/tmp/test.txt"
     });
 
-    let result = tool.execute(input).await;
+    let result = registry.execute("save_narrative", input).await;
     assert!(result.is_err(), "Should reject non-.toml extension");
+
+    tracing::info!("Non-TOML extension rejection test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_save_prevents_overwrite_by_default() {
-    let tool = SaveNarrativeTool;
+async fn test_save_prevents_overwrite_by_default() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing save prevents overwrite by default");
+
+    let registry = ToolRegistry::default();
 
     let temp_dir = std::env::temp_dir();
     let file_path = temp_dir.join("test_overwrite.toml");
@@ -255,7 +314,7 @@ async fn test_save_prevents_overwrite_by_default() {
         "overwrite": false
     });
 
-    let result = tool.execute(input).await;
+    let result = registry.execute("save_narrative", input).await;
     assert!(
         result.is_err(),
         "Should prevent overwriting existing file without permission"
@@ -263,36 +322,36 @@ async fn test_save_prevents_overwrite_by_default() {
 
     // Clean up
     std::fs::remove_file(&file_path).ok();
+
+    tracing::info!("Overwrite prevention test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_full_workflow() {
-    // Test the complete workflow: create → modify → save
+async fn test_full_workflow() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing full workflow: create → modify → save");
+
+    let registry = ToolRegistry::default();
 
     // Step 1: Create narrative
-    let create_tool = CreateNarrativeTool;
     let create_input = json!({
         "description": "Fetch user data and analyze trends",
         "name": "user_trends"
     });
 
-    let create_result = create_tool
-        .execute(create_input)
-        .await
-        .expect("Create failed");
+    let create_result = registry.execute("create_narrative", create_input).await?;
+    tracing::debug!(?create_result, "Created narrative");
     let narrative_v1 = create_result.get("toml").unwrap().as_str().unwrap();
 
     // Step 2: Modify - add model
-    let modify_tool = ModifyNarrativeTool;
     let modify_input = json!({
         "narrative_toml": narrative_v1,
         "modification": "Use Gemini model"
     });
 
-    let modify_result = modify_tool
-        .execute(modify_input)
-        .await
-        .expect("Modify failed");
+    let modify_result = registry.execute("modify_narrative", modify_input).await?;
+    tracing::debug!(?modify_result, "Modified narrative");
     let narrative_v2 = modify_result.get("toml").unwrap().as_str().unwrap();
 
     // Verify modification applied
@@ -302,7 +361,6 @@ async fn test_full_workflow() {
     );
 
     // Step 3: Save
-    let save_tool = SaveNarrativeTool;
     let temp_dir = std::env::temp_dir();
     let file_path = temp_dir.join("user_trends.toml");
     let file_path_str = file_path.to_str().unwrap();
@@ -314,7 +372,8 @@ async fn test_full_workflow() {
         "file_path": file_path_str
     });
 
-    save_tool.execute(save_input).await.expect("Save failed");
+    registry.execute("save_narrative", save_input).await?;
+    tracing::debug!("Saved narrative to file");
 
     // Verify file exists and is valid
     assert!(file_path.exists(), "File should be created");
@@ -326,4 +385,7 @@ async fn test_full_workflow() {
 
     // Clean up
     std::fs::remove_file(&file_path).ok();
+
+    tracing::info!("Full workflow test passed");
+    Ok(())
 }
