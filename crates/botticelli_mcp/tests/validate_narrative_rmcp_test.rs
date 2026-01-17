@@ -1,12 +1,17 @@
 //! Tests for validate_narrative tool (rmcp version).
 
+mod helpers;
+
 use botticelli_mcp::{BotticelliServer, ValidateNarrativeParams};
 use rmcp::handler::server::wrapper::Parameters;
 use tempfile::TempDir;
 use tokio::fs;
 
 #[tokio::test]
-async fn test_validate_narrative_valid_content() {
+async fn test_validate_narrative_valid_content() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validate_narrative with valid content");
+
     let server = BotticelliServer::builder().build();
 
     let valid_toml = r#"
@@ -31,10 +36,13 @@ objective = "Test objective"
         strict: false,
     };
 
-    let result = server
-        .validate_narrative(Parameters(params))
-        .await
-        .expect("Validation should succeed");
+    let result = server.validate_narrative(Parameters(params)).await?;
+    tracing::debug!(
+        valid = result.0.valid,
+        error_count = result.0.errors.len(),
+        warning_count = result.0.warnings.len(),
+        "Validation result"
+    );
 
     // The narrative might have validation issues based on the validator's requirements
     // Check that we got a result structure (tool succeeded)
@@ -42,12 +50,18 @@ objective = "Test objective"
 
     // If there are errors, they're related to the TOML structure, not the tool
     if !result.0.errors.is_empty() {
-        eprintln!("Validation errors: {:?}", result.0.errors);
+        tracing::debug!(errors = ?result.0.errors, "Validation errors");
     }
+
+    tracing::info!("Valid content test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validate_narrative_invalid_toml() {
+async fn test_validate_narrative_invalid_toml() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validate_narrative with invalid TOML");
+
     let server = BotticelliServer::builder().build();
 
     let invalid_toml = r#"
@@ -64,20 +78,25 @@ title = "Test
         strict: false,
     };
 
-    let result = server
-        .validate_narrative(Parameters(params))
-        .await
-        .expect("Validation should complete");
+    let result = server.validate_narrative(Parameters(params)).await?;
+    tracing::debug!(valid = result.0.valid, error_count = result.0.errors.len(), "Validation result");
 
     assert!(!result.0.valid, "Invalid TOML should fail validation");
     assert!(!result.0.errors.is_empty(), "Should have errors");
+
+    tracing::info!("Invalid TOML test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validate_narrative_from_file() {
+async fn test_validate_narrative_from_file() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validate_narrative from file");
+
     let server = BotticelliServer::builder().build();
-    let temp_dir = TempDir::new().unwrap();
+    let temp_dir = TempDir::new()?;
     let file_path = temp_dir.path().join("test.toml");
+    tracing::debug!(path = ?file_path, "Created temp file path");
 
     let valid_toml = r#"
 title = "File Test"
@@ -88,7 +107,7 @@ name = "act1"
 objective = "Test"
 "#;
 
-    fs::write(&file_path, valid_toml).await.unwrap();
+    fs::write(&file_path, valid_toml).await?;
 
     let params = ValidateNarrativeParams {
         content: None,
@@ -99,17 +118,21 @@ objective = "Test"
         strict: false,
     };
 
-    let result = server
-        .validate_narrative(Parameters(params))
-        .await
-        .expect("Validation should succeed");
+    let result = server.validate_narrative(Parameters(params)).await?;
+    tracing::debug!(has_summary = !result.0.summary.is_empty(), "Validation result");
 
     // Should complete successfully (may have validation errors in content, but tool works)
     assert!(!result.0.summary.is_empty());
+
+    tracing::info!("From file test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validate_narrative_file_not_found() {
+async fn test_validate_narrative_file_not_found() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validate_narrative with missing file");
+
     let server = BotticelliServer::builder().build();
 
     let params = ValidateNarrativeParams {
@@ -122,12 +145,19 @@ async fn test_validate_narrative_file_not_found() {
     };
 
     let result = server.validate_narrative(Parameters(params)).await;
+    tracing::debug!(is_err = result.is_err(), "Validation result");
 
     assert!(result.is_err(), "Should fail with file not found error");
+
+    tracing::info!("File not found test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validate_narrative_neither_content_nor_file() {
+async fn test_validate_narrative_neither_content_nor_file() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validate_narrative with neither content nor file");
+
     let server = BotticelliServer::builder().build();
 
     let params = ValidateNarrativeParams {
@@ -140,15 +170,22 @@ async fn test_validate_narrative_neither_content_nor_file() {
     };
 
     let result = server.validate_narrative(Parameters(params)).await;
+    tracing::debug!(is_err = result.is_err(), "Validation result");
 
     assert!(
         result.is_err(),
         "Should fail when neither content nor file_path provided"
     );
+
+    tracing::info!("Neither content nor file test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validate_narrative_with_warnings_strict() {
+async fn test_validate_narrative_with_warnings_strict() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validate_narrative strict mode with warnings");
+
     let server = BotticelliServer::builder().build();
 
     let toml_with_warnings = r#"
@@ -170,10 +207,12 @@ model = "gpt-unknown-model"
         strict: true,
     };
 
-    let result = server
-        .validate_narrative(Parameters(params))
-        .await
-        .expect("Validation should complete");
+    let result = server.validate_narrative(Parameters(params)).await?;
+    tracing::debug!(
+        valid = result.0.valid,
+        warning_count = result.0.warnings.len(),
+        "Validation result in strict mode"
+    );
 
     // In strict mode, warnings should make it invalid
     if !result.0.warnings.is_empty() {
@@ -182,10 +221,16 @@ model = "gpt-unknown-model"
             "Should be invalid in strict mode with warnings"
         );
     }
+
+    tracing::info!("Strict mode with warnings test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validate_narrative_result_structure() {
+async fn test_validate_narrative_result_structure() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing validate_narrative result structure");
+
     let server = BotticelliServer::builder().build();
 
     let valid_toml = r#"
@@ -206,10 +251,8 @@ objective = "Test"
         strict: false,
     };
 
-    let result = server
-        .validate_narrative(Parameters(params))
-        .await
-        .expect("Validation should succeed");
+    let result = server.validate_narrative(Parameters(params)).await?;
+    tracing::debug!(summary = %result.0.summary, "Validation result");
 
     // Check result structure
     assert!(!result.0.summary.is_empty(), "Should have summary");
@@ -221,10 +264,16 @@ objective = "Test"
         result.0.summary.contains("warning"),
         "Summary should mention warnings"
     );
+
+    tracing::info!("Result structure test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validate_narrative_params_serialization() {
+async fn test_validate_narrative_params_serialization() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing ValidateNarrativeParams serialization");
+
     let params = ValidateNarrativeParams {
         content: Some("test".to_string()),
         file_path: None,
@@ -234,22 +283,35 @@ async fn test_validate_narrative_params_serialization() {
         strict: false,
     };
 
-    let json = serde_json::to_value(&params).unwrap();
+    let json = serde_json::to_value(&params)?;
+    tracing::debug!(?json, "Serialized params");
+
     assert!(json.is_object());
     assert_eq!(json["content"], "test");
     assert_eq!(json["validate_models"], true);
+
+    tracing::info!("Params serialization test passed");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_validate_narrative_result_serialization() {
+async fn test_validate_narrative_result_serialization() -> anyhow::Result<()> {
+    helpers::init_test_tracing("info");
+    tracing::info!("Testing ValidateNarrativeResult serialization");
+
     use botticelli_mcp::ValidateNarrativeResult;
 
     let result = ValidateNarrativeResult::new(true, vec![], vec![]);
 
-    let json = serde_json::to_value(&result).unwrap();
+    let json = serde_json::to_value(&result)?;
+    tracing::debug!(?json, "Serialized result");
+
     assert!(json.is_object());
     assert_eq!(json["valid"], true);
     assert!(json["errors"].is_array());
     assert!(json["warnings"].is_array());
     assert!(json["summary"].is_string());
+
+    tracing::info!("Result serialization test passed");
+    Ok(())
 }
