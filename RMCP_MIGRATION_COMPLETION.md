@@ -1283,3 +1283,66 @@ If issues arise:
 ✅ Phase 3 verification gate passed before deletion
 
 **Estimated Total Time:** 14-18 hours
+
+---
+
+## Phase 6 Update: Testing Pattern Migration (In Progress)
+
+### Objective
+Apply consistent testing patterns across all test files:
+- Use `anyhow::Result<()>` with `?` operator for seamless error handling
+- Initialize tracing with `helpers::init_test_tracing("info")`  
+- Add comprehensive tracing for full observability
+- Migrate from old McpTool trait to ToolRegistry.execute() or direct server APIs
+
+### Progress: 16/28 files completed (93 tests, 57%)
+
+**Completed Files:**
+1. echo_tool_test.rs (3 tests)
+2. elicit_text_test.rs (3 tests)
+3. elicit_bool_test.rs (4 tests)
+4. elicit_number_test.rs (6 tests)
+5. elicit_select_test.rs (6 tests)
+6. export_metrics_test.rs (5 tests)
+7. conversation_test.rs (7 tests)
+8. execution_test.rs (1 test)
+9. server_info_tool_test.rs (3 tests)
+10. query_content_test.rs (4 tests)
+11. validation_test.rs (4 tests)
+12. scene_tools_test.rs (10 tests)
+13. validate_narrative_test.rs (7 tests)
+14. execution_tools_test.rs (10 tests)
+15. execution_tools_rmcp_test.rs (13 tests)
+16. validate_narrative_rmcp_test.rs (9 tests)
+
+**Remaining Work:**
+
+*Obsolete Files (5)* - Use old pmcp protocol:
+- in_proc_transport_test.rs
+- elicitation_integration_test.rs
+- elicitation_derive_test.rs
+- pmcp_http_test.rs
+- pmcp_server_test.rs
+
+Action: Mark with #[ignore] and document as obsolete
+
+*Need Migration (4)* - Use old McpTool trait:
+- narrative_generation_test.rs
+- narrative_validation_test.rs
+- narrative_tools_test.rs
+- discord_tools_test.rs
+
+Action: Migrate to ToolRegistry.execute()
+
+*Complex Integration (2)*:
+- integration_workflow_test.rs
+- server_lifecycle_test.rs
+
+Action: Investigate and update or mark feature-gated
+
+### Pattern Success
+- Clean, precise edits with proper observability
+- Consistent structure across all updated tests
+- Zero test failures after migration
+- Full tracing support for debugging
+
