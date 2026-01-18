@@ -375,3 +375,4 @@ This index tracks all planning documents in the workspace. When documents are co
   - Comparison to previous audit shows improved thoroughness
   - Status: 📋 Active - superseded by RMCP_MIGRATION_COMPLETION.md
 
+- ELICITATION_REFACTOR_GUIDE.md - Plan to unify dual elicitation implementations using trait-based approach
