@@ -19,7 +19,9 @@ use crate::{
 };
 use botticelli_narrative::validator::{ValidationConfig, Validator};
 use rmcp::handler::server::wrapper::{Json, Parameters};
-use std::path::Path;
+use rmcp::model::ErrorCode;
+use std::borrow::Cow;
+use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
@@ -29,9 +31,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<CreateNarrativeParams>,
     ) -> Result<Json<CreateNarrativeResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let description = params.description().clone();
         let name = params.name().clone();
         let default_model = params.default_model().clone();
@@ -179,9 +178,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<SaveNarrativeParams>,
     ) -> Result<Json<SaveNarrativeResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let narrative_toml = params.narrative_toml().clone();
         let file_path = params.file_path().clone();
         let overwrite = *params.overwrite();
@@ -248,10 +244,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<ValidateNarrativeParams>,
     ) -> Result<Json<ValidateNarrativeResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-        use std::path::PathBuf;
-
         let content = params.content().clone();
         let file_path = params.file_path().clone();
         let validate_files = *params.validate_files();
@@ -611,9 +603,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<ApplyValidationFixesParams>,
     ) -> Result<Json<ApplyValidationFixesResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let narrative_id = params.narrative_id().clone();
         let fix_types = params.fix_types().clone();
         let confirm = *params.confirm();

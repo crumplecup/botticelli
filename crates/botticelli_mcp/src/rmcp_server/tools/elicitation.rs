@@ -10,7 +10,10 @@ use crate::{
     ElicitMetadataResult, ElicitNumberParams, ElicitNumberResult, ElicitSelectParams,
     ElicitSelectResult, ElicitTextParams, ElicitTextResult,
 };
+use botticelli_narrative::CarouselConfig;
 use rmcp::handler::server::wrapper::{Json, Parameters};
+use rmcp::model::ErrorCode;
+use std::borrow::Cow;
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
@@ -20,9 +23,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<ElicitTextParams>,
     ) -> Result<Json<ElicitTextResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let prompt = params.prompt().clone();
         debug!(?prompt, "Eliciting text input");
 
@@ -53,9 +53,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<ElicitBoolParams>,
     ) -> Result<Json<ElicitBoolResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let prompt = params.prompt().clone();
         let default = params.default().clone();
         debug!(?prompt, default, "Eliciting boolean confirmation");
@@ -87,9 +84,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<ElicitNumberParams>,
     ) -> Result<Json<ElicitNumberResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let prompt = params.prompt().clone();
         let min = *params.min();
         let max = *params.max();
@@ -131,9 +125,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<ElicitSelectParams>,
     ) -> Result<Json<ElicitSelectResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let prompt = params.prompt().clone();
         let options = params.options().clone();
         debug!(?prompt, option_count = options.len(), "Eliciting selection");
@@ -267,10 +258,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<ElicitCarouselParams>,
     ) -> Result<Json<ElicitCarouselResult>, rmcp::ErrorData> {
-        use botticelli_narrative::CarouselConfig;
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let narrative_id = params.narrative_id().clone();
         let level = params.level().clone();
         let act_name = params.act_name().clone();

@@ -12,12 +12,15 @@ use crate::rmcp_server::helpers::default_model;
 ))]
 use crate::rmcp_server::helpers::to_mcp_error;
 use crate::rmcp_server::BotticelliServer;
+use crate::tools::NarrativeHelper;
 use crate::{
     CreateNarrativeSessionParams, CreateNarrativeSessionResult, ExecuteActParams,
     ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult, GenerateParams,
     GenerateResult, NarrativeAnalysis,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
+use rmcp::model::ErrorCode;
+use std::borrow::Cow;
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
@@ -42,9 +45,6 @@ impl BotticelliServer {
             feature = "groq"
         ))]
         {
-            use rmcp::model::ErrorCode;
-            use std::borrow::Cow;
-
             // Dispatch to appropriate driver based on model prefix
             #[cfg(feature = "gemini")]
             if model.starts_with("gemini") || model.starts_with("models/gemini") {
@@ -313,9 +313,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<ExecuteNarrativeParams>,
     ) -> Result<Json<ExecuteNarrativeResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let narrative_path = params.narrative_path().clone();
         let prompt = params.prompt().clone();
         let model = params.model().clone();
@@ -364,8 +361,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<CreateNarrativeSessionParams>,
     ) -> Result<Json<CreateNarrativeSessionResult>, rmcp::ErrorData> {
-        use crate::tools::NarrativeHelper;
-
         let description = params.description().clone();
         debug!(?description, "Creating narrative session");
 

@@ -10,7 +10,11 @@ use crate::{
     DiscordGetMessagesResult, DiscordMessageInfo, DiscordPostMessageParams,
     DiscordPostMessageResult,
 };
+use reqwest::Client;
 use rmcp::handler::server::wrapper::{Json, Parameters};
+use rmcp::model::ErrorCode;
+use serde_json::json;
+use std::borrow::Cow;
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
@@ -20,11 +24,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<DiscordPostMessageParams>,
     ) -> Result<Json<DiscordPostMessageResult>, rmcp::ErrorData> {
-        use reqwest::Client;
-        use rmcp::model::ErrorCode;
-        use serde_json::json;
-        use std::borrow::Cow;
-
         let channel_id = params.channel_id().clone();
         let content = params.content().clone();
 
@@ -112,10 +111,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<DiscordGetMessagesParams>,
     ) -> Result<Json<DiscordGetMessagesResult>, rmcp::ErrorData> {
-        use reqwest::Client;
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let channel_id = params.channel_id().clone();
         let limit = (*params.limit()).clamp(1, 100);
         debug!(channel_id, limit, "Getting Discord messages");
@@ -201,10 +196,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<DiscordGetGuildInfoParams>,
     ) -> Result<Json<DiscordGetGuildInfoResult>, rmcp::ErrorData> {
-        use reqwest::Client;
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let guild_id = params.guild_id().clone();
         debug!(guild_id, "Getting Discord guild info");
 
@@ -266,10 +257,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<DiscordGetChannelsParams>,
     ) -> Result<Json<DiscordGetChannelsResult>, rmcp::ErrorData> {
-        use reqwest::Client;
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let guild_id = params.guild_id().clone();
         debug!(guild_id, "Getting Discord channels");
 
