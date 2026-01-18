@@ -26,7 +26,7 @@
 ///     fn name(&self) -> &str { "Free" }
 /// }
 /// ```
-pub trait Tier: Send + Sync {
+pub trait Tier: Send + Sync + std::fmt::Debug {
     /// Requests per minute limit.
     ///
     /// Returns `None` if there is no per-minute request limit.
@@ -73,4 +73,41 @@ pub trait Tier: Send + Sync {
 
     /// Name of the tier (e.g., "Free", "Pro", "Enterprise", "Tier 1").
     fn name(&self) -> &str;
+}
+
+/// Blanket implementation of Tier for Box<dyn Tier>.
+///
+/// This allows boxed trait objects to be used wherever Tier is required.
+impl Tier for Box<dyn Tier> {
+    fn rpm(&self) -> Option<u32> {
+        (**self).rpm()
+    }
+
+    fn tpm(&self) -> Option<u64> {
+        (**self).tpm()
+    }
+
+    fn rpd(&self) -> Option<u32> {
+        (**self).rpd()
+    }
+
+    fn max_concurrent(&self) -> Option<u32> {
+        (**self).max_concurrent()
+    }
+
+    fn daily_quota_usd(&self) -> Option<f64> {
+        (**self).daily_quota_usd()
+    }
+
+    fn cost_per_million_input_tokens(&self) -> Option<f64> {
+        (**self).cost_per_million_input_tokens()
+    }
+
+    fn cost_per_million_output_tokens(&self) -> Option<f64> {
+        (**self).cost_per_million_output_tokens()
+    }
+
+    fn name(&self) -> &str {
+        (**self).name()
+    }
 }

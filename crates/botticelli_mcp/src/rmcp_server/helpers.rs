@@ -28,6 +28,13 @@ pub(super) fn to_mcp_error<E: std::fmt::Display + std::fmt::Debug>(
 }
 
 /// Get default model name.
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "ollama",
+    feature = "huggingface",
+    feature = "groq"
+))]
 #[instrument]
 pub(super) fn default_model() -> String {
     "gemini-2.0-flash-exp".to_string()

@@ -3,7 +3,7 @@
 use crate::ResourceInfo;
 use async_trait::async_trait;
 use botticelli_database::{establish_connection, get_content_by_id, list_content};
-use botticelli_error::{McpError, McpResult};
+use botticelli_error::BotticelliResult;
 use botticelli_interface::McpResource;
 use tracing::{debug, instrument};
 
@@ -22,37 +22,40 @@ impl ContentResource {
 
     /// Parses a content URI into (table, id).
     #[tracing::instrument(skip(self))]
-    fn parse_uri(&self, uri: &str) -> McpResult<(String, i32)> {
+    fn parse_uri(&self, uri: &str) -> BotticelliResult<(String, i32)> {
         let without_scheme = uri.strip_prefix("content://").ok_or_else(|| {
-            McpError::resource_not_found(
-                "Invalid content URI: missing content:// scheme".to_string(),
-            )
+            botticelli_error::IoError::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Invalid content URI: missing content:// scheme"
+            ))
         })?;
 
         let parts: Vec<&str> = without_scheme.split('/').collect();
         if parts.len() != 2 {
-            return Err(McpError::invalid_input(format!(
-                "Invalid content URI format. Expected content://table/id, got {}",
-                uri
-            )));
+            return Err(botticelli_error::IoError::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Invalid content URI format. Expected content://table/id, got {}", uri)
+            )).into());
         }
 
         let table = parts[0].to_string();
         let id = parts[1]
             .parse::<i32>()
-            .map_err(|e| McpError::parse_int_error(format!("Invalid ID in URI: '{}'", parts[1]), e))?;
+            .map_err(|e| {
+                botticelli_error::IoError::new(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    format!("Invalid ID in URI '{}': {}", parts[1], e)
+                ))
+            })?;
 
         Ok((table, id))
     }
 
     /// Queries content from database.
     #[instrument(skip(self))]
-    fn query_content(&self, table: &str, id: i32) -> McpResult<serde_json::Value> {
-        let mut conn = establish_connection()
-            .map_err(|e| McpError::database_error("Database connection failed", e))?;
-
+    fn query_content(&self, table: &str, id: i32) -> BotticelliResult<serde_json::Value> {
+        let mut conn = establish_connection()?;
         get_content_by_id(&mut conn, table, id as i64)
-            .map_err(|e| McpError::database_error(format!("Content not found in table '{}'", table), e))
     }
 }
 
@@ -65,7 +68,7 @@ impl Default for ContentResource {
 
 #[async_trait]
 impl McpResource for ContentResource {
-    type Error = McpError;
+    type Error = botticelli_error::BotticelliError;
     type ResourceInfo = ResourceInfo;
 
     #[tracing::instrument(skip(self))]
@@ -86,21 +89,19 @@ impl McpResource for ContentResource {
         let content = self.query_content(&table, id)?;
 
         // Format as JSON
-        serde_json::to_string_pretty(&content).map_err(McpError::from)
+        serde_json::to_string_pretty(&content).map_err(Into::into)
     }
 
     #[instrument(skip(self))]
     async fn list(&self) -> Result<Vec<Self::ResourceInfo>, Self::Error> {
-        let mut conn = establish_connection()
-            .map_err(|e| McpError::database_error("Database connection failed", e))?;
+        let mut conn = establish_connection()?;
 
         // List recent content (limit 20 for performance)
-        let rows = list_content(&mut conn, "content", None, 20)
-            .map_err(|e| McpError::database_error("Failed to list content", e))?;
+        let rows = list_content(&mut conn, "content", None, 20)?;
 
         let resources = rows
             .into_iter()
-            .filter_map(|row| {
+            .filter_map(|row: serde_json::Value| {
                 let id = row.get("id")?.as_i64()? as i32;
                 let text = row.get("text_content")?.as_str()?;
 

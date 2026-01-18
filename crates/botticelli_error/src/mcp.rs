@@ -18,8 +18,10 @@ pub struct SerdeJsonError {
 /// Database error with source tracking.
 #[cfg(feature = "database")]
 #[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
-#[display("Database error: {:?} at {}:{}", source, file, line)]
+#[display("Database error: {} - {:?} at {}:{}", message, source, file, line)]
 pub struct DatabaseMcpError {
+    /// Error message
+    message: String,
     /// The database error source
     source: Box<crate::DatabaseError>,
     /// Line number where error was created
@@ -46,9 +48,10 @@ impl SerdeJsonError {
 impl DatabaseMcpError {
     /// Create a new DatabaseMcpError with automatic location tracking.
     #[track_caller]
-    pub fn new(err: crate::DatabaseError) -> Self {
+    pub fn new(message: impl Into<String>, err: crate::DatabaseError) -> Self {
         let location = std::panic::Location::caller();
         Self {
+            message: message.into(),
             source: Box::new(err),
             line: location.line(),
             file: location.file(),
@@ -77,6 +80,7 @@ impl Clone for DatabaseMcpError {
     fn clone(&self) -> Self {
         // DatabaseError implements Clone, so this is straightforward
         Self {
+            message: self.message.clone(),
             source: self.source.clone(),
             line: self.line,
             file: self.file,
@@ -98,7 +102,7 @@ impl PartialEq for SerdeJsonError {
 impl PartialEq for DatabaseMcpError {
     fn eq(&self, other: &Self) -> bool {
         // DatabaseError implements PartialEq
-        self.source == other.source && self.line == other.line && self.file == other.file
+        self.message == other.message && self.source == other.source && self.line == other.line && self.file == other.file
     }
 }
 
@@ -121,6 +125,7 @@ impl std::hash::Hash for SerdeJsonError {
 impl std::hash::Hash for DatabaseMcpError {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         // DatabaseError implements Hash
+        self.message.hash(state);
         self.source.hash(state);
         self.line.hash(state);
         self.file.hash(state);
@@ -241,7 +246,7 @@ impl From<SerdeJsonError> for McpErrorKind {
 #[cfg(feature = "database")]
 impl From<crate::DatabaseError> for McpErrorKind {
     fn from(err: crate::DatabaseError) -> Self {
-        Self::Database(DatabaseMcpError::new(err))
+        Self::Database(DatabaseMcpError::new("Database error", err))
     }
 }
 
@@ -334,6 +339,13 @@ impl McpError {
     #[track_caller]
     pub fn resource_not_found(resource: impl Into<String>) -> Self {
         Self::new(McpErrorKind::ResourceNotFound(resource.into()))
+    }
+
+    /// Create a database error with source.
+    #[cfg(feature = "database")]
+    #[track_caller]
+    pub fn database_error(message: impl Into<String>, source: crate::DatabaseError) -> Self {
+        Self::new(McpErrorKind::Database(DatabaseMcpError::new(message, source)))
     }
 
     /// Create a backend unavailable error.

@@ -4,15 +4,11 @@ use super::core::NarrativeExecutor;
 use crate::{ActConfig, CarouselConfig, NarrativeMetadata, ProcessorContext};
 use botticelli_core::{ActExecution, Message, MessageBuilder};
 use botticelli_error::{BotticelliResult, NarrativeError, NarrativeErrorKind};
-use botticelli_interface::{BotticelliDriver, NarrativeProvider};
+use botticelli_interface::NarrativeProvider;
 use tracing::instrument;
 
-impl<D, BE> NarrativeExecutor<D, BE>
+impl<BE> NarrativeExecutor<BE>
 where
-    D: BotticelliDriver<
-            Request = botticelli_core::GenerateRequest,
-            Response = botticelli_core::GenerateResponse,
-        >,
     BE: std::error::Error + Send + Sync + 'static,
 {
     /// Process act results through registered processors.

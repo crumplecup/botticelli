@@ -7,7 +7,7 @@ use botticelli_core::{GenerateRequest, Input, Message, MessageBuilder, Role};
 use botticelli_error::{
     BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
 };
-use botticelli_interface::{BotticelliDriver, NarrativeProvider};
+use botticelli_interface::NarrativeProvider;
 use std::time::Instant;
 use tracing::instrument;
 
@@ -21,9 +21,8 @@ pub(super) type LlmActResult = (
     Option<std::time::Duration>,
 );
 
-impl<D, BE> NarrativeExecutor<D, BE>
+impl<BE> NarrativeExecutor<BE>
 where
-    D: BotticelliDriver<Request = GenerateRequest, Response = botticelli_core::GenerateResponse>,
     BE: std::error::Error + Send + Sync + 'static,
 {
     /// Execute an LLM call for an act with text prompts.

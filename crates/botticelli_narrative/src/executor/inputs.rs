@@ -5,7 +5,7 @@ use super::utils;
 use crate::{ActConfig, CarouselConfig, NarrativeMetadata};
 use botticelli_core::{ActExecution, Input};
 use botticelli_error::{BotticelliResult, NarrativeError, NarrativeErrorKind};
-use botticelli_interface::{BotticelliDriver, NarrativeProvider};
+use botticelli_interface::NarrativeProvider;
 use serde_json::Value as JsonValue;
 use tracing::instrument;
 
@@ -21,12 +21,8 @@ pub(super) struct TableQueryParams<'a> {
     pub format: botticelli_core::TableFormat,
 }
 
-impl<D, BE> NarrativeExecutor<D, BE>
+impl<BE> NarrativeExecutor<BE>
 where
-    D: BotticelliDriver<
-            Request = botticelli_core::GenerateRequest,
-            Response = botticelli_core::GenerateResponse,
-        >,
     BE: std::error::Error + Send + Sync + 'static,
 {
     /// Process a bot command input, executing it and capturing IDs to state.

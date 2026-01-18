@@ -6,15 +6,10 @@ use botticelli_core::{ActExecution, ActExecutionBuilder, Input, Message, Message
 use botticelli_error::{
     BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
 };
-use botticelli_interface::BotticelliDriver;
 use tracing::instrument;
 
-impl<D, BE> NarrativeExecutor<D, BE>
+impl<BE> NarrativeExecutor<BE>
 where
-    D: BotticelliDriver<
-            Request = botticelli_core::GenerateRequest,
-            Response = botticelli_core::GenerateResponse,
-        >,
     BE: std::error::Error + Send + Sync + 'static,
 {
     /// Handle narrative composition by recursively executing referenced narratives.

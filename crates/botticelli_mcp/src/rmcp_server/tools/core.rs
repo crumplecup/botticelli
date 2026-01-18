@@ -67,7 +67,7 @@ impl BotticelliServer {
         #[cfg(feature = "database")]
         {
             // Check if database operations are available
-            let db_ops = self.db_ops.as_ref().ok_or_else(|| {
+            let db_ops = self.db_ops().as_ref().ok_or_else(|| {
                 rmcp::ErrorData::new(
                     ErrorCode::INTERNAL_ERROR,
                     Cow::Borrowed("Database operations not configured"),
@@ -82,7 +82,7 @@ impl BotticelliServer {
 
             // Execute query
             let query = format!("SELECT * FROM {} LIMIT {}", table, limit);
-            let rows = db_ops
+            let rows: Vec<serde_json::Value> = db_ops
                 .execute_query(&query)
                 .await
                 .map_err(|e| to_mcp_error(e, "Query failed"))?;

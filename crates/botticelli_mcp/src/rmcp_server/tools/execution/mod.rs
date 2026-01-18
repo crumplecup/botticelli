@@ -10,6 +10,7 @@
 
 mod acts;
 mod generation;
+mod helpers;
 mod narratives;
 mod sessions;
 

@@ -88,7 +88,7 @@ fn initialize_backends() -> BotticelliServer {
             match botticelli_models::GeminiClient::new() {
                 Ok(client) => {
                     tracing::info!("Gemini backend initialized");
-                    builder = builder.gemini(std::sync::Arc::new(client));
+                    builder = builder.gemini_driver(Some(std::sync::Arc::new(client)));
                 }
                 Err(e) => tracing::warn!("Failed to initialize Gemini: {}", e),
             }
@@ -102,7 +102,7 @@ fn initialize_backends() -> BotticelliServer {
                 .unwrap_or_else(|_| "claude-3-5-sonnet-20241022".to_string());
             let client = botticelli_models::AnthropicClient::new(api_key, model);
             tracing::info!("Anthropic backend initialized");
-            builder = builder.anthropic(std::sync::Arc::new(client));
+            builder = builder.anthropic_driver(Some(std::sync::Arc::new(client)));
         }
     }
 
@@ -112,7 +112,7 @@ fn initialize_backends() -> BotticelliServer {
         match botticelli_models::OllamaClient::new(model) {
             Ok(client) => {
                 tracing::info!("Ollama backend initialized");
-                builder = builder.ollama(std::sync::Arc::new(client));
+                builder = builder.ollama_driver(Some(std::sync::Arc::new(client)));
             }
             Err(e) => tracing::warn!("Failed to initialize Ollama: {}", e),
         }
@@ -126,7 +126,7 @@ fn initialize_backends() -> BotticelliServer {
             match botticelli_models::HuggingFaceDriver::new(model) {
                 Ok(client) => {
                     tracing::info!("HuggingFace backend initialized");
-                    builder = builder.huggingface(std::sync::Arc::new(client));
+                    builder = builder.huggingface_driver(Some(std::sync::Arc::new(client)));
                 }
                 Err(e) => tracing::warn!("Failed to initialize HuggingFace: {}", e),
             }
@@ -141,14 +141,14 @@ fn initialize_backends() -> BotticelliServer {
             match botticelli_models::GroqDriver::new(model) {
                 Ok(client) => {
                     tracing::info!("Groq backend initialized");
-                    builder = builder.groq(std::sync::Arc::new(client));
+                    builder = builder.groq_driver(Some(std::sync::Arc::new(client)));
                 }
                 Err(e) => tracing::warn!("Failed to initialize Groq: {}", e),
             }
         }
     }
 
-    builder.build()
+    builder.build().expect("Failed to build server")
 }
 
 /// Run server with stdio transport.

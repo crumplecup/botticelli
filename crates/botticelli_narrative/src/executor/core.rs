@@ -39,12 +39,16 @@ use tracing::instrument;
 /// referenced by name. For JSON responses (e.g., from bot commands), you can
 /// navigate JSON paths using dot notation.
 #[derive(derive_getters::Getters)]
-pub struct NarrativeExecutor<D, BE = botticelli_error::NarrativeError>
+pub struct NarrativeExecutor<BE = botticelli_error::NarrativeError>
 where
-    D: BotticelliDriver<Request = GenerateRequest, Response = botticelli_core::GenerateResponse>,
     BE: std::error::Error + Send + Sync + 'static,
 {
-    pub(super) driver: D,
+    pub(super) driver: std::sync::Arc<
+        dyn botticelli_interface::ExecutionDriver<
+            GenerateRequest,
+            botticelli_core::GenerateResponse,
+        >,
+    >,
     pub(super) processor_registry: Option<ProcessorRegistry>,
     pub(super) bot_registry: Option<Box<dyn BotCommandRegistry<Error = BE>>>,
     pub(super) table_registry:
@@ -52,9 +56,8 @@ where
     pub(super) state_manager: Option<StateManager>,
 }
 
-impl<D, BE> NarrativeExecutor<D, BE>
+impl<BE> NarrativeExecutor<BE>
 where
-    D: BotticelliDriver<Request = GenerateRequest, Response = botticelli_core::GenerateResponse>,
     BE: std::error::Error + Send + Sync + 'static,
 {
     /// Create a new narrative executor with the given LLM driver.
@@ -68,7 +71,15 @@ where
     ///     .expect("Valid executor")
     /// ```
     #[instrument(skip(driver))]
-    pub fn new(driver: D) -> Self {
+    pub fn new(
+        driver: std::sync::Arc<
+            dyn botticelli_interface::ExecutionDriver<
+                GenerateRequest,
+                botticelli_core::GenerateResponse,
+            >,
+        >,
+    ) -> Self {
+        tracing::debug!("Creating narrative executor");
         Self {
             driver,
             processor_registry: None,
@@ -91,7 +102,16 @@ where
     ///     .expect("Valid executor")
     /// ```
     #[instrument(skip(driver, registry), fields(processor_count = registry.len()))]
-    pub fn with_processors(driver: D, registry: ProcessorRegistry) -> Self {
+    pub fn with_processors(
+        driver: std::sync::Arc<
+            dyn botticelli_interface::ExecutionDriver<
+                GenerateRequest,
+                botticelli_core::GenerateResponse,
+            >,
+        >,
+        registry: ProcessorRegistry,
+    ) -> Self {
+        tracing::debug!(processor_count = registry.len(), "Creating executor with processors");
         Self {
             driver,
             processor_registry: Some(registry),
@@ -429,8 +449,10 @@ where
         );
 
         // Create carousel state with budget
-        let mut state =
-            CarouselState::new(carousel_config.clone(), self.driver.rate_limits().clone());
+        tracing::debug!("Getting rate limits for carousel");
+        let rate_limits = self.driver.rate_limits();
+        tracing::debug!("Rate limits retrieved for carousel");
+        let mut state = CarouselState::new(carousel_config.clone(), rate_limits);
 
         let mut executions = Vec::new();
 
