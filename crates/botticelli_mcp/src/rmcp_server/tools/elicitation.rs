@@ -27,7 +27,7 @@ impl BotticelliServer {
         debug!(?prompt, "Eliciting text input");
 
         // Check if dialog resource is available
-        let dialog = self.dialog.as_ref().ok_or_else(|| {
+        let dialog = self.dialog().as_ref().ok_or_else(|| {
             rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
                 Cow::Borrowed("Dialog resource not configured"),
@@ -61,7 +61,7 @@ impl BotticelliServer {
         debug!(?prompt, default, "Eliciting boolean confirmation");
 
         // Check if dialog resource is available
-        let dialog = self.dialog.as_ref().ok_or_else(|| {
+        let dialog = self.dialog().as_ref().ok_or_else(|| {
             rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
                 Cow::Borrowed("Dialog resource not configured"),
@@ -105,7 +105,7 @@ impl BotticelliServer {
         }
 
         // Check if dialog resource is available
-        let dialog = self.dialog.as_ref().ok_or_else(|| {
+        let dialog = self.dialog().as_ref().ok_or_else(|| {
             rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
                 Cow::Borrowed("Dialog resource not configured"),
@@ -148,7 +148,7 @@ impl BotticelliServer {
         }
 
         // Check if dialog resource is available
-        let dialog = self.dialog.as_ref().ok_or_else(|| {
+        let dialog = self.dialog().as_ref().ok_or_else(|| {
             rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
                 Cow::Borrowed("Dialog resource not configured"),
@@ -195,7 +195,7 @@ impl BotticelliServer {
         debug!(narrative_id, "Updating narrative metadata");
 
         // Update fields if provided
-        self.narrative_registry
+        self.narrative_registry()
             .update(
                 &narrative_id,
                 serde_json::json!({
@@ -231,7 +231,7 @@ impl BotticelliServer {
 
         // Get current narrative
         let mut partial = self
-            .narrative_registry
+            .narrative_registry()
             .get(&narrative_id)
             .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
@@ -250,7 +250,7 @@ impl BotticelliServer {
         );
 
         // Update registry
-        self.narrative_registry.add(partial);
+        self.narrative_registry().add(partial);
 
         debug!(narrative_id, act_name, status, "Act elicited");
 
@@ -287,7 +287,7 @@ impl BotticelliServer {
         );
 
         // Get narrative
-        let mut partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
+        let mut partial = self.narrative_registry().get(&narrative_id).map_err(|e| {
             rmcp::ErrorData::new(
                 ErrorCode::INVALID_PARAMS,
                 Cow::Owned(format!("Narrative not found: {}", e)),
@@ -355,7 +355,7 @@ impl BotticelliServer {
         }
 
         // Update narrative in registry
-        self.narrative_registry.add(partial);
+        self.narrative_registry().add(partial);
 
         debug!(
             narrative_id,

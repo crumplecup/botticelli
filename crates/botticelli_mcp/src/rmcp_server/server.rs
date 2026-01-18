@@ -2,6 +2,8 @@
 
 use crate::dialog_resource::DialogResource;
 use crate::PrometheusMetrics;
+use derive_builder::Builder;
+use derive_getters::Getters;
 use rmcp::handler::server::tool::ToolRouter;
 use std::sync::Arc;
 
@@ -19,37 +21,58 @@ use botticelli_interface::DatabaseRegistryOperations;
 /// use botticelli_mcp::BotticelliServer;
 ///
 /// let server = BotticelliServer::builder()
-///     .build();
+///     .build()
+///     .expect("Valid server");
 /// ```
-#[derive(Clone)]
+#[derive(Clone, Getters, Builder)]
+#[builder(pattern = "owned")]
 pub struct BotticelliServer {
-    pub(crate) tool_router: ToolRouter<Self>,
+    /// Tool router for handling MCP tool requests.
+    #[getter(rename = "get_tool_router")]
+    #[builder(setter(skip))]
+    tool_router: ToolRouter<Self>,
 
+    /// Database operations (optional).
     #[cfg(feature = "database")]
-    pub(super) db_ops: Option<
-        Arc<dyn DatabaseRegistryOperations<Error = botticelli_error::BotticelliError>>,
-    >,
+    #[builder(default)]
+    db_ops: Option<Arc<dyn DatabaseRegistryOperations<Error = botticelli_error::BotticelliError>>>,
 
-    pub(super) dialog: Option<Arc<DialogResource>>,
+    /// Dialog resource for elicitation tools (optional).
+    #[builder(default)]
+    dialog: Option<Arc<DialogResource>>,
 
-    pub(super) metrics: Option<Arc<PrometheusMetrics>>,
+    /// Prometheus metrics collector (optional).
+    #[builder(default)]
+    metrics: Option<Arc<PrometheusMetrics>>,
 
-    pub(super) narrative_registry: Arc<crate::tools::PartialNarrativeRegistry>,
+    /// Partial narrative registry.
+    #[builder(setter(into), default = "Arc::new(crate::tools::PartialNarrativeRegistry::new())")]
+    narrative_registry: Arc<crate::tools::PartialNarrativeRegistry>,
 
+    /// Gemini LLM driver (optional).
     #[cfg(feature = "gemini")]
-    pub(super) gemini_driver: Option<Arc<botticelli_models::GeminiClient>>,
+    #[builder(default)]
+    gemini_driver: Option<Arc<botticelli_models::GeminiClient>>,
 
+    /// Anthropic LLM driver (optional).
     #[cfg(feature = "anthropic")]
-    pub(super) anthropic_driver: Option<Arc<botticelli_models::AnthropicClient>>,
+    #[builder(default)]
+    anthropic_driver: Option<Arc<botticelli_models::AnthropicClient>>,
 
+    /// Ollama LLM driver (optional).
     #[cfg(feature = "ollama")]
-    pub(super) ollama_driver: Option<Arc<botticelli_models::OllamaClient>>,
+    #[builder(default)]
+    ollama_driver: Option<Arc<botticelli_models::OllamaClient>>,
 
+    /// HuggingFace LLM driver (optional).
     #[cfg(feature = "huggingface")]
-    pub(super) huggingface_driver: Option<Arc<botticelli_models::HuggingFaceDriver>>,
+    #[builder(default)]
+    huggingface_driver: Option<Arc<botticelli_models::HuggingFaceDriver>>,
 
+    /// Groq LLM driver (optional).
     #[cfg(feature = "groq")]
-    pub(super) groq_driver: Option<Arc<botticelli_models::GroqDriver>>,
+    #[builder(default)]
+    groq_driver: Option<Arc<botticelli_models::GroqDriver>>,
 }
 
 impl BotticelliServer {
@@ -65,201 +88,11 @@ impl BotticelliServer {
     /// use botticelli_mcp::BotticelliServer;
     ///
     /// let server = BotticelliServer::builder()
-    ///     .build();
+    ///     .build()
+    ///     .expect("Valid server");
     /// ```
     #[tracing::instrument]
     pub fn builder() -> BotticelliServerBuilder {
         BotticelliServerBuilder::default()
-    }
-}
-
-/// Builder for BotticelliServer.
-///
-/// Provides a type-safe way to configure optional server components
-/// before construction.
-#[derive(Clone, Default)]
-pub struct BotticelliServerBuilder {
-    #[cfg(feature = "database")]
-    db_ops: Option<Arc<dyn DatabaseRegistryOperations<Error = botticelli_error::BotticelliError>>>,
-
-    dialog: Option<Arc<DialogResource>>,
-
-    metrics: Option<Arc<PrometheusMetrics>>,
-
-    narrative_registry: Option<Arc<crate::tools::PartialNarrativeRegistry>>,
-
-    #[cfg(feature = "gemini")]
-    gemini_driver: Option<Arc<botticelli_models::GeminiClient>>,
-
-    #[cfg(feature = "anthropic")]
-    anthropic_driver: Option<Arc<botticelli_models::AnthropicClient>>,
-
-    #[cfg(feature = "ollama")]
-    ollama_driver: Option<Arc<botticelli_models::OllamaClient>>,
-
-    #[cfg(feature = "huggingface")]
-    huggingface_driver: Option<Arc<botticelli_models::HuggingFaceDriver>>,
-
-    #[cfg(feature = "groq")]
-    groq_driver: Option<Arc<botticelli_models::GroqDriver>>,
-}
-
-impl BotticelliServerBuilder {
-    /// Configure database operations.
-    ///
-    /// # Arguments
-    ///
-    /// * `db` - Database operations implementation
-    ///
-    /// # Returns
-    ///
-    /// The builder for method chaining.
-    #[cfg(feature = "database")]
-    #[tracing::instrument(skip(self, db))]
-    pub fn database(
-        mut self,
-        db: Arc<dyn DatabaseRegistryOperations<Error = botticelli_error::BotticelliError>>,
-    ) -> Self {
-        self.db_ops = Some(db);
-        self
-    }
-
-    /// Configure dialog resource for elicitation tools.
-    ///
-    /// # Arguments
-    ///
-    /// * `dialog` - Dialog resource for user interaction
-    ///
-    /// # Returns
-    ///
-    /// The builder for method chaining.
-    #[tracing::instrument(skip(self, dialog))]
-    pub fn dialog(mut self, dialog: Arc<DialogResource>) -> Self {
-        self.dialog = Some(dialog);
-        self
-    }
-
-    /// Configure Prometheus metrics collector.
-    ///
-    /// # Arguments
-    ///
-    /// * `metrics` - Prometheus metrics collector
-    ///
-    /// # Returns
-    ///
-    /// The builder for method chaining.
-    #[tracing::instrument(skip(self, metrics))]
-    pub fn metrics(mut self, metrics: Arc<PrometheusMetrics>) -> Self {
-        self.metrics = Some(metrics);
-        self
-    }
-
-    /// Configure Gemini LLM driver.
-    ///
-    /// # Arguments
-    ///
-    /// * `driver` - Gemini client
-    ///
-    /// # Returns
-    ///
-    /// The builder for method chaining.
-    #[cfg(feature = "gemini")]
-    #[tracing::instrument(skip(self, driver))]
-    pub fn gemini(mut self, driver: Arc<botticelli_models::GeminiClient>) -> Self {
-        self.gemini_driver = Some(driver);
-        self
-    }
-
-    /// Configure Anthropic LLM driver.
-    ///
-    /// # Arguments
-    ///
-    /// * `driver` - Anthropic client
-    ///
-    /// # Returns
-    ///
-    /// The builder for method chaining.
-    #[cfg(feature = "anthropic")]
-    #[tracing::instrument(skip(self, driver))]
-    pub fn anthropic(mut self, driver: Arc<botticelli_models::AnthropicClient>) -> Self {
-        self.anthropic_driver = Some(driver);
-        self
-    }
-
-    /// Configure Ollama LLM driver.
-    ///
-    /// # Arguments
-    ///
-    /// * `driver` - Ollama client
-    ///
-    /// # Returns
-    ///
-    /// The builder for method chaining.
-    #[cfg(feature = "ollama")]
-    #[tracing::instrument(skip(self, driver))]
-    pub fn ollama(mut self, driver: Arc<botticelli_models::OllamaClient>) -> Self {
-        self.ollama_driver = Some(driver);
-        self
-    }
-
-    /// Configure HuggingFace LLM driver.
-    ///
-    /// # Arguments
-    ///
-    /// * `driver` - HuggingFace driver
-    ///
-    /// # Returns
-    ///
-    /// The builder for method chaining.
-    #[cfg(feature = "huggingface")]
-    #[tracing::instrument(skip(self, driver))]
-    pub fn huggingface(mut self, driver: Arc<botticelli_models::HuggingFaceDriver>) -> Self {
-        self.huggingface_driver = Some(driver);
-        self
-    }
-
-    /// Configure Groq LLM driver.
-    ///
-    /// # Arguments
-    ///
-    /// * `driver` - Groq driver
-    ///
-    /// # Returns
-    ///
-    /// The builder for method chaining.
-    #[cfg(feature = "groq")]
-    #[tracing::instrument(skip(self, driver))]
-    pub fn groq(mut self, driver: Arc<botticelli_models::GroqDriver>) -> Self {
-        self.groq_driver = Some(driver);
-        self
-    }
-
-    /// Build the BotticelliServer instance.
-    ///
-    /// # Returns
-    ///
-    /// A configured `BotticelliServer` ready to serve MCP requests.
-    #[tracing::instrument(skip(self))]
-    pub fn build(self) -> BotticelliServer {
-        BotticelliServer {
-            tool_router: super::tools::get_tool_router(),
-            #[cfg(feature = "database")]
-            db_ops: self.db_ops,
-            dialog: self.dialog,
-            metrics: self.metrics,
-            narrative_registry: self
-                .narrative_registry
-                .unwrap_or_else(|| Arc::new(crate::tools::PartialNarrativeRegistry::new())),
-            #[cfg(feature = "gemini")]
-            gemini_driver: self.gemini_driver,
-            #[cfg(feature = "anthropic")]
-            anthropic_driver: self.anthropic_driver,
-            #[cfg(feature = "ollama")]
-            ollama_driver: self.ollama_driver,
-            #[cfg(feature = "huggingface")]
-            huggingface_driver: self.huggingface_driver,
-            #[cfg(feature = "groq")]
-            groq_driver: self.groq_driver,
-        }
     }
 }

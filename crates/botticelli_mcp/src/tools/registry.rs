@@ -27,7 +27,7 @@ impl ToolRegistry {
     pub fn tool_definitions(&self) -> Vec<botticelli_core::ToolDefinition> {
         debug!("Retrieving tool definitions from rmcp ToolRouter");
         
-        let tools = self.server.tool_router.list_all()
+        let tools = self.server.get_tool_router().list_all()
             .into_iter()
             .map(|tool| {
                 trace!(
@@ -359,13 +359,13 @@ impl ToolRegistry {
     /// Gets the number of registered tools.
     #[tracing::instrument(skip(self))]
     pub fn len(&self) -> usize {
-        self.server.tool_router.list_all().len()
+        self.server.get_tool_router().list_all().len()
     }
 
     /// Returns true if no tools are registered.
     #[tracing::instrument(skip(self))]
     pub fn is_empty(&self) -> bool {
-        self.server.tool_router.list_all().is_empty()
+        self.server.get_tool_router().list_all().is_empty()
     }
 }
 
@@ -376,7 +376,11 @@ impl Default for ToolRegistry {
     #[tracing::instrument]
     fn default() -> Self {
         Self {
-            server: Arc::new(crate::BotticelliServer::builder().build()),
+            server: Arc::new(
+                crate::BotticelliServer::builder()
+                    .build()
+                    .expect("Default server should build successfully"),
+            ),
         }
     }
 }

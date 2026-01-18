@@ -4,7 +4,7 @@ use crate::rmcp_server::BotticelliServer;
 use rmcp::model::ServerCapabilities;
 use rmcp::{ServerHandler, tool_handler};
 
-#[tool_handler]
+#[tool_handler(router = self.get_tool_router())]
 impl ServerHandler for BotticelliServer {
     #[tracing::instrument(skip(self))]
     fn get_info(&self) -> rmcp::model::InitializeResult {

@@ -35,7 +35,7 @@ impl BotticelliServer {
         let result = Json(ServerInfoResult::new(
             "botticelli".to_string(),
             env!("CARGO_PKG_VERSION").to_string(),
-            self.tool_router.list_all().len(),
+            self.get_tool_router().list_all().len(),
         ));
 
         debug!(tool_count = result.0.tool_count(), "Server info retrieved");
@@ -108,7 +108,7 @@ impl BotticelliServer {
         debug!(?format, "Exporting metrics");
 
         // Check if metrics collector is available
-        let metrics = self.metrics.as_ref().ok_or_else(|| {
+        let metrics = self.metrics().as_ref().ok_or_else(|| {
             rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
                 Cow::Borrowed("Metrics collector not configured"),

@@ -396,7 +396,7 @@ impl BotticelliServer {
         }
 
         // Store in registry (returns the narrative name as the key/ID)
-        let narrative_id = self.narrative_registry.add(partial);
+        let narrative_id = self.narrative_registry().add(partial);
 
         debug!(narrative_id = %narrative_id, acts = acts.len(), "Session created");
 

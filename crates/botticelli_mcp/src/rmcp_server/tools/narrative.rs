@@ -363,7 +363,7 @@ impl BotticelliServer {
 
         // Get narrative
         let partial = self
-            .narrative_registry
+            .narrative_registry()
             .get(&narrative_id)
             .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
@@ -394,7 +394,7 @@ impl BotticelliServer {
         let success = validation_errors.is_none();
 
         // Remove from registry (session complete)
-        self.narrative_registry.remove(&narrative_id);
+        self.narrative_registry().remove(&narrative_id);
 
         debug!(narrative_id, success, "Narrative finalized");
 
@@ -418,7 +418,7 @@ impl BotticelliServer {
 
         // Get narrative
         let partial = self
-            .narrative_registry
+            .narrative_registry()
             .get(&narrative_id)
             .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
@@ -490,7 +490,7 @@ impl BotticelliServer {
 
         // Get narrative
         let partial = self
-            .narrative_registry
+            .narrative_registry()
             .get(&narrative_id)
             .map_err(|e| to_mcp_error(e, "Narrative not found"))?;
 
@@ -634,7 +634,7 @@ impl BotticelliServer {
         }
 
         // Get narrative
-        let mut partial = self.narrative_registry.get(&narrative_id).map_err(|e| {
+        let mut partial = self.narrative_registry().get(&narrative_id).map_err(|e| {
             rmcp::ErrorData::new(
                 ErrorCode::INVALID_PARAMS,
                 Cow::Owned(format!("Narrative not found: {}", e)),
@@ -665,12 +665,12 @@ impl BotticelliServer {
         }
 
         // Update narrative in registry
-        self.narrative_registry.add(partial);
+        self.narrative_registry().add(partial);
 
         // Count remaining errors by validating
         let remaining_errors = {
             let partial = self
-                .narrative_registry
+                .narrative_registry()
                 .get(&narrative_id)
                 .map_err(|e| to_mcp_error(e, "Failed to retrieve updated narrative"))?;
 
