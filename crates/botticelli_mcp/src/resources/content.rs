@@ -40,7 +40,7 @@ impl ContentResource {
         let table = parts[0].to_string();
         let id = parts[1]
             .parse::<i32>()
-            .map_err(|_| McpError::invalid_input(format!("Invalid ID in URI: {}", parts[1])))?;
+            .map_err(|e| McpError::parse_int_error(format!("Invalid ID in URI '{}'", parts[1]), e))?;
 
         Ok((table, id))
     }

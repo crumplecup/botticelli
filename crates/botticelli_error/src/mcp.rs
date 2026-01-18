@@ -1,5 +1,7 @@
 //! MCP-specific error types.
 
+use std::sync::Arc;
+
 /// Serde JSON error with source tracking.
 #[cfg(feature = "serde_json")]
 #[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
@@ -66,7 +68,7 @@ impl std::hash::Hash for SerdeJsonError {
 }
 
 /// MCP error kinds.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+#[derive(Debug, Clone, derive_more::Display)]
 pub enum McpErrorKind {
     /// JSON serialization/deserialization error
     #[cfg(feature = "serde_json")]
@@ -123,6 +125,24 @@ pub enum McpErrorKind {
     /// Mutex poisoned (internal error)
     #[display("Mutex poisoned: {}", _0)]
     MutexPoisoned(String),
+    
+    /// Parse int error with source
+    #[display("Parse error: {}", message)]
+    ParseInt {
+        /// Error message
+        message: String,
+        /// Source error
+        source: Arc<std::num::ParseIntError>,
+    },
+    
+    /// Environment variable error with source
+    #[display("Environment variable error: {}", message)]
+    EnvVar {
+        /// Error message
+        message: String,
+        /// Source error
+        source: Arc<std::env::VarError>,
+    },
 }
 
 /// From implementations for automatic error conversion
@@ -234,6 +254,24 @@ impl McpError {
     #[track_caller]
     pub fn mutex_poisoned(context: impl Into<String>) -> Self {
         Self::new(McpErrorKind::MutexPoisoned(context.into()))
+    }
+    
+    /// Create a parse int error with source.
+    #[track_caller]
+    pub fn parse_int_error(message: impl Into<String>, source: std::num::ParseIntError) -> Self {
+        Self::new(McpErrorKind::ParseInt {
+            message: message.into(),
+            source: Arc::new(source),
+        })
+    }
+    
+    /// Create an environment variable error with source.
+    #[track_caller]
+    pub fn env_var_error(message: impl Into<String>, source: std::env::VarError) -> Self {
+        Self::new(McpErrorKind::EnvVar {
+            message: message.into(),
+            source: Arc::new(source),
+        })
     }
 }
 
