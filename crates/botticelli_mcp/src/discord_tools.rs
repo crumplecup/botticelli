@@ -10,7 +10,7 @@ use tracing::instrument;
 // ============================================================================
 
 /// Parameters for posting a message to Discord.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_new::new)]
 #[schemars(description = "Parameters for posting a message to a Discord channel")]
 pub struct DiscordPostMessageParams {
     /// Discord channel ID.
@@ -22,19 +22,8 @@ pub struct DiscordPostMessageParams {
     content: String,
 }
 
-impl DiscordPostMessageParams {
-    /// Create new Discord post message parameters.
-    #[instrument]
-    pub fn new(channel_id: String, content: String) -> Self {
-        Self {
-            channel_id,
-            content,
-        }
-    }
-}
-
 /// Result from posting a Discord message.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new)]
 #[schemars(description = "Result from posting a Discord message")]
 pub struct DiscordPostMessageResult {
     /// Status of the operation.
@@ -52,19 +41,6 @@ pub struct DiscordPostMessageResult {
     /// Timestamp of the message.
     #[schemars(description = "ISO 8601 timestamp of the message")]
     timestamp: String,
-}
-
-impl DiscordPostMessageResult {
-    /// Create new Discord post message result.
-    #[instrument]
-    pub fn new(status: String, message_id: String, channel_id: String, timestamp: String) -> Self {
-        Self {
-            status,
-            message_id,
-            channel_id,
-            timestamp,
-        }
-    }
 }
 
 /// Parameters for getting Discord messages.

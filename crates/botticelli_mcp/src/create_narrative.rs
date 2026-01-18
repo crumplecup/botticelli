@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// Parameters for creating a narrative from natural language.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_new::new)]
 pub struct CreateNarrativeParams {
     /// Natural language description of the narrative workflow
     description: String,
@@ -21,24 +21,6 @@ pub struct CreateNarrativeParams {
     /// Optional default temperature (0.0-1.0)
     #[serde(skip_serializing_if = "Option::is_none")]
     default_temperature: Option<f64>,
-}
-
-impl CreateNarrativeParams {
-    /// Create new create narrative parameters.
-    #[tracing::instrument(skip(description, name), fields(description_len = description.len(), name_len = name.len()))]
-    pub fn new(
-        description: String,
-        name: String,
-        default_model: Option<String>,
-        default_temperature: Option<f64>,
-    ) -> Self {
-        Self {
-            description,
-            name,
-            default_model,
-            default_temperature,
-        }
-    }
 }
 
 /// Result from creating a narrative.

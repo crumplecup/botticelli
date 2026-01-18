@@ -11,21 +11,13 @@ use serde::{Deserialize, Serialize};
 /// Parameters for the echo tool.
 ///
 /// This tool echoes back the provided message with a timestamp.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Getters, derive_new::new)]
 pub struct EchoParams {
     /// The message to echo back.
     ///
     /// This can be any UTF-8 string. The server will return it
     /// unchanged along with a timestamp.
     message: String,
-}
-
-impl EchoParams {
-    /// Create new echo parameters.
-    #[tracing::instrument(skip(message), fields(message_len = message.len()))]
-    pub fn new(message: String) -> Self {
-        Self { message }
-    }
 }
 
 /// Result from the echo tool.
