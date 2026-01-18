@@ -2,7 +2,7 @@
 //!
 //! Tools for generating content and executing narrative acts.
 
-use crate::rmcp_server::helpers::default_model;
+use crate::rmcp_server::helpers::{default_model, to_mcp_error};
 use crate::rmcp_server::BotticelliServer;
 use crate::{
     CreateNarrativeSessionParams, CreateNarrativeSessionResult, ExecuteActParams,
@@ -48,7 +48,7 @@ impl BotticelliServer {
                             model,
                             max_tokens,
                             temperature,
-                            system_prompt,
+                            None,
                         )
                         .await;
                 } else {
@@ -70,7 +70,7 @@ impl BotticelliServer {
                             model,
                             max_tokens,
                             temperature,
-                            system_prompt,
+                            None,
                         )
                         .await;
                 } else {
@@ -95,7 +95,7 @@ impl BotticelliServer {
                             model,
                             max_tokens,
                             temperature,
-                            system_prompt,
+                            None,
                         )
                         .await;
                 } else {
@@ -117,7 +117,7 @@ impl BotticelliServer {
                             model,
                             max_tokens,
                             temperature,
-                            system_prompt,
+                            None,
                         )
                         .await;
                 } else {
@@ -139,7 +139,7 @@ impl BotticelliServer {
                             model,
                             max_tokens,
                             temperature,
-                            system_prompt,
+                            None,
                         )
                         .await;
                 } else {
@@ -253,7 +253,9 @@ impl BotticelliServer {
             })
             .unwrap_or_else(|| "No text generated".to_string());
 
-        let tokens_used = response.usage().map(|u| *u.total_tokens() as u32);
+        let tokens_used = response
+            .usage()
+            .map(|u| *u.total_tokens() as u32);
 
         debug!(response_len = text.len(), ?tokens_used, "Generated text");
 
