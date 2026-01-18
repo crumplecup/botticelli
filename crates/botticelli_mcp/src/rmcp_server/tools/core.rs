@@ -9,6 +9,8 @@ use crate::{
     QueryContentParams, QueryContentResult, ServerInfoResult,
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
+use rmcp::model::ErrorCode;
+use std::borrow::Cow;
 use tracing::{debug, instrument};
 
 impl BotticelliServer {
@@ -48,9 +50,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<QueryContentParams>,
     ) -> Result<Json<QueryContentResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let table = params.table().clone();
         let limit = *params.limit();
 
@@ -101,9 +100,6 @@ impl BotticelliServer {
         &self,
         Parameters(params): Parameters<ExportMetricsParams>,
     ) -> Result<Json<ExportMetricsResult>, rmcp::ErrorData> {
-        use rmcp::model::ErrorCode;
-        use std::borrow::Cow;
-
         let format = *params.format();
         debug!(?format, "Exporting metrics");
 
