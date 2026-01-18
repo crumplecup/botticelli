@@ -29,6 +29,7 @@ tokio-tungstenite = { workspace = true, optional = true }
 tiktoken-rs = { workspace = true, optional = true }
 ollama-rs = { workspace = true, optional = true }
 serenity = { workspace = true, optional = true }
+rmcp = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -42,3 +43,4 @@ anthropic = ["models"]
 huggingface = ["models"]
 groq = ["models"]
 discord = ["dep:serenity"]
+mcp = ["dep:rmcp"]

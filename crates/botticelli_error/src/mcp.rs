@@ -237,5 +237,36 @@ impl McpError {
     }
 }
 
+/// From implementations for external errors to McpError
+#[cfg(feature = "serde_json")]
+impl From<serde_json::Error> for McpError {
+    #[track_caller]
+    fn from(err: serde_json::Error) -> Self {
+        Self::new(McpErrorKind::from(err))
+    }
+}
+
+#[cfg(feature = "mcp")]
+impl From<rmcp::ErrorData> for McpError {
+    #[track_caller]
+    fn from(error: rmcp::ErrorData) -> Self {
+        // Map rmcp error code to appropriate McpErrorKind
+        let kind = match error.code {
+            rmcp::model::ErrorCode::INVALID_PARAMS => {
+                McpErrorKind::InvalidInput(error.message.to_string())
+            }
+            rmcp::model::ErrorCode::INTERNAL_ERROR => {
+                McpErrorKind::ExecutionFailed(error.message.to_string())
+            }
+            rmcp::model::ErrorCode::METHOD_NOT_FOUND => {
+                McpErrorKind::ToolNotFound(error.message.to_string())
+            }
+            _ => McpErrorKind::ExecutionFailed(error.message.to_string()),
+        };
+        
+        Self::new(kind)
+    }
+}
+
 /// Result type for MCP operations.
 pub type McpResult<T> = std::result::Result<T, McpError>;
