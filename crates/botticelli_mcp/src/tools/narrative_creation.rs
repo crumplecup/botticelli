@@ -1,7 +1,7 @@
 //! MCP tools for iterative narrative creation through LLM-guided elicitation.
 
 use crate::{PartialNarrative, PartialNarrativeBuilder};
-use botticelli_error::{BotticelliResult, BuilderError, BuilderErrorKind};
+use botticelli_error::{BotticelliResult, BuilderError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Arc;
@@ -16,6 +16,7 @@ pub struct NarrativeRegistry {
 
 impl NarrativeRegistry {
     /// Creates a new empty registry.
+    #[tracing::instrument]
     pub fn new() -> Self {
         Self {
             sessions: Arc::new(RwLock::new(std::collections::HashMap::new())),
@@ -33,7 +34,7 @@ impl NarrativeRegistry {
         let partial = PartialNarrativeBuilder::default()
             .description(Some(description))
             .build()
-            .map_err(|e| BuilderError::new(BuilderErrorKind::ValidationFailed(e.to_string())))?;
+            .map_err(|e| BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(e.to_string())))?;
         sessions.insert(session_id, partial);
         Ok(())
     }
@@ -79,6 +80,7 @@ impl NarrativeRegistry {
 }
 
 impl Default for NarrativeRegistry {
+    #[tracing::instrument]
     fn default() -> Self {
         Self::new()
     }
@@ -124,6 +126,7 @@ pub struct StartNarrativeTool {
 
 impl StartNarrativeTool {
     /// Creates a new tool instance.
+    #[tracing::instrument(skip(registry))]
     pub fn new(registry: NarrativeRegistry) -> Self {
         Self { registry }
     }

@@ -2,7 +2,7 @@
 //!
 //! CRUD operations for narrative scenes.
 
-use super::super::server::BotticelliServer;
+use crate::rmcp_server::BotticelliServer;
 use crate::{
     CreateSceneParams, CreateSceneResult, DeleteSceneParams, DeleteSceneResult, ListScenesParams,
     ListScenesResult, UpdateSceneParams, UpdateSceneResult,
@@ -12,15 +12,15 @@ use tracing::{debug, instrument};
 
 impl BotticelliServer {
     /// Create a new scene in a narrative.
-    #[instrument(skip(self), fields(narrative_id, scene_name, has_description = description.is_some()))]
+    #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), scene_name = params.scene_name(), has_description = params.description().is_some()))]
     pub async fn create_scene(
         &self,
-        Parameters(CreateSceneParams {
-            narrative_id,
-            scene_name,
-            description,
-        }): Parameters<CreateSceneParams>,
+        Parameters(params): Parameters<CreateSceneParams>,
     ) -> Result<Json<CreateSceneResult>, rmcp::ErrorData> {
+        let narrative_id = params.narrative_id().clone();
+        let scene_name = params.scene_name().clone();
+        let description = params.description().clone();
+
         debug!(
             narrative_id = %narrative_id,
             scene_name = %scene_name,
@@ -38,11 +38,12 @@ impl BotticelliServer {
     }
     
     /// List all scenes in a narrative.
-    #[instrument(skip(self), fields(narrative_id))]
+    #[instrument(skip(self, params), fields(narrative_id = params.narrative_id()))]
     pub async fn list_scenes(
         &self,
-        Parameters(ListScenesParams { narrative_id }): Parameters<ListScenesParams>,
+        Parameters(params): Parameters<ListScenesParams>,
     ) -> Result<Json<ListScenesResult>, rmcp::ErrorData> {
+        let narrative_id = params.narrative_id().clone();
         debug!(narrative_id = %narrative_id, "Listing scenes");
 
         let result = ListScenesResult::new(narrative_id, vec![]);
@@ -50,11 +51,14 @@ impl BotticelliServer {
     }
     
     /// Update an existing scene.
-    #[instrument(skip(self, updates), fields(scene_id))]
+    #[instrument(skip(self, params), fields(scene_id = params.scene_id()))]
     pub async fn update_scene(
         &self,
-        Parameters(UpdateSceneParams { scene_id, updates }): Parameters<UpdateSceneParams>,
+        Parameters(params): Parameters<UpdateSceneParams>,
     ) -> Result<Json<UpdateSceneResult>, rmcp::ErrorData> {
+        let scene_id = params.scene_id().clone();
+        let updates = params.updates().clone();
+
         debug!(scene_id = %scene_id, "Updating scene");
 
         let result = UpdateSceneResult::new(scene_id, updates);
@@ -62,11 +66,12 @@ impl BotticelliServer {
     }
     
     /// Delete a scene from a narrative.
-    #[instrument(skip(self), fields(scene_id))]
+    #[instrument(skip(self, params), fields(scene_id = params.scene_id()))]
     pub async fn delete_scene(
         &self,
-        Parameters(DeleteSceneParams { scene_id }): Parameters<DeleteSceneParams>,
+        Parameters(params): Parameters<DeleteSceneParams>,
     ) -> Result<Json<DeleteSceneResult>, rmcp::ErrorData> {
+        let scene_id = params.scene_id().clone();
         debug!(scene_id = %scene_id, "Deleting scene");
 
         let result = DeleteSceneResult::new(scene_id);

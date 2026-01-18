@@ -2,8 +2,8 @@
 //!
 //! Tools that prompt users for input during narrative creation process.
 
-use super::super::helpers::to_mcp_error;
-use super::super::server::BotticelliServer;
+use crate::rmcp_server::helpers::to_mcp_error;
+use crate::rmcp_server::BotticelliServer;
 use crate::{
     CarouselLevel, CarouselSummary, ElicitActParams, ElicitActResult, ElicitBoolParams,
     ElicitBoolResult, ElicitCarouselParams, ElicitCarouselResult, ElicitMetadataParams,
@@ -15,14 +15,15 @@ use tracing::{debug, instrument};
 
 impl BotticelliServer {
     /// Prompt user for text input.
-    #[instrument(skip(self, prompt), fields(prompt_len = prompt.len()))]
+    #[instrument(skip(self, params), fields(prompt_len = params.prompt().len()))]
     pub async fn elicit_text(
         &self,
-        Parameters(ElicitTextParams { prompt }): Parameters<ElicitTextParams>,
+        Parameters(params): Parameters<ElicitTextParams>,
     ) -> Result<Json<ElicitTextResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
+        let prompt = params.prompt().clone();
         debug!(?prompt, "Eliciting text input");
 
         // Check if dialog resource is available
@@ -47,14 +48,16 @@ impl BotticelliServer {
     }
     
     /// Prompt user for yes/no input.
-    #[instrument(skip(self, prompt), fields(prompt_len = prompt.len(), default))]
+    #[instrument(skip(self, params), fields(prompt_len = params.prompt().len(), default = params.default()))]
     pub async fn elicit_bool(
         &self,
-        Parameters(ElicitBoolParams { prompt, default }): Parameters<ElicitBoolParams>,
+        Parameters(params): Parameters<ElicitBoolParams>,
     ) -> Result<Json<ElicitBoolResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
+        let prompt = params.prompt().clone();
+        let default = params.default().clone();
         debug!(?prompt, default, "Eliciting boolean confirmation");
 
         // Check if dialog resource is available
@@ -79,14 +82,17 @@ impl BotticelliServer {
     }
     
     /// Prompt user for numeric input within a range.
-    #[instrument(skip(self, prompt), fields(prompt_len = prompt.len(), min, max))]
+    #[instrument(skip(self, params), fields(prompt_len = params.prompt().len(), min = params.min(), max = params.max()))]
     pub async fn elicit_number(
         &self,
-        Parameters(ElicitNumberParams { prompt, min, max }): Parameters<ElicitNumberParams>,
+        Parameters(params): Parameters<ElicitNumberParams>,
     ) -> Result<Json<ElicitNumberResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
+        let prompt = params.prompt().clone();
+        let min = *params.min();
+        let max = *params.max();
         debug!(?prompt, min, max, "Eliciting numeric input");
 
         // Validate range
@@ -120,14 +126,16 @@ impl BotticelliServer {
     }
     
     /// Prompt user to select from a list of options.
-    #[instrument(skip(self, prompt, options), fields(prompt_len = prompt.len(), option_count = options.len()))]
+    #[instrument(skip(self, params), fields(prompt_len = params.prompt().len(), option_count = params.options().len()))]
     pub async fn elicit_select(
         &self,
-        Parameters(ElicitSelectParams { prompt, options }): Parameters<ElicitSelectParams>,
+        Parameters(params): Parameters<ElicitSelectParams>,
     ) -> Result<Json<ElicitSelectResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
+        let prompt = params.prompt().clone();
+        let options = params.options().clone();
         debug!(?prompt, option_count = options.len(), "Eliciting selection");
 
         // Validate options is not empty
@@ -173,17 +181,17 @@ impl BotticelliServer {
     }
     
     /// Update narrative metadata (name, description, defaults).
-    #[instrument(skip(self), fields(narrative_id, name, description))]
+    #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), name = ?params.name(), description = ?params.description()))]
     pub async fn elicit_metadata(
         &self,
-        Parameters(ElicitMetadataParams {
-            narrative_id,
-            name,
-            description,
-            default_model,
-            default_temperature,
-        }): Parameters<ElicitMetadataParams>,
+        Parameters(params): Parameters<ElicitMetadataParams>,
     ) -> Result<Json<ElicitMetadataResult>, rmcp::ErrorData> {
+        let narrative_id = params.narrative_id().clone();
+        let name = params.name().clone();
+        let description = params.description().clone();
+        let default_model = params.default_model().clone();
+        let default_temperature = params.default_temperature().clone();
+
         debug!(narrative_id, "Updating narrative metadata");
 
         // Update fields if provided
@@ -201,24 +209,24 @@ impl BotticelliServer {
 
         debug!(narrative_id, "Metadata updated");
 
-        Ok(Json(ElicitMetadataResult {
+        Ok(Json(ElicitMetadataResult::new(
             narrative_id,
-            status: "updated".to_string(),
-        }))
+            "updated".to_string(),
+        )))
     }
     
     /// Elicit and refine a narrative act's content.
-    #[instrument(skip(self, prompt), fields(narrative_id, act_name, prompt_len = prompt.len()))]
+    #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), act_name = params.act_name(), prompt_len = params.prompt().len()))]
     pub async fn elicit_act(
         &self,
-        Parameters(ElicitActParams {
-            narrative_id,
-            act_name,
-            prompt,
-            model,
-            temperature,
-        }): Parameters<ElicitActParams>,
+        Parameters(params): Parameters<ElicitActParams>,
     ) -> Result<Json<ElicitActResult>, rmcp::ErrorData> {
+        let narrative_id = params.narrative_id().clone();
+        let act_name = params.act_name().clone();
+        let prompt = params.prompt().clone();
+        let model = params.model().clone();
+        let temperature = params.temperature().clone();
+
         debug!(narrative_id, act_name, "Eliciting act");
 
         // Get current narrative
@@ -246,30 +254,30 @@ impl BotticelliServer {
 
         debug!(narrative_id, act_name, status, "Act elicited");
 
-        Ok(Json(ElicitActResult {
+        Ok(Json(ElicitActResult::new(
             narrative_id,
             act_name,
-            status: status.to_string(),
-        }))
+            status.to_string(),
+        )))
     }
     
     /// Run iterative carousel refinement on narrative acts.
-    #[instrument(skip(self), fields(narrative_id))]
+    #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), level = ?params.level(), iterations = params.iterations()))]
     pub async fn elicit_carousel(
         &self,
-        Parameters(ElicitCarouselParams {
-            narrative_id,
-            level,
-            act_name,
-            iterations,
-            continue_on_error,
-            estimated_tokens_per_iteration,
-            budget_multiplier,
-        }): Parameters<ElicitCarouselParams>,
+        Parameters(params): Parameters<ElicitCarouselParams>,
     ) -> Result<Json<ElicitCarouselResult>, rmcp::ErrorData> {
         use botticelli_narrative::CarouselConfig;
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
+
+        let narrative_id = params.narrative_id().clone();
+        let level = params.level().clone();
+        let act_name = params.act_name().clone();
+        let iterations = *params.iterations();
+        let continue_on_error = *params.continue_on_error();
+        let estimated_tokens_per_iteration = params.estimated_tokens_per_iteration().clone();
+        let budget_multiplier = *params.budget_multiplier();
 
         debug!(
             narrative_id,
@@ -356,18 +364,17 @@ impl BotticelliServer {
             "Carousel configuration created"
         );
 
-        Ok(Json(ElicitCarouselResult {
-            success: true,
-            carousel_config: CarouselSummary {
-                level: match level {
-                    CarouselLevel::Narrative => "narrative".to_string(),
-                    CarouselLevel::Act => "act".to_string(),
-                },
-                act_name,
-                iterations,
-                estimated_total_tokens: estimated_tokens_per_iteration.map(|t| t * iterations),
-                budget_warnings,
+        let carousel_config = CarouselSummary::new(
+            match level {
+                CarouselLevel::Narrative => "narrative".to_string(),
+                CarouselLevel::Act => "act".to_string(),
             },
-        }))
+            act_name,
+            iterations,
+            estimated_tokens_per_iteration.map(|t| t * iterations),
+            budget_warnings,
+        );
+
+        Ok(Json(ElicitCarouselResult::new(true, carousel_config)))
     }
 }

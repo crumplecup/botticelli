@@ -2,8 +2,8 @@
 //!
 //! Tools for interacting with Discord servers, channels, and messages.
 
-use super::super::helpers::to_mcp_error;
-use super::super::server::BotticelliServer;
+use crate::rmcp_server::helpers::to_mcp_error;
+use crate::rmcp_server::BotticelliServer;
 use crate::{
     DiscordAuthor, DiscordChannelInfo, DiscordGetChannelsParams, DiscordGetChannelsResult,
     DiscordGetGuildInfoParams, DiscordGetGuildInfoResult, DiscordGetMessagesParams,
@@ -15,18 +15,18 @@ use tracing::{debug, instrument};
 
 impl BotticelliServer {
     /// Post a message to a Discord channel.
-    #[instrument(skip(self, content), fields(channel_id, content_len = content.len()))]
+    #[instrument(skip(self, params), fields(channel_id = params.channel_id(), content_len = params.content().len()))]
     pub async fn discord_post_message(
         &self,
-        Parameters(DiscordPostMessageParams {
-            channel_id,
-            content,
-        }): Parameters<DiscordPostMessageParams>,
+        Parameters(params): Parameters<DiscordPostMessageParams>,
     ) -> Result<Json<DiscordPostMessageResult>, rmcp::ErrorData> {
         use reqwest::Client;
         use rmcp::model::ErrorCode;
         use serde_json::json;
         use std::borrow::Cow;
+
+        let channel_id = params.channel_id().clone();
+        let content = params.content().clone();
 
         debug!(
             channel_id,
@@ -98,27 +98,26 @@ impl BotticelliServer {
 
         debug!(message_id, "Discord message posted successfully");
 
-        Ok(Json(DiscordPostMessageResult {
-            status: "success".to_string(),
+        Ok(Json(DiscordPostMessageResult::new(
+            "success".to_string(),
             message_id,
             channel_id,
             timestamp,
-        }))
+        )))
     }
     
     /// Get recent messages from a Discord channel.
-    #[instrument(skip(self), fields(channel_id, limit))]
+    #[instrument(skip(self, params), fields(channel_id = params.channel_id(), limit = params.limit()))]
     pub async fn discord_get_messages(
         &self,
-        Parameters(DiscordGetMessagesParams { channel_id, limit }): Parameters<
-            DiscordGetMessagesParams,
-        >,
+        Parameters(params): Parameters<DiscordGetMessagesParams>,
     ) -> Result<Json<DiscordGetMessagesResult>, rmcp::ErrorData> {
         use reqwest::Client;
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
-        let limit = limit.clamp(1, 100);
+        let channel_id = params.channel_id().clone();
+        let limit = (*params.limit()).clamp(1, 100);
         debug!(channel_id, limit, "Getting Discord messages");
 
         // Get Discord token
@@ -168,14 +167,18 @@ impl BotticelliServer {
 
         let formatted_messages: Vec<DiscordMessageInfo> = messages
             .into_iter()
-            .map(|m| DiscordMessageInfo {
-                id: m["id"].as_str().unwrap_or("").to_string(),
-                content: m["content"].as_str().unwrap_or("").to_string(),
-                timestamp: m["timestamp"].as_str().unwrap_or("").to_string(),
-                author: m["author"].as_object().map(|a| DiscordAuthor {
-                    id: a["id"].as_str().unwrap_or("").to_string(),
-                    username: a["username"].as_str().unwrap_or("").to_string(),
-                }),
+            .map(|m| {
+                DiscordMessageInfo::new(
+                    m["id"].as_str().unwrap_or("").to_string(),
+                    m["content"].as_str().unwrap_or("").to_string(),
+                    m["timestamp"].as_str().unwrap_or("").to_string(),
+                    m["author"].as_object().map(|a| {
+                        DiscordAuthor::new(
+                            a["id"].as_str().unwrap_or("").to_string(),
+                            a["username"].as_str().unwrap_or("").to_string(),
+                        )
+                    }),
+                )
             })
             .collect();
 
@@ -184,24 +187,25 @@ impl BotticelliServer {
             "Discord messages retrieved"
         );
 
-        Ok(Json(DiscordGetMessagesResult {
-            status: "success".to_string(),
+        Ok(Json(DiscordGetMessagesResult::new(
+            "success".to_string(),
             channel_id,
-            count: formatted_messages.len(),
-            messages: formatted_messages,
-        }))
+            formatted_messages.len(),
+            formatted_messages,
+        )))
     }
     
     /// Get information about a Discord guild (server).
-    #[instrument(skip(self), fields(guild_id))]
+    #[instrument(skip(self, params), fields(guild_id = params.guild_id()))]
     pub async fn discord_get_guild_info(
         &self,
-        Parameters(DiscordGetGuildInfoParams { guild_id }): Parameters<DiscordGetGuildInfoParams>,
+        Parameters(params): Parameters<DiscordGetGuildInfoParams>,
     ) -> Result<Json<DiscordGetGuildInfoResult>, rmcp::ErrorData> {
         use reqwest::Client;
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
+        let guild_id = params.guild_id().clone();
         debug!(guild_id, "Getting Discord guild info");
 
         // Get Discord token
@@ -248,24 +252,25 @@ impl BotticelliServer {
 
         debug!(guild_id, name, "Discord guild info retrieved");
 
-        Ok(Json(DiscordGetGuildInfoResult {
-            status: "success".to_string(),
+        Ok(Json(DiscordGetGuildInfoResult::new(
+            "success".to_string(),
             guild_id,
             name,
             member_count,
-        }))
+        )))
     }
 
     /// List channels in a Discord guild.
-    #[instrument(skip(self), fields(guild_id))]
+    #[instrument(skip(self, params), fields(guild_id = params.guild_id()))]
     pub async fn discord_get_channels(
         &self,
-        Parameters(DiscordGetChannelsParams { guild_id }): Parameters<DiscordGetChannelsParams>,
+        Parameters(params): Parameters<DiscordGetChannelsParams>,
     ) -> Result<Json<DiscordGetChannelsResult>, rmcp::ErrorData> {
         use reqwest::Client;
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
+        let guild_id = params.guild_id().clone();
         debug!(guild_id, "Getting Discord channels");
 
         // Get Discord token
@@ -306,10 +311,12 @@ impl BotticelliServer {
 
         let formatted_channels: Vec<DiscordChannelInfo> = channels
             .into_iter()
-            .map(|c| DiscordChannelInfo {
-                id: c["id"].as_str().unwrap_or("").to_string(),
-                name: c["name"].as_str().map(|s| s.to_string()),
-                channel_type: c["type"].as_u64().unwrap_or(0) as u8,
+            .map(|c| {
+                DiscordChannelInfo::new(
+                    c["id"].as_str().unwrap_or("").to_string(),
+                    c["name"].as_str().map(|s| s.to_string()),
+                    c["type"].as_u64().unwrap_or(0) as u8,
+                )
             })
             .collect();
 
@@ -318,12 +325,12 @@ impl BotticelliServer {
             "Discord channels retrieved"
         );
 
-        Ok(Json(DiscordGetChannelsResult {
-            status: "success".to_string(),
+        Ok(Json(DiscordGetChannelsResult::new(
+            "success".to_string(),
             guild_id,
-            count: formatted_channels.len(),
-            channels: formatted_channels,
-        }))
+            formatted_channels.len(),
+            formatted_channels,
+        )))
     }
 }
 

@@ -1,11 +1,12 @@
 //! ServerHandler trait implementation.
 
-use super::server::BotticelliServer;
+use crate::rmcp_server::BotticelliServer;
 use rmcp::model::ServerCapabilities;
 use rmcp::{ServerHandler, tool_handler};
 
 #[tool_handler]
 impl ServerHandler for BotticelliServer {
+    #[tracing::instrument(skip(self))]
     fn get_info(&self) -> rmcp::model::InitializeResult {
         rmcp::model::InitializeResult {
             protocol_version: rmcp::model::ProtocolVersion::V_2024_11_05,

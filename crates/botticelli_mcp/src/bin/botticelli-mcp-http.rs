@@ -11,6 +11,7 @@ use tokio_util::sync::CancellationToken;
 use tracing_subscriber::{self, EnvFilter};
 
 #[tokio::main]
+#[tracing::instrument]
 async fn main() -> Result<()> {
     // Load environment variables from .env file
     let _ = dotenvy::dotenv();

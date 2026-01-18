@@ -3,25 +3,26 @@
 //! Provides server metadata and version information.
 
 use chrono::Utc;
+use derive_getters::Getters;
 use rmcp::schemars::JsonSchema;
 use serde::Serialize;
 
 /// Result from the server_info tool.
 ///
 /// Contains server metadata including name, version, and timestamp.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Getters)]
 pub struct ServerInfoResult {
     /// Server name.
-    pub name: String,
+    name: String,
 
     /// Server version.
-    pub version: String,
+    version: String,
 
     /// ISO 8601 timestamp when info was retrieved.
-    pub timestamp: String,
+    timestamp: String,
 
     /// Number of tools available.
-    pub tool_count: usize,
+    tool_count: usize,
 }
 
 impl ServerInfoResult {
@@ -36,6 +37,7 @@ impl ServerInfoResult {
     /// # Returns
     ///
     /// A `ServerInfoResult` with the provided data and current timestamp.
+    #[tracing::instrument(skip(name, version), fields(name = %name, version = %version))]
     pub fn new(name: String, version: String, tool_count: usize) -> Self {
         Self {
             name,

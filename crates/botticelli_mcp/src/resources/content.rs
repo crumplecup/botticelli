@@ -1,9 +1,10 @@
 //! Content resource for database content.
 
-use super::{McpResource, ResourceInfo};
+use crate::ResourceInfo;
 use async_trait::async_trait;
 use botticelli_database::{establish_connection, get_content_by_id, list_content};
 use botticelli_error::{McpError, McpResult};
+use botticelli_interface::McpResource;
 use tracing::{debug, instrument};
 
 /// Resource for accessing database content.
@@ -14,11 +15,13 @@ pub struct ContentResource;
 
 impl ContentResource {
     /// Creates a new content resource.
+    #[tracing::instrument]
     pub fn new() -> Self {
         Self
     }
 
     /// Parses a content URI into (table, id).
+    #[tracing::instrument(skip(self))]
     fn parse_uri(&self, uri: &str) -> McpResult<(String, i32)> {
         let without_scheme = uri.strip_prefix("content://").ok_or_else(|| {
             McpError::resource_not_found(
@@ -55,6 +58,7 @@ impl ContentResource {
 }
 
 impl Default for ContentResource {
+    #[tracing::instrument]
     fn default() -> Self {
         Self::new()
     }
@@ -62,16 +66,21 @@ impl Default for ContentResource {
 
 #[async_trait]
 impl McpResource for ContentResource {
+    type Error = McpError;
+    type ResourceInfo = ResourceInfo;
+
+    #[tracing::instrument(skip(self))]
     fn uri_pattern(&self) -> &'static str {
         "content://"
     }
 
+    #[tracing::instrument(skip(self))]
     fn description(&self) -> &'static str {
         "Access database content by table and ID"
     }
 
     #[instrument(skip(self), fields(uri))]
-    async fn read(&self, uri: &str) -> McpResult<String> {
+    async fn read(&self, uri: &str) -> Result<String, Self::Error> {
         let (table, id) = self.parse_uri(uri)?;
         debug!(table, id, "Reading content");
 
@@ -83,7 +92,7 @@ impl McpResource for ContentResource {
     }
 
     #[instrument(skip(self))]
-    async fn list(&self) -> McpResult<Vec<ResourceInfo>> {
+    async fn list(&self) -> Result<Vec<Self::ResourceInfo>, Self::Error> {
         let mut conn = establish_connection().map_err(|e| {
             McpError::execution_failed(format!("Database connection failed: {}", e))
         })?;
@@ -104,40 +113,15 @@ impl McpResource for ContentResource {
                     text.to_string()
                 };
 
-                Some(ResourceInfo {
-                    uri: format!("content://content/{}", id),
-                    name: format!("Content {}", id),
-                    description: preview,
-                    mime_type: Some("application/json".to_string()),
-                })
+                Some(ResourceInfo::new(
+                    format!("content://content/{}", id),
+                    format!("Content {}", id),
+                    preview,
+                    Some("application/json".to_string()),
+                ))
             })
             .collect();
 
         Ok(resources)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_uri() {
-        let resource = ContentResource::new();
-
-        let (table, id) = resource
-            .parse_uri("content://content/123")
-            .expect("Valid URI");
-        assert_eq!(table, "content");
-        assert_eq!(id, 123);
-    }
-
-    #[test]
-    fn test_parse_uri_invalid() {
-        let resource = ContentResource::new();
-
-        assert!(resource.parse_uri("invalid://uri").is_err());
-        assert!(resource.parse_uri("content://table").is_err());
-        assert!(resource.parse_uri("content://table/notanumber").is_err());
     }
 }

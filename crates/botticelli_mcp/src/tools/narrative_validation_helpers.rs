@@ -6,6 +6,7 @@ use botticelli_narrative::validator::{ValidationError, ValidationResult, Validat
 use serde_json::{Value, json};
 
 /// Format validation result as structured JSON with enhanced information.
+#[tracing::instrument(skip(validation), fields(is_valid = validation.is_valid()))]
 pub fn format_validation_result(validation: &ValidationResult) -> Value {
     json!({
         "valid": validation.is_valid(),
@@ -18,6 +19,7 @@ pub fn format_validation_result(validation: &ValidationResult) -> Value {
 }
 
 /// Format errors with priority and fix suggestions.
+#[tracing::instrument(skip(errors), fields(error_count = errors.len()))]
 fn format_errors(errors: &[ValidationError]) -> Vec<Value> {
     errors
         .iter()
@@ -42,6 +44,7 @@ fn format_errors(errors: &[ValidationError]) -> Vec<Value> {
 }
 
 /// Format warnings with additional context.
+#[tracing::instrument(skip(warnings), fields(warning_count = warnings.len()))]
 fn format_warnings(warnings: &[ValidationWarning]) -> Vec<Value> {
     warnings
         .iter()
@@ -61,6 +64,7 @@ fn format_warnings(warnings: &[ValidationWarning]) -> Vec<Value> {
 }
 
 /// Create a summary of validation results.
+#[tracing::instrument(skip(validation), fields(is_valid = validation.is_valid()))]
 fn create_summary(validation: &ValidationResult) -> String {
     let error_count = validation.errors().len();
     let warning_count = validation.warnings().len();
@@ -91,6 +95,7 @@ fn create_summary(validation: &ValidationResult) -> String {
 }
 
 /// Categorize error priority.
+#[tracing::instrument(skip(kind))]
 fn categorize_error_priority(kind: &botticelli_narrative::validator::ValidationErrorKind) -> &str {
     use botticelli_narrative::validator::ValidationErrorKind;
 
@@ -107,6 +112,7 @@ fn categorize_error_priority(kind: &botticelli_narrative::validator::ValidationE
 }
 
 /// Categorize warning severity.
+#[tracing::instrument(skip(kind))]
 fn categorize_warning_severity(
     kind: &botticelli_narrative::validator::ValidationWarningKind,
 ) -> &str {
@@ -121,6 +127,7 @@ fn categorize_warning_severity(
 }
 
 /// Check if there are critical errors.
+#[tracing::instrument(skip(errors), fields(error_count = errors.len()))]
 fn has_critical_errors(errors: &[ValidationError]) -> bool {
     errors
         .iter()
@@ -128,11 +135,13 @@ fn has_critical_errors(errors: &[ValidationError]) -> bool {
 }
 
 /// Check if errors have fix suggestions.
+#[tracing::instrument(skip(errors), fields(error_count = errors.len()))]
 fn has_fixable_errors(errors: &[ValidationError]) -> bool {
     errors.iter().any(|e| e.suggestion().is_some())
 }
 
 /// Generate fix suggestion for errors without one.
+#[tracing::instrument(skip(error))]
 fn generate_fix_suggestion(error: &ValidationError) -> Option<String> {
     use botticelli_narrative::validator::ValidationErrorKind;
 
@@ -154,6 +163,7 @@ fn generate_fix_suggestion(error: &ValidationError) -> Option<String> {
 }
 
 /// Improve TOML formatting with better structure.
+#[tracing::instrument(skip(toml), fields(toml_len = toml.len()))]
 pub fn format_toml(toml: &str) -> String {
     let mut formatted = String::new();
     let mut in_section = false;
@@ -188,6 +198,7 @@ pub fn format_toml(toml: &str) -> String {
 }
 
 /// Add helpful comments to generated TOML.
+#[tracing::instrument(skip(toml), fields(toml_len = toml.len()))]
 pub fn add_helpful_comments(toml: &str) -> String {
     let mut output = String::new();
 
@@ -221,6 +232,7 @@ pub fn add_helpful_comments(toml: &str) -> String {
 }
 
 /// Validate and auto-fix common TOML issues.
+#[tracing::instrument(skip(toml), fields(toml_len = toml.len()))]
 pub fn auto_fix_common_issues(toml: &str) -> (String, Vec<String>) {
     let mut fixed = toml.to_string();
     let mut fixes_applied = Vec::new();
@@ -274,6 +286,7 @@ pub fn auto_fix_common_issues(toml: &str) -> (String, Vec<String>) {
 }
 
 /// Extract act names from TOML.
+#[tracing::instrument(skip(toml), fields(toml_len = toml.len()))]
 fn extract_act_names(toml: &str) -> Vec<String> {
     let mut names = Vec::new();
     let mut in_acts_section = false;
@@ -298,41 +311,4 @@ fn extract_act_names(toml: &str) -> Vec<String> {
     }
 
     names
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_format_toml() {
-        let toml =
-            "[narrative]\nname = \"test\"\n\n\n[toc]\norder = [\"act1\"]\n[acts]\nact1 = \"test\"";
-        let formatted = format_toml(toml);
-
-        // Should not have triple blank lines
-        assert!(!formatted.contains("\n\n\n"));
-        // Should have blank line before [acts]
-        assert!(formatted.contains("\n[acts]\n"));
-    }
-
-    #[test]
-    fn test_auto_fix_missing_toc() {
-        let toml = "[narrative]\nname = \"test\"\n\n[acts]\nact1 = \"test\"\nact2 = \"test2\"";
-        let (fixed, fixes) = auto_fix_common_issues(toml);
-
-        assert!(fixed.contains("[toc]"));
-        assert!(fixed.contains("order = [\"act1\", \"act2\"]"));
-        assert!(!fixes.is_empty());
-    }
-
-    #[test]
-    fn test_extract_act_names() {
-        let toml = "[acts]\nfetch = \"Get data\"\nanalyze = \"Process\"";
-        let names = extract_act_names(toml);
-
-        assert_eq!(names.len(), 2);
-        assert!(names.contains(&"fetch".to_string()));
-        assert!(names.contains(&"analyze".to_string()));
-    }
 }

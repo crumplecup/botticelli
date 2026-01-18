@@ -1,41 +1,52 @@
 //! Query content tool types for database queries.
 
+use derive_getters::Getters;
 use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tracing::instrument;
 
 /// Parameters for querying content from database tables.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
 pub struct QueryContentParams {
     /// The table name to query (e.g., 'blog_posts', 'tweets')
-    pub table: String,
+    table: String,
 
     /// Maximum number of results to return (default: 10, max: 100)
     #[serde(default = "default_limit")]
-    pub limit: i64,
+    limit: i64,
 }
 
+impl QueryContentParams {
+    /// Create new query content parameters.
+    #[instrument]
+    pub fn new(table: String, limit: i64) -> Self {
+        Self { table, limit }
+    }
+}
+
+#[tracing::instrument]
 fn default_limit() -> i64 {
     10
 }
 
 /// Result of a content query operation.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
 pub struct QueryContentResult {
     /// Status of the operation
-    pub status: String,
+    status: String,
 
     /// Table that was queried
-    pub table: String,
+    table: String,
 
     /// Number of rows returned
-    pub count: usize,
+    count: usize,
 
     /// Limit applied to the query
-    pub limit: i64,
+    limit: i64,
 
     /// Rows returned from the query
-    pub rows: Vec<Value>,
+    rows: Vec<Value>,
 }
 
 impl QueryContentResult {
@@ -50,6 +61,7 @@ impl QueryContentResult {
     /// # Returns
     ///
     /// A new `QueryContentResult` with success status.
+    #[instrument(skip(rows))]
     pub fn new(table: String, limit: i64, rows: Vec<Value>) -> Self {
         let count = rows.len();
         Self {

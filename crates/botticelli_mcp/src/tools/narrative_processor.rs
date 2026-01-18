@@ -88,6 +88,7 @@ pub struct McpProcessorCollector {
 ))]
 impl McpProcessorCollector {
     /// Create a new processor collector.
+    #[instrument]
     pub fn new() -> Self {
         Self {
             outputs: Arc::new(Mutex::new(Vec::new())),
@@ -95,6 +96,7 @@ impl McpProcessorCollector {
     }
 
     /// Get collected processor outputs.
+    #[instrument(skip(self))]
     pub fn outputs(&self) -> Result<Vec<(String, Value)>, botticelli_error::McpError> {
         self.outputs
             .lock()
@@ -103,6 +105,7 @@ impl McpProcessorCollector {
     }
 
     /// Clear collected outputs.
+    #[instrument(skip(self))]
     pub fn clear(&self) -> Result<(), botticelli_error::McpError> {
         self.outputs
             .lock()
@@ -119,6 +122,7 @@ impl McpProcessorCollector {
     feature = "groq"
 ))]
 impl Default for McpProcessorCollector {
+    #[instrument]
     fn default() -> Self {
         Self::new()
     }
@@ -134,10 +138,12 @@ impl Default for McpProcessorCollector {
 #[async_trait::async_trait]
 impl<'a> ActProcessor<ProcessorContext<'a>> for McpProcessorCollector {
     type Error = BotticelliError;
+    #[instrument(skip(self))]
     fn name(&self) -> &str {
         "mcp_collector"
     }
 
+    #[instrument(skip(self, _context))]
     fn should_process(&self, _context: &ProcessorContext<'a>) -> bool {
         // This processor doesn't transform data, it just collects from others
         false

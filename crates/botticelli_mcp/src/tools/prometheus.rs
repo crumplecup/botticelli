@@ -14,6 +14,7 @@ pub struct PrometheusMetrics {
 
 impl PrometheusMetrics {
     /// Create a new Prometheus metrics collector.
+    #[tracing::instrument]
     pub fn new() -> Self {
         Self {
             executions: Arc::new(Mutex::new(Vec::new())),
@@ -149,6 +150,7 @@ impl PrometheusMetrics {
 }
 
 impl Default for PrometheusMetrics {
+    #[tracing::instrument]
     fn default() -> Self {
         Self::new()
     }

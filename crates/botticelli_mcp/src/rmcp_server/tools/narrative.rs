@@ -2,8 +2,8 @@
 //!
 //! Tools for creating, modifying, validating, and managing narrative workflows.
 
-use super::super::helpers::{apply_modification, generate_narrative_toml, to_mcp_error};
-use super::super::server::BotticelliServer;
+use crate::rmcp_server::helpers::{apply_modification, generate_narrative_toml, to_mcp_error};
+use crate::rmcp_server::BotticelliServer;
 use crate::tools::NarrativeHelper;
 use crate::tools::narrative_validation_helpers::{
     add_helpful_comments, auto_fix_common_issues, format_toml, format_validation_result,
@@ -24,18 +24,18 @@ use tracing::{debug, instrument};
 
 impl BotticelliServer {
     /// Create a new narrative from a description using LLM analysis.
-    #[instrument(skip(self, description), fields(name, description_len = description.len(), has_model = default_model.is_some()))]
+    #[instrument(skip(self, params), fields(name = params.name(), description_len = params.description().len(), has_model = params.default_model().is_some()))]
     pub async fn create_narrative(
         &self,
-        Parameters(CreateNarrativeParams {
-            description,
-            name,
-            default_model,
-            default_temperature,
-        }): Parameters<CreateNarrativeParams>,
+        Parameters(params): Parameters<CreateNarrativeParams>,
     ) -> Result<Json<CreateNarrativeResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
+
+        let description = params.description().clone();
+        let name = params.name().clone();
+        let default_model = params.default_model().clone();
+        let default_temperature = params.default_temperature().clone();
 
         debug!(name = %name, has_model = default_model.is_some(), "Creating narrative from description");
 
@@ -116,15 +116,15 @@ impl BotticelliServer {
     }
     
     /// Modify an existing narrative TOML with natural language instructions.
-    #[instrument(skip(self, narrative_toml, modification), fields(toml_len = narrative_toml.len(), modification_len = modification.len(), has_save_path = save_to.is_some()))]
+    #[instrument(skip(self, params), fields(toml_len = params.narrative_toml().len(), modification_len = params.modification().len(), has_save_path = params.save_to().is_some()))]
     pub async fn modify_narrative(
         &self,
-        Parameters(ModifyNarrativeParams {
-            narrative_toml,
-            modification,
-            save_to,
-        }): Parameters<ModifyNarrativeParams>,
+        Parameters(params): Parameters<ModifyNarrativeParams>,
     ) -> Result<Json<ModifyNarrativeResult>, rmcp::ErrorData> {
+        let narrative_toml = params.narrative_toml().clone();
+        let modification = params.modification().clone();
+        let save_to = params.save_to().clone();
+
         debug!(modification = %modification, has_save_path = save_to.is_some(), "Modifying narrative");
 
         // Apply modification
@@ -174,17 +174,17 @@ impl BotticelliServer {
     }
     
     /// Save narrative TOML content to a file.
-    #[instrument(skip(self, narrative_toml), fields(toml_len = narrative_toml.len(), path = %file_path, overwrite))]
+    #[instrument(skip(self, params), fields(toml_len = params.narrative_toml().len(), path = %params.file_path(), overwrite = params.overwrite()))]
     pub async fn save_narrative(
         &self,
-        Parameters(SaveNarrativeParams {
-            narrative_toml,
-            file_path,
-            overwrite,
-        }): Parameters<SaveNarrativeParams>,
+        Parameters(params): Parameters<SaveNarrativeParams>,
     ) -> Result<Json<SaveNarrativeResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
+
+        let narrative_toml = params.narrative_toml().clone();
+        let file_path = params.file_path().clone();
+        let overwrite = *params.overwrite();
 
         debug!(path = %file_path, overwrite, "Saving narrative to file");
 
@@ -240,20 +240,24 @@ impl BotticelliServer {
     }
     
     /// Validate narrative TOML file structure and content.
+    #[instrument(skip(self, params), fields(
+        has_content = params.content().is_some(),
+        has_file_path = params.file_path().is_some()
+    ))]
     pub async fn validate_narrative(
         &self,
-        Parameters(ValidateNarrativeParams {
-            content,
-            file_path,
-            validate_files,
-            validate_models,
-            warn_unused,
-            strict,
-        }): Parameters<ValidateNarrativeParams>,
+        Parameters(params): Parameters<ValidateNarrativeParams>,
     ) -> Result<Json<ValidateNarrativeResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
         use std::path::PathBuf;
+
+        let content = params.content().clone();
+        let file_path = params.file_path().clone();
+        let validate_files = *params.validate_files();
+        let validate_models = *params.validate_models();
+        let warn_unused = *params.warn_unused();
+        let strict = *params.strict();
 
         debug!(
             ?file_path,
@@ -297,15 +301,19 @@ impl BotticelliServer {
         let errors: Vec<ValidationError> = result
             .errors()
             .iter()
-            .map(|e| ValidationError {
-                kind: format!("{:?}", e.kind()),
-                message: e.message().clone(),
-                suggestion: e.suggestion().clone(),
-                location: e.location().as_ref().map(|loc| ValidationLocation {
-                    line: *loc.line(),
-                    column: *loc.column(),
-                    section: loc.section().clone(),
-                }),
+            .map(|e| {
+                ValidationError::new(
+                    format!("{:?}", e.kind()),
+                    e.message().clone(),
+                    e.suggestion().clone(),
+                    e.location().as_ref().map(|loc| {
+                        ValidationLocation::new(
+                            *loc.line(),
+                            *loc.column(),
+                            loc.section().clone(),
+                        )
+                    }),
+                )
             })
             .collect();
 
@@ -313,14 +321,18 @@ impl BotticelliServer {
         let warnings: Vec<ValidationWarning> = result
             .warnings()
             .iter()
-            .map(|w| ValidationWarning {
-                kind: format!("{:?}", w.kind()),
-                message: w.message().clone(),
-                location: w.location().as_ref().map(|loc| ValidationLocation {
-                    line: *loc.line(),
-                    column: *loc.column(),
-                    section: loc.section().clone(),
-                }),
+            .map(|w| {
+                ValidationWarning::new(
+                    format!("{:?}", w.kind()),
+                    w.message().clone(),
+                    w.location().as_ref().map(|loc| {
+                        ValidationLocation::new(
+                            *loc.line(),
+                            *loc.column(),
+                            loc.section().clone(),
+                        )
+                    }),
+                )
             })
             .collect();
 
@@ -339,14 +351,14 @@ impl BotticelliServer {
     }
     
     /// Finalize a narrative session and convert to TOML.
-    #[instrument(skip(self), fields(narrative_id, validate))]
+    #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), validate = params.validate()))]
     pub async fn finalize_narrative(
         &self,
-        Parameters(FinalizeNarrativeParams {
-            narrative_id,
-            validate,
-        }): Parameters<FinalizeNarrativeParams>,
+        Parameters(params): Parameters<FinalizeNarrativeParams>,
     ) -> Result<Json<FinalizeNarrativeResult>, rmcp::ErrorData> {
+        let narrative_id = params.narrative_id().clone();
+        let validate = *params.validate();
+
         debug!(narrative_id, validate, "Finalizing narrative");
 
         // Get narrative
@@ -386,22 +398,22 @@ impl BotticelliServer {
 
         debug!(narrative_id, success, "Narrative finalized");
 
-        Ok(Json(FinalizeNarrativeResult {
+        Ok(Json(FinalizeNarrativeResult::new(
             success,
             toml,
             validation_errors,
-        }))
+        )))
     }
     
     /// Get the current state of a narrative session.
-    #[instrument(skip(self), fields(narrative_id, format = ?format))]
+    #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), format = ?params.format()))]
     pub async fn get_narrative_state(
         &self,
-        Parameters(GetNarrativeStateParams {
-            narrative_id,
-            format,
-        }): Parameters<GetNarrativeStateParams>,
+        Parameters(params): Parameters<GetNarrativeStateParams>,
     ) -> Result<Json<GetNarrativeStateResult>, rmcp::ErrorData> {
+        let narrative_id = params.narrative_id().clone();
+        let format = params.format().clone();
+
         debug!(narrative_id, ?format, "Getting narrative state");
 
         // Get narrative
@@ -450,28 +462,30 @@ impl BotticelliServer {
             "Narrative state retrieved"
         );
 
-        Ok(Json(GetNarrativeStateResult {
+        let state = NarrativeStateSummary::new(
+            partial.name().clone(),
+            acts_count,
+            acts,
+            format!("{}%", completeness_score),
+            has_carousel,
+        );
+
+        Ok(Json(GetNarrativeStateResult::new(
             narrative_id,
-            state: NarrativeStateSummary {
-                name: partial.name().clone(),
-                acts_count,
-                acts,
-                completeness: format!("{}%", completeness_score),
-                has_carousel,
-            },
+            state,
             toml,
-        }))
+        )))
     }
     
     /// Validate a narrative session and report issues.
-    #[instrument(skip(self), fields(narrative_id, strict))]
+    #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), strict = params.strict()))]
     pub async fn validate_narrative_session(
         &self,
-        Parameters(ValidateNarrativeSessionParams {
-            narrative_id,
-            strict,
-        }): Parameters<ValidateNarrativeSessionParams>,
+        Parameters(params): Parameters<ValidateNarrativeSessionParams>,
     ) -> Result<Json<ValidateNarrativeSessionResult>, rmcp::ErrorData> {
+        let narrative_id = params.narrative_id().clone();
+        let strict = *params.strict();
+
         debug!(narrative_id, strict, "Validating narrative session");
 
         // Get narrative
@@ -485,68 +499,68 @@ impl BotticelliServer {
 
         // Validate name
         if partial.name().is_none() || partial.name().as_ref().is_some_and(|n| n.is_empty()) {
-            errors.push(ValidationIssue {
-                severity: ValidationSeverity::Critical,
-                field: "name".to_string(),
-                message: "Narrative name is required".to_string(),
-                suggestion: "Provide a unique name for this narrative".to_string(),
-                auto_fixable: false,
-            });
+            errors.push(ValidationIssue::new(
+                ValidationSeverity::Critical,
+                "name".to_string(),
+                "Narrative name is required".to_string(),
+                "Provide a unique name for this narrative".to_string(),
+                false,
+            ));
         }
 
         // Validate description
         if partial.description().is_none()
             || partial.description().as_ref().is_some_and(|d| d.is_empty())
         {
-            errors.push(ValidationIssue {
-                severity: ValidationSeverity::High,
-                field: "description".to_string(),
-                message: "Narrative description is missing".to_string(),
-                suggestion: "Add a description explaining what this narrative does".to_string(),
-                auto_fixable: false,
-            });
+            errors.push(ValidationIssue::new(
+                ValidationSeverity::High,
+                "description".to_string(),
+                "Narrative description is missing".to_string(),
+                "Add a description explaining what this narrative does".to_string(),
+                false,
+            ));
         }
 
         // Validate model
         if partial.model().is_none() {
-            warnings.push(ValidationIssue {
-                severity: ValidationSeverity::Medium,
-                field: "model".to_string(),
-                message: "Default model not specified".to_string(),
-                suggestion: "Set a default model (e.g., 'gemini-2.0-flash-exp')".to_string(),
-                auto_fixable: true,
-            });
+            warnings.push(ValidationIssue::new(
+                ValidationSeverity::Medium,
+                "model".to_string(),
+                "Default model not specified".to_string(),
+                "Set a default model (e.g., 'gemini-2.0-flash-exp')".to_string(),
+                true,
+            ));
         }
 
         // Validate acts
         if partial.acts().is_empty() {
-            errors.push(ValidationIssue {
-                severity: ValidationSeverity::Critical,
-                field: "acts".to_string(),
-                message: "Narrative has no acts".to_string(),
-                suggestion: "Add at least one act to the narrative".to_string(),
-                auto_fixable: false,
-            });
+            errors.push(ValidationIssue::new(
+                ValidationSeverity::Critical,
+                "acts".to_string(),
+                "Narrative has no acts".to_string(),
+                "Add at least one act to the narrative".to_string(),
+                false,
+            ));
         } else {
             for (act_name, act) in partial.acts() {
                 if act.prompt().is_empty() {
-                    errors.push(ValidationIssue {
-                        severity: ValidationSeverity::High,
-                        field: format!("acts.{}.prompt", act_name),
-                        message: format!("Act '{}' has empty prompt", act_name),
-                        suggestion: "Provide a prompt for this act".to_string(),
-                        auto_fixable: false,
-                    });
+                    errors.push(ValidationIssue::new(
+                        ValidationSeverity::High,
+                        format!("acts.{}.prompt", act_name),
+                        format!("Act '{}' has empty prompt", act_name),
+                        "Provide a prompt for this act".to_string(),
+                        false,
+                    ));
                 }
 
                 if strict && act.model().is_none() && partial.model().is_none() {
-                    warnings.push(ValidationIssue {
-                        severity: ValidationSeverity::Low,
-                        field: format!("acts.{}.model", act_name),
-                        message: format!("Act '{}' has no model specified", act_name),
-                        suggestion: "Set model for act or narrative default".to_string(),
-                        auto_fixable: true,
-                    });
+                    warnings.push(ValidationIssue::new(
+                        ValidationSeverity::Low,
+                        format!("acts.{}.model", act_name),
+                        format!("Act '{}' has no model specified", act_name),
+                        "Set model for act or narrative default".to_string(),
+                        true,
+                    ));
                 }
             }
         }
@@ -568,7 +582,7 @@ impl BotticelliServer {
         let auto_fixable_count = errors
             .iter()
             .chain(warnings.iter())
-            .filter(|issue| issue.auto_fixable)
+            .filter(|issue| *issue.auto_fixable())
             .count();
 
         let is_valid = errors.is_empty();
@@ -581,28 +595,28 @@ impl BotticelliServer {
             "Validation complete"
         );
 
-        Ok(Json(ValidateNarrativeSessionResult {
+        Ok(Json(ValidateNarrativeSessionResult::new(
             narrative_id,
             is_valid,
             errors,
             warnings,
-            completeness: format!("{}%", completeness_score),
+            format!("{}%", completeness_score),
             auto_fixable_count,
-        }))
+        )))
     }
     
     /// Apply automatic fixes to a narrative session based on validation results.
-    #[instrument(skip(self, fix_types), fields(narrative_id, fix_count = fix_types.len(), confirm))]
+    #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), fix_count = params.fix_types().len(), confirm = params.confirm()))]
     pub async fn apply_validation_fixes(
         &self,
-        Parameters(ApplyValidationFixesParams {
-            narrative_id,
-            fix_types,
-            confirm,
-        }): Parameters<ApplyValidationFixesParams>,
+        Parameters(params): Parameters<ApplyValidationFixesParams>,
     ) -> Result<Json<ApplyValidationFixesResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
+
+        let narrative_id = params.narrative_id().clone();
+        let fix_types = params.fix_types().clone();
+        let confirm = *params.confirm();
 
         debug!(
             narrative_id,
@@ -692,10 +706,10 @@ impl BotticelliServer {
             "Validation fixes applied"
         );
 
-        Ok(Json(ApplyValidationFixesResult {
-            success: true,
+        Ok(Json(ApplyValidationFixesResult::new(
+            true,
             fixes_applied,
             remaining_errors,
-        }))
+        )))
     }
 }

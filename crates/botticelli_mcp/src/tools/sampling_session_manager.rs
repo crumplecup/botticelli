@@ -16,6 +16,7 @@ pub struct SamplingSessionManager {
 
 impl SamplingSessionManager {
     /// Create a new session manager.
+    #[tracing::instrument]
     pub fn new() -> Self {
         Self {
             sessions: Arc::new(RwLock::new(std::collections::HashMap::new())),
@@ -55,13 +56,13 @@ impl SamplingSessionManager {
         let _result = sampler
             .sample(&mut session, available_tools)
             .await
-            .map_err(|e| ChatError::validation_error(e.to_string()))?;
+            .map_err(|e| botticelli_error::ChatError::validation_error(e.to_string()))?;
 
         // Store session
         self.sessions
             .write()
             .await
-            .insert(session.id.clone(), session.clone());
+            .insert(session.id().clone(), session.clone());
 
         Ok(session)
     }
@@ -101,6 +102,7 @@ impl SamplingSessionManager {
 }
 
 impl Default for SamplingSessionManager {
+    #[tracing::instrument]
     fn default() -> Self {
         Self::new()
     }

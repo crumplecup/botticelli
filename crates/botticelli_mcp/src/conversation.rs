@@ -4,27 +4,28 @@
 //! with LLMs, including tool calls and results.
 
 use botticelli_core::{ToolCall, ToolResult};
+use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use uuid::Uuid;
 
 /// A multi-turn conversation session.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct ConversationSession {
     /// Unique session ID
-    pub id: String,
+    id: String,
 
     /// System prompt (context for all turns)
-    pub system_prompt: String,
+    system_prompt: String,
 
     /// Conversation turns in order
-    pub turns: Vec<ConversationTurn>,
+    turns: Vec<ConversationTurn>,
 
     /// Current session state
-    pub state: SessionState,
+    state: SessionState,
 
     /// Maximum turns allowed (prevent infinite loops)
-    pub max_turns: usize,
+    max_turns: usize,
 }
 
 impl ConversationSession {
@@ -114,12 +115,20 @@ pub enum ConversationTurn {
 /// **Note**: This type has been moved to `botticelli_core`.
 /// Import from there: `use botticelli_core::ToolResult;`
 /// Attachment to a user message (image, file, etc.)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 pub struct Attachment {
     /// MIME type
-    pub mime_type: String,
+    mime_type: String,
     /// Binary data
-    pub data: Vec<u8>,
+    data: Vec<u8>,
+}
+
+impl Attachment {
+    /// Create a new attachment.
+    #[tracing::instrument(skip(mime_type, data), fields(mime_type_len = mime_type.len(), data_len = data.len()))]
+    pub fn new(mime_type: String, data: Vec<u8>) -> Self {
+        Self { mime_type, data }
+    }
 }
 
 /// State of a conversation session.

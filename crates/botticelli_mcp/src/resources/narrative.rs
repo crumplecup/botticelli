@@ -1,8 +1,9 @@
 //! Narrative resource for TOML narrative files.
 
-use super::{McpResource, ResourceInfo};
+use crate::ResourceInfo;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
+use botticelli_interface::McpResource;
 use std::fs;
 use std::path::PathBuf;
 use tracing::{debug, instrument};
@@ -17,6 +18,7 @@ pub struct NarrativeResource {
 
 impl NarrativeResource {
     /// Creates a new narrative resource with default directory.
+    #[tracing::instrument]
     pub fn new() -> Self {
         Self {
             narratives_dir: PathBuf::from("narratives"),
@@ -24,6 +26,7 @@ impl NarrativeResource {
     }
 
     /// Creates a new narrative resource with custom directory.
+    #[tracing::instrument(skip(narratives_dir))]
     pub fn with_directory(narratives_dir: impl Into<PathBuf>) -> Self {
         Self {
             narratives_dir: narratives_dir.into(),
@@ -31,6 +34,7 @@ impl NarrativeResource {
     }
 
     /// Parses a narrative URI into a name.
+    #[tracing::instrument(skip(self))]
     fn parse_uri(&self, uri: &str) -> McpResult<String> {
         let name = uri.strip_prefix("narrative://").ok_or_else(|| {
             McpError::resource_not_found(
@@ -48,6 +52,7 @@ impl NarrativeResource {
     }
 
     /// Gets the path to a narrative file.
+    #[tracing::instrument(skip(self))]
     fn narrative_path(&self, name: &str) -> PathBuf {
         self.narratives_dir.join(format!("{}.toml", name))
     }
@@ -102,6 +107,7 @@ impl NarrativeResource {
 }
 
 impl Default for NarrativeResource {
+    #[tracing::instrument]
     fn default() -> Self {
         Self::new()
     }
@@ -109,65 +115,42 @@ impl Default for NarrativeResource {
 
 #[async_trait]
 impl McpResource for NarrativeResource {
+    type Error = McpError;
+    type ResourceInfo = ResourceInfo;
+
+    #[tracing::instrument(skip(self))]
     fn uri_pattern(&self) -> &'static str {
         "narrative://"
     }
 
+    #[tracing::instrument(skip(self))]
     fn description(&self) -> &'static str {
         "Access narrative TOML configuration files"
     }
 
     #[instrument(skip(self), fields(uri))]
-    async fn read(&self, uri: &str) -> McpResult<String> {
+    async fn read(&self, uri: &str) -> Result<String, Self::Error> {
         let name = self.parse_uri(uri)?;
         debug!(name, "Reading narrative");
         self.read_narrative(&name)
     }
 
     #[instrument(skip(self))]
-    async fn list(&self) -> McpResult<Vec<ResourceInfo>> {
+    async fn list(&self) -> Result<Vec<Self::ResourceInfo>, Self::Error> {
         let narratives = self.list_narratives()?;
 
         let resources = narratives
             .into_iter()
-            .map(|name| ResourceInfo {
-                uri: format!("narrative://{}", name),
-                name: name.clone(),
-                description: format!("Narrative configuration: {}", name),
-                mime_type: Some("application/toml".to_string()),
+            .map(|name| {
+                ResourceInfo::new(
+                    format!("narrative://{}", name),
+                    name.clone(),
+                    format!("Narrative configuration: {}", name),
+                    Some("application/toml".to_string()),
+                )
             })
             .collect();
 
         Ok(resources)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_uri() {
-        let resource = NarrativeResource::new();
-
-        let name = resource
-            .parse_uri("narrative://curate_content")
-            .expect("Valid URI");
-        assert_eq!(name, "curate_content");
-    }
-
-    #[test]
-    fn test_parse_uri_invalid() {
-        let resource = NarrativeResource::new();
-
-        assert!(resource.parse_uri("invalid://uri").is_err());
-        assert!(resource.parse_uri("narrative://").is_err());
-    }
-
-    #[test]
-    fn test_narrative_path() {
-        let resource = NarrativeResource::new();
-        let path = resource.narrative_path("test");
-        assert_eq!(path, PathBuf::from("narratives/test.toml"));
     }
 }

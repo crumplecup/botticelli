@@ -2,60 +2,86 @@
 //!
 //! These tools require LLM backend features to be enabled.
 
+use derive_getters::Getters;
 use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 
 /// Parameters for simple text generation.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
 pub struct GenerateParams {
     /// The prompt to send to the LLM.
-    pub prompt: String,
+    prompt: String,
 
     /// Model to use (e.g., 'gemini-2.0-flash-exp', 'gpt-4o', 'claude-3-5-sonnet-20241022').
     #[serde(default = "default_model")]
-    pub model: String,
+    model: String,
 
     /// Maximum tokens to generate.
     #[serde(default = "default_max_tokens")]
-    pub max_tokens: u32,
+    max_tokens: u32,
 
     /// Sampling temperature (0.0-2.0).
     #[serde(default = "default_temperature")]
-    pub temperature: f32,
+    temperature: f32,
 
     /// Optional system prompt to set context.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub system_prompt: Option<String>,
+    system_prompt: Option<String>,
 }
 
+impl GenerateParams {
+    /// Create new generate parameters.
+    #[instrument]
+    pub fn new(
+        prompt: String,
+        model: String,
+        max_tokens: u32,
+        temperature: f32,
+        system_prompt: Option<String>,
+    ) -> Self {
+        Self {
+            prompt,
+            model,
+            max_tokens,
+            temperature,
+            system_prompt,
+        }
+    }
+}
+
+#[tracing::instrument]
 fn default_model() -> String {
     "gemini-2.0-flash-exp".to_string()
 }
 
+#[tracing::instrument]
 fn default_max_tokens() -> u32 {
     1024
 }
 
+#[tracing::instrument]
 fn default_temperature() -> f32 {
     1.0
 }
 
 /// Result from text generation.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
 pub struct GenerateResult {
     /// The generated text response.
-    pub text: String,
+    text: String,
 
     /// Model that was used for generation.
-    pub model: String,
+    model: String,
 
     /// Number of tokens used in the response.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tokens_used: Option<u32>,
+    tokens_used: Option<u32>,
 }
 
 impl GenerateResult {
     /// Create a new generation result.
+    #[instrument]
     pub fn new(text: String, model: String, tokens_used: Option<u32>) -> Self {
         Self {
             text,
@@ -66,51 +92,74 @@ impl GenerateResult {
 }
 
 /// Parameters for executing a single narrative act.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
 pub struct ExecuteActParams {
     /// The act prompt or instruction.
-    pub prompt: String,
+    prompt: String,
 
     /// Model to use for execution.
     #[serde(default = "default_model")]
-    pub model: String,
+    model: String,
 
     /// Maximum tokens to generate.
     #[serde(default = "default_max_tokens")]
-    pub max_tokens: u32,
+    max_tokens: u32,
 
     /// Sampling temperature (0.0-2.0).
     #[serde(default = "default_temperature")]
-    pub temperature: f32,
+    temperature: f32,
 
     /// Optional system context.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub system_prompt: Option<String>,
+    system_prompt: Option<String>,
 
     /// Optional context from previous acts.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub context: Option<String>,
+    context: Option<String>,
+}
+
+impl ExecuteActParams {
+    /// Create new execute act parameters.
+    #[instrument]
+    pub fn new(
+        prompt: String,
+        model: String,
+        max_tokens: u32,
+        temperature: f32,
+        system_prompt: Option<String>,
+        context: Option<String>,
+    ) -> Self {
+        Self {
+            prompt,
+            model,
+            max_tokens,
+            temperature,
+            system_prompt,
+            context,
+        }
+    }
 }
 
 /// Result from executing a single act.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
 pub struct ExecuteActResult {
     /// The generated response from the act.
-    pub response: String,
+    response: String,
 
     /// Model that was used.
-    pub model: String,
+    model: String,
 
     /// Number of tokens used.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tokens_used: Option<u32>,
+    tokens_used: Option<u32>,
 
     /// Whether execution was successful.
-    pub success: bool,
+    success: bool,
 }
 
 impl ExecuteActResult {
     /// Create a new act execution result.
+    #[instrument]
     pub fn new(response: String, model: String, tokens_used: Option<u32>, success: bool) -> Self {
         Self {
             response,
@@ -122,49 +171,68 @@ impl ExecuteActResult {
 }
 
 /// Parameters for executing a complete narrative.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
 pub struct ExecuteNarrativeParams {
     /// Path to the narrative TOML file.
-    pub narrative_path: String,
+    narrative_path: String,
 
     /// Initial prompt to start the narrative.
-    pub prompt: String,
+    prompt: String,
 
     /// Model to use (overrides narrative settings if provided).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub model: Option<String>,
+    model: Option<String>,
 
     /// Maximum tokens per act.
     #[serde(default = "default_max_tokens")]
-    pub max_tokens: u32,
+    max_tokens: u32,
+}
+
+impl ExecuteNarrativeParams {
+    /// Create new execute narrative parameters.
+    #[instrument]
+    pub fn new(
+        narrative_path: String,
+        prompt: String,
+        model: Option<String>,
+        max_tokens: u32,
+    ) -> Self {
+        Self {
+            narrative_path,
+            prompt,
+            model,
+            max_tokens,
+        }
+    }
 }
 
 /// Result from executing a narrative.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
 pub struct ExecuteNarrativeResult {
     /// The final output from the narrative.
-    pub final_output: String,
+    final_output: String,
 
     /// Number of acts executed.
-    pub acts_executed: usize,
+    acts_executed: usize,
 
     /// Model(s) used during execution.
-    pub models_used: Vec<String>,
+    models_used: Vec<String>,
 
     /// Total tokens used across all acts.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub total_tokens: Option<u32>,
+    total_tokens: Option<u32>,
 
     /// Whether the narrative completed successfully.
-    pub success: bool,
+    success: bool,
 
     /// Optional error message if failed.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
+    error: Option<String>,
 }
 
 impl ExecuteNarrativeResult {
     /// Create a new narrative execution result.
+    #[instrument]
     pub fn new(
         final_output: String,
         acts_executed: usize,

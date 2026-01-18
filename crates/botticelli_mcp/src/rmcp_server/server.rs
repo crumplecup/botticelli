@@ -67,6 +67,7 @@ impl BotticelliServer {
     /// let server = BotticelliServer::builder()
     ///     .build();
     /// ```
+    #[tracing::instrument]
     pub fn builder() -> BotticelliServerBuilder {
         BotticelliServerBuilder::default()
     }
@@ -114,6 +115,7 @@ impl BotticelliServerBuilder {
     ///
     /// The builder for method chaining.
     #[cfg(feature = "database")]
+    #[tracing::instrument(skip(self, db))]
     pub fn database(
         mut self,
         db: Arc<dyn DatabaseRegistryOperations<Error = botticelli_error::BotticelliError>>,
@@ -131,6 +133,7 @@ impl BotticelliServerBuilder {
     /// # Returns
     ///
     /// The builder for method chaining.
+    #[tracing::instrument(skip(self, dialog))]
     pub fn dialog(mut self, dialog: Arc<DialogResource>) -> Self {
         self.dialog = Some(dialog);
         self
@@ -145,6 +148,7 @@ impl BotticelliServerBuilder {
     /// # Returns
     ///
     /// The builder for method chaining.
+    #[tracing::instrument(skip(self, metrics))]
     pub fn metrics(mut self, metrics: Arc<PrometheusMetrics>) -> Self {
         self.metrics = Some(metrics);
         self
@@ -160,6 +164,7 @@ impl BotticelliServerBuilder {
     ///
     /// The builder for method chaining.
     #[cfg(feature = "gemini")]
+    #[tracing::instrument(skip(self, driver))]
     pub fn gemini(mut self, driver: Arc<botticelli_models::GeminiClient>) -> Self {
         self.gemini_driver = Some(driver);
         self
@@ -175,6 +180,7 @@ impl BotticelliServerBuilder {
     ///
     /// The builder for method chaining.
     #[cfg(feature = "anthropic")]
+    #[tracing::instrument(skip(self, driver))]
     pub fn anthropic(mut self, driver: Arc<botticelli_models::AnthropicClient>) -> Self {
         self.anthropic_driver = Some(driver);
         self
@@ -190,6 +196,7 @@ impl BotticelliServerBuilder {
     ///
     /// The builder for method chaining.
     #[cfg(feature = "ollama")]
+    #[tracing::instrument(skip(self, driver))]
     pub fn ollama(mut self, driver: Arc<botticelli_models::OllamaClient>) -> Self {
         self.ollama_driver = Some(driver);
         self
@@ -205,6 +212,7 @@ impl BotticelliServerBuilder {
     ///
     /// The builder for method chaining.
     #[cfg(feature = "huggingface")]
+    #[tracing::instrument(skip(self, driver))]
     pub fn huggingface(mut self, driver: Arc<botticelli_models::HuggingFaceDriver>) -> Self {
         self.huggingface_driver = Some(driver);
         self
@@ -220,6 +228,7 @@ impl BotticelliServerBuilder {
     ///
     /// The builder for method chaining.
     #[cfg(feature = "groq")]
+    #[tracing::instrument(skip(self, driver))]
     pub fn groq(mut self, driver: Arc<botticelli_models::GroqDriver>) -> Self {
         self.groq_driver = Some(driver);
         self
@@ -230,6 +239,7 @@ impl BotticelliServerBuilder {
     /// # Returns
     ///
     /// A configured `BotticelliServer` ready to serve MCP requests.
+    #[tracing::instrument(skip(self))]
     pub fn build(self) -> BotticelliServer {
         BotticelliServer {
             tool_router: super::tools::get_tool_router(),

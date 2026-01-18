@@ -34,6 +34,7 @@ pub struct DialogResource {
 
 impl DialogResource {
     /// Create a new dialog resource wrapping an ElicitationDialog.
+    #[instrument(skip(dialog))]
     pub fn new(dialog: Box<dyn ElicitationDialog<Error = BotticelliError>>) -> Self {
         Self {
             dialog: Arc::new(Mutex::new(dialog)),

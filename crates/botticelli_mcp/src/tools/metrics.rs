@@ -41,6 +41,7 @@ pub struct ActMetrics {
 
 impl ExecutionMetrics {
     /// Create new empty metrics.
+    #[tracing::instrument]
     pub fn new() -> Self {
         Self {
             input_tokens: 0,
@@ -69,17 +70,20 @@ impl ExecutionMetrics {
     }
 
     /// Set total execution duration.
+    #[tracing::instrument(skip(self))]
     pub fn set_duration(&mut self, duration: Duration) {
         self.duration_ms = duration.as_millis() as u64;
     }
 
     /// Get total token count.
+    #[tracing::instrument(skip(self))]
     pub fn total_tokens(&self) -> u64 {
         self.input_tokens + self.output_tokens
     }
 }
 
 impl Default for ExecutionMetrics {
+    #[tracing::instrument]
     fn default() -> Self {
         Self::new()
     }
@@ -87,6 +91,7 @@ impl Default for ExecutionMetrics {
 
 impl ActMetrics {
     /// Create new act metrics.
+    #[tracing::instrument(skip(act_name, model), fields(act = %act_name, model = %model))]
     pub fn new(
         act_name: String,
         model: String,

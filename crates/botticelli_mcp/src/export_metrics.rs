@@ -1,5 +1,6 @@
 //! Export metrics tool types for Prometheus metrics export.
 
+use derive_getters::Getters;
 use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -15,11 +16,19 @@ pub enum MetricsFormat {
 }
 
 /// Parameters for exporting metrics.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
 pub struct ExportMetricsParams {
     /// Output format: 'prometheus' for full metrics, 'summary' for quick stats
     #[serde(default)]
-    pub format: MetricsFormat,
+    format: MetricsFormat,
+}
+
+impl ExportMetricsParams {
+    /// Create new export metrics parameters.
+    #[tracing::instrument]
+    pub fn new(format: MetricsFormat) -> Self {
+        Self { format }
+    }
 }
 
 /// Result from exporting metrics.
@@ -27,30 +36,30 @@ pub struct ExportMetricsParams {
 /// The format field indicates which type of metrics are included.
 /// For Prometheus format, the metrics field contains the text.
 /// For summary format, the summary fields contain statistics.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
 pub struct ExportMetricsResult {
     /// Output format: "prometheus" or "summary"
-    pub format: String,
+    format: String,
 
     /// Prometheus text format metrics (when format is "prometheus")
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub metrics: Option<String>,
+    metrics: Option<String>,
 
     /// Total number of executions (when format is "summary")
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub total_executions: Option<usize>,
+    total_executions: Option<usize>,
 
     /// Total tokens processed (when format is "summary")
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub total_tokens: Option<u64>,
+    total_tokens: Option<u64>,
 
     /// Total cost in USD (when format is "summary")
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub total_cost_usd: Option<f64>,
+    total_cost_usd: Option<f64>,
 
     /// Average execution duration in milliseconds (when format is "summary")
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub avg_duration_ms: Option<u64>,
+    avg_duration_ms: Option<u64>,
 }
 
 impl ExportMetricsResult {
@@ -63,6 +72,7 @@ impl ExportMetricsResult {
     /// # Returns
     ///
     /// A new `ExportMetricsResult` with Prometheus format.
+    #[tracing::instrument(skip(metrics), fields(metrics_len = metrics.len()))]
     pub fn prometheus(metrics: String) -> Self {
         Self {
             format: "prometheus".to_string(),
@@ -86,6 +96,7 @@ impl ExportMetricsResult {
     /// # Returns
     ///
     /// A new `ExportMetricsResult` with summary format.
+    #[tracing::instrument]
     pub fn summary(
         total_executions: usize,
         total_tokens: u64,

@@ -1,28 +1,37 @@
 //! Elicit number tool types for numeric input with range constraints.
 
+use derive_getters::Getters;
 use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Parameters for eliciting numeric input.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
 pub struct ElicitNumberParams {
     /// The prompt to display to the user
-    pub prompt: String,
+    prompt: String,
 
     /// Minimum acceptable value (inclusive)
-    pub min: i64,
+    min: i64,
 
     /// Maximum acceptable value (inclusive)
-    pub max: i64,
+    max: i64,
+}
+
+impl ElicitNumberParams {
+    /// Create new elicit number parameters.
+    #[tracing::instrument(skip(prompt), fields(prompt_len = prompt.len()))]
+    pub fn new(prompt: String, min: i64, max: i64) -> Self {
+        Self { prompt, min, max }
+    }
 }
 
 /// Result from numeric elicitation.
 ///
 /// Returns the user's numeric input within the specified range.
-#[derive(Debug, Clone, Serialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
 pub struct ElicitNumberResult {
     /// The numeric value from the user's input
-    pub value: i64,
+    value: i64,
 }
 
 impl ElicitNumberResult {
@@ -35,6 +44,7 @@ impl ElicitNumberResult {
     /// # Returns
     ///
     /// A new `ElicitNumberResult`.
+    #[tracing::instrument]
     pub fn new(value: i64) -> Self {
         Self { value }
     }

@@ -21,6 +21,7 @@ pub struct SamplingCoordinator {
 
 impl SamplingCoordinator {
     /// Create a new sampling coordinator.
+    #[tracing::instrument(skip(sampler, tool_registry))]
     pub fn new(
         sampler: Arc<dyn LlmSamplerOperations<
             Session = ConversationSession,
@@ -110,6 +111,7 @@ impl SamplingCoordinator {
     }
 
     /// Get reference to the tool registry.
+    #[tracing::instrument(skip(self))]
     pub fn tool_registry(&self) -> &Arc<ToolRegistry> {
         &self.tool_registry
     }

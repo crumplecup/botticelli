@@ -10,6 +10,7 @@ pub struct GetNarrativeStateInput {
     pub format: StateFormat,
 }
 
+#[tracing::instrument]
 fn default_format() -> StateFormat {
     StateFormat::Summary
 }

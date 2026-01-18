@@ -9,6 +9,7 @@ use rmcp::transport::io::stdio;
 use tracing_subscriber::{self, EnvFilter};
 
 #[tokio::main]
+#[tracing::instrument]
 async fn main() -> Result<()> {
     // Load environment variables from .env file
     let _ = dotenvy::dotenv();

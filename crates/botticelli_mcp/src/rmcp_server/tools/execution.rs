@@ -2,8 +2,8 @@
 //!
 //! Tools for generating content and executing narrative acts.
 
-use super::super::helpers::default_model;
-use super::super::server::BotticelliServer;
+use crate::rmcp_server::helpers::default_model;
+use crate::rmcp_server::BotticelliServer;
 use crate::{
     CreateNarrativeSessionParams, CreateNarrativeSessionResult, ExecuteActParams,
     ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult, GenerateParams,
@@ -14,17 +14,16 @@ use tracing::{debug, instrument};
 
 impl BotticelliServer {
     /// Generate text using an LLM with the provided prompt.
-    #[instrument(skip(self, prompt), fields(model, max_tokens, temperature, prompt_len = prompt.len()))]
+    #[instrument(skip(self, params), fields(model = params.model(), max_tokens = params.max_tokens(), temperature = params.temperature(), prompt_len = params.prompt().len()))]
     pub async fn generate(
         &self,
-        Parameters(GenerateParams {
-            prompt,
-            model,
-            max_tokens,
-            temperature,
-            system_prompt: _,
-        }): Parameters<GenerateParams>,
+        Parameters(params): Parameters<GenerateParams>,
     ) -> Result<Json<GenerateResult>, rmcp::ErrorData> {
+        let prompt = params.prompt().clone();
+        let model = params.model().clone();
+        let max_tokens = *params.max_tokens();
+        let temperature = *params.temperature();
+
         debug!(%model, max_tokens, temperature, "Generating text");
 
         #[cfg(any(
@@ -194,6 +193,7 @@ impl BotticelliServer {
         feature = "huggingface",
         feature = "groq"
     ))]
+    #[instrument(skip(self, driver), fields(model, max_tokens, temperature))]
     async fn generate_with_driver<D>(
         &self,
         driver: D,
@@ -261,18 +261,16 @@ impl BotticelliServer {
     }
     
     /// Execute a single narrative act with context.
-    #[instrument(skip(self, prompt, context), fields(model, max_tokens, prompt_len = prompt.len(), has_context = context.is_some()))]
+    #[instrument(skip(self, params), fields(model = params.model(), max_tokens = params.max_tokens(), prompt_len = params.prompt().len(), has_context = params.context().is_some()))]
     pub async fn execute_act(
         &self,
-        Parameters(ExecuteActParams {
-            prompt,
-            model,
-            max_tokens,
-            temperature: _,
-            system_prompt: _,
-            context,
-        }): Parameters<ExecuteActParams>,
+        Parameters(params): Parameters<ExecuteActParams>,
     ) -> Result<Json<ExecuteActResult>, rmcp::ErrorData> {
+        let prompt = params.prompt().clone();
+        let model = params.model().clone();
+        let max_tokens = *params.max_tokens();
+        let context = params.context().clone();
+
         debug!(%model, has_context = context.is_some(), "Executing act");
 
         // Placeholder implementation
@@ -300,18 +298,18 @@ impl BotticelliServer {
     }
     
     /// Execute a complete narrative from a TOML file.
-    #[instrument(skip(self, prompt), fields(narrative_path, model, max_tokens, prompt_len = prompt.len()))]
+    #[instrument(skip(self, params), fields(narrative_path = params.narrative_path(), model = ?params.model(), max_tokens = params.max_tokens(), prompt_len = params.prompt().len()))]
     pub async fn execute_narrative(
         &self,
-        Parameters(ExecuteNarrativeParams {
-            narrative_path,
-            prompt,
-            model,
-            max_tokens,
-        }): Parameters<ExecuteNarrativeParams>,
+        Parameters(params): Parameters<ExecuteNarrativeParams>,
     ) -> Result<Json<ExecuteNarrativeResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
+
+        let narrative_path = params.narrative_path().clone();
+        let prompt = params.prompt().clone();
+        let model = params.model().clone();
+        let max_tokens = *params.max_tokens();
 
         debug!(%narrative_path, model = ?model, "Executing narrative");
 
@@ -351,15 +349,14 @@ impl BotticelliServer {
     }
     
     /// Create a new narrative session from a description.
-    #[instrument(skip(self, description), fields(description_len = description.len()))]
+    #[instrument(skip(self, params), fields(description_len = params.description().len()))]
     pub async fn create_narrative_session(
         &self,
-        Parameters(CreateNarrativeSessionParams { description }): Parameters<
-            CreateNarrativeSessionParams,
-        >,
+        Parameters(params): Parameters<CreateNarrativeSessionParams>,
     ) -> Result<Json<CreateNarrativeSessionResult>, rmcp::ErrorData> {
         use crate::tools::NarrativeHelper;
 
+        let description = params.description().clone();
         debug!(?description, "Creating narrative session");
 
         // Analyze description
@@ -393,14 +390,14 @@ impl BotticelliServer {
 
         debug!(narrative_id = %narrative_id, acts = acts.len(), "Session created");
 
-        Ok(Json(CreateNarrativeSessionResult {
+        Ok(Json(CreateNarrativeSessionResult::new(
             narrative_id,
             suggested_name,
-            analysis: NarrativeAnalysis {
-                detected_acts: acts.iter().map(|a| a.name.clone()).collect(),
-                complexity: complexity.to_string(),
-                act_count: acts.len(),
-            },
-        }))
+            NarrativeAnalysis::new(
+                acts.iter().map(|a| a.name.clone()).collect(),
+                complexity.to_string(),
+                acts.len(),
+            ),
+        )))
     }
 }

@@ -2,8 +2,8 @@
 //!
 //! Basic server functionality: echo, server info, content queries, and metrics export.
 
-use super::super::helpers::to_mcp_error;
-use super::super::server::BotticelliServer;
+use crate::rmcp_server::helpers::to_mcp_error;
+use crate::rmcp_server::BotticelliServer;
 use crate::{
     EchoParams, EchoResult, ExportMetricsParams, ExportMetricsResult, MetricsFormat,
     QueryContentParams, QueryContentResult, ServerInfoResult,
@@ -16,8 +16,9 @@ impl BotticelliServer {
     #[instrument(skip(self), fields(message))]
     pub async fn echo(
         &self,
-        Parameters(EchoParams { message }): Parameters<EchoParams>,
+        Parameters(params): Parameters<EchoParams>,
     ) -> Result<Json<EchoResult>, rmcp::ErrorData> {
+        let message = params.message().clone();
         debug!(?message, "Processing echo request");
 
         let result = EchoResult::new(message);
@@ -37,18 +38,21 @@ impl BotticelliServer {
             self.tool_router.list_all().len(),
         ));
 
-        debug!(tool_count = result.0.tool_count, "Server info retrieved");
+        debug!(tool_count = result.0.tool_count(), "Server info retrieved");
         Ok(result)
     }
     
     /// Query content from the database.
-    #[instrument(skip(self), fields(table, limit))]
+    #[instrument(skip(self, params), fields(table = params.table(), limit = params.limit()))]
     pub async fn query_content(
         &self,
-        Parameters(QueryContentParams { table, limit }): Parameters<QueryContentParams>,
+        Parameters(params): Parameters<QueryContentParams>,
     ) -> Result<Json<QueryContentResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
+
+        let table = params.table().clone();
+        let limit = *params.limit();
 
         debug!(?table, limit, "Processing query_content request");
 
@@ -92,14 +96,15 @@ impl BotticelliServer {
     }
     
     /// Export metrics in the requested format.
-    #[instrument(skip(self), fields(format = ?format))]
+    #[instrument(skip(self, params), fields(format = ?params.format()))]
     pub async fn export_metrics(
         &self,
-        Parameters(ExportMetricsParams { format }): Parameters<ExportMetricsParams>,
+        Parameters(params): Parameters<ExportMetricsParams>,
     ) -> Result<Json<ExportMetricsResult>, rmcp::ErrorData> {
         use rmcp::model::ErrorCode;
         use std::borrow::Cow;
 
+        let format = *params.format();
         debug!(?format, "Exporting metrics");
 
         // Check if metrics collector is available
