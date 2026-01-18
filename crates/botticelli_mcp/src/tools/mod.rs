@@ -3,7 +3,6 @@
 mod bot_commands;
 mod elicitation;
 mod metrics;
-mod narrative;
 mod narrative_creation;
 mod narrative_processor;
 pub mod narrative_utils;
