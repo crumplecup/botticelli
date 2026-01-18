@@ -19,10 +19,10 @@ pub(super) fn to_mcp_error<E: std::fmt::Display + std::fmt::Debug>(
     // Log the full error with debug representation
     error!(error = ?err, context = context, "Error occurred");
 
-    // Convert to ErrorData with context
+    // Convert to ErrorData with context (use Debug format to preserve structure)
     rmcp::ErrorData::new(
         ErrorCode::INTERNAL_ERROR,
-        Cow::Owned(format!("{}: {}", context, err)),
+        Cow::Owned(format!("{}: {:?}", context, err)),
         None,
     )
 }
