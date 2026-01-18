@@ -207,4 +207,23 @@ impl ActConfig {
         self.inputs = inputs;
         self
     }
+
+    /// Set inputs in-place (mutable setter).
+    ///
+    /// This is used for runtime modifications to act configurations,
+    /// such as injecting user prompts.
+    #[tracing::instrument(skip(self, inputs), fields(input_count = inputs.len()))]
+    pub fn set_inputs(&mut self, inputs: Vec<Input>) {
+        tracing::debug!("Mutating inputs");
+        self.inputs = inputs;
+    }
+
+    /// Set max_tokens in-place (mutable setter).
+    ///
+    /// This is used for runtime overrides to act configurations.
+    #[tracing::instrument(skip(self))]
+    pub fn set_max_tokens(&mut self, max_tokens: Option<u32>) {
+        tracing::debug!(max_tokens = ?max_tokens, "Mutating max_tokens");
+        self.max_tokens = max_tokens;
+    }
 }

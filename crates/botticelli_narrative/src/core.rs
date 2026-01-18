@@ -293,6 +293,15 @@ impl Narrative {
             .filter_map(|name| self.acts.get(name).map(|config| (name.as_str(), config)))
             .collect()
     }
+
+    /// Returns mutable access to the acts HashMap.
+    ///
+    /// This allows modification of act configurations, useful for applying
+    /// runtime overrides to inputs, max_tokens, etc.
+    #[tracing::instrument(skip(self))]
+    pub fn acts_mut(&mut self) -> &mut HashMap<String, ActConfig> {
+        &mut self.acts
+    }
 }
 
 impl FromStr for Narrative {
