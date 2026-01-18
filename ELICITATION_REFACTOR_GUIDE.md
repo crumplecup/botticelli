@@ -14,10 +14,12 @@ We have **two separate elicitation systems** that need to be unified:
    - Uses old `pmcp` protocol
 
 2. **New RMCP system** (`src/rmcp_server/tools/elicitation.rs`): 367 lines
-   - Basic tools: elicit_text, elicit_bool, elicit_number, elicit_select
+   - **Reinventing the wheel:** elicit_text, elicit_bool, elicit_number, elicit_select
+     - These duplicate functionality already in elicitation crate for basic Rust types
+     - `String`, `bool`, `i32`, `u32` etc. already have `.elicit()` implemented
    - More advanced: elicit_act, elicit_metadata, elicit_carousel
    - Uses new `rmcp` protocol
-   - Uses DialogResource for interaction
+   - Uses DialogResource for interaction wrapper
 
 3. **Standalone parameter types** (`src/elicit_*.rs`): 4 files (3.6KB)
    - Parameter/Result structs for each elicitation type
@@ -35,6 +37,15 @@ The `elicitation` crate provides a trait-based system for conversational value e
 - `Survey` - Multi-field elicitation (struct pattern)
 - `Authorize` - Permission policies (planned)
 
+**Already Implemented for Standard Types:**
+The elicitation crate **already implements** `.elicit()` for all basic Rust types:
+- **Primitives:** `i8`, `i16`, `i32`, `i64`, `i128`, `u8`, `u16`, `u32`, `u64`, `u128`, `f32`, `f64`, `bool`
+- **Strings:** `String`, `&str`
+- **Collections:** `Vec<T>`, `Option<T>`, `HashMap<K, V>`
+- **Other:** `char`, `PathBuf`, etc.
+
+**This means our elicit_text, elicit_bool, elicit_number, elicit_select handlers are redundant!**
+
 **Derive Macros:**
 - `#[derive(Elicit)]` on enums → implements Select
 - `#[derive(Elicit)]` on structs → implements Survey
@@ -46,6 +57,7 @@ use elicitation::{Elicitation, ElicitResult};
 use rmcp::service::{Peer, RoleClient};
 
 async fn example(client: &Peer<RoleClient>) -> ElicitResult<()> {
+    // Basic types already work - no custom handlers needed!
     let age: i32 = i32::elicit(client).await?;
     let name: Option<String> = Option::<String>::elicit(client).await?;
     let scores: Vec<i32> = Vec::<i32>::elicit(client).await?;
@@ -107,7 +119,7 @@ pub struct ActConfig {
 
 ### Phase 3: Replace Direct MCP Calls with Trait Calls
 
-**Before (direct MCP):**
+**Before (reinventing the wheel):**
 ```rust
 pub async fn elicit_text(
     &self,
@@ -119,13 +131,27 @@ pub async fn elicit_text(
 }
 ```
 
-**After (trait-based):**
+**After (use built-in implementations):**
 ```rust
-pub async fn elicit<T: Elicitation>(
-    &self,
+// No custom handler needed! String already has .elicit()
+use elicitation::Elicitation;
+use rmcp::service::{Peer, RoleClient};
+
+// Direct usage:
+let text: String = String::elicit(client).await?;
+let number: i32 = i32::elicit(client).await?;
+let confirmed: bool = bool::elicit(client).await?;
+
+// If we need a generic wrapper for ToolRegistry:
+pub async fn elicit_value<T>(
     client: &Peer<RoleClient>,
-) -> ElicitResult<T> {
-    T::elicit(client).await
+) -> Result<T, rmcp::ErrorData>
+where
+    T: Elicitation + std::fmt::Debug,
+{
+    T::elicit(client)
+        .await
+        .map_err(convert_elicit_error)
 }
 ```
 
@@ -236,23 +262,26 @@ where
 ### Step 4: Update Call Sites
 
 **Actions:**
-1. Replace `elicit_text()` → `String::elicit()`
-2. Replace `elicit_bool()` → `bool::elicit()`
-3. Replace `elicit_number()` → `i32::elicit()` / `u32::elicit()`
-4. Replace `elicit_select()` → `MyEnum::elicit()`
+1. Replace `elicit_text()` → `String::elicit()` (built-in)
+2. Replace `elicit_bool()` → `bool::elicit()` (built-in)
+3. Replace `elicit_number()` → `i32::elicit()` / `u32::elicit()` (built-in)
+4. Replace `elicit_select()` → `MyEnum::elicit()` (derive)
 5. Update tests to use trait-based API
 
 **Migration pattern:**
 ```rust
-// Before:
+// Before (reinventing the wheel with params/results):
 let params = ElicitTextParams::new("Enter name:");
 let result = server.elicit_text(Parameters(params)).await?;
 let name = result.value();
 
-// After:
+// After (use built-in implementation):
 use elicitation::Elicitation;
 let name: String = String::elicit(&client).await?;
+// That's it! No params, no result wrapper, just the value.
 ```
+
+**The revelation:** Our entire elicit_text/bool/number/select infrastructure was duplicating functionality that the elicitation crate already provides for all basic Rust types. We only need derives for our custom types!
 
 ### Step 5: Test Migration
 
@@ -275,8 +304,10 @@ let name: String = String::elicit(&client).await?;
 ## Benefits
 
 ### Code Reduction
-- **Before:** 978+ lines across multiple implementations
-- **After:** ~100 lines of trait-based wrappers + derives on types
+- **Before:** 978+ lines across multiple implementations + reinvented wheel for basic types
+- **After:** Only derives on custom types (elicitation crate handles all basic types)
+- **Estimated:** 50-100 lines total (just derives + error conversion)
+- **Key insight:** We don't need elicit_text, elicit_bool, elicit_number handlers at all!
 
 ### Type Safety
 - Compile-time guarantees for elicitable types
