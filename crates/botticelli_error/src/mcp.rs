@@ -15,11 +15,38 @@ pub struct SerdeJsonError {
     file: &'static str,
 }
 
+/// Database error with source tracking.
+#[cfg(feature = "database")]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[display("Database error: {:?} at {}:{}", source, file, line)]
+pub struct DatabaseMcpError {
+    /// The database error source
+    source: Box<crate::DatabaseError>,
+    /// Line number where error was created
+    line: u32,
+    /// File where error was created
+    file: &'static str,
+}
+
 #[cfg(feature = "serde_json")]
 impl SerdeJsonError {
     /// Create a new SerdeJsonError with automatic location tracking.
     #[track_caller]
     pub fn new(err: serde_json::Error) -> Self {
+        let location = std::panic::Location::caller();
+        Self {
+            source: Box::new(err),
+            line: location.line(),
+            file: location.file(),
+        }
+    }
+}
+
+#[cfg(feature = "database")]
+impl DatabaseMcpError {
+    /// Create a new DatabaseMcpError with automatic location tracking.
+    #[track_caller]
+    pub fn new(err: crate::DatabaseError) -> Self {
         let location = std::panic::Location::caller();
         Self {
             source: Box::new(err),
@@ -45,6 +72,18 @@ impl Clone for SerdeJsonError {
     }
 }
 
+#[cfg(feature = "database")]
+impl Clone for DatabaseMcpError {
+    fn clone(&self) -> Self {
+        // DatabaseError implements Clone, so this is straightforward
+        Self {
+            source: self.source.clone(),
+            line: self.line,
+            file: self.file,
+        }
+    }
+}
+
 #[cfg(feature = "serde_json")]
 impl PartialEq for SerdeJsonError {
     fn eq(&self, other: &Self) -> bool {
@@ -55,13 +94,34 @@ impl PartialEq for SerdeJsonError {
     }
 }
 
+#[cfg(feature = "database")]
+impl PartialEq for DatabaseMcpError {
+    fn eq(&self, other: &Self) -> bool {
+        // DatabaseError implements PartialEq
+        self.source == other.source && self.line == other.line && self.file == other.file
+    }
+}
+
 #[cfg(feature = "serde_json")]
 impl Eq for SerdeJsonError {}
+
+#[cfg(feature = "database")]
+impl Eq for DatabaseMcpError {}
 
 #[cfg(feature = "serde_json")]
 impl std::hash::Hash for SerdeJsonError {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.source.to_string().hash(state);
+        self.line.hash(state);
+        self.file.hash(state);
+    }
+}
+
+#[cfg(feature = "database")]
+impl std::hash::Hash for DatabaseMcpError {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // DatabaseError implements Hash
+        self.source.hash(state);
         self.line.hash(state);
         self.file.hash(state);
     }
@@ -74,6 +134,15 @@ pub enum McpErrorKind {
     #[cfg(feature = "serde_json")]
     #[display("JSON error: {}", _0)]
     Json(SerdeJsonError),
+    
+    /// Database error
+    #[cfg(feature = "database")]
+    #[display("Database error: {}", _0)]
+    Database(DatabaseMcpError),
+    
+    /// Narrative error
+    #[display("Narrative error: {}", _0)]
+    Narrative(crate::NarrativeError),
     
     /// RMCP protocol error (message + code)
     #[display("RMCP error: {} (code {})", message, code)]
@@ -143,6 +212,15 @@ pub enum McpErrorKind {
         /// Source error
         source: Arc<std::env::VarError>,
     },
+    
+    /// IO error with source
+    #[display("IO error: {}", message)]
+    Io {
+        /// Error message
+        message: String,
+        /// Source error
+        source: Arc<std::io::Error>,
+    },
 }
 
 /// From implementations for automatic error conversion
@@ -157,6 +235,26 @@ impl From<serde_json::Error> for McpErrorKind {
 impl From<SerdeJsonError> for McpErrorKind {
     fn from(err: SerdeJsonError) -> Self {
         Self::Json(err)
+    }
+}
+
+#[cfg(feature = "database")]
+impl From<crate::DatabaseError> for McpErrorKind {
+    fn from(err: crate::DatabaseError) -> Self {
+        Self::Database(DatabaseMcpError::new(err))
+    }
+}
+
+#[cfg(feature = "database")]
+impl From<DatabaseMcpError> for McpErrorKind {
+    fn from(err: DatabaseMcpError) -> Self {
+        Self::Database(err)
+    }
+}
+
+impl From<crate::NarrativeError> for McpErrorKind {
+    fn from(err: crate::NarrativeError) -> Self {
+        Self::Narrative(err)
     }
 }
 
@@ -273,6 +371,15 @@ impl McpError {
             source: Arc::new(source),
         })
     }
+    
+    /// Create an IO error with source.
+    #[track_caller]
+    pub fn io_error(message: impl Into<String>, source: std::io::Error) -> Self {
+        Self::new(McpErrorKind::Io {
+            message: message.into(),
+            source: Arc::new(source),
+        })
+    }
 }
 
 /// From implementations for external errors to McpError
@@ -284,25 +391,30 @@ impl From<serde_json::Error> for McpError {
     }
 }
 
+#[cfg(feature = "database")]
+impl From<crate::DatabaseError> for McpError {
+    #[track_caller]
+    fn from(err: crate::DatabaseError) -> Self {
+        Self::new(McpErrorKind::from(err))
+    }
+}
+
+impl From<crate::NarrativeError> for McpError {
+    #[track_caller]
+    fn from(err: crate::NarrativeError) -> Self {
+        Self::new(McpErrorKind::from(err))
+    }
+}
+
 #[cfg(feature = "mcp")]
 impl From<rmcp::ErrorData> for McpError {
     #[track_caller]
     fn from(error: rmcp::ErrorData) -> Self {
         // Map rmcp error code to appropriate McpErrorKind
-        let kind = match error.code {
-            rmcp::model::ErrorCode::INVALID_PARAMS => {
-                McpErrorKind::InvalidInput(error.message.to_string())
-            }
-            rmcp::model::ErrorCode::INTERNAL_ERROR => {
-                McpErrorKind::ExecutionFailed(error.message.to_string())
-            }
-            rmcp::model::ErrorCode::METHOD_NOT_FOUND => {
-                McpErrorKind::ToolNotFound(error.message.to_string())
-            }
-            _ => McpErrorKind::ExecutionFailed(error.message.to_string()),
-        };
-        
-        Self::new(kind)
+        Self::new(McpErrorKind::Rmcp {
+            code: error.code.0,
+            message: error.message.to_string(),
+        })
     }
 }
 
