@@ -55,8 +55,7 @@ impl SamplingSessionManager {
         // Run sampling
         let _result = sampler
             .sample(&mut session, available_tools)
-            .await
-            .map_err(|e| botticelli_error::ChatError::validation_error(e.to_string()))?;
+            .await?;
 
         // Store session
         self.sessions

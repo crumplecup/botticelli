@@ -40,7 +40,7 @@ impl ContentResource {
         let table = parts[0].to_string();
         let id = parts[1]
             .parse::<i32>()
-            .map_err(|e| McpError::parse_int_error(format!("Invalid ID in URI '{}'", parts[1]), e))?;
+            .map_err(|e| McpError::parse_int_error(format!("Invalid ID in URI: '{}'", parts[1]), e))?;
 
         Ok((table, id))
     }
@@ -48,12 +48,11 @@ impl ContentResource {
     /// Queries content from database.
     #[instrument(skip(self))]
     fn query_content(&self, table: &str, id: i32) -> McpResult<serde_json::Value> {
-        let mut conn = establish_connection().map_err(|e| {
-            McpError::execution_failed(format!("Database connection failed: {}", e))
-        })?;
+        let mut conn = establish_connection()
+            .map_err(|e| McpError::database_error("Database connection failed", e))?;
 
         get_content_by_id(&mut conn, table, id as i64)
-            .map_err(|e| McpError::resource_not_found(format!("Content not found: {}", e)))
+            .map_err(|e| McpError::database_error(format!("Content not found in table '{}'", table), e))
     }
 }
 
@@ -87,19 +86,17 @@ impl McpResource for ContentResource {
         let content = self.query_content(&table, id)?;
 
         // Format as JSON
-        serde_json::to_string_pretty(&content)
-            .map_err(|e| McpError::execution_failed(format!("Failed to serialize content: {}", e)))
+        serde_json::to_string_pretty(&content).map_err(McpError::from)
     }
 
     #[instrument(skip(self))]
     async fn list(&self) -> Result<Vec<Self::ResourceInfo>, Self::Error> {
-        let mut conn = establish_connection().map_err(|e| {
-            McpError::execution_failed(format!("Database connection failed: {}", e))
-        })?;
+        let mut conn = establish_connection()
+            .map_err(|e| McpError::database_error("Database connection failed", e))?;
 
         // List recent content (limit 20 for performance)
         let rows = list_content(&mut conn, "content", None, 20)
-            .map_err(|e| McpError::execution_failed(format!("Failed to list content: {}", e)))?;
+            .map_err(|e| McpError::database_error("Failed to list content", e))?;
 
         let resources = rows
             .into_iter()

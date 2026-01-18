@@ -62,12 +62,7 @@ impl SamplingCoordinator {
         let _result = self
             .sampler
             .sample(&mut session, &tools)
-            .await
-            .map_err(|e| {
-                botticelli_error::ChatError::new(botticelli_error::ChatErrorKind::ExecutionFailed(
-                    e.to_string(),
-                ))
-            })?;
+            .await?;
 
         // TODO: Extract narrative from session after LLM tool calling
         // For now, return a placeholder
@@ -99,12 +94,7 @@ impl SamplingCoordinator {
         let _result = self
             .sampler
             .sample(&mut session, &tools)
-            .await
-            .map_err(|e| {
-                botticelli_error::ChatError::new(botticelli_error::ChatErrorKind::ExecutionFailed(
-                    e.to_string(),
-                ))
-            })?;
+            .await?;
 
         // TODO: Apply refinements from LLM tool calling
         Ok(narrative)

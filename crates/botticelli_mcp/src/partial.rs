@@ -252,7 +252,7 @@ impl PartialNarrative {
         botticelli_narrative::Narrative::from_toml_str(&toml, self.name().as_deref())
             .map_err(|e| {
                 warn!(error = %e, "Failed to create Narrative from TOML");
-                McpError::execution_failed(e.to_string())
+                McpError::from(e)
             })
     }
 }
@@ -274,7 +274,7 @@ impl RegistryOperations for PartialNarrative {
         
         serde_json::from_value(args).map_err(|e| {
             warn!(error = %e, "Failed to deserialize PartialNarrative");
-            McpError::invalid_input(format!("Failed to deserialize PartialNarrative: {}", e))
+            McpError::from(e)
         })
     }
 
@@ -287,7 +287,7 @@ impl RegistryOperations for PartialNarrative {
         
         serde_json::to_value(self).map_err(|e| {
             warn!(error = %e, "Failed to serialize PartialNarrative");
-            McpError::execution_failed(format!("Failed to serialize PartialNarrative: {}", e))
+            McpError::from(e)
         })
     }
 

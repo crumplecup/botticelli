@@ -1,6 +1,6 @@
 //! Registry for managing active narrative creation sessions.
 
-use botticelli_error::{McpError, McpErrorKind, McpResult};
+use botticelli_error::{McpError, McpResult};
 use botticelli_interface::RegistryOperations;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
@@ -73,7 +73,7 @@ impl<T: RegistryOperations<Key = String>> NarrativeRegistry<T> {
 
         narrative
             .update_from_json(args)
-            .map_err(|e| McpError::new(McpErrorKind::ExecutionFailed(e.to_string())))?;
+            .map_err(|e| McpError::execution_failed(format!("{:?}", e)))?;
         tracing::debug!("Updated narrative");
         Ok(())
     }
@@ -229,7 +229,7 @@ where
             .map_err(|e: McpError| botticelli_error::BotticelliError::from(e))?;
         // Convert narrative to JSON for state representation
         serde_json::to_value(&narrative).map_err(|e| {
-            botticelli_error::BotticelliError::from(McpError::execution_failed(e.to_string()))
+            botticelli_error::BotticelliError::from(McpError::from(e))
         })
     }
 

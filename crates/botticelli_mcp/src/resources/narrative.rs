@@ -64,12 +64,14 @@ impl NarrativeResource {
         debug!(path = %path.display(), "Reading narrative file");
 
         fs::read_to_string(&path).map_err(|e| {
-            McpError::resource_not_found(format!(
-                "Failed to read narrative '{}' at {}: {}",
-                name,
-                path.display(),
-                e
-            ))
+            McpError::io_error(
+                format!(
+                    "Failed to read narrative '{}' at {}",
+                    name,
+                    path.display()
+                ),
+                e,
+            )
         })
     }
 
@@ -81,17 +83,15 @@ impl NarrativeResource {
         }
 
         let entries = fs::read_dir(&self.narratives_dir).map_err(|e| {
-            McpError::execution_failed(format!(
-                "Failed to read narratives directory {}: {}",
-                self.narratives_dir.display(),
-                e
-            ))
+            McpError::io_error(
+                format!("Failed to read narratives directory {}", self.narratives_dir.display()),
+                e,
+            )
         })?;
 
         let mut narratives = Vec::new();
         for entry in entries {
-            let entry = entry
-                .map_err(|e| McpError::execution_failed(format!("Failed to read entry: {}", e)))?;
+            let entry = entry.map_err(|e| McpError::io_error("Failed to read entry", e))?;
             let path = entry.path();
 
             if path.extension().and_then(|s| s.to_str()) == Some("toml") {
