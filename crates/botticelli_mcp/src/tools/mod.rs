@@ -1,12 +1,8 @@
 //! Tool implementations for MCP server.
 
 mod bot_commands;
-mod create_narrative;
 mod elicitation;
-mod elicitation_primitives;
-mod elicitation_tools;
 mod metrics;
-mod modify_narrative;
 mod narrative;
 mod narrative_creation;
 mod narrative_processor;
@@ -15,7 +11,6 @@ pub mod narrative_validation_helpers;
 mod prometheus;
 mod sampling;
 mod sampling_session_manager;
-mod save_narrative;
 
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 // All tool structs migrated to rmcp - tools now accessed via ToolRegistry delegation
