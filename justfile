@@ -584,20 +584,13 @@ check-features package='':
     command -v cargo-hack >/dev/null 2>&1 || (echo "❌ cargo-hack not installed. Run: cargo install cargo-hack" && exit 1)
     
     LOG_FILE="/tmp/botticelli-check-features.log"
-    rm -f "$LOG_FILE"
     
-    # Run feature gate checks and capture output
-    if ./scripts/feature-gate-check.sh "{{ package }}" 2>&1 | tee "$LOG_FILE"; then
-        if [ -s "$LOG_FILE" ] && grep -qE "^(warning:|error:|\s+\^|error\[)" "$LOG_FILE"; then
-            echo "⚠️  Feature gate checks completed with warnings/errors. See: $LOG_FILE"
-            exit 1
-        else
-            echo "✅ All feature gate checks passed!"
-            rm -f "$LOG_FILE"
-        fi
+    if [ -n "{{ package }}" ]; then
+        echo "🔍 Checking all feature combinations for {{ package }}"
+        cargo hack check -p {{ package }} --each-feature --no-dev-deps 2>&1 | tee "$LOG_FILE"
     else
-        echo "❌ Feature gate checks failed. See: $LOG_FILE"
-        exit 1
+        echo "🔍 Checking all feature combinations for workspace"
+        cargo hack check --workspace --each-feature --no-dev-deps 2>&1 | tee "$LOG_FILE"
     fi
 
 # Run all checks (lint, format check, tests)
