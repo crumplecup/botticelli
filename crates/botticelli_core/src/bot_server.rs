@@ -1,9 +1,10 @@
 //! Bot server types.
 
+use elicitation::{Prompt, Select};
 use std::time::Duration;
 
 /// State of a bot actor.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, elicitation::Elicit)]
 pub enum BotState {
     /// Bot is starting up.
     Starting,

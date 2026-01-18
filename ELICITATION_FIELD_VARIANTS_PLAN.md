@@ -1,6 +1,184 @@
 # Elicitation Crate Enhancement Plan
 ## Support for Enum Variants with Fields
 
+## Core Philosophy: Values as State Machines
+
+**Central Principle:** Every value provokes an elicitation. Complex values aren't "big prompts" - they're **state machines** where:
+- Each state represents "what information satisfied so far?"
+- Each transition represents "elicit the next piece"
+- Terminal state is "value fully constructed"
+
+### The Pattern Hierarchy
+
+**Primitive → Single State**
+```rust
+i32::elicit() → "Enter number:" → 42
+// State machine: [Start] → [Elicit] → [Terminal]
+```
+
+**Enum Unit Variant → Select (one transition)**
+```rust
+Role::elicit() → Select(System|User|Assistant) → Role::User
+// State machine: [Start] → [Select] → [Terminal]
+```
+
+**Enum Tuple Variant → Select + Sequential States**
+```rust
+MediaSource::elicit() 
+  → Select(Url|Base64|Binary)     // State 1: variant selected
+  → String::elicit()               // State 2: field_0 satisfied
+  → MediaSource::Url(value)        // Terminal: value complete
+
+// State machine: [Start] → [Select Variant] → [Elicit Field] → [Construct] → [Terminal]
+```
+
+**Enum Struct Variant → Select + Multi-Field States**
+```rust
+Input::elicit()
+  → Select(Text|Image|Document)          // State 1: variant = Image
+  → Option<String>::elicit() for mime    // State 2: mime satisfied
+  → MediaSource::elicit() for source     // State 3: source satisfied (NESTED STATE MACHINE)
+  → Input::Image { mime, source }        // Terminal
+
+// Each field is a state transition. Nested types run their own state machines.
+```
+
+**Struct → Survey (N states for N fields)**
+```rust
+ActConfig::elicit()
+  → name: String::elicit()               // State 1
+  → prompt: Option<String>::elicit()     // State 2
+  → max_tokens: Option<u32>::elicit()    // State 3
+  → ActConfig { name, prompt, max_tokens }  // Terminal
+```
+
+### The Beautiful Recursion
+
+**Key:** Complex values compose because elicitation is recursive by construction. Each field type knows how to elicit itself:
+
+```rust
+struct Image {
+    mime: Option<String>,      // Option<T> handles its own state machine
+    source: MediaSource,       // MediaSource handles its own state machine
+}
+
+// Image elicitation just delegates to field state machines:
+impl Elicitation for Image {
+    async fn elicit(client) -> Result<Self> {
+        let mime = Option::<String>::elicit(client).await?;    // Delegate
+        let source = MediaSource::elicit(client).await?;       // Delegate
+        Ok(Image { mime, source })                             // Compose
+    }
+}
+```
+
+**The derive macro codifies this recursion pattern.**
+
+### State Machine Visualization
+
+**MediaSource::Url(String):**
+```
+┌─────────────┐
+│  Start      │
+└──────┬──────┘
+       │ "Select media source:"
+       ▼
+┌──────────────┐
+│ State 1:     │ Select from: [Url, Base64, Binary]
+│ Variant      │
+└──────┬───────┘
+       │ User: "Url"
+       ▼
+┌──────────────┐
+│ State 2:     │ String::elicit() - "Enter URL:"
+│ field_0      │
+└──────┬───────┘
+       │ User: "https://..."
+       ▼
+┌──────────────┐
+│ Terminal:    │ MediaSource::Url("https://...")
+│ Construct    │
+└──────────────┘
+```
+
+**Input::Image (nested state machines):**
+```
+┌─────────────┐
+│  Start      │
+└──────┬──────┘
+       │ "Select input type:"
+       ▼
+┌──────────────┐
+│ State 1:     │ Select: [Text, Image, Document]
+│ Variant      │
+└──────┬───────┘
+       │ User: "Image"
+       ▼
+┌──────────────┐
+│ State 2:     │ Option<String>::elicit()
+│ field: mime  │   └→ Some("image/png")
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────────────────┐
+│ State 3:                     │ MediaSource::elicit()
+│ field: source                │   └→ NESTED STATE MACHINE:
+│                              │       [Start] → [Select Variant: Url]
+│  ┌─────────────────────┐    │              → [Elicit String]
+│  │ MediaSource state   │    │              → [Return Url(...)]
+│  │ machine runs        │    │
+│  └─────────────────────┘    │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│ Terminal:                    │
+│ Input::Image {               │
+│   mime: Some("image/png"),   │
+│   source: Url("https://...")│
+│ }                            │
+└──────────────────────────────┘
+```
+
+### Why State Machines?
+
+**1. Composability:** Each type is self-contained. Complex types = nested state machines.
+
+**2. Uniform Interface:** Everything is `.elicit()`. Whether `i32` or `Input::Image`, same API.
+
+**3. Automatic Orchestration:** Derive macro generates state transitions from structure.
+
+**4. Type Safety:** Compiler ensures all fields implement `Elicitation` - composition guaranteed.
+
+**5. Observable:** Each state transition traced → complete visibility into flow.
+
+**6. Interruptible:** Failure at any state preserves partial progress + clear error context.
+
+### Design Implications
+
+**We're not "adding tuple variant support"** - we're **extending the state machine generator** to handle more transition types.
+
+The macro's job:
+1. **Analyze value structure** → How many states? What transitions?
+2. **Generate state transitions** → What elicitation at each state?
+3. **Compose final value** → Terminal state constructor
+
+Unit variant = 1 state (select), tuple variant = N+1 states (select + N fields), struct variant = N+1 states (select + N named fields). Same pattern, different arity.
+
+### Answers to Design Questions
+
+**Field prompts?** Each field is its own state, uses type's default prompt. Field-level `#[prompt]` can be v0.3.0.
+
+**Error handling?** Fail-fast at any state. Stack preserves partial progress for debugging.
+
+**Recursion depth?** Unlimited. Each recursive call is just another state machine. User controls termination.
+
+**Large tuples?** Sequential states work fine - just a longer state machine (like structs with many fields).
+
+**Variant labels?** Use ident as-is (current). Human-friendly can be v0.3.0 if needed.
+
+---
+
 ## Executive Summary
 
 The elicitation crate currently supports unit-variant enums (Select pattern) and structs with named fields (Survey pattern). This document outlines a detailed implementation plan to extend support to enum variants with fields - both tuple variants `Variant(T)` and struct variants `Variant { field: T }`.
@@ -983,55 +1161,47 @@ The derive macro automatically generates the appropriate elicitation logic based
 
 ## Open Design Questions
 
-### 1. Field-Level Prompts
+### All Questions Answered via State Machine Philosophy
 
-For struct variant fields with `#[prompt]`, should we:
+**1. Field-Level Prompts**
 
-**A)** Ignore for now (use type's default prompt)
-**B)** Extend Elicitation trait with `elicit_with_prompt()`
-**C)** Use builder pattern for custom prompts
+~~Question: Should we extend Elicitation trait with `elicit_with_prompt()`?~~
 
-**Recommendation:** Option A for v0.2.0, Option B for v0.3.0 if needed.
+**Answer:** Each field is its own state transition. The field's type controls its prompt via `Prompt` trait. Field-level `#[prompt]` attributes are sugar for documentation - the type's prompt is what matters. Can add override API in v0.3.0 if UX demands it.
 
-### 2. Tuple Field Prompts
+**v0.2.0 approach:** Use type's default prompt. Field docstrings explain purpose.
 
-For tuple variants, how should we prompt?
+**2. Variant Label Generation**
 
-**A)** Generic: "Enter value for field 0:", "Enter value for field 1:"
-**B)** Type-based: "Enter String:", "Enter i32:"
-**C)** Variant-aware: "Enter URL:", "Enter port number:"
+~~Question: Ident as-is vs human-friendly vs configurable?~~
 
-**Recommendation:** Option B (type-based) - clear and automatic.
+**Answer:** Use ident as-is (current behavior). The variant name IS the label. If users want "URL" instead of "Url", they name the variant `URL`. Keep it simple - one source of truth.
 
-### 3. Large Tuple Handling
+**v0.2.0 approach:** `ident.to_string()` for labels. No magic transformations.
 
-For variants with 5+ fields, should we:
+**3. Large Tuple Variants**
 
-**A)** Elicit all sequentially (simple, consistent)
-**B)** Warn/error if too many fields
-**C)** Allow `#[skip]` with defaults
+~~Question: Elicit all vs warn vs allow skip?~~
 
-**Recommendation:** Option A for v0.2.0. Users can refactor if needed.
+**Answer:** Sequential states work regardless of count. A 10-field tuple is just a state machine with 10 transitions. Same as a 10-field struct. No artificial limits. If it's overwhelming, user refactors to named struct.
 
-### 4. Recursive Enum Depth
+**v0.2.0 approach:** Elicit all fields sequentially. No warnings, no limits.
 
-For self-referential enums (Tree, LinkedList), should we:
+**4. Error Handling**
 
-**A)** Allow unlimited recursion (user terminates)
-**B)** Add configurable depth limit
-**C)** Require manual implementation
+~~Question: Abort vs retry vs collect-then-validate?~~
 
-**Recommendation:** Option A - trust the user to handle termination.
+**Answer:** Fail-fast at any state. The call stack preserves partial progress (which states completed). Error context shows which transition failed. Clean semantics: either you get a value or an error.
 
-### 5. Error Recovery
+**v0.2.0 approach:** First elicitation error aborts, returns with context.
 
-If field elicitation fails midway, should we:
+**5. Recursive Enums**
 
-**A)** Abort and return error (fail-fast)
-**B)** Allow retry of specific field
-**C)** Collect all errors, report at end
+~~Question: Unlimited vs depth limit vs manual impl?~~
 
-**Recommendation:** Option A for v0.2.0 (simplest). Option B for v0.3.0 if UX needs it.
+**Answer:** Unlimited recursion. Each recursive call is another state machine. For `Tree` with `Node { left: Box<Tree>, right: Box<Tree> }`, user creates leaves by selecting a non-recursive variant (e.g., `Leaf`). Natural termination via variant choice.
+
+**v0.2.0 approach:** Allow unbounded recursion. Trust user to terminate via variant selection.
 
 ---
 

@@ -1,6 +1,7 @@
 //! Streaming response types.
 
 use crate::Output;
+use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 
 /// A single chunk from a streaming response.
@@ -45,6 +46,7 @@ impl StreamChunk {
     Serialize,
     Deserialize,
     strum::EnumIter,
+    elicitation::Elicit,
 )]
 pub enum FinishReason {
     /// Model completed naturally.
