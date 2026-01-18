@@ -1,5 +1,6 @@
 //! Output types from LLM responses.
 
+use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 
 /// Supported output types from LLMs.
@@ -102,9 +103,19 @@ pub struct ToolCall {
 /// let reason = StopReason::EndTurn;
 /// assert_eq!(format!("{:?}", reason), "EndTurn");
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    Default,
+    elicitation::Elicit,
+)]
 #[serde(rename_all = "snake_case")]
-#[derive(Default)]
 pub enum StopReason {
     /// Model finished generating naturally (end of turn).
     #[default]

@@ -1,5 +1,6 @@
 //! Repository types for narrative persistence.
 
+use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 
 /// Filter criteria for querying executions.
@@ -72,6 +73,7 @@ pub struct ExecutionSummary {
     Deserialize,
     derive_more::Display,
     strum::EnumString,
+    elicitation::Elicit,
 )]
 #[strum(serialize_all = "lowercase")]
 pub enum ExecutionStatus {

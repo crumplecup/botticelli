@@ -1,5 +1,6 @@
 //! Role types for conversation participants.
 
+use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 
 /// Roles are the same across modalities (text, image, etc.)
@@ -28,6 +29,7 @@ use serde::{Deserialize, Serialize};
     Serialize,
     Deserialize,
     derive_more::Display,
+    elicitation::Elicit,
 )]
 pub enum Role {
     /// System messages provide context and instructions
