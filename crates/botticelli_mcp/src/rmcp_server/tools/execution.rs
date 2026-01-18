@@ -2,7 +2,15 @@
 //!
 //! Tools for generating content and executing narrative acts.
 
-use crate::rmcp_server::helpers::{default_model, to_mcp_error};
+use crate::rmcp_server::helpers::default_model;
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "ollama",
+    feature = "huggingface",
+    feature = "groq"
+))]
+use crate::rmcp_server::helpers::to_mcp_error;
 use crate::rmcp_server::BotticelliServer;
 use crate::{
     CreateNarrativeSessionParams, CreateNarrativeSessionResult, ExecuteActParams,

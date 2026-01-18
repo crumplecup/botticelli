@@ -102,11 +102,5 @@ pub use validate_narrative::{
     ValidateNarrativeParams, ValidateNarrativeParamsBuilder, ValidateNarrativeResult, ValidationError, ValidationLocation,
     ValidationWarning,
 };
-
-#[cfg(feature = "discord")]
-pub use tools::{
-    DiscordGetChannelsTool, DiscordGetGuildInfoTool, DiscordGetMessagesTool, DiscordPostMessageTool,
-};
-
 #[cfg(feature = "database")]
 pub use resources::ContentResource;
