@@ -40,6 +40,9 @@ tracing-subscriber = { workspace = true }
 # Environment
 dotenvy = { workspace = true }
 
+# CLI parsing
+clap = { workspace = true }
+
 # Time
 chrono = { workspace = true }
 
@@ -107,14 +110,9 @@ llm = ["gemini", "anthropic", "ollama", "huggingface", "groq"]
 execution = ["llm"]  # Enable execution features
 
 [[bin]]
-name = "botticelli-mcp"
-path = "src/bin/botticelli-mcp.rs"
+name = "botticelli_mcp"
+path = "src/main.rs"
 required-features = ["llm"]
-
-[[bin]]
-name = "botticelli-mcp-http"
-path = "src/bin/botticelli-mcp-http.rs"
-required-features = ["http", "llm"]
 
 [package.metadata.docs.rs]
 all-features = true
