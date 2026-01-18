@@ -11,11 +11,7 @@ async fn test_elicit_number_without_dialog() -> anyhow::Result<()> {
     tracing::info!("Testing elicit_number without dialog resource");
 
     let server = BotticelliServer::builder().build();
-    let params = ElicitNumberParams {
-        prompt: "Enter a number:".to_string(),
-        min: 1,
-        max: 10,
-    };
+    let params = ElicitNumberParams::new("Enter a number:".to_string(), 1, 10);
 
     let result = server.elicit_number(Parameters(params)).await;
     tracing::debug!(is_err = result.is_err(), "Call completed");
@@ -36,11 +32,7 @@ async fn test_elicit_number_invalid_range() -> anyhow::Result<()> {
     tracing::info!("Testing elicit_number with invalid range");
 
     let server = BotticelliServer::builder().build();
-    let params = ElicitNumberParams {
-        prompt: "Enter a number:".to_string(),
-        min: 10,
-        max: 1,
-    };
+    let params = ElicitNumberParams::new("Enter a number:".to_string(), 10, 1);
 
     let result = server.elicit_number(Parameters(params)).await;
     tracing::debug!(is_err = result.is_err(), "Call completed with invalid range");
@@ -73,11 +65,11 @@ async fn test_elicit_number_params_serialization() -> anyhow::Result<()> {
     });
 
     let params: ElicitNumberParams = serde_json::from_value(json_value)?;
-    tracing::debug!(prompt = %params.prompt, min = params.min, max = params.max, "Deserialized params");
+    tracing::debug!(prompt = %params.prompt(), min = params.min(), max = params.max(), "Deserialized params");
 
-    assert_eq!(params.prompt, "Pick a number:");
-    assert_eq!(params.min, 5);
-    assert_eq!(params.max, 15);
+    assert_eq!(params.prompt(), "Pick a number:");
+    assert_eq!(*params.min(), 5);
+    assert_eq!(*params.max(), 15);
 
     tracing::info!("Params serialization test passed");
     Ok(())
@@ -90,7 +82,7 @@ async fn test_elicit_number_result_serialization() -> anyhow::Result<()> {
 
     let result = ElicitNumberResult::new(42);
 
-    assert_eq!(result.value, 42);
+    assert_eq!(*result.value(), 42);
 
     let json = serde_json::to_value(&result)?;
     tracing::debug!(?json, "Serialized result");
@@ -106,15 +98,11 @@ async fn test_elicit_number_valid_range() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing valid range parameters");
 
-    let params = ElicitNumberParams {
-        prompt: "Enter a number:".to_string(),
-        min: 0,
-        max: 100,
-    };
+    let params = ElicitNumberParams::new("Enter a number:".to_string(), 0, 100);
 
     // Validate that min <= max is accepted
-    tracing::debug!(min = params.min, max = params.max, "Checking valid range");
-    assert!(params.min <= params.max, "Valid range should be accepted");
+    tracing::debug!(min = params.min(), max = params.max(), "Checking valid range");
+    assert!(*params.min() <= *params.max(), "Valid range should be accepted");
 
     tracing::info!("Valid range test passed");
     Ok(())
@@ -125,15 +113,11 @@ async fn test_elicit_number_equal_min_max() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing equal min/max parameters");
 
-    let params = ElicitNumberParams {
-        prompt: "Confirm value:".to_string(),
-        min: 5,
-        max: 5,
-    };
+    let params = ElicitNumberParams::new("Confirm value:".to_string(), 5, 5);
 
     // Equal min and max should be valid (single value choice)
-    tracing::debug!(min = params.min, max = params.max, "Checking equal min/max");
-    assert_eq!(params.min, params.max, "Equal min/max should be valid");
+    tracing::debug!(min = params.min(), max = params.max(), "Checking equal min/max");
+    assert_eq!(*params.min(), *params.max(), "Equal min/max should be valid");
 
     tracing::info!("Equal min/max test passed");
     Ok(())

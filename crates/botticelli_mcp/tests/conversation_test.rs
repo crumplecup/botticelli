@@ -12,17 +12,17 @@ fn test_conversation_session_creation() -> anyhow::Result<()> {
 
     let session = ConversationSession::new("You are a helpful assistant");
     tracing::debug!(
-        id = %session.id,
-        system_prompt = %session.system_prompt,
+        id = %session.id(),
+        system_prompt = %session.system_prompt(),
         turn_count = session.turn_count(),
         "Created session"
     );
 
-    assert!(!session.id.is_empty());
-    assert_eq!(session.system_prompt, "You are a helpful assistant");
+    assert!(!session.id().is_empty());
+    assert_eq!(session.system_prompt(), "You are a helpful assistant");
     assert_eq!(session.turn_count(), 0);
     assert!(session.is_active());
-    assert_eq!(session.max_turns, 50);
+    assert_eq!(*session.max_turns(), 50);
 
     tracing::info!("Session creation test passed");
     Ok(())
@@ -121,10 +121,9 @@ fn test_max_turns_exceeded() -> anyhow::Result<()> {
     tracing::info!("Testing max turns exceeded");
 
     let mut session = ConversationSession::new("Test");
-    session.max_turns = 3;
 
-    // Add 3 turns
-    for i in 1..=3 {
+    // Default max_turns is 50, add exactly 50 turns
+    for i in 1..=50 {
         session.add_turn(ConversationTurn::UserMessage {
             content: "Test".to_string(),
             attachments: None,
@@ -138,7 +137,7 @@ fn test_max_turns_exceeded() -> anyhow::Result<()> {
         "Reached max turns"
     );
 
-    assert_eq!(session.turn_count(), 3);
+    assert_eq!(session.turn_count(), 50);
     assert!(!session.is_active());
 
     tracing::info!("Max turns exceeded test passed");

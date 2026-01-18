@@ -11,10 +11,10 @@ async fn test_elicit_select_without_dialog() -> anyhow::Result<()> {
     tracing::info!("Testing elicit_select without dialog resource");
 
     let server = BotticelliServer::builder().build();
-    let params = ElicitSelectParams {
-        prompt: "Choose one:".to_string(),
-        options: vec!["Option A".to_string(), "Option B".to_string()],
-    };
+    let params = ElicitSelectParams::new(
+        "Choose one:".to_string(),
+        vec!["Option A".to_string(), "Option B".to_string()],
+    );
 
     let result = server.elicit_select(Parameters(params)).await;
     tracing::debug!(is_err = result.is_err(), "Call completed");
@@ -35,10 +35,10 @@ async fn test_elicit_select_empty_options() -> anyhow::Result<()> {
     tracing::info!("Testing elicit_select with empty options");
 
     let server = BotticelliServer::builder().build();
-    let params = ElicitSelectParams {
-        prompt: "Choose one:".to_string(),
-        options: vec![],
-    };
+    let params = ElicitSelectParams::new(
+        "Choose one:".to_string(),
+        vec![],
+    );
 
     let result = server.elicit_select(Parameters(params)).await;
     tracing::debug!(is_err = result.is_err(), "Call completed with empty options");
@@ -70,13 +70,13 @@ async fn test_elicit_select_params_serialization() -> anyhow::Result<()> {
     });
 
     let params: ElicitSelectParams = serde_json::from_value(json_value)?;
-    tracing::debug!(prompt = %params.prompt, option_count = params.options.len(), "Deserialized params");
+    tracing::debug!(prompt = %params.prompt(), option_count = params.options().len(), "Deserialized params");
 
-    assert_eq!(params.prompt, "Pick a color:");
-    assert_eq!(params.options.len(), 3);
-    assert_eq!(params.options[0], "Red");
-    assert_eq!(params.options[1], "Green");
-    assert_eq!(params.options[2], "Blue");
+    assert_eq!(params.prompt(), "Pick a color:");
+    assert_eq!(params.options().len(), 3);
+    assert_eq!(params.options()[0], "Red");
+    assert_eq!(params.options()[1], "Green");
+    assert_eq!(params.options()[2], "Blue");
 
     tracing::info!("Params serialization test passed");
     Ok(())
@@ -89,7 +89,7 @@ async fn test_elicit_select_result_serialization() -> anyhow::Result<()> {
 
     let result = ElicitSelectResult::new("Option A".to_string());
 
-    assert_eq!(result.value, "Option A");
+    assert_eq!(result.value(), "Option A");
 
     let json = serde_json::to_value(&result)?;
     tracing::debug!(?json, "Serialized result");
@@ -105,14 +105,14 @@ async fn test_elicit_select_single_option() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing single option");
 
-    let params = ElicitSelectParams {
-        prompt: "Confirm:".to_string(),
-        options: vec!["Only Option".to_string()],
-    };
+    let params = ElicitSelectParams::new(
+        "Confirm:".to_string(),
+        vec!["Only Option".to_string()],
+    );
 
     // Single option should be valid
-    tracing::debug!(option_count = params.options.len(), "Checking single option");
-    assert_eq!(params.options.len(), 1, "Single option should be valid");
+    tracing::debug!(option_count = params.options().len(), "Checking single option");
+    assert_eq!(params.options().len(), 1, "Single option should be valid");
 
     tracing::info!("Single option test passed");
     Ok(())
@@ -123,14 +123,14 @@ async fn test_elicit_select_many_options() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing many options");
 
-    let params = ElicitSelectParams {
-        prompt: "Choose a number:".to_string(),
-        options: (1..=10).map(|i| format!("Option {}", i)).collect(),
-    };
+    let params = ElicitSelectParams::new(
+        "Choose a number:".to_string(),
+        (1..=10).map(|i| format!("Option {}", i)).collect(),
+    );
 
     // Many options should be valid
-    tracing::debug!(option_count = params.options.len(), "Checking many options");
-    assert_eq!(params.options.len(), 10, "Many options should be valid");
+    tracing::debug!(option_count = params.options().len(), "Checking many options");
+    assert_eq!(params.options().len(), 10, "Many options should be valid");
 
     tracing::info!("Many options test passed");
     Ok(())

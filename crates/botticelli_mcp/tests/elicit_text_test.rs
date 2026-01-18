@@ -13,9 +13,7 @@ async fn test_elicit_text_without_dialog() -> anyhow::Result<()> {
     let server = BotticelliServer::builder().build();
     tracing::debug!("Created server without dialog");
 
-    let params = ElicitTextParams {
-        prompt: "Enter your name:".to_string(),
-    };
+    let params = ElicitTextParams::new("Enter your name:".to_string());
 
     let result = server.elicit_text(Parameters(params)).await;
     tracing::debug!(is_err = result.is_err(), "Call completed");
@@ -42,9 +40,9 @@ async fn test_elicit_text_params_serialization() -> anyhow::Result<()> {
     });
 
     let params: ElicitTextParams = serde_json::from_value(json_value)?;
-    tracing::debug!(prompt = %params.prompt, "Deserialized params");
+    tracing::debug!(prompt = %params.prompt(), "Deserialized params");
 
-    assert_eq!(params.prompt, "What is your favorite color?");
+    assert_eq!(params.prompt(), "What is your favorite color?");
 
     tracing::info!("Params serialization test passed");
     Ok(())
@@ -57,7 +55,7 @@ async fn test_elicit_text_result_serialization() -> anyhow::Result<()> {
 
     let result = ElicitTextResult::new("Blue".to_string());
 
-    assert_eq!(result.value, "Blue");
+    assert_eq!(result.value(), "Blue");
 
     let json = serde_json::to_value(&result)?;
     tracing::debug!(?json, "Serialized result");

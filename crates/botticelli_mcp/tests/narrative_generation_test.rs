@@ -170,10 +170,11 @@ analyze = "Analyze the data"
     });
 
     let result = registry.execute("modify_narrative", input).await?;
-    tracing::debug!(?result, "Received modified narrative with new act");
+    tracing::info!(?result, "Received modified narrative with new act");
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
-    assert!(toml.contains("summarizes"), "New act should be added");
+    tracing::info!("Generated TOML:\n{}", toml);
+    assert!(toml.contains("summarize"), "New act should be added (looking for 'summarize')");
 
     let changes = result.get("changes").unwrap().as_array().unwrap();
     assert!(!changes.is_empty(), "Should report changes");

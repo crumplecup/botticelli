@@ -11,10 +11,7 @@ async fn test_elicit_bool_without_dialog() -> anyhow::Result<()> {
     tracing::info!("Testing elicit_bool without dialog resource");
 
     let server = BotticelliServer::builder().build();
-    let params = ElicitBoolParams {
-        prompt: "Do you agree?".to_string(),
-        default: false,
-    };
+    let params = ElicitBoolParams::new("Do you agree?".to_string(), false);
 
     let result = server.elicit_bool(Parameters(params)).await;
     tracing::debug!(is_err = result.is_err(), "Call completed");
@@ -42,10 +39,10 @@ async fn test_elicit_bool_params_serialization() -> anyhow::Result<()> {
     });
 
     let params: ElicitBoolParams = serde_json::from_value(json_value)?;
-    tracing::debug!(prompt = %params.prompt, default = params.default, "Deserialized params");
+    tracing::debug!(prompt = %params.prompt(), default = params.default(), "Deserialized params");
 
-    assert_eq!(params.prompt, "Continue?");
-    assert_eq!(params.default, true);
+    assert_eq!(params.prompt(), "Continue?");
+    assert_eq!(*params.default(), true);
 
     tracing::info!("Params serialization test passed");
     Ok(())
@@ -63,10 +60,10 @@ async fn test_elicit_bool_params_default_value() -> anyhow::Result<()> {
     });
 
     let params: ElicitBoolParams = serde_json::from_value(json_value)?;
-    tracing::debug!(default = params.default, "Deserialized with default");
+    tracing::debug!(default = params.default(), "Deserialized with default");
 
-    assert_eq!(params.prompt, "Continue?");
-    assert_eq!(params.default, false, "Should default to false");
+    assert_eq!(params.prompt(), "Continue?");
+    assert_eq!(*params.default(), false, "Should default to false");
 
     tracing::info!("Default value test passed");
     Ok(())
@@ -79,7 +76,7 @@ async fn test_elicit_bool_result_serialization() -> anyhow::Result<()> {
 
     let result = ElicitBoolResult::new(true);
 
-    assert_eq!(result.value, true);
+    assert_eq!(*result.value(), true);
 
     let json = serde_json::to_value(&result)?;
     tracing::debug!(?json, "Serialized result");

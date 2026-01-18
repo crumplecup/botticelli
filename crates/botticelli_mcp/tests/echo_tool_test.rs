@@ -15,15 +15,13 @@ async fn test_echo_basic_message() -> anyhow::Result<()> {
     let server = BotticelliServer::builder().build();
     tracing::debug!("Created BotticelliServer");
 
-    let params = EchoParams {
-        message: "Hello, MCP!".to_string(),
-    };
+    let params = EchoParams::new("Hello, MCP!".to_string());
 
     let result = server.echo(Parameters(params)).await?;
-    tracing::debug!(echo = %result.0.echo, timestamp = %result.0.timestamp, "Received echo response");
+    tracing::debug!(echo = %result.0.echo(), timestamp = %result.0.timestamp(), "Received echo response");
 
-    assert_eq!(result.0.echo, "Hello, MCP!");
-    assert!(!result.0.timestamp.is_empty());
+    assert_eq!(result.0.echo(), "Hello, MCP!");
+    assert!(!result.0.timestamp().is_empty());
 
     tracing::info!("Basic echo test passed");
     Ok(())
@@ -35,14 +33,12 @@ async fn test_echo_empty_message() -> anyhow::Result<()> {
     tracing::info!("Testing echo with empty message");
 
     let server = BotticelliServer::builder().build();
-    let params = EchoParams {
-        message: String::new(),
-    };
+    let params = EchoParams::new(String::new());
 
     let result = server.echo(Parameters(params)).await?;
-    tracing::debug!(echo_len = result.0.echo.len(), "Received empty echo response");
+    tracing::debug!(echo_len = result.0.echo().len(), "Received empty echo response");
 
-    assert_eq!(result.0.echo, "");
+    assert_eq!(result.0.echo(), "");
 
     tracing::info!("Empty echo test passed");
     Ok(())
@@ -54,14 +50,12 @@ async fn test_echo_unicode_message() -> anyhow::Result<()> {
     tracing::info!("Testing echo with unicode");
 
     let server = BotticelliServer::builder().build();
-    let params = EchoParams {
-        message: "Hello 世界 🌍".to_string(),
-    };
+    let params = EchoParams::new("Hello 世界 🌍".to_string());
 
     let result = server.echo(Parameters(params)).await?;
-    tracing::debug!(echo = %result.0.echo, "Received unicode echo response");
+    tracing::debug!(echo = %result.0.echo(), "Received unicode echo response");
 
-    assert_eq!(result.0.echo, "Hello 世界 🌍");
+    assert_eq!(result.0.echo(), "Hello 世界 🌍");
 
     tracing::info!("Unicode echo test passed");
     Ok(())

@@ -27,30 +27,31 @@ name = "intro"
 objective = "Test objective"
 "#;
 
-    let params = ValidateNarrativeParams {
-        content: Some(valid_toml.to_string()),
-        file_path: None,
-        validate_files: false,
-        validate_models: true,
-        warn_unused: true,
-        strict: false,
-    };
+    let params = ValidateNarrativeParams::builder()
+        .content(Some(valid_toml.to_string()))
+        .file_path(None)
+        .validate_files(false)
+        .validate_models(true)
+        .warn_unused(true)
+        .strict(false)
+        .build()
+        .expect("Valid params");
 
     let result = server.validate_narrative(Parameters(params)).await?;
     tracing::debug!(
-        valid = result.0.valid,
-        error_count = result.0.errors.len(),
-        warning_count = result.0.warnings.len(),
+        valid = result.0.valid(),
+        error_count = result.0.errors().len(),
+        warning_count = result.0.warnings().len(),
         "Validation result"
     );
 
     // The narrative might have validation issues based on the validator's requirements
     // Check that we got a result structure (tool succeeded)
-    assert!(!result.0.summary.is_empty(), "Should have a summary");
+    assert!(!result.0.summary().is_empty(), "Should have a summary");
 
     // If there are errors, they're related to the TOML structure, not the tool
-    if !result.0.errors.is_empty() {
-        tracing::debug!(errors = ?result.0.errors, "Validation errors");
+    if !result.0.errors().is_empty() {
+        tracing::debug!(errors = ?result.0.errors(), "Validation errors");
     }
 
     tracing::info!("Valid content test passed");
@@ -69,20 +70,21 @@ title = "Test
 # Missing closing quote - syntax error
 "#;
 
-    let params = ValidateNarrativeParams {
-        content: Some(invalid_toml.to_string()),
-        file_path: None,
-        validate_files: false,
-        validate_models: true,
-        warn_unused: true,
-        strict: false,
-    };
+    let params = ValidateNarrativeParams::builder()
+        .content(Some(invalid_toml.to_string()))
+        .file_path(None)
+        .validate_files(false)
+        .validate_models(true)
+        .warn_unused(true)
+        .strict(false)
+        .build()
+        .expect("Valid params");
 
     let result = server.validate_narrative(Parameters(params)).await?;
-    tracing::debug!(valid = result.0.valid, error_count = result.0.errors.len(), "Validation result");
+    tracing::debug!(valid = result.0.valid(), error_count = result.0.errors().len(), "Validation result");
 
-    assert!(!result.0.valid, "Invalid TOML should fail validation");
-    assert!(!result.0.errors.is_empty(), "Should have errors");
+    assert!(!*result.0.valid(), "Invalid TOML should fail validation");
+    assert!(!result.0.errors().is_empty(), "Should have errors");
 
     tracing::info!("Invalid TOML test passed");
     Ok(())
@@ -109,20 +111,21 @@ objective = "Test"
 
     fs::write(&file_path, valid_toml).await?;
 
-    let params = ValidateNarrativeParams {
-        content: None,
-        file_path: Some(file_path.to_string_lossy().to_string()),
-        validate_files: false,
-        validate_models: true,
-        warn_unused: true,
-        strict: false,
-    };
+    let params = ValidateNarrativeParams::builder()
+        .content(None)
+        .file_path(Some(file_path.to_string_lossy().to_string()))
+        .validate_files(false)
+        .validate_models(true)
+        .warn_unused(true)
+        .strict(false)
+        .build()
+        .expect("Valid params");
 
     let result = server.validate_narrative(Parameters(params)).await?;
-    tracing::debug!(has_summary = !result.0.summary.is_empty(), "Validation result");
+    tracing::debug!(has_summary = !result.0.summary().is_empty(), "Validation result");
 
     // Should complete successfully (may have validation errors in content, but tool works)
-    assert!(!result.0.summary.is_empty());
+    assert!(!result.0.summary().is_empty());
 
     tracing::info!("From file test passed");
     Ok(())
@@ -135,14 +138,15 @@ async fn test_validate_narrative_file_not_found() -> anyhow::Result<()> {
 
     let server = BotticelliServer::builder().build();
 
-    let params = ValidateNarrativeParams {
-        content: None,
-        file_path: Some("/nonexistent/path/to/file.toml".to_string()),
-        validate_files: false,
-        validate_models: true,
-        warn_unused: true,
-        strict: false,
-    };
+    let params = ValidateNarrativeParams::builder()
+        .content(None)
+        .file_path(Some("/nonexistent/path/to/file.toml".to_string()))
+        .validate_files(false)
+        .validate_models(true)
+        .warn_unused(true)
+        .strict(false)
+        .build()
+        .expect("Valid params");
 
     let result = server.validate_narrative(Parameters(params)).await;
     tracing::debug!(is_err = result.is_err(), "Validation result");
@@ -160,14 +164,15 @@ async fn test_validate_narrative_neither_content_nor_file() -> anyhow::Result<()
 
     let server = BotticelliServer::builder().build();
 
-    let params = ValidateNarrativeParams {
-        content: None,
-        file_path: None,
-        validate_files: false,
-        validate_models: true,
-        warn_unused: true,
-        strict: false,
-    };
+    let params = ValidateNarrativeParams::builder()
+        .content(None)
+        .file_path(None)
+        .validate_files(false)
+        .validate_models(true)
+        .warn_unused(true)
+        .strict(false)
+        .build()
+        .expect("Valid params");
 
     let result = server.validate_narrative(Parameters(params)).await;
     tracing::debug!(is_err = result.is_err(), "Validation result");
@@ -198,26 +203,27 @@ objective = "Test"
 model = "gpt-unknown-model"
 "#;
 
-    let params = ValidateNarrativeParams {
-        content: Some(toml_with_warnings.to_string()),
-        file_path: None,
-        validate_files: false,
-        validate_models: true,
-        warn_unused: true,
-        strict: true,
-    };
+    let params = ValidateNarrativeParams::builder()
+        .content(Some(toml_with_warnings.to_string()))
+        .file_path(None)
+        .validate_files(false)
+        .validate_models(true)
+        .warn_unused(true)
+        .strict(true)
+        .build()
+        .expect("Valid params");
 
     let result = server.validate_narrative(Parameters(params)).await?;
     tracing::debug!(
-        valid = result.0.valid,
-        warning_count = result.0.warnings.len(),
+        valid = result.0.valid(),
+        warning_count = result.0.warnings().len(),
         "Validation result in strict mode"
     );
 
     // In strict mode, warnings should make it invalid
-    if !result.0.warnings.is_empty() {
+    if !result.0.warnings().is_empty() {
         assert!(
-            !result.0.valid,
+            !*result.0.valid(),
             "Should be invalid in strict mode with warnings"
         );
     }
@@ -242,26 +248,27 @@ name = "act1"
 objective = "Test"
 "#;
 
-    let params = ValidateNarrativeParams {
-        content: Some(valid_toml.to_string()),
-        file_path: None,
-        validate_files: false,
-        validate_models: true,
-        warn_unused: true,
-        strict: false,
-    };
+    let params = ValidateNarrativeParams::builder()
+        .content(Some(valid_toml.to_string()))
+        .file_path(None)
+        .validate_files(false)
+        .validate_models(true)
+        .warn_unused(true)
+        .strict(false)
+        .build()
+        .expect("Valid params");
 
     let result = server.validate_narrative(Parameters(params)).await?;
-    tracing::debug!(summary = %result.0.summary, "Validation result");
+    tracing::debug!(summary = %result.0.summary(), "Validation result");
 
     // Check result structure
-    assert!(!result.0.summary.is_empty(), "Should have summary");
+    assert!(!result.0.summary().is_empty(), "Should have summary");
     assert!(
-        result.0.summary.contains("error"),
+        result.0.summary().contains("error"),
         "Summary should mention errors"
     );
     assert!(
-        result.0.summary.contains("warning"),
+        result.0.summary().contains("warning"),
         "Summary should mention warnings"
     );
 
@@ -274,14 +281,15 @@ async fn test_validate_narrative_params_serialization() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing ValidateNarrativeParams serialization");
 
-    let params = ValidateNarrativeParams {
-        content: Some("test".to_string()),
-        file_path: None,
-        validate_files: false,
-        validate_models: true,
-        warn_unused: true,
-        strict: false,
-    };
+    let params = ValidateNarrativeParams::builder()
+        .content(Some("test".to_string()))
+        .file_path(None)
+        .validate_files(false)
+        .validate_models(true)
+        .warn_unused(true)
+        .strict(false)
+        .build()
+        .expect("Valid params");
 
     let json = serde_json::to_value(&params)?;
     tracing::debug!(?json, "Serialized params");

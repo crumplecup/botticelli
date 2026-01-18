@@ -19,12 +19,7 @@ fn test_create_narrative_params_serialization() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing CreateNarrativeParams serialization");
 
-    let params = CreateNarrativeParams {
-        description: "Fetch data then analyze it".to_string(),
-        name: "test_narrative".to_string(),
-        default_model: Some("gemini-2.0-flash-exp".to_string()),
-        default_temperature: Some(0.7),
-    };
+    let params = CreateNarrativeParams::new("Fetch data then analyze it".to_string(), "test_narrative".to_string(), Some("gemini-2.0-flash-exp".to_string()), Some(0.7));
 
     let json = serde_json::to_value(&params)?;
     tracing::debug!(?json, "Serialized params");
@@ -42,12 +37,7 @@ fn test_create_narrative_params_serialization() -> anyhow::Result<()> {
 fn test_create_narrative_params_optional_fields() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing CreateNarrativeParams with optional fields");
-    let params = CreateNarrativeParams {
-        description: "Process data".to_string(),
-        name: "simple".to_string(),
-        default_model: None,
-        default_temperature: None,
-    };
+    let params = CreateNarrativeParams::new("Process data".to_string(), "simple".to_string(), None, None);
 
     let json = serde_json::to_value(&params)?;
     tracing::debug!(?json, "Serialized params with optional fields");
@@ -99,12 +89,7 @@ async fn test_create_narrative_basic() -> anyhow::Result<()> {
 
     let server = BotticelliServer::builder().build();
 
-    let params = CreateNarrativeParams {
-        description: "Fetch data from API then analyze the results".to_string(),
-        name: "data_analysis".to_string(),
-        default_model: None,
-        default_temperature: None,
-    };
+    let params = CreateNarrativeParams::new("Fetch data from API then analyze the results".to_string(), "data_analysis".to_string(), None, None);
 
     let result = server
         .create_narrative(Parameters(params))
@@ -142,12 +127,7 @@ async fn test_create_narrative_with_defaults() -> anyhow::Result<()> {
 
     let server = BotticelliServer::builder().build();
 
-    let params = CreateNarrativeParams {
-        description: "Generate a report".to_string(),
-        name: "report_generator".to_string(),
-        default_model: Some("claude-3-5-sonnet-20241022".to_string()),
-        default_temperature: Some(0.5),
-    };
+    let params = CreateNarrativeParams::new("Generate a report".to_string(), "report_generator".to_string(), Some("claude-3-5-sonnet-20241022".to_string()), Some(0.5));
 
     let result = server
         .create_narrative(Parameters(params))
@@ -171,12 +151,7 @@ async fn test_create_narrative_invalid_name() -> anyhow::Result<()> {
 
     let server = BotticelliServer::builder().build();
 
-    let params = CreateNarrativeParams {
-        description: "Do something".to_string(),
-        name: "123-invalid-name!".to_string(), // Invalid: starts with number, has hyphen and !
-        default_model: None,
-        default_temperature: None,
-    };
+    let params = CreateNarrativeParams::new("Do something".to_string(), "123-invalid-name!".to_string(), None, None);
 
     let result = server.create_narrative(Parameters(params)).await;
 
@@ -196,14 +171,12 @@ async fn test_create_narrative_complex_description() -> anyhow::Result<()> {
 
     let server = BotticelliServer::builder().build();
 
-    let params = CreateNarrativeParams {
-        description:
-            "First fetch user data, then process the data, and finally generate a summary report"
-                .to_string(),
-        name: "user_report".to_string(),
-        default_model: None,
-        default_temperature: None,
-    };
+    let params = CreateNarrativeParams::new(
+        "First fetch user data, then process the data, and finally generate a summary report".to_string(),
+        "user_report".to_string(),
+        None,
+        None
+    );
 
     let result = server
         .create_narrative(Parameters(params))
@@ -228,11 +201,11 @@ async fn test_create_narrative_complex_description() -> anyhow::Result<()> {
 
 #[test]
 fn test_modify_narrative_params_serialization() {
-    let params = ModifyNarrativeParams {
-        narrative_toml: "[narrative]\nname = \"test\"\n".to_string(),
-        modification: "add act that validates the data".to_string(),
-        save_to: Some("/tmp/narrative.toml".to_string()),
-    };
+    let params = ModifyNarrativeParams::new(
+        "[narrative]\nname = \"test\"\n".to_string(),
+        "add act that validates the data".to_string(),
+        Some("/tmp/narrative.toml".to_string())
+    );
 
     let json = serde_json::to_value(&params).expect("Should serialize");
 
@@ -282,11 +255,11 @@ order = [\"fetch\"]
 fetch = \"Get data\"
 ";
 
-    let params = ModifyNarrativeParams {
-        narrative_toml: original_toml.to_string(),
-        modification: "add act that validates the data".to_string(),
-        save_to: None,
-    };
+    let params = ModifyNarrativeParams::new(
+        original_toml.to_string(),
+        "add act that validates the data".to_string(),
+        None
+    );
 
     let result = server
         .modify_narrative(Parameters(params))
@@ -295,11 +268,11 @@ fetch = \"Get data\"
     let result: ModifyNarrativeResult = result.0;
 
     // Check that act was added
-    assert!(result.toml.contains("validates"));
-    assert!(result.changes.iter().any(|c| c.contains("Added act")));
+    assert!(result.toml().contains("validates"));
+    assert!(result.changes().iter().any(|c: &String| c.contains("Added act")));
 
     // Should still be valid
-    let validation: Value = result.validation;
+    let validation: Value = result.validation().clone();
     assert_eq!(validation["valid"], true);
 
     tracing::info!("Add act test passed");
@@ -325,11 +298,11 @@ fetch = \"Get data\"
 process = \"Process data\"
 ";
 
-    let params = ModifyNarrativeParams {
-        narrative_toml: original_toml.to_string(),
-        modification: "remove act process".to_string(),
-        save_to: None,
-    };
+    let params = ModifyNarrativeParams::new(
+        original_toml.to_string(),
+        "remove act process".to_string(),
+        None
+    );
 
     let result = server
         .modify_narrative(Parameters(params))
@@ -338,12 +311,12 @@ process = \"Process data\"
     let result: ModifyNarrativeResult = result.0;
 
     // Check that act was removed
-    assert!(!result.toml.contains("process = \"Process data\""));
+    assert!(!result.toml().contains("process = \"Process data\""));
     assert!(
         result
-            .changes
+            .changes()
             .iter()
-            .any(|c| c.contains("Removed act 'process'"))
+            .any(|c: &String| c.contains("Removed act 'process'"))
     );
 
     tracing::info!("Remove act test passed");
@@ -368,11 +341,11 @@ order = [\"fetch\"]
 fetch = \"Get data\"
 ";
 
-    let params = ModifyNarrativeParams {
-        narrative_toml: original_toml.to_string(),
-        modification: "use claude model".to_string(),
-        save_to: None,
-    };
+    let params = ModifyNarrativeParams::new(
+        original_toml.to_string(),
+        "use claude model".to_string(),
+        None
+    );
 
     let result = server
         .modify_narrative(Parameters(params))
@@ -384,10 +357,10 @@ fetch = \"Get data\"
     // Check that model was added/changed
     assert!(
         result
-            .toml
+            .toml()
             .contains("model = \"claude-3-5-sonnet-20241022\"")
     );
-    assert!(result.changes.iter().any(|c| c.contains("Changed model")));
+    assert!(result.changes().iter().any(|c: &String| c.contains("Changed model")));
 
     tracing::info!("Change model test passed");
     Ok(())
@@ -411,11 +384,11 @@ order = [\"fetch\"]
 fetch = \"Get data\"
 ";
 
-    let params = ModifyNarrativeParams {
-        narrative_toml: original_toml.to_string(),
-        modification: "set temperature to 0.8".to_string(),
-        save_to: None,
-    };
+    let params = ModifyNarrativeParams::new(
+        original_toml.to_string(),
+        "set temperature to 0.8".to_string(),
+        None
+    );
 
     let result = server
         .modify_narrative(Parameters(params))
@@ -424,12 +397,12 @@ fetch = \"Get data\"
     let result: ModifyNarrativeResult = result.0;
 
     // Check that temperature was added/changed
-    assert!(result.toml.contains("temperature = 0.8"));
+    assert!(result.toml().contains("temperature = 0.8"));
     assert!(
         result
-            .changes
+            .changes()
             .iter()
-            .any(|c| c.contains("Changed temperature"))
+            .any(|c: &String| c.contains("Changed temperature"))
     );
 
     tracing::info!("Change temperature test passed");
@@ -443,11 +416,11 @@ async fn test_modify_narrative_unknown_modification() -> anyhow::Result<()> {
 
     let server = BotticelliServer::builder().build();
 
-    let params = ModifyNarrativeParams {
-        narrative_toml: "[narrative]\nname = \"test\"\n".to_string(),
-        modification: "do something completely unknown".to_string(),
-        save_to: None,
-    };
+    let params = ModifyNarrativeParams::new(
+        "[narrative]\nname = \"test\"\n".to_string(),
+        "do something completely unknown".to_string(),
+        None
+    );
 
     let result = server.modify_narrative(Parameters(params)).await;
 
@@ -480,11 +453,11 @@ order = [\"fetch\"]
 fetch = \"Get data\"
 ";
 
-    let params = ModifyNarrativeParams {
-        narrative_toml: original_toml.to_string(),
-        modification: "use gemini model".to_string(),
-        save_to: Some(save_path.to_string_lossy().to_string()),
-    };
+    let params = ModifyNarrativeParams::new(
+        original_toml.to_string(),
+        "use gemini model".to_string(),
+        Some(save_path.to_string_lossy().to_string())
+    );
 
     let result = server
         .modify_narrative(Parameters(params))
@@ -494,7 +467,7 @@ fetch = \"Get data\"
     let result: ModifyNarrativeResult = result.0;
 
     // Check that file was saved
-    assert!(result.saved_to.is_some());
+    assert!(result.saved_to().is_some());
     assert!(save_path.exists(), "File should be created");
 
     // Verify file contents
@@ -509,11 +482,7 @@ fetch = \"Get data\"
 
 #[test]
 fn test_save_narrative_params_serialization() {
-    let params = SaveNarrativeParams {
-        narrative_toml: "[narrative]\nname = \"test\"\n".to_string(),
-        file_path: "/tmp/test.toml".to_string(),
-        overwrite: true,
-    };
+    let params = SaveNarrativeParams::new("[narrative]\nname = \"test\"\n".to_string(), "/tmp/test.toml".to_string(), true);
 
     let json = serde_json::to_value(&params).expect("Should serialize");
 
@@ -529,11 +498,7 @@ fn test_save_narrative_params_serialization() {
 
 #[test]
 fn test_save_narrative_params_default_overwrite() {
-    let params = SaveNarrativeParams {
-        narrative_toml: "content".to_string(),
-        file_path: "/tmp/test.toml".to_string(),
-        overwrite: false,
-    };
+    let params = SaveNarrativeParams::new("content".to_string(), "/tmp/test.toml".to_string(), false);
 
     let json = serde_json::to_value(&params).expect("Should serialize");
 
@@ -572,11 +537,7 @@ order = [\"fetch\"]
 fetch = \"Get data\"
 ";
 
-    let params = SaveNarrativeParams {
-        narrative_toml: narrative_toml.to_string(),
-        file_path: file_path.to_string_lossy().to_string(),
-        overwrite: false,
-    };
+    let params = SaveNarrativeParams::new(narrative_toml.to_string(), file_path.to_string_lossy().to_string(), false);
 
     let result = server
         .save_narrative(Parameters(params))
@@ -586,9 +547,9 @@ fetch = \"Get data\"
     let result: SaveNarrativeResult = result.0;
 
     // Check result
-    assert_eq!(result.status, "saved");
-    assert_eq!(result.size_bytes, narrative_toml.len());
-    assert!(!result.overwritten);
+    assert_eq!(result.status(), "saved");
+    assert_eq!(*result.size_bytes(), narrative_toml.len());
+    assert!(!*result.overwritten());
 
     // Verify file was created
     assert!(file_path.exists(), "File should exist");
@@ -602,11 +563,11 @@ fetch = \"Get data\"
 async fn test_save_narrative_invalid_extension() {
     let server = BotticelliServer::builder().build();
 
-    let params = SaveNarrativeParams {
-        narrative_toml: "content".to_string(),
-        file_path: "/tmp/test.txt".to_string(), // Wrong extension
-        overwrite: false,
-    };
+    let params = SaveNarrativeParams::new(
+        "content".to_string(),
+        "/tmp/test.txt".to_string(), // Wrong extension
+        false
+    );
 
     let result = server.save_narrative(Parameters(params)).await;
 
@@ -625,11 +586,11 @@ async fn test_save_narrative_overwrite_protection() {
     // Create existing file
     fs::write(&file_path, "old content").expect("Should write initial file");
 
-    let params = SaveNarrativeParams {
-        narrative_toml: "new content".to_string(),
-        file_path: file_path.to_string_lossy().to_string(),
-        overwrite: false, // Should fail
-    };
+    let params = SaveNarrativeParams::new(
+        "new content".to_string(),
+        file_path.to_string_lossy().to_string(),
+        false // Should fail
+    );
 
     let result = server.save_narrative(Parameters(params)).await;
 
@@ -652,11 +613,11 @@ async fn test_save_narrative_overwrite_allowed() {
     // Create existing file
     fs::write(&file_path, "old content").expect("Should write initial file");
 
-    let params = SaveNarrativeParams {
-        narrative_toml: "new content".to_string(),
-        file_path: file_path.to_string_lossy().to_string(),
-        overwrite: true, // Allow overwrite
-    };
+    let params = SaveNarrativeParams::new(
+        "new content".to_string(),
+        file_path.to_string_lossy().to_string(),
+        true // Allow overwrite
+    );
 
     let result = server
         .save_narrative(Parameters(params))
@@ -666,7 +627,7 @@ async fn test_save_narrative_overwrite_allowed() {
     let result: SaveNarrativeResult = result.0;
 
     // Check that overwritten flag is set
-    assert!(result.overwritten);
+    assert!(*result.overwritten());
 
     // Verify file was overwritten
     let contents = fs::read_to_string(&file_path).expect("Should read file");
@@ -682,11 +643,7 @@ async fn test_save_narrative_creates_directories() {
     // Ensure parent directories don't exist
     assert!(!file_path.parent().unwrap().exists());
 
-    let params = SaveNarrativeParams {
-        narrative_toml: "content".to_string(),
-        file_path: file_path.to_string_lossy().to_string(),
-        overwrite: false,
-    };
+    let params = SaveNarrativeParams::new("content".to_string(), file_path.to_string_lossy().to_string(), false);
 
     let _result = server
         .save_narrative(Parameters(params))
@@ -707,11 +664,7 @@ async fn test_save_narrative_absolute_path() {
     let temp_dir = TempDir::new().expect("Should create temp dir");
     let file_path = temp_dir.path().join("test.toml");
 
-    let params = SaveNarrativeParams {
-        narrative_toml: "content".to_string(),
-        file_path: file_path.to_string_lossy().to_string(),
-        overwrite: false,
-    };
+    let params = SaveNarrativeParams::new("content".to_string(), file_path.to_string_lossy().to_string(), false);
 
     let result = server
         .save_narrative(Parameters(params))
@@ -721,7 +674,7 @@ async fn test_save_narrative_absolute_path() {
     let result: SaveNarrativeResult = result.0;
 
     // Result should contain absolute path
-    let result_path = Path::new(&result.file_path);
+    let result_path = Path::new(result.file_path());
     assert!(
         result_path.is_absolute(),
         "Returned path should be absolute"
@@ -736,12 +689,7 @@ async fn test_narrative_workflow_create_modify_save() {
     let temp_dir = TempDir::new().expect("Should create temp dir");
 
     // 1. Create a narrative
-    let create_params = CreateNarrativeParams {
-        description: "Fetch user data then generate a report".to_string(),
-        name: "user_report".to_string(),
-        default_model: Some("gemini-2.0-flash-exp".to_string()),
-        default_temperature: Some(0.7),
-    };
+    let create_params = CreateNarrativeParams::new("Fetch user data then generate a report".to_string(), "user_report".to_string(), Some("gemini-2.0-flash-exp".to_string()), Some(0.7));
 
     let created = server
         .create_narrative(Parameters(create_params))
@@ -753,11 +701,11 @@ async fn test_narrative_workflow_create_modify_save() {
     let toml = created.toml().to_string();
 
     // 2. Modify the narrative
-    let modify_params = ModifyNarrativeParams {
-        narrative_toml: toml,
-        modification: "add act that validates the data".to_string(),
-        save_to: None,
-    };
+    let modify_params = ModifyNarrativeParams::new(
+        toml,
+        "add act that validates the data".to_string(),
+        None
+    );
 
     let modified = server
         .modify_narrative(Parameters(modify_params))
@@ -765,16 +713,12 @@ async fn test_narrative_workflow_create_modify_save() {
         .expect("Should modify narrative")
         .0;
 
-    assert!(modified.validation["valid"].as_bool().unwrap());
-    assert!(modified.changes.iter().any(|c| c.contains("Added act")));
+    assert!(modified.validation()["valid"].as_bool().unwrap());
+    assert!(modified.changes().iter().any(|c: &String| c.contains("Added act")));
 
     // 3. Save the narrative
     let save_path = temp_dir.path().join("final_narrative.toml");
-    let save_params = SaveNarrativeParams {
-        narrative_toml: modified.toml.clone(),
-        file_path: save_path.to_string_lossy().to_string(),
-        overwrite: false,
-    };
+    let save_params = SaveNarrativeParams::new(modified.toml().clone(), save_path.to_string_lossy().to_string(), false);
 
     let saved = server
         .save_narrative(Parameters(save_params))
@@ -782,7 +726,7 @@ async fn test_narrative_workflow_create_modify_save() {
         .expect("Should save narrative")
         .0;
 
-    assert_eq!(saved.status, "saved");
+    assert_eq!(saved.status(), "saved");
     assert!(save_path.exists());
 
     // Verify final file contains all expected elements
