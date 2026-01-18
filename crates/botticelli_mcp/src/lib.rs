@@ -74,7 +74,7 @@ pub use execution::{
 pub use export_metrics::{ExportMetricsParams, ExportMetricsResult, MetricsFormat};
 pub use modify_narrative::{ModifyNarrativeParams, ModifyNarrativeResult};
 pub use query_content::{QueryContentParams, QueryContentResult};
-pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
+pub use resources::{NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
 pub use save_narrative::{SaveNarrativeParams, SaveNarrativeResult};
 pub use scene::{
@@ -84,8 +84,8 @@ pub use scene::{
 pub use server_info::ServerInfoResult;
 pub use session_tools::{
     ApplyValidationFixesParams, ApplyValidationFixesResult, CarouselLevel, CarouselSummary,
-    CreateNarrativeSessionParams, CreateNarrativeSessionResult, ElicitActParams, ElicitActResult,
-    ElicitCarouselParams, ElicitCarouselResult, ElicitMetadataParams, ElicitMetadataResult,
+    CreateNarrativeSessionParams, CreateNarrativeSessionResult, ElicitActParams, ElicitActParamsBuilder, ElicitActResult,
+    ElicitCarouselParams, ElicitCarouselResult, ElicitMetadataParams, ElicitMetadataParamsBuilder, ElicitMetadataResult,
     FinalizeNarrativeParams, FinalizeNarrativeResult, GetNarrativeStateParams,
     GetNarrativeStateResult, NarrativeAnalysis, NarrativeStateSummary, StateFormat,
     ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationIssue,
@@ -99,7 +99,7 @@ pub use tools::{
     SamplingHelper, SamplingResult, ToolRegistry,
 };
 pub use validate_narrative::{
-    ValidateNarrativeParams, ValidateNarrativeResult, ValidationError, ValidationLocation,
+    ValidateNarrativeParams, ValidateNarrativeParamsBuilder, ValidateNarrativeResult, ValidationError, ValidationLocation,
     ValidationWarning,
 };
 
