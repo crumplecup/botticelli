@@ -1,5 +1,7 @@
 //! Database error types.
 
+use std::sync::Arc;
+
 #[cfg(feature = "serde_json")]
 use crate::json::SerdeJsonError;
 
@@ -9,7 +11,7 @@ use crate::json::SerdeJsonError;
 #[display("Diesel error: {:?} at {}:{}", source, file, line)]
 pub struct DieselError {
     /// The diesel error source
-    source: Box<diesel::result::Error>,
+    source: Arc<diesel::result::Error>,
     /// Line number where error was created
     line: u32,
     /// File where error was created
@@ -23,7 +25,7 @@ impl DieselError {
     pub fn new(err: diesel::result::Error) -> Self {
         let location = std::panic::Location::caller();
         Self {
-            source: Box::new(err),
+            source: Arc::new(err),
             line: location.line(),
             file: location.file(),
         }
@@ -34,12 +36,32 @@ impl DieselError {
 impl Clone for DieselError {
     fn clone(&self) -> Self {
         Self {
-            source: Box::new(diesel::result::Error::DeserializationError(
-                format!("{:?}", self.source).into(),
-            )),
+            source: Arc::clone(&self.source),
             line: self.line,
             file: self.file,
         }
+    }
+}
+
+#[cfg(feature = "database")]
+impl PartialEq for DieselError {
+    fn eq(&self, other: &Self) -> bool {
+        // Compare by string representation since diesel::Error doesn't impl PartialEq
+        format!("{:?}", self.source) == format!("{:?}", other.source)
+            && self.line == other.line
+            && self.file == other.file
+    }
+}
+
+#[cfg(feature = "database")]
+impl Eq for DieselError {}
+
+#[cfg(feature = "database")]
+impl std::hash::Hash for DieselError {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        format!("{:?}", self.source).hash(state);
+        self.line.hash(state);
+        self.file.hash(state);
     }
 }
 
@@ -49,7 +71,7 @@ impl Clone for DieselError {
 #[display("Diesel connection error: {:?} at {}:{}", source, file, line)]
 pub struct DieselConnectionError {
     /// The diesel connection error source
-    source: Box<diesel::ConnectionError>,
+    source: Arc<diesel::ConnectionError>,
     /// Line number where error was created
     line: u32,
     /// File where error was created
@@ -63,7 +85,7 @@ impl DieselConnectionError {
     pub fn new(err: diesel::ConnectionError) -> Self {
         let location = std::panic::Location::caller();
         Self {
-            source: Box::new(err),
+            source: Arc::new(err),
             line: location.line(),
             file: location.file(),
         }
@@ -74,13 +96,32 @@ impl DieselConnectionError {
 impl Clone for DieselConnectionError {
     fn clone(&self) -> Self {
         Self {
-            source: Box::new(diesel::ConnectionError::BadConnection(format!(
-                "{:?}",
-                self.source
-            ))),
+            source: Arc::clone(&self.source),
             line: self.line,
             file: self.file,
         }
+    }
+}
+
+#[cfg(feature = "database")]
+impl PartialEq for DieselConnectionError {
+    fn eq(&self, other: &Self) -> bool {
+        // Compare by string representation since diesel::ConnectionError doesn't impl PartialEq
+        format!("{:?}", self.source) == format!("{:?}", other.source)
+            && self.line == other.line
+            && self.file == other.file
+    }
+}
+
+#[cfg(feature = "database")]
+impl Eq for DieselConnectionError {}
+
+#[cfg(feature = "database")]
+impl std::hash::Hash for DieselConnectionError {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        format!("{:?}", self.source).hash(state);
+        self.line.hash(state);
+        self.file.hash(state);
     }
 }
 
@@ -90,7 +131,7 @@ impl Clone for DieselConnectionError {
 #[display("R2D2 pool error: {:?} at {}:{}", source, file, line)]
 pub struct R2d2Error {
     /// The r2d2 error source
-    source: Box<r2d2::Error>,
+    source: Arc<r2d2::Error>,
     /// Line number where error was created
     line: u32,
     /// File where error was created
@@ -104,15 +145,48 @@ impl R2d2Error {
     pub fn new(err: r2d2::Error) -> Self {
         let location = std::panic::Location::caller();
         Self {
-            source: Box::new(err),
+            source: Arc::new(err),
             line: location.line(),
             file: location.file(),
         }
     }
 }
 
+#[cfg(feature = "database")]
+impl Clone for R2d2Error {
+    fn clone(&self) -> Self {
+        Self {
+            source: Arc::clone(&self.source),
+            line: self.line,
+            file: self.file,
+        }
+    }
+}
+
+#[cfg(feature = "database")]
+impl PartialEq for R2d2Error {
+    fn eq(&self, other: &Self) -> bool {
+        // Compare by string representation since r2d2::Error doesn't impl PartialEq
+        format!("{:?}", self.source) == format!("{:?}", other.source)
+            && self.line == other.line
+            && self.file == other.file
+    }
+}
+
+#[cfg(feature = "database")]
+impl Eq for R2d2Error {}
+
+#[cfg(feature = "database")]
+impl std::hash::Hash for R2d2Error {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        format!("{:?}", self.source).hash(state);
+        self.line.hash(state);
+        self.file.hash(state);
+    }
+}
+
 /// Database error conditions.
-#[derive(Debug, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
 pub enum DatabaseErrorKind {
     /// Connection failed
     #[display("Database connection error: {}", _0)]
@@ -177,7 +251,7 @@ pub enum DatabaseErrorKind {
 /// let err = DatabaseError::new(DatabaseErrorKind::NotFound);
 /// assert!(format!("{}", err).contains("not found"));
 /// ```
-#[derive(Debug, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Error)]
 #[display("Database Error: {} at line {} in {}", kind, line, file)]
 pub struct DatabaseError {
     /// The kind of error that occurred
