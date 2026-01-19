@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// Note: Cannot derive `Eq`, `Hash`, `PartialOrd`, or `Ord` because the
 /// `Embedding` variant contains `Vec<f32>`, and `f32` does not implement
 /// these traits (floating point is not totally ordered).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, elicitation::Elicit)]
 #[serde(tag = "type", content = "data")]
 pub enum Output {
     /// Plain text output.
@@ -81,6 +81,7 @@ pub enum Output {
     derive_getters::Getters,
     derive_builder::Builder,
     derive_new::new,
+    elicitation::Elicit,
 )]
 pub struct ToolCall {
     /// Unique identifier for this tool call

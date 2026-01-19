@@ -180,7 +180,7 @@ tempfile = "3"
 mockall = "0.14"
 
 # Elicitation framework
-elicitation = "0.2.1"
+elicitation = { version = "0.4.1", features = ["serde_json", "chrono"] }
 
 # MCP (Model Context Protocol)
 rmcp = "0.13"
