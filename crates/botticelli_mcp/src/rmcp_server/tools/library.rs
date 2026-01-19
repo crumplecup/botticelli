@@ -82,6 +82,55 @@ pub struct GetTierInfoResult {
     tier: TierInfo,
 }
 
+/// Parameters for selecting a model.
+#[cfg(feature = "llm")]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
+pub struct SelectModelParams {
+    /// Selection strategy
+    strategy: SelectionStrategy,
+}
+
+/// Result from model selection.
+#[cfg(feature = "llm")]
+#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
+pub struct SelectModelResult {
+    /// Selected model ID
+    model_id: String,
+    
+    /// Strategy used for selection
+    strategy: String,
+}
+
+/// Parameters for inferring schema from JSON.
+#[cfg(feature = "database")]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
+pub struct InferSchemaParams {
+    /// JSON sample data
+    json: String,
+}
+
+/// Inferred column information.
+#[cfg(feature = "database")]
+#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
+pub struct InferredColumn {
+    /// Column name
+    name: String,
+    
+    /// SQL type
+    sql_type: String,
+    
+    /// Whether the column is nullable
+    nullable: bool,
+}
+
+/// Result from schema inference.
+#[cfg(feature = "database")]
+#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
+pub struct InferSchemaResult {
+    /// Inferred columns (sorted by name)
+    columns: Vec<InferredColumn>,
+}
+
 impl BotticelliServer {
     /// Validate narrative TOML without creating a file.
     ///
@@ -177,6 +226,96 @@ impl BotticelliServer {
             tier_name = result.tier.name,
             rpm = ?result.tier.rpm,
             "Tier information retrieved"
+        );
+
+        Ok(Json(result))
+    }
+
+    /// Select optimal model based on criteria.
+    ///
+    /// Exposes `botticelli_models::ModelSelector` as an MCP tool.
+    ///
+    /// Available with the `llm` feature.
+    #[cfg(feature = "llm")]
+    #[instrument(skip(self, params), fields(strategy = ?params.strategy()))]
+    pub async fn select_model(
+        &self,
+        Parameters(params): Parameters<SelectModelParams>,
+    ) -> Result<Json<SelectModelResult>, rmcp::ErrorData> {
+        use botticelli_models::{ModelSelector};
+        
+        debug!(strategy = ?params.strategy(), "Selecting model");
+
+        let selector = ModelSelector::new();
+        let model_id = selector
+            .select(params.strategy())
+            .ok_or_else(|| {
+                rmcp::ErrorData::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    Cow::Borrowed("No model matches the selection criteria"),
+                    None,
+                )
+            })?;
+
+        let result = SelectModelResult {
+            model_id: model_id.to_string(),
+            strategy: format!("{:?}", params.strategy()),
+        };
+
+        debug!(model_id = %result.model_id, "Model selected");
+
+        Ok(Json(result))
+    }
+
+    /// Infer database schema from JSON sample data.
+    ///
+    /// Exposes `botticelli_database::infer_schema` as an MCP tool.
+    ///
+    /// Available with the `database` feature.
+    #[cfg(feature = "database")]
+    #[instrument(skip(self, params), fields(json_len = params.json().len()))]
+    pub async fn infer_schema(
+        &self,
+        Parameters(params): Parameters<InferSchemaParams>,
+    ) -> Result<Json<InferSchemaResult>, rmcp::ErrorData> {
+        use botticelli_database::infer_schema;
+        
+        let json = params.json();
+        debug!(json_len = json.len(), "Inferring schema from JSON");
+
+        // Parse JSON
+        let value: serde_json::Value = serde_json::from_str(json).map_err(|e| {
+            rmcp::ErrorData::new(
+                ErrorCode::INVALID_PARAMS,
+                Cow::Owned(format!("Invalid JSON: {}", e)),
+                None,
+            )
+        })?;
+
+        // Infer schema
+        let schema = infer_schema(&value).map_err(|e| to_mcp_error(e, "Schema inference failed"))?;
+
+        // Convert to result type
+        let mut columns: Vec<InferredColumn> = schema
+            .fields
+            .iter()
+            .map(|(name, col_def)| InferredColumn {
+                name: name.clone(),
+                sql_type: col_def.pg_type.clone(),
+                nullable: col_def.nullable,
+            })
+            .collect();
+
+        // Sort columns by name for consistent output
+        columns.sort_by(|a, b| a.name.cmp(&b.name));
+
+        let result = InferSchemaResult {
+            columns,
+        };
+
+        debug!(
+            column_count = result.columns.len(),
+            "Schema inferred"
         );
 
         Ok(Json(result))
