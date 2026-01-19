@@ -1,6 +1,7 @@
 //! Budget configuration for rate limiting multipliers.
 
 use botticelli_error::ConfigError;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// Budget multipliers for throttling API usage.
@@ -56,6 +57,11 @@ fn default_multiplier() -> f64 {
     1.0
 }
 
+#[tool]
+fn default_multiplier_tool() -> f64 {
+    default_multiplier()
+}
+
 impl Default for BudgetConfig {
     fn default() -> Self {
         Self {
@@ -68,6 +74,7 @@ impl Default for BudgetConfig {
 
 impl BudgetConfig {
     /// Creates a new budget config builder.
+    #[tool]
     #[tracing::instrument]
     pub fn builder() -> BudgetConfigBuilder {
         BudgetConfigBuilder::default()
@@ -78,6 +85,7 @@ impl BudgetConfig {
     /// # Errors
     ///
     /// Returns an error if any multiplier is <= 0.0 or > 1.0.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn validate(&self) -> Result<(), ConfigError> {
         if self.rpm_multiplier <= 0.0 || self.rpm_multiplier > 1.0 {
@@ -102,18 +110,21 @@ impl BudgetConfig {
     }
 
     /// Applies this budget to a rate limit value.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn apply_rpm(&self, rpm: u64) -> u64 {
         (rpm as f64 * self.rpm_multiplier).round() as u64
     }
 
     /// Applies this budget to a token limit value.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn apply_tpm(&self, tpm: u64) -> u64 {
         (tpm as f64 * self.tpm_multiplier).round() as u64
     }
 
     /// Applies this budget to a daily request limit.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn apply_rpd(&self, rpd: u64) -> u64 {
         (rpd as f64 * self.rpd_multiplier).round() as u64
@@ -122,6 +133,7 @@ impl BudgetConfig {
     /// Merges this budget with another, taking the minimum of each multiplier.
     ///
     /// This is useful for combining CLI overrides with narrative config.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn merge(&self, other: &BudgetConfig) -> BudgetConfig {
         BudgetConfig {

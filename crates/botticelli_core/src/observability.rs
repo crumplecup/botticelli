@@ -3,6 +3,7 @@ use elicitation::{Prompt, Select};
 use opentelemetry::{KeyValue, global, trace::TracerProvider};
 use opentelemetry_sdk::{Resource, metrics::SdkMeterProvider, trace::SdkTracerProvider};
 use opentelemetry_stdout::SpanExporter;
+use rmcp::tool;
 use std::env;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -26,6 +27,7 @@ impl ExporterBackend {
     /// Reads `OTEL_EXPORTER` and `OTEL_EXPORTER_OTLP_ENDPOINT` environment variables:
     /// - "stdout" → Stdout (default if unset)
     /// - "otlp" → Otlp (requires `otel-otlp` feature, reads endpoint from env)
+    #[tool]
     #[tracing::instrument]
     pub fn from_env() -> Self {
         match env::var("OTEL_EXPORTER")
@@ -68,6 +70,7 @@ pub struct ObservabilityConfig {
     enable_metrics: bool,
 }
 
+#[tool]
 fn default_log_level() -> String {
     env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string())
 }
@@ -83,6 +86,7 @@ impl ObservabilityConfig {
     /// - Metrics: enabled
     ///
     /// For more control, use `ObservabilityConfig::builder()`.
+    #[tool]
     #[tracing::instrument(skip(service_name))]
     pub fn new(service_name: impl Into<String>) -> Self {
         Self::builder()
@@ -92,6 +96,7 @@ impl ObservabilityConfig {
     }
 
     /// Creates a builder for ObservabilityConfig.
+    #[tool]
     #[tracing::instrument]
     pub fn builder() -> ObservabilityConfigBuilder {
         ObservabilityConfigBuilder::default()
@@ -117,6 +122,7 @@ impl Default for ObservabilityConfig {
 /// # Errors
 ///
 /// Returns an error if initialization fails.
+#[tool]
 #[tracing::instrument]
 pub fn init_observability() -> ObservabilityResult<()> {
     init_observability_with_config(ObservabilityConfig::default())
@@ -138,6 +144,7 @@ pub fn init_observability() -> ObservabilityResult<()> {
 /// # Errors
 ///
 /// Returns an error if tracer provider, exporter, or filter initialization fails.
+#[tool]
 #[tracing::instrument]
 pub fn init_observability_with_config(config: ObservabilityConfig) -> ObservabilityResult<()> {
     // Create resource with service metadata
@@ -227,6 +234,7 @@ pub fn init_observability_with_config(config: ObservabilityConfig) -> Observabil
 ///
 /// Note: In OpenTelemetry v0.31+, direct Prometheus exporters are deprecated.
 /// Use OTLP exporter → OpenTelemetry Collector → Prometheus scraping instead.
+#[tool]
 fn init_metrics(resource: &Resource, config: &ObservabilityConfig) -> ObservabilityResult<()> {
     use tracing::{debug, info};
 
@@ -307,6 +315,7 @@ fn init_metrics(resource: &Resource, config: &ObservabilityConfig) -> Observabil
 /// This ensures all spans and metrics are flushed before exit.
 /// In OpenTelemetry SDK v0.31+, providers flush automatically on drop,
 /// so this is primarily for API compatibility.
+#[tool]
 #[tracing::instrument]
 pub fn shutdown_observability() {
     // Providers are dropped automatically and flush on drop

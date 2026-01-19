@@ -2,6 +2,7 @@
 
 use crate::MediaSource;
 use elicitation::{Prompt, Select};
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// Controls how an input is retained in conversation history.
@@ -222,6 +223,7 @@ impl Input {
     ///
     /// Returns `HistoryRetention::Full` for input types that don't support
     /// retention configuration.
+    #[tool]
     pub fn history_retention(&self) -> HistoryRetention {
         match self {
             Input::BotCommand {
@@ -241,6 +243,7 @@ impl Input {
     ///
     /// Only applies to BotCommand, Table, and Narrative inputs.
     /// Other input types are unaffected.
+    #[tool]
     pub fn with_history_retention(mut self, retention: HistoryRetention) -> Self {
         match &mut self {
             Input::BotCommand {

@@ -1,6 +1,7 @@
 //! Request and response types for LLM generation.
 
 use crate::{Message, Output, StopReason};
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// Generic generation request (multimodal-safe).
@@ -48,6 +49,7 @@ pub struct GenerateRequest {
 
 impl GenerateRequest {
     /// Creates a builder for GenerateRequest.
+    #[tool]
     pub fn builder() -> GenerateRequestBuilder {
         GenerateRequestBuilder::default()
     }
@@ -91,6 +93,7 @@ pub struct GenerateResponse {
 
 impl GenerateResponse {
     /// Creates a builder for GenerateResponse.
+    #[tool]
     pub fn builder() -> GenerateResponseBuilder {
         GenerateResponseBuilder::default()
     }

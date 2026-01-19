@@ -1,6 +1,7 @@
 //! Message types for conversation history.
 
 use crate::{Input, Role};
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// A multimodal message in a conversation.
@@ -35,6 +36,7 @@ pub struct Message {
 
 impl Message {
     /// Returns a builder for constructing a Message.
+    #[tool]
     pub fn builder() -> MessageBuilder {
         MessageBuilder::default()
     }

@@ -1,5 +1,6 @@
 //! Token usage tracking for LLM requests.
 
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// Token usage information for a completed generation.
@@ -45,6 +46,7 @@ pub struct TokenUsageData {
 
 impl TokenUsageData {
     /// Creates new token usage data.
+    #[tool]
     pub fn new(input_tokens: u64, output_tokens: u64, total_tokens: u64) -> Self {
         Self {
             input_tokens,
@@ -54,6 +56,7 @@ impl TokenUsageData {
     }
 
     /// Creates a builder for TokenUsageData.
+    #[tool]
     pub fn builder() -> TokenUsageDataBuilder {
         TokenUsageDataBuilder::default()
     }
@@ -75,6 +78,7 @@ impl TokenUsageData {
     /// let cost = usage.calculate_cost(1.0, 2.0);
     /// assert!((cost - 2.0).abs() < 0.001); // 1.0 + 1.0 = 2.0
     /// ```
+    #[tool]
     pub fn calculate_cost(
         &self,
         prompt_price_per_million: f64,

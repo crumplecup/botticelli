@@ -2,6 +2,7 @@
 
 use crate::Output;
 use elicitation::{Prompt, Select};
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// A single chunk from a streaming response.
@@ -29,6 +30,7 @@ pub struct StreamChunk {
 
 impl StreamChunk {
     /// Creates a builder for StreamChunk.
+    #[tool]
     pub fn builder() -> StreamChunkBuilder {
         StreamChunkBuilder::default()
     }
