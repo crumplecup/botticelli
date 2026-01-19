@@ -34,7 +34,7 @@ impl CacheEntry {
 
 /// Cache key for command results.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct CacheKey {
+pub struct CacheKey {
     platform: String,
     command: String,
     args_hash: u64,
@@ -43,7 +43,7 @@ struct CacheKey {
 impl CacheKey {
     #[tool]
     #[tracing::instrument(skip(args), fields(platform, command, arg_count = args.len()))]
-    fn new(platform: &str, command: &str, args: &HashMap<String, JsonValue>) -> Self {
+    pub fn new(platform: &str, command: &str, args: &HashMap<String, JsonValue>) -> Self {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
 
         // Create stable hash of args
@@ -332,7 +332,7 @@ impl CommandCache {
     /// Evict least recently used entry.
     #[tool]
     #[tracing::instrument(skip(self), fields(cache_size = self.entries.len()))]
-    fn evict_lru(&mut self) {
+    pub fn evict_lru(&mut self) {
         if let Some(key) = self.access_order.first().cloned() {
             tracing::debug!(
                 platform = %key.platform,

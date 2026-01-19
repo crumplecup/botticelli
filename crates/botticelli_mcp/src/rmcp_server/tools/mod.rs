@@ -1,5 +1,6 @@
 //! MCP tool implementations organized by category.
 
+mod cache;
 mod core;
 mod discord;
 mod elicitation;
@@ -20,6 +21,12 @@ use rmcp::tool_router;
 
 // Re-export tool DTOs (parameters and results)
 // Always available
+pub use cache::{
+    CacheCleanupParams, CacheCleanupResult, CacheClearParams, CacheEntryIsExpiredParams,
+    CacheEntryIsExpiredResult, CacheEntryTimeRemainingParams, CacheEntryTimeRemainingResult,
+    CacheEvictLruParams, CacheIsEmptyParams, CacheIsEmptyResult, CacheKeyNewParams, CacheLenParams,
+    CacheLenResult, CommandCacheNewParams,
+};
 pub use extraction_tools::{ExtractJsonParams, ExtractTomlParams};
 pub use library::{GetTierInfoParams, GetTierInfoResult, TierInfo, ValidateTomlParams, ValidateTomlResult};
 pub use narrative::{

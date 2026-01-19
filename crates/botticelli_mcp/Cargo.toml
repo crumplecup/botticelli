@@ -59,6 +59,7 @@ tower = { workspace = true, optional = true }
 tower-http = { workspace = true, features = ["cors", "trace"], optional = true }
 
 # Internal dependencies
+botticelli_cache = { workspace = true }
 botticelli_core = { workspace = true }
 botticelli_error = { workspace = true, features = ["mcp"] }
 botticelli_interface = { workspace = true }
