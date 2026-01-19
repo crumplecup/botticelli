@@ -5,7 +5,7 @@
 
 use chrono::Utc;
 use derive_getters::Getters;
-use elicitation::{Prompt, Survey};
+use elicitation::Survey;
 use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

@@ -4,6 +4,7 @@ mod core;
 mod discord;
 mod elicitation;
 mod execution;
+mod library;
 mod narrative;
 mod scene;
 
