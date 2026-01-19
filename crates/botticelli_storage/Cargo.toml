@@ -32,6 +32,12 @@ strum = { workspace = true }
 
 # Serialization
 elicitation = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# MCP tooling
+rmcp = { workspace = true }
+schemars = { workspace = true }
 
 [dev-dependencies]
 botticelli_error = { workspace = true }

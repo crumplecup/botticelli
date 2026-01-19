@@ -37,6 +37,8 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "fmt"] }
 botticelli_error = { workspace = true }
 botticelli_interface = { workspace = true }
 elicitation = { workspace = true }
+rmcp = { workspace = true }
+schemars = { workspace = true }
 futures = { workspace = true, optional = true }
 reqwest = { workspace = true, features = ["json"], optional = true }
 tiktoken-rs = { workspace = true }

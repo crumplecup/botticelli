@@ -49,6 +49,10 @@ derive_builder.workspace = true
 # Serialization
 elicitation = { workspace = true }
 
+# MCP tooling
+rmcp = { workspace = true }
+schemars = { workspace = true }
+
 [dev-dependencies]
 anyhow = { workspace = true }
 dotenvy = { workspace = true }

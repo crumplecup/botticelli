@@ -42,6 +42,10 @@ opentelemetry = { workspace = true }
 # Serialization
 elicitation = { workspace = true }
 
+# MCP tooling
+rmcp = { workspace = true }
+schemars = { workspace = true }
+
 # Retry
 tokio-retry2 = { workspace = true }
 

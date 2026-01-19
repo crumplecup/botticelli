@@ -18,6 +18,8 @@ botticelli_narrative = { workspace = true, optional = true }
 botticelli_cache = { workspace = true }
 botticelli_security = { workspace = true }
 elicitation.workspace = true
+rmcp = { workspace = true }
+schemars = { workspace = true }
 
 # Database
 diesel = { workspace = true, optional = true }

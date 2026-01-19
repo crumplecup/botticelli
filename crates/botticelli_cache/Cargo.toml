@@ -13,6 +13,8 @@ derive-getters = { workspace = true }
 derive_setters = { workspace = true }
 derive_builder = { workspace = true }
 elicitation.workspace = true
+rmcp = { workspace = true }
+schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
