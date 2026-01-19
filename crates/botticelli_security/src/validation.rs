@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use tracing::{debug, instrument};
 
 /// Validation error details.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, schemars::JsonSchema)]
 pub struct ValidationError {
     /// Field that failed validation
     pub field: String,
@@ -35,7 +35,7 @@ pub trait CommandValidator {
 }
 
 /// Discord-specific command validator.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, schemars::JsonSchema)]
 pub struct DiscordValidator;
 
 impl DiscordValidator {

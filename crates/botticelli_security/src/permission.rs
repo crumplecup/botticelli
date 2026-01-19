@@ -12,6 +12,7 @@ use tracing::{debug, instrument};
     Clone,
     Serialize,
     Deserialize,
+    schemars::JsonSchema,
     Default,
     derive_getters::Getters,
     derive_setters::Setters,
@@ -57,6 +58,7 @@ pub struct PermissionConfig {
     Clone,
     Serialize,
     Deserialize,
+    schemars::JsonSchema,
     Default,
     derive_getters::Getters,
     derive_setters::Setters,
@@ -82,7 +84,7 @@ pub struct ResourcePermission {
 }
 
 /// Command permission information.
-#[derive(Debug, Clone, derive_getters::Getters, derive_new::new)]
+#[derive(Debug, Clone, schemars::JsonSchema, derive_getters::Getters, derive_new::new)]
 pub struct CommandPermission {
     /// Command name
     command: String,
@@ -93,7 +95,7 @@ pub struct CommandPermission {
 }
 
 /// Permission checker for validating command execution.
-#[derive(Debug, Clone, derive_getters::Getters, derive_new::new)]
+#[derive(Debug, Clone, schemars::JsonSchema, derive_getters::Getters, derive_new::new)]
 pub struct PermissionChecker {
     config: PermissionConfig,
 }

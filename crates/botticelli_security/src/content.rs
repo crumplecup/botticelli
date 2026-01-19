@@ -13,6 +13,7 @@ use tracing::{debug, instrument};
     Clone,
     Serialize,
     Deserialize,
+    schemars::JsonSchema,
     derive_getters::Getters,
     derive_setters::Setters,
     derive_new::new,
@@ -87,7 +88,7 @@ impl Default for ContentFilterConfig {
 }
 
 /// Content violation details.
-#[derive(Debug, Clone, derive_getters::Getters, derive_new::new, elicitation::Elicit)]
+#[derive(Debug, Clone, schemars::JsonSchema, derive_getters::Getters, derive_new::new, elicitation::Elicit)]
 pub struct ContentViolation {
     /// Type of violation
     violation_type: String,
@@ -96,11 +97,14 @@ pub struct ContentViolation {
 }
 
 /// Content filter for validating AI-generated content.
-#[derive(Debug, Clone, derive_getters::Getters)]
+#[derive(Debug, Clone, schemars::JsonSchema, derive_getters::Getters)]
 pub struct ContentFilter {
     config: ContentFilterConfig,
+    #[schemars(skip)]
     prohibited_regex: Vec<Regex>,
+    #[schemars(skip)]
     mention_regex: Regex,
+    #[schemars(skip)]
     url_regex: Regex,
 }
 

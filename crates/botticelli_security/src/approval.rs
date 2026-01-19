@@ -9,7 +9,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{debug, instrument};
 
 /// Approval decision.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, elicitation::Elicit)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, schemars::JsonSchema, elicitation::Elicit)]
 pub enum ApprovalDecision {
     /// Action approved
     Approved,
@@ -20,7 +20,7 @@ pub enum ApprovalDecision {
 }
 
 /// Pending action awaiting approval.
-#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 pub struct PendingAction {
     /// Unique action ID
     id: String,
@@ -112,7 +112,7 @@ impl PendingAction {
 }
 
 /// Approval workflow manager.
-#[derive(Debug, Clone, derive_setters::Setters)]
+#[derive(Debug, Clone, schemars::JsonSchema, derive_setters::Setters)]
 #[setters(prefix = "with_")]
 pub struct ApprovalWorkflow {
     /// Pending actions by ID
