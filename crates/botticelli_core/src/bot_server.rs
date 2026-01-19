@@ -21,7 +21,7 @@ pub enum BotState {
 }
 
 /// Statistics for bot execution.
-#[derive(Debug, Clone, derive_getters::Getters)]
+#[derive(Debug, Clone, derive_getters::Getters, elicitation::Elicit)]
 pub struct BotStats {
     /// Number of tasks processed successfully.
     tasks_completed: u64,
@@ -34,7 +34,7 @@ pub struct BotStats {
 }
 
 /// Configuration for the bot server.
-#[derive(Debug, Clone, derive_getters::Getters, derive_setters::Setters)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_setters::Setters, elicitation::Elicit)]
 #[setters(prefix = "with_")]
 pub struct BotServerConfig {
     /// Path to the configuration file.

@@ -31,6 +31,7 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 #[serde(deny_unknown_fields)]
 #[builder(pattern = "owned", setter(into, strip_option))]

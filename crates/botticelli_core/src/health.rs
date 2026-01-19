@@ -1,9 +1,10 @@
 //! Health status types.
 
+use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 
 /// Health status of a backend.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, elicitation::Elicit)]
 pub enum HealthStatus {
     /// System is fully operational
     Healthy,
