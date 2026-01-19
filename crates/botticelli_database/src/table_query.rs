@@ -4,6 +4,7 @@ use crate::TableCountView;
 use crate::{DatabaseError, DatabaseErrorKind, DatabaseResult};
 use diesel::prelude::*;
 use diesel::sql_types::{BigInt, Text};
+use rmcp::tool;
 use serde_json::Value as JsonValue;
 use std::sync::{Arc, Mutex};
 use tracing::{debug, instrument};
@@ -259,12 +260,14 @@ impl TableQueryExecutor {
 }
 
 /// Formats table results as JSON.
+#[tool]
 #[instrument(skip(rows))]
 pub fn format_as_json(rows: &[JsonValue]) -> String {
     serde_json::to_string_pretty(rows).unwrap_or_else(|_| "[]".to_string())
 }
 
 /// Formats table results as Markdown table.
+#[tool]
 #[instrument(skip(rows))]
 pub fn format_as_markdown(rows: &[JsonValue]) -> String {
     if rows.is_empty() {
@@ -324,6 +327,7 @@ pub fn format_as_markdown(rows: &[JsonValue]) -> String {
 }
 
 /// Formats table results as CSV.
+#[tool]
 #[instrument(skip(rows))]
 pub fn format_as_csv(rows: &[JsonValue]) -> String {
     if rows.is_empty() {

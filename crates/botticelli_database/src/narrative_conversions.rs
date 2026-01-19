@@ -4,6 +4,7 @@ use botticelli_core::{
     ActExecution, ActExecutionBuilder, ExecutionStatus, Input, NarrativeExecution,
 };
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
+use rmcp::tool;
 use tracing::instrument;
 
 use crate::{
@@ -13,6 +14,7 @@ use crate::{
 use chrono::Utc;
 
 /// Convert ExecutionStatus to database string.
+#[tool]
 #[instrument]
 pub fn status_to_string(status: ExecutionStatus) -> String {
     match status {
@@ -23,6 +25,7 @@ pub fn status_to_string(status: ExecutionStatus) -> String {
 }
 
 /// Convert database string to ExecutionStatus.
+#[tool]
 #[instrument]
 pub fn string_to_status(s: &str) -> BotticelliResult<ExecutionStatus> {
     s.parse().map_err(|e| {
@@ -34,6 +37,7 @@ pub fn string_to_status(s: &str) -> BotticelliResult<ExecutionStatus> {
 }
 
 /// Convert NarrativeExecution to NewNarrativeExecutionRow.
+#[tool]
 #[instrument(skip(execution))]
 pub fn execution_to_new_row(
     execution: &NarrativeExecution,
@@ -53,6 +57,7 @@ pub fn execution_to_new_row(
 }
 
 /// Convert ActExecution to NewActExecutionRow.
+#[tool]
 #[instrument(skip(act), fields(execution_id))]
 pub fn act_execution_to_new_row(act: &ActExecution, execution_id: i32) -> NewActExecutionRow {
     NewActExecutionRow {
@@ -67,6 +72,7 @@ pub fn act_execution_to_new_row(act: &ActExecution, execution_id: i32) -> NewAct
 }
 
 /// Convert Input to NewActInputRow.
+#[tool]
 #[instrument(skip(input), fields(execution_id))]
 pub fn input_to_new_row(
     input: &Input,
@@ -196,6 +202,7 @@ fn input_type_string(input: &Input) -> String {
 }
 
 /// Reconstruct ActExecution from database rows.
+#[tool]
 #[instrument(name = "narrative_conversions.rows_to_act_execution", skip(act_row, input_rows), fields(act_name = %act_row.act_name, input_count = input_rows.len()))]
 pub fn rows_to_act_execution(
     act_row: ActExecutionRow,
@@ -258,6 +265,7 @@ fn row_to_input(row: ActInputRow) -> BotticelliResult<Input> {
 }
 
 /// Reconstruct NarrativeExecution from database rows.
+#[tool]
 #[instrument(name = "narrative_conversions.rows_to_narrative_execution", skip(_execution_row, act_executions), fields(narrative = %narrative_name, act_count = act_executions.len()))]
 pub fn rows_to_narrative_execution(
     _execution_row: &NarrativeExecutionRow,
