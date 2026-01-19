@@ -35,6 +35,7 @@ use uuid::Uuid;
     Hash,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 #[builder(setter(into))]
 pub struct MediaReference {

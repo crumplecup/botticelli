@@ -16,7 +16,17 @@ use diesel::prelude::*;
 use tracing::instrument;
 
 /// Represents a database column's structure
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, QueryableByName)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    QueryableByName,
+    elicitation::Elicit,
+)]
 pub struct ColumnInfo {
     /// Column name
     #[diesel(sql_type = diesel::sql_types::Text)]
@@ -36,7 +46,7 @@ pub struct ColumnInfo {
 }
 
 /// Represents a table's schema structure
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, elicitation::Elicit)]
 pub struct TableSchema {
     /// Table name
     pub table_name: String,

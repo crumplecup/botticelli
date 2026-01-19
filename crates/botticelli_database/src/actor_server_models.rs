@@ -30,7 +30,7 @@ pub struct ActorServerStateRow {
 }
 
 /// Insertable struct for actor_server_state table with builder pattern.
-#[derive(Debug, Clone, Insertable, Getters, Builder)]
+#[derive(Debug, Clone, Insertable, Getters, Builder, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::actor_server_state)]
 #[builder(setter(into))]
 pub struct NewActorServerState {
@@ -86,7 +86,7 @@ pub struct ActorServerExecutionRow {
 }
 
 /// Insertable struct for actor_server_executions table with builder pattern.
-#[derive(Debug, Clone, Insertable, Getters, Builder)]
+#[derive(Debug, Clone, Insertable, Getters, Builder, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::actor_server_executions)]
 #[builder(setter(into))]
 pub struct NewActorServerExecution {

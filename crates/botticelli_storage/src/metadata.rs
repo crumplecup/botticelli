@@ -20,7 +20,14 @@ use crate::MediaType;
 ///     .build()
 ///     .expect("Valid metadata");
 /// ```
-#[derive(Debug, Clone, PartialEq, derive_getters::Getters, derive_builder::Builder)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    derive_getters::Getters,
+    derive_builder::Builder,
+    elicitation::Elicit,
+)]
 #[builder(setter(into))]
 pub struct MediaMetadata {
     /// Type of media (image, audio, video)

@@ -6,13 +6,23 @@
 
 use botticelli_error::{BotticelliResult, IoError, JsonError};
 use derive_getters::Getters;
+use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tracing::{debug, error, info, instrument};
 
 /// Represents different scopes for state storage.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    elicitation::Elicit,
+)]
 pub enum StateScope {
     /// Global state shared across all narratives
     Global,
@@ -28,7 +38,7 @@ pub enum StateScope {
 }
 
 /// A key-value store for narrative state.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters, elicitation::Elicit)]
 pub struct NarrativeState {
     /// The state data
     data: HashMap<String, String>,

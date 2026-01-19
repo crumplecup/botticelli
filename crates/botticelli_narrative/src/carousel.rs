@@ -195,7 +195,7 @@ impl<T: botticelli_interface::Tier + std::fmt::Debug> CarouselState<T> {
 }
 
 /// Result of carousel execution.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Getters, elicitation::Elicit)]
 pub struct CarouselResult {
     /// Total iterations attempted
     iterations_attempted: u32,

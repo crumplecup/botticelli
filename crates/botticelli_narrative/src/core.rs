@@ -72,7 +72,15 @@ impl NarrativeMetadata {
 
 /// Table of contents from the `[toc]` section.
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize, derive_getters::Getters,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Deserialize,
+    serde::Serialize,
+    derive_getters::Getters,
+    elicitation::Elicit,
 )]
 pub struct NarrativeToc {
     /// Ordered list of act names to execute

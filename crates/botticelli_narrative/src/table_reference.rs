@@ -10,7 +10,17 @@ use serde::{Deserialize, Serialize};
 ///
 /// Allows narratives to include dynamically generated content
 /// by referencing tables created during content generation.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Getters, Builder)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    Getters,
+    Builder,
+    elicitation::Elicit,
+)]
 #[builder(setter(into))]
 pub struct TableReference {
     /// Name of the table to query
