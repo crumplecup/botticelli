@@ -2,8 +2,8 @@
 //!
 //! Tools that prompt users for input during narrative creation process.
 
-use crate::rmcp_server::helpers::to_mcp_error;
 use crate::rmcp_server::BotticelliServer;
+use crate::rmcp_server::helpers::to_mcp_error;
 use crate::{
     CarouselLevel, CarouselSummary, ElicitActParams, ElicitActResult, ElicitBoolParams,
     ElicitBoolResult, ElicitCarouselParams, ElicitCarouselResult, ElicitMetadataParams,
@@ -46,7 +46,7 @@ impl BotticelliServer {
         let result = ElicitTextResult::new(text);
         Ok(Json(result))
     }
-    
+
     /// Prompt user for yes/no input.
     #[instrument(skip(self, params), fields(prompt_len = params.prompt().len(), default = params.default()))]
     pub async fn elicit_bool(
@@ -77,7 +77,7 @@ impl BotticelliServer {
         let result = ElicitBoolResult::new(confirmed);
         Ok(Json(result))
     }
-    
+
     /// Prompt user for numeric input within a range.
     #[instrument(skip(self, params), fields(prompt_len = params.prompt().len(), min = params.min(), max = params.max()))]
     pub async fn elicit_number(
@@ -118,7 +118,7 @@ impl BotticelliServer {
         let result = ElicitNumberResult::new(number);
         Ok(Json(result))
     }
-    
+
     /// Prompt user to select from a list of options.
     #[instrument(skip(self, params), fields(prompt_len = params.prompt().len(), option_count = params.options().len()))]
     pub async fn elicit_select(
@@ -170,7 +170,7 @@ impl BotticelliServer {
         let result = ElicitSelectResult::new(selected.clone());
         Ok(Json(result))
     }
-    
+
     /// Update narrative metadata (name, description, defaults).
     #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), name = ?params.name(), description = ?params.description()))]
     pub async fn elicit_metadata(
@@ -205,7 +205,7 @@ impl BotticelliServer {
             "updated".to_string(),
         )))
     }
-    
+
     /// Elicit and refine a narrative act's content.
     #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), act_name = params.act_name(), prompt_len = params.prompt().len()))]
     pub async fn elicit_act(
@@ -251,7 +251,7 @@ impl BotticelliServer {
             status.to_string(),
         )))
     }
-    
+
     /// Run iterative carousel refinement on narrative acts.
     #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), level = ?params.level(), iterations = params.iterations()))]
     pub async fn elicit_carousel(

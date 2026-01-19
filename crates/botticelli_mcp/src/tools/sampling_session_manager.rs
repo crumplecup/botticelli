@@ -34,14 +34,14 @@ impl SamplingSessionManager {
     ) -> BotticelliResult<ConversationSession>
     where
         S: LlmSamplerOperations<
-            Session = ConversationSession,
-            ToolDefinition = ToolDefinition,
-            Response = GenerateResponse,
-            Result = crate::SamplingResult,
-            Error = SamplingError,
-            ToolCall = ToolCall,
-            ToolResult = ToolResult,
-        > + 'static,
+                Session = ConversationSession,
+                ToolDefinition = ToolDefinition,
+                Response = GenerateResponse,
+                Result = crate::SamplingResult,
+                Error = SamplingError,
+                ToolCall = ToolCall,
+                ToolResult = ToolResult,
+            > + 'static,
     {
         debug!("Starting new sampling session");
 
@@ -53,9 +53,7 @@ impl SamplingSessionManager {
         });
 
         // Run sampling
-        let _result = sampler
-            .sample(&mut session, available_tools)
-            .await?;
+        let _result = sampler.sample(&mut session, available_tools).await?;
 
         // Store session
         self.sessions

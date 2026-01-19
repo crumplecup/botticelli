@@ -223,13 +223,16 @@ async fn test_tool_registry_includes_validator() -> anyhow::Result<()> {
     tracing::info!("Testing tool registry includes validator");
 
     let registry = ToolRegistry::default();
-    
+
     // Try calling the tool to verify it exists
     let input = json!({"content": "[narrative]\nname = \"test\"\n[acts]\nact1 = \"hello\""});
     let result = registry.execute("validate_narrative", input).await;
     tracing::debug!(has_tool = result.is_ok(), "Checked registry");
 
-    assert!(result.is_ok(), "validate_narrative tool should be available");
+    assert!(
+        result.is_ok(),
+        "validate_narrative tool should be available"
+    );
 
     tracing::info!("Tool registry test passed");
     Ok(())

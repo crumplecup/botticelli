@@ -50,9 +50,9 @@ macro_rules! select_driver_impl {
             .map(|d| {
                 d as Arc<
                     dyn botticelli_interface::ExecutionDriver<
-                        botticelli_core::GenerateRequest,
-                        botticelli_core::GenerateResponse,
-                    >,
+                            botticelli_core::GenerateRequest,
+                            botticelli_core::GenerateResponse,
+                        >,
                 >
             })
     }};
@@ -85,9 +85,9 @@ impl BotticelliServer {
     ) -> Result<
         Arc<
             dyn botticelli_interface::ExecutionDriver<
-                botticelli_core::GenerateRequest,
-                botticelli_core::GenerateResponse,
-            >,
+                    botticelli_core::GenerateRequest,
+                    botticelli_core::GenerateResponse,
+                >,
         >,
         rmcp::ErrorData,
     > {
@@ -157,10 +157,12 @@ impl BotticelliServer {
             feature = "huggingface",
             feature = "groq"
         )))]
-        {            
+        {
             Err(rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
-                Cow::Borrowed("No LLM drivers enabled. Enable at least one feature: gemini, anthropic, ollama, huggingface, or groq"),
+                Cow::Borrowed(
+                    "No LLM drivers enabled. Enable at least one feature: gemini, anthropic, ollama, huggingface, or groq",
+                ),
                 None,
             ))
         }

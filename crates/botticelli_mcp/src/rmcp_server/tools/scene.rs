@@ -36,7 +36,7 @@ impl BotticelliServer {
         let result = CreateSceneResult::new(scene_id, narrative_id, scene_name, description);
         Ok(Json(result))
     }
-    
+
     /// List all scenes in a narrative.
     #[instrument(skip(self, params), fields(narrative_id = params.narrative_id()))]
     pub async fn list_scenes(
@@ -49,7 +49,7 @@ impl BotticelliServer {
         let result = ListScenesResult::new(narrative_id, vec![]);
         Ok(Json(result))
     }
-    
+
     /// Update an existing scene.
     #[instrument(skip(self, params), fields(scene_id = params.scene_id()))]
     pub async fn update_scene(
@@ -64,7 +64,7 @@ impl BotticelliServer {
         let result = UpdateSceneResult::new(scene_id, updates);
         Ok(Json(result))
     }
-    
+
     /// Delete a scene from a narrative.
     #[instrument(skip(self, params), fields(scene_id = params.scene_id()))]
     pub async fn delete_scene(

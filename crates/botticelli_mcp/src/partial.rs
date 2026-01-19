@@ -14,7 +14,15 @@ use tracing::{debug, instrument, trace, warn};
 use crate::tools::NarrativeHelper;
 
 /// Partial act definition.
-#[derive(Debug, Clone, Serialize, Deserialize, derive_new::new, derive_getters::Getters, derive_setters::Setters)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    derive_new::new,
+    derive_getters::Getters,
+    derive_setters::Setters,
+)]
 #[setters(prefix = "set_", borrow_self)]
 pub struct PartialAct {
     /// Act prompt/instruction.
@@ -35,7 +43,9 @@ pub struct PartialAct {
 ///
 /// Uses builder pattern for type-safe construction.
 /// All fields are optional during elicitation.
-#[derive(Debug, Clone, Builder, Serialize, Deserialize, Getters, Default, derive_setters::Setters)]
+#[derive(
+    Debug, Clone, Builder, Serialize, Deserialize, Getters, Default, derive_setters::Setters,
+)]
 #[builder(setter(into), default)]
 #[setters(prefix = "with_", borrow_self)]
 pub struct PartialNarrative {
@@ -81,7 +91,10 @@ impl PartialNarrative {
     /// Use this to add, remove, or modify acts.
     #[instrument(skip(self))]
     pub fn acts_mut(&mut self) -> &mut HashMap<String, PartialAct> {
-        trace!(acts_count = self.acts.len(), "Providing mutable access to acts");
+        trace!(
+            acts_count = self.acts.len(),
+            "Providing mutable access to acts"
+        );
         &mut self.acts
     }
 
@@ -90,7 +103,10 @@ impl PartialNarrative {
     /// Use this to reorder acts.
     #[instrument(skip(self))]
     pub fn act_order_mut(&mut self) -> &mut Vec<String> {
-        trace!(order_length = self.act_order.len(), "Providing mutable access to act order");
+        trace!(
+            order_length = self.act_order.len(),
+            "Providing mutable access to act order"
+        );
         &mut self.act_order
     }
 
@@ -103,7 +119,8 @@ impl PartialNarrative {
         acts_count = self.acts().len()
     ))]
     pub fn has_minimum_required(&self) -> bool {
-        let result = self.name().is_some() && self.description().is_some() && !self.acts().is_empty();
+        let result =
+            self.name().is_some() && self.description().is_some() && !self.acts().is_empty();
         debug!(meets_minimum = result, "Checked minimum requirements");
         result
     }
@@ -118,14 +135,18 @@ impl PartialNarrative {
     pub fn validate(&self) -> McpResult<botticelli_narrative::validator::ValidationResult> {
         debug!("Starting validation");
         use botticelli_narrative::validator::Validator;
-        
+
         let toml = self.to_toml()?;
         trace!(toml_length = toml.len(), "Generated TOML for validation");
-        
+
         let result = Validator::validate_toml(&toml);
-        
+
         if result.is_valid() {
-            debug!(errors = 0, warnings = result.warnings().len(), "Validation passed");
+            debug!(
+                errors = 0,
+                warnings = result.warnings().len(),
+                "Validation passed"
+            );
         } else {
             warn!(
                 errors = result.errors().len(),
@@ -133,7 +154,7 @@ impl PartialNarrative {
                 "Validation failed"
             );
         }
-        
+
         Ok(result)
     }
 
@@ -149,24 +170,22 @@ impl PartialNarrative {
     ))]
     pub fn to_toml(&self) -> McpResult<String> {
         debug!("Converting partial narrative to TOML");
-        
-        let name = self
-            .name()
-            .as_ref()
-            .ok_or_else(|| {
-                warn!("Missing narrative name");
-                McpError::invalid_input("Missing narrative name".to_string())
-            })?;
 
-        let description = self
-            .description()
-            .as_ref()
-            .ok_or_else(|| {
-                warn!("Missing narrative description");
-                McpError::invalid_input("Missing narrative description".to_string())
-            })?;
+        let name = self.name().as_ref().ok_or_else(|| {
+            warn!("Missing narrative name");
+            McpError::invalid_input("Missing narrative name".to_string())
+        })?;
 
-        trace!(name, description_length = description.len(), "Retrieved required fields");
+        let description = self.description().as_ref().ok_or_else(|| {
+            warn!("Missing narrative description");
+            McpError::invalid_input("Missing narrative description".to_string())
+        })?;
+
+        trace!(
+            name,
+            description_length = description.len(),
+            "Retrieved required fields"
+        );
 
         let mut toml = String::new();
 
@@ -196,7 +215,10 @@ impl PartialNarrative {
         toml.push('\n');
 
         // [toc] section
-        trace!(act_count = self.act_order().len(), "Generating table of contents");
+        trace!(
+            act_count = self.act_order().len(),
+            "Generating table of contents"
+        );
         toml.push_str("[toc]\n");
         toml.push_str("order = [");
         for (i, act_name) in self.act_order().iter().enumerate() {
@@ -235,7 +257,7 @@ impl PartialNarrative {
     #[instrument(skip(self), fields(name = ?self.name()))]
     pub fn try_into_narrative(&self) -> McpResult<botticelli_narrative::Narrative> {
         debug!("Attempting to convert to complete narrative");
-        
+
         let toml = self.to_toml()?;
         let validation = self.validate()?;
 
@@ -249,11 +271,10 @@ impl PartialNarrative {
         }
 
         debug!("Validation passed, creating Narrative");
-        botticelli_narrative::Narrative::from_toml_str(&toml, self.name().as_deref())
-            .map_err(|e| {
-                warn!(error = %e, "Failed to create Narrative from TOML");
-                McpError::from(e)
-            })
+        botticelli_narrative::Narrative::from_toml_str(&toml, self.name().as_deref()).map_err(|e| {
+            warn!(error = %e, "Failed to create Narrative from TOML");
+            McpError::from(e)
+        })
     }
 }
 
@@ -271,7 +292,7 @@ impl RegistryOperations for PartialNarrative {
     #[instrument(skip(args), fields(args_type = ?args.as_object().map(|_| "object")))]
     fn from_json_args(args: Value) -> Result<Self, Self::Error> {
         debug!("Deserializing PartialNarrative from JSON");
-        
+
         serde_json::from_value(args).map_err(|e| {
             warn!(error = %e, "Failed to deserialize PartialNarrative");
             McpError::from(e)
@@ -284,7 +305,7 @@ impl RegistryOperations for PartialNarrative {
     ))]
     fn to_json(&self) -> Result<Value, Self::Error> {
         debug!("Serializing PartialNarrative to JSON");
-        
+
         serde_json::to_value(self).map_err(|e| {
             warn!(error = %e, "Failed to serialize PartialNarrative");
             McpError::from(e)
@@ -297,13 +318,11 @@ impl RegistryOperations for PartialNarrative {
     ))]
     fn update_from_json(&mut self, args: Value) -> Result<(), Self::Error> {
         debug!("Updating PartialNarrative from JSON");
-        
-        let obj = args
-            .as_object()
-            .ok_or_else(|| {
-                warn!("Expected JSON object, got different type");
-                McpError::invalid_input("Expected JSON object".to_string())
-            })?;
+
+        let obj = args.as_object().ok_or_else(|| {
+            warn!("Expected JSON object, got different type");
+            McpError::invalid_input("Expected JSON object".to_string())
+        })?;
 
         let mut updated_fields = Vec::new();
 

@@ -50,7 +50,7 @@ pub(super) fn generate_narrative_toml(
     default_model: Option<&str>,
     default_temperature: Option<f64>,
 ) -> Result<String, rmcp::ErrorData> {
-    use crate::partial::{PartialNarrative, PartialAct};
+    use crate::partial::{PartialAct, PartialNarrative};
     use rmcp::model::ErrorCode;
     use std::borrow::Cow;
     use tracing::{debug, warn};
@@ -60,7 +60,7 @@ pub(super) fn generate_narrative_toml(
 
     // Extract acts from description using heuristics
     let acts = extract_acts_from_description(description);
-    
+
     debug!(
         act_count = acts.len(),
         model = model,
@@ -83,22 +83,21 @@ pub(super) fn generate_narrative_toml(
         act_order.push(act_name.clone());
         act_map.insert(
             act_name.clone(),
-            PartialAct::new(act_prompt, None, None, vec![], None)
+            PartialAct::new(act_prompt, None, None, vec![], None),
         );
     }
     partial.with_acts(act_map);
     partial.with_act_order(act_order);
 
     // Convert to TOML
-    let toml = partial.to_toml()
-        .map_err(|e| {
-            warn!(error = ?e, "Failed to generate TOML from partial narrative");
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Failed to generate TOML: {}", e)),
-                None,
-            )
-        })?;
+    let toml = partial.to_toml().map_err(|e| {
+        warn!(error = ?e, "Failed to generate TOML from partial narrative");
+        rmcp::ErrorData::new(
+            ErrorCode::INTERNAL_ERROR,
+            Cow::Owned(format!("Failed to generate TOML: {}", e)),
+            None,
+        )
+    })?;
 
     // Validate the generated TOML
     match Validator::validate_toml(&toml) {
@@ -130,50 +129,60 @@ fn extract_acts_from_description(description: &str) -> Vec<(String, String)> {
     use tracing::{debug, trace};
 
     let lower = description.to_lowercase();
-    
+
     // Strategy 1: Split on "then" keyword
     if lower.contains("then") {
         let parts: Vec<&str> = description.split("then").map(|s| s.trim()).collect();
-        debug!(strategy = "then_split", parts = parts.len(), "Splitting description on 'then'");
-        
-        let acts: Vec<(String, String)> = parts.iter()
+        debug!(
+            strategy = "then_split",
+            parts = parts.len(),
+            "Splitting description on 'then'"
+        );
+
+        let acts: Vec<(String, String)> = parts
+            .iter()
             .enumerate()
             .filter(|(_, part)| !part.is_empty())
             .map(|(i, part)| {
                 // Extract first verb as act name
-                let act_name = extract_verb_from_phrase(part)
-                    .unwrap_or_else(|| format!("act{}", i + 1));
+                let act_name =
+                    extract_verb_from_phrase(part).unwrap_or_else(|| format!("act{}", i + 1));
                 trace!(act_name = %act_name, prompt = %part, "Extracted act from 'then' clause");
                 (act_name, part.to_string())
             })
             .collect();
-        
+
         if !acts.is_empty() {
             return acts;
         }
     }
-    
+
     // Strategy 2: Split on commas (for lists like "fetch, analyze, report")
     if lower.matches(',').count() >= 2 {
         let parts: Vec<&str> = description.split(',').map(|s| s.trim()).collect();
-        debug!(strategy = "comma_split", parts = parts.len(), "Splitting description on commas");
-        
-        let acts: Vec<(String, String)> = parts.iter()
+        debug!(
+            strategy = "comma_split",
+            parts = parts.len(),
+            "Splitting description on commas"
+        );
+
+        let acts: Vec<(String, String)> = parts
+            .iter()
             .enumerate()
             .filter(|(_, part)| !part.is_empty())
             .map(|(i, part)| {
-                let act_name = extract_verb_from_phrase(part)
-                    .unwrap_or_else(|| format!("act{}", i + 1));
+                let act_name =
+                    extract_verb_from_phrase(part).unwrap_or_else(|| format!("act{}", i + 1));
                 trace!(act_name = %act_name, prompt = %part, "Extracted act from comma clause");
                 (act_name, part.to_string())
             })
             .collect();
-        
+
         if acts.len() >= 2 {
             return acts;
         }
     }
-    
+
     // Strategy 3: Single act (default)
     debug!(strategy = "single_act", "Creating single-act narrative");
     vec![("main".to_string(), description.to_string())]
@@ -189,28 +198,58 @@ fn extract_verb_from_phrase(phrase: &str) -> Option<String> {
         .split_whitespace()
         .take(3)
         .collect();
-    
+
     if words.is_empty() {
         return None;
     }
-    
+
     // Common verbs that might start action descriptions
     let common_verbs = [
-        "fetch", "get", "retrieve", "load", "read", "query", "download",
-        "analyze", "process", "transform", "compute", "calculate", "examine",
-        "generate", "create", "produce", "build", "construct", "write",
-        "send", "post", "publish", "upload", "transmit", "deliver",
-        "summarize", "report", "display", "show", "present", "output",
-        "validate", "check", "verify", "test", "ensure",
+        "fetch",
+        "get",
+        "retrieve",
+        "load",
+        "read",
+        "query",
+        "download",
+        "analyze",
+        "process",
+        "transform",
+        "compute",
+        "calculate",
+        "examine",
+        "generate",
+        "create",
+        "produce",
+        "build",
+        "construct",
+        "write",
+        "send",
+        "post",
+        "publish",
+        "upload",
+        "transmit",
+        "deliver",
+        "summarize",
+        "report",
+        "display",
+        "show",
+        "present",
+        "output",
+        "validate",
+        "check",
+        "verify",
+        "test",
+        "ensure",
     ];
-    
+
     // Check if first word is a known verb
     let first = words[0].to_lowercase();
     if common_verbs.contains(&first.as_str()) {
         trace!(verb = %first, "Found common verb at start");
         return Some(first);
     }
-    
+
     // Check if any word in first few is a verb
     for word in &words {
         let lower = word.to_lowercase();
@@ -219,7 +258,7 @@ fn extract_verb_from_phrase(phrase: &str) -> Option<String> {
             return Some(lower);
         }
     }
-    
+
     trace!("No recognizable verb found");
     None
 }
@@ -267,7 +306,7 @@ fn add_act(toml: &str, modification: &str) -> Result<(String, String), rmcp::Err
     let lines: Vec<&str> = toml.lines().collect();
     let mut acts_start = None;
     let mut toc_start = None;
-    
+
     for (i, line) in lines.iter().enumerate() {
         if line.trim() == "[acts]" {
             acts_start = Some(i);
@@ -296,7 +335,7 @@ fn add_act(toml: &str, modification: &str) -> Result<(String, String), rmcp::Err
 
     // Insert new act before the end of acts section
     let new_act = format!("{} = \"[Describe what this act should do]\"", act_name);
-    
+
     let mut result = Vec::new();
     result.extend_from_slice(&lines[..acts_end]);
     result.push(new_act.as_str());
@@ -373,7 +412,8 @@ fn remove_act(toml: &str, modification: &str) -> Result<(String, String), rmcp::
 
         // Remove act from [toc] order
         if in_toc && line.trim().starts_with("order = ") {
-            let updated = line.replace(&format!("\"{}\", ", act_name), "")
+            let updated = line
+                .replace(&format!("\"{}\", ", act_name), "")
                 .replace(&format!(", \"{}\"", act_name), "")
                 .replace(&format!("\"{}\"", act_name), "");
             result.push(Box::leak(updated.into_boxed_str()));
@@ -401,7 +441,7 @@ fn remove_act(toml: &str, modification: &str) -> Result<(String, String), rmcp::
 #[instrument(skip(toml), fields(toml_len = toml.len()))]
 fn change_model(toml: &str, modification: &str) -> Result<(String, String), rmcp::ErrorData> {
     use tracing::{debug, trace};
-    
+
     let model = extract_model_name(modification)?;
     debug!(model = %model, "Extracted model name");
 
@@ -413,7 +453,7 @@ fn change_model(toml: &str, modification: &str) -> Result<(String, String), rmcp
 
     for (i, line) in lines.iter().enumerate() {
         let trimmed = line.trim();
-        
+
         // Track if we're in [narrative] section
         if trimmed == "[narrative]" {
             in_narrative_section = true;
@@ -424,7 +464,7 @@ fn change_model(toml: &str, modification: &str) -> Result<(String, String), rmcp
             in_narrative_section = false;
             trace!(line_num = i, "End of [narrative] section");
         }
-        
+
         // If we find existing model line, replace it
         if trimmed.starts_with("model = ") {
             result.push(format!(r#"model = "{}""#, model));
@@ -456,10 +496,7 @@ fn change_model(toml: &str, modification: &str) -> Result<(String, String), rmcp
 
 /// Change the temperature in the narrative.
 #[instrument(skip(toml), fields(toml_len = toml.len()))]
-fn change_temperature(
-    toml: &str,
-    modification: &str,
-) -> Result<(String, String), rmcp::ErrorData> {
+fn change_temperature(toml: &str, modification: &str) -> Result<(String, String), rmcp::ErrorData> {
     use rmcp::model::ErrorCode;
     use std::borrow::Cow;
     use tracing::{debug, trace};
@@ -475,7 +512,7 @@ fn change_temperature(
 
     for (i, line) in lines.iter().enumerate() {
         let trimmed = line.trim();
-        
+
         // Track if we're in [narrative] section
         if trimmed == "[narrative]" {
             in_narrative_section = true;
@@ -486,7 +523,7 @@ fn change_temperature(
             in_narrative_section = false;
             trace!(line_num = i, "End of [narrative] section");
         }
-        
+
         // If we find existing temperature line, replace it
         if trimmed.starts_with("temperature = ") {
             result.push(format!("temperature = {}", temperature));
@@ -502,7 +539,10 @@ fn change_temperature(
         if let Some(end_idx) = narrative_section_end {
             // Insert before the next section
             result.insert(end_idx, format!("temperature = {}", temperature));
-            debug!(insert_at = end_idx, "Inserted temperature before next section");
+            debug!(
+                insert_at = end_idx,
+                "Inserted temperature before next section"
+            );
             changed = true;
         } else {
             // [narrative] section is last or only section, append at end
@@ -555,32 +595,36 @@ narrative = "main"
 #[instrument]
 fn extract_act_name_from_mod(text: &str) -> String {
     use tracing::debug;
-    
+
     // Skip common instruction words to find the actual action verb
-    let skip_words = ["add", "remove", "create", "delete", "act", "that", "which", "the", "a", "an"];
-    
+    let skip_words = [
+        "add", "remove", "create", "delete", "act", "that", "which", "the", "a", "an",
+    ];
+
     let words: Vec<&str> = text.split_whitespace().collect();
-    
+
     // Find first significant verb after skipping common words
     for word in &words {
-        let clean = word.trim_matches(|c: char| !c.is_alphabetic()).to_lowercase();
+        let clean = word
+            .trim_matches(|c: char| !c.is_alphabetic())
+            .to_lowercase();
         if skip_words.contains(&clean.as_str()) {
             continue;
         }
-        
+
         // Check if it's a recognized action verb
         if let Some(verb) = extract_verb_from_phrase(&clean) {
             debug!(verb = %verb, "Found action verb in modification");
             return verb;
         }
-        
+
         // First non-skip word might be our verb
         if clean.len() > 2 {
             debug!(verb = %clean, "Using first significant word as verb");
             return clean;
         }
     }
-    
+
     // Fallback: look for quoted names
     if let Some(start) = text.find('"') {
         if let Some(end) = text[start + 1..].find('"') {
@@ -589,7 +633,7 @@ fn extract_act_name_from_mod(text: &str) -> String {
             return name.to_lowercase().replace(' ', "_");
         }
     }
-    
+
     debug!("Using default act name");
     "new_act".to_string()
 }

@@ -12,7 +12,7 @@ async fn test_validate_narrative_valid_content() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing validate_narrative with valid content");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let valid_toml = r#"
 title = "Test Narrative"
@@ -63,7 +63,7 @@ async fn test_validate_narrative_invalid_toml() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing validate_narrative with invalid TOML");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let invalid_toml = r#"
 title = "Test
@@ -81,7 +81,11 @@ title = "Test
         .expect("Valid params");
 
     let result = server.validate_narrative(Parameters(params)).await?;
-    tracing::debug!(valid = result.0.valid(), error_count = result.0.errors().len(), "Validation result");
+    tracing::debug!(
+        valid = result.0.valid(),
+        error_count = result.0.errors().len(),
+        "Validation result"
+    );
 
     assert!(!*result.0.valid(), "Invalid TOML should fail validation");
     assert!(!result.0.errors().is_empty(), "Should have errors");
@@ -95,7 +99,7 @@ async fn test_validate_narrative_from_file() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing validate_narrative from file");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new()?;
     let file_path = temp_dir.path().join("test.toml");
     tracing::debug!(path = ?file_path, "Created temp file path");
@@ -122,7 +126,10 @@ objective = "Test"
         .expect("Valid params");
 
     let result = server.validate_narrative(Parameters(params)).await?;
-    tracing::debug!(has_summary = !result.0.summary().is_empty(), "Validation result");
+    tracing::debug!(
+        has_summary = !result.0.summary().is_empty(),
+        "Validation result"
+    );
 
     // Should complete successfully (may have validation errors in content, but tool works)
     assert!(!result.0.summary().is_empty());
@@ -136,7 +143,7 @@ async fn test_validate_narrative_file_not_found() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing validate_narrative with missing file");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = ValidateNarrativeParams::builder()
         .content(None)
@@ -162,7 +169,7 @@ async fn test_validate_narrative_neither_content_nor_file() -> anyhow::Result<()
     helpers::init_test_tracing("info");
     tracing::info!("Testing validate_narrative with neither content nor file");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = ValidateNarrativeParams::builder()
         .content(None)
@@ -191,7 +198,7 @@ async fn test_validate_narrative_with_warnings_strict() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing validate_narrative strict mode with warnings");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let toml_with_warnings = r#"
 title = "Strict Warning Test"
@@ -237,7 +244,7 @@ async fn test_validate_narrative_result_structure() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing validate_narrative result structure");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let valid_toml = r#"
 title = "Structure Test"

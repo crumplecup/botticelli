@@ -23,7 +23,10 @@ async fn test_generate_tool_basic() -> anyhow::Result<()> {
     // Generate now returns actual generated text, not just config
     assert!(result["text"].is_string(), "Should have text field");
     assert!(result["model"].is_string(), "Should have model field");
-    assert!(result["tokens_used"].is_number(), "Should have tokens_used field");
+    assert!(
+        result["tokens_used"].is_number(),
+        "Should have tokens_used field"
+    );
 
     tracing::info!("Generate basic test passed");
     Ok(())
@@ -48,7 +51,10 @@ async fn test_generate_tool_with_model() -> anyhow::Result<()> {
 
     // Verify response structure
     assert!(result["text"].is_string(), "Should have text field");
-    assert_eq!(result["model"], "claude-3-5-sonnet-20241022", "Should use specified model");
+    assert_eq!(
+        result["model"], "claude-3-5-sonnet-20241022",
+        "Should use specified model"
+    );
 
     tracing::info!("Generate with model test passed");
     Ok(())
@@ -88,7 +94,10 @@ async fn test_generate_tool_missing_prompt() -> anyhow::Result<()> {
     });
 
     let result = registry.execute("generate", input).await;
-    tracing::debug!(is_err = result.is_err(), "Generate result for missing prompt");
+    tracing::debug!(
+        is_err = result.is_err(),
+        "Generate result for missing prompt"
+    );
 
     assert!(result.is_err(), "Should fail with missing prompt");
 
@@ -218,23 +227,40 @@ async fn test_tool_registry_includes_execution_tools() -> anyhow::Result<()> {
     let registry = ToolRegistry::default();
 
     // Test by attempting to execute - if tool exists, it will work or fail with specific error
-    let generate_test = registry.execute("generate", json!({"prompt": "test"})).await;
-    let execute_test = registry.execute("execute_narrative", json!({"narrative_path": "/fake", "prompt": "test"})).await;
-    
+    let generate_test = registry
+        .execute("generate", json!({"prompt": "test"}))
+        .await;
+    let execute_test = registry
+        .execute(
+            "execute_narrative",
+            json!({"narrative_path": "/fake", "prompt": "test"}),
+        )
+        .await;
+
     tracing::debug!(
         generate_ok = generate_test.is_ok(),
-        execute_has_file_err = execute_test.as_ref().err().map(|e| e.to_string().contains("file")).unwrap_or(false),
+        execute_has_file_err = execute_test
+            .as_ref()
+            .err()
+            .map(|e| e.to_string().contains("file"))
+            .unwrap_or(false),
         "Tool execution"
     );
 
     // Generate should succeed (returns placeholder text)
     assert!(generate_test.is_ok(), "Generate tool should be available");
-    
+
     // Execute_narrative should fail with file error (not "unknown tool")
-    assert!(execute_test.is_err(), "Execute should fail with bad file path");
+    assert!(
+        execute_test.is_err(),
+        "Execute should fail with bad file path"
+    );
     let err = execute_test.unwrap_err().to_string();
-    assert!(!err.to_lowercase().contains("unknown tool"), 
-        "Should fail with file error, not 'unknown tool': {}", err);
+    assert!(
+        !err.to_lowercase().contains("unknown tool"),
+        "Should fail with file error, not 'unknown tool': {}",
+        err
+    );
 
     tracing::info!("Tool registry test passed");
     Ok(())
@@ -247,10 +273,15 @@ async fn test_generate_input_schema() -> anyhow::Result<()> {
 
     // Schema is now accessed via rmcp ToolRouter, test by calling tool
     let registry = ToolRegistry::default();
-    
+
     // If tool accepts prompt, schema is correct
-    let result = registry.execute("generate", json!({"prompt": "test"})).await;
-    tracing::debug!(has_prompt = result.is_ok() || !result.as_ref().unwrap_err().to_string().contains("prompt"), "Schema validation");
+    let result = registry
+        .execute("generate", json!({"prompt": "test"}))
+        .await;
+    tracing::debug!(
+        has_prompt = result.is_ok() || !result.as_ref().unwrap_err().to_string().contains("prompt"),
+        "Schema validation"
+    );
 
     // Missing required field should error
     let no_prompt = registry.execute("generate", json!({"model": "test"})).await;
@@ -268,9 +299,13 @@ async fn test_execute_narrative_input_schema() -> anyhow::Result<()> {
     let registry = ToolRegistry::default();
 
     // Missing required fields should error
-    let no_file = registry.execute("execute_narrative", json!({"prompt": "test"})).await;
-    let no_prompt = registry.execute("execute_narrative", json!({"narrative_path": "/test"})).await;
-    
+    let no_file = registry
+        .execute("execute_narrative", json!({"prompt": "test"}))
+        .await;
+    let no_prompt = registry
+        .execute("execute_narrative", json!({"narrative_path": "/test"}))
+        .await;
+
     tracing::debug!(
         no_file_err = no_file.is_err(),
         no_prompt_err = no_prompt.is_err(),

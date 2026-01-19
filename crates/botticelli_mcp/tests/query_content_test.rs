@@ -11,7 +11,7 @@ async fn test_query_content_without_database() -> anyhow::Result<()> {
     use botticelli_mcp::{BotticelliServer, QueryContentParams};
     use rmcp::handler::server::wrapper::Parameters;
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = QueryContentParams {
         table: "content".to_string(),
         limit: 10,
@@ -108,4 +108,3 @@ async fn test_query_content_result_creation() -> anyhow::Result<()> {
     tracing::info!("Result creation test passed");
     Ok(())
 }
-

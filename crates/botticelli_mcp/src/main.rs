@@ -172,8 +172,8 @@ async fn run_stdio(server: BotticelliServer) -> Result<()> {
 #[tracing::instrument(skip_all, fields(port))]
 async fn run_http(_server: BotticelliServer, port: u16) -> Result<()> {
     use rmcp::transport::streamable_http_server::{
-        session::local::LocalSessionManager, tower::StreamableHttpService,
-        StreamableHttpServerConfig,
+        StreamableHttpServerConfig, session::local::LocalSessionManager,
+        tower::StreamableHttpService,
     };
     use tokio_util::sync::CancellationToken;
 
@@ -184,9 +184,8 @@ async fn run_http(_server: BotticelliServer, port: u16) -> Result<()> {
     let ct = CancellationToken::new();
 
     // Server factory - creates a new server instance for each session
-    let server_factory = move || -> Result<BotticelliServer, std::io::Error> {
-        Ok(initialize_backends())
-    };
+    let server_factory =
+        move || -> Result<BotticelliServer, std::io::Error> { Ok(initialize_backends()) };
 
     // Create streamable HTTP service
     let service: StreamableHttpService<BotticelliServer, LocalSessionManager> =

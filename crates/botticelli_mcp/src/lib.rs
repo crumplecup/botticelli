@@ -17,7 +17,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
-//!     let server = BotticelliServer::builder().build();
+//!     let server = BotticelliServer::builder().build()?;
 //!
 //!     // Use rmcp's serve method with stdio transport
 //!     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
@@ -66,14 +66,16 @@ pub use elicit_bool::{ElicitBoolParams, ElicitBoolResult};
 pub use elicit_number::{ElicitNumberParams, ElicitNumberResult};
 pub use elicit_select::{ElicitSelectParams, ElicitSelectResult};
 pub use elicit_text::{ElicitTextParams, ElicitTextResult};
-pub use partial::{PartialAct, PartialNarrative, PartialNarrativeBuilder};
 pub use execution::{
     ExecuteActParams, ExecuteActResult, ExecuteNarrativeParams, ExecuteNarrativeResult,
     GenerateParams, GenerateResult,
 };
 pub use export_metrics::{ExportMetricsParams, ExportMetricsResult, MetricsFormat};
 pub use modify_narrative::{ModifyNarrativeParams, ModifyNarrativeResult};
+pub use partial::{PartialAct, PartialNarrative, PartialNarrativeBuilder};
 pub use query_content::{QueryContentParams, QueryContentResult};
+#[cfg(feature = "database")]
+pub use resources::ContentResource;
 pub use resources::{NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use rmcp_server::{BotticelliServer, BotticelliServerBuilder};
 pub use save_narrative::{SaveNarrativeParams, SaveNarrativeResult};
@@ -84,23 +86,21 @@ pub use scene::{
 pub use server_info::ServerInfoResult;
 pub use session_tools::{
     ApplyValidationFixesParams, ApplyValidationFixesResult, CarouselLevel, CarouselSummary,
-    CreateNarrativeSessionParams, CreateNarrativeSessionResult, ElicitActParams, ElicitActParamsBuilder, ElicitActResult,
-    ElicitCarouselParams, ElicitCarouselResult, ElicitMetadataParams, ElicitMetadataParamsBuilder, ElicitMetadataResult,
+    CreateNarrativeSessionParams, CreateNarrativeSessionResult, ElicitActParams,
+    ElicitActParamsBuilder, ElicitActResult, ElicitCarouselParams, ElicitCarouselResult,
+    ElicitMetadataParams, ElicitMetadataParamsBuilder, ElicitMetadataResult,
     FinalizeNarrativeParams, FinalizeNarrativeResult, GetNarrativeStateParams,
     GetNarrativeStateResult, NarrativeAnalysis, NarrativeStateSummary, StateFormat,
     ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationIssue,
     ValidationSeverity,
 };
 pub use tools::{
-    Act, ActMetrics, ElicitActInput, ElicitMetadataInput,
-    ElicitationHelper, ExecutionMetrics,
-    FinalizeNarrativeInput, LlmSamplerOperations,
-    MetricsSummary, NarrativeHelper, NarrativeRegistry, PrometheusMetrics, SamplingCoordinator,
-    SamplingHelper, SamplingResult, ToolRegistry,
+    Act, ActMetrics, ElicitActInput, ElicitMetadataInput, ElicitationHelper, ExecutionMetrics,
+    FinalizeNarrativeInput, LlmSamplerOperations, MetricsSummary, NarrativeHelper,
+    NarrativeRegistry, PrometheusMetrics, SamplingCoordinator, SamplingHelper, SamplingResult,
+    ToolRegistry,
 };
 pub use validate_narrative::{
-    ValidateNarrativeParams, ValidateNarrativeParamsBuilder, ValidateNarrativeResult, ValidationError, ValidationLocation,
-    ValidationWarning,
+    ValidateNarrativeParams, ValidateNarrativeParamsBuilder, ValidateNarrativeResult,
+    ValidationError, ValidationLocation, ValidationWarning,
 };
-#[cfg(feature = "database")]
-pub use resources::ContentResource;

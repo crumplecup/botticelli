@@ -11,7 +11,7 @@ async fn test_export_metrics_without_collector() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing export_metrics without collector");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = ExportMetricsParams::new(MetricsFormat::Prometheus);
 
     let result = server.export_metrics(Parameters(params)).await;
@@ -33,7 +33,7 @@ async fn test_export_metrics_prometheus_format() -> anyhow::Result<()> {
     tracing::info!("Testing export_metrics with Prometheus format");
 
     let metrics = Arc::new(PrometheusMetrics::new());
-    let server = BotticelliServer::builder().metrics(metrics).build();
+    let server = BotticelliServer::builder().metrics(Some(metrics)).build()?;
     tracing::debug!("Created server with metrics collector");
 
     let params = ExportMetricsParams::new(MetricsFormat::Prometheus);
@@ -57,7 +57,7 @@ async fn test_export_metrics_summary_format() -> anyhow::Result<()> {
     tracing::info!("Testing export_metrics with Summary format");
 
     let metrics = Arc::new(PrometheusMetrics::new());
-    let server = BotticelliServer::builder().metrics(metrics).build();
+    let server = BotticelliServer::builder().metrics(Some(metrics)).build()?;
 
     let params = ExportMetricsParams::new(MetricsFormat::Summary);
 
@@ -118,4 +118,3 @@ async fn test_export_metrics_params_custom_format() -> anyhow::Result<()> {
     tracing::info!("Custom format test passed");
     Ok(())
 }
-

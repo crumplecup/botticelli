@@ -9,9 +9,7 @@ use botticelli_core::{GenerateRequest, Input, Message, MessageBuilder, Role};
 use botticelli_error::{
     BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
 };
-use botticelli_interface::{
-    BotCommandRegistry, BotticelliDriver, NarrativeProvider, TableQueryRegistry,
-};
+use botticelli_interface::{BotCommandRegistry, NarrativeProvider, TableQueryRegistry};
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Instant;
@@ -45,9 +43,9 @@ where
 {
     pub(super) driver: std::sync::Arc<
         dyn botticelli_interface::ExecutionDriver<
-            GenerateRequest,
-            botticelli_core::GenerateResponse,
-        >,
+                GenerateRequest,
+                botticelli_core::GenerateResponse,
+            >,
     >,
     pub(super) processor_registry: Option<ProcessorRegistry>,
     pub(super) bot_registry: Option<Box<dyn BotCommandRegistry<Error = BE>>>,
@@ -74,9 +72,9 @@ where
     pub fn new(
         driver: std::sync::Arc<
             dyn botticelli_interface::ExecutionDriver<
-                GenerateRequest,
-                botticelli_core::GenerateResponse,
-            >,
+                    GenerateRequest,
+                    botticelli_core::GenerateResponse,
+                >,
         >,
     ) -> Self {
         tracing::debug!("Creating narrative executor");
@@ -105,13 +103,16 @@ where
     pub fn with_processors(
         driver: std::sync::Arc<
             dyn botticelli_interface::ExecutionDriver<
-                GenerateRequest,
-                botticelli_core::GenerateResponse,
-            >,
+                    GenerateRequest,
+                    botticelli_core::GenerateResponse,
+                >,
         >,
         registry: ProcessorRegistry,
     ) -> Self {
-        tracing::debug!(processor_count = registry.len(), "Creating executor with processors");
+        tracing::debug!(
+            processor_count = registry.len(),
+            "Creating executor with processors"
+        );
         Self {
             driver,
             processor_registry: Some(registry),

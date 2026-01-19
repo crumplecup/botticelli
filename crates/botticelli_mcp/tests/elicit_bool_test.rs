@@ -10,7 +10,7 @@ async fn test_elicit_bool_without_dialog() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing elicit_bool without dialog resource");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = ElicitBoolParams::new("Do you agree?".to_string(), false);
 
     let result = server.elicit_bool(Parameters(params)).await;
@@ -86,4 +86,3 @@ async fn test_elicit_bool_result_serialization() -> anyhow::Result<()> {
     tracing::info!("Result serialization test passed");
     Ok(())
 }
-

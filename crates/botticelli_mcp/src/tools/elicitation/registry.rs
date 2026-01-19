@@ -228,9 +228,8 @@ where
             .get(id)
             .map_err(|e: McpError| botticelli_error::BotticelliError::from(e))?;
         // Convert narrative to JSON for state representation
-        serde_json::to_value(&narrative).map_err(|e| {
-            botticelli_error::BotticelliError::from(McpError::from(e))
-        })
+        serde_json::to_value(&narrative)
+            .map_err(|e| botticelli_error::BotticelliError::from(McpError::from(e)))
     }
 
     #[tracing::instrument(skip(self))]

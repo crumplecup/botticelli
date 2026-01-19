@@ -14,10 +14,9 @@ mod sampling_session_manager;
 
 pub use bot_commands::{BotCommandRequest, BotCommandResponse};
 pub use elicitation::{
-    ApplyValidationFixesInput, ApplyValidationFixesOutput,
-    ElicitationHelper,
-    GetNarrativeStateInput, GetNarrativeStateOutput, NarrativeRegistry,
-    PartialNarrativeRegistry, ValidateNarrativeInput, ValidateNarrativeOutput,
+    ApplyValidationFixesInput, ApplyValidationFixesOutput, ElicitationHelper,
+    GetNarrativeStateInput, GetNarrativeStateOutput, NarrativeRegistry, PartialNarrativeRegistry,
+    ValidateNarrativeInput, ValidateNarrativeOutput,
 };
 pub use metrics::{ActMetrics, ExecutionMetrics};
 pub use narrative_creation::{
@@ -42,4 +41,3 @@ pub use narrative_utils::{Act, NarrativeHelper};
 
 // Re-export LlmSamplerOperations for convenience
 pub use botticelli_interface::LlmSamplerOperations;
-

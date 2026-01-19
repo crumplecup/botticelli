@@ -43,7 +43,7 @@ use async_trait::async_trait;
 pub trait McpResource: Send + Sync {
     /// Error type for operations
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     /// Resource information type
     type ResourceInfo;
 

@@ -10,7 +10,7 @@ async fn test_elicit_select_without_dialog() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing elicit_select without dialog resource");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = ElicitSelectParams::new(
         "Choose one:".to_string(),
         vec!["Option A".to_string(), "Option B".to_string()],
@@ -34,14 +34,14 @@ async fn test_elicit_select_empty_options() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing elicit_select with empty options");
 
-    let server = BotticelliServer::builder().build();
-    let params = ElicitSelectParams::new(
-        "Choose one:".to_string(),
-        vec![],
-    );
+    let server = BotticelliServer::builder().build()?;
+    let params = ElicitSelectParams::new("Choose one:".to_string(), vec![]);
 
     let result = server.elicit_select(Parameters(params)).await;
-    tracing::debug!(is_err = result.is_err(), "Call completed with empty options");
+    tracing::debug!(
+        is_err = result.is_err(),
+        "Call completed with empty options"
+    );
 
     // Should fail with empty options
     assert!(result.is_err(), "Should fail with empty options");
@@ -105,13 +105,13 @@ async fn test_elicit_select_single_option() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing single option");
 
-    let params = ElicitSelectParams::new(
-        "Confirm:".to_string(),
-        vec!["Only Option".to_string()],
-    );
+    let params = ElicitSelectParams::new("Confirm:".to_string(), vec!["Only Option".to_string()]);
 
     // Single option should be valid
-    tracing::debug!(option_count = params.options().len(), "Checking single option");
+    tracing::debug!(
+        option_count = params.options().len(),
+        "Checking single option"
+    );
     assert_eq!(params.options().len(), 1, "Single option should be valid");
 
     tracing::info!("Single option test passed");
@@ -129,10 +129,12 @@ async fn test_elicit_select_many_options() -> anyhow::Result<()> {
     );
 
     // Many options should be valid
-    tracing::debug!(option_count = params.options().len(), "Checking many options");
+    tracing::debug!(
+        option_count = params.options().len(),
+        "Checking many options"
+    );
     assert_eq!(params.options().len(), 10, "Many options should be valid");
 
     tracing::info!("Many options test passed");
     Ok(())
 }
-

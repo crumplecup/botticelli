@@ -174,7 +174,10 @@ analyze = "Analyze the data"
 
     let toml = result.get("toml").unwrap().as_str().unwrap();
     tracing::info!("Generated TOML:\n{}", toml);
-    assert!(toml.contains("summarize"), "New act should be added (looking for 'summarize')");
+    assert!(
+        toml.contains("summarize"),
+        "New act should be added (looking for 'summarize')"
+    );
 
     let changes = result.get("changes").unwrap().as_array().unwrap();
     assert!(!changes.is_empty(), "Should report changes");

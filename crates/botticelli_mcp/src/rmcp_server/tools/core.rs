@@ -2,8 +2,8 @@
 //!
 //! Basic server functionality: echo, server info, content queries, and metrics export.
 
-use crate::rmcp_server::helpers::to_mcp_error;
 use crate::rmcp_server::BotticelliServer;
+use crate::rmcp_server::helpers::to_mcp_error;
 use crate::{
     EchoParams, EchoResult, ExportMetricsParams, ExportMetricsResult, MetricsFormat,
     QueryContentParams, QueryContentResult, ServerInfoResult,
@@ -28,7 +28,7 @@ impl BotticelliServer {
         debug!(result = ?result, "Echo completed successfully");
         Ok(Json(result))
     }
-    
+
     /// Get server information including version and tool count.
     #[instrument(skip(self))]
     pub async fn server_info(&self) -> Result<Json<ServerInfoResult>, rmcp::ErrorData> {
@@ -43,7 +43,7 @@ impl BotticelliServer {
         debug!(tool_count = result.0.tool_count(), "Server info retrieved");
         Ok(result)
     }
-    
+
     /// Query content from the database.
     #[instrument(skip(self, params), fields(table = params.table(), limit = params.limit()))]
     pub async fn query_content(
@@ -93,7 +93,7 @@ impl BotticelliServer {
             Ok(Json(result))
         }
     }
-    
+
     /// Export metrics in the requested format.
     #[instrument(skip(self, params), fields(format = ?params.format()))]
     pub async fn export_metrics(

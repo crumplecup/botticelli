@@ -2,8 +2,8 @@
 //!
 //! Tools for creating, modifying, validating, and managing narrative workflows.
 
-use crate::rmcp_server::helpers::{apply_modification, generate_narrative_toml, to_mcp_error};
 use crate::rmcp_server::BotticelliServer;
+use crate::rmcp_server::helpers::{apply_modification, generate_narrative_toml, to_mcp_error};
 use crate::tools::NarrativeHelper;
 use crate::tools::narrative_validation_helpers::{
     add_helpful_comments, auto_fix_common_issues, format_toml, format_validation_result,
@@ -11,11 +11,11 @@ use crate::tools::narrative_validation_helpers::{
 use crate::{
     ApplyValidationFixesParams, ApplyValidationFixesResult, CreateNarrativeParams,
     CreateNarrativeResult, FinalizeNarrativeParams, FinalizeNarrativeResult,
-    GetNarrativeStateParams, GetNarrativeStateResult, ModifyNarrativeParams,
-    ModifyNarrativeResult, NarrativeStateSummary, SaveNarrativeParams,
-    SaveNarrativeResult, StateFormat, ValidateNarrativeParams, ValidateNarrativeResult,
-    ValidateNarrativeSessionParams, ValidateNarrativeSessionResult, ValidationError,
-    ValidationIssue, ValidationLocation, ValidationSeverity, ValidationWarning,
+    GetNarrativeStateParams, GetNarrativeStateResult, ModifyNarrativeParams, ModifyNarrativeResult,
+    NarrativeStateSummary, SaveNarrativeParams, SaveNarrativeResult, StateFormat,
+    ValidateNarrativeParams, ValidateNarrativeResult, ValidateNarrativeSessionParams,
+    ValidateNarrativeSessionResult, ValidationError, ValidationIssue, ValidationLocation,
+    ValidationSeverity, ValidationWarning,
 };
 use botticelli_narrative::validator::{ValidationConfig, Validator};
 use rmcp::handler::server::wrapper::{Json, Parameters};
@@ -113,7 +113,7 @@ impl BotticelliServer {
 
         Ok(Json(result))
     }
-    
+
     /// Modify an existing narrative TOML with natural language instructions.
     #[instrument(skip(self, params), fields(toml_len = params.narrative_toml().len(), modification_len = params.modification().len(), has_save_path = params.save_to().is_some()))]
     pub async fn modify_narrative(
@@ -127,7 +127,8 @@ impl BotticelliServer {
         debug!(modification = %modification, has_save_path = save_to.is_some(), "Modifying narrative");
 
         // Apply modification
-        let (mut modified_toml, change_description) = apply_modification(&narrative_toml, &modification)?;
+        let (mut modified_toml, change_description) =
+            apply_modification(&narrative_toml, &modification)?;
 
         // Track changes
         let mut changes = vec![change_description];
@@ -171,7 +172,7 @@ impl BotticelliServer {
         let result = ModifyNarrativeResult::new(modified_toml, validation_json, changes, saved_to);
         Ok(Json(result))
     }
-    
+
     /// Save narrative TOML content to a file.
     #[instrument(skip(self, params), fields(toml_len = params.narrative_toml().len(), path = %params.file_path(), overwrite = params.overwrite()))]
     pub async fn save_narrative(
@@ -234,7 +235,7 @@ impl BotticelliServer {
         let result = SaveNarrativeResult::new(absolute_path, narrative_toml.len(), existed);
         Ok(Json(result))
     }
-    
+
     /// Validate narrative TOML file structure and content.
     #[instrument(skip(self, params), fields(
         has_content = params.content().is_some(),
@@ -299,11 +300,7 @@ impl BotticelliServer {
                     e.message().clone(),
                     e.suggestion().clone(),
                     e.location().as_ref().map(|loc| {
-                        ValidationLocation::new(
-                            *loc.line(),
-                            *loc.column(),
-                            loc.section().clone(),
-                        )
+                        ValidationLocation::new(*loc.line(), *loc.column(), loc.section().clone())
                     }),
                 )
             })
@@ -318,11 +315,7 @@ impl BotticelliServer {
                     format!("{:?}", w.kind()),
                     w.message().clone(),
                     w.location().as_ref().map(|loc| {
-                        ValidationLocation::new(
-                            *loc.line(),
-                            *loc.column(),
-                            loc.section().clone(),
-                        )
+                        ValidationLocation::new(*loc.line(), *loc.column(), loc.section().clone())
                     }),
                 )
             })
@@ -341,7 +334,7 @@ impl BotticelliServer {
 
         Ok(Json(ValidateNarrativeResult::new(valid, errors, warnings)))
     }
-    
+
     /// Finalize a narrative session and convert to TOML.
     #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), validate = params.validate()))]
     pub async fn finalize_narrative(
@@ -396,7 +389,7 @@ impl BotticelliServer {
             validation_errors,
         )))
     }
-    
+
     /// Get the current state of a narrative session.
     #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), format = ?params.format()))]
     pub async fn get_narrative_state(
@@ -417,13 +410,14 @@ impl BotticelliServer {
         // Calculate state
         let acts_count = partial.acts().len();
         let acts: Vec<String> = partial.act_order().clone();
-        let has_carousel =
-            partial.carousel().is_some() || partial.acts().values().any(|act| act.carousel().is_some());
+        let has_carousel = partial.carousel().is_some()
+            || partial.acts().values().any(|act| act.carousel().is_some());
 
-        let metadata_complete =
-            partial.name().is_some() && partial.description().is_some() && partial.model().is_some();
-        let acts_complete =
-            !partial.acts().is_empty() && partial.acts().values().all(|act| !act.prompt().is_empty());
+        let metadata_complete = partial.name().is_some()
+            && partial.description().is_some()
+            && partial.model().is_some();
+        let acts_complete = !partial.acts().is_empty()
+            && partial.acts().values().all(|act| !act.prompt().is_empty());
         let inputs_partial = partial.acts().values().any(|act| !act.inputs().is_empty());
 
         let mut completeness_score = 0;
@@ -468,7 +462,7 @@ impl BotticelliServer {
             toml,
         )))
     }
-    
+
     /// Validate a narrative session and report issues.
     #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), strict = params.strict()))]
     pub async fn validate_narrative_session(
@@ -558,10 +552,11 @@ impl BotticelliServer {
         }
 
         // Calculate completeness
-        let metadata_complete =
-            partial.name().is_some() && partial.description().is_some() && partial.model().is_some();
-        let acts_complete =
-            !partial.acts().is_empty() && partial.acts().values().all(|act| !act.prompt().is_empty());
+        let metadata_complete = partial.name().is_some()
+            && partial.description().is_some()
+            && partial.model().is_some();
+        let acts_complete = !partial.acts().is_empty()
+            && partial.acts().values().all(|act| !act.prompt().is_empty());
 
         let mut completeness_score = 0;
         if metadata_complete {
@@ -596,7 +591,7 @@ impl BotticelliServer {
             auto_fixable_count,
         )))
     }
-    
+
     /// Apply automatic fixes to a narrative session based on validation results.
     #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), fix_count = params.fix_types().len(), confirm = params.confirm()))]
     pub async fn apply_validation_fixes(

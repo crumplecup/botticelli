@@ -7,15 +7,17 @@ use tracing::instrument;
 
 /// Coordinates LLM sampling for narrative generation.
 pub struct SamplingCoordinator {
-    sampler: Arc<dyn LlmSamplerOperations<
-        Session = ConversationSession,
-        ToolDefinition = ToolDefinition,
-        Response = GenerateResponse,
-        Result = SamplingResult,
-        Error = SamplingError,
-        ToolCall = ToolCall,
-        ToolResult = ToolResult,
-    >>,
+    sampler: Arc<
+        dyn LlmSamplerOperations<
+                Session = ConversationSession,
+                ToolDefinition = ToolDefinition,
+                Response = GenerateResponse,
+                Result = SamplingResult,
+                Error = SamplingError,
+                ToolCall = ToolCall,
+                ToolResult = ToolResult,
+            >,
+    >,
     tool_registry: Arc<ToolRegistry>,
 }
 
@@ -23,15 +25,17 @@ impl SamplingCoordinator {
     /// Create a new sampling coordinator.
     #[tracing::instrument(skip(sampler, tool_registry))]
     pub fn new(
-        sampler: Arc<dyn LlmSamplerOperations<
-            Session = ConversationSession,
-            ToolDefinition = ToolDefinition,
-            Response = GenerateResponse,
-            Result = SamplingResult,
-            Error = SamplingError,
-            ToolCall = ToolCall,
-            ToolResult = ToolResult,
-        >>,
+        sampler: Arc<
+            dyn LlmSamplerOperations<
+                    Session = ConversationSession,
+                    ToolDefinition = ToolDefinition,
+                    Response = GenerateResponse,
+                    Result = SamplingResult,
+                    Error = SamplingError,
+                    ToolCall = ToolCall,
+                    ToolResult = ToolResult,
+                >,
+        >,
         tool_registry: Arc<ToolRegistry>,
     ) -> Self {
         Self {
@@ -59,10 +63,7 @@ impl SamplingCoordinator {
         let tools = self.tool_registry.tool_definitions();
 
         // Run sampling
-        let _result = self
-            .sampler
-            .sample(&mut session, &tools)
-            .await?;
+        let _result = self.sampler.sample(&mut session, &tools).await?;
 
         // TODO: Extract narrative from session after LLM tool calling
         // For now, return a placeholder
@@ -91,10 +92,7 @@ impl SamplingCoordinator {
         // Get tool definitions from registry
         let tools = self.tool_registry.tool_definitions();
 
-        let _result = self
-            .sampler
-            .sample(&mut session, &tools)
-            .await?;
+        let _result = self.sampler.sample(&mut session, &tools).await?;
 
         // TODO: Apply refinements from LLM tool calling
         Ok(narrative)

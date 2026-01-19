@@ -11,7 +11,9 @@ use serde::{Deserialize, Serialize};
 /// Parameters for the echo tool.
 ///
 /// This tool echoes back the provided message with a timestamp.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Getters, derive_new::new)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Getters, derive_new::new,
+)]
 pub struct EchoParams {
     /// The message to echo back.
     ///

@@ -10,7 +10,7 @@ async fn test_elicit_text_without_dialog() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing elicit_text without dialog resource");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     tracing::debug!("Created server without dialog");
 
     let params = ElicitTextParams::new("Enter your name:".to_string());
@@ -65,4 +65,3 @@ async fn test_elicit_text_result_serialization() -> anyhow::Result<()> {
     tracing::info!("Result serialization test passed");
     Ok(())
 }
-

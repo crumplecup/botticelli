@@ -40,7 +40,7 @@ impl BotticelliServer {
         {
             // Select appropriate driver
             let driver = self.select_driver(&model)?;
-            
+
             // Call generate_with_driver with the selected driver
             return self
                 .generate_with_driver(driver, prompt, model, max_tokens, temperature, None)
@@ -87,9 +87,9 @@ impl BotticelliServer {
         &self,
         driver: std::sync::Arc<
             dyn botticelli_interface::ExecutionDriver<
-                botticelli_core::GenerateRequest,
-                botticelli_core::GenerateResponse,
-            >,
+                    botticelli_core::GenerateRequest,
+                    botticelli_core::GenerateResponse,
+                >,
         >,
         prompt: String,
         model: String,
@@ -126,18 +126,15 @@ impl BotticelliServer {
             .map_err(|e| to_mcp_error(e, "Failed to build request"))?;
 
         // Execute generation
-        let response = driver
-            .generate(&request)
-            .await
-            .map_err(|e| {
-                use rmcp::model::ErrorCode;
-                use std::borrow::Cow;
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Generation failed: {}", e)),
-                    None,
-                )
-            })?;
+        let response = driver.generate(&request).await.map_err(|e| {
+            use rmcp::model::ErrorCode;
+            use std::borrow::Cow;
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Generation failed: {}", e)),
+                None,
+            )
+        })?;
 
         // Extract text from response
         let text = response
@@ -149,9 +146,7 @@ impl BotticelliServer {
             })
             .unwrap_or_else(|| "No text generated".to_string());
 
-        let tokens_used = response
-            .usage()
-            .map(|u| *u.total_tokens() as u32);
+        let tokens_used = response.usage().map(|u| *u.total_tokens() as u32);
 
         debug!(response_len = text.len(), ?tokens_used, "Generated text");
 

@@ -1,8 +1,6 @@
 //! Tests for narrative validation helpers.
 
-use botticelli_mcp::tools::narrative_validation_helpers::{
-    auto_fix_common_issues, format_toml,
-};
+use botticelli_mcp::tools::narrative_validation_helpers::{auto_fix_common_issues, format_toml};
 
 #[test]
 fn test_format_toml() {

@@ -12,7 +12,7 @@ async fn test_generate_basic() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing basic generate");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = GenerateParams::new(
         "Hello, world!".to_string(),
@@ -37,7 +37,7 @@ async fn test_generate_with_system_prompt() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing generate with system prompt");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = GenerateParams::new(
         "Write a haiku".to_string(),
@@ -48,7 +48,11 @@ async fn test_generate_with_system_prompt() -> anyhow::Result<()> {
     );
 
     let result = server.generate(Parameters(params)).await?;
-    tracing::debug!(has_system_prompt = true, text_len = result.0.text().len(), "Generate result");
+    tracing::debug!(
+        has_system_prompt = true,
+        text_len = result.0.text().len(),
+        "Generate result"
+    );
 
     assert!(!result.0.text().is_empty());
     assert_eq!(result.0.model(), "claude-3-5-sonnet-20241022");
@@ -62,13 +66,13 @@ async fn test_generate_default_values() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing generate with default values");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = GenerateParams::new(
         "Test prompt".to_string(),
         "gemini-2.0-flash-exp".to_string(), // default
-        1024,                                 // default
-        1.0,                                  // default
+        1024,                               // default
+        1.0,                                // default
         None,
     );
 
@@ -86,7 +90,7 @@ async fn test_execute_act_basic() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing basic execute_act");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = ExecuteActParams::new(
         "Analyze this data".to_string(),
@@ -118,7 +122,7 @@ async fn test_execute_act_with_context() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing execute_act with context");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = ExecuteActParams::new(
         "Continue the story".to_string(),
@@ -130,7 +134,11 @@ async fn test_execute_act_with_context() -> anyhow::Result<()> {
     );
 
     let result = server.execute_act(Parameters(params)).await?;
-    tracing::debug!(response_len = result.0.response().len(), success = result.0.success(), "Execute act result");
+    tracing::debug!(
+        response_len = result.0.response().len(),
+        success = result.0.success(),
+        "Execute act result"
+    );
 
     assert!(!result.0.response().is_empty());
     assert!(result.0.success());
@@ -144,7 +152,7 @@ async fn test_execute_narrative_file_not_found() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing execute_narrative with missing file");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = ExecuteNarrativeParams::new(
         "/nonexistent/narrative.toml".to_string(),
@@ -167,7 +175,7 @@ async fn test_execute_narrative_with_file() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing execute_narrative with file");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new()?;
     let narrative_path = temp_dir.path().join("test_narrative.toml");
     tracing::debug!(path = ?narrative_path, "Created temp narrative path");
@@ -212,7 +220,7 @@ async fn test_execute_narrative_default_model() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing execute_narrative with default model");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new()?;
     let narrative_path = temp_dir.path().join("test.toml");
 

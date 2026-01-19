@@ -6,7 +6,7 @@
 // - rmcp's serve() method with stdio/HTTP transports
 //
 // If HTTP server lifecycle testing is needed in the future, this should be rewritten to:
-// 1. Use BotticelliServer::builder().build()
+// 1. Use BotticelliServer::builder().build()?
 // 2. Use rmcp's HTTP transport layer
 // 3. Test through rmcp protocol, not direct HTTP calls
 //

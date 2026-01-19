@@ -10,7 +10,7 @@ async fn test_elicit_number_without_dialog() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing elicit_number without dialog resource");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = ElicitNumberParams::new("Enter a number:".to_string(), 1, 10);
 
     let result = server.elicit_number(Parameters(params)).await;
@@ -31,11 +31,14 @@ async fn test_elicit_number_invalid_range() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing elicit_number with invalid range");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = ElicitNumberParams::new("Enter a number:".to_string(), 10, 1);
 
     let result = server.elicit_number(Parameters(params)).await;
-    tracing::debug!(is_err = result.is_err(), "Call completed with invalid range");
+    tracing::debug!(
+        is_err = result.is_err(),
+        "Call completed with invalid range"
+    );
 
     // Should fail with invalid range (min > max)
     assert!(result.is_err(), "Should fail with invalid range");
@@ -101,8 +104,15 @@ async fn test_elicit_number_valid_range() -> anyhow::Result<()> {
     let params = ElicitNumberParams::new("Enter a number:".to_string(), 0, 100);
 
     // Validate that min <= max is accepted
-    tracing::debug!(min = params.min(), max = params.max(), "Checking valid range");
-    assert!(*params.min() <= *params.max(), "Valid range should be accepted");
+    tracing::debug!(
+        min = params.min(),
+        max = params.max(),
+        "Checking valid range"
+    );
+    assert!(
+        *params.min() <= *params.max(),
+        "Valid range should be accepted"
+    );
 
     tracing::info!("Valid range test passed");
     Ok(())
@@ -116,10 +126,17 @@ async fn test_elicit_number_equal_min_max() -> anyhow::Result<()> {
     let params = ElicitNumberParams::new("Confirm value:".to_string(), 5, 5);
 
     // Equal min and max should be valid (single value choice)
-    tracing::debug!(min = params.min(), max = params.max(), "Checking equal min/max");
-    assert_eq!(*params.min(), *params.max(), "Equal min/max should be valid");
+    tracing::debug!(
+        min = params.min(),
+        max = params.max(),
+        "Checking equal min/max"
+    );
+    assert_eq!(
+        *params.min(),
+        *params.max(),
+        "Equal min/max should be valid"
+    );
 
     tracing::info!("Equal min/max test passed");
     Ok(())
 }
-

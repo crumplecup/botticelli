@@ -40,7 +40,10 @@ impl BotticelliServer {
         {
             // Build system prompt with context
             let system_prompt = if let Some(ctx) = context {
-                debug!(context_len = ctx.len(), "Including context from previous acts");
+                debug!(
+                    context_len = ctx.len(),
+                    "Including context from previous acts"
+                );
                 Some(format!(
                     "You are executing a narrative act. Here is context from previous acts:\n\n{}",
                     ctx
@@ -52,7 +55,7 @@ impl BotticelliServer {
 
             // Select appropriate driver
             let driver = self.select_driver(&model)?;
-            
+
             // Call execute_act_with_driver with the selected driver
             return self
                 .execute_act_with_driver(driver, prompt, model, max_tokens, system_prompt)
@@ -75,7 +78,10 @@ impl BotticelliServer {
                 context.as_deref().unwrap_or("(none)")
             );
 
-            debug!(response_len = response.len(), "Act execution complete (placeholder)");
+            debug!(
+                response_len = response.len(),
+                "Act execution complete (placeholder)"
+            );
 
             Ok(Json(ExecuteActResult::new(
                 response,
@@ -99,9 +105,9 @@ impl BotticelliServer {
         &self,
         driver: std::sync::Arc<
             dyn botticelli_interface::ExecutionDriver<
-                botticelli_core::GenerateRequest,
-                botticelli_core::GenerateResponse,
-            >,
+                    botticelli_core::GenerateRequest,
+                    botticelli_core::GenerateResponse,
+                >,
         >,
         prompt: String,
         model: String,
@@ -143,18 +149,15 @@ impl BotticelliServer {
         debug!("Executing act with driver");
 
         // Execute generation
-        let response = driver
-            .generate(&request)
-            .await
-            .map_err(|e| {
-                use rmcp::model::ErrorCode;
-                use std::borrow::Cow;
-                rmcp::ErrorData::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    Cow::Owned(format!("Act execution failed: {}", e)),
-                    None,
-                )
-            })?;
+        let response = driver.generate(&request).await.map_err(|e| {
+            use rmcp::model::ErrorCode;
+            use std::borrow::Cow;
+            rmcp::ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                Cow::Owned(format!("Act execution failed: {}", e)),
+                None,
+            )
+        })?;
 
         // Extract text from response
         let text = response
@@ -168,13 +171,12 @@ impl BotticelliServer {
 
         let tokens_used = response.usage().map(|u| *u.total_tokens() as u32);
 
-        debug!(response_len = text.len(), ?tokens_used, "Act execution complete");
+        debug!(
+            response_len = text.len(),
+            ?tokens_used,
+            "Act execution complete"
+        );
 
-        Ok(Json(ExecuteActResult::new(
-            text,
-            model,
-            tokens_used,
-            true,
-        )))
+        Ok(Json(ExecuteActResult::new(text, model, tokens_used, true)))
     }
 }

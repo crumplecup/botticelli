@@ -133,9 +133,7 @@ pub async fn minimal_event_loop<B: Backend>(
                     {
                         warn!("❌ Cannot auto-start server: streamable-http feature not enabled");
                         warn!("💡 Start server manually:");
-                        warn!(
-                            "   cargo run --bin botticelli-mcp-pmcp-http --features http"
-                        );
+                        warn!("   cargo run --bin botticelli-mcp-pmcp-http --features http");
                         warn!("💡 Or enable streamable-http feature in botticelli_tui");
                     }
                 }

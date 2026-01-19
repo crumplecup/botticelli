@@ -26,7 +26,7 @@ impl ContentResource {
         let without_scheme = uri.strip_prefix("content://").ok_or_else(|| {
             botticelli_error::IoError::new(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                "Invalid content URI: missing content:// scheme"
+                "Invalid content URI: missing content:// scheme",
             ))
         })?;
 
@@ -34,19 +34,21 @@ impl ContentResource {
         if parts.len() != 2 {
             return Err(botticelli_error::IoError::new(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                format!("Invalid content URI format. Expected content://table/id, got {}", uri)
-            )).into());
+                format!(
+                    "Invalid content URI format. Expected content://table/id, got {}",
+                    uri
+                ),
+            ))
+            .into());
         }
 
         let table = parts[0].to_string();
-        let id = parts[1]
-            .parse::<i32>()
-            .map_err(|e| {
-                botticelli_error::IoError::new(std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    format!("Invalid ID in URI '{}': {}", parts[1], e)
-                ))
-            })?;
+        let id = parts[1].parse::<i32>().map_err(|e| {
+            botticelli_error::IoError::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Invalid ID in URI '{}': {}", parts[1], e),
+            ))
+        })?;
 
         Ok((table, id))
     }

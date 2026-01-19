@@ -124,7 +124,12 @@ pub struct DiscordGetMessagesResult {
 impl DiscordGetMessagesResult {
     /// Create new Discord get messages result.
     #[instrument(skip(messages))]
-    pub fn new(status: String, channel_id: String, count: usize, messages: Vec<DiscordMessageInfo>) -> Self {
+    pub fn new(
+        status: String,
+        channel_id: String,
+        count: usize,
+        messages: Vec<DiscordMessageInfo>,
+    ) -> Self {
         Self {
             status,
             channel_id,
@@ -221,4 +226,3 @@ pub struct DiscordGetChannelsResult {
     #[schemars(description = "List of channels")]
     channels: Vec<DiscordChannelInfo>,
 }
-

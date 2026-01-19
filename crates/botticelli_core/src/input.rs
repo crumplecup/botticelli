@@ -25,16 +25,7 @@ use serde::{Deserialize, Serialize};
 /// let drop = HistoryRetention::Drop;
 /// ```
 #[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-    Default,
-    elicitation::Elicit,
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default, elicitation::Elicit,
 )]
 #[serde(rename_all = "lowercase")]
 pub enum HistoryRetention {
@@ -268,17 +259,7 @@ impl Input {
 }
 
 /// Output format for table data.
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-    elicitation::Elicit,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, elicitation::Elicit)]
 #[serde(rename_all = "lowercase")]
 pub enum TableFormat {
     /// JSON array of objects

@@ -108,12 +108,12 @@ derive-getters = "0.5"
 derive_setters = "0.1"
 derive_builder = "0.20"
 strum = { version = "0.27", features = ["derive"] }
-petgraph = "0.6"
+petgraph = "0.8"
 shellexpand = "3"
 
 # Rate limiting and retry
 governor = "0.10"
-tokio-retry2 = { version = "0.7", features = ["jitter"] }
+tokio-retry2 = { version = "0.9", features = ["jitter"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = [
   "env-filter",
@@ -128,12 +128,7 @@ ractor = { version = "0.15", features = ["async-trait"] }
 
 # Configuration and HTTP
 config = { version = "0.15", features = ["toml"] }
-reqwest = { version = "0.13", features = [
-  "json",
-  "gzip",
-  "stream",
-  "rustls",
-] }
+reqwest = { version = "0.13", features = ["json", "gzip", "stream", "rustls"] }
 dirs = "6"
 
 # Storage and hashing
@@ -153,7 +148,12 @@ base64 = "0.22"
 tokio-tungstenite = "0.28"
 
 # Discord integration
-serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"] }
+serenity = { version = "0.12", default-features = false, features = [
+  "client",
+  "gateway",
+  "rustls_backend",
+  "model",
+] }
 
 # Database
 diesel = { version = "2", features = [
@@ -183,15 +183,15 @@ mockall = "0.14"
 elicitation = "0.2"
 
 # MCP (Model Context Protocol)
-rmcp = "0.12.0"
-rmcp-macros = "0.12.0"
+rmcp = "0.13"
+rmcp-macros = "0.13"
 mcp-spec = "0.1.0"
 schemars = "1.0"
 
 # HTTP server and middleware
-axum = "0.7"
+axum = "0.8"
 tower = "0.5"
-tower-http = "0.5"
+tower-http = "0.6"
 
 # Tokio utilities
 tokio-util = "0.7"

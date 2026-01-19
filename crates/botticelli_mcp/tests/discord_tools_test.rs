@@ -17,7 +17,7 @@ async fn test_discord_tools_available_with_token() -> anyhow::Result<()> {
 
     // Test that tools work when DISCORD_TOKEN is available
     let has_token = std::env::var("DISCORD_TOKEN").is_ok();
-    
+
     if !has_token {
         tracing::info!("Skipping - no DISCORD_TOKEN available");
         return Ok(());
@@ -25,15 +25,18 @@ async fn test_discord_tools_available_with_token() -> anyhow::Result<()> {
 
     let registry = ToolRegistry::default();
     let definitions = registry.tool_definitions().await?;
-    
+
     // Check that Discord tools are registered
     let discord_tools: Vec<_> = definitions
         .iter()
         .filter(|def| def.name.starts_with("discord_"))
         .collect();
-    
-    assert!(!discord_tools.is_empty(), "Should have Discord tools registered");
-    
+
+    assert!(
+        !discord_tools.is_empty(),
+        "Should have Discord tools registered"
+    );
+
     // Verify expected tools exist
     let tool_names: Vec<_> = discord_tools.iter().map(|def| def.name.as_str()).collect();
     assert!(tool_names.contains(&"discord_post_message"));
@@ -61,16 +64,33 @@ async fn test_discord_tool_schemas() -> anyhow::Result<()> {
     let definitions = registry.tool_definitions().await?;
 
     // Find Discord tool definitions
-    let post_def = definitions.iter().find(|d| d.name == "discord_post_message");
-    let get_messages_def = definitions.iter().find(|d| d.name == "discord_get_messages");
-    let get_guild_def = definitions.iter().find(|d| d.name == "discord_get_guild_info");
-    let get_channels_def = definitions.iter().find(|d| d.name == "discord_get_channels");
+    let post_def = definitions
+        .iter()
+        .find(|d| d.name == "discord_post_message");
+    let get_messages_def = definitions
+        .iter()
+        .find(|d| d.name == "discord_get_messages");
+    let get_guild_def = definitions
+        .iter()
+        .find(|d| d.name == "discord_get_guild_info");
+    let get_channels_def = definitions
+        .iter()
+        .find(|d| d.name == "discord_get_channels");
 
     // Verify tool names exist
     assert!(post_def.is_some(), "Should have discord_post_message tool");
-    assert!(get_messages_def.is_some(), "Should have discord_get_messages tool");
-    assert!(get_guild_def.is_some(), "Should have discord_get_guild_info tool");
-    assert!(get_channels_def.is_some(), "Should have discord_get_channels tool");
+    assert!(
+        get_messages_def.is_some(),
+        "Should have discord_get_messages tool"
+    );
+    assert!(
+        get_guild_def.is_some(),
+        "Should have discord_get_guild_info tool"
+    );
+    assert!(
+        get_channels_def.is_some(),
+        "Should have discord_get_channels tool"
+    );
 
     // Verify schemas have required fields
     let post_schema = &post_def.unwrap().input_schema;
@@ -136,21 +156,30 @@ async fn test_discord_post_message_validation() -> anyhow::Result<()> {
     let registry = ToolRegistry::default();
 
     // Test missing channel_id
-    let result = registry.execute("discord_post_message", json!({"content": "test"})).await;
+    let result = registry
+        .execute("discord_post_message", json!({"content": "test"}))
+        .await;
     assert!(result.is_err(), "Should fail without channel_id");
     tracing::debug!("Correctly rejected missing channel_id");
 
     // Test missing content
-    let result = registry.execute("discord_post_message", json!({"channel_id": "123456789"})).await;
+    let result = registry
+        .execute("discord_post_message", json!({"channel_id": "123456789"}))
+        .await;
     assert!(result.is_err(), "Should fail without content");
     tracing::debug!("Correctly rejected missing content");
 
     // Test content too long
     let long_content = "a".repeat(2001);
-    let result = registry.execute("discord_post_message", json!({
-        "channel_id": "123456789",
-        "content": long_content
-    })).await;
+    let result = registry
+        .execute(
+            "discord_post_message",
+            json!({
+                "channel_id": "123456789",
+                "content": long_content
+            }),
+        )
+        .await;
     assert!(
         result.is_err(),
         "Should fail with content over 2000 characters"

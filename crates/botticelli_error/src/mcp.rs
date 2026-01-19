@@ -102,7 +102,10 @@ impl PartialEq for SerdeJsonError {
 impl PartialEq for DatabaseMcpError {
     fn eq(&self, other: &Self) -> bool {
         // DatabaseError implements PartialEq
-        self.message == other.message && self.source == other.source && self.line == other.line && self.file == other.file
+        self.message == other.message
+            && self.source == other.source
+            && self.line == other.line
+            && self.file == other.file
     }
 }
 
@@ -139,16 +142,16 @@ pub enum McpErrorKind {
     #[cfg(feature = "serde_json")]
     #[display("JSON error: {}", _0)]
     Json(SerdeJsonError),
-    
+
     /// Database error
     #[cfg(feature = "database")]
     #[display("Database error: {}", _0)]
     Database(DatabaseMcpError),
-    
+
     /// Narrative error
     #[display("Narrative error: {}", _0)]
     Narrative(crate::NarrativeError),
-    
+
     /// RMCP protocol error (message + code)
     #[display("RMCP error: {} (code {})", message, code)]
     Rmcp {
@@ -157,7 +160,7 @@ pub enum McpErrorKind {
         /// Error message
         message: String,
     },
-    
+
     /// Tool not found
     #[display("Tool not found: {}", _0)]
     ToolNotFound(String),
@@ -199,7 +202,7 @@ pub enum McpErrorKind {
     /// Mutex poisoned (internal error)
     #[display("Mutex poisoned: {}", _0)]
     MutexPoisoned(String),
-    
+
     /// Parse int error with source
     #[display("Parse error: {}", message)]
     ParseInt {
@@ -208,7 +211,7 @@ pub enum McpErrorKind {
         /// Source error
         source: Arc<std::num::ParseIntError>,
     },
-    
+
     /// Environment variable error with source
     #[display("Environment variable error: {}", message)]
     EnvVar {
@@ -217,7 +220,7 @@ pub enum McpErrorKind {
         /// Source error
         source: Arc<std::env::VarError>,
     },
-    
+
     /// IO error with source
     #[display("IO error: {}", message)]
     Io {
@@ -345,7 +348,9 @@ impl McpError {
     #[cfg(feature = "database")]
     #[track_caller]
     pub fn database_error(message: impl Into<String>, source: crate::DatabaseError) -> Self {
-        Self::new(McpErrorKind::Database(DatabaseMcpError::new(message, source)))
+        Self::new(McpErrorKind::Database(DatabaseMcpError::new(
+            message, source,
+        )))
     }
 
     /// Create a backend unavailable error.
@@ -365,7 +370,7 @@ impl McpError {
     pub fn mutex_poisoned(context: impl Into<String>) -> Self {
         Self::new(McpErrorKind::MutexPoisoned(context.into()))
     }
-    
+
     /// Create a parse int error with source.
     #[track_caller]
     pub fn parse_int_error(message: impl Into<String>, source: std::num::ParseIntError) -> Self {
@@ -374,7 +379,7 @@ impl McpError {
             source: Arc::new(source),
         })
     }
-    
+
     /// Create an environment variable error with source.
     #[track_caller]
     pub fn env_var_error(message: impl Into<String>, source: std::env::VarError) -> Self {
@@ -383,7 +388,7 @@ impl McpError {
             source: Arc::new(source),
         })
     }
-    
+
     /// Create an IO error with source.
     #[track_caller]
     pub fn io_error(message: impl Into<String>, source: std::io::Error) -> Self {

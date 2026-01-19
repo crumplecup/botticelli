@@ -19,7 +19,12 @@ fn test_create_narrative_params_serialization() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing CreateNarrativeParams serialization");
 
-    let params = CreateNarrativeParams::new("Fetch data then analyze it".to_string(), "test_narrative".to_string(), Some("gemini-2.0-flash-exp".to_string()), Some(0.7));
+    let params = CreateNarrativeParams::new(
+        "Fetch data then analyze it".to_string(),
+        "test_narrative".to_string(),
+        Some("gemini-2.0-flash-exp".to_string()),
+        Some(0.7),
+    );
 
     let json = serde_json::to_value(&params)?;
     tracing::debug!(?json, "Serialized params");
@@ -37,7 +42,8 @@ fn test_create_narrative_params_serialization() -> anyhow::Result<()> {
 fn test_create_narrative_params_optional_fields() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing CreateNarrativeParams with optional fields");
-    let params = CreateNarrativeParams::new("Process data".to_string(), "simple".to_string(), None, None);
+    let params =
+        CreateNarrativeParams::new("Process data".to_string(), "simple".to_string(), None, None);
 
     let json = serde_json::to_value(&params)?;
     tracing::debug!(?json, "Serialized params with optional fields");
@@ -87,13 +93,16 @@ async fn test_create_narrative_basic() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing create narrative basic");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
-    let params = CreateNarrativeParams::new("Fetch data from API then analyze the results".to_string(), "data_analysis".to_string(), None, None);
+    let params = CreateNarrativeParams::new(
+        "Fetch data from API then analyze the results".to_string(),
+        "data_analysis".to_string(),
+        None,
+        None,
+    );
 
-    let result = server
-        .create_narrative(Parameters(params))
-        .await?;
+    let result = server.create_narrative(Parameters(params)).await?;
     let result: CreateNarrativeResult = result.0;
 
     // Check TOML structure
@@ -125,13 +134,16 @@ async fn test_create_narrative_with_defaults() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing create narrative with defaults");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
-    let params = CreateNarrativeParams::new("Generate a report".to_string(), "report_generator".to_string(), Some("claude-3-5-sonnet-20241022".to_string()), Some(0.5));
+    let params = CreateNarrativeParams::new(
+        "Generate a report".to_string(),
+        "report_generator".to_string(),
+        Some("claude-3-5-sonnet-20241022".to_string()),
+        Some(0.5),
+    );
 
-    let result = server
-        .create_narrative(Parameters(params))
-        .await?;
+    let result = server.create_narrative(Parameters(params)).await?;
     let result: CreateNarrativeResult = result.0;
 
     let toml = result.toml();
@@ -149,9 +161,14 @@ async fn test_create_narrative_invalid_name() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing create narrative with invalid name");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
-    let params = CreateNarrativeParams::new("Do something".to_string(), "123-invalid-name!".to_string(), None, None);
+    let params = CreateNarrativeParams::new(
+        "Do something".to_string(),
+        "123-invalid-name!".to_string(),
+        None,
+        None,
+    );
 
     let result = server.create_narrative(Parameters(params)).await;
 
@@ -169,18 +186,17 @@ async fn test_create_narrative_complex_description() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing create narrative with complex description");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = CreateNarrativeParams::new(
-        "First fetch user data, then process the data, and finally generate a summary report".to_string(),
+        "First fetch user data, then process the data, and finally generate a summary report"
+            .to_string(),
         "user_report".to_string(),
         None,
-        None
+        None,
     );
 
-    let result = server
-        .create_narrative(Parameters(params))
-        .await?;
+    let result = server.create_narrative(Parameters(params)).await?;
     let result: CreateNarrativeResult = result.0;
 
     // Should extract multiple acts from "then" and "and" patterns
@@ -204,7 +220,7 @@ fn test_modify_narrative_params_serialization() {
     let params = ModifyNarrativeParams::new(
         "[narrative]\nname = \"test\"\n".to_string(),
         "add act that validates the data".to_string(),
-        Some("/tmp/narrative.toml".to_string())
+        Some("/tmp/narrative.toml".to_string()),
     );
 
     let json = serde_json::to_value(&params).expect("Should serialize");
@@ -242,7 +258,7 @@ async fn test_modify_narrative_add_act() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing modify narrative add act");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let original_toml = "\
 [narrative]
@@ -258,18 +274,21 @@ fetch = \"Get data\"
     let params = ModifyNarrativeParams::new(
         original_toml.to_string(),
         "add act that validates the data".to_string(),
-        None
+        None,
     );
 
-    let result = server
-        .modify_narrative(Parameters(params))
-        .await?;
+    let result = server.modify_narrative(Parameters(params)).await?;
 
     let result: ModifyNarrativeResult = result.0;
 
     // Check that act was added
     assert!(result.toml().contains("validates"));
-    assert!(result.changes().iter().any(|c: &String| c.contains("Added act")));
+    assert!(
+        result
+            .changes()
+            .iter()
+            .any(|c: &String| c.contains("Added act"))
+    );
 
     // Should still be valid
     let validation: Value = result.validation().clone();
@@ -284,7 +303,7 @@ async fn test_modify_narrative_remove_act() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing modify narrative remove act");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let original_toml = "\
 [narrative]
@@ -301,12 +320,10 @@ process = \"Process data\"
     let params = ModifyNarrativeParams::new(
         original_toml.to_string(),
         "remove act process".to_string(),
-        None
+        None,
     );
 
-    let result = server
-        .modify_narrative(Parameters(params))
-        .await?;
+    let result = server.modify_narrative(Parameters(params)).await?;
 
     let result: ModifyNarrativeResult = result.0;
 
@@ -328,7 +345,7 @@ async fn test_modify_narrative_change_model() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing modify narrative change model");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let original_toml = "\
 [narrative]
@@ -344,7 +361,7 @@ fetch = \"Get data\"
     let params = ModifyNarrativeParams::new(
         original_toml.to_string(),
         "use claude model".to_string(),
-        None
+        None,
     );
 
     let result = server
@@ -360,7 +377,12 @@ fetch = \"Get data\"
             .toml()
             .contains("model = \"claude-3-5-sonnet-20241022\"")
     );
-    assert!(result.changes().iter().any(|c: &String| c.contains("Changed model")));
+    assert!(
+        result
+            .changes()
+            .iter()
+            .any(|c: &String| c.contains("Changed model"))
+    );
 
     tracing::info!("Change model test passed");
     Ok(())
@@ -371,7 +393,7 @@ async fn test_modify_narrative_change_temperature() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing modify narrative change temperature");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let original_toml = "\
 [narrative]
@@ -387,12 +409,10 @@ fetch = \"Get data\"
     let params = ModifyNarrativeParams::new(
         original_toml.to_string(),
         "set temperature to 0.8".to_string(),
-        None
+        None,
     );
 
-    let result = server
-        .modify_narrative(Parameters(params))
-        .await?;
+    let result = server.modify_narrative(Parameters(params)).await?;
 
     let result: ModifyNarrativeResult = result.0;
 
@@ -414,12 +434,12 @@ async fn test_modify_narrative_unknown_modification() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing modify narrative with unknown modification");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let params = ModifyNarrativeParams::new(
         "[narrative]\nname = \"test\"\n".to_string(),
         "do something completely unknown".to_string(),
-        None
+        None,
     );
 
     let result = server.modify_narrative(Parameters(params)).await;
@@ -438,7 +458,7 @@ async fn test_modify_narrative_with_save() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing modify narrative with save");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new()?;
     let save_path = temp_dir.path().join("modified.toml");
 
@@ -456,7 +476,7 @@ fetch = \"Get data\"
     let params = ModifyNarrativeParams::new(
         original_toml.to_string(),
         "use gemini model".to_string(),
-        Some(save_path.to_string_lossy().to_string())
+        Some(save_path.to_string_lossy().to_string()),
     );
 
     let result = server
@@ -482,7 +502,11 @@ fetch = \"Get data\"
 
 #[test]
 fn test_save_narrative_params_serialization() {
-    let params = SaveNarrativeParams::new("[narrative]\nname = \"test\"\n".to_string(), "/tmp/test.toml".to_string(), true);
+    let params = SaveNarrativeParams::new(
+        "[narrative]\nname = \"test\"\n".to_string(),
+        "/tmp/test.toml".to_string(),
+        true,
+    );
 
     let json = serde_json::to_value(&params).expect("Should serialize");
 
@@ -498,7 +522,8 @@ fn test_save_narrative_params_serialization() {
 
 #[test]
 fn test_save_narrative_params_default_overwrite() {
-    let params = SaveNarrativeParams::new("content".to_string(), "/tmp/test.toml".to_string(), false);
+    let params =
+        SaveNarrativeParams::new("content".to_string(), "/tmp/test.toml".to_string(), false);
 
     let json = serde_json::to_value(&params).expect("Should serialize");
 
@@ -521,8 +546,8 @@ fn test_save_narrative_result_serialization() {
 // ===== SaveNarrative Tool Tests =====
 
 #[tokio::test]
-async fn test_save_narrative_basic() {
-    let server = BotticelliServer::builder().build();
+async fn test_save_narrative_basic() -> anyhow::Result<()> {
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new().expect("Should create temp dir");
     let file_path = temp_dir.path().join("test.toml");
 
@@ -537,7 +562,11 @@ order = [\"fetch\"]
 fetch = \"Get data\"
 ";
 
-    let params = SaveNarrativeParams::new(narrative_toml.to_string(), file_path.to_string_lossy().to_string(), false);
+    let params = SaveNarrativeParams::new(
+        narrative_toml.to_string(),
+        file_path.to_string_lossy().to_string(),
+        false,
+    );
 
     let result = server
         .save_narrative(Parameters(params))
@@ -557,16 +586,17 @@ fetch = \"Get data\"
     // Verify contents
     let contents = fs::read_to_string(&file_path).expect("Should read file");
     assert_eq!(contents, narrative_toml);
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_save_narrative_invalid_extension() {
-    let server = BotticelliServer::builder().build();
+async fn test_save_narrative_invalid_extension() -> anyhow::Result<()> {
+    let server = BotticelliServer::builder().build()?;
 
     let params = SaveNarrativeParams::new(
         "content".to_string(),
         "/tmp/test.txt".to_string(), // Wrong extension
-        false
+        false,
     );
 
     let result = server.save_narrative(Parameters(params)).await;
@@ -575,11 +605,12 @@ async fn test_save_narrative_invalid_extension() {
     if let Err(err) = result {
         assert!(err.message.contains(".toml extension"));
     }
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_save_narrative_overwrite_protection() {
-    let server = BotticelliServer::builder().build();
+async fn test_save_narrative_overwrite_protection() -> anyhow::Result<()> {
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new().expect("Should create temp dir");
     let file_path = temp_dir.path().join("existing.toml");
 
@@ -589,7 +620,7 @@ async fn test_save_narrative_overwrite_protection() {
     let params = SaveNarrativeParams::new(
         "new content".to_string(),
         file_path.to_string_lossy().to_string(),
-        false // Should fail
+        false, // Should fail
     );
 
     let result = server.save_narrative(Parameters(params)).await;
@@ -602,11 +633,12 @@ async fn test_save_narrative_overwrite_protection() {
     // Verify original file unchanged
     let contents = fs::read_to_string(&file_path).expect("Should read file");
     assert_eq!(contents, "old content");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_save_narrative_overwrite_allowed() {
-    let server = BotticelliServer::builder().build();
+async fn test_save_narrative_overwrite_allowed() -> anyhow::Result<()> {
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new().expect("Should create temp dir");
     let file_path = temp_dir.path().join("existing.toml");
 
@@ -616,7 +648,7 @@ async fn test_save_narrative_overwrite_allowed() {
     let params = SaveNarrativeParams::new(
         "new content".to_string(),
         file_path.to_string_lossy().to_string(),
-        true // Allow overwrite
+        true, // Allow overwrite
     );
 
     let result = server
@@ -632,18 +664,23 @@ async fn test_save_narrative_overwrite_allowed() {
     // Verify file was overwritten
     let contents = fs::read_to_string(&file_path).expect("Should read file");
     assert_eq!(contents, "new content");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_save_narrative_creates_directories() {
-    let server = BotticelliServer::builder().build();
+async fn test_save_narrative_creates_directories() -> anyhow::Result<()> {
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new().expect("Should create temp dir");
     let file_path = temp_dir.path().join("nested/directories/test.toml");
 
     // Ensure parent directories don't exist
     assert!(!file_path.parent().unwrap().exists());
 
-    let params = SaveNarrativeParams::new("content".to_string(), file_path.to_string_lossy().to_string(), false);
+    let params = SaveNarrativeParams::new(
+        "content".to_string(),
+        file_path.to_string_lossy().to_string(),
+        false,
+    );
 
     let _result = server
         .save_narrative(Parameters(params))
@@ -656,15 +693,20 @@ async fn test_save_narrative_creates_directories() {
         "Parent directories should exist"
     );
     assert!(file_path.exists(), "File should exist");
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_save_narrative_absolute_path() {
-    let server = BotticelliServer::builder().build();
+async fn test_save_narrative_absolute_path() -> anyhow::Result<()> {
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new().expect("Should create temp dir");
     let file_path = temp_dir.path().join("test.toml");
 
-    let params = SaveNarrativeParams::new("content".to_string(), file_path.to_string_lossy().to_string(), false);
+    let params = SaveNarrativeParams::new(
+        "content".to_string(),
+        file_path.to_string_lossy().to_string(),
+        false,
+    );
 
     let result = server
         .save_narrative(Parameters(params))
@@ -679,17 +721,23 @@ async fn test_save_narrative_absolute_path() {
         result_path.is_absolute(),
         "Returned path should be absolute"
     );
+    Ok(())
 }
 
 // ===== Integration Test: Full Workflow =====
 
 #[tokio::test]
-async fn test_narrative_workflow_create_modify_save() {
-    let server = BotticelliServer::builder().build();
+async fn test_narrative_workflow_create_modify_save() -> anyhow::Result<()> {
+    let server = BotticelliServer::builder().build()?;
     let temp_dir = TempDir::new().expect("Should create temp dir");
 
     // 1. Create a narrative
-    let create_params = CreateNarrativeParams::new("Fetch user data then generate a report".to_string(), "user_report".to_string(), Some("gemini-2.0-flash-exp".to_string()), Some(0.7));
+    let create_params = CreateNarrativeParams::new(
+        "Fetch user data then generate a report".to_string(),
+        "user_report".to_string(),
+        Some("gemini-2.0-flash-exp".to_string()),
+        Some(0.7),
+    );
 
     let created = server
         .create_narrative(Parameters(create_params))
@@ -701,11 +749,8 @@ async fn test_narrative_workflow_create_modify_save() {
     let toml = created.toml().to_string();
 
     // 2. Modify the narrative
-    let modify_params = ModifyNarrativeParams::new(
-        toml,
-        "add act that validates the data".to_string(),
-        None
-    );
+    let modify_params =
+        ModifyNarrativeParams::new(toml, "add act that validates the data".to_string(), None);
 
     let modified = server
         .modify_narrative(Parameters(modify_params))
@@ -714,11 +759,20 @@ async fn test_narrative_workflow_create_modify_save() {
         .0;
 
     assert!(modified.validation()["valid"].as_bool().unwrap());
-    assert!(modified.changes().iter().any(|c: &String| c.contains("Added act")));
+    assert!(
+        modified
+            .changes()
+            .iter()
+            .any(|c: &String| c.contains("Added act"))
+    );
 
     // 3. Save the narrative
     let save_path = temp_dir.path().join("final_narrative.toml");
-    let save_params = SaveNarrativeParams::new(modified.toml().clone(), save_path.to_string_lossy().to_string(), false);
+    let save_params = SaveNarrativeParams::new(
+        modified.toml().clone(),
+        save_path.to_string_lossy().to_string(),
+        false,
+    );
 
     let saved = server
         .save_narrative(Parameters(save_params))
@@ -735,4 +789,5 @@ async fn test_narrative_workflow_create_modify_save() {
     assert!(final_contents.contains("model = \"gemini-2.0-flash-exp\""));
     assert!(final_contents.contains("temperature = 0.7"));
     assert!(final_contents.contains("validates")); // Modified act
+    Ok(())
 }

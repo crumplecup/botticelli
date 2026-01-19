@@ -43,22 +43,22 @@ use async_trait::async_trait;
 pub trait LlmSamplerOperations: Send + Sync {
     /// Session type for conversation state
     type Session;
-    
+
     /// Tool definition type
     type ToolDefinition;
-    
+
     /// Response type from generation
     type Response;
-    
+
     /// Result type for completed sessions
     type Result;
-    
+
     /// Error type
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     /// Tool call type
     type ToolCall;
-    
+
     /// Tool result type
     type ToolResult;
 

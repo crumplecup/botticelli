@@ -104,16 +104,7 @@ pub struct ToolCall {
 /// assert_eq!(format!("{:?}", reason), "EndTurn");
 /// ```
 #[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-    Default,
-    elicitation::Elicit,
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default, elicitation::Elicit,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum StopReason {

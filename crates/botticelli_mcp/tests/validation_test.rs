@@ -17,7 +17,11 @@ name = "test"
 "#;
 
     let result = Validator::validate_toml(toml_content);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validation result");
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validation result"
+    );
 
     assert!(!result.is_valid());
     assert!(!result.errors().is_empty());
@@ -40,7 +44,11 @@ prompt = "test prompt"
 "#;
 
     let result = Validator::validate_toml(toml_content);
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validation result");
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validation result"
+    );
 
     assert!(!result.is_valid());
     assert!(!result.errors().is_empty());
@@ -55,7 +63,11 @@ fn test_empty_narrative() -> anyhow::Result<()> {
     tracing::info!("Testing empty narrative");
 
     let result = Validator::validate_toml("");
-    tracing::debug!(is_valid = result.is_valid(), error_count = result.errors().len(), "Validation result");
+    tracing::debug!(
+        is_valid = result.is_valid(),
+        error_count = result.errors().len(),
+        "Validation result"
+    );
 
     assert!(!result.is_valid());
     assert!(!result.errors().is_empty());
@@ -94,6 +106,3 @@ prompt = "test prompt"
     tracing::info!("Minimal valid narrative test passed");
     Ok(())
 }
-
-
-

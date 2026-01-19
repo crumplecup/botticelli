@@ -11,7 +11,7 @@ async fn test_server_info_basic() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing basic server info");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     tracing::debug!("Created server");
 
     let result = server.server_info().await?;
@@ -37,7 +37,7 @@ async fn test_server_info_tool_count() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing server info tool count");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let result = server.server_info().await?;
     tracing::debug!(tool_count = *result.0.tool_count(), "Got tool count");
@@ -58,7 +58,7 @@ async fn test_server_info_version() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing server info version");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     let result = server.server_info().await?;
     tracing::debug!(version = %result.0.version(), expected = env!("CARGO_PKG_VERSION"), "Checking version");
@@ -69,4 +69,3 @@ async fn test_server_info_version() -> anyhow::Result<()> {
     tracing::info!("Version test passed");
     Ok(())
 }
-

@@ -9,4 +9,3 @@ fn test_placeholder() -> anyhow::Result<()> {
     tracing::info!("Placeholder test passed");
     Ok(())
 }
-

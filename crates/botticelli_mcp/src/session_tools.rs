@@ -351,7 +351,10 @@ impl GetNarrativeStateParams {
     /// Creates new parameters for getting narrative state.
     #[instrument]
     pub fn new(narrative_id: String, format: StateFormat) -> Self {
-        Self { narrative_id, format }
+        Self {
+            narrative_id,
+            format,
+        }
     }
 }
 
@@ -376,11 +379,7 @@ pub struct GetNarrativeStateResult {
 impl GetNarrativeStateResult {
     /// Creates a new narrative state result.
     #[instrument(skip(state))]
-    pub fn new(
-        narrative_id: String,
-        state: NarrativeStateSummary,
-        toml: Option<String>,
-    ) -> Self {
+    pub fn new(narrative_id: String, state: NarrativeStateSummary, toml: Option<String>) -> Self {
         Self {
             narrative_id,
             state,
@@ -471,7 +470,10 @@ impl ValidateNarrativeSessionParams {
     /// Creates new parameters for validating a narrative session.
     #[instrument]
     pub fn new(narrative_id: String, strict: bool) -> Self {
-        Self { narrative_id, strict }
+        Self {
+            narrative_id,
+            strict,
+        }
     }
 }
 

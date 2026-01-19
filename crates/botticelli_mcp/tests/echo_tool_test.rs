@@ -12,7 +12,7 @@ async fn test_echo_basic_message() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing basic echo functionality");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     tracing::debug!("Created BotticelliServer");
 
     let params = EchoParams::new("Hello, MCP!".to_string());
@@ -32,11 +32,14 @@ async fn test_echo_empty_message() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing echo with empty message");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = EchoParams::new(String::new());
 
     let result = server.echo(Parameters(params)).await?;
-    tracing::debug!(echo_len = result.0.echo().len(), "Received empty echo response");
+    tracing::debug!(
+        echo_len = result.0.echo().len(),
+        "Received empty echo response"
+    );
 
     assert_eq!(result.0.echo(), "");
 
@@ -49,7 +52,7 @@ async fn test_echo_unicode_message() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing echo with unicode");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = EchoParams::new("Hello 世界 🌍".to_string());
 
     let result = server.echo(Parameters(params)).await?;
@@ -60,4 +63,3 @@ async fn test_echo_unicode_message() -> anyhow::Result<()> {
     tracing::info!("Unicode echo test passed");
     Ok(())
 }
-

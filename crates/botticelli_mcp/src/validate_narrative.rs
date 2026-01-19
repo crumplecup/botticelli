@@ -8,7 +8,9 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
 /// Parameters for validating a narrative.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_builder::Builder, Default)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_builder::Builder, Default,
+)]
 #[builder(setter(into), default)]
 pub struct ValidateNarrativeParams {
     /// TOML content to validate (either this or file_path must be provided).

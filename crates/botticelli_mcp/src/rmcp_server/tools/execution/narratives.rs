@@ -2,14 +2,7 @@
 //!
 //! Execute complete narratives from TOML files with prompt injection and parameter overrides.
 
-#[cfg(any(
-    feature = "gemini",
-    feature = "anthropic",
-    feature = "ollama",
-    feature = "huggingface",
-    feature = "groq"
-))]
-use crate::rmcp_server::helpers::{default_model, to_mcp_error};
+use crate::rmcp_server::BotticelliServer;
 #[cfg(not(any(
     feature = "gemini",
     feature = "anthropic",
@@ -18,7 +11,14 @@ use crate::rmcp_server::helpers::{default_model, to_mcp_error};
     feature = "groq"
 )))]
 use crate::rmcp_server::helpers::to_mcp_error;
-use crate::rmcp_server::BotticelliServer;
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "ollama",
+    feature = "huggingface",
+    feature = "groq"
+))]
+use crate::rmcp_server::helpers::{default_model, to_mcp_error};
 use crate::{ExecuteNarrativeParams, ExecuteNarrativeResult};
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ErrorCode;
@@ -70,18 +70,24 @@ impl BotticelliServer {
             // Determine which driver to use based on model
             let model_str = model.unwrap_or_else(default_model);
             debug!(model = %model_str, "Selecting driver for narrative execution");
-            
+
             // Use modified narrative for execution
-            let narrative_source = botticelli_narrative::NarrativeSource::Single(Box::new(narrative));
+            let narrative_source =
+                botticelli_narrative::NarrativeSource::Single(Box::new(narrative));
 
             // Use helper from execution/helpers.rs to get trait object
             let driver = self.select_driver(&model_str)?;
-            debug!(provider = driver.provider_name(), model = driver.model_name(), "Driver selected");
-            
-            let executor: botticelli_narrative::NarrativeExecutor<botticelli_error::NarrativeError> = 
-                botticelli_narrative::NarrativeExecutor::new(driver);
+            debug!(
+                provider = driver.provider_name(),
+                model = driver.model_name(),
+                "Driver selected"
+            );
+
+            let executor: botticelli_narrative::NarrativeExecutor<
+                botticelli_error::NarrativeError,
+            > = botticelli_narrative::NarrativeExecutor::new(driver);
             debug!("Executing narrative from source");
-            
+
             let execution = executor
                 .execute_from_source(&narrative_source)
                 .await
@@ -93,8 +99,11 @@ impl BotticelliServer {
                         None,
                     )
                 })?;
-            
-            debug!(acts_count = execution.act_executions().len(), "Narrative execution completed");
+
+            debug!(
+                acts_count = execution.act_executions().len(),
+                "Narrative execution completed"
+            );
             let result = Self::convert_execution_result(execution);
             return Ok(Json(result));
         }
@@ -109,7 +118,9 @@ impl BotticelliServer {
         {
             Err(rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
-                Cow::Borrowed("No LLM drivers enabled. Enable at least one feature: gemini, anthropic, ollama, huggingface, or groq"),
+                Cow::Borrowed(
+                    "No LLM drivers enabled. Enable at least one feature: gemini, anthropic, ollama, huggingface, or groq",
+                ),
                 None,
             ))
         }
@@ -235,8 +246,7 @@ impl BotticelliServer {
                     );
 
                     // Prepend prompt as Input::Text to existing inputs
-                    let mut new_inputs =
-                        vec![botticelli_core::Input::Text(prompt.to_string())];
+                    let mut new_inputs = vec![botticelli_core::Input::Text(prompt.to_string())];
                     new_inputs.extend_from_slice(act_config.inputs());
                     let new_input_count = new_inputs.len();
                     act_config.set_inputs(new_inputs);
@@ -339,8 +349,8 @@ impl BotticelliServer {
             execution.act_executions().len(),
             models_used,
             total_tokens,
-            true,  // success - we got here without errors
-            None,  // no error
+            true, // success - we got here without errors
+            None, // no error
         )
     }
 }

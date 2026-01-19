@@ -2,8 +2,8 @@
 //!
 //! Tools for interacting with Discord servers, channels, and messages.
 
-use crate::rmcp_server::helpers::to_mcp_error;
 use crate::rmcp_server::BotticelliServer;
+use crate::rmcp_server::helpers::to_mcp_error;
 use crate::{
     DiscordAuthor, DiscordChannelInfo, DiscordGetChannelsParams, DiscordGetChannelsResult,
     DiscordGetGuildInfoParams, DiscordGetGuildInfoResult, DiscordGetMessagesParams,
@@ -104,7 +104,7 @@ impl BotticelliServer {
             timestamp,
         )))
     }
-    
+
     /// Get recent messages from a Discord channel.
     #[instrument(skip(self, params), fields(channel_id = params.channel_id(), limit = params.limit()))]
     pub async fn discord_get_messages(
@@ -189,7 +189,7 @@ impl BotticelliServer {
             formatted_messages,
         )))
     }
-    
+
     /// Get information about a Discord guild (server).
     #[instrument(skip(self, params), fields(guild_id = params.guild_id()))]
     pub async fn discord_get_guild_info(
@@ -320,4 +320,3 @@ impl BotticelliServer {
         )))
     }
 }
-

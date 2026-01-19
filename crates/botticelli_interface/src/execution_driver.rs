@@ -33,10 +33,7 @@ where
     /// Generate model output given a request.
     ///
     /// Errors are boxed to avoid associated type issues with trait objects.
-    async fn generate(
-        &self,
-        req: &Req,
-    ) -> Result<Resp, Box<dyn std::error::Error + Send + Sync>>;
+    async fn generate(&self, req: &Req) -> Result<Resp, Box<dyn std::error::Error + Send + Sync>>;
 
     /// Provider name (e.g., "anthropic", "gemini").
     fn provider_name(&self) -> &str;
@@ -62,10 +59,7 @@ where
     Req: Send + Sync,
     Resp: Send + Sync,
 {
-    async fn generate(
-        &self,
-        req: &Req,
-    ) -> Result<Resp, Box<dyn std::error::Error + Send + Sync>> {
+    async fn generate(&self, req: &Req) -> Result<Resp, Box<dyn std::error::Error + Send + Sync>> {
         BotticelliDriver::generate(self, req)
             .await
             .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)

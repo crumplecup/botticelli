@@ -65,11 +65,7 @@ impl NarrativeResource {
 
         fs::read_to_string(&path).map_err(|e| {
             McpError::io_error(
-                format!(
-                    "Failed to read narrative '{}' at {}",
-                    name,
-                    path.display()
-                ),
+                format!("Failed to read narrative '{}' at {}", name, path.display()),
                 e,
             )
         })
@@ -84,7 +80,10 @@ impl NarrativeResource {
 
         let entries = fs::read_dir(&self.narratives_dir).map_err(|e| {
             McpError::io_error(
-                format!("Failed to read narratives directory {}", self.narratives_dir.display()),
+                format!(
+                    "Failed to read narratives directory {}",
+                    self.narratives_dir.display()
+                ),
                 e,
             )
         })?;

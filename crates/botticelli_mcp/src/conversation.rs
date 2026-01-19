@@ -36,7 +36,7 @@ impl ConversationSession {
         let session_id = Uuid::new_v4().to_string();
         tracing::Span::current().record("session_id", &session_id);
         tracing::Span::current().record("system_prompt_len", system_prompt.len());
-        
+
         Self {
             id: session_id,
             system_prompt,

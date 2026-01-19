@@ -13,8 +13,12 @@ async fn test_create_scene_with_description() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing scene creation with description");
 
-    let server = BotticelliServer::builder().build();
-    let params = CreateSceneParams::new("narrative_123".to_string(), "Opening Scene".to_string(), Some("The hero awakens in a strange land".to_string()));
+    let server = BotticelliServer::builder().build()?;
+    let params = CreateSceneParams::new(
+        "narrative_123".to_string(),
+        "Opening Scene".to_string(),
+        Some("The hero awakens in a strange land".to_string()),
+    );
 
     let result = server.create_scene(Parameters(params)).await?;
     let scene = result.0;
@@ -42,8 +46,12 @@ async fn test_create_scene_without_description() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing scene creation without description");
 
-    let server = BotticelliServer::builder().build();
-    let params = CreateSceneParams::new("narrative_456".to_string(), "Battle Scene".to_string(), None);
+    let server = BotticelliServer::builder().build()?;
+    let params = CreateSceneParams::new(
+        "narrative_456".to_string(),
+        "Battle Scene".to_string(),
+        None,
+    );
 
     let result = server.create_scene(Parameters(params)).await?;
     let scene = result.0;
@@ -88,7 +96,7 @@ async fn test_list_scenes() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing list scenes");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = ListScenesParams::new("narrative_999".to_string());
 
     let result = server.list_scenes(Parameters(params)).await?;
@@ -126,7 +134,7 @@ async fn test_update_scene() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing scene update");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let updates = json!({
         "name": "Updated Scene Name",
         "description": "New description"
@@ -174,7 +182,7 @@ async fn test_delete_scene() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing scene deletion");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
     let params = DeleteSceneParams::new("scene_to_delete".to_string());
 
     let result = server.delete_scene(Parameters(params)).await?;
@@ -212,17 +220,24 @@ async fn test_scene_workflow() -> anyhow::Result<()> {
     helpers::init_test_tracing("info");
     tracing::info!("Testing full scene workflow");
 
-    let server = BotticelliServer::builder().build();
+    let server = BotticelliServer::builder().build()?;
 
     // Create a scene
-    let create_params = CreateSceneParams::new("workflow_narrative".to_string(), "Test Scene".to_string(), Some("Initial description".to_string()));
+    let create_params = CreateSceneParams::new(
+        "workflow_narrative".to_string(),
+        "Test Scene".to_string(),
+        Some("Initial description".to_string()),
+    );
     let create_result = server.create_scene(Parameters(create_params)).await?;
     let created_scene = create_result.0;
     let scene_id = created_scene.scene_id().clone();
     tracing::debug!(scene_id = %scene_id, "Created scene");
 
     // Update the scene
-    let update_params = UpdateSceneParams::new(scene_id.clone(), json!({"description": "Updated description"}));
+    let update_params = UpdateSceneParams::new(
+        scene_id.clone(),
+        json!({"description": "Updated description"}),
+    );
     let update_result = server.update_scene(Parameters(update_params)).await?;
     tracing::debug!("Updated scene");
     assert!(*update_result.0.success());

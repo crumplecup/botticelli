@@ -40,7 +40,16 @@ pub enum SamplingErrorKind {
 }
 
 /// Sampling error with location tracking.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::Display,
+    derive_more::Error,
+    derive_getters::Getters,
+)]
 #[display("Sampling: {} at {}:{}", kind, file, line)]
 pub struct SamplingError {
     /// Error kind

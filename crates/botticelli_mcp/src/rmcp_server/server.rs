@@ -1,7 +1,7 @@
 //! BotticelliServer struct and builder.
 
-use crate::dialog_resource::DialogResource;
 use crate::PrometheusMetrics;
+use crate::dialog_resource::DialogResource;
 use derive_builder::Builder;
 use derive_getters::Getters;
 use rmcp::handler::server::tool::ToolRouter;
@@ -46,7 +46,10 @@ pub struct BotticelliServer {
     metrics: Option<Arc<PrometheusMetrics>>,
 
     /// Partial narrative registry.
-    #[builder(setter(into), default = "Arc::new(crate::tools::PartialNarrativeRegistry::new())")]
+    #[builder(
+        setter(into),
+        default = "Arc::new(crate::tools::PartialNarrativeRegistry::new())"
+    )]
     narrative_registry: Arc<crate::tools::PartialNarrativeRegistry>,
 
     /// Gemini LLM driver (optional).

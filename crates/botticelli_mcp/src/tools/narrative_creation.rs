@@ -34,7 +34,11 @@ impl NarrativeRegistry {
         let partial = PartialNarrativeBuilder::default()
             .description(Some(description))
             .build()
-            .map_err(|e| BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(e.to_string())))?;
+            .map_err(|e| {
+                BuilderError::new(botticelli_error::BuilderErrorKind::ValidationFailed(
+                    e.to_string(),
+                ))
+            })?;
         sessions.insert(session_id, partial);
         Ok(())
     }

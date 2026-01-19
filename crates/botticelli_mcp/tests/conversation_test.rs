@@ -163,4 +163,3 @@ fn test_serialization() -> anyhow::Result<()> {
     tracing::info!("Serialization test passed");
     Ok(())
 }
-

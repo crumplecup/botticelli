@@ -9,7 +9,9 @@ use tracing::{debug, instrument};
 /// Registry for MCP resources.
 #[derive(Clone, Default)]
 pub struct ResourceRegistry {
-    resources: Arc<Vec<Arc<dyn McpResource<Error = botticelli_error::McpError, ResourceInfo = ResourceInfo>>>>,
+    resources: Arc<
+        Vec<Arc<dyn McpResource<Error = botticelli_error::McpError, ResourceInfo = ResourceInfo>>>,
+    >,
 }
 
 impl ResourceRegistry {
@@ -23,13 +25,21 @@ impl ResourceRegistry {
 
     /// Registers a resource.
     #[tracing::instrument(skip(self, resource))]
-    pub fn register(&mut self, resource: Arc<dyn McpResource<Error = botticelli_error::McpError, ResourceInfo = ResourceInfo>>) {
+    pub fn register(
+        &mut self,
+        resource: Arc<
+            dyn McpResource<Error = botticelli_error::McpError, ResourceInfo = ResourceInfo>,
+        >,
+    ) {
         Arc::make_mut(&mut self.resources).push(resource);
     }
 
     /// Lists all resources.
     #[tracing::instrument(skip(self))]
-    pub fn list(&self) -> Vec<Arc<dyn McpResource<Error = botticelli_error::McpError, ResourceInfo = ResourceInfo>>> {
+    pub fn list(
+        &self,
+    ) -> Vec<Arc<dyn McpResource<Error = botticelli_error::McpError, ResourceInfo = ResourceInfo>>>
+    {
         self.resources.as_ref().clone()
     }
 
