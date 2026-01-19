@@ -1,5 +1,7 @@
 //! Media type enumeration.
 
+use elicitation::{Prompt, Select};
+
 /// Type of media content.
 #[derive(
     Debug,
@@ -14,6 +16,7 @@
     strum::AsRefStr,
     derive_more::Display,
     derive_more::FromStr,
+    elicitation::Elicit,
 )]
 pub enum MediaType {
     /// Image content (PNG, JPEG, WebP, etc.)
