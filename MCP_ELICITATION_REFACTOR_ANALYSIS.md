@@ -287,17 +287,107 @@ Files:
 
 ## Refactor Plan
 
-### Phase 0: Elicit + Universal Tooling (This PR)
-**Goal**: Make LLMs able to construct all config/param types
+### Phase 0: Elicit + Universal Tooling (✨ IN PROGRESS)
 
-**Tasks**:
+**Status**: First library tools implemented! 🎉
+
+**Goal 1**: Make all config types Elicit-able
 1. ✅ Add `elicitation.workspace = true` to Cargo.toml
-2. Add `elicitation::Elicit` to all Params structs
-3. Add Elicit to enums (MetricsFormat, StateFormat, etc.)
+2. ⏳ Add `elicitation::Elicit` to all Params structs (6/50 complete)
+   - ✅ EchoParams, EchoResult
+   - ✅ MetricsFormat (enum), ExportMetricsParams, ExportMetricsResult
+   - ✅ ValidateTomlParams, ValidateTomlResult
+   - ✅ GetTierInfoParams, GetTierInfoResult, TierInfo
+   - ⏳ Remaining ~44 types (partial.rs, scene.rs, session_tools.rs, etc.)
+3. Add Elicit to enums (MetricsFormat ✅, StateFormat ⏳, CarouselLevel ⏳)
 4. Add Elicit to PartialAct, PartialNarrative
 5. Verify compilation, fix unused imports
 
-**Benefit**: LLMs can construct all MCP tool parameters programmatically
+**Goal 2**: Tool-out the workspace - STARTED! 🚀
+
+**Implemented Library Tools**:
+1. ✅ **validate_toml** - Validate narrative TOML without file I/O
+   - Exposes `botticelli_narrative::Validator::validate_toml`
+   - Returns structured errors/warnings
+   - LLMs can validate TOML before saving
+   - Types: ValidateTomlParams, ValidateTomlResult (both Elicit)
+   
+2. ✅ **get_tier_info** - Query rate limit tier configuration
+   - Exposes `botticelli_rate_limit::BotticelliConfig::get_tier`
+   - Returns RPM/TPM/RPD limits for provider/tier
+   - LLMs can check budget before expensive operations
+   - **Fixed bug**: Added missing derive_getters to TierConfig
+   - Types: GetTierInfoParams, GetTierInfoResult, TierInfo (all Elicit)
+
+**Planned Library Tools** (3 remaining):
+3. ⏳ **select_model** - Model selection tool
+   - Expose `botticelli_models::ModelSelector`
+   - LLMs pick optimal model for task
+   
+4. ⏳ **query_table** - Database query tool
+   - Expose `botticelli_database::Repository`
+   - LLMs query content tables
+   
+5. ⏳ **infer_schema** - Schema inference tool
+   - Expose `botticelli_database::infer_schema`
+   - LLMs analyze JSON → generate schemas
+
+**Implementation Pattern**:
+```rust
+// New module: src/rmcp_server/tools/library.rs
+impl BotticelliServer {
+    /// Validate narrative TOML without creating a file.
+    #[instrument(skip(self, params), fields(toml_len = params.toml().len()))]
+    pub async fn validate_toml(
+        &self,
+        Parameters(params): Parameters<ValidateTomlParams>,
+    ) -> Result<Json<ValidateTomlResult>, rmcp::ErrorData> {
+        // Thin wrapper around library function
+        let validation = Validator::validate_toml(params.toml());
+        
+        // Convert to MCP result types with Elicit
+        Ok(Json(ValidateTomlResult {
+            valid: validation.is_valid(),
+            errors: validation.errors().iter().map(|e| e.message().to_string()).collect(),
+            warnings: /* ... */,
+        }))
+    }
+}
+```
+
+**Architecture Benefits**:
+1. **Zero boilerplate** - `#[tool_router]` auto-registers all pub async fn
+2. **LLM construction** - Elicit derives enable parameter construction
+3. **Tool composition** - LLMs can chain: validate → check_tier → execute
+4. **Type safety** - Compiler enforces schemas match tool signatures
+5. **Full observability** - All tools instrumented with tracing spans
+6. **Error handling** - Seamless conversion via to_mcp_error helper
+
+**Example Tool Composition Workflow** (LLM scripting):
+```json
+// Step 1: Validate TOML syntax
+validate_toml({toml: "[acts]\n name = \"intro\""})
+→ {valid: true, errors: [], warnings: ["Missing description"]}
+
+// Step 2: Check budget
+get_tier_info({provider: "gemini", tier: "free"})
+→ {provider: "gemini", tier: {name: "Free", rpm: 15, tpm: 1000000}}
+
+// Step 3: Create narrative (existing tool)
+create_narrative({toml: "..."})
+→ {narrative_id: "abc123"}
+
+// Step 4: Execute (existing tool)
+execute_narrative({narrative_id: "abc123"})
+→ {status: "success", outputs: [...]}
+```
+
+LLMs can now write **multi-step scripts** using library functions as building blocks!
+
+**Bug Fixes**:
+- ✅ Added derive_getters to TierConfig (was missing, fields were private)
+
+**Benefit**: LLMs can construct all MCP tool parameters programmatically AND compose library functions into workflows!
 
 ---
 
