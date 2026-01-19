@@ -1,6 +1,7 @@
 //! Input validation for command parameters.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
+use rmcp::tool;
 use std::collections::HashMap;
 use tracing::{debug, instrument};
 
@@ -15,6 +16,7 @@ pub struct ValidationError {
 
 impl ValidationError {
     /// Create a new validation error.
+    #[tool]
     #[tracing::instrument(fields(field, reason))]
     pub fn new(field: impl Into<String>, reason: impl Into<String>) -> Self {
         let error = Self {
@@ -38,6 +40,7 @@ pub struct DiscordValidator;
 
 impl DiscordValidator {
     /// Create a new Discord validator.
+    #[tool]
     #[tracing::instrument]
     pub fn new() -> Self {
         tracing::debug!("Creating Discord validator");
@@ -45,6 +48,7 @@ impl DiscordValidator {
     }
 
     /// Validate a Discord snowflake ID.
+    #[tool]
     #[tracing::instrument(skip(self), fields(value))]
     fn validate_snowflake(&self, value: &str) -> bool {
         // Discord snowflakes are 17-19 digit integers
@@ -52,6 +56,7 @@ impl DiscordValidator {
     }
 
     /// Validate message content length.
+    #[tool]
     #[tracing::instrument(skip(self), fields(content_len = content.len()))]
     fn validate_content_length(&self, content: &str) -> bool {
         // Discord message limit is 2000 characters
@@ -59,6 +64,7 @@ impl DiscordValidator {
     }
 
     /// Validate channel name.
+    #[tool]
     #[tracing::instrument(skip(self), fields(name))]
     fn validate_channel_name(&self, name: &str) -> bool {
         // Channel names: 1-100 chars, lowercase alphanumeric + hyphens/underscores
@@ -70,6 +76,7 @@ impl DiscordValidator {
     }
 
     /// Validate role name.
+    #[tool]
     fn validate_role_name(&self, name: &str) -> bool {
         // Role names: 1-100 characters
         !name.is_empty() && name.len() <= 100

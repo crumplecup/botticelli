@@ -4,6 +4,7 @@ use crate::{
     ApprovalWorkflow, CommandValidator, ContentFilter, PermissionChecker, RateLimiter,
     SecurityResult,
 };
+use rmcp::tool;
 use std::collections::HashMap;
 use tracing::{debug, info, instrument, warn};
 
@@ -40,6 +41,7 @@ pub struct SecureExecutor<V: CommandValidator> {
 
 impl<V: CommandValidator> SecureExecutor<V> {
     /// Create a new secure executor.
+    #[tool]
     #[tracing::instrument(skip_all)]
     pub fn new(
         permission_checker: PermissionChecker,
@@ -62,6 +64,7 @@ impl<V: CommandValidator> SecureExecutor<V> {
     ///
     /// Returns Ok(()) if the command passes all security checks and is ready to execute.
     /// Returns Err with specific security error if any check fails.
+    #[tool]
     #[instrument(skip(self, params), fields(command, narrative_id))]
     pub fn check_security(
         &mut self,

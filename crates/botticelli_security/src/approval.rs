@@ -1,7 +1,8 @@
 //! Approval workflows for dangerous operations.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
-use elicitation::{Prompt, Select, Survey};
+use elicitation::{Prompt, Select};
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -45,6 +46,7 @@ pub struct PendingAction {
 
 impl PendingAction {
     /// Create a new pending action.
+    #[tool]
     #[tracing::instrument(fields(id, narrative_id, command, param_count = params.len()))]
     pub fn new(
         id: impl Into<String>,
@@ -76,6 +78,7 @@ impl PendingAction {
     }
 
     /// Check if the action has expired.
+    #[tool]
     #[tracing::instrument(skip(self), fields(action_id = %self.id))]
     pub fn is_expired(&self) -> bool {
         let now = SystemTime::now()
@@ -86,6 +89,7 @@ impl PendingAction {
     }
 
     /// Approve the action.
+    #[tool]
     #[tracing::instrument(skip(self, approved_by), fields(action_id = %self.id))]
     pub fn approve(&mut self, approved_by: impl Into<String>, reason: Option<String>) {
         let approver = approved_by.into();
@@ -96,6 +100,7 @@ impl PendingAction {
     }
 
     /// Deny the action.
+    #[tool]
     #[tracing::instrument(skip(self, denied_by), fields(action_id = %self.id))]
     pub fn deny(&mut self, denied_by: impl Into<String>, reason: Option<String>) {
         let denier = denied_by.into();
@@ -120,6 +125,7 @@ pub struct ApprovalWorkflow {
 
 impl ApprovalWorkflow {
     /// Create a new approval workflow.
+    #[tool]
     #[tracing::instrument]
     pub fn new() -> Self {
         tracing::debug!("Creating approval workflow");
@@ -130,6 +136,7 @@ impl ApprovalWorkflow {
     }
 
     /// Configure whether a command requires approval.
+    #[tool]
     #[tracing::instrument(skip(self), fields(command, required))]
     pub fn set_requires_approval(&mut self, command: impl Into<String>, required: bool) {
         let cmd = command.into();
@@ -138,6 +145,7 @@ impl ApprovalWorkflow {
     }
 
     /// Check if a command requires approval.
+    #[tool]
     #[tracing::instrument(skip(self), fields(command))]
     pub fn requires_approval(&self, command: &str) -> bool {
         self.requires_approval
@@ -147,6 +155,7 @@ impl ApprovalWorkflow {
     }
 
     /// Create a pending action and return its ID.
+    #[tool]
     #[instrument(skip(self, params), fields(narrative_id, command))]
     pub fn create_pending_action(
         &mut self,
@@ -178,18 +187,21 @@ impl ApprovalWorkflow {
     }
 
     /// Get a pending action by ID.
+    #[tool]
     #[tracing::instrument(skip(self), fields(action_id = id))]
     pub fn get_pending_action(&self, id: &str) -> Option<&PendingAction> {
         self.pending.get(id)
     }
 
     /// Get a mutable pending action by ID.
+    #[tool]
     #[tracing::instrument(skip(self), fields(action_id = id))]
     pub fn get_pending_action_mut(&mut self, id: &str) -> Option<&mut PendingAction> {
         self.pending.get_mut(id)
     }
 
     /// List all pending actions for a narrative.
+    #[tool]
     #[tracing::instrument(skip(self), fields(narrative_id))]
     pub fn list_pending_actions(&self, narrative_id: &str) -> Vec<&PendingAction> {
         self.pending
@@ -199,6 +211,7 @@ impl ApprovalWorkflow {
     }
 
     /// Approve a pending action.
+    #[tool]
     #[instrument(skip(self), fields(action_id, approved_by))]
     pub fn approve_action(
         &mut self,
@@ -227,6 +240,7 @@ impl ApprovalWorkflow {
     }
 
     /// Deny a pending action.
+    #[tool]
     #[instrument(skip(self), fields(action_id, denied_by))]
     pub fn deny_action(
         &mut self,
@@ -247,6 +261,7 @@ impl ApprovalWorkflow {
     }
 
     /// Check if an action is approved and ready to execute.
+    #[tool]
     #[instrument(skip(self), fields(action_id))]
     pub fn check_approval(&self, action_id: &str) -> SecurityResult<()> {
         let action = self.pending.get(action_id).ok_or_else(|| {
@@ -291,6 +306,7 @@ impl ApprovalWorkflow {
     }
 
     /// Clean up expired actions.
+    #[tool]
     #[tracing::instrument(skip(self), fields(pending_count = self.pending.len()))]
     pub fn cleanup_expired(&mut self) -> usize {
         let before = self.pending.len();

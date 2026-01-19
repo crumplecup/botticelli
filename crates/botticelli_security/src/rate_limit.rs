@@ -1,7 +1,7 @@
 //! Rate limiting using token bucket algorithm.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
-use elicitation::Survey;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -20,6 +20,7 @@ pub struct RateLimit {
 
 impl RateLimit {
     /// Create a new rate limit.
+    #[tool]
     #[tracing::instrument(fields(max_tokens, window_secs, burst))]
     pub fn new(max_tokens: u32, window_secs: u64, burst: u32) -> Self {
         tracing::debug!("Creating rate limit");
@@ -31,6 +32,7 @@ impl RateLimit {
     }
 
     /// Create a rate limit with no burst.
+    #[tool]
     #[tracing::instrument(fields(max_tokens, window_secs))]
     pub fn strict(max_tokens: u32, window_secs: u64) -> Self {
         Self::new(max_tokens, window_secs, 0)
@@ -61,6 +63,7 @@ struct TokenBucket {
 
 impl TokenBucket {
     /// Create a new token bucket.
+    #[tool]
     #[tracing::instrument(skip(limit), fields(max_tokens = limit.max_tokens, burst = limit.burst))]
     fn new(limit: RateLimit) -> Self {
         let max_tokens = (limit.max_tokens + limit.burst) as f64;
@@ -73,6 +76,7 @@ impl TokenBucket {
     }
 
     /// Refill tokens based on elapsed time.
+    #[tool]
     #[tracing::instrument(skip(self), fields(current_tokens = self.tokens))]
     fn refill(&mut self) {
         let now = Instant::now();
@@ -90,6 +94,7 @@ impl TokenBucket {
     }
 
     /// Try to consume a token. Returns Ok if successful, Err with retry duration if not.
+    #[tool]
     #[tracing::instrument(skip(self), fields(available_tokens = self.tokens))]
     fn try_consume(&mut self) -> Result<(), Duration> {
         self.refill();
@@ -109,6 +114,7 @@ impl TokenBucket {
     }
 
     /// Get current token count.
+    #[tool]
     fn available_tokens(&mut self) -> u32 {
         self.refill();
         self.tokens.floor() as u32
@@ -129,6 +135,7 @@ pub struct RateLimiter {
 
 impl RateLimiter {
     /// Create a new rate limiter.
+    #[tool]
     #[tracing::instrument]
     pub fn new() -> Self {
         tracing::debug!("Creating rate limiter");
@@ -139,6 +146,7 @@ impl RateLimiter {
     }
 
     /// Add a rate limit for an operation.
+    #[tool]
     #[tracing::instrument(skip(self, limit), fields(operation, max_tokens = limit.max_tokens))]
     pub fn add_limit(&mut self, operation: impl Into<String>, limit: RateLimit) {
         let operation = operation.into();
@@ -149,6 +157,7 @@ impl RateLimiter {
     }
 
     /// Check if an operation can be executed.
+    #[tool]
     #[instrument(skip(self), fields(operation))]
     pub fn check(&mut self, operation: &str) -> SecurityResult<()> {
         debug!("Checking rate limit");
@@ -185,6 +194,7 @@ impl RateLimiter {
     }
 
     /// Get available tokens for an operation.
+    #[tool]
     #[tracing::instrument(skip(self), fields(operation))]
     pub fn available_tokens(&mut self, operation: &str) -> Option<u32> {
         self.buckets
@@ -193,6 +203,7 @@ impl RateLimiter {
     }
 
     /// Get rate limit configuration for an operation.
+    #[tool]
     #[tracing::instrument(skip(self), fields(operation))]
     pub fn get_limit(&self, operation: &str) -> Option<&RateLimit> {
         self.limits.get(operation)

@@ -20,6 +20,7 @@ derive-new = { workspace = true }
 derive_builder = { workspace = true }
 derive_setters = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 toml = { workspace = true }
 regex = { workspace = true }
 tracing = { workspace = true }

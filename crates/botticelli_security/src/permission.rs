@@ -1,7 +1,7 @@
 //! Permission model for command execution.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
-use elicitation::Survey;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, instrument};
@@ -100,6 +100,7 @@ pub struct PermissionChecker {
 
 impl PermissionChecker {
     /// Check if a command is allowed.
+    #[tool]
     #[instrument(skip(self), fields(command))]
     pub fn check_command(&self, command: &str) -> SecurityResult<()> {
         debug!("Checking command permission");
@@ -130,6 +131,7 @@ impl PermissionChecker {
     }
 
     /// Check if a resource is accessible.
+    #[tool]
     #[instrument(skip(self), fields(resource_type, resource_id))]
     pub fn check_resource(&self, resource_type: &str, resource_id: &str) -> SecurityResult<()> {
         debug!("Checking resource permission");
@@ -171,6 +173,7 @@ impl PermissionChecker {
     }
 
     /// Check if a user is protected.
+    #[tool]
     #[instrument(skip(self), fields(user_id))]
     pub fn check_user_protected(&self, user_id: &str) -> SecurityResult<()> {
         if self.config.protected_users.contains(user_id) {
@@ -187,6 +190,7 @@ impl PermissionChecker {
     }
 
     /// Check if a role is protected.
+    #[tool]
     #[instrument(skip(self), fields(role_id))]
     pub fn check_role_protected(&self, role_id: &str) -> SecurityResult<()> {
         if self.config.protected_roles.contains(role_id) {

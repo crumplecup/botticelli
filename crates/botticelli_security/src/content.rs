@@ -1,8 +1,8 @@
 //! Content filtering for AI-generated output.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
-use elicitation::{Elicitation, Survey};
 use regex::Regex;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use tracing::{debug, instrument};
@@ -106,6 +106,7 @@ pub struct ContentFilter {
 
 impl ContentFilter {
     /// Create a new content filter with the given configuration.
+    #[tool]
     #[tracing::instrument(skip(config), fields(
         pattern_count = config.prohibited_patterns.len(),
         max_length = config.max_length
@@ -144,6 +145,7 @@ impl ContentFilter {
     }
 
     /// Filter content and return violations if any.
+    #[tool]
     #[instrument(skip(self, content), fields(content_len = content.len()))]
     pub fn filter(&self, content: &str) -> SecurityResult<()> {
         debug!("Filtering content");
@@ -237,6 +239,7 @@ impl ContentFilter {
     }
 
     /// Extract domain from URL.
+    #[tool]
     #[tracing::instrument(skip(self), fields(url))]
     fn extract_domain<'a>(&self, url: &'a str) -> Option<&'a str> {
         // Remove protocol

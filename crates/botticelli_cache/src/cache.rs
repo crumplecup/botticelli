@@ -1,7 +1,7 @@
 //! Command result cache implementation.
 
 use derive_getters::Getters;
-use elicitation::Survey;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -18,12 +18,14 @@ pub struct CacheEntry {
 
 impl CacheEntry {
     /// Check if this entry is expired.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn is_expired(&self) -> bool {
         self.created_at.elapsed() > self.ttl
     }
 
     /// Get remaining time until expiration.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn time_remaining(&self) -> Option<Duration> {
         self.ttl.checked_sub(self.created_at.elapsed())
@@ -39,6 +41,7 @@ struct CacheKey {
 }
 
 impl CacheKey {
+    #[tool]
     #[tracing::instrument(skip(args), fields(platform, command, arg_count = args.len()))]
     fn new(platform: &str, command: &str, args: &HashMap<String, JsonValue>) -> Self {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -148,6 +151,7 @@ pub struct CommandCache {
 
 impl CommandCache {
     /// Create a new command cache with configuration.
+    #[tool]
     #[tracing::instrument(skip(config), fields(
         default_ttl = config.default_ttl,
         max_size = config.max_size,
@@ -171,6 +175,7 @@ impl CommandCache {
     /// * `args` - Command arguments
     /// * `value` - Result value to cache
     /// * `ttl_seconds` - TTL in seconds (uses default if None)
+    #[tool]
     #[tracing::instrument(
         skip(self, args, value),
         fields(
@@ -228,6 +233,7 @@ impl CommandCache {
     /// - Entry doesn't exist
     /// - Entry is expired
     /// - Cache is disabled
+    #[tool]
     #[tracing::instrument(
         skip(self, args),
         fields(
@@ -275,6 +281,7 @@ impl CommandCache {
     }
 
     /// Remove expired entries from cache.
+    #[tool]
     #[tracing::instrument(skip(self), fields(cache_size = self.entries.len()))]
     pub fn cleanup_expired(&mut self) -> usize {
         let before = self.entries.len();
@@ -299,6 +306,7 @@ impl CommandCache {
     }
 
     /// Clear all cache entries.
+    #[tool]
     #[tracing::instrument(skip(self), fields(cache_size = self.entries.len()))]
     pub fn clear(&mut self) {
         let count = self.entries.len();
@@ -308,18 +316,21 @@ impl CommandCache {
     }
 
     /// Get number of cached entries.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
 
     /// Check if cache is empty.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
 
     /// Evict least recently used entry.
+    #[tool]
     #[tracing::instrument(skip(self), fields(cache_size = self.entries.len()))]
     fn evict_lru(&mut self) {
         if let Some(key) = self.access_order.first().cloned() {
