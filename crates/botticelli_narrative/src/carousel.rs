@@ -5,6 +5,7 @@ use botticelli_error::{NarrativeError, NarrativeErrorKind};
 use botticelli_rate_limit::Budget;
 use derive_getters::Getters;
 use derive_setters::Setters;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// Carousel configuration for iterative execution with budget constraints.
@@ -40,6 +41,7 @@ fn default_estimated_tokens() -> u64 {
 
 impl CarouselConfig {
     /// Creates a new carousel configuration.
+    #[tool]
     #[tracing::instrument(fields(iterations, estimated_tokens_per_iteration))]
     pub fn new(iterations: u32, estimated_tokens_per_iteration: u64) -> Self {
         tracing::debug!(

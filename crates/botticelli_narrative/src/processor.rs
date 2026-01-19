@@ -7,6 +7,7 @@ use crate::NarrativeMetadata;
 use botticelli_core::ActExecution;
 use botticelli_error::BotticelliResult;
 use botticelli_interface::{ActProcessor, ProcessorTrait};
+use rmcp::tool;
 
 /// Context provided to processors for act processing.
 ///
@@ -33,6 +34,7 @@ pub struct ProcessorContext<'a> {
 
 impl<'a> ProcessorContext<'a> {
     /// Create a new processor context.
+    #[tool]
     pub fn new(
         execution: &'a ActExecution,
         narrative_metadata: &'a NarrativeMetadata,
@@ -106,6 +108,7 @@ where
 
 impl ProcessorRegistry {
     /// Create a new empty processor registry.
+    #[tool]
     pub fn new() -> Self {
         Self::default()
     }
@@ -183,11 +186,13 @@ impl ProcessorRegistry {
     }
 
     /// Get the number of registered processors.
+    #[tool]
     pub fn len(&self) -> usize {
         self.processors.len()
     }
 
     /// Check if the registry is empty.
+    #[tool]
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.processors.is_empty()

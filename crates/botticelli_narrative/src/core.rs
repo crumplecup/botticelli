@@ -3,7 +3,7 @@
 use crate::{ActConfig, CarouselConfig, toml_parser};
 use botticelli_error::{NarrativeError, NarrativeErrorKind};
 use botticelli_interface::NarrativeProvider;
-use elicitation::{Prompt, Select, Survey};
+use elicitation::{Prompt, Select};
 use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;

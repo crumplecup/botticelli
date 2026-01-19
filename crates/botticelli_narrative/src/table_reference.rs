@@ -4,6 +4,7 @@ use botticelli_error::{BotticelliError, BotticelliResult};
 use botticelli_interface::ContentRepository;
 use derive_builder::Builder;
 use derive_getters::Getters;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// Reference to content in a database table.
@@ -37,6 +38,7 @@ pub struct TableReference {
 
 impl TableReference {
     /// Create a new builder for constructing a table reference.
+    #[tool]
     pub fn builder() -> TableReferenceBuilder {
         TableReferenceBuilder::default()
     }

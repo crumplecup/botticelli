@@ -16,6 +16,7 @@
 //! ```
 
 use botticelli_error::BotticelliResult;
+use rmcp::tool;
 use tracing::instrument;
 
 /// Unit struct providing extraction and parsing utilities for LLM responses.
@@ -51,6 +52,7 @@ impl Extract {
     /// let json = Extract::json(response).unwrap();
     /// assert!(json.contains("123"));
     /// ```
+    #[tool]
     #[instrument(skip(response), fields(response_len = response.len()))]
     pub fn json(response: &str) -> BotticelliResult<String> {
         use tracing::{debug, error};
@@ -171,6 +173,7 @@ impl Extract {
     /// let toml = Extract::toml(response).unwrap();
     /// assert!(toml.contains("[server]"));
     /// ```
+    #[tool]
     #[instrument(skip(response), fields(response_len = response.len()))]
     pub fn toml(response: &str) -> BotticelliResult<String> {
         use tracing::{debug, error};
