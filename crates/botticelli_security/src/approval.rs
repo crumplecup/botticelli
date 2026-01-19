@@ -1,13 +1,14 @@
 //! Approval workflows for dangerous operations.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
+use elicitation::{Prompt, Select, Survey};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{debug, instrument};
 
 /// Approval decision.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, elicitation::Elicit)]
 pub enum ApprovalDecision {
     /// Action approved
     Approved,
@@ -18,7 +19,7 @@ pub enum ApprovalDecision {
 }
 
 /// Pending action awaiting approval.
-#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct PendingAction {
     /// Unique action ID
     id: String,

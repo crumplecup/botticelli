@@ -3,7 +3,7 @@
 use botticelli_error::{RateLimitError, RateLimitErrorKind};
 use botticelli_interface::Tier;
 use derive_getters::Getters;
-use elicitation::{Prompt, Survey};
+use elicitation::Survey;
 use std::time::{Duration, Instant};
 
 /// Budget tracker for carousel operations.

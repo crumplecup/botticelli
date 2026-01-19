@@ -1,6 +1,7 @@
 //! Permission model for command execution.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
+use elicitation::{Prompt, Survey};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, instrument};
@@ -15,6 +16,7 @@ use tracing::{debug, instrument};
     derive_getters::Getters,
     derive_setters::Setters,
     derive_new::new,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
 pub struct PermissionConfig {
@@ -59,6 +61,7 @@ pub struct PermissionConfig {
     derive_getters::Getters,
     derive_setters::Setters,
     derive_new::new,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
 pub struct ResourcePermission {

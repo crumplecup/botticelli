@@ -11,6 +11,7 @@ categories.workspace = true
 
 [dependencies]
 botticelli_error = { workspace = true }
+elicitation.workspace = true
 derive_more = { workspace = true, features = ["display", "from", "deref", "deref_mut"] }
 derive-getters = { workspace = true }
 derive-new = { workspace = true }

@@ -1,13 +1,14 @@
 //! Rate limiting using token bucket algorithm.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
+use elicitation::{Prompt, Survey};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tracing::{debug, instrument};
 
 /// Rate limit configuration.
-#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct RateLimit {
     /// Maximum tokens (requests) allowed
     max_tokens: u32,

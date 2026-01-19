@@ -9,7 +9,7 @@
 use botticelli_error::ConfigError;
 use botticelli_interface::Tier;
 use config::{Config, File, FileFormat};
-use elicitation::{Prompt, Survey};
+use elicitation::Survey;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, info, instrument, warn};

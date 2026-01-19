@@ -1,6 +1,7 @@
 //! Content filtering for AI-generated output.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
+use elicitation::{Elicitation, Prompt, Survey};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -15,6 +16,7 @@ use tracing::{debug, instrument};
     derive_getters::Getters,
     derive_setters::Setters,
     derive_new::new,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
 pub struct ContentFilterConfig {
@@ -85,7 +87,7 @@ impl Default for ContentFilterConfig {
 }
 
 /// Content violation details.
-#[derive(Debug, Clone, derive_getters::Getters, derive_new::new)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_new::new, elicitation::Elicit)]
 pub struct ContentViolation {
     /// Type of violation
     violation_type: String,
