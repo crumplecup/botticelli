@@ -24,6 +24,9 @@ use crate::MediaType;
     Debug,
     Clone,
     PartialEq,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
     derive_getters::Getters,
     derive_builder::Builder,
     elicitation::Elicit,
@@ -46,4 +49,25 @@ pub struct MediaMetadata {
     /// Audio/video duration in seconds
     #[builder(default)]
     duration_seconds: Option<f32>,
+}
+
+impl MediaMetadata {
+    /// Create simple metadata with just media type and default MIME.
+    #[tracing::instrument]
+    pub fn new(media_type: MediaType) -> Self {
+        let mime_type = match media_type {
+            MediaType::Image => "application/octet-stream",
+            MediaType::Audio => "application/octet-stream",
+            MediaType::Video => "application/octet-stream",
+        };
+        
+        Self {
+            media_type,
+            mime_type: mime_type.to_string(),
+            filename: None,
+            width: None,
+            height: None,
+            duration_seconds: None,
+        }
+    }
 }

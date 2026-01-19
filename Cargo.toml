@@ -186,7 +186,7 @@ elicitation = { version = "0.4.3", features = ["serde_json", "chrono", "uuid"] }
 rmcp = "0.13"
 rmcp-macros = "0.13"
 mcp-spec = "0.1.0"
-schemars = "1.0"
+schemars = { version = "1.0", features = ["uuid1"] }
 
 # HTTP server and middleware
 axum = "0.8"

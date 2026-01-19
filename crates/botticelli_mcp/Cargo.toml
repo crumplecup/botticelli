@@ -63,6 +63,7 @@ botticelli_error = { workspace = true, features = ["mcp"] }
 botticelli_interface = { workspace = true }
 botticelli_narrative = { workspace = true }
 botticelli_rate_limit = { workspace = true }
+botticelli_storage = { workspace = true }
 botticelli_database = { workspace = true, optional = true }
 botticelli_models = { workspace = true, optional = true }
 botticelli_social = { workspace = true, optional = true, features = ["discord"] }

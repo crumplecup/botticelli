@@ -7,6 +7,7 @@ mod execution;
 mod library;
 mod narrative;
 mod scene;
+mod storage;
 
 use crate::rmcp_server::BotticelliServer;
 use rmcp::tool_router;

@@ -17,6 +17,9 @@ use rmcp::tool;
     strum::AsRefStr,
     derive_more::Display,
     derive_more::FromStr,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
     elicitation::Elicit,
 )]
 pub enum MediaType {
