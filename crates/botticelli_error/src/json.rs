@@ -35,7 +35,7 @@ impl Clone for SerdeJsonError {
         Self {
             source: Box::new(serde_json::Error::io(std::io::Error::other(msg))),
             line: self.line,
-            file: self.file,
+            file: self.file.clone(),
         }
     }
 }
@@ -71,8 +71,8 @@ impl PartialOrd for SerdeJsonError {
 #[cfg(feature = "serde_json")]
 impl Ord for SerdeJsonError {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (self.file, self.line, format!("{:?}", self.source)).cmp(&(
-            other.file,
+        (&self.file, self.line, format!("{:?}", self.source)).cmp(&(
+            &other.file,
             other.line,
             format!("{:?}", other.source),
         ))

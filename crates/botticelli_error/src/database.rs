@@ -38,7 +38,7 @@ impl Clone for DieselError {
         Self {
             source: Arc::clone(&self.source),
             line: self.line,
-            file: self.file,
+            file: self.file.clone(),
         }
     }
 }
@@ -98,7 +98,7 @@ impl Clone for DieselConnectionError {
         Self {
             source: Arc::clone(&self.source),
             line: self.line,
-            file: self.file,
+            file: self.file.clone(),
         }
     }
 }
@@ -158,7 +158,7 @@ impl Clone for R2d2Error {
         Self {
             source: Arc::clone(&self.source),
             line: self.line,
-            file: self.file,
+            file: self.file.clone(),
         }
     }
 }

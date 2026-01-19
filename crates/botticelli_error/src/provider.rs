@@ -64,7 +64,7 @@ impl Clone for ProviderSerdeJsonError {
                 self.source
             )))),
             line: self.line,
-            file: self.file,
+            file: self.file.clone(),
         }
     }
 }

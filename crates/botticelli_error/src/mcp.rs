@@ -70,7 +70,7 @@ impl Clone for SerdeJsonError {
         Self {
             source: Box::new(json_err),
             line: self.line,
-            file: self.file,
+            file: self.file.clone(),
         }
     }
 }
@@ -83,7 +83,7 @@ impl Clone for DatabaseMcpError {
             message: self.message.clone(),
             source: self.source.clone(),
             line: self.line,
-            file: self.file,
+            file: self.file.clone(),
         }
     }
 }

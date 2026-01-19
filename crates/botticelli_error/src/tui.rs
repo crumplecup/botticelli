@@ -33,7 +33,7 @@ impl Clone for TuiIoError {
         Self {
             source: Box::new(std::io::Error::new(kind, msg)),
             line: self.line,
-            file: self.file,
+            file: self.file.clone(),
         }
     }
 }
