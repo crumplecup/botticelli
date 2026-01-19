@@ -10,6 +10,7 @@ use botticelli_error::ConfigError;
 use botticelli_interface::Tier;
 use config::{Config, File, FileFormat};
 use elicitation::Survey;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, info, instrument, warn};
@@ -212,6 +213,7 @@ impl TierConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn for_model(&self, model_name: &str) -> TierConfig {
         if let Some(model_config) = self.models.get(model_name) {
@@ -282,6 +284,7 @@ impl RateLimitConfig {
     }
 
     /// Creates a rate limit configuration from a tier config.
+    #[tool]
     #[tracing::instrument]
     pub fn from_tier(tier: &TierConfig) -> Self {
         Self {
@@ -293,6 +296,7 @@ impl RateLimitConfig {
     }
 
     /// Creates an unlimited rate limit configuration (for local execution).
+    #[tool]
     #[tracing::instrument]
     pub fn unlimited(name: &str) -> Self {
         debug!(name, "Creating unlimited rate limit config");
@@ -377,6 +381,7 @@ impl BotticelliConfig {
     /// # Errors
     ///
     /// Returns an error if the file cannot be read or parsed.
+    #[tool]
     #[instrument(skip(path), fields(path = %path.as_ref().display()))]
     pub fn from_file(path: impl AsRef<std::path::Path>) -> Result<Self, ConfigError> {
         debug!("Loading configuration from file");
@@ -418,6 +423,7 @@ impl BotticelliConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[tool]
     #[instrument]
     pub fn load() -> Result<Self, ConfigError> {
         debug!("Loading configuration with precedence: current dir > home dir > bundled defaults");
@@ -473,6 +479,7 @@ impl BotticelliConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[tool]
     #[instrument(skip(self))]
     pub fn get_tier(&self, provider: &str, tier_name: Option<&str>) -> Option<TierConfig> {
         let provider_config = self.providers.get(provider)?;

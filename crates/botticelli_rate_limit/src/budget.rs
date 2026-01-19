@@ -4,6 +4,7 @@ use botticelli_error::{RateLimitError, RateLimitErrorKind};
 use botticelli_interface::Tier;
 use derive_getters::Getters;
 use elicitation::Survey;
+use rmcp::tool;
 use std::time::{Duration, Instant};
 
 /// Budget tracker for carousel operations.
@@ -36,6 +37,7 @@ pub struct Budget<T: Tier + std::fmt::Debug> {
 
 impl<T: Tier + std::fmt::Debug> Budget<T> {
     /// Creates a new budget tracker with the given rate limits.
+    #[tool]
     #[tracing::instrument]
     pub fn new(config: T) -> Self {
         let now = Instant::now();
@@ -51,6 +53,7 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
     }
 
     /// Gets the rate limit configuration.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn config(&self) -> &T {
         &self.config
@@ -79,6 +82,7 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
     /// Checks if the budget can accommodate a request with the given token count.
     ///
     /// Returns true if the request fits within all rate limit windows.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn can_afford(&mut self, tokens: u64) -> bool {
         self.reset_windows();
@@ -111,6 +115,7 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
     /// # Errors
     ///
     /// Returns an error if the consumption would exceed rate limits.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn consume(&mut self, tokens: u64) -> Result<(), RateLimitError> {
         if !self.can_afford(tokens) {
@@ -149,6 +154,7 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
     }
 
     /// Returns the remaining budget in the current windows.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn remaining(&mut self) -> BudgetRemaining {
         self.reset_windows();

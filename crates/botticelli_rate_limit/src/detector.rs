@@ -12,6 +12,7 @@
 
 use crate::TierConfig;
 use reqwest::header::HeaderMap;
+use rmcp::tool;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, instrument};
@@ -43,6 +44,7 @@ pub struct HeaderRateLimitDetector {
 
 impl HeaderRateLimitDetector {
     /// Create a new header rate limit detector.
+    #[tool]
     #[instrument]
     pub fn new() -> Self {
         debug!("Creating new header rate limit detector");
@@ -283,11 +285,13 @@ impl Default for HeaderRateLimitDetector {
 }
 
 /// Helper to parse u32 from header value.
+#[tool]
 fn parse_header_u32(headers: &HeaderMap, key: &str) -> Option<u32> {
     headers.get(key)?.to_str().ok()?.parse().ok()
 }
 
 /// Helper to parse u64 from header value.
+#[tool]
 fn parse_header_u64(headers: &HeaderMap, key: &str) -> Option<u64> {
     headers.get(key)?.to_str().ok()?.parse().ok()
 }

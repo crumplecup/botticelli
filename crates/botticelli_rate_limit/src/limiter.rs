@@ -11,6 +11,7 @@ use botticelli_interface::Tier;
 use governor::clock::DefaultClock;
 use governor::state::{InMemoryState, NotKeyed};
 use governor::{Quota, RateLimiter as GovernorRateLimiter};
+use rmcp::tool;
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
@@ -90,6 +91,7 @@ impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
     /// let limiter = RateLimiter::new(GeminiTier::Free);
     /// // Enforces: 10 RPM, 250K TPM, 250 RPD, 1 concurrent
     /// ```
+    #[tool]
     #[instrument(skip(tier), fields(tier = ?tier))]
     pub fn new(tier: T) -> Self {
         debug!("Creating new rate limiter");
@@ -159,6 +161,7 @@ impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
     /// // Limit to 3 retries with 1s initial backoff
     /// let limiter = RateLimiter::new_with_retry(GeminiTier::Free, false, Some(3), Some(1000));
     /// ```
+    #[tool]
     #[tracing::instrument(skip(tier), fields(tier = ?tier))]
     pub fn new_with_retry(
         tier: T,
@@ -186,6 +189,7 @@ impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
     /// let client_ref = limiter.inner();
     /// // Use client_ref to make API calls
     /// ```
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn inner(&self) -> &T {
         &self.inner
@@ -278,6 +282,7 @@ impl<T: Tier + std::fmt::Debug> RateLimiter<T> {
     ///     // Rate limited, try again later
     /// }
     /// ```
+    #[tool]
     #[instrument(skip(self))]
     pub fn try_acquire(&self, estimated_tokens: u64) -> Option<RateLimiterGuard> {
         debug!(
