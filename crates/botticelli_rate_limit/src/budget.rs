@@ -3,6 +3,7 @@
 use botticelli_error::{RateLimitError, RateLimitErrorKind};
 use botticelli_interface::Tier;
 use derive_getters::Getters;
+use elicitation::{Prompt, Survey};
 use std::time::{Duration, Instant};
 
 /// Budget tracker for carousel operations.
@@ -171,7 +172,7 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
 }
 
 /// Remaining budget across rate limit windows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Getters)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Getters, elicitation::Elicit)]
 pub struct BudgetRemaining {
     /// Remaining tokens in current minute
     tokens_per_minute: u64,

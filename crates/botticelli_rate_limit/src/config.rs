@@ -9,6 +9,7 @@
 use botticelli_error::ConfigError;
 use botticelli_interface::Tier;
 use config::{Config, File, FileFormat};
+use elicitation::{Prompt, Survey};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{debug, info, instrument, warn};
@@ -26,7 +27,16 @@ use tracing::{debug, info, instrument, warn};
 /// tpm = 125_000
 /// rpd = 50
 /// ```
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default, derive_getters::Getters)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Default,
+    derive_getters::Getters,
+    elicitation::Elicit,
+)]
 pub struct ModelTierConfig {
     /// Requests per minute limit (overrides tier default)
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -81,7 +91,7 @@ pub struct ModelTierConfig {
 /// tpm = 125_000      # Overrides tier default
 /// rpd = 50           # Overrides tier default
 /// ```
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_builder::Builder)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_builder::Builder, elicitation::Elicit)]
 #[builder(setter(into, strip_option))]
 pub struct TierConfig {
     /// Name of the tier (e.g., "Free", "Pro", "Tier 1")
@@ -231,7 +241,16 @@ impl TierConfig {
 /// Rate limit configuration for budget tracking.
 ///
 /// Contains concrete rate limit values used by the Budget tracker.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, derive_getters::Getters)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_getters::Getters,
+    elicitation::Elicit,
+)]
 pub struct RateLimitConfig {
     /// Requests per minute limit
     requests_per_minute: u64,
@@ -289,7 +308,7 @@ impl RateLimitConfig {
 /// Configuration for a specific provider.
 ///
 /// Contains the default tier name and a map of tier configurations.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_getters::Getters)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct ProviderConfig {
     /// Name of the default tier for this provider
     default_tier: String,
@@ -320,7 +339,16 @@ pub struct ProviderConfig {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default, derive_getters::Getters)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Deserialize,
+    Serialize,
+    Default,
+    derive_getters::Getters,
+    elicitation::Elicit,
+)]
 pub struct BotticelliConfig {
     /// Map of provider name to provider configuration
     #[serde(default)]
@@ -336,7 +364,7 @@ pub struct BotticelliConfig {
 }
 
 /// Configuration for context file resolution.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_getters::Getters)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct ContextConfig {
     /// Base directory for resolving file references in narrative TOML files.
     /// Defaults to workspace root if not specified.

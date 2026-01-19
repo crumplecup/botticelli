@@ -5,13 +5,25 @@
 //! provide type-safe tier selection for each provider.
 
 use botticelli_interface::Tier;
+use elicitation::{Prompt, Select};
 
 /// Gemini API usage tiers.
 ///
 /// Based on [Gemini API pricing](https://ai.google.dev/pricing).
 /// Rates verified from user dashboard as of 2025-01.
 #[cfg(feature = "gemini")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, strum::EnumIter)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    strum::EnumIter,
+    elicitation::Elicit,
+)]
 pub enum GeminiTier {
     /// Free tier: 10 RPM, 250K TPM, 250 RPD (Flash 2.0)
     Free,
@@ -85,7 +97,18 @@ impl Tier for GeminiTier {
 /// Based on [Anthropic pricing](https://docs.anthropic.com/claude/docs/rate-limits).
 /// Tiers are automatically assigned based on cumulative spend.
 #[cfg(feature = "anthropic")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, strum::EnumIter)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    strum::EnumIter,
+    elicitation::Elicit,
+)]
 pub enum AnthropicTier {
     /// Tier 1: Free/new accounts (5 RPM, 20K TPM)
     Tier1,
@@ -159,7 +182,18 @@ impl Tier for AnthropicTier {
 ///
 /// Based on [OpenAI usage tiers](https://platform.openai.com/docs/guides/rate-limits).
 /// Tiers are automatically assigned based on cumulative spend and account age.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, strum::EnumIter)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    strum::EnumIter,
+    elicitation::Elicit,
+)]
 pub enum OpenAITier {
     /// Free tier: 3 RPM, 40K TPM, 200 RPD
     Free,
