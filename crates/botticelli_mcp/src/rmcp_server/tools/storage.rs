@@ -1,8 +1,10 @@
-//! Storage trait wrapper tools.
+//! Storage trait wrapper tools and primitive delegation.
 //!
-//! These wrapper functions provide MCP tool access to MediaStorage trait methods.
-//! The trait implementations delegate to these tools for consistent observability.
+//! This module provides:
+//! 1. MCP tool access to MediaStorage trait methods
+//! 2. Orchestrator delegation wrappers for storage primitives
 
+use crate::rmcp_server::BotticelliServer;
 use botticelli_error::BotticelliError;
 use botticelli_interface::MediaStorage;
 use botticelli_storage::{FileSystemStorage, MediaMetadata, MediaReference, MediaType};
@@ -153,4 +155,145 @@ pub async fn media_storage_exists(
     
     tracing::info!(exists = exists, "Existence checked");
     Ok(MediaStorageExistsResult { exists })
+}
+
+// ============================================================================
+// Storage Primitive Delegation Wrappers
+// ============================================================================
+
+/// Parameters for creating filesystem storage.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct StorageNewParams {
+    /// Base path for storage
+    pub base_path: PathBuf,
+}
+
+/// Parameters for computing hash.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct StorageComputeHashParams {
+    /// Data to hash
+    pub data: Vec<u8>,
+}
+
+/// Result from computing hash.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct StorageComputeHashResult {
+    /// SHA-256 hash
+    pub hash: String,
+}
+
+/// Parameters for getting storage path.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct StorageGetPathParams {
+    /// Base path for storage
+    pub base_path: PathBuf,
+    /// Content hash
+    pub hash: String,
+    /// Media type
+    pub media_type: MediaType,
+}
+
+/// Result from getting storage path.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct StorageGetPathResult {
+    /// Full filesystem path
+    pub path: PathBuf,
+}
+
+/// Parameters for verifying hash.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct StorageVerifyHashParams {
+    /// Data to verify
+    pub data: Vec<u8>,
+    /// Expected hash
+    pub expected_hash: String,
+}
+
+/// Parameters for media type conversion.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct MediaTypeAsStrParams {
+    /// Media type to convert
+    pub media_type: MediaType,
+}
+
+/// Result from media type conversion.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct MediaTypeAsStrResult {
+    /// String representation
+    pub value: String,
+}
+
+impl BotticelliServer {
+    /// Create a new filesystem storage backend.
+    ///
+    /// Creates the base directory if it doesn't exist.
+    #[tool]
+    #[instrument(skip(self, params), fields(tool = "storage_new", base_path = %params.base_path.display()))]
+    pub fn storage_new(&self, params: StorageNewParams) -> Result<FileSystemStorage, BotticelliError> {
+        tracing::debug!("Delegating to botticelli_storage::FileSystemStorage::new");
+        
+        let result = FileSystemStorage::new(params.base_path);
+        
+        match &result {
+            Ok(_) => tracing::debug!("Storage creation succeeded"),
+            Err(e) => tracing::error!(error = ?e, "Storage creation failed"),
+        }
+        
+        result
+    }
+
+    /// Compute SHA-256 hash of data.
+    #[tool]
+    #[instrument(skip(self, params), fields(tool = "storage_compute_hash", data_len = params.data.len()))]
+    pub fn storage_compute_hash(&self, params: StorageComputeHashParams) -> StorageComputeHashResult {
+        tracing::debug!("Delegating to botticelli_storage::FileSystemStorage::compute_hash");
+        
+        let hash = FileSystemStorage::compute_hash(&params.data);
+        
+        tracing::debug!(hash = %hash, "Hash computed");
+        StorageComputeHashResult { hash }
+    }
+
+    /// Get the filesystem path for a given hash and media type.
+    ///
+    /// Structure: `{base}/{type}/{hash[0:2]}/{hash[2:4]}/{hash}`
+    #[tool]
+    #[instrument(skip(self, params), fields(tool = "storage_get_path", hash = %params.hash))]
+    pub fn storage_get_path(&self, params: StorageGetPathParams) -> Result<StorageGetPathResult, BotticelliError> {
+        tracing::debug!("Delegating to botticelli_storage::FileSystemStorage::get_path");
+        
+        let storage = FileSystemStorage::new(params.base_path)?;
+        let path = storage.get_path(&params.hash, params.media_type);
+        
+        tracing::debug!(path = %path.display(), "Path computed");
+        Ok(StorageGetPathResult { path })
+    }
+
+    /// Verify content hash matches expected hash.
+    #[tool]
+    #[instrument(skip(self, params), fields(tool = "storage_verify_hash", expected = %params.expected_hash))]
+    pub fn storage_verify_hash(&self, params: StorageVerifyHashParams) -> Result<(), BotticelliError> {
+        tracing::debug!("Delegating to botticelli_storage::FileSystemStorage::verify_hash");
+        
+        let result = FileSystemStorage::verify_hash(&params.data, &params.expected_hash);
+        
+        match &result {
+            Ok(_) => tracing::debug!("Hash verification succeeded"),
+            Err(e) => tracing::error!(error = ?e, "Hash verification failed"),
+        }
+        
+        result
+    }
+
+    /// Convert MediaType to string representation.
+    #[tool]
+    #[instrument(skip(self, params), fields(tool = "media_type_as_str"))]
+    pub fn media_type_as_str(&self, params: MediaTypeAsStrParams) -> MediaTypeAsStrResult {
+        tracing::debug!("Delegating to botticelli_storage::MediaType::as_str");
+        
+        let value = params.media_type.as_str().to_string();
+        
+        tracing::debug!(value = %value, "MediaType converted");
+        MediaTypeAsStrResult { value }
+    }
 }

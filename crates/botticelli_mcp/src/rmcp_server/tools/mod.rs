@@ -12,10 +12,70 @@ mod narrative;
 mod rate_limit;
 mod scene;
 mod security;
+mod social;
 mod storage;
 
 use crate::rmcp_server::BotticelliServer;
 use rmcp::tool_router;
+
+// Re-export tool DTOs (parameters and results)
+// Always available
+pub use extraction_tools::{ExtractJsonParams, ExtractTomlParams};
+pub use library::{GetTierInfoParams, GetTierInfoResult, TierInfo, ValidateTomlParams, ValidateTomlResult};
+pub use narrative::{
+    MultiNarrativeFromFileParams, NarrativeFromFileParams, NarrativeFromTomlStrParams,
+    StateManagerNewParams,
+};
+pub use rate_limit::{
+    TierDailyQuotaParams, TierDailyQuotaResult, TierInputCostParams, TierInputCostResult,
+    TierMaxConcurrentParams, TierMaxConcurrentResult, TierOutputCostParams, TierOutputCostResult,
+    TierRpdParams, TierRpdResult, TierRpmParams, TierRpmResult, TierTpdParams, TierTpdResult,
+    TierTpmParams, TierTpmResult, TierNameParams, TierNameResult,
+};
+pub use security::ValidateDiscordParams;
+pub use social::{
+    BotRegistryHasPlatformParams, BotRegistryHasPlatformResult, BotRegistryNewParams,
+    BotRegistryPlatformsParams, BotRegistryPlatformsResult, BotRegistryWithCacheParams,
+    ConvertArgsToStringsParams, ConvertArgsToStringsResult, ConvertSecurityErrorParams,
+    HashmapToParamsParams, HashmapToParamsResult,
+};
+pub use storage::{
+    MediaStorageDeleteParams, MediaStorageDeleteResult, MediaStorageExistsParams,
+    MediaStorageExistsResult, MediaStorageGetUrlParams, MediaStorageGetUrlResult,
+    MediaStorageRetrieveParams, MediaStorageRetrieveResult, MediaStorageStoreParams,
+    MediaStorageStoreResult, MediaTypeAsStrParams, MediaTypeAsStrResult,
+    StorageComputeHashParams, StorageComputeHashResult, StorageGetPathParams,
+    StorageGetPathResult, StorageNewParams, StorageVerifyHashParams,
+};
+
+// LLM feature
+#[cfg(feature = "llm")]
+pub use library::{SelectModelParams, SelectModelResult};
+
+// Database feature
+#[cfg(feature = "database")]
+pub use library::{InferSchemaParams, InferSchemaResult, InferredColumn};
+#[cfg(feature = "database")]
+pub use narrative::{
+    AssembleNarrativeActPromptsParams, MultiNarrativeFromFileWithDbParams,
+    NarrativeFromFileWithDbParams,
+};
+
+// Model provider features
+#[cfg(any(feature = "gemini", feature = "anthropic", feature = "groq", feature = "huggingface", feature = "ollama"))]
+pub use models::{
+    CountTokensParams,
+};
+#[cfg(feature = "gemini")]
+pub use models::GeminiGenerateParams;
+#[cfg(feature = "anthropic")]
+pub use models::AnthropicGenerateParams;
+#[cfg(feature = "groq")]
+pub use models::GroqGenerateParams;
+#[cfg(feature = "huggingface")]
+pub use models::HuggingFaceGenerateParams;
+#[cfg(feature = "ollama")]
+pub use models::OllamaGenerateParams;
 
 // Empty impl block required for #[tool_router] macro
 impl BotticelliServer {}

@@ -77,7 +77,7 @@ impl FileSystemStorage {
     /// Compute SHA-256 hash of data.
     #[tool]
     #[tracing::instrument(skip(data), fields(size = data.len()))]
-    fn compute_hash(data: &[u8]) -> String {
+    pub fn compute_hash(data: &[u8]) -> String {
         let mut hasher = Sha256::new();
         hasher.update(data);
         format!("{:x}", hasher.finalize())
@@ -88,7 +88,7 @@ impl FileSystemStorage {
     /// Structure: `{base}/{type}/{hash[0:2]}/{hash[2:4]}/{hash}`
     #[tool]
     #[tracing::instrument(skip(self))]
-    fn get_path(&self, hash: &str, media_type: MediaType) -> PathBuf {
+    pub fn get_path(&self, hash: &str, media_type: MediaType) -> PathBuf {
         let type_dir = match media_type {
             MediaType::Image => "images",
             MediaType::Audio => "audio",
@@ -105,7 +105,7 @@ impl FileSystemStorage {
     /// Verify content hash matches expected hash.
     #[tool]
     #[tracing::instrument(skip(data))]
-    fn verify_hash(data: &[u8], expected_hash: &str) -> Result<(), BotticelliError> {
+    pub fn verify_hash(data: &[u8], expected_hash: &str) -> Result<(), BotticelliError> {
         let actual_hash = Self::compute_hash(data);
         if actual_hash != expected_hash {
             return Err(StorageError::new(StorageErrorKind::InvalidPath(format!(

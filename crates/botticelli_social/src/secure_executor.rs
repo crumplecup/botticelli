@@ -13,6 +13,7 @@ use botticelli_security::{
     SecureExecutor, SecurityError, SecurityErrorKind,
 };
 use derive_getters::Getters;
+use rmcp::tool;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use tracing::{debug, error, info, instrument, warn};
@@ -134,8 +135,9 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     }
 
     /// Convert JSON arguments to string arguments for security pipeline.
+    #[tool]
     #[instrument(skip(args), fields(arg_count = args.len()))]
-    fn convert_args_to_strings(
+    pub fn convert_args_to_strings(
         args: &HashMap<String, JsonValue>,
     ) -> BotCommandResult<HashMap<String, String>> {
         debug!("Converting JSON args to string args");
@@ -156,8 +158,9 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     }
 
     /// Convert security error to bot command error.
+    #[tool]
     #[instrument(skip(error), fields(command = command_name, error_kind = ?error.kind))]
-    fn convert_security_error(error: SecurityError, command_name: &str) -> BotCommandError {
+    pub fn convert_security_error(error: SecurityError, command_name: &str) -> BotCommandError {
         debug!("Converting security error to bot command error");
         match error.kind {
             SecurityErrorKind::PermissionDenied { command, reason } => {

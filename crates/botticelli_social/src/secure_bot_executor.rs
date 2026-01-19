@@ -10,6 +10,7 @@ use botticelli_security::{
     ApprovalWorkflow, CommandValidator, ContentFilter, PermissionChecker, RateLimiter,
     SecureExecutor,
 };
+use rmcp::tool;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -173,8 +174,9 @@ where
 }
 
 /// Convert HashMap<String, JsonValue> to HashMap<String, String> for security checks.
+#[tool]
 #[instrument(skip(args), fields(arg_count = args.len()))]
-fn hashmap_to_params(
+pub fn hashmap_to_params(
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<HashMap<String, String>> {
     debug!("Converting args to params");

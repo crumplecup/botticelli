@@ -31,6 +31,7 @@ use botticelli_cache::CommandCache;
 use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use botticelli_interface::BotCommandExecutor;
 use derive_getters::Getters;
+use rmcp::tool;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -58,6 +59,7 @@ pub struct BotCommandRegistryImpl {
 
 impl BotCommandRegistryImpl {
     /// Create a new empty registry with default cache.
+    #[tool]
     #[instrument]
     pub fn new() -> Self {
         debug!("Creating new BotCommandRegistryImpl");
@@ -68,6 +70,7 @@ impl BotCommandRegistryImpl {
     }
 
     /// Create a new registry with custom cache.
+    #[tool]
     #[instrument(skip(cache))]
     pub fn with_cache(cache: CommandCache) -> Self {
         debug!("Creating new BotCommandRegistry with custom cache");
@@ -189,6 +192,7 @@ impl BotCommandRegistryImpl {
     }
 
     /// List all registered platforms.
+    #[tool]
     #[instrument(skip(self))]
     pub fn platforms(&self) -> Vec<String> {
         let platforms = self.executors.keys().cloned().collect::<Vec<_>>();
@@ -197,6 +201,7 @@ impl BotCommandRegistryImpl {
     }
 
     /// Check if a platform is registered.
+    #[tool]
     #[instrument(skip(self), fields(platform))]
     pub fn has_platform(&self, platform: &str) -> bool {
         let exists = self.executors.contains_key(platform);
