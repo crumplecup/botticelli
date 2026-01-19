@@ -63,7 +63,7 @@
 
 use derive_getters::Getters;
 use derive_setters::Setters;
-use elicitation::{Prompt, Select, Survey};
+use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 
 //

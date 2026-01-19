@@ -57,8 +57,9 @@ fn default_multiplier() -> f64 {
     1.0
 }
 
+/// MCP tool wrapper for default multiplier constant.
 #[tool]
-fn default_multiplier_tool() -> f64 {
+pub fn default_multiplier_tool() -> f64 {
     default_multiplier()
 }
 

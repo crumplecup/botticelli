@@ -142,7 +142,7 @@ impl GeminiClient {
         };
 
         let live_client = {
-            let rpm = base_tier.rpm();
+            let rpm = *base_tier.rpm();
             crate::gemini::live_client::GeminiLiveClient::new_with_rate_limit(rpm).ok()
         };
 
@@ -215,7 +215,7 @@ impl GeminiClient {
         };
 
         let live_client = {
-            let rpm = base_tier.rpm();
+            let rpm = *base_tier.rpm();
             crate::gemini::live_client::GeminiLiveClient::new_with_rate_limit(rpm).ok()
         };
 

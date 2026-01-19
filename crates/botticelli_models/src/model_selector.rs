@@ -4,6 +4,7 @@ use derive_getters::Getters;
 use derive_more::Display;
 use derive_new::new;
 use elicitation::{Prompt, Select};
+use rmcp::tool;
 use tracing::instrument;
 
 use crate::{GeminiModel, GroqModel, ModelFamily, RateLimitDetector};
@@ -33,6 +34,8 @@ pub struct ModelBounds {
 
 impl ModelBounds {
     /// No boundaries - accept any model.
+    #[tool]
+    #[instrument]
     pub fn none() -> Self {
         Self {
             lower: None,
@@ -41,6 +44,8 @@ impl ModelBounds {
     }
 
     /// Set lower bound only.
+    #[tool]
+    #[instrument]
     pub fn lower_bound(model: ModelId) -> Self {
         Self {
             lower: Some(model),
@@ -49,6 +54,8 @@ impl ModelBounds {
     }
 
     /// Set upper bound only.
+    #[tool]
+    #[instrument]
     pub fn upper_bound(model: ModelId) -> Self {
         Self {
             lower: None,
@@ -57,6 +64,8 @@ impl ModelBounds {
     }
 
     /// Set both bounds.
+    #[tool]
+    #[instrument]
     pub fn both(lower: ModelId, upper: ModelId) -> Self {
         Self {
             lower: Some(lower),
@@ -65,6 +74,7 @@ impl ModelBounds {
     }
 
     /// Check if a model is within bounds.
+    #[tool]
     #[instrument]
     pub fn allows(&self, model: ModelId) -> bool {
         if let Some(lower) = self.lower
@@ -127,6 +137,7 @@ impl std::str::FromStr for ModelId {
 
 impl ModelId {
     /// Get the family this model belongs to.
+    #[tool]
     #[instrument]
     pub fn family(&self) -> ModelFamily {
         match self {
@@ -136,6 +147,7 @@ impl ModelId {
     }
 
     /// Get the model string for API calls.
+    #[tool]
     #[instrument]
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -145,6 +157,7 @@ impl ModelId {
     }
 
     /// Get "friends" - laterally equivalent models in other families.
+    #[tool]
     #[instrument]
     pub fn friends(&self) -> Vec<Self> {
         match self {
@@ -168,6 +181,7 @@ impl ModelId {
     }
 
     /// Move up to more capable/expensive model within family.
+    #[tool]
     #[instrument]
     pub fn move_up(&self) -> Option<Self> {
         match self {
@@ -177,6 +191,7 @@ impl ModelId {
     }
 
     /// Move down to faster/cheaper model within family.
+    #[tool]
     #[instrument]
     pub fn move_down(&self) -> Option<Self> {
         match self {
@@ -189,6 +204,7 @@ impl ModelId {
     ///
     /// For same-family comparisons, compares tier positions.
     /// Cross-family comparisons use the friends() equivalence mapping.
+    #[tool]
     #[instrument]
     pub fn is_at_least(&self, other: Self) -> bool {
         if self.family() == other.family() {
@@ -201,6 +217,7 @@ impl ModelId {
     }
 
     /// Check if this model is at most as capable as another.
+    #[tool]
     #[instrument]
     pub fn is_at_most(&self, other: Self) -> bool {
         if self.family() == other.family() {
@@ -292,6 +309,7 @@ impl ModelSelector {
     /// Select next model after rate limit error.
     ///
     /// Returns None if error is not rate-related or no valid fallback exists.
+    #[tool]
     #[instrument(skip(self))]
     pub fn select_next(&mut self, current: ModelId, error: &str) -> Option<ModelId> {
         if !self.detector.is_rate_limit_message(error) {
@@ -311,6 +329,7 @@ impl ModelSelector {
     }
 
     /// Get current rate limit status for a family.
+    #[tool]
     #[instrument(skip(self))]
     pub fn get_status(&self, family: ModelFamily) -> Option<&crate::RateLimitStatus> {
         self.detector.get_status(family)

@@ -6,6 +6,7 @@
 use crate::ModelId;
 use derive_getters::Getters;
 use derive_new::new;
+use rmcp::tool;
 use std::time::{Duration, Instant};
 use tracing::{debug, instrument, warn};
 
@@ -26,6 +27,7 @@ impl RateLimitStatus {
     /// Uses conservative estimates:
     /// - If reset_at is known, check if current time is past it
     /// - Otherwise, assume 60 second cooldown period
+    #[tool]
     #[instrument(skip(self))]
     pub fn is_likely_expired(&self) -> bool {
         let now = Instant::now();
@@ -62,10 +64,13 @@ pub struct RateLimitDetector {
 
 impl RateLimitDetector {
     /// Create a new detector with no tracked rate limits.
+    #[tool]
+    #[instrument]
     pub fn new() -> Self {
         Self::default()
     }
     /// Check if an error message indicates a rate limit.
+    #[tool]
     #[instrument(skip(self))]
     pub fn is_rate_limit_message(&self, error: &str) -> bool {
         let msg_lower = error.to_lowercase();
@@ -76,6 +81,7 @@ impl RateLimitDetector {
     }
 
     /// Detect rate limit status from error message.
+    #[tool]
     #[instrument(skip(self))]
     pub fn detect_from_message(&self, error: &str) -> Option<Duration> {
         if !self.is_rate_limit_message(error) {
@@ -85,6 +91,7 @@ impl RateLimitDetector {
     }
 
     /// Record a rate limit for a family.
+    #[tool]
     #[instrument(skip(self))]
     pub fn record(&mut self, family: crate::ModelFamily, model_id: ModelId) {
         let status = RateLimitStatus::new(model_id, Instant::now(), None);
@@ -92,6 +99,7 @@ impl RateLimitDetector {
     }
 
     /// Check if a family is currently rate limited.
+    #[tool]
     #[instrument(skip(self))]
     pub fn is_rate_limited(&self, family: crate::ModelFamily) -> bool {
         self.tracked
@@ -101,6 +109,7 @@ impl RateLimitDetector {
     }
 
     /// Get status for a family.
+    #[tool]
     #[instrument(skip(self))]
     pub fn get_status(&self, family: crate::ModelFamily) -> Option<&RateLimitStatus> {
         self.tracked.get(&family)

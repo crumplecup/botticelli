@@ -7,6 +7,7 @@ use opentelemetry::{
     KeyValue, global,
     metrics::{Counter, Histogram, Meter},
 };
+use rmcp::tool;
 use std::sync::OnceLock;
 use tracing::{debug, info, instrument};
 
@@ -74,6 +75,7 @@ impl LlmMetrics {
     }
 
     /// Get the global LLM metrics instance.
+    #[tool]
     #[instrument]
     pub fn get() -> &'static Self {
         debug!("Getting LLM metrics instance");
@@ -81,6 +83,7 @@ impl LlmMetrics {
     }
 
     /// Record a successful LLM API request.
+    #[tool]
     #[instrument(skip(self))]
     pub fn record_request(&self, provider: &str, model: &str, duration_secs: f64) {
         debug!(
@@ -99,6 +102,7 @@ impl LlmMetrics {
     }
 
     /// Record a failed LLM API request.
+    #[tool]
     #[instrument(skip(self))]
     pub fn record_error(&self, provider: &str, model: &str, error_type: &str) {
         debug!(
@@ -117,6 +121,7 @@ impl LlmMetrics {
     }
 
     /// Record token usage from an LLM response.
+    #[tool]
     #[instrument(skip(self))]
     pub fn record_tokens(
         &self,
@@ -149,6 +154,8 @@ impl Default for LlmMetrics {
 /// Classify error type for metrics labeling.
 ///
 /// Returns one of: "rate_limit", "auth", "network", "timeout", "invalid_request", "unknown"
+#[tool]
+#[instrument]
 pub fn classify_error(error: &dyn std::error::Error) -> &'static str {
     let error_str = error.to_string().to_lowercase();
 

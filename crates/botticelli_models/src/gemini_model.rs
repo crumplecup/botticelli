@@ -2,6 +2,7 @@
 
 use derive_more::Display;
 use elicitation::{Prompt, Select};
+use rmcp::tool;
 use strum::EnumIter;
 use tracing::instrument;
 
@@ -42,6 +43,7 @@ pub enum GeminiModel {
 
 impl GeminiModel {
     /// Get the model string for API calls.
+    #[tool]
     #[instrument]
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -57,6 +59,7 @@ impl GeminiModel {
     ///
     /// Returns tuples of (family, model_string) for models with similar
     /// capability/cost tradeoffs in other providers.
+    #[tool]
     #[instrument]
     pub fn friends(&self) -> Vec<(&'static str, &'static str)> {
         match self {
@@ -85,6 +88,7 @@ impl GeminiModel {
     /// Move up to a more capable/expensive model.
     ///
     /// Returns None if already at the top.
+    #[tool]
     #[instrument]
     pub fn move_up(&self) -> Option<Self> {
         use strum::IntoEnumIterator;
@@ -101,6 +105,7 @@ impl GeminiModel {
     /// Move down to a faster/cheaper model.
     ///
     /// Returns None if already at the bottom.
+    #[tool]
     #[instrument]
     pub fn move_down(&self) -> Option<Self> {
         use strum::IntoEnumIterator;

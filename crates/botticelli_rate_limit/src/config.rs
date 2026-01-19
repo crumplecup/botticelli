@@ -9,7 +9,6 @@
 use botticelli_error::ConfigError;
 use botticelli_interface::Tier;
 use config::{Config, File, FileFormat};
-use elicitation::Survey;
 use rmcp::tool;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

@@ -2,6 +2,7 @@
 
 use derive_more::Display;
 use elicitation::{Prompt, Select};
+use rmcp::tool;
 use strum::EnumIter;
 use tracing::instrument;
 
@@ -39,6 +40,7 @@ pub enum GroqModel {
 
 impl GroqModel {
     /// Get the model string for API calls.
+    #[tool]
     #[instrument]
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -50,6 +52,7 @@ impl GroqModel {
     }
 
     /// Get laterally equivalent models in other families.
+    #[tool]
     #[instrument]
     pub fn friends(&self) -> Vec<(&'static str, &'static str)> {
         match self {
@@ -73,6 +76,7 @@ impl GroqModel {
     }
 
     /// Move up to a more capable/expensive model.
+    #[tool]
     #[instrument]
     pub fn move_up(&self) -> Option<Self> {
         use strum::IntoEnumIterator;
@@ -87,6 +91,7 @@ impl GroqModel {
     }
 
     /// Move down to a faster/cheaper model.
+    #[tool]
     #[instrument]
     pub fn move_down(&self) -> Option<Self> {
         use strum::IntoEnumIterator;

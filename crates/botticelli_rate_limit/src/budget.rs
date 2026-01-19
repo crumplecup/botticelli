@@ -3,7 +3,6 @@
 use botticelli_error::{RateLimitError, RateLimitErrorKind};
 use botticelli_interface::Tier;
 use derive_getters::Getters;
-use elicitation::Survey;
 use rmcp::tool;
 use std::time::{Duration, Instant};
 

@@ -5,6 +5,7 @@
 
 use derive_more::Display;
 use elicitation::{Prompt, Select};
+use rmcp::tool;
 use strum::EnumIter;
 use tracing::instrument;
 
@@ -35,6 +36,7 @@ impl ModelFamily {
     /// Get the default fallback order starting after this family.
     ///
     /// Returns families in enum order, wrapping around if needed.
+    #[tool]
     #[instrument]
     pub fn fallback_order(&self) -> Vec<ModelFamily> {
         use strum::IntoEnumIterator;
