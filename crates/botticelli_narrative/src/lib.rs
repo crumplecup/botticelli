@@ -69,7 +69,7 @@ pub use multi_narrative::MultiNarrative;
 pub use processor::{ProcessorContext, ProcessorRegistry};
 pub use provider::ActConfig;
 pub use state::{NarrativeState, StateManager, StateScope};
-pub use table_reference::TableReference;
+pub use table_reference::{TableReference, TableReferenceBuilder};
 
 #[cfg(feature = "database")]
 pub use content_generation::ContentGenerationProcessor;

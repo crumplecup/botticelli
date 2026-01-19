@@ -4,6 +4,7 @@ mod core;
 mod discord;
 mod elicitation;
 mod execution;
+mod extraction_tools;
 mod library;
 #[cfg(any(feature = "gemini", feature = "anthropic", feature = "groq", feature = "huggingface", feature = "ollama"))]
 mod models;

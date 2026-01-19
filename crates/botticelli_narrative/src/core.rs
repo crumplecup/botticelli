@@ -127,7 +127,7 @@ pub struct NarrativeToc {
 /// mime = "image/png"
 /// url = "https://example.com/image.png"
 /// ```
-#[derive(Debug, Clone, PartialEq, serde::Serialize, derive_getters::Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct Narrative {
     /// Narrative metadata
     metadata: NarrativeMetadata,

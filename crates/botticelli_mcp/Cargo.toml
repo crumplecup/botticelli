@@ -32,6 +32,7 @@ derive-getters = { workspace = true }
 derive-new = { workspace = true }
 derive_setters = { workspace = true }
 anyhow = { workspace = true }
+paste = { workspace = true }
 
 # Tracing
 tracing = { workspace = true }

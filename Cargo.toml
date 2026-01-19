@@ -107,6 +107,7 @@ derive-new = "0.7"
 derive-getters = "0.5"
 derive_setters = "0.1"
 derive_builder = "0.20"
+paste = "1"
 strum = { version = "0.27", features = ["derive"] }
 petgraph = "0.8"
 shellexpand = "3"
