@@ -10,6 +10,7 @@ mod models;
 mod narrative;
 mod rate_limit;
 mod scene;
+mod security;
 mod storage;
 
 use crate::rmcp_server::BotticelliServer;
