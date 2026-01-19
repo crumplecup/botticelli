@@ -61,7 +61,7 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
     /// Resets window counters if windows have expired.
     #[tool]
     #[tracing::instrument(skip(self))]
-    fn reset_windows(&mut self) {
+    pub fn reset_windows(&mut self) {
         let now = Instant::now();
 
         // Reset minute window if it has expired
@@ -178,7 +178,7 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
 }
 
 /// Remaining budget across rate limit windows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema, Getters, elicitation::Elicit)]
 pub struct BudgetRemaining {
     /// Remaining tokens in current minute
     tokens_per_minute: u64,

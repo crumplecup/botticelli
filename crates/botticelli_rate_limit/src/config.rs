@@ -250,6 +250,9 @@ impl TierConfig {
     PartialEq,
     Eq,
     Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
     derive_getters::Getters,
     elicitation::Elicit,
 )]
