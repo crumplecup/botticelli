@@ -59,8 +59,38 @@ pub use tools::{
     // Rate limit config primitives
     RateLimitForModelParams, RateLimitFromTierParams, RateLimitUnlimitedParams,
     RateLimitFromFileParams, RateLimitGetTierParams, RateLimitGetTierResult,
+    // Budget<TierConfig> primitives
+    BudgetNewTierConfigParams, BudgetResetWindowsTierConfigParams, BudgetResetWindowsTierConfigResult,
+    BudgetCanAffordTierConfigParams, BudgetCanAffordTierConfigResult,
+    BudgetConsumeTierConfigParams, BudgetConsumeTierConfigResult,
+    BudgetRemainingTierConfigParams, BudgetRemainingTierConfigResult,
+    // Budget<OpenAITier> primitives
+    BudgetNewOpenAITierParams, BudgetResetWindowsOpenAITierParams, BudgetResetWindowsOpenAITierResult,
+    BudgetCanAffordOpenAITierParams, BudgetCanAffordOpenAITierResult,
+    BudgetConsumeOpenAITierParams, BudgetConsumeOpenAITierResult,
+    BudgetRemainingOpenAITierParams, BudgetRemainingOpenAITierResult,
     // Validation primitives
     ValidateDiscordParams, ValidateTomlParams, ValidateTomlResult,
+};
+
+// Gemini feature
+#[cfg(feature = "gemini")]
+pub use tools::{
+    // Budget<GeminiTier> primitives
+    BudgetNewGeminiTierParams, BudgetResetWindowsGeminiTierParams, BudgetResetWindowsGeminiTierResult,
+    BudgetCanAffordGeminiTierParams, BudgetCanAffordGeminiTierResult,
+    BudgetConsumeGeminiTierParams, BudgetConsumeGeminiTierResult,
+    BudgetRemainingGeminiTierParams, BudgetRemainingGeminiTierResult,
+};
+
+// Anthropic feature
+#[cfg(feature = "anthropic")]
+pub use tools::{
+    // Budget<AnthropicTier> primitives
+    BudgetNewAnthropicTierParams, BudgetResetWindowsAnthropicTierParams, BudgetResetWindowsAnthropicTierResult,
+    BudgetCanAffordAnthropicTierParams, BudgetCanAffordAnthropicTierResult,
+    BudgetConsumeAnthropicTierParams, BudgetConsumeAnthropicTierResult,
+    BudgetRemainingAnthropicTierParams, BudgetRemainingAnthropicTierResult,
 };
 
 // LLM feature

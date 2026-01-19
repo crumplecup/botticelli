@@ -10,7 +10,9 @@ use std::time::{Duration, Instant};
 ///
 /// Tracks token and request consumption across rate limit windows
 /// to ensure carousel operations stay within configured limits.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema)]
+#[serde(bound = "T: Tier + std::fmt::Debug + serde::Serialize + serde::de::DeserializeOwned")]
+#[schemars(bound = "T: Tier + std::fmt::Debug + schemars::JsonSchema")]
 pub struct Budget<T: Tier + std::fmt::Debug> {
     /// Rate limit configuration
     config: T,
@@ -28,9 +30,13 @@ pub struct Budget<T: Tier + std::fmt::Debug> {
     requests_per_day: u64,
 
     /// Start of current minute window
+    #[serde(skip, default = "Instant::now")]
+    #[schemars(skip)]
     minute_window_start: Instant,
 
     /// Start of current day window
+    #[serde(skip, default = "Instant::now")]
+    #[schemars(skip)]
     day_window_start: Instant,
 }
 

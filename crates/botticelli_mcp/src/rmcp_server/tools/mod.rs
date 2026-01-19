@@ -52,6 +52,32 @@ pub use rate_limit::{
     TierTpmParams, TierTpmResult, TierNameParams, TierNameResult,
     RateLimitForModelParams, RateLimitFromTierParams, RateLimitUnlimitedParams,
     RateLimitFromFileParams, RateLimitGetTierParams, RateLimitGetTierResult,
+    // Budget<TierConfig> wrappers
+    BudgetNewTierConfigParams, BudgetResetWindowsTierConfigParams, BudgetResetWindowsTierConfigResult,
+    BudgetCanAffordTierConfigParams, BudgetCanAffordTierConfigResult,
+    BudgetConsumeTierConfigParams, BudgetConsumeTierConfigResult,
+    BudgetRemainingTierConfigParams, BudgetRemainingTierConfigResult,
+    // Budget<OpenAITier> wrappers
+    BudgetNewOpenAITierParams, BudgetResetWindowsOpenAITierParams, BudgetResetWindowsOpenAITierResult,
+    BudgetCanAffordOpenAITierParams, BudgetCanAffordOpenAITierResult,
+    BudgetConsumeOpenAITierParams, BudgetConsumeOpenAITierResult,
+    BudgetRemainingOpenAITierParams, BudgetRemainingOpenAITierResult,
+};
+#[cfg(feature = "gemini")]
+pub use rate_limit::{
+    // Budget<GeminiTier> wrappers
+    BudgetNewGeminiTierParams, BudgetResetWindowsGeminiTierParams, BudgetResetWindowsGeminiTierResult,
+    BudgetCanAffordGeminiTierParams, BudgetCanAffordGeminiTierResult,
+    BudgetConsumeGeminiTierParams, BudgetConsumeGeminiTierResult,
+    BudgetRemainingGeminiTierParams, BudgetRemainingGeminiTierResult,
+};
+#[cfg(feature = "anthropic")]
+pub use rate_limit::{
+    // Budget<AnthropicTier> wrappers
+    BudgetNewAnthropicTierParams, BudgetResetWindowsAnthropicTierParams, BudgetResetWindowsAnthropicTierResult,
+    BudgetCanAffordAnthropicTierParams, BudgetCanAffordAnthropicTierResult,
+    BudgetConsumeAnthropicTierParams, BudgetConsumeAnthropicTierResult,
+    BudgetRemainingAnthropicTierParams, BudgetRemainingAnthropicTierResult,
 };
 pub use security::ValidateDiscordParams;
 #[cfg(feature = "discord")]

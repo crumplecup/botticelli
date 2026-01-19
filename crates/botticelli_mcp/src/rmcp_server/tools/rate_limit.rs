@@ -4,8 +4,15 @@
 
 use crate::rmcp_server::BotticelliServer;
 use botticelli_interface::Tier;
-use botticelli_rate_limit::{RateLimitConfig, TierConfig, BotticelliConfig};
+use botticelli_rate_limit::{Budget, BudgetRemaining, RateLimitConfig, TierConfig, BotticelliConfig};
+#[cfg(feature = "gemini")]
+use botticelli_rate_limit::GeminiTier;
+#[cfg(feature = "anthropic")]
+use botticelli_rate_limit::AnthropicTier;
+use botticelli_rate_limit::OpenAITier;
+use botticelli_error::RateLimitError;
 use elicitation::Elicit;
+use paste::paste;
 use rmcp::tool;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -136,6 +143,196 @@ pub struct TierNameParams {
 pub struct TierNameResult {
     /// Tier name
     pub name: String,
+}
+
+// ============================================================================
+// Macros for generic Budget<T> wrappers
+// ============================================================================
+
+/// Macro to generate Budget wrapper methods for a specific Tier type.
+macro_rules! impl_budget_wrappers {
+    ($(($tier_name:ident, $tier_type:ty, $feature:literal)),* $(,)?) => {
+        $(
+            paste! {
+                #[cfg(feature = $feature)]
+                #[doc = "Create Budget<" $tier_name ">."]
+                #[tool]
+                #[instrument(skip(self, params))]
+                pub fn [<budget_new_ $tier_name:snake>](
+                    &self,
+                    params: [<BudgetNew $tier_name Params>]
+                ) -> Budget<$tier_type> {
+                    tracing::debug!(tier = stringify!($tier_name), "Creating Budget");
+                    Budget::new(params.config)
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Reset time windows for Budget<" $tier_name ">."]
+                #[tool]
+                #[instrument(skip(self, params))]
+                pub fn [<budget_reset_windows_ $tier_name:snake>](
+                    &self,
+                    mut params: [<BudgetResetWindows $tier_name Params>]
+                ) -> [<BudgetResetWindows $tier_name Result>] {
+                    tracing::debug!(tier = stringify!($tier_name), "Resetting budget windows");
+                    params.budget.reset_windows();
+                    [<BudgetResetWindows $tier_name Result>] { budget: params.budget }
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Check if Budget<" $tier_name "> can afford tokens."]
+                #[tool]
+                #[instrument(skip(self, params), fields(tokens = params.tokens))]
+                pub fn [<budget_can_afford_ $tier_name:snake>](
+                    &self,
+                    mut params: [<BudgetCanAfford $tier_name Params>]
+                ) -> [<BudgetCanAfford $tier_name Result>] {
+                    tracing::debug!(tier = stringify!($tier_name), tokens = params.tokens, "Checking affordability");
+                    let can_afford = params.budget.can_afford(params.tokens);
+                    match can_afford {
+                        true => tracing::debug!("Budget can afford request"),
+                        false => tracing::debug!("Budget cannot afford request"),
+                    }
+                    [<BudgetCanAfford $tier_name Result>] { budget: params.budget, can_afford }
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Consume tokens in Budget<" $tier_name ">."]
+                #[tool]
+                #[instrument(skip(self, params), fields(tokens = params.tokens))]
+                pub fn [<budget_consume_ $tier_name:snake>](
+                    &self,
+                    mut params: [<BudgetConsume $tier_name Params>]
+                ) -> Result<[<BudgetConsume $tier_name Result>], RateLimitError> {
+                    tracing::debug!(tier = stringify!($tier_name), tokens = params.tokens, "Consuming tokens");
+                    
+                    let result = params.budget.consume(params.tokens);
+                    
+                    match &result {
+                        Ok(_) => tracing::debug!("Tokens consumed successfully"),
+                        Err(e) => tracing::error!(error = ?e, "Failed to consume tokens"),
+                    }
+                    
+                    result.map(|_| [<BudgetConsume $tier_name Result>] { budget: params.budget })
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Get remaining budget for Budget<" $tier_name ">."]
+                #[tool]
+                #[instrument(skip(self, params))]
+                pub fn [<budget_remaining_ $tier_name:snake>](
+                    &self,
+                    mut params: [<BudgetRemaining $tier_name Params>]
+                ) -> [<BudgetRemaining $tier_name Result>] {
+                    tracing::debug!(tier = stringify!($tier_name), "Getting remaining budget");
+                    let remaining = params.budget.remaining();
+                    tracing::debug!(
+                        tokens_per_minute = remaining.tokens_per_minute(),
+                        tokens_per_day = remaining.tokens_per_day(),
+                        "Remaining budget calculated"
+                    );
+                    [<BudgetRemaining $tier_name Result>] { budget: params.budget, remaining }
+                }
+            }
+        )*
+    };
+}
+
+/// Macro to generate DTOs for Budget wrappers.
+macro_rules! impl_budget_dtos {
+    ($(($tier_name:ident, $tier_type:ty, $feature:literal)),* $(,)?) => {
+        $(
+            paste! {
+                #[cfg(feature = $feature)]
+                #[doc = "Parameters for creating Budget<" $tier_name ">."]
+                #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+                pub struct [<BudgetNew $tier_name Params>] {
+                    /// Tier configuration
+                    pub config: $tier_type,
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Parameters for resetting Budget<" $tier_name "> windows."]
+                #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+                pub struct [<BudgetResetWindows $tier_name Params>] {
+                    /// Budget to reset
+                    pub budget: Budget<$tier_type>,
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Result of resetting Budget<" $tier_name "> windows."]
+                #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+                pub struct [<BudgetResetWindows $tier_name Result>] {
+                    /// Updated budget
+                    pub budget: Budget<$tier_type>,
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Parameters for checking Budget<" $tier_name "> affordability."]
+                #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+                pub struct [<BudgetCanAfford $tier_name Params>] {
+                    /// Budget to check
+                    pub budget: Budget<$tier_type>,
+                    /// Number of tokens requested
+                    pub tokens: u64,
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Result of checking Budget<" $tier_name "> affordability."]
+                #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+                pub struct [<BudgetCanAfford $tier_name Result>] {
+                    /// Updated budget
+                    pub budget: Budget<$tier_type>,
+                    /// Whether the budget can afford the request
+                    pub can_afford: bool,
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Parameters for consuming tokens in Budget<" $tier_name ">."]
+                #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+                pub struct [<BudgetConsume $tier_name Params>] {
+                    /// Budget to consume from
+                    pub budget: Budget<$tier_type>,
+                    /// Number of tokens to consume
+                    pub tokens: u64,
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Result of consuming tokens in Budget<" $tier_name ">."]
+                #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+                pub struct [<BudgetConsume $tier_name Result>] {
+                    /// Updated budget
+                    pub budget: Budget<$tier_type>,
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Parameters for getting remaining Budget<" $tier_name ">."]
+                #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+                pub struct [<BudgetRemaining $tier_name Params>] {
+                    /// Budget to query
+                    pub budget: Budget<$tier_type>,
+                }
+
+                #[cfg(feature = $feature)]
+                #[doc = "Result of getting remaining Budget<" $tier_name ">."]
+                #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+                pub struct [<BudgetRemaining $tier_name Result>] {
+                    /// Updated budget
+                    pub budget: Budget<$tier_type>,
+                    /// Remaining budget across windows
+                    pub remaining: BudgetRemaining,
+                }
+            }
+        )*
+    };
+}
+
+// Generate DTOs for all tier types
+impl_budget_dtos! {
+    (TierConfig, TierConfig, "default"),
+    (GeminiTier, GeminiTier, "gemini"),
+    (AnthropicTier, AnthropicTier, "anthropic"),
+    (OpenAITier, OpenAITier, "default"),
 }
 
 impl BotticelliServer {
@@ -300,6 +497,14 @@ impl BotticelliServer {
         }
         
         RateLimitGetTierResult { tier }
+    }
+
+    // Generate Budget<T> wrappers for all tier types
+    impl_budget_wrappers! {
+        (TierConfig, TierConfig, "default"),
+        (GeminiTier, GeminiTier, "gemini"),
+        (AnthropicTier, AnthropicTier, "anthropic"),
+        (OpenAITier, OpenAITier, "default"),
     }
 }
 
