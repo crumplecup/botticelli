@@ -2,6 +2,7 @@
 
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
+use elicitation::{Prompt, Select};
 use serde_json::Value as JsonValue;
 
 /// Discord channel type enum.
@@ -15,6 +16,7 @@ use serde_json::Value as JsonValue;
     Eq,
     diesel::deserialize::FromSqlRow,
     diesel::expression::AsExpression,
+    elicitation::Elicit,
 )]
 #[diesel(sql_type = botticelli_database::schema::sql_types::DiscordChannelType)]
 pub enum ChannelType {
@@ -160,7 +162,14 @@ pub struct ChannelRow {
 ///
 /// Used to create new channel records in the database.
 #[allow(missing_docs)]
-#[derive(Debug, Clone, Insertable, derive_getters::Getters, derive_builder::Builder)]
+#[derive(
+    Debug,
+    Clone,
+    Insertable,
+    derive_getters::Getters,
+    derive_builder::Builder,
+    elicitation::Elicit,
+)]
 #[diesel(table_name = botticelli_database::schema::discord_channels)]
 pub struct NewChannel {
     id: i64,

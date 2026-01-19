@@ -17,6 +17,7 @@ botticelli_database = { workspace = true, optional = true }
 botticelli_narrative = { workspace = true, optional = true }
 botticelli_cache = { workspace = true }
 botticelli_security = { workspace = true }
+elicitation.workspace = true
 
 # Database
 diesel = { workspace = true, optional = true }

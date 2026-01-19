@@ -8,6 +8,7 @@
 //! because they represent the JSON format from LLM responses, while Diesel
 //! models represent the database schema.
 
+use elicitation::{Prompt, Survey};
 use serde::{Deserialize, Serialize};
 
 /// JSON model for Discord guild data.
@@ -21,6 +22,7 @@ use serde::{Deserialize, Serialize};
     PartialEq,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 pub struct DiscordGuildJson {
     /// Discord snowflake ID (required)
@@ -64,6 +66,7 @@ pub struct DiscordGuildJson {
     PartialEq,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 pub struct DiscordChannelJson {
     /// Discord snowflake ID (required)
@@ -111,6 +114,7 @@ pub struct DiscordChannelJson {
     PartialEq,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 pub struct DiscordUserJson {
     /// Discord snowflake ID (required)
@@ -149,6 +153,7 @@ pub struct DiscordUserJson {
     PartialEq,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 pub struct DiscordRoleJson {
     /// Discord snowflake ID (required)
@@ -193,6 +198,7 @@ pub struct DiscordRoleJson {
     PartialEq,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 pub struct DiscordGuildMemberJson {
     /// Guild ID (required)
@@ -233,6 +239,7 @@ pub struct DiscordGuildMemberJson {
     PartialEq,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 pub struct DiscordMemberRoleJson {
     /// Guild ID (required)

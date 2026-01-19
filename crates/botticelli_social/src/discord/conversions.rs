@@ -257,7 +257,7 @@ impl TryFrom<DiscordGuildMemberJson> for NewGuildMember {
 /// Insertable struct for discord_member_roles table.
 ///
 /// Used to create role assignment records in the database.
-#[derive(Debug, Clone, diesel::Insertable, derive_getters::Getters)]
+#[derive(Debug, Clone, diesel::Insertable, derive_getters::Getters, elicitation::Elicit)]
 #[diesel(table_name = botticelli_database::schema::discord_member_roles)]
 pub struct NewMemberRole {
     guild_id: i64,
