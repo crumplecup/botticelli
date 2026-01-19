@@ -1,4 +1,5 @@
 use botticelli_error::{ObservabilityError, ObservabilityErrorKind, ObservabilityResult};
+use elicitation::{Prompt, Select};
 use opentelemetry::{KeyValue, global, trace::TracerProvider};
 use opentelemetry_sdk::{Resource, metrics::SdkMeterProvider, trace::SdkTracerProvider};
 use opentelemetry_stdout::SpanExporter;
@@ -6,7 +7,7 @@ use std::env;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Exporter backend for traces.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, elicitation::Elicit)]
 pub enum ExporterBackend {
     /// Export traces to stdout (development/debugging)
     #[default]
@@ -45,7 +46,7 @@ impl ExporterBackend {
 }
 
 /// Configuration for OpenTelemetry observability.
-#[derive(Debug, Clone, derive_getters::Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_builder::Builder, elicitation::Elicit)]
 #[builder(pattern = "owned", setter(into, strip_option))]
 pub struct ObservabilityConfig {
     /// Service name for telemetry attribution

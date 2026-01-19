@@ -58,6 +58,7 @@ pub struct ModelMetadata {
     Deserialize,
     derive_getters::Getters,
     derive_setters::Setters,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
 pub struct Capabilities {
