@@ -5,6 +5,7 @@
 
 use crate::DatabaseResult;
 use botticelli_error::{DatabaseError, DatabaseErrorKind};
+use rmcp::tool;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use tracing::{instrument, warn};
@@ -127,6 +128,7 @@ impl Default for InferredSchema {
 /// Infer PostgreSQL column type from JSON value
 ///
 /// Returns (type_name, is_null) tuple
+#[tool]
 #[instrument(skip(value))]
 pub fn infer_column_type(value: &JsonValue) -> (&'static str, bool) {
     match value {
@@ -154,6 +156,7 @@ pub fn infer_column_type(value: &JsonValue) -> (&'static str, bool) {
 }
 
 /// Resolve conflicts when same field has different types across rows
+#[tool]
 #[instrument]
 pub fn resolve_type_conflict(type1: &str, type2: &str) -> DatabaseResult<String> {
     // Same type - no conflict
@@ -192,8 +195,8 @@ pub fn resolve_type_conflict(type1: &str, type2: &str) -> DatabaseResult<String>
 }
 
 /// Infer schema from JSON (single object or array)
+#[tool]
 #[instrument(name = "schema_inference.infer_schema", skip(json))]
-#[instrument(skip(json))]
 pub fn infer_schema(json: &JsonValue) -> DatabaseResult<InferredSchema> {
     let items: Vec<&JsonValue> = match json {
         JsonValue::Object(_) => {
@@ -263,6 +266,7 @@ pub fn infer_schema(json: &JsonValue) -> DatabaseResult<InferredSchema> {
 /// # Returns
 ///
 /// Returns `Ok(())` if the table was created successfully, or an error if creation failed.
+#[tool]
 #[instrument(name = "schema_inference.create_inferred_table", skip(conn, schema), fields(table = %table_name, field_count = schema.field_count()))]
 pub fn create_inferred_table(
     conn: &mut diesel::pg::PgConnection,
