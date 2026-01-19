@@ -2,6 +2,7 @@
 
 use botticelli_interface::Tier;
 use gemini_rust::Gemini;
+use rmcp::tool;
 
 /// Couples a Gemini API client with its rate limiting tier.
 ///
@@ -21,6 +22,7 @@ pub struct TieredGemini<T: Tier> {
 
 impl<T: Tier> TieredGemini<T> {
     /// Creates a new tiered Gemini client.
+    #[tool]
     pub fn new(client: Gemini, tier: T) -> Self {
         Self { client, tier }
     }

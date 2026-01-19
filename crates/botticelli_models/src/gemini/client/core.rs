@@ -1,6 +1,7 @@
 //! Core Gemini client implementation.
 
 use botticelli_rate_limit::TierConfigBuilder;
+use rmcp::tool;
 use std::collections::HashMap;
 use std::env;
 use std::sync::{Arc, Mutex};
@@ -65,6 +66,7 @@ impl GeminiClient {
     /// - JSON mode
     ///
     /// Additional capabilities vary by model (vision, video, audio, etc.).
+    #[tool]
     pub fn capabilities(&self) -> crate::gemini::ModelCapabilities {
         // For now, return standard capabilities for all models
         // In the future, this could be model-specific
@@ -89,18 +91,21 @@ impl GeminiClient {
     }
 
     /// Create a new Gemini client without rate limiting.
+    #[tool]
     #[instrument(name = "gemini_client_new")]
     pub fn new() -> BotticelliResult<Self> {
         Self::new_with_config(None)
     }
 
     /// Create a new Gemini client with rate limiting.
+    #[tool]
     #[instrument(name = "gemini_client_new_with_tier", skip(tier))]
     pub fn new_with_tier(tier: Option<Box<dyn Tier>>) -> BotticelliResult<Self> {
         Self::new_internal(tier).map_err(Into::into)
     }
 
     /// Create a new Gemini client with rate limiting and retry configuration.
+    #[tool]
     #[instrument(name = "gemini_client_new_with_retry", skip(tier))]
     pub fn new_with_retry(
         tier: Option<Box<dyn Tier>>,
@@ -113,6 +118,7 @@ impl GeminiClient {
     }
 
     /// Create a new Gemini client with rate limiting from configuration.
+    #[tool]
     #[instrument(name = "gemini_client_new_with_config")]
     pub fn new_with_config(tier_name: Option<&str>) -> BotticelliResult<Self> {
         let tier_config = BotticelliConfig::load()
@@ -246,6 +252,7 @@ impl GeminiClient {
     }
 
     /// Set the default model for this client.
+    #[tool]
     pub fn set_default_model(&mut self, model: String) {
         self.model_name = model;
     }

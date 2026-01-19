@@ -3,8 +3,10 @@
 use crate::GeminiClient;
 use botticelli_error::{GeminiError, GeminiErrorKind};
 use botticelli_interface::TokenCounting;
+use rmcp::tool;
 
 /// Create a tokenizer for Gemini (uses GPT encoding).
+#[tool]
 fn gemini_tokenizer() -> Result<tiktoken_rs::CoreBPE, GeminiError> {
     tiktoken_rs::cl100k_base()
         .map_err(|e| GeminiError::new(GeminiErrorKind::Tiktoken(e.to_string())))
