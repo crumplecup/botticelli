@@ -64,6 +64,7 @@
 use derive_getters::Getters;
 use derive_setters::Setters;
 use elicitation::{Prompt, Select};
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 //
@@ -417,11 +418,13 @@ pub struct UsageMetadata {
 
 impl Part {
     /// Create a text part.
+    #[tool]
     pub fn text(text: impl Into<String>) -> Self {
         Part::Text(TextPart { text: text.into() })
     }
 
     /// Extract text from a part, if it contains text.
+    #[tool]
     pub fn as_text(&self) -> Option<&str> {
         match self {
             Part::Text(TextPart { text }) => Some(text),
@@ -432,6 +435,7 @@ impl Part {
 
 impl ServerMessage {
     /// Check if this is a setup complete message.
+    #[tool]
     pub fn is_setup_complete(&self) -> bool {
         self.setup_complete.is_some()
     }
@@ -439,7 +443,7 @@ impl ServerMessage {
     /// Check if this is a server content message.
     ///
     /// Not yet used - reserved for future features.
-    #[allow(dead_code)]
+    #[tool]
     pub fn is_server_content(&self) -> bool {
         self.server_content.is_some()
     }
@@ -447,17 +451,19 @@ impl ServerMessage {
     /// Check if this is a tool call message.
     ///
     /// Not yet used - reserved for future tool calling feature.
-    #[allow(dead_code)]
+    #[tool]
     pub fn is_tool_call(&self) -> bool {
         self.tool_call.is_some()
     }
 
     /// Check if this is a go away (disconnect) message.
+    #[tool]
     pub fn is_go_away(&self) -> bool {
         self.go_away.is_some()
     }
 
     /// Extract text from server content, if present.
+    #[tool]
     pub fn extract_text(&self) -> Option<String> {
         self.server_content.as_ref().map(|content| {
             content
@@ -471,6 +477,7 @@ impl ServerMessage {
     }
 
     /// Check if the turn is complete.
+    #[tool]
     pub fn is_turn_complete(&self) -> bool {
         self.server_content
             .as_ref()

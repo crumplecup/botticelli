@@ -6,6 +6,7 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
+use rmcp::tool;
 use tokio::sync::Mutex;
 use tracing::{debug, trace, warn};
 
@@ -61,6 +62,7 @@ impl LiveRateLimiter {
     ///
     /// let limiter = LiveRateLimiter::new(10); // 10 messages per minute
     /// ```
+    #[tool]
     pub fn new(max_messages_per_minute: u32) -> Self {
         debug!(
             "Creating LiveRateLimiter with {} messages/minute",
@@ -92,6 +94,7 @@ impl LiveRateLimiter {
     /// limiter.record();
     /// # }
     /// ```
+    #[tool]
     pub async fn acquire(&self) {
         let current_count = self.messages_sent.load(Ordering::SeqCst);
 
@@ -142,6 +145,7 @@ impl LiveRateLimiter {
     /// limiter.record();
     /// # }
     /// ```
+    #[tool]
     pub fn record(&self) {
         let new_count = self.messages_sent.fetch_add(1, Ordering::SeqCst) + 1;
         trace!(
@@ -163,11 +167,13 @@ impl LiveRateLimiter {
     /// Get the current message count.
     ///
     /// Useful for monitoring and debugging.
+    #[tool]
     pub fn current_count(&self) -> u32 {
         self.messages_sent.load(Ordering::SeqCst)
     }
 
     /// Get the maximum messages per minute.
+    #[tool]
     pub fn max_per_minute(&self) -> u32 {
         self.max_messages_per_minute
     }
