@@ -5,6 +5,8 @@ mod discord;
 mod elicitation;
 mod execution;
 mod library;
+#[cfg(any(feature = "gemini", feature = "anthropic", feature = "groq", feature = "huggingface", feature = "ollama"))]
+mod models;
 mod narrative;
 mod rate_limit;
 mod scene;
