@@ -83,7 +83,7 @@ pub enum HistoryRetention {
 ///     filename: Some("report.pdf".to_string()),
 /// };
 /// ```
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, elicitation::Elicit)]
 #[serde(tag = "type", content = "data")]
 pub enum Input {
     /// Plain text input.

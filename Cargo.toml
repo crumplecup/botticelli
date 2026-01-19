@@ -180,7 +180,7 @@ tempfile = "3"
 mockall = "0.14"
 
 # Elicitation framework
-elicitation = "0.2"
+elicitation = "0.2.1"
 
 # MCP (Model Context Protocol)
 rmcp = "0.13"

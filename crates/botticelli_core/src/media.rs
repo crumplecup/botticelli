@@ -1,5 +1,6 @@
 //! Media source types for multimodal content.
 
+use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 
 /// Where media content is sourced from.
@@ -13,7 +14,9 @@ use serde::{Deserialize, Serialize};
 /// let base64 = MediaSource::Base64("iVBORw0KGgo...".to_string());
 /// let binary = MediaSource::Binary(vec![0x89, 0x50, 0x4E, 0x47]);
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, elicitation::Elicit
+)]
 pub enum MediaSource {
     /// URL to fetch the content from
     Url(String),
