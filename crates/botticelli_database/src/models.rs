@@ -29,7 +29,7 @@ pub struct ModelResponse {
 }
 
 /// New model response for insertion.
-#[derive(Debug, Clone, Insertable)]
+#[derive(Debug, Clone, Insertable, elicitation::Elicit)]
 #[diesel(table_name = model_responses)]
 pub struct NewModelResponse {
     pub provider: String,

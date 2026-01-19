@@ -29,7 +29,7 @@ pub struct ContentGenerationRow {
 ///
 /// Used to record the start of a content generation attempt.
 /// The status should be 'running' initially.
-#[derive(Debug, Clone, Insertable)]
+#[derive(Debug, Clone, Insertable, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::content_generations)]
 pub struct NewContentGenerationRow {
     pub table_name: String,
@@ -43,7 +43,7 @@ pub struct NewContentGenerationRow {
 ///
 /// Used to update the generation record with completion metadata.
 /// Status should be 'success' or 'failed'.
-#[derive(Debug, Clone, AsChangeset)]
+#[derive(Debug, Clone, AsChangeset, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::content_generations)]
 pub struct UpdateContentGenerationRow {
     pub completed_at: Option<DateTime<Utc>>,

@@ -19,7 +19,7 @@ pub struct NarrativeExecutionRow {
 }
 
 /// Insertable struct for narrative_executions table.
-#[derive(Debug, Clone, Insertable)]
+#[derive(Debug, Clone, Insertable, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::narrative_executions)]
 pub struct NewNarrativeExecutionRow {
     pub narrative_name: String,
@@ -48,7 +48,7 @@ pub struct ActExecutionRow {
 }
 
 /// Insertable struct for act_executions table.
-#[derive(Debug, Clone, Insertable)]
+#[derive(Debug, Clone, Insertable, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::act_executions)]
 pub struct NewActExecutionRow {
     pub execution_id: i32,
@@ -78,7 +78,7 @@ pub struct ActInputRow {
 }
 
 /// Insertable struct for act_inputs table.
-#[derive(Debug, Clone, Insertable)]
+#[derive(Debug, Clone, Insertable, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::act_inputs)]
 pub struct NewActInputRow {
     pub act_execution_id: i32,
