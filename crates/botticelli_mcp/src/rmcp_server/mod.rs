@@ -12,17 +12,44 @@ pub use server::{BotticelliServer, BotticelliServerBuilder};
 
 // Always available tool DTOs
 pub use tools::{
+    // Cache primitives
+    CacheCleanupParams, CacheCleanupResult, CacheClearParams, CacheEntryIsExpiredParams,
+    CacheEntryIsExpiredResult, CacheEntryTimeRemainingParams, CacheEntryTimeRemainingResult,
+    CacheEvictLruParams, CacheIsEmptyParams, CacheIsEmptyResult, CacheKeyNewParams, CacheLenParams,
+    CacheLenResult, CommandCacheNewParams,
+    // Core primitives
     ExtractJsonParams, ExtractTomlParams, GetTierInfoParams, GetTierInfoResult,
+};
+
+// Discord feature
+#[cfg(feature = "discord")]
+pub use tools::{
+    // Social primitives
+    BotRegistryHasPlatformParams, BotRegistryHasPlatformResult, BotRegistryNewParams,
+    BotRegistryPlatformsParams, BotRegistryPlatformsResult, BotRegistryWithCacheParams,
+    ConvertArgsToStringsParams, ConvertArgsToStringsResult, ConvertSecurityErrorParams,
+    HashmapToParamsParams, HashmapToParamsResult,
+};
+
+// Always available tool DTOs (continued)
+pub use tools::{
+    // Storage primitives
     MediaStorageDeleteParams, MediaStorageDeleteResult, MediaStorageExistsParams,
     MediaStorageExistsResult, MediaStorageGetUrlParams, MediaStorageGetUrlResult,
     MediaStorageRetrieveParams, MediaStorageRetrieveResult, MediaStorageStoreParams,
-    MediaStorageStoreResult, MultiNarrativeFromFileParams, NarrativeFromFileParams,
-    NarrativeFromTomlStrParams, StateManagerNewParams, TierDailyQuotaParams, TierDailyQuotaResult,
-    TierInfo, TierInputCostParams, TierInputCostResult, TierMaxConcurrentParams,
-    TierMaxConcurrentResult, TierNameParams, TierNameResult, TierOutputCostParams,
-    TierOutputCostResult, TierRpdParams, TierRpdResult, TierRpmParams, TierRpmResult,
-    TierTpdParams, TierTpdResult, TierTpmParams, TierTpmResult, ValidateDiscordParams,
-    ValidateTomlParams, ValidateTomlResult,
+    MediaStorageStoreResult, MediaTypeAsStrParams, MediaTypeAsStrResult, StorageComputeHashParams,
+    StorageComputeHashResult, StorageGetPathParams, StorageGetPathResult, StorageNewParams,
+    StorageVerifyHashParams,
+    // Narrative primitives
+    MultiNarrativeFromFileParams, NarrativeFromFileParams, NarrativeFromTomlStrParams,
+    StateManagerNewParams,
+    // Tier primitives
+    TierDailyQuotaParams, TierDailyQuotaResult, TierInfo, TierInputCostParams, TierInputCostResult,
+    TierMaxConcurrentParams, TierMaxConcurrentResult, TierNameParams, TierNameResult,
+    TierOutputCostParams, TierOutputCostResult, TierRpdParams, TierRpdResult, TierRpmParams,
+    TierRpmResult, TierTpdParams, TierTpdResult, TierTpmParams, TierTpmResult,
+    // Validation primitives
+    ValidateDiscordParams, ValidateTomlParams, ValidateTomlResult,
 };
 
 // LLM feature

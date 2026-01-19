@@ -7,4 +7,4 @@
 
 mod cache;
 
-pub use cache::{CacheEntry, CommandCache, CommandCacheConfig, CommandCacheConfigBuilder};
+pub use cache::{CacheEntry, CacheKey, CommandCache, CommandCacheConfig, CommandCacheConfigBuilder};

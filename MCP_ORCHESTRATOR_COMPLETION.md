@@ -74,26 +74,59 @@
 use crate::rmcp_server::BotticelliServer;
 use botticelli_{dependency}::{function_name, ParamsType, ResultType};
 use rmcp::tool;
+use tracing::instrument;
 
 impl BotticelliServer {
     /// Documentation copied from source function.
     #[tool]
-    #[tracing::instrument(skip(self))]
+    #[instrument(skip(self, params), fields(
+        tool = "{dependency}_{function_name}",
+        // Add contextual fields from params as needed
+    ))]
     pub fn {dependency}_{function_name}(&self, params: ParamsType) -> ResultType {
+        tracing::debug!("Delegating to {dependency}::{function_name}");
+        
         // Simple delegation to dependency tool
-        botticelli_{dependency}::{function_name}(params)
+        let result = botticelli_{dependency}::{function_name}(params);
+        
+        // Log result/error before returning
+        match &result {
+            Ok(_) => tracing::debug!("Delegation succeeded"),
+            Err(e) => tracing::error!(error = ?e, "Delegation failed"),
+        }
+        
+        result
     }
 }
 ```
+
+**Why Instrumentation on Wrappers?**
+
+This creates a crucial observability layer:
+
+```
+TRACE mcp_server.database_create_pool  <- Wrapper span (orchestrator layer)
+  TRACE database.create_pool            <- Primitive span (implementation)
+    TRACE diesel.get_connection         <- Library span
+```
+
+Benefits:
+1. **Call chain visibility** - See path through orchestrator to primitive
+2. **Performance profiling** - Measure orchestration overhead vs implementation
+3. **Error location** - Know if failure is in MCP layer or dependency
+4. **Rate limiting** - Track tool usage patterns at orchestrator level
+5. **AI debugging** - Gives LLMs precise failure context
 
 ### Key Principles
 
 1. **Name prefixing**: `{crate}_{function}` to avoid collisions (e.g., `database_create_pool`)
 2. **Simple delegation**: Wrappers just forward to dependency - no logic duplication
-3. **Instrumentation**: All wrappers have `#[tracing::instrument(skip(self))]`
-4. **Documentation**: Copy original doc comments from source functions
-5. **Feature gates**: Match dependency feature requirements
-6. **Type re-exports**: All parameter/result DTOs exported at `_mcp` crate level
+3. **Full instrumentation**: All wrappers have `#[instrument(skip(self, params))]` + debug/error logging
+4. **Span context**: Add `fields(tool = "name")` to identify orchestrator layer in traces
+5. **Result logging**: Log success/error before returning for observability
+6. **Documentation**: Copy original doc comments from source functions
+7. **Feature gates**: Match dependency feature requirements
+8. **Type re-exports**: All parameter/result DTOs exported at `_mcp` crate level
 
 ---
 

@@ -2,6 +2,7 @@
 
 use derive_getters::Getters;
 use rmcp::tool;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -41,6 +42,7 @@ pub struct CacheKey {
 }
 
 impl CacheKey {
+    /// Create a new cache key for command results.
     #[tool]
     #[tracing::instrument(skip(args), fields(platform, command, arg_count = args.len()))]
     pub fn new(platform: &str, command: &str, args: &HashMap<String, JsonValue>) -> Self {
@@ -75,6 +77,7 @@ impl CacheKey {
     Clone,
     Serialize,
     Deserialize,
+    JsonSchema,
     Getters,
     derive_setters::Setters,
     derive_builder::Builder,

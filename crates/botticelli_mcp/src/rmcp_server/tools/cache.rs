@@ -3,7 +3,7 @@
 //! Orchestrator wrappers for command cache primitives.
 
 use crate::rmcp_server::BotticelliServer;
-use botticelli_cache::{CacheEntry, CacheKey, CommandCache, CommandCacheConfig};
+use botticelli_cache::{CacheKey, CommandCache, CommandCacheConfig};
 use elicitation::Elicit;
 use rmcp::tool;
 use schemars::JsonSchema;

@@ -107,17 +107,39 @@ pub use validate_narrative::{
 
 // MCP tool DTOs - Parameters and results for AI API (always available)
 pub use rmcp_server::{
+    // Cache primitives
+    CacheCleanupParams, CacheCleanupResult, CacheClearParams, CacheEntryIsExpiredParams,
+    CacheEntryIsExpiredResult, CacheEntryTimeRemainingParams, CacheEntryTimeRemainingResult,
+    CacheEvictLruParams, CacheIsEmptyParams, CacheIsEmptyResult, CacheKeyNewParams, CacheLenParams,
+    CacheLenResult, CommandCacheNewParams,
+    // Core primitives
     ExtractJsonParams, ExtractTomlParams, GetTierInfoParams, GetTierInfoResult,
+    // Storage primitives
     MediaStorageDeleteParams, MediaStorageDeleteResult, MediaStorageExistsParams,
     MediaStorageExistsResult, MediaStorageGetUrlParams, MediaStorageGetUrlResult,
     MediaStorageRetrieveParams, MediaStorageRetrieveResult, MediaStorageStoreParams,
-    MediaStorageStoreResult, MultiNarrativeFromFileParams, NarrativeFromFileParams,
-    NarrativeFromTomlStrParams, StateManagerNewParams, TierDailyQuotaParams, TierDailyQuotaResult,
-    TierInfo, TierInputCostParams, TierInputCostResult, TierMaxConcurrentParams,
-    TierMaxConcurrentResult, TierNameParams, TierNameResult, TierOutputCostParams,
-    TierOutputCostResult, TierRpdParams, TierRpdResult, TierRpmParams, TierRpmResult,
-    TierTpdParams, TierTpdResult, TierTpmParams, TierTpmResult, ValidateDiscordParams,
-    ValidateTomlParams, ValidateTomlResult,
+    MediaStorageStoreResult, MediaTypeAsStrParams, MediaTypeAsStrResult, StorageComputeHashParams,
+    StorageComputeHashResult, StorageGetPathParams, StorageGetPathResult, StorageNewParams,
+    StorageVerifyHashParams,
+    // Narrative primitives
+    MultiNarrativeFromFileParams, NarrativeFromFileParams, NarrativeFromTomlStrParams,
+    StateManagerNewParams,
+    // Tier primitives
+    TierDailyQuotaParams, TierDailyQuotaResult, TierInfo, TierInputCostParams, TierInputCostResult,
+    TierMaxConcurrentParams, TierMaxConcurrentResult, TierNameParams, TierNameResult,
+    TierOutputCostParams, TierOutputCostResult, TierRpdParams, TierRpdResult, TierRpmParams,
+    TierRpmResult, TierTpdParams, TierTpdResult, TierTpmParams, TierTpmResult,
+    // Validation primitives
+    ValidateDiscordParams, ValidateTomlParams, ValidateTomlResult,
+};
+
+// Discord feature
+#[cfg(feature = "discord")]
+pub use rmcp_server::{
+    BotRegistryHasPlatformParams, BotRegistryHasPlatformResult, BotRegistryNewParams,
+    BotRegistryPlatformsParams, BotRegistryPlatformsResult, BotRegistryWithCacheParams,
+    ConvertArgsToStringsParams, ConvertArgsToStringsResult, ConvertSecurityErrorParams,
+    HashmapToParamsParams, HashmapToParamsResult,
 };
 
 // LLM feature

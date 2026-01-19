@@ -2,6 +2,7 @@
 
 mod cache;
 mod core;
+#[cfg(feature = "discord")]
 mod discord;
 mod elicitation;
 mod execution;
@@ -13,6 +14,7 @@ mod narrative;
 mod rate_limit;
 mod scene;
 mod security;
+#[cfg(feature = "discord")]
 mod social;
 mod storage;
 
@@ -40,6 +42,7 @@ pub use rate_limit::{
     TierTpmParams, TierTpmResult, TierNameParams, TierNameResult,
 };
 pub use security::ValidateDiscordParams;
+#[cfg(feature = "discord")]
 pub use social::{
     BotRegistryHasPlatformParams, BotRegistryHasPlatformResult, BotRegistryNewParams,
     BotRegistryPlatformsParams, BotRegistryPlatformsResult, BotRegistryWithCacheParams,
