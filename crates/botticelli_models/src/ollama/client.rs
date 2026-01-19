@@ -10,6 +10,7 @@ use botticelli_core::{Capabilities, FinishReason, GenerateRequest, GenerateRespo
 use botticelli_error::{ModelsError, OllamaErrorKind, OllamaResult};
 
 use botticelli_interface::BotticelliDriver;
+use rmcp::tool;
 use tracing::{debug, info, instrument, warn};
 
 /// Ollama LLM client for local model execution.
@@ -27,12 +28,14 @@ pub struct OllamaClient {
 
 impl OllamaClient {
     /// Create a new Ollama client with default localhost connection.
+    #[tool]
     #[instrument(skip_all, fields(model_name))]
     pub fn new(model_name: impl Into<String>) -> OllamaResult<Self> {
         Self::new_with_url(model_name, "http://localhost:11434")
     }
 
     /// Create a new Ollama client with custom server URL.
+    #[tool]
     #[instrument(skip_all, fields(model_name, base_url))]
     pub fn new_with_url(
         model_name: impl Into<String>,
@@ -57,6 +60,7 @@ impl OllamaClient {
     }
 
     /// Check if Ollama server is running and model is available.
+    #[tool]
     #[instrument(skip(self))]
     pub async fn validate(&self) -> OllamaResult<()> {
         debug!("Validating Ollama server and model availability");
@@ -90,6 +94,7 @@ impl OllamaClient {
     }
 
     /// Pull model if not available locally.
+    #[tool]
     #[instrument(skip(self))]
     pub async fn ensure_model(&self) -> OllamaResult<()> {
         debug!("Ensuring model is available");

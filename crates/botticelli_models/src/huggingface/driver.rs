@@ -7,6 +7,7 @@ use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliResult, ModelsResult, OpenAIErrorKind};
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
+use rmcp::tool;
 use std::sync::Arc;
 use tracing::{debug, instrument};
 
@@ -24,6 +25,7 @@ impl HuggingFaceDriver {
     /// # Errors
     ///
     /// Returns error if API token is not set.
+    #[tool]
     #[instrument(skip_all, fields(model = %model))]
     pub fn new(model: String) -> ModelsResult<Self> {
         let api_token = std::env::var("HUGGINGFACE_API_KEY")
@@ -37,6 +39,7 @@ impl HuggingFaceDriver {
     /// # Errors
     ///
     /// Returns error if client cannot be initialized.
+    #[tool]
     #[instrument(skip(api_token), fields(model = %model))]
     pub fn with_api_token(api_token: String, model: String) -> ModelsResult<Self> {
         let inner = OpenAIibleClient::new(

@@ -2,6 +2,7 @@
 
 use botticelli_core::ToolDefinition;
 use derive_getters::Getters;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// Anthropic tool definition format.
@@ -43,6 +44,8 @@ impl AnthropicTool {
     /// # Ok(())
     /// # }
     /// ```
+    #[tool]
+    #[tracing::instrument]
     pub fn from_mcp(tool: &ToolDefinition) -> Self {
         Self {
             name: tool.name().to_string(),

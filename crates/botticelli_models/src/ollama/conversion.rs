@@ -2,8 +2,10 @@
 
 use botticelli_core::{Input, Message, Output, Role};
 use ollama_rs::generation::completion::GenerationResponse;
+use rmcp::tool;
 
 /// Convert Botticelli messages to Ollama prompt.
+#[tool]
 #[tracing::instrument(skip(messages), fields(message_count = messages.len()))]
 pub fn messages_to_prompt(messages: &[Message]) -> String {
     let mut prompt = String::new();
@@ -47,6 +49,7 @@ pub fn messages_to_prompt(messages: &[Message]) -> String {
 }
 
 /// Convert Ollama response to Botticelli Output.
+#[tool]
 #[tracing::instrument(skip(response))]
 pub fn response_to_output(response: GenerationResponse) -> Output {
     Output::Text(response.response)

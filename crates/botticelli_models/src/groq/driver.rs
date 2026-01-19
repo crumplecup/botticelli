@@ -7,6 +7,7 @@ use botticelli_core::{GenerateRequest, GenerateResponse};
 use botticelli_error::{BotticelliError, BotticelliResult, ModelsResult, OpenAIErrorKind};
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
+use rmcp::tool;
 use tracing::{debug, instrument};
 
 /// Groq AI LPU Inference API driver.
@@ -23,6 +24,7 @@ impl GroqDriver {
     /// # Errors
     ///
     /// Returns error if API token is not set.
+    #[tool]
     #[instrument(skip_all, fields(model = %model))]
     pub fn new(model: String) -> ModelsResult<Self> {
         let api_key = std::env::var("GROQ_API_KEY")
@@ -36,6 +38,7 @@ impl GroqDriver {
     /// # Errors
     ///
     /// Returns error if client cannot be initialized.
+    #[tool]
     #[instrument(skip(api_key), fields(model = %model))]
     pub fn with_api_key(api_key: String, model: String) -> ModelsResult<Self> {
         let inner = OpenAIibleClient::new(

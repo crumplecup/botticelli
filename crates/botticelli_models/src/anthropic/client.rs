@@ -9,6 +9,7 @@ use botticelli_error::{AnthropicErrorKind, BotticelliError, ModelsError};
 use botticelli_interface::{BotticelliDriver, ToolCalling};
 use botticelli_rate_limit::RateLimitConfig;
 use reqwest::Client;
+use rmcp::tool;
 use tracing::{debug, error, instrument};
 
 const ANTHROPIC_API_URL: &str = "https://api.anthropic.com/v1/messages";
@@ -29,6 +30,7 @@ impl AnthropicClient {
     ///
     /// * `api_key` - Anthropic API key
     /// * `model` - Model identifier (e.g., "claude-3-5-sonnet-20241022")
+    #[tool]
     #[instrument(skip(api_key, model))]
     pub fn new(api_key: impl Into<String>, model: impl Into<String>) -> Self {
         let api_key = api_key.into();

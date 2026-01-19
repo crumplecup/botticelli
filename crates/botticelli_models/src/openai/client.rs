@@ -6,6 +6,7 @@ use botticelli_error::{OpenAIError, OpenAIErrorKind};
 use botticelli_rate_limit::RateLimitConfig;
 use derive_getters::Getters;
 use reqwest::Client;
+use rmcp::tool;
 use tracing::{debug, error, instrument};
 
 /// Generic client for any OpenAI-compatible API.
@@ -37,6 +38,7 @@ impl OpenAIibleClient {
     /// * `model` - Model identifier
     /// * `base_url` - Base URL for the API endpoint
     /// * `provider_name` - Name of the provider (for logging/tracing)
+    #[tool]
     #[instrument(skip(api_key), fields(provider = %provider_name, model = %model))]
     pub fn new(api_key: String, model: String, base_url: String, provider_name: String) -> Self {
         let client = Client::new();

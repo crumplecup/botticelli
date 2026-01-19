@@ -3,9 +3,11 @@
 use crate::openai::{ChatMessage, ChatRequest, ChatResponse};
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output};
 use botticelli_error::{OpenAIError, OpenAIErrorKind};
+use rmcp::tool;
 use tracing::instrument;
 
 /// Converts a Botticelli GenerateRequest to OpenAI chat format.
+#[tool]
 #[instrument(skip(req), fields(model, message_count = req.messages().len()))]
 pub fn to_chat_request(req: &GenerateRequest, model: &str) -> Result<ChatRequest, OpenAIError> {
     let mut messages = Vec::new();
@@ -49,6 +51,7 @@ pub fn to_chat_request(req: &GenerateRequest, model: &str) -> Result<ChatRequest
 }
 
 /// Converts an OpenAI chat response to Botticelli GenerateResponse.
+#[tool]
 #[instrument(skip(response), fields(choice_count = response.choices().len()))]
 pub fn from_chat_response(response: &ChatResponse) -> Result<GenerateResponse, OpenAIError> {
     let content = response
