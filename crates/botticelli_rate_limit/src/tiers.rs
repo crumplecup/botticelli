@@ -21,6 +21,9 @@ use elicitation::{Prompt, Select};
     PartialOrd,
     Ord,
     Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
     strum::EnumIter,
     elicitation::Elicit,
 )]
@@ -106,6 +109,9 @@ impl Tier for GeminiTier {
     PartialOrd,
     Ord,
     Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
     strum::EnumIter,
     elicitation::Elicit,
 )]
@@ -191,6 +197,9 @@ impl Tier for AnthropicTier {
     PartialOrd,
     Ord,
     Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
     strum::EnumIter,
     elicitation::Elicit,
 )]

@@ -50,6 +50,8 @@ pub use rate_limit::{
     TierMaxConcurrentParams, TierMaxConcurrentResult, TierOutputCostParams, TierOutputCostResult,
     TierRpdParams, TierRpdResult, TierRpmParams, TierRpmResult, TierTpdParams, TierTpdResult,
     TierTpmParams, TierTpmResult, TierNameParams, TierNameResult,
+    RateLimitForModelParams, RateLimitFromTierParams, RateLimitUnlimitedParams,
+    RateLimitFromFileParams, RateLimitGetTierParams, RateLimitGetTierResult,
 };
 pub use security::ValidateDiscordParams;
 #[cfg(feature = "discord")]

@@ -315,7 +315,7 @@ impl RateLimitConfig {
 /// Configuration for a specific provider.
 ///
 /// Contains the default tier name and a map of tier configurations.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_getters::Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, schemars::JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 pub struct ProviderConfig {
     /// Name of the default tier for this provider
     default_tier: String,
@@ -352,6 +352,7 @@ pub struct ProviderConfig {
     PartialEq,
     Deserialize,
     Serialize,
+    schemars::JsonSchema,
     Default,
     derive_getters::Getters,
     elicitation::Elicit,
@@ -371,7 +372,7 @@ pub struct BotticelliConfig {
 }
 
 /// Configuration for context file resolution.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_getters::Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, schemars::JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 pub struct ContextConfig {
     /// Base directory for resolving file references in narrative TOML files.
     /// Defaults to workspace root if not specified.

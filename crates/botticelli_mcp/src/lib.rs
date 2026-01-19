@@ -137,6 +137,9 @@ pub use rmcp_server::{
     TierMaxConcurrentParams, TierMaxConcurrentResult, TierNameParams, TierNameResult,
     TierOutputCostParams, TierOutputCostResult, TierRpdParams, TierRpdResult, TierRpmParams,
     TierRpmResult, TierTpdParams, TierTpdResult, TierTpmParams, TierTpmResult,
+    // Rate limit config primitives
+    RateLimitForModelParams, RateLimitFromTierParams, RateLimitUnlimitedParams,
+    RateLimitFromFileParams, RateLimitGetTierParams, RateLimitGetTierResult,
     // Validation primitives
     ValidateDiscordParams, ValidateTomlParams, ValidateTomlResult,
 };

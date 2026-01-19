@@ -4,11 +4,12 @@
 
 use crate::rmcp_server::BotticelliServer;
 use botticelli_interface::Tier;
-use botticelli_rate_limit::TierConfig;
+use botticelli_rate_limit::{RateLimitConfig, TierConfig, BotticelliConfig};
 use elicitation::Elicit;
 use rmcp::tool;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use tracing::instrument;
 
 /// Parameters for tier RPM query.
@@ -222,4 +223,134 @@ impl BotticelliServer {
         tracing::info!(name = %name, "Retrieved tier name");
         TierNameResult { name }
     }
+
+    /// Get tier configuration for a specific model.
+    #[tool]
+    #[instrument(skip(self, params), fields(model = %params.model_name))]
+    pub fn rate_limit_for_model(&self, params: RateLimitForModelParams) -> TierConfig {
+        tracing::debug!("Delegating to TierConfig::for_model");
+        let result = params.tier_config.for_model(&params.model_name);
+        tracing::debug!(tier_name = %result.name(), "Model tier retrieved");
+        result
+    }
+
+    /// Create rate limit config from tier configuration.
+    #[tool]
+    #[instrument(skip(self, params), fields(tier_name = %params.tier.name()))]
+    pub fn rate_limit_from_tier(&self, params: RateLimitFromTierParams) -> RateLimitConfig {
+        tracing::debug!("Delegating to RateLimitConfig::from_tier");
+        let config = RateLimitConfig::from_tier(&params.tier);
+        tracing::debug!("Rate limit config created from tier");
+        config
+    }
+
+    /// Create unlimited rate limit config.
+    #[tool]
+    #[instrument(skip(self, params), fields(name = %params.name))]
+    pub fn rate_limit_unlimited(&self, params: RateLimitUnlimitedParams) -> RateLimitConfig {
+        tracing::debug!("Delegating to RateLimitConfig::unlimited");
+        let config = RateLimitConfig::unlimited(&params.name);
+        tracing::debug!("Unlimited rate limit config created");
+        config
+    }
+
+    /// Load botticelli config from file.
+    #[tool]
+    #[instrument(skip(self, params), fields(path = ?params.path))]
+    pub fn rate_limit_from_file(&self, params: RateLimitFromFileParams) -> Result<BotticelliConfig, botticelli_error::ConfigError> {
+        tracing::debug!("Delegating to BotticelliConfig::from_file");
+        
+        let result = BotticelliConfig::from_file(&params.path);
+        
+        match &result {
+            Ok(_) => tracing::debug!("Config loaded from file"),
+            Err(e) => tracing::error!(error = ?e, "Config load failed"),
+        }
+        
+        result
+    }
+
+    /// Load botticelli config from default location.
+    #[tool]
+    #[instrument(skip(self), fields(tool = "rate_limit_load"))]
+    pub fn rate_limit_load(&self) -> Result<BotticelliConfig, botticelli_error::ConfigError> {
+        tracing::debug!("Delegating to BotticelliConfig::load");
+        
+        let result = BotticelliConfig::load();
+        
+        match &result {
+            Ok(_) => tracing::debug!("Config loaded from default location"),
+            Err(e) => tracing::error!(error = ?e, "Config load failed"),
+        }
+        
+        result
+    }
+
+    /// Get tier configuration from loaded config.
+    #[tool]
+    #[instrument(skip(self, params), fields(provider = %params.provider))]
+    pub fn rate_limit_get_tier(&self, params: RateLimitGetTierParams) -> RateLimitGetTierResult {
+        tracing::debug!("Delegating to BotticelliConfig::get_tier");
+        
+        let tier = params.config.get_tier(&params.provider, params.tier_name.as_deref());
+        
+        match &tier {
+            Some(t) => tracing::debug!(tier_name = %t.name(), "Tier retrieved"),
+            None => tracing::debug!("Tier not found"),
+        }
+        
+        RateLimitGetTierResult { tier }
+    }
+}
+
+// ============================================================================
+// DTOs for new primitives
+// ============================================================================
+
+/// Parameters for getting model tier.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct RateLimitForModelParams {
+    /// Tier configuration
+    pub tier_config: TierConfig,
+    /// Model name
+    pub model_name: String,
+}
+
+/// Parameters for creating config from tier.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct RateLimitFromTierParams {
+    /// Tier configuration
+    pub tier: TierConfig,
+}
+
+/// Parameters for creating unlimited config.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct RateLimitUnlimitedParams {
+    /// Config name
+    pub name: String,
+}
+
+/// Parameters for loading config from file.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct RateLimitFromFileParams {
+    /// Path to config file
+    pub path: PathBuf,
+}
+
+/// Parameters for getting tier from config.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct RateLimitGetTierParams {
+    /// Botticelli configuration
+    pub config: BotticelliConfig,
+    /// Provider name
+    pub provider: String,
+    /// Optional tier name
+    pub tier_name: Option<String>,
+}
+
+/// Result of getting tier.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct RateLimitGetTierResult {
+    /// Tier configuration if found
+    pub tier: Option<TierConfig>,
 }
