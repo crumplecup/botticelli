@@ -35,6 +35,7 @@ use tracing::{debug, info, instrument, warn};
     Deserialize,
     Serialize,
     Default,
+    schemars::JsonSchema,
     derive_getters::Getters,
     elicitation::Elicit,
 )]
@@ -92,7 +93,7 @@ pub struct ModelTierConfig {
 /// tpm = 125_000      # Overrides tier default
 /// rpd = 50           # Overrides tier default
 /// ```
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, derive_builder::Builder, derive_getters::Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, schemars::JsonSchema, derive_builder::Builder, derive_getters::Getters, elicitation::Elicit)]
 #[builder(setter(into, strip_option))]
 pub struct TierConfig {
     /// Name of the tier (e.g., "Free", "Pro", "Tier 1")

@@ -6,6 +6,7 @@ mod elicitation;
 mod execution;
 mod library;
 mod narrative;
+mod rate_limit;
 mod scene;
 mod storage;
 
