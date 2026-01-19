@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
 /// Parameters for simple text generation.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct GenerateParams {
     /// The prompt to send to the LLM.
     prompt: String,
@@ -66,7 +66,7 @@ fn default_temperature() -> f32 {
 }
 
 /// Result from text generation.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct GenerateResult {
     /// The generated text response.
     text: String,
@@ -92,7 +92,7 @@ impl GenerateResult {
 }
 
 /// Parameters for executing a single narrative act.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct ExecuteActParams {
     /// The act prompt or instruction.
     prompt: String,
@@ -141,7 +141,7 @@ impl ExecuteActParams {
 }
 
 /// Result from executing a single act.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct ExecuteActResult {
     /// The generated response from the act.
     response: String,
@@ -171,7 +171,7 @@ impl ExecuteActResult {
 }
 
 /// Parameters for executing a complete narrative.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct ExecuteNarrativeParams {
     /// Path to the narrative TOML file.
     narrative_path: String,
@@ -207,7 +207,7 @@ impl ExecuteNarrativeParams {
 }
 
 /// Result from executing a narrative.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct ExecuteNarrativeResult {
     /// The final output from the narrative.
     final_output: String,

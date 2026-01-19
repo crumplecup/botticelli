@@ -22,6 +22,7 @@ use crate::tools::NarrativeHelper;
     derive_new::new,
     derive_getters::Getters,
     derive_setters::Setters,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "set_", borrow_self)]
 pub struct PartialAct {
@@ -44,7 +45,15 @@ pub struct PartialAct {
 /// Uses builder pattern for type-safe construction.
 /// All fields are optional during elicitation.
 #[derive(
-    Debug, Clone, Builder, Serialize, Deserialize, Getters, Default, derive_setters::Setters,
+    Debug,
+    Clone,
+    Builder,
+    Serialize,
+    Deserialize,
+    Getters,
+    Default,
+    derive_setters::Setters,
+    elicitation::Elicit,
 )]
 #[builder(setter(into), default)]
 #[setters(prefix = "with_", borrow_self)]

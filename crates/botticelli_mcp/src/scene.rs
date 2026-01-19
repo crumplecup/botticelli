@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// Parameters for creating a new scene in a narrative.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct CreateSceneParams {
     /// The narrative ID to add the scene to
     narrative_id: String,
@@ -32,7 +32,7 @@ impl CreateSceneParams {
 }
 
 /// Result from creating a scene.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct CreateSceneResult {
     /// Whether the operation succeeded
     success: bool,
@@ -71,7 +71,7 @@ impl CreateSceneResult {
 }
 
 /// Parameters for listing scenes in a narrative.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct ListScenesParams {
     /// The narrative ID to list scenes from
     narrative_id: String,
@@ -86,7 +86,7 @@ impl ListScenesParams {
 }
 
 /// Result from listing scenes.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct ListScenesResult {
     /// Whether the operation succeeded
     success: bool,
@@ -111,7 +111,7 @@ impl ListScenesResult {
 }
 
 /// Parameters for updating a scene.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct UpdateSceneParams {
     /// The scene ID to update
     scene_id: String,
@@ -129,7 +129,7 @@ impl UpdateSceneParams {
 }
 
 /// Result from updating a scene.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct UpdateSceneResult {
     /// Whether the operation succeeded
     success: bool,
@@ -154,7 +154,7 @@ impl UpdateSceneResult {
 }
 
 /// Parameters for deleting a scene.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct DeleteSceneParams {
     /// The scene ID to delete
     scene_id: String,
@@ -169,7 +169,7 @@ impl DeleteSceneParams {
 }
 
 /// Result from deleting a scene.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct DeleteSceneResult {
     /// Whether the operation succeeded
     success: bool,
