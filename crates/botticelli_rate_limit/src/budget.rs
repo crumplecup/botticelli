@@ -60,6 +60,7 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
     }
 
     /// Resets window counters if windows have expired.
+    #[tool]
     #[tracing::instrument(skip(self))]
     fn reset_windows(&mut self) {
         let now = Instant::now();
