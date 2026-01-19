@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use botticelli_error::BotticelliResult;
 use botticelli_interface::DatabaseRegistryOperations;
 use diesel::prelude::*;
+use rmcp::tool;
 use serde_json::Value;
 
 use crate::{DbPool, reflect_table_schema};
@@ -16,6 +17,7 @@ pub struct DbOperationsImpl {
 
 impl DbOperationsImpl {
     /// Create new database operations with connection pool.
+    #[tool]
     #[tracing::instrument(skip(pool))]
     pub fn new(pool: DbPool) -> Self {
         Self { pool }

@@ -23,6 +23,7 @@ pub struct ColumnDefinition {
 
 impl ColumnDefinition {
     /// Create a new column definition
+    #[tool]
     #[tracing::instrument(skip(pg_type), fields(nullable))]
     pub fn new(pg_type: impl Into<String>, nullable: bool) -> Self {
         Self {
@@ -33,6 +34,7 @@ impl ColumnDefinition {
     }
 
     /// Add an example value
+    #[tool]
     #[tracing::instrument(skip(self, value))]
     pub fn add_example(&mut self, value: JsonValue) {
         self.examples.push(value);
@@ -48,6 +50,7 @@ pub struct InferredSchema {
 
 impl InferredSchema {
     /// Create a new empty schema
+    #[tool]
     #[tracing::instrument]
     pub fn new() -> Self {
         Self {
@@ -56,6 +59,7 @@ impl InferredSchema {
     }
 
     /// Add a field from a JSON value
+    #[tool]
     #[tracing::instrument(skip(self, value), fields(name, value_type = match value {
         JsonValue::Null => "null",
         JsonValue::Bool(_) => "bool",
@@ -107,12 +111,14 @@ impl InferredSchema {
     }
 
     /// Get the number of fields in the schema
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn field_count(&self) -> usize {
         self.fields.len()
     }
 
     /// Check if a field exists
+    #[tool]
     #[tracing::instrument(skip(self), fields(name))]
     pub fn has_field(&self, name: &str) -> bool {
         self.fields.contains_key(name)

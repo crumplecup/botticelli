@@ -16,6 +16,7 @@ use async_trait::async_trait;
 use chrono::Utc;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use rmcp::tool;
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -68,6 +69,7 @@ impl PostgresNarrativeRepository {
     /// # Note
     /// The connection is wrapped in Arc<Mutex> to allow async access.
     /// For better performance with concurrent access, consider using a connection pool.
+    #[tool]
     #[tracing::instrument(skip(conn, storage))]
     pub fn new(
         conn: PgConnection,
@@ -86,6 +88,7 @@ impl PostgresNarrativeRepository {
     }
 
     /// Create a repository from an Arc<Mutex<PgConnection>> (for sharing connections).
+    #[tool]
     #[tracing::instrument(skip(conn, storage))]
     pub fn from_arc(
         conn: Arc<Mutex<PgConnection>>,

@@ -3,6 +3,7 @@
 use crate::{TableQueryExecutor, format_as_json};
 use async_trait::async_trait;
 use botticelli_interface::TableQueryRegistry;
+use rmcp::tool;
 use tracing::{debug, instrument};
 
 /// Implementation of TableQueryRegistry using TableQueryExecutor.
@@ -12,6 +13,7 @@ pub struct DatabaseTableQueryRegistry {
 
 impl DatabaseTableQueryRegistry {
     /// Creates a new table query registry.
+    #[tool]
     #[tracing::instrument(skip(executor))]
     pub fn new(executor: TableQueryExecutor) -> Self {
         Self { executor }

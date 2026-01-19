@@ -2,6 +2,7 @@
 
 use botticelli_error::{BotticelliResult, McpError, McpErrorKind};
 use botticelli_interface::RegistryOperations;
+use rmcp::tool;
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -15,6 +16,7 @@ pub struct ActorRow {
 
 impl ActorRow {
     /// Create a new actor entry.
+    #[tool]
     #[tracing::instrument(skip(name, description), fields(name_len = name.len(), has_description = description.is_some()))]
     pub fn new(name: String, description: Option<String>) -> Self {
         let id = Uuid::new_v4();
@@ -106,6 +108,7 @@ pub struct ContentEntry {
 
 impl ContentEntry {
     /// Create a new content entry.
+    #[tool]
     #[tracing::instrument(skip(title, content_type, data), fields(title_len = title.len(), content_type_len = content_type.len()))]
     pub fn new(title: String, content_type: String, data: Value) -> Self {
         let id = Uuid::new_v4();

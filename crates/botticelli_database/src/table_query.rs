@@ -17,12 +17,14 @@ pub struct TableQueryExecutor {
 
 impl TableQueryExecutor {
     /// Creates a new table query executor.
+    #[tool]
     #[tracing::instrument(skip(connection))]
     pub fn new(connection: Arc<Mutex<PgConnection>>) -> Self {
         Self { connection }
     }
 
     /// Queries a table and returns results as JSON values.
+    #[tool]
     #[instrument(skip(self, view), fields(table_name = %view.table_name(), limit = ?view.limit(), offset = ?view.offset()))]
     pub fn query_table(
         &self,
@@ -55,6 +57,7 @@ impl TableQueryExecutor {
     }
 
     /// Queries a table, returns results, and deletes those rows (destructive read).
+    #[tool]
     #[instrument(skip(self, view), fields(table_name = %view.table_name(), limit = ?view.limit(), offset = ?view.offset()))]
     pub fn query_and_delete_table(
         &self,

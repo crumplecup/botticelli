@@ -3,6 +3,7 @@
 use botticelli_error::{DatabaseError, DatabaseErrorKind};
 use botticelli_interface::ContentGenerationRepository;
 use diesel::prelude::*;
+use rmcp::tool;
 use tracing::{debug, error};
 
 use crate::{ContentGenerationRow, NewContentGenerationRow, UpdateContentGenerationRow};
@@ -31,6 +32,7 @@ impl<'a> PostgresContentGenerationRepository<'a> {
     /// # Ok(())
     /// # }
     /// ```
+    #[tool]
     #[tracing::instrument(skip(conn))]
     pub fn new(conn: &'a mut PgConnection) -> Self {
         Self { conn }

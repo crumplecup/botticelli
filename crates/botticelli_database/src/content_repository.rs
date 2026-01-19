@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use botticelli_interface::ContentRepository;
 use diesel::pg::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
+use rmcp::tool;
 
 /// Database-backed content repository.
 #[derive(Clone)]
@@ -16,12 +17,14 @@ pub struct DatabaseContentRepository {
 
 impl DatabaseContentRepository {
     /// Create a new content repository with the given connection pool.
+    #[tool]
     #[tracing::instrument(skip(pool))]
     pub fn new(pool: Pool<ConnectionManager<PgConnection>>) -> Self {
         Self { pool }
     }
 
     /// Get a reference to the connection pool.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn pool(&self) -> &Pool<ConnectionManager<PgConnection>> {
         &self.pool

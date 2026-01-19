@@ -2,6 +2,7 @@
 
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
+use rmcp::tool;
 use serde::de::Error as _;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -45,6 +46,7 @@ pub struct NewModelResponse {
 
 impl NewModelResponse {
     /// Create a new model response record from a request and response.
+    #[tool]
     #[tracing::instrument(skip_all, fields(
         message_count = request.messages().len(),
         output_count = response.outputs().len(),
@@ -74,6 +76,7 @@ impl NewModelResponse {
     }
 
     /// Create a new error response record.
+    #[tool]
     #[tracing::instrument(skip_all, fields(
         message_count = request.messages().len(),
         duration_ms
@@ -117,6 +120,7 @@ pub struct SerializableModelResponse {
 
 impl ModelResponse {
     /// Convert to a serializable format.
+    #[tool]
     #[tracing::instrument(skip(self), fields(id = %self.id, has_error = self.error_message.is_some()))]
     pub fn to_serializable(&self) -> Result<SerializableModelResponse, serde_json::Error> {
         tracing::debug!("Converting ModelResponse to serializable format");
