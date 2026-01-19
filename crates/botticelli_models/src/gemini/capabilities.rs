@@ -1,10 +1,11 @@
+use derive_getters::Getters;
 use rmcp::tool;
 
 /// Gemini model capabilities configuration.
 ///
 /// This struct describes what features a Gemini model supports.
 /// It's used by the `BotticelliDriver::capabilities()` method.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Getters)]
 pub struct ModelCapabilities {
     supports_streaming: bool,
     supports_tools: bool,
@@ -51,75 +52,5 @@ impl ModelCapabilities {
             supports_batch: true,
             supports_embeddings: true,
         }
-    }
-
-    /// Check if model supports streaming.
-    #[must_use]
-    #[tool]
-    pub fn supports_streaming(&self) -> bool {
-        self.supports_streaming
-    }
-
-    /// Check if model supports tool calling.
-    #[must_use]
-    #[tool]
-    pub fn supports_tool_calling(&self) -> bool {
-        self.supports_tools
-    }
-
-    /// Check if model supports vision.
-    #[must_use]
-    #[tool]
-    pub fn supports_vision(&self) -> bool {
-        self.supports_vision
-    }
-
-    /// Check if model supports video.
-    #[must_use]
-    #[tool]
-    pub fn supports_video(&self) -> bool {
-        self.supports_video
-    }
-
-    /// Check if model supports audio.
-    #[must_use]
-    #[tool]
-    pub fn supports_audio(&self) -> bool {
-        self.supports_audio
-    }
-
-    /// Check if model supports documents.
-    #[must_use]
-    #[tool]
-    pub fn supports_documents(&self) -> bool {
-        self.supports_documents
-    }
-
-    /// Check if model supports JSON mode.
-    #[must_use]
-    #[tool]
-    pub fn supports_json_mode(&self) -> bool {
-        self.supports_json_mode
-    }
-
-    /// Check if model supports token counting.
-    #[must_use]
-    #[tool]
-    pub fn supports_token_counting(&self) -> bool {
-        self.supports_token_counting
-    }
-
-    /// Check if model supports batch generation.
-    #[must_use]
-    #[tool]
-    pub fn supports_batch(&self) -> bool {
-        self.supports_batch
-    }
-
-    /// Check if model supports embeddings.
-    #[must_use]
-    #[tool]
-    pub fn supports_embeddings(&self) -> bool {
-        self.supports_embeddings
     }
 }
