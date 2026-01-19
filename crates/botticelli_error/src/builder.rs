@@ -27,7 +27,7 @@ pub enum BuilderErrorKind {
 pub struct BuilderError {
     kind: BuilderErrorKind,
     line: u32,
-    file: &'static str,
+    file: String,
 }
 
 impl BuilderError {
@@ -38,7 +38,7 @@ impl BuilderError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 

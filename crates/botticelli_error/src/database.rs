@@ -15,7 +15,7 @@ pub struct DieselError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 #[cfg(feature = "database")]
@@ -27,7 +27,7 @@ impl DieselError {
         Self {
             source: Arc::new(err),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }
@@ -75,7 +75,7 @@ pub struct DieselConnectionError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 #[cfg(feature = "database")]
@@ -87,7 +87,7 @@ impl DieselConnectionError {
         Self {
             source: Arc::new(err),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }
@@ -135,7 +135,7 @@ pub struct R2d2Error {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 #[cfg(feature = "database")]
@@ -147,7 +147,7 @@ impl R2d2Error {
         Self {
             source: Arc::new(err),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }
@@ -259,7 +259,7 @@ pub struct DatabaseError {
     /// Line number where error was created
     pub line: u32,
     /// File where error was created
-    pub file: &'static str,
+    pub file: String,
 }
 
 impl DatabaseError {
@@ -270,7 +270,7 @@ impl DatabaseError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

@@ -1,7 +1,17 @@
 //! Security error types.
 
 /// Specific security error conditions.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::Display,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+)]
 pub enum SecurityErrorKind {
     /// Permission denied for command
     #[display("Permission denied for command '{}': {}", command, reason)]
@@ -87,7 +97,15 @@ pub enum SecurityErrorKind {
 }
 
 /// Security error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(
+    Debug,
+    Clone,
+    derive_more::Display,
+    derive_more::Error,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+)]
 #[display("Security: {} at {}:{}", kind, file, line)]
 pub struct SecurityError {
     /// The specific error kind
@@ -95,7 +113,7 @@ pub struct SecurityError {
     /// Line number where error occurred
     pub line: u32,
     /// File where error occurred
-    pub file: &'static str,
+    pub file: String,
 }
 
 impl SecurityError {
@@ -107,7 +125,7 @@ impl SecurityError {
         let error = Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         };
         tracing::error!(
             error_kind = ?error.kind,

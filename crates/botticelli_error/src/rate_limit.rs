@@ -45,7 +45,7 @@ pub struct RateLimitError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 impl RateLimitError {
@@ -56,7 +56,7 @@ impl RateLimitError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

@@ -10,7 +10,7 @@ pub struct SerdeJsonError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 #[cfg(feature = "serde_json")]
@@ -22,7 +22,7 @@ impl SerdeJsonError {
         Self {
             source: Box::new(err),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }
@@ -101,7 +101,7 @@ pub struct JsonError {
     /// Line number where the error occurred
     line: u32,
     /// File where the error occurred
-    file: &'static str,
+    file: String,
 }
 
 impl PartialEq for JsonError {
@@ -128,7 +128,7 @@ impl PartialOrd for JsonError {
 
 impl Ord for JsonError {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (self.file, self.line, &self.kind).cmp(&(other.file, other.line, &other.kind))
+        (&self.file, self.line, &self.kind).cmp(&(&other.file, other.line, &other.kind))
     }
 }
 
@@ -140,7 +140,7 @@ impl JsonError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

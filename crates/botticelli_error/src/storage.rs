@@ -47,7 +47,7 @@ pub struct StorageError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 impl StorageError {
@@ -58,7 +58,7 @@ impl StorageError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

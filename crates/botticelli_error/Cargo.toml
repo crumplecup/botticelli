@@ -17,6 +17,9 @@ derive_builder = { workspace = true }
 tracing = { workspace = true }
 botticelli_interface = { workspace = true }
 anyhow = { workspace = true }
+serde = { workspace = true }
+schemars = { workspace = true }
+elicitation = { workspace = true }
 
 # Optional database error conversions
 diesel = { workspace = true, optional = true }

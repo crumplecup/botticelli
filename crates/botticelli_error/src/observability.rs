@@ -30,7 +30,7 @@ pub enum ObservabilityErrorKind {
 pub struct ObservabilityError {
     kind: ObservabilityErrorKind,
     line: u32,
-    file: &'static str,
+    file: String,
 }
 
 impl ObservabilityError {
@@ -41,7 +41,7 @@ impl ObservabilityError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

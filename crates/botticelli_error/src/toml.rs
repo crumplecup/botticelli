@@ -9,7 +9,7 @@ use std::sync::Arc;
 pub struct TomlError {
     source: Arc<toml::de::Error>,
     line: u32,
-    file: &'static str,
+    file: String,
 }
 
 impl TomlError {
@@ -20,7 +20,7 @@ impl TomlError {
         Self {
             source: Arc::new(err),
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 }
@@ -59,8 +59,8 @@ impl PartialOrd for TomlError {
 
 impl Ord for TomlError {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (self.file, self.line, format!("{}", self.source)).cmp(&(
-            other.file,
+        (&self.file, self.line, format!("{}", self.source)).cmp(&(
+            &other.file,
             other.line,
             format!("{}", other.source),
         ))

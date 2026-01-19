@@ -185,7 +185,7 @@ pub struct NarrativeError {
     /// Line number where the error occurred
     line: u32,
     /// Source file where the error occurred
-    file: &'static str,
+    file: String,
 }
 
 impl NarrativeError {
@@ -196,7 +196,7 @@ impl NarrativeError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

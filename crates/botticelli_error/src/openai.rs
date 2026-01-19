@@ -55,7 +55,7 @@ pub struct OpenAIError {
     /// Line number where error occurred
     pub line: u32,
     /// Source file where error occurred
-    pub file: &'static str,
+    pub file: String,
 }
 
 impl OpenAIError {
@@ -66,7 +66,7 @@ impl OpenAIError {
         Self {
             kind,
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 }

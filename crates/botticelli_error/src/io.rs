@@ -9,7 +9,7 @@ use std::sync::Arc;
 pub struct IoError {
     source: Arc<std::io::Error>,
     line: u32,
-    file: &'static str,
+    file: String,
 }
 
 impl IoError {
@@ -20,7 +20,7 @@ impl IoError {
         Self {
             source: Arc::new(err),
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 }
@@ -59,8 +59,8 @@ impl PartialOrd for IoError {
 
 impl Ord for IoError {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (self.file, self.line, self.source.kind()).cmp(&(
-            other.file,
+        (&self.file, self.line, self.source.kind()).cmp(&(
+            &other.file,
             other.line,
             other.source.kind(),
         ))

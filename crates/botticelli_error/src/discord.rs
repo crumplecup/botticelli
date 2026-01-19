@@ -107,7 +107,7 @@ pub enum DiscordErrorKind {
 pub struct DiscordError {
     kind: DiscordErrorKind,
     line: u32,
-    file: &'static str,
+    file: String,
 }
 
 impl From<DiscordErrorKind> for DiscordError {
@@ -132,7 +132,7 @@ impl DiscordError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 

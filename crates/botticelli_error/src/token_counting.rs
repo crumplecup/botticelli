@@ -18,7 +18,7 @@ pub enum TokenCountingErrorKind {
 pub struct TokenCountingError {
     kind: TokenCountingErrorKind,
     line: u32,
-    file: &'static str,
+    file: String,
 }
 
 impl TokenCountingError {
@@ -29,7 +29,7 @@ impl TokenCountingError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

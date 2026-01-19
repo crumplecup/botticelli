@@ -10,7 +10,7 @@ pub struct ProviderReqwestError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 #[cfg(feature = "reqwest")]
@@ -22,7 +22,7 @@ impl ProviderReqwestError {
         Self {
             source: Box::new(err),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }
@@ -37,7 +37,7 @@ pub struct ProviderSerdeJsonError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 #[cfg(feature = "serde_json")]
@@ -49,7 +49,7 @@ impl ProviderSerdeJsonError {
         Self {
             source: Box::new(err),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }
@@ -80,7 +80,7 @@ pub struct ProviderError {
     /// Line number where error occurred
     line: u32,
     /// File where error occurred
-    file: &'static str,
+    file: String,
 }
 
 /// Types of provider errors.
@@ -126,7 +126,7 @@ impl ProviderError {
             provider: provider.into(),
             kind,
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 }

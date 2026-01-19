@@ -164,7 +164,7 @@ pub struct BotCommandError {
     /// Line number where error occurred
     line: u32,
     /// File where error occurred
-    file: &'static str,
+    file: String,
 }
 
 impl BotCommandError {
@@ -175,7 +175,7 @@ impl BotCommandError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 

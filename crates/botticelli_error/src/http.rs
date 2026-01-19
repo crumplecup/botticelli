@@ -27,7 +27,7 @@ pub struct HttpError {
     /// Line number where the error occurred
     line: u32,
     /// File where the error occurred
-    file: &'static str,
+    file: String,
 }
 
 impl HttpError {
@@ -38,7 +38,7 @@ impl HttpError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

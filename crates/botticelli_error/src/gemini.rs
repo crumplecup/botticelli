@@ -126,7 +126,7 @@ pub struct GeminiError {
     /// Line number where error was created
     pub line: u32,
     /// File where error was created
-    pub file: &'static str,
+    pub file: String,
 }
 
 impl GeminiError {
@@ -137,7 +137,7 @@ impl GeminiError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

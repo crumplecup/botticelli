@@ -9,7 +9,7 @@ pub struct BackendError {
     /// Line number where the error occurred
     pub line: u32,
     /// File where the error occurred
-    pub file: &'static str,
+    pub file: String,
 }
 
 impl BackendError {
@@ -29,7 +29,7 @@ impl BackendError {
         Self {
             message: message.into(),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

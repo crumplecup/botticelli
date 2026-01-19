@@ -9,7 +9,7 @@ pub struct TuiIoError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 impl TuiIoError {
@@ -20,7 +20,7 @@ impl TuiIoError {
         Self {
             source: Box::new(err),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }
@@ -85,7 +85,7 @@ pub struct TuiError {
     /// Line number where error occurred
     line: u32,
     /// File where error occurred
-    file: &'static str,
+    file: String,
 }
 
 impl TuiError {
@@ -96,7 +96,7 @@ impl TuiError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

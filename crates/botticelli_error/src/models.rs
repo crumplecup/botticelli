@@ -47,7 +47,7 @@ pub struct OllamaError {
     /// Line number where error occurred
     line: u32,
     /// Source file where error occurred
-    file: &'static str,
+    file: String,
 }
 
 #[cfg(feature = "ollama")]
@@ -59,7 +59,7 @@ impl OllamaError {
         Self {
             kind,
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 
@@ -142,7 +142,7 @@ pub struct AnthropicError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 #[cfg(feature = "anthropic")]
@@ -154,7 +154,7 @@ impl AnthropicError {
         Self {
             kind,
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 }
@@ -223,7 +223,7 @@ pub struct ModelsError {
     /// Line number where error occurred
     line: u32,
     /// Source file where error occurred
-    file: &'static str,
+    file: String,
 }
 
 impl ModelsError {
@@ -234,7 +234,7 @@ impl ModelsError {
         Self {
             kind,
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 }

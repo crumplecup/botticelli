@@ -57,7 +57,7 @@ pub struct SamplingError {
     /// Line number
     line: u32,
     /// File name
-    file: &'static str,
+    file: String,
 }
 
 impl SamplingError {
@@ -68,7 +68,7 @@ impl SamplingError {
         Self {
             kind,
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 }
@@ -144,7 +144,7 @@ pub struct ChatError {
     /// Line number
     pub line: u32,
     /// File path
-    pub file: &'static str,
+    pub file: String,
 }
 
 impl ChatError {
@@ -155,7 +155,7 @@ impl ChatError {
         Self {
             kind,
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 

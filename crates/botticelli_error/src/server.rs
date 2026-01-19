@@ -57,7 +57,7 @@ pub struct ServerError {
     /// Line number where error occurred
     line: u32,
     /// File where error occurred
-    file: &'static str,
+    file: String,
 }
 
 impl ServerError {
@@ -68,7 +68,7 @@ impl ServerError {
         Self {
             kind,
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }

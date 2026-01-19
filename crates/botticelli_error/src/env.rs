@@ -20,7 +20,7 @@ pub enum EnvErrorKind {
 pub struct EnvError {
     kind: EnvErrorKind,
     line: u32,
-    file: &'static str,
+    file: String,
 }
 
 impl EnvError {
@@ -31,7 +31,7 @@ impl EnvError {
         Self {
             kind,
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 

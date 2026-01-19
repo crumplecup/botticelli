@@ -12,7 +12,7 @@ pub struct SerdeJsonError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 /// Database error with source tracking.
@@ -27,7 +27,7 @@ pub struct DatabaseMcpError {
     /// Line number where error was created
     line: u32,
     /// File where error was created
-    file: &'static str,
+    file: String,
 }
 
 #[cfg(feature = "serde_json")]
@@ -39,7 +39,7 @@ impl SerdeJsonError {
         Self {
             source: Box::new(err),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }
@@ -54,7 +54,7 @@ impl DatabaseMcpError {
             message: message.into(),
             source: Box::new(err),
             line: location.line(),
-            file: location.file(),
+            file: location.file().to_string(),
         }
     }
 }
@@ -275,7 +275,7 @@ pub struct McpError {
     /// Line number
     pub line: u32,
     /// File path
-    pub file: &'static str,
+    pub file: String,
 }
 
 impl McpError {
@@ -286,7 +286,7 @@ impl McpError {
         Self {
             kind,
             line: loc.line(),
-            file: loc.file(),
+            file: loc.file().to_string(),
         }
     }
 
