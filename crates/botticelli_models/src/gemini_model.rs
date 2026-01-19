@@ -1,6 +1,7 @@
 //! Gemini model variants with hierarchical ordering.
 
 use derive_more::Display;
+use elicitation::{Prompt, Select};
 use strum::EnumIter;
 use tracing::instrument;
 
@@ -9,7 +10,17 @@ use tracing::instrument;
 /// Variants are ordered by rate limits and cost, allowing "loyal" movement
 /// up (more capable/expensive) or down (faster/cheaper) within the family.
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumIter, serde::Serialize, serde::Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Display,
+    EnumIter,
+    serde::Serialize,
+    serde::Deserialize,
+    elicitation::Elicit,
 )]
 pub enum GeminiModel {
     /// Gemini 2.5 Pro - Most restrictive, highest capability

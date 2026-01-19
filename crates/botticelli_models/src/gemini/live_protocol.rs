@@ -63,6 +63,7 @@
 
 use derive_getters::Getters;
 use derive_setters::Setters;
+use elicitation::{Prompt, Select, Survey};
 use serde::{Deserialize, Serialize};
 
 //
@@ -78,7 +79,16 @@ pub struct SetupMessage {
 }
 
 /// Configuration for the Live API session.
-#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters, derive_builder::Builder)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    Default,
+    Getters,
+    derive_builder::Builder,
+    elicitation::Elicit,
+)]
 #[serde(rename_all = "camelCase")]
 #[builder(setter(into), default)]
 pub struct SetupConfig {
@@ -100,7 +110,15 @@ pub struct SetupConfig {
 
 /// Generation configuration parameters.
 #[derive(
-    Debug, Clone, Serialize, Deserialize, Default, Getters, Setters, derive_builder::Builder,
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    Default,
+    Getters,
+    Setters,
+    derive_builder::Builder,
+    elicitation::Elicit,
 )]
 #[serde(rename_all = "camelCase")]
 #[builder(setter(into, strip_option), default)]
@@ -140,14 +158,14 @@ pub struct GenerationConfig {
 }
 
 /// System instruction for the model.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemInstruction {
     parts: Vec<Part>,
 }
 
 /// Tool/function definition.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct Tool {
     name: String,
@@ -188,7 +206,7 @@ pub struct Turn {
 }
 
 /// Content part (text, inline data, etc.).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum Part {
     /// Text content
@@ -198,20 +216,20 @@ pub enum Part {
 }
 
 /// Text content part.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 pub struct TextPart {
     text: String,
 }
 
 /// Inline data content part.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct InlineDataPart {
     inline_data: InlineData,
 }
 
 /// Inline data with MIME type.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct InlineData {
     mime_type: String,

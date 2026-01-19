@@ -3,6 +3,7 @@
 use derive_getters::Getters;
 use derive_more::Display;
 use derive_new::new;
+use elicitation::{Prompt, Select};
 use tracing::instrument;
 
 use crate::{GeminiModel, GroqModel, ModelFamily, RateLimitDetector};
@@ -11,7 +12,18 @@ use crate::{GeminiModel, GroqModel, ModelFamily, RateLimitDetector};
 ///
 /// Defines upper and lower bounds to prevent using models that are
 /// too expensive/slow (upper bound) or too cheap/fast (lower bound).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, new, Getters, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    new,
+    Getters,
+    serde::Serialize,
+    serde::Deserialize,
+    elicitation::Elicit,
+)]
 pub struct ModelBounds {
     /// Minimum acceptable model (None = no lower bound)
     lower: Option<ModelId>,
@@ -73,7 +85,16 @@ impl ModelBounds {
 ///
 /// Allows comparing and ordering models regardless of provider.
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Display, serde::Serialize, serde::Deserialize,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Display,
+    serde::Serialize,
+    serde::Deserialize,
+    elicitation::Elicit,
 )]
 pub enum ModelId {
     /// Gemini model variant
@@ -239,7 +260,16 @@ impl GroqModel {
 
 /// Selection strategy for fallback behavior.
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, Default,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    Default,
+    elicitation::Elicit,
 )]
 pub enum SelectionStrategy {
     /// Try loyal movement first (within family), then friendly (cross-family)

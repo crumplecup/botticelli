@@ -39,6 +39,9 @@ strum = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
 opentelemetry = { workspace = true }
 
+# Serialization
+elicitation = { workspace = true }
+
 # Retry
 tokio-retry2 = { workspace = true }
 

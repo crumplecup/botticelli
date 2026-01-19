@@ -4,6 +4,7 @@
 //! "friendly" movement when switching between providers.
 
 use derive_more::Display;
+use elicitation::{Prompt, Select};
 use strum::EnumIter;
 use tracing::instrument;
 
@@ -11,7 +12,7 @@ use tracing::instrument;
 ///
 /// Variants are ordered by fallback preference. When a model is unavailable,
 /// the system will try equivalent models in other families following this order.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Display, EnumIter, elicitation::Elicit)]
 pub enum ModelFamily {
     /// Google Gemini models (default/preferred)
     #[display("gemini")]
