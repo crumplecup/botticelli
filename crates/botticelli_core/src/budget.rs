@@ -30,6 +30,7 @@ use serde::{Deserialize, Serialize};
     PartialEq,
     Serialize,
     Deserialize,
+    schemars::JsonSchema,
     derive_getters::Getters,
     derive_builder::Builder,
     elicitation::Elicit,

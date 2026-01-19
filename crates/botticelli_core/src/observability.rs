@@ -8,7 +8,7 @@ use std::env;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Exporter backend for traces.
-#[derive(Debug, Clone, PartialEq, Eq, Default, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema, Default, elicitation::Elicit)]
 pub enum ExporterBackend {
     /// Export traces to stdout (development/debugging)
     #[default]
@@ -48,7 +48,7 @@ impl ExporterBackend {
 }
 
 /// Configuration for OpenTelemetry observability.
-#[derive(Debug, Clone, derive_getters::Getters, derive_builder::Builder, elicitation::Elicit)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, derive_getters::Getters, derive_builder::Builder, elicitation::Elicit)]
 #[builder(pattern = "owned", setter(into, strip_option))]
 pub struct ObservabilityConfig {
     /// Service name for telemetry attribution

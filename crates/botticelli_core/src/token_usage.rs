@@ -27,6 +27,7 @@ use serde::{Deserialize, Serialize};
     Hash,
     Serialize,
     Deserialize,
+    schemars::JsonSchema,
     Default,
     derive_getters::Getters,
     derive_builder::Builder,

@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 /// let binary = MediaSource::Binary(vec![0x89, 0x50, 0x4E, 0x47]);
 /// ```
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, elicitation::Elicit
+    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema, elicitation::Elicit
 )]
 pub enum MediaSource {
     /// URL to fetch the content from

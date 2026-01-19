@@ -112,7 +112,15 @@ pub use rmcp_server::{
     CacheEntryIsExpiredResult, CacheEntryTimeRemainingParams, CacheEntryTimeRemainingResult,
     CacheEvictLruParams, CacheIsEmptyParams, CacheIsEmptyResult, CacheKeyNewParams, CacheLenParams,
     CacheLenResult, CommandCacheNewParams,
-    // Core primitives
+    // Core infrastructure primitives
+    CoreBudgetApplyResult, CoreBudgetApplyRpdParams, CoreBudgetApplyRpmParams,
+    CoreBudgetApplyTpmParams, CoreBudgetMergeParams, CoreBudgetMergeResult,
+    CoreBudgetValidateParams, CoreGetTokenizerParams, CoreGetTokenizerResult,
+    CoreInitObservabilityWithConfigParams, CoreInputHistoryRetentionParams,
+    CoreInputHistoryRetentionResult, CoreInputWithHistoryRetentionParams,
+    CoreInputWithHistoryRetentionResult, CoreTokenUsageCalculateCostParams,
+    CoreTokenUsageCalculateCostResult, CoreTokenUsageNewParams,
+    // Tool/library primitives
     ExtractJsonParams, ExtractTomlParams, GetTierInfoParams, GetTierInfoResult,
     // Storage primitives
     MediaStorageDeleteParams, MediaStorageDeleteResult, MediaStorageExistsParams,

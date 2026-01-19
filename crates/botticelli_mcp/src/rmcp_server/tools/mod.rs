@@ -2,6 +2,7 @@
 
 mod cache;
 mod core;
+mod core_primitives;
 #[cfg(feature = "discord")]
 mod discord;
 mod elicitation;
@@ -28,6 +29,15 @@ pub use cache::{
     CacheEntryIsExpiredResult, CacheEntryTimeRemainingParams, CacheEntryTimeRemainingResult,
     CacheEvictLruParams, CacheIsEmptyParams, CacheIsEmptyResult, CacheKeyNewParams, CacheLenParams,
     CacheLenResult, CommandCacheNewParams,
+};
+pub use core_primitives::{
+    CoreBudgetApplyResult, CoreBudgetApplyRpdParams, CoreBudgetApplyRpmParams,
+    CoreBudgetApplyTpmParams, CoreBudgetMergeParams, CoreBudgetMergeResult,
+    CoreBudgetValidateParams, CoreGetTokenizerParams, CoreGetTokenizerResult,
+    CoreInitObservabilityWithConfigParams, CoreInputHistoryRetentionParams,
+    CoreInputHistoryRetentionResult, CoreInputWithHistoryRetentionParams,
+    CoreInputWithHistoryRetentionResult, CoreTokenUsageCalculateCostParams,
+    CoreTokenUsageCalculateCostResult, CoreTokenUsageNewParams,
 };
 pub use extraction_tools::{ExtractJsonParams, ExtractTomlParams};
 pub use library::{GetTierInfoParams, GetTierInfoResult, TierInfo, ValidateTomlParams, ValidateTomlResult};
