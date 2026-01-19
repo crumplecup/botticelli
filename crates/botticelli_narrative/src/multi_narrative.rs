@@ -16,7 +16,7 @@ use diesel::pg::PgConnection;
 /// Container for multiple narratives from a single TOML file.
 ///
 /// Enables narrative composition where narratives can reference each other.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, elicitation::Elicit)]
 pub struct MultiNarrative {
     narratives: HashMap<String, Narrative>,
     active_narrative: String,

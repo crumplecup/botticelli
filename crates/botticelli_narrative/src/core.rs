@@ -3,6 +3,7 @@
 use crate::{ActConfig, CarouselConfig, toml_parser};
 use botticelli_error::{NarrativeError, NarrativeErrorKind};
 use botticelli_interface::NarrativeProvider;
+use elicitation::{Prompt, Select, Survey};
 use std::collections::HashMap;
 use std::path::Path;
 use std::str::FromStr;
@@ -17,7 +18,13 @@ use diesel::pg::PgConnection;
 
 /// Narrative metadata from the `[narrative]` section.
 #[derive(
-    Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize, derive_getters::Getters,
+    Debug,
+    Clone,
+    PartialEq,
+    serde::Deserialize,
+    serde::Serialize,
+    derive_getters::Getters,
+    elicitation::Elicit,
 )]
 pub struct NarrativeMetadata {
     /// Unique identifier for this narrative
@@ -120,7 +127,7 @@ pub struct NarrativeToc {
 /// mime = "image/png"
 /// url = "https://example.com/image.png"
 /// ```
-#[derive(Debug, Clone, PartialEq, serde::Serialize, derive_getters::Getters)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct Narrative {
     /// Narrative metadata
     metadata: NarrativeMetadata,
@@ -413,7 +420,7 @@ impl NarrativeProvider for Narrative {
 /// This enum handles both single narratives and multi-narrative files with composition.
 /// When a narrative uses composition (references other narratives), the full MultiNarrative
 /// context must be preserved to resolve those references during execution.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, elicitation::Elicit)]
 pub enum NarrativeSource {
     /// Single narrative without composition.
     ///
