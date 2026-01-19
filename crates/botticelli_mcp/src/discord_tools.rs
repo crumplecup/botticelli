@@ -10,7 +10,7 @@ use tracing::instrument;
 // ============================================================================
 
 /// Parameters for posting a message to Discord.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_new::new)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_new::new, elicitation::Elicit)]
 #[schemars(description = "Parameters for posting a message to a Discord channel")]
 pub struct DiscordPostMessageParams {
     /// Discord channel ID.
@@ -23,7 +23,7 @@ pub struct DiscordPostMessageParams {
 }
 
 /// Result from posting a Discord message.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new, elicitation::Elicit)]
 #[schemars(description = "Result from posting a Discord message")]
 pub struct DiscordPostMessageResult {
     /// Status of the operation.
@@ -44,7 +44,7 @@ pub struct DiscordPostMessageResult {
 }
 
 /// Parameters for getting Discord messages.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_new::new)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_new::new, elicitation::Elicit)]
 #[schemars(description = "Parameters for fetching Discord message history")]
 pub struct DiscordGetMessagesParams {
     /// Discord channel ID.
@@ -66,7 +66,7 @@ fn default_message_limit() -> i64 {
 }
 
 /// Discord author information.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new, elicitation::Elicit)]
 #[schemars(description = "Discord message author information")]
 pub struct DiscordAuthor {
     /// User ID.
@@ -79,7 +79,7 @@ pub struct DiscordAuthor {
 }
 
 /// Discord message information.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new, elicitation::Elicit)]
 #[schemars(description = "Discord message information")]
 pub struct DiscordMessageInfo {
     /// Message ID.
@@ -101,7 +101,7 @@ pub struct DiscordMessageInfo {
 }
 
 /// Result from getting Discord messages.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 #[schemars(description = "Result from fetching Discord messages")]
 pub struct DiscordGetMessagesResult {
     /// Status of the operation.
@@ -140,7 +140,7 @@ impl DiscordGetMessagesResult {
 }
 
 /// Parameters for getting Discord guild info.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 #[schemars(description = "Parameters for fetching Discord guild information")]
 pub struct DiscordGetGuildInfoParams {
     /// Discord guild ID.
@@ -157,7 +157,7 @@ impl DiscordGetGuildInfoParams {
 }
 
 /// Result from getting Discord guild info.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new, elicitation::Elicit)]
 #[schemars(description = "Result from fetching Discord guild information")]
 pub struct DiscordGetGuildInfoResult {
     /// Status of the operation.
@@ -179,7 +179,7 @@ pub struct DiscordGetGuildInfoResult {
 }
 
 /// Parameters for getting Discord channels.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_new::new)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_new::new, elicitation::Elicit)]
 #[schemars(description = "Parameters for listing Discord channels")]
 pub struct DiscordGetChannelsParams {
     /// Discord guild ID.
@@ -188,7 +188,7 @@ pub struct DiscordGetChannelsParams {
 }
 
 /// Discord channel information.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new, elicitation::Elicit)]
 #[schemars(description = "Discord channel information")]
 pub struct DiscordChannelInfo {
     /// Channel ID.
@@ -207,7 +207,7 @@ pub struct DiscordChannelInfo {
 }
 
 /// Result from getting Discord channels.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, derive_new::new, elicitation::Elicit)]
 #[schemars(description = "Result from listing Discord channels")]
 pub struct DiscordGetChannelsResult {
     /// Status of the operation.

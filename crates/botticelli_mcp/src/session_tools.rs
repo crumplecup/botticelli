@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tracing::instrument;
 
 /// Parameters for creating a narrative session.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 #[schemars(description = "Parameters for initializing a new narrative creation session")]
 pub struct CreateNarrativeSessionParams {
     /// User's description of what they want to create.
@@ -23,7 +23,7 @@ impl CreateNarrativeSessionParams {
 }
 
 /// Analysis of the user's description.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 #[schemars(description = "Analysis of the user's narrative description")]
 pub struct NarrativeAnalysis {
     /// Names of detected acts.
@@ -52,7 +52,7 @@ impl NarrativeAnalysis {
 }
 
 /// Result from creating a narrative session.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 #[schemars(description = "Result from creating a new narrative session")]
 pub struct CreateNarrativeSessionResult {
     /// UUID of the created session.
@@ -81,7 +81,7 @@ impl CreateNarrativeSessionResult {
 }
 
 /// Parameters for setting narrative metadata.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_builder::Builder, elicitation::Elicit)]
 #[schemars(description = "Parameters for setting or updating narrative metadata")]
 #[builder(setter(into))]
 pub struct ElicitMetadataParams {
@@ -119,7 +119,7 @@ impl ElicitMetadataParams {
 }
 
 /// Result from eliciting metadata.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 #[schemars(description = "Result from updating narrative metadata")]
 pub struct ElicitMetadataResult {
     /// Session UUID.
@@ -143,7 +143,7 @@ impl ElicitMetadataResult {
 }
 
 /// Parameters for adding or updating an act.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, derive_builder::Builder, elicitation::Elicit)]
 #[schemars(description = "Parameters for adding or updating an act in the narrative")]
 #[builder(setter(into))]
 pub struct ElicitActParams {
@@ -179,7 +179,7 @@ impl ElicitActParams {
 }
 
 /// Result from eliciting an act.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 #[schemars(description = "Result from adding or updating an act")]
 pub struct ElicitActResult {
     /// Session UUID.
@@ -208,7 +208,7 @@ impl ElicitActResult {
 }
 
 /// Parameters for finalizing a narrative session.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 #[schemars(description = "Parameters for finalizing a narrative session")]
 pub struct FinalizeNarrativeParams {
     /// Session UUID.
@@ -241,7 +241,7 @@ fn default_true() -> bool {
 }
 
 /// Result from finalizing a narrative.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 #[schemars(description = "Result from finalizing a narrative session")]
 pub struct FinalizeNarrativeResult {
     /// Whether finalization succeeded.
@@ -271,6 +271,8 @@ impl FinalizeNarrativeResult {
 }
 
 /// Output format for narrative state.
+///
+/// Note: Cannot derive Elicit - simple unit enum without explicit prompts.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "lowercase")]
 #[schemars(description = "Format for narrative state output")]
@@ -288,7 +290,7 @@ pub enum StateFormat {
 }
 
 /// Summary of narrative state.
-#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 #[schemars(description = "Summary of narrative session state")]
 pub struct NarrativeStateSummary {
     /// Narrative name (if set).
@@ -334,6 +336,8 @@ impl NarrativeStateSummary {
 }
 
 /// Parameters for getting narrative state.
+///
+/// Note: Cannot derive Elicit due to StateFormat enum field.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, derive_getters::Getters)]
 #[schemars(description = "Parameters for querying narrative session state")]
 pub struct GetNarrativeStateParams {
@@ -359,7 +363,7 @@ impl GetNarrativeStateParams {
 }
 
 /// Result from getting narrative state.
-#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 #[schemars(description = "Result containing narrative session state")]
 pub struct GetNarrativeStateResult {
     /// Session UUID.
@@ -389,6 +393,8 @@ impl GetNarrativeStateResult {
 }
 
 /// Validation issue severity.
+///
+/// Note: Cannot derive Elicit - simple unit enum without explicit prompts.
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 #[schemars(description = "Severity level of a validation issue")]
@@ -408,6 +414,8 @@ pub enum ValidationSeverity {
 }
 
 /// Validation issue.
+///
+/// Note: Cannot derive Elicit due to ValidationSeverity enum field.
 #[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters)]
 #[schemars(description = "A validation issue (error or warning)")]
 pub struct ValidationIssue {
@@ -453,7 +461,7 @@ impl ValidationIssue {
 }
 
 /// Parameters for validating a narrative session.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 #[schemars(description = "Parameters for validating a narrative session")]
 pub struct ValidateNarrativeSessionParams {
     /// Session UUID.
@@ -478,6 +486,8 @@ impl ValidateNarrativeSessionParams {
 }
 
 /// Result from validating a narrative session.
+///
+/// Note: Cannot derive Elicit due to ValidationIssue fields.
 #[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters)]
 #[schemars(description = "Result from narrative session validation")]
 pub struct ValidateNarrativeSessionResult {
@@ -529,7 +539,7 @@ impl ValidateNarrativeSessionResult {
 }
 
 /// Parameters for applying automated validation fixes.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 #[schemars(description = "Parameters for applying automated fixes to validation issues")]
 pub struct ApplyValidationFixesParams {
     /// Session UUID.
@@ -559,7 +569,7 @@ impl ApplyValidationFixesParams {
 }
 
 /// Result from applying validation fixes.
-#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 #[schemars(description = "Result from applying automated validation fixes")]
 pub struct ApplyValidationFixesResult {
     /// Whether fixes were successfully applied.
@@ -588,6 +598,8 @@ impl ApplyValidationFixesResult {
 }
 
 /// Level at which carousel operates.
+///
+/// Note: Cannot derive Elicit - simple unit enum without explicit prompts.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 #[schemars(description = "Level at which carousel configuration applies")]
@@ -601,7 +613,7 @@ pub enum CarouselLevel {
 }
 
 /// Summary of carousel configuration.
-#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 #[schemars(description = "Summary of carousel configuration")]
 pub struct CarouselSummary {
     /// Level (narrative or act).
@@ -648,6 +660,8 @@ impl CarouselSummary {
 }
 
 /// Parameters for creating carousel configuration.
+///
+/// Note: Cannot derive Elicit due to CarouselLevel enum field.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, derive_getters::Getters)]
 #[schemars(description = "Parameters for creating carousel configuration")]
 pub struct ElicitCarouselParams {
@@ -717,6 +731,8 @@ fn default_budget_multiplier() -> f64 {
 }
 
 /// Result from creating carousel configuration.
+///
+/// Note: Cannot derive Elicit due to CarouselSummary field.
 #[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters)]
 #[schemars(description = "Result from creating carousel configuration")]
 pub struct ElicitCarouselResult {
