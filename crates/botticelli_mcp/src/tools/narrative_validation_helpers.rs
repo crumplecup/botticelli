@@ -3,9 +3,11 @@
 //! Provides better error formatting, suggestions, and TOML quality improvements.
 
 use botticelli_narrative::validator::{ValidationError, ValidationResult, ValidationWarning};
+use rmcp::tool;
 use serde_json::{Value, json};
 
 /// Format validation result as structured JSON with enhanced information.
+#[tool]
 #[tracing::instrument(skip(validation), fields(is_valid = validation.is_valid()))]
 pub fn format_validation_result(validation: &ValidationResult) -> Value {
     json!({
@@ -19,6 +21,7 @@ pub fn format_validation_result(validation: &ValidationResult) -> Value {
 }
 
 /// Format errors with priority and fix suggestions.
+#[tool]
 #[tracing::instrument(skip(errors), fields(error_count = errors.len()))]
 fn format_errors(errors: &[ValidationError]) -> Vec<Value> {
     errors
@@ -44,6 +47,7 @@ fn format_errors(errors: &[ValidationError]) -> Vec<Value> {
 }
 
 /// Format warnings with additional context.
+#[tool]
 #[tracing::instrument(skip(warnings), fields(warning_count = warnings.len()))]
 fn format_warnings(warnings: &[ValidationWarning]) -> Vec<Value> {
     warnings
@@ -64,6 +68,7 @@ fn format_warnings(warnings: &[ValidationWarning]) -> Vec<Value> {
 }
 
 /// Create a summary of validation results.
+#[tool]
 #[tracing::instrument(skip(validation), fields(is_valid = validation.is_valid()))]
 fn create_summary(validation: &ValidationResult) -> String {
     let error_count = validation.errors().len();
@@ -95,6 +100,7 @@ fn create_summary(validation: &ValidationResult) -> String {
 }
 
 /// Categorize error priority.
+#[tool]
 #[tracing::instrument(skip(kind))]
 fn categorize_error_priority(kind: &botticelli_narrative::validator::ValidationErrorKind) -> &str {
     use botticelli_narrative::validator::ValidationErrorKind;
@@ -112,6 +118,7 @@ fn categorize_error_priority(kind: &botticelli_narrative::validator::ValidationE
 }
 
 /// Categorize warning severity.
+#[tool]
 #[tracing::instrument(skip(kind))]
 fn categorize_warning_severity(
     kind: &botticelli_narrative::validator::ValidationWarningKind,
@@ -127,6 +134,7 @@ fn categorize_warning_severity(
 }
 
 /// Check if there are critical errors.
+#[tool]
 #[tracing::instrument(skip(errors), fields(error_count = errors.len()))]
 fn has_critical_errors(errors: &[ValidationError]) -> bool {
     errors
@@ -135,12 +143,14 @@ fn has_critical_errors(errors: &[ValidationError]) -> bool {
 }
 
 /// Check if errors have fix suggestions.
+#[tool]
 #[tracing::instrument(skip(errors), fields(error_count = errors.len()))]
 fn has_fixable_errors(errors: &[ValidationError]) -> bool {
     errors.iter().any(|e| e.suggestion().is_some())
 }
 
 /// Generate fix suggestion for errors without one.
+#[tool]
 #[tracing::instrument(skip(error))]
 fn generate_fix_suggestion(error: &ValidationError) -> Option<String> {
     use botticelli_narrative::validator::ValidationErrorKind;
@@ -163,6 +173,7 @@ fn generate_fix_suggestion(error: &ValidationError) -> Option<String> {
 }
 
 /// Improve TOML formatting with better structure.
+#[tool]
 #[tracing::instrument(skip(toml), fields(toml_len = toml.len()))]
 pub fn format_toml(toml: &str) -> String {
     let mut formatted = String::new();
@@ -198,6 +209,7 @@ pub fn format_toml(toml: &str) -> String {
 }
 
 /// Add helpful comments to generated TOML.
+#[tool]
 #[tracing::instrument(skip(toml), fields(toml_len = toml.len()))]
 pub fn add_helpful_comments(toml: &str) -> String {
     let mut output = String::new();
@@ -232,6 +244,7 @@ pub fn add_helpful_comments(toml: &str) -> String {
 }
 
 /// Validate and auto-fix common TOML issues.
+#[tool]
 #[tracing::instrument(skip(toml), fields(toml_len = toml.len()))]
 pub fn auto_fix_common_issues(toml: &str) -> (String, Vec<String>) {
     let mut fixed = toml.to_string();
@@ -286,6 +299,7 @@ pub fn auto_fix_common_issues(toml: &str) -> (String, Vec<String>) {
 }
 
 /// Extract act names from TOML.
+#[tool]
 #[tracing::instrument(skip(toml), fields(toml_len = toml.len()))]
 fn extract_act_names(toml: &str) -> Vec<String> {
     let mut names = Vec::new();

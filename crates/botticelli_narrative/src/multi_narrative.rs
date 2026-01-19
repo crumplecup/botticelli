@@ -6,6 +6,7 @@
 use crate::{ActConfig, CarouselConfig, Narrative, NarrativeMetadata};
 use botticelli_error::{NarrativeError, NarrativeErrorKind};
 use botticelli_interface::NarrativeProvider;
+use rmcp::tool;
 use std::collections::HashMap;
 use std::path::Path;
 use tracing::{debug, instrument};
@@ -211,6 +212,7 @@ impl MultiNarrative {
     }
 
     /// Get a narrative by name for composition.
+    #[tool]
     #[instrument(skip(self), fields(name))]
     pub fn get_narrative(&self, name: &str) -> Option<&Narrative> {
         let result = self.narratives.get(name);

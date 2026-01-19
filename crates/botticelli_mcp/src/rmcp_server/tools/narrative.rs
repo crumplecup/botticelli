@@ -18,8 +18,10 @@ use crate::{
     ValidationSeverity, ValidationWarning,
 };
 use botticelli_narrative::validator::{ValidationConfig, Validator};
+use botticelli_narrative::{MultiNarrative, Narrative, StateManager};
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ErrorCode;
+use rmcp::tool;
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
@@ -696,4 +698,259 @@ impl BotticelliServer {
             remaining_errors,
         )))
     }
+}
+
+// =============================================================================
+// MCP Tool Wrapper Parameter DTOs
+// =============================================================================
+
+/// Parameters for loading a narrative from a file.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct NarrativeFromFileParams {
+    /// Path to the narrative TOML file
+    pub path: String,
+}
+
+/// Parameters for loading a narrative from a file with database support.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[cfg(feature = "database")]
+pub struct NarrativeFromFileWithDbParams {
+    /// Path to the narrative TOML file
+    pub path: String,
+    /// Database connection string
+    pub database_url: String,
+}
+
+/// Parameters for creating a StateManager.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct StateManagerNewParams {
+    /// Directory where state files will be stored
+    pub state_dir: String,
+}
+
+/// Parameters for loading a multi-narrative from a file.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct MultiNarrativeFromFileParams {
+    /// Path to the multi-narrative TOML file
+    pub path: String,
+    /// Name of the narrative within the file
+    pub narrative_name: String,
+}
+
+/// Parameters for loading a multi-narrative from a file with database support.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[cfg(feature = "database")]
+pub struct MultiNarrativeFromFileWithDbParams {
+    /// Path to the multi-narrative TOML file
+    pub path: String,
+    /// Name of the narrative within the file
+    pub narrative_name: String,
+    /// Database connection string
+    pub database_url: String,
+}
+
+/// Parameters for loading a narrative from a TOML string.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct NarrativeFromTomlStrParams {
+    /// TOML content to parse
+    pub content: String,
+    /// Optional source description for error messages
+    pub source: Option<String>,
+}
+
+/// Parameters for assembling narrative act prompts with database content.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[cfg(feature = "database")]
+pub struct AssembleNarrativeActPromptsParams {
+    /// The narrative to process (will be modified in place)
+    pub narrative: Narrative,
+    /// Database connection string
+    pub database_url: String,
+}
+
+// =============================================================================
+// MCP Tool Wrapper Implementations
+// =============================================================================
+
+impl BotticelliServer {
+    // =========================================================================
+    // MCP Tool Wrappers for botticelli_narrative
+    //
+    // Wrappers for narrative functions that cannot be directly tooled:
+    // - Generic path parameters (AsRef<Path>)
+    // - Borrowed string parameters (&str)
+    // - Async methods with &self/&mut self
+    // - Trait implementations
+    // - Generic trait bounds
+    // =========================================================================
+
+    /// Load a narrative from a TOML file.
+    ///
+    /// Wrapper for `Narrative::from_file<P: AsRef<Path>>`.
+    #[tool]
+    #[tracing::instrument(skip(self, params), fields(path = %params.path))]
+    pub fn narrative_from_file(
+        &self,
+        params: NarrativeFromFileParams,
+    ) -> Result<Narrative, botticelli_error::BotticelliError> {
+    use std::path::PathBuf;
+    let path = PathBuf::from(params.path);
+    tracing::debug!(path = %path.display(), "Loading narrative from file");
+    Narrative::from_file(&path).map_err(Into::into)
+}
+
+    /// Load a narrative from a TOML file with database schema reflection.
+    ///
+    /// Wrapper for `Narrative::from_file_with_db<P: AsRef<Path>>`.
+    #[tool]
+    #[cfg(feature = "database")]
+    #[tracing::instrument(skip(self, params), fields(path = %params.path))]
+    pub fn narrative_from_file_with_db(
+        &self,
+        params: NarrativeFromFileWithDbParams,
+    ) -> Result<Narrative, botticelli_error::BotticelliError> {
+    use diesel::prelude::*;
+    use diesel::r2d2::{ConnectionManager, Pool};
+    use std::path::PathBuf;
+
+    let path = PathBuf::from(params.path);
+    tracing::debug!(path = %path.display(), "Loading narrative from file with database");
+
+    // Create connection pool
+    let manager = ConnectionManager::<PgConnection>::new(&params.database_url);
+    let pool = Pool::builder().build(manager).map_err(|e| {
+        botticelli_error::BackendError::new(format!("Failed to create connection pool: {}", e))
+    })?;
+
+    let mut conn = pool.get().map_err(|e| {
+        botticelli_error::BackendError::new(format!("Failed to get connection: {}", e))
+    })?;
+
+    Narrative::from_file_with_db(&path, &mut conn).map_err(Into::into)
+}
+
+/// Create a new state manager.
+///
+/// Wrapper for `StateManager::new<P: AsRef<Path>>`.
+#[tool]
+#[tracing::instrument(skip(self, params), fields(state_dir = %params.state_dir))]
+pub fn state_manager_new(
+    &self,
+    params: StateManagerNewParams,
+) -> Result<StateManager, botticelli_error::BotticelliError> {
+    use std::path::PathBuf;
+    let path = PathBuf::from(params.state_dir);
+    tracing::debug!(path = %path.display(), "Creating state manager");
+    StateManager::new(&path)
+}
+
+/// Load all narratives from a TOML file.
+///
+/// Wrapper for `MultiNarrative::from_file<P: AsRef<Path>>`.
+#[tool]
+#[tracing::instrument(skip(self, params), fields(path = %params.path, narrative_name = %params.narrative_name))]
+pub fn multi_narrative_from_file(
+    &self,
+    params: MultiNarrativeFromFileParams,
+) -> Result<MultiNarrative, botticelli_error::BotticelliError> {
+    use std::path::PathBuf;
+    let path = PathBuf::from(params.path);
+    tracing::debug!(
+        path = %path.display(),
+        narrative_name = %params.narrative_name,
+        "Loading multi-narrative from file"
+    );
+    MultiNarrative::from_file(&path, &params.narrative_name).map_err(Into::into)
+}
+
+/// Load all narratives from a TOML file with database support.
+///
+/// Wrapper for `MultiNarrative::from_file_with_db<P: AsRef<Path>>`.
+#[tool]
+#[cfg(feature = "database")]
+#[tracing::instrument(skip(self, params), fields(path = %params.path, narrative_name = %params.narrative_name))]
+pub fn multi_narrative_from_file_with_db(
+    &self,
+    params: MultiNarrativeFromFileWithDbParams,
+) -> Result<MultiNarrative, botticelli_error::BotticelliError> {
+    use diesel::prelude::*;
+    use diesel::r2d2::{ConnectionManager, Pool};
+    use std::path::PathBuf;
+
+    let path = PathBuf::from(params.path);
+    tracing::debug!(
+        path = %path.display(),
+        narrative_name = %params.narrative_name,
+        "Loading multi-narrative from file with database"
+    );
+
+    // Create connection pool
+    let manager = ConnectionManager::<PgConnection>::new(&params.database_url);
+    let pool = Pool::builder().build(manager).map_err(|e| {
+        botticelli_error::BackendError::new(format!("Failed to create connection pool: {}", e))
+    })?;
+
+    let mut conn = pool.get().map_err(|e| {
+        botticelli_error::BackendError::new(format!("Failed to get connection: {}", e))
+    })?;
+
+    MultiNarrative::from_file_with_db(&path, &params.narrative_name, &mut conn).map_err(Into::into)
+}
+
+// -----------------------------------------------------------------------------
+// Category 2: Borrowed String Functions
+// -----------------------------------------------------------------------------
+
+/// Parse a narrative from a TOML string.
+///
+/// Wrapper for `Narrative::from_toml_str(&str, Option<&str>)`.
+#[tool]
+#[tracing::instrument(skip(self, params), fields(content_len = params.content.len(), source = ?params.source))]
+pub fn narrative_from_toml_str(
+    &self,
+    params: NarrativeFromTomlStrParams,
+) -> Result<Narrative, botticelli_error::BotticelliError> {
+    tracing::debug!(
+        content_len = params.content.len(),
+        source = ?params.source,
+        "Parsing narrative from TOML string"
+    );
+    Narrative::from_toml_str(&params.content, params.source.as_deref()).map_err(Into::into)
+}
+
+// -----------------------------------------------------------------------------
+// Category 3: Database Connection Functions
+// -----------------------------------------------------------------------------
+
+/// Assemble act prompts from database templates.
+///
+/// Wrapper for `Narrative::assemble_act_prompts(&mut PgConnection)`.
+#[tool]
+#[cfg(feature = "database")]
+#[tracing::instrument(skip(self, params), fields(narrative_name = params.narrative.metadata().name()))]
+pub fn assemble_narrative_act_prompts(
+    &self,
+    mut params: AssembleNarrativeActPromptsParams,
+) -> Result<Narrative, botticelli_error::BotticelliError> {
+    use diesel::prelude::*;
+    use diesel::r2d2::{ConnectionManager, Pool};
+
+    tracing::debug!(
+        narrative_name = params.narrative.metadata().name(),
+        "Assembling narrative act prompts"
+    );
+
+    // Create connection pool
+    let manager = ConnectionManager::<PgConnection>::new(&params.database_url);
+    let pool = Pool::builder().build(manager).map_err(|e| {
+        botticelli_error::BackendError::new(format!("Failed to create connection pool: {}", e))
+    })?;
+
+    let mut conn = pool.get().map_err(|e| {
+        botticelli_error::BackendError::new(format!("Failed to get connection: {}", e))
+    })?;
+
+    params.narrative.assemble_act_prompts(&mut conn).map_err(Into::into)?;
+    Ok(params.narrative)
+}
 }

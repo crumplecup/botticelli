@@ -23,6 +23,7 @@
 //! ```
 
 use botticelli_core::Input;
+use rmcp::tool;
 use tracing::{debug, instrument};
 
 /// Unit struct providing history retention utilities for conversation management.
@@ -63,6 +64,7 @@ impl HistoryRetention {
     /// assert!(summary.contains("[Text:"));
     /// assert!(summary.len() < 50); // Much smaller than 5000 chars
     /// ```
+    #[tool]
     #[instrument(skip(input), fields(input_type = ?std::mem::discriminant(input)))]
     pub fn summarize_input(input: &Input) -> String {
         match input {
@@ -165,6 +167,7 @@ impl HistoryRetention {
     /// let large = Input::Text("a".repeat(15000));
     /// assert!(HistoryRetention::should_auto_summarize(&large));
     /// ```
+    #[tool]
     #[instrument(skip(input), fields(input_type = ?std::mem::discriminant(input)))]
     pub fn should_auto_summarize(input: &Input) -> bool {
         let size = Self::estimate_input_size(input);
@@ -278,6 +281,7 @@ impl HistoryRetention {
     /// let result = HistoryRetention::apply_retention(&inputs);
     /// assert_eq!(result.len(), 2);
     /// ```
+    #[tool]
     #[instrument(skip(inputs), fields(input_count = inputs.len()))]
     pub fn apply_retention(inputs: &[Input]) -> Vec<Input> {
         let mut result = Vec::new();

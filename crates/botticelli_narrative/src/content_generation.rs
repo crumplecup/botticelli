@@ -12,6 +12,7 @@ use async_trait::async_trait;
 use botticelli_error::{BotticelliResult, NarrativeError, NarrativeErrorKind};
 use botticelli_interface::ActProcessor;
 use ractor::{ActorRef, MessagingErr, rpc::CallResult};
+use rmcp::tool;
 use serde_json::Value as JsonValue;
 
 /// Helper to unwrap Ractor's CallResult into a standard Result
@@ -62,6 +63,7 @@ impl ContentGenerationProcessor {
     /// # Arguments
     ///
     /// * `storage_actor` - Reference to the storage actor for database operations
+    #[tool]
     pub fn new(storage_actor: ActorRef<StorageMessage>) -> Self {
         Self { storage_actor }
     }

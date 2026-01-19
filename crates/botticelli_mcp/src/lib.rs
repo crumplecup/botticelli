@@ -104,3 +104,55 @@ pub use validate_narrative::{
     ValidateNarrativeParams, ValidateNarrativeParamsBuilder, ValidateNarrativeResult,
     ValidationError, ValidationLocation, ValidationWarning,
 };
+
+// MCP tool DTOs - Parameters and results for AI API (always available)
+pub use rmcp_server::{
+    ExtractJsonParams, ExtractTomlParams, GetTierInfoParams, GetTierInfoResult,
+    MediaStorageDeleteParams, MediaStorageDeleteResult, MediaStorageExistsParams,
+    MediaStorageExistsResult, MediaStorageGetUrlParams, MediaStorageGetUrlResult,
+    MediaStorageRetrieveParams, MediaStorageRetrieveResult, MediaStorageStoreParams,
+    MediaStorageStoreResult, MultiNarrativeFromFileParams, NarrativeFromFileParams,
+    NarrativeFromTomlStrParams, StateManagerNewParams, TierDailyQuotaParams, TierDailyQuotaResult,
+    TierInfo, TierInputCostParams, TierInputCostResult, TierMaxConcurrentParams,
+    TierMaxConcurrentResult, TierNameParams, TierNameResult, TierOutputCostParams,
+    TierOutputCostResult, TierRpdParams, TierRpdResult, TierRpmParams, TierRpmResult,
+    TierTpdParams, TierTpdResult, TierTpmParams, TierTpmResult, ValidateDiscordParams,
+    ValidateTomlParams, ValidateTomlResult,
+};
+
+// LLM feature
+#[cfg(feature = "llm")]
+pub use rmcp_server::{SelectModelParams, SelectModelResult};
+
+// Database feature
+#[cfg(feature = "database")]
+pub use rmcp_server::{
+    AssembleNarrativeActPromptsParams, InferSchemaParams, InferSchemaResult, InferredColumn,
+    MultiNarrativeFromFileWithDbParams, NarrativeFromFileWithDbParams,
+};
+
+// Model provider features
+#[cfg(any(
+    feature = "gemini",
+    feature = "anthropic",
+    feature = "groq",
+    feature = "huggingface",
+    feature = "ollama"
+))]
+pub use rmcp_server::CountTokensParams;
+
+#[cfg(feature = "gemini")]
+pub use rmcp_server::GeminiGenerateParams;
+#[cfg(feature = "anthropic")]
+pub use rmcp_server::AnthropicGenerateParams;
+#[cfg(feature = "groq")]
+pub use rmcp_server::GroqGenerateParams;
+#[cfg(feature = "huggingface")]
+pub use rmcp_server::HuggingFaceGenerateParams;
+#[cfg(feature = "ollama")]
+pub use rmcp_server::OllamaGenerateParams;
+
+// Tool helper functions (from tools/)
+pub use tools::narrative_validation_helpers::{
+    add_helpful_comments, auto_fix_common_issues, format_toml, format_validation_result,
+};

@@ -6,6 +6,7 @@
 
 use crate::CarouselConfig;
 use botticelli_core::Input;
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// Configuration for a single act in a narrative.
@@ -80,6 +81,7 @@ impl ActConfig {
         has_carousel = carousel.is_some(),
         has_extract_output = extract_output.is_some()
     ))]
+    #[tool]
     pub fn new(
         inputs: Vec<Input>,
         model: Option<String>,
@@ -107,6 +109,7 @@ impl ActConfig {
         has_temperature = temperature.is_some(),
         has_max_tokens = max_tokens.is_some()
     ))]
+    #[tool]
     pub fn from_narrative_ref<S: Into<String>>(
         narrative_name: S,
         model: Option<String>,
@@ -131,6 +134,7 @@ impl ActConfig {
     /// Convenience constructor for the common case of a single text prompt
     /// with no model or parameter overrides.
     #[tracing::instrument(skip(text), fields(text_len))]
+    #[tool]
     pub fn from_text<S: Into<String>>(text: S) -> Self {
         let text_string = text.into();
         tracing::Span::current().record("text_len", text_string.len());
@@ -147,12 +151,14 @@ impl ActConfig {
     }
 
     /// Check if this act is a narrative reference.
+    #[tool]
     pub fn is_narrative_ref(&self) -> bool {
         self.narrative_ref.is_some()
     }
 
     /// Create an act configuration with multimodal inputs.
     #[tracing::instrument(skip(inputs), fields(input_count = inputs.len()))]
+    #[tool]
     pub fn from_inputs(inputs: Vec<Input>) -> Self {
         tracing::debug!("Creating multimodal ActConfig");
         Self {
@@ -168,6 +174,7 @@ impl ActConfig {
 
     /// Builder method to set the model override.
     #[tracing::instrument(skip(self, model), fields(model_name))]
+    #[tool]
     pub fn with_model<S: Into<String>>(mut self, model: S) -> Self {
         let model_string = model.into();
         tracing::Span::current().record("model_name", &model_string);
@@ -178,6 +185,7 @@ impl ActConfig {
 
     /// Builder method to set the temperature override.
     #[tracing::instrument(skip(self), fields(temperature))]
+    #[tool]
     pub fn with_temperature(mut self, temperature: f32) -> Self {
         tracing::debug!("Setting temperature override");
         self.temperature = Some(temperature);
@@ -186,6 +194,7 @@ impl ActConfig {
 
     /// Builder method to set the max_tokens override.
     #[tracing::instrument(skip(self), fields(max_tokens))]
+    #[tool]
     pub fn with_max_tokens(mut self, max_tokens: u32) -> Self {
         tracing::debug!("Setting max_tokens override");
         self.max_tokens = Some(max_tokens);
@@ -194,6 +203,7 @@ impl ActConfig {
 
     /// Builder method to set the carousel configuration.
     #[tracing::instrument(skip(self, carousel), fields(has_carousel = true))]
+    #[tool]
     pub fn with_carousel(mut self, carousel: CarouselConfig) -> Self {
         tracing::debug!("Setting carousel configuration");
         self.carousel = Some(carousel);
@@ -202,6 +212,7 @@ impl ActConfig {
 
     /// Builder method to set the inputs.
     #[tracing::instrument(skip(self, inputs), fields(input_count = inputs.len()))]
+    #[tool]
     pub fn with_inputs(mut self, inputs: Vec<Input>) -> Self {
         tracing::debug!("Setting inputs");
         self.inputs = inputs;
@@ -213,6 +224,7 @@ impl ActConfig {
     /// This is used for runtime modifications to act configurations,
     /// such as injecting user prompts.
     #[tracing::instrument(skip(self, inputs), fields(input_count = inputs.len()))]
+    #[tool]
     pub fn set_inputs(&mut self, inputs: Vec<Input>) {
         tracing::debug!("Mutating inputs");
         self.inputs = inputs;
@@ -222,6 +234,7 @@ impl ActConfig {
     ///
     /// This is used for runtime overrides to act configurations.
     #[tracing::instrument(skip(self))]
+    #[tool]
     pub fn set_max_tokens(&mut self, max_tokens: Option<u32>) {
         tracing::debug!(max_tokens = ?max_tokens, "Mutating max_tokens");
         self.max_tokens = max_tokens;

@@ -2,6 +2,7 @@
 //!
 //! Provides tool access to trait implementations that cannot have #[tool] directly.
 
+use crate::rmcp_server::BotticelliServer;
 use anyhow::Result;
 use botticelli_security::{CommandValidator, DiscordValidator};
 use rmcp::tool;
@@ -17,13 +18,15 @@ pub struct ValidateDiscordParams {
     pub params: HashMap<String, String>,
 }
 
-/// Validate Discord command parameters using CommandValidator trait.
-///
-/// Wraps DiscordValidator::validate() trait method to provide MCP tool access.
-#[tool]
-#[tracing::instrument(skip(params), fields(command = %params.command, param_count = params.params.len()))]
-pub fn validate_discord_command(params: ValidateDiscordParams) -> Result<()> {
-    let validator = DiscordValidator::new();
-    validator.validate(&params.command, &params.params)?;
-    Ok(())
+impl BotticelliServer {
+    /// Validate Discord command parameters using CommandValidator trait.
+    ///
+    /// Wraps DiscordValidator::validate() trait method to provide MCP tool access.
+    #[tool]
+    #[tracing::instrument(skip(self, params), fields(command = %params.command, param_count = params.params.len()))]
+    pub fn validate_discord_command(&self, params: ValidateDiscordParams) -> Result<()> {
+        let validator = DiscordValidator::new();
+        validator.validate(&params.command, &params.params)?;
+        Ok(())
+    }
 }

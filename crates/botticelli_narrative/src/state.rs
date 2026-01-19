@@ -7,6 +7,7 @@
 use botticelli_error::{BotticelliResult, IoError, JsonError};
 use derive_getters::Getters;
 use elicitation::{Prompt, Select};
+use rmcp::tool;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -46,6 +47,7 @@ pub struct NarrativeState {
 
 impl NarrativeState {
     /// Creates a new empty state.
+    #[tool]
     #[instrument]
     pub fn new() -> Self {
         debug!("Creating new empty state");
@@ -55,6 +57,7 @@ impl NarrativeState {
     }
 
     /// Gets a value from the state.
+    #[tool]
     #[instrument(skip(self), fields(key, found))]
     pub fn get(&self, key: &str) -> Option<&str> {
         let result = self.data.get(key).map(|s| s.as_str());
@@ -64,6 +67,7 @@ impl NarrativeState {
     }
 
     /// Sets a value in the state.
+    #[tool]
     #[instrument(skip(self, value), fields(key, value_len))]
     pub fn set(&mut self, key: impl Into<String>, value: impl Into<String>) {
         let key = key.into();
@@ -74,6 +78,7 @@ impl NarrativeState {
     }
 
     /// Removes a value from the state.
+    #[tool]
     #[instrument(skip(self), fields(key, removed))]
     pub fn remove(&mut self, key: &str) -> Option<String> {
         let result = self.data.remove(key);
@@ -83,6 +88,7 @@ impl NarrativeState {
     }
 
     /// Checks if a key exists in the state.
+    #[tool]
     #[instrument(skip(self), fields(key, exists))]
     pub fn contains_key(&self, key: &str) -> bool {
         let exists = self.data.contains_key(key);
@@ -92,6 +98,7 @@ impl NarrativeState {
     }
 
     /// Gets all keys in the state.
+    #[tool]
     #[instrument(skip(self), fields(key_count = self.data.len()))]
     pub fn keys(&self) -> impl Iterator<Item = &str> {
         debug!(key_count = self.data.len(), "Getting all keys");
@@ -99,6 +106,7 @@ impl NarrativeState {
     }
 
     /// Clears all state.
+    #[tool]
     #[instrument(skip(self), fields(cleared_count = self.data.len()))]
     pub fn clear(&mut self) {
         let count = self.data.len();
@@ -151,6 +159,7 @@ impl StateManager {
     }
 
     /// Loads state for a given scope.
+    #[tool]
     #[instrument(skip(self), fields(scope = ?scope, path, exists, key_count))]
     pub fn load(&self, scope: &StateScope) -> BotticelliResult<NarrativeState> {
         let path = self.scope_path(scope);
@@ -184,6 +193,7 @@ impl StateManager {
     }
 
     /// Saves state for a given scope.
+    #[tool]
     #[instrument(skip(self, state), fields(scope = ?scope, keys = state.data.len(), path, content_len))]
     pub fn save(&self, scope: &StateScope, state: &NarrativeState) -> BotticelliResult<()> {
         let path = self.scope_path(scope);
@@ -208,6 +218,7 @@ impl StateManager {
     }
 
     /// Deletes state for a given scope.
+    #[tool]
     #[instrument(skip(self), fields(scope = ?scope, path, existed, deleted))]
     pub fn delete(&self, scope: &StateScope) -> BotticelliResult<()> {
         let path = self.scope_path(scope);

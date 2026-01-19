@@ -50,7 +50,7 @@ impl BotticelliServer {
         }
 
         // Parse TOML and load narrative
-        let (_narrative_name, mut narrative) = Self::parse_narrative_toml(path)?;
+        let (_narrative_name, mut narrative) = Self::parse_narrative_toml_from_file(path)?;
 
         // Apply runtime overrides (prompt injection + max_tokens)
         Self::apply_runtime_overrides(&mut narrative, prompt, max_tokens);
@@ -135,7 +135,7 @@ impl BotticelliServer {
     /// - MultiNarrative loading
     /// - Narrative retrieval
     #[instrument(skip(path), fields(path = %path.display()))]
-    fn parse_narrative_toml(
+    fn parse_narrative_toml_from_file(
         path: &std::path::Path,
     ) -> Result<(String, botticelli_narrative::Narrative), rmcp::ErrorData> {
         debug!("Reading and parsing narrative TOML");

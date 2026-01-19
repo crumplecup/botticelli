@@ -147,6 +147,7 @@ pub struct Narrative {
 
 impl Narrative {
     /// Set the source path for this narrative.
+    #[tool]
     pub fn set_source_path(&mut self, path: Option<std::path::PathBuf>) {
         self.source_path = path;
     }
@@ -222,6 +223,7 @@ impl Narrative {
     /// - Database schema reflection fails
     /// - Prompt assembly fails
     #[cfg(feature = "database")]
+    #[tool]
     #[tracing::instrument(skip(self, conn), fields(template = ?self.metadata.template, act_count = self.acts.len()))]
     pub fn assemble_act_prompts(&mut self, conn: &mut PgConnection) -> Result<(), NarrativeError> {
         let template = self
@@ -275,6 +277,7 @@ impl Narrative {
     /// # Errors
     ///
     /// Returns an error if validation fails.
+    #[tool]
     #[tracing::instrument(skip(self), fields(name = %self.metadata.name, act_count = self.toc.order.len()))]
     pub fn validate(&self) -> Result<(), NarrativeError> {
         // Check that toc.order is not empty
@@ -302,6 +305,7 @@ impl Narrative {
     /// Returns the acts in the order specified by the table of contents.
     ///
     /// Each tuple contains the act name and its configuration.
+    #[tool]
     pub fn ordered_acts(&self) -> Vec<(&str, &ActConfig)> {
         self.toc
             .order
@@ -314,6 +318,7 @@ impl Narrative {
     ///
     /// This allows modification of act configurations, useful for applying
     /// runtime overrides to inputs, max_tokens, etc.
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn acts_mut(&mut self) -> &mut HashMap<String, ActConfig> {
         &mut self.acts
@@ -444,11 +449,13 @@ pub enum NarrativeSource {
 
 impl NarrativeSource {
     /// Check if this source has composition context.
+    #[tool]
     pub fn has_composition_context(&self) -> bool {
         matches!(self, Self::MultiWithContext { .. })
     }
 
     /// Get the name of the narrative to execute.
+    #[tool]
     pub fn name(&self) -> &str {
         match self {
             Self::Single(n) => n.name(),
@@ -461,6 +468,7 @@ impl NarrativeSource {
     /// # Errors
     ///
     /// Returns an error if the specified narrative name is not found in the MultiNarrative.
+    #[tool]
     pub fn get_narrative(&self) -> Result<&Narrative, NarrativeError> {
         match self {
             Self::Single(n) => Ok(n.as_ref()),
@@ -480,6 +488,7 @@ impl NarrativeSource {
     ///
     /// Returns `Some(&MultiNarrative)` if this source has composition context,
     /// or `None` for single narratives without composition.
+    #[tool]
     pub fn get_multi_context(&self) -> Option<&crate::MultiNarrative> {
         match self {
             Self::Single(_) => None,
