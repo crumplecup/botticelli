@@ -41,6 +41,7 @@ use serde_json::Value;
     derive_getters::Getters,
     derive_setters::Setters,
     derive_new::new,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
 pub struct ToolDefinition {

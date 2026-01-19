@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// Result from executing a tool call.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Getters, derive_new::new)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Getters, derive_new::new, elicitation::Elicit)]
 pub struct ToolResult {
     /// ID of the tool call this responds to
     tool_call_id: String,

@@ -28,6 +28,7 @@ use serde::{Deserialize, Serialize};
     derive_getters::Getters,
     derive_setters::Setters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
 #[builder(pattern = "owned", setter(into, strip_option))]
@@ -75,6 +76,7 @@ impl GenerateRequest {
     Deserialize,
     derive_builder::Builder,
     derive_getters::Getters,
+    elicitation::Elicit,
 )]
 #[builder(setter(into))]
 pub struct GenerateResponse {

@@ -29,6 +29,7 @@ use serde::{Deserialize, Serialize};
     Default,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 pub struct TokenUsageData {
     /// Number of tokens in the input/prompt.

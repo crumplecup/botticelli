@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     derive_builder::Builder,
     derive_getters::Getters,
+    elicitation::Elicit,
 )]
 #[builder(setter(into))]
 pub struct StreamChunk {

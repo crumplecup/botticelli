@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
     derive_getters::Getters,
     derive_builder::Builder,
     derive_new::new,
+    elicitation::Elicit,
 )]
 pub struct Message {
     /// The role of the message sender
