@@ -6,6 +6,7 @@
 use crate::{MediaMetadata, MediaReference, MediaReferenceBuilder, MediaType};
 use botticelli_error::{BotticelliError, StorageError, StorageErrorKind};
 use botticelli_interface::MediaStorage;
+use rmcp::tool;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -56,6 +57,7 @@ impl FileSystemStorage {
     /// # Errors
     ///
     /// Returns error if the directory cannot be created or accessed.
+    #[tool]
     #[tracing::instrument(skip(base_path))]
     pub fn new(base_path: impl Into<PathBuf>) -> Result<Self, BotticelliError> {
         let base_path = base_path.into();
@@ -73,6 +75,7 @@ impl FileSystemStorage {
     }
 
     /// Compute SHA-256 hash of data.
+    #[tool]
     #[tracing::instrument(skip(data), fields(size = data.len()))]
     fn compute_hash(data: &[u8]) -> String {
         let mut hasher = Sha256::new();
@@ -83,6 +86,7 @@ impl FileSystemStorage {
     /// Get the filesystem path for a given hash and media type.
     ///
     /// Structure: `{base}/{type}/{hash[0:2]}/{hash[2:4]}/{hash}`
+    #[tool]
     #[tracing::instrument(skip(self))]
     fn get_path(&self, hash: &str, media_type: MediaType) -> PathBuf {
         let type_dir = match media_type {
@@ -99,6 +103,7 @@ impl FileSystemStorage {
     }
 
     /// Verify content hash matches expected hash.
+    #[tool]
     #[tracing::instrument(skip(data))]
     fn verify_hash(data: &[u8], expected_hash: &str) -> Result<(), BotticelliError> {
         let actual_hash = Self::compute_hash(data);

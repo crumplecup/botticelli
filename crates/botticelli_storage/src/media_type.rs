@@ -1,6 +1,7 @@
 //! Media type enumeration.
 
 use elicitation::{Prompt, Select};
+use rmcp::tool;
 
 /// Type of media content.
 #[derive(
@@ -35,6 +36,7 @@ pub enum MediaType {
 
 impl MediaType {
     /// Convert to string representation for database storage.
+    #[tool]
     pub fn as_str(&self) -> &str {
         self.as_ref()
     }
