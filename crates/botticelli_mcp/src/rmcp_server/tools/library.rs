@@ -5,7 +5,7 @@
 
 use crate::rmcp_server::helpers::to_mcp_error;
 use crate::rmcp_server::BotticelliServer;
-use botticelli_narrative::validator::{ValidationConfig, Validator};
+use botticelli_narrative::validator::Validator;
 use botticelli_rate_limit::BotticelliConfig;
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ErrorCode;
