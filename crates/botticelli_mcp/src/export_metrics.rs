@@ -1,11 +1,24 @@
 //! Export metrics tool types for Prometheus metrics export.
 
 use derive_getters::Getters;
+use elicitation::{Prompt, Select};
 use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Output format for metrics export.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Default,
+    elicitation::Elicit,
+)]
 #[serde(rename_all = "lowercase")]
 pub enum MetricsFormat {
     /// Full Prometheus text format
@@ -16,7 +29,7 @@ pub enum MetricsFormat {
 }
 
 /// Parameters for exporting metrics.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct ExportMetricsParams {
     /// Output format: 'prometheus' for full metrics, 'summary' for quick stats
     #[serde(default)]
@@ -36,7 +49,7 @@ impl ExportMetricsParams {
 /// The format field indicates which type of metrics are included.
 /// For Prometheus format, the metrics field contains the text.
 /// For summary format, the summary fields contain statistics.
-#[derive(Debug, Clone, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct ExportMetricsResult {
     /// Output format: "prometheus" or "summary"
     format: String,

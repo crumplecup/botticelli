@@ -5,6 +5,7 @@
 
 use chrono::Utc;
 use derive_getters::Getters;
+use elicitation::{Prompt, Survey};
 use rmcp::schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +13,17 @@ use serde::{Deserialize, Serialize};
 ///
 /// This tool echoes back the provided message with a timestamp.
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Getters, derive_new::new,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    Getters,
+    derive_new::new,
+    elicitation::Elicit,
 )]
 pub struct EchoParams {
     /// The message to echo back.
@@ -25,7 +36,7 @@ pub struct EchoParams {
 /// Result from the echo tool.
 ///
 /// Contains the echoed message and the timestamp when it was processed.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Getters)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema, Getters, elicitation::Elicit)]
 pub struct EchoResult {
     /// The echoed message (same as input).
     echo: String,
