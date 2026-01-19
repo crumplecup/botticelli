@@ -46,6 +46,9 @@ sha2 = { workspace = true }
 derive-getters = { workspace = true }
 derive_builder.workspace = true
 
+# Serialization
+elicitation = { workspace = true }
+
 [dev-dependencies]
 anyhow = { workspace = true }
 dotenvy = { workspace = true }
