@@ -8,7 +8,7 @@
 //! because they represent the JSON format from LLM responses, while Diesel
 //! models represent the database schema.
 
-use elicitation::{Prompt, Survey};
+use elicitation::Survey;
 use serde::{Deserialize, Serialize};
 
 /// JSON model for Discord guild data.
