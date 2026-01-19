@@ -1,6 +1,7 @@
 //! Command result cache implementation.
 
 use derive_getters::Getters;
+use elicitation::Survey;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
@@ -67,7 +68,14 @@ impl CacheKey {
 
 /// Configuration for command cache.
 #[derive(
-    Debug, Clone, Serialize, Deserialize, Getters, derive_setters::Setters, derive_builder::Builder,
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    Getters,
+    derive_setters::Setters,
+    derive_builder::Builder,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
 pub struct CommandCacheConfig {

@@ -1,7 +1,7 @@
 //! Rate limiting using token bucket algorithm.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
-use elicitation::{Prompt, Survey};
+use elicitation::Survey;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};

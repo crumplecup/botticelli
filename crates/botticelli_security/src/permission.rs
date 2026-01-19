@@ -1,7 +1,7 @@
 //! Permission model for command execution.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
-use elicitation::{Prompt, Survey};
+use elicitation::Survey;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, instrument};

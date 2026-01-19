@@ -1,7 +1,7 @@
 //! Content filtering for AI-generated output.
 
 use crate::{SecurityError, SecurityErrorKind, SecurityResult};
-use elicitation::{Elicitation, Prompt, Survey};
+use elicitation::{Elicitation, Survey};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
