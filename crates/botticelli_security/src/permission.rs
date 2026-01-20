@@ -95,7 +95,7 @@ pub struct CommandPermission {
 }
 
 /// Permission checker for validating command execution.
-#[derive(Debug, Clone, schemars::JsonSchema, derive_getters::Getters, derive_new::new)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, derive_getters::Getters, derive_new::new)]
 pub struct PermissionChecker {
     config: PermissionConfig,
 }

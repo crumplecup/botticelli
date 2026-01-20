@@ -112,7 +112,7 @@ impl PendingAction {
 }
 
 /// Approval workflow manager.
-#[derive(Debug, Clone, schemars::JsonSchema, derive_setters::Setters)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit, derive_setters::Setters)]
 #[setters(prefix = "with_")]
 pub struct ApprovalWorkflow {
     /// Pending actions by ID
