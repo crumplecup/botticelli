@@ -40,7 +40,7 @@ impl RateLimit {
 }
 
 /// Rate limit exceeded error details.
-#[derive(Debug, Clone, schemars::JsonSchema, derive_getters::Getters)]
+#[derive(Debug, Clone, schemars::JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 pub struct RateLimitExceeded {
     /// Operation that exceeded limit
     operation: String,

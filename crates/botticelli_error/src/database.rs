@@ -21,6 +21,7 @@ pub struct DieselError {
 #[cfg(feature = "database")]
 impl DieselError {
     /// Create a new DieselError with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(err: diesel::result::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -81,6 +82,7 @@ pub struct DieselConnectionError {
 #[cfg(feature = "database")]
 impl DieselConnectionError {
     /// Create a new DieselConnectionError with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(err: diesel::ConnectionError) -> Self {
         let location = std::panic::Location::caller();
@@ -141,6 +143,7 @@ pub struct R2d2Error {
 #[cfg(feature = "database")]
 impl R2d2Error {
     /// Create a new R2d2Error with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(err: r2d2::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -264,6 +267,7 @@ pub struct DatabaseError {
 
 impl DatabaseError {
     /// Create a new DatabaseError with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: DatabaseErrorKind) -> Self {
         let location = std::panic::Location::caller();

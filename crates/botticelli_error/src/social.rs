@@ -169,6 +169,7 @@ pub struct BotCommandError {
 
 impl BotCommandError {
     /// Create a new bot command error with location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: BotCommandErrorKind) -> Self {
         let location = std::panic::Location::caller();
@@ -180,6 +181,7 @@ impl BotCommandError {
     }
 
     /// Create from a security error with location tracking.
+    #[tool]
     #[track_caller]
     pub fn from_security_error(error: impl std::error::Error + Send + Sync + 'static) -> Self {
         Self::new(BotCommandErrorKind::SecurityViolation {
@@ -188,6 +190,7 @@ impl BotCommandError {
     }
 
     /// Create from a serialization error with location tracking.
+    #[tool]
     #[track_caller]
     pub fn from_serialization_error(error: impl std::error::Error + Send + Sync + 'static) -> Self {
         Self::new(BotCommandErrorKind::SerializationFailed {
@@ -196,6 +199,7 @@ impl BotCommandError {
     }
 
     /// Create from an API error with location tracking.
+    #[tool]
     #[track_caller]
     pub fn from_api_error(
         command: impl Into<String>,
@@ -208,6 +212,7 @@ impl BotCommandError {
     }
 
     /// Create from an invalid argument parse error with location tracking.
+    #[tool]
     #[track_caller]
     pub fn from_parse_error(
         arg_name: impl Into<String>,

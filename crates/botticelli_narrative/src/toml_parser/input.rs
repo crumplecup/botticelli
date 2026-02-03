@@ -12,7 +12,7 @@ use tracing::{debug, error, instrument, warn};
 ///
 /// The `type` field determines which other fields are required.
 /// Source is detected from which of url/base64/file is present.
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct TomlInput {
     /// Input type: "text", "image", "audio", "video", "document", "bot_command", "table"
     #[serde(rename = "type")]

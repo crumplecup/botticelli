@@ -1,7 +1,9 @@
 //! Validation error types for TOML narrative validation.
 
+use elicitation::{Prompt, Select};
+
 /// Result of validating a narrative TOML file.
-#[derive(Debug, Clone, Default, derive_getters::Getters)]
+#[derive(Debug, Clone, Default, derive_getters::Getters, elicitation::Elicit)]
 pub struct ValidationResult {
     /// Validation errors (must be fixed)
     errors: Vec<ValidationError>,
@@ -85,7 +87,7 @@ impl ValidationResult {
 }
 
 /// A validation error with location and fix suggestion.
-#[derive(Debug, Clone, derive_getters::Getters, derive_new::new)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_new::new, elicitation::Elicit)]
 pub struct ValidationError {
     /// Type of validation error
     kind: ValidationErrorKind,
@@ -98,7 +100,7 @@ pub struct ValidationError {
 }
 
 /// A validation warning that should be reviewed.
-#[derive(Debug, Clone, derive_getters::Getters, derive_new::new)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_new::new, elicitation::Elicit)]
 pub struct ValidationWarning {
     /// Type of validation warning
     kind: ValidationWarningKind,
@@ -109,7 +111,7 @@ pub struct ValidationWarning {
 }
 
 /// Location information for validation messages.
-#[derive(Debug, Clone, derive_getters::Getters, derive_new::new)]
+#[derive(Debug, Clone, derive_getters::Getters, derive_new::new, elicitation::Elicit)]
 pub struct ValidationLocation {
     /// Line number (1-indexed)
     line: usize,
@@ -120,7 +122,7 @@ pub struct ValidationLocation {
 }
 
 /// Types of validation errors.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, elicitation::Elicit)]
 pub enum ValidationErrorKind {
     /// Invalid TOML syntax pattern
     InvalidSyntax,
@@ -141,7 +143,7 @@ pub enum ValidationErrorKind {
 }
 
 /// Types of validation warnings.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, elicitation::Elicit)]
 pub enum ValidationWarningKind {
     /// Unknown model name (possible typo)
     UnknownModel,

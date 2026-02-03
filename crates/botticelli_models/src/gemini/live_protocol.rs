@@ -88,7 +88,6 @@ pub struct SetupMessage {
     Default,
     Getters,
     derive_builder::Builder,
-    elicitation::Elicit,
 )]
 #[serde(rename_all = "camelCase")]
 #[builder(setter(into), default)]
@@ -159,7 +158,7 @@ pub struct GenerationConfig {
 }
 
 /// System instruction for the model.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemInstruction {
     parts: Vec<Part>,
@@ -240,7 +239,7 @@ pub struct InlineData {
 /// Realtime input message for streaming audio/video.
 ///
 /// Reserved for future realtime input feature.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeInputMessage {
     /// Realtime input
@@ -250,7 +249,7 @@ pub struct RealtimeInputMessage {
 /// Realtime input data.
 ///
 /// Reserved for future realtime input feature.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct RealtimeInput {
     /// Media chunks
@@ -260,7 +259,7 @@ pub struct RealtimeInput {
 /// Media chunk for streaming.
 ///
 /// Reserved for future realtime input feature.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct MediaChunk {
     /// MIME type
@@ -272,7 +271,7 @@ pub struct MediaChunk {
 /// Tool response message.
 ///
 /// Reserved for future tool calling feature.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolResponseMessage {
     /// Tool response
@@ -282,7 +281,7 @@ pub struct ToolResponseMessage {
 /// Tool response data.
 ///
 /// Reserved for future tool calling feature.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolResponse {
     /// Function responses
@@ -292,7 +291,7 @@ pub struct ToolResponse {
 /// Function call response.
 ///
 /// Reserved for future tool calling feature.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionResponse {
     /// Function call ID
@@ -366,14 +365,14 @@ pub struct ModelTurn {
 }
 
 /// Tool call request from model.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct LiveToolCall {
     function_calls: Vec<FunctionCall>,
 }
 
 /// Function call from model.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct FunctionCall {
     id: String,
@@ -382,21 +381,21 @@ pub struct FunctionCall {
 }
 
 /// Tool call cancellation.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct LiveToolCallCancellation {
     ids: Vec<String>,
 }
 
 /// Server disconnect warning.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct GoAway {
     reason: String,
 }
 
 /// Token usage metadata.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 #[serde(rename_all = "camelCase")]
 pub struct UsageMetadata {
     /// Tokens in the prompt

@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
     derive_getters::Getters,
     derive_setters::Setters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
 #[builder(setter(into))]
@@ -65,6 +66,7 @@ pub struct ActExecution {
     derive_getters::Getters,
     derive_setters::Setters,
     derive_new::new,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
 pub struct NarrativeExecution {

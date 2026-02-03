@@ -12,7 +12,7 @@ use botticelli_core::{GenerateRequest, GenerateResponse, Message, Output};
 use super::schema::model_responses;
 
 /// A stored model response in the database.
-#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable)]
+#[derive(Debug, Clone, PartialEq, Queryable, Selectable, Identifiable, elicitation::Elicit)]
 #[diesel(table_name = model_responses)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ModelResponse {
@@ -106,7 +106,7 @@ impl NewModelResponse {
 }
 
 /// Serializable version of ModelResponse for API responses.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, elicitation::Elicit)]
 pub struct SerializableModelResponse {
     pub id: String,
     pub created_at: String,

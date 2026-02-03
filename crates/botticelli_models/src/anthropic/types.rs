@@ -2,13 +2,14 @@
 
 use botticelli_core::ToolDefinition;
 use derive_getters::Getters;
+use elicitation::{Prompt, Select};
 use rmcp::tool;
 use serde::{Deserialize, Serialize};
 
 /// Anthropic tool definition format.
 ///
 /// Represents a tool in Anthropic's API format, converted from MCP ToolDefinition.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, elicitation::Elicit)]
 pub struct AnthropicTool {
     /// Tool name
     name: String,
@@ -56,7 +57,7 @@ impl AnthropicTool {
 }
 
 /// Anthropic API request.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicRequest {
     /// Model identifier
@@ -87,7 +88,7 @@ impl AnthropicRequest {
 }
 
 /// Anthropic message in a conversation.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicMessage {
     /// Role of the message sender
@@ -104,7 +105,7 @@ impl AnthropicMessage {
 }
 
 /// Content block in an Anthropic message.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, elicitation::Elicit)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum AnthropicContentBlock {
     /// Text content
@@ -120,7 +121,7 @@ pub enum AnthropicContentBlock {
 }
 
 /// Image source for Anthropic API.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicImageSource {
     /// Source type (always "base64")
@@ -140,7 +141,7 @@ impl AnthropicImageSource {
 }
 
 /// Anthropic API response.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicResponse {
     /// Response ID
@@ -174,7 +175,7 @@ impl AnthropicResponse {
 /// Content in an Anthropic response.
 ///
 /// Can be either text or a tool use request from the model.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, elicitation::Elicit)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum AnthropicContent {
     /// Text content
@@ -194,7 +195,7 @@ pub enum AnthropicContent {
 }
 
 /// Usage information from Anthropic API.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicUsage {
     /// Input tokens

@@ -181,11 +181,17 @@ tempfile = "3"
 mockall = "0.14"
 
 # Elicitation framework
-elicitation = { version = "0.4.3", features = ["serde_json", "chrono", "uuid"] }
+elicitation = { version = "0.4.4", features = [
+  "serde_json",
+  "chrono",
+  "regex",
+  "url",
+  "uuid",
+] }
 
 # MCP (Model Context Protocol)
-rmcp = "0.13"
-rmcp-macros = "0.13"
+rmcp = "0.14"
+rmcp-macros = "0.14"
 mcp-spec = "0.1.0"
 schemars = { version = "1.0", features = ["uuid1"] }
 

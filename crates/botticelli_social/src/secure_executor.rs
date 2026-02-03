@@ -224,7 +224,7 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
 }
 
 /// Result of executing a bot command through the security pipeline.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, elicitation::Elicit)]
 pub enum ExecutionResult {
     /// Command executed successfully with result.
     Success(JsonValue),

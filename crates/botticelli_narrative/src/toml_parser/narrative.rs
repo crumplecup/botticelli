@@ -5,7 +5,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 /// Root narrative metadata structure (for single narratives).
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters, derive_builder::Builder)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, derive_builder::Builder, elicitation::Elicit)]
 #[builder(setter(into))]
 pub struct TomlNarrative {
     name: String,
@@ -43,7 +43,7 @@ pub struct TomlNarrative {
 }
 
 /// Intermediate structure for deserializing individual [narratives.name] sections.
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct TomlNarrativeDefinition {
     /// Name is optional here because it comes from the table key [narratives.NAME]
     #[serde(default)]

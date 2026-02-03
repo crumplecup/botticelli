@@ -41,6 +41,7 @@ use uuid::Uuid;
 /// - **Automatic deduplication**: Same content = same hash = same file
 /// - **Atomic writes**: Uses temp file + rename for atomicity
 /// - **Organized structure**: Two-level subdirectories prevent directory bloat
+#[derive(elicitation::Elicit)]
 pub struct FileSystemStorage {
     base_path: PathBuf,
 }

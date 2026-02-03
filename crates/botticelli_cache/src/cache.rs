@@ -34,7 +34,7 @@ impl CacheEntry {
 }
 
 /// Cache key for command results.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, elicitation::Elicit)]
 pub struct CacheKey {
     platform: String,
     command: String,

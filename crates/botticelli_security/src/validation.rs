@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use tracing::{debug, instrument};
 
 /// Validation error details.
-#[derive(Debug, Clone, schemars::JsonSchema)]
+#[derive(Debug, Clone, schemars::JsonSchema, elicitation::Elicit)]
 pub struct ValidationError {
     /// Field that failed validation
     pub field: String,

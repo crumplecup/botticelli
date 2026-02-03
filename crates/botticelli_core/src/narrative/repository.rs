@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     derive_getters::Getters,
     derive_setters::Setters,
+    elicitation::Elicit,
 )]
 #[setters(prefix = "with_", strip_option)]
 pub struct ExecutionFilter {
@@ -43,6 +44,7 @@ impl ExecutionFilter {
 /// loading all the act data.
 #[derive(
     Debug, Clone, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters, derive_new::new,
+    elicitation::Elicit,
 )]
 pub struct ExecutionSummary {
     /// Unique execution ID

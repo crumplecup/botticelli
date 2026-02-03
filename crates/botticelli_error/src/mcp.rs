@@ -33,6 +33,7 @@ pub struct DatabaseMcpError {
 #[cfg(feature = "serde_json")]
 impl SerdeJsonError {
     /// Create a new SerdeJsonError with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(err: serde_json::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -47,6 +48,7 @@ impl SerdeJsonError {
 #[cfg(feature = "database")]
 impl DatabaseMcpError {
     /// Create a new DatabaseMcpError with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(message: impl Into<String>, err: crate::DatabaseError) -> Self {
         let location = std::panic::Location::caller();
@@ -280,6 +282,7 @@ pub struct McpError {
 
 impl McpError {
     /// Create a new MCP error.
+    #[tool]
     #[track_caller]
     pub fn new(kind: McpErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -291,12 +294,14 @@ impl McpError {
     }
 
     /// Create a tool not found error.
+    #[tool]
     #[track_caller]
     pub fn tool_not_found(tool: impl Into<String>) -> Self {
         Self::new(McpErrorKind::ToolNotFound(tool.into()))
     }
 
     /// Create an invalid arguments error.
+    #[tool]
     #[track_caller]
     pub fn invalid_arguments(tool: impl Into<String>, reason: impl Into<String>) -> Self {
         Self::new(McpErrorKind::InvalidArguments {
@@ -306,30 +311,35 @@ impl McpError {
     }
 
     /// Create an invalid input error.
+    #[tool]
     #[track_caller]
     pub fn invalid_input(message: impl Into<String>) -> Self {
         Self::new(McpErrorKind::InvalidInput(message.into()))
     }
 
     /// Create an execution failed error.
+    #[tool]
     #[track_caller]
     pub fn execution_failed(message: impl Into<String>) -> Self {
         Self::new(McpErrorKind::ExecutionFailed(message.into()))
     }
 
     /// Create an invalid state error.
+    #[tool]
     #[track_caller]
     pub fn invalid_state(message: impl Into<String>) -> Self {
         Self::new(McpErrorKind::InvalidState(message.into()))
     }
 
     /// Create a session error.
+    #[tool]
     #[track_caller]
     pub fn session(message: impl Into<String>) -> Self {
         Self::new(McpErrorKind::Session(message.into()))
     }
 
     /// Create a session not found error.
+    #[tool]
     #[track_caller]
     pub fn session_not_found(session_id: impl Into<String>) -> Self {
         Self::new(McpErrorKind::Session(format!(
@@ -339,6 +349,7 @@ impl McpError {
     }
 
     /// Create a resource not found error.
+    #[tool]
     #[track_caller]
     pub fn resource_not_found(resource: impl Into<String>) -> Self {
         Self::new(McpErrorKind::ResourceNotFound(resource.into()))
@@ -346,6 +357,7 @@ impl McpError {
 
     /// Create a database error with source.
     #[cfg(feature = "database")]
+    #[tool]
     #[track_caller]
     pub fn database_error(message: impl Into<String>, source: crate::DatabaseError) -> Self {
         Self::new(McpErrorKind::Database(DatabaseMcpError::new(
@@ -354,24 +366,28 @@ impl McpError {
     }
 
     /// Create a backend unavailable error.
+    #[tool]
     #[track_caller]
     pub fn backend_unavailable(backend: impl Into<String>) -> Self {
         Self::new(McpErrorKind::BackendUnavailable(backend.into()))
     }
 
     /// Create an unsupported model error.
+    #[tool]
     #[track_caller]
     pub fn unsupported_model(model: impl Into<String>) -> Self {
         Self::new(McpErrorKind::UnsupportedModel(model.into()))
     }
 
     /// Create a mutex poisoned error.
+    #[tool]
     #[track_caller]
     pub fn mutex_poisoned(context: impl Into<String>) -> Self {
         Self::new(McpErrorKind::MutexPoisoned(context.into()))
     }
 
     /// Create a parse int error with source.
+    #[tool]
     #[track_caller]
     pub fn parse_int_error(message: impl Into<String>, source: std::num::ParseIntError) -> Self {
         Self::new(McpErrorKind::ParseInt {
@@ -381,6 +397,7 @@ impl McpError {
     }
 
     /// Create an environment variable error with source.
+    #[tool]
     #[track_caller]
     pub fn env_var_error(message: impl Into<String>, source: std::env::VarError) -> Self {
         Self::new(McpErrorKind::EnvVar {
@@ -390,6 +407,7 @@ impl McpError {
     }
 
     /// Create an IO error with source.
+    #[tool]
     #[track_caller]
     pub fn io_error(message: impl Into<String>, source: std::io::Error) -> Self {
         Self::new(McpErrorKind::Io {

@@ -12,10 +12,11 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     derive_getters::Getters,
     derive_builder::Builder,
+    elicitation::Elicit,
 )]
 pub struct ModelMetadata {
     /// Provider name (e.g., "anthropic", "openai")
-    provider: &'static str,
+    provider: String,
     /// Model identifier (e.g., "claude-3-5-sonnet-20241022")
     model: String,
     /// Maximum input context tokens

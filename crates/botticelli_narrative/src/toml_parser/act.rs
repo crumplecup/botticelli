@@ -36,7 +36,7 @@ pub enum TomlActInput {
 }
 
 /// Structured act configuration from TOML.
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct TomlActConfig {
     /// Array of inputs via `[[acts.act_name.input]]` syntax
     #[serde(default)]

@@ -1,7 +1,7 @@
 //! Configuration error types.
 
 /// Configuration error with source location.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("Configuration Error: {} at line {} in {}", message, line, file)]
 pub struct ConfigError {
     /// Error message

@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use tracing::{debug, error, instrument};
 
 /// Root TOML structure supporting both single and multi-narrative files.
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct TomlNarrativeFile {
     /// Shared act definitions (available to all narratives)
     #[serde(default)]

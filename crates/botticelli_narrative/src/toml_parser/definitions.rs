@@ -4,7 +4,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 /// Bot command definition from [bots.name] section.
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct TomlBotDefinition {
     platform: String,
     command: String,
@@ -14,7 +14,7 @@ pub struct TomlBotDefinition {
 }
 
 /// Table query definition from [tables.name] section.
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct TomlTableDefinition {
     table_name: String,
     columns: Option<Vec<String>>,
@@ -29,7 +29,7 @@ pub struct TomlTableDefinition {
 }
 
 /// Media source definition from [media.name] section.
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct TomlMediaDefinition {
     url: Option<String>,
     file: Option<String>,
@@ -39,7 +39,7 @@ pub struct TomlMediaDefinition {
 }
 
 /// Nested narrative reference from [narratives.name] section.
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Deserialize, derive_getters::Getters, elicitation::Elicit)]
 pub struct TomlNarrativeReference {
     narrative: String,
 }
