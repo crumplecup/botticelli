@@ -1,5 +1,6 @@
 //! Media metadata types.
 
+use rmcp::tool;
 use crate::MediaType;
 
 /// Metadata about media being stored.
@@ -53,6 +54,7 @@ pub struct MediaMetadata {
 
 impl MediaMetadata {
     /// Create simple metadata with just media type and default MIME.
+    #[tool]
     #[tracing::instrument]
     pub fn new(media_type: MediaType) -> Self {
         let mime_type = match media_type {

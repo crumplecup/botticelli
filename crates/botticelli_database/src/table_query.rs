@@ -223,6 +223,7 @@ impl TableQueryExecutor {
     }
 
     /// Gets the count of rows that would be returned by a query.
+    #[tool]
     #[instrument(skip(self), fields(table_name = %view.table_name()))]
     pub fn count_rows(&self, view: &TableCountView) -> DatabaseResult<i64> {
         let mut conn = self
