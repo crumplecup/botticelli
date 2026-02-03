@@ -1,6 +1,9 @@
 //! TUI (Terminal User Interface) error types.
 
 /// IO error with source tracking for TUI operations.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("IO error: {:?} at {}:{}", source, file, line)]
 pub struct TuiIoError {
@@ -14,6 +17,7 @@ pub struct TuiIoError {
 
 impl TuiIoError {
     /// Create a new TuiIoError with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(err: std::io::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -90,6 +94,7 @@ pub struct TuiError {
 
 impl TuiError {
     /// Create a new TuiError with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: TuiErrorKind) -> Self {
         let location = std::panic::Location::caller();

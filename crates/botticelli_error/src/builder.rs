@@ -1,6 +1,9 @@
 //! Builder-related errors.
 
 /// Specific builder error conditions.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
 pub enum BuilderErrorKind {
     /// Missing required field
@@ -32,6 +35,7 @@ pub struct BuilderError {
 
 impl BuilderError {
     /// Create a new builder error with caller location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: BuilderErrorKind) -> Self {
         let location = std::panic::Location::caller();
@@ -42,6 +46,7 @@ impl BuilderError {
         }
     }
 
+#[tool]
     /// Get the error kind.
     pub fn kind(&self) -> &BuilderErrorKind {
         &self.kind

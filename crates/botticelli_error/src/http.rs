@@ -1,6 +1,9 @@
 //! HTTP error types.
 
 /// Specific HTTP error conditions.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, Clone, derive_more::Display)]
 pub enum HttpErrorKind {
     /// Generic HTTP error with message
@@ -32,6 +35,7 @@ pub struct HttpError {
 
 impl HttpError {
     /// Create a new HttpError with the given kind at the current location.
+    #[tool]
     #[track_caller]
     pub fn new(kind: HttpErrorKind) -> Self {
         let location = std::panic::Location::caller();

@@ -1,6 +1,9 @@
 //! Rate limiting error types.
 
 /// Specific rate limiting error conditions.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display)]
 pub enum RateLimitErrorKind {
     /// Configuration file error.
@@ -50,6 +53,7 @@ pub struct RateLimitError {
 
 impl RateLimitError {
     /// Create a new rate limiting error with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: RateLimitErrorKind) -> Self {
         let location = std::panic::Location::caller();

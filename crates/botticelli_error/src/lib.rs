@@ -27,6 +27,10 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+// Re-export rmcp::tool when mcp feature is enabled
+#[cfg(feature = "mcp")]
+pub use rmcp::tool;
+
 #[cfg(feature = "models")]
 extern crate gemini_rust;
 

@@ -1,5 +1,8 @@
 //! MCP-specific error types.
 
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 use std::sync::Arc;
 
 /// Serde JSON error with source tracking.

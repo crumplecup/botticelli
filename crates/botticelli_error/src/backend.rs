@@ -1,6 +1,9 @@
 //! Backend error types.
 
 /// Backend error with source location.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
 #[display("Backend Error: {} at line {} in {}", message, line, file)]
 pub struct BackendError {
@@ -23,6 +26,7 @@ impl BackendError {
     /// let err = BackendError::new("Backend service unavailable");
     /// assert!(err.message.contains("unavailable"));
     /// ```
+    #[tool]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

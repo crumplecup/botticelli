@@ -1,5 +1,8 @@
 //! Chat-specific error types.
 
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 /// Sampling error kinds.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
 pub enum SamplingErrorKind {

@@ -1,5 +1,8 @@
 //! Model provider errors.
 
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 use std::sync::Arc;
 
 use crate::GeminiErrorKind;
@@ -53,6 +56,7 @@ pub struct OllamaError {
 #[cfg(feature = "ollama")]
 impl OllamaError {
     /// Create a new Ollama error.
+    #[tool]
     #[track_caller]
     pub fn new(kind: OllamaErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -63,6 +67,7 @@ impl OllamaError {
         }
     }
 
+#[tool]
     /// Get the error kind.
     pub fn kind(&self) -> &OllamaErrorKind {
         &self.kind
@@ -148,6 +153,7 @@ pub struct AnthropicError {
 #[cfg(feature = "anthropic")]
 impl AnthropicError {
     /// Creates a new Anthropic error with location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: AnthropicErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -228,6 +234,7 @@ pub struct ModelsError {
 
 impl ModelsError {
     /// Create a new models error.
+    #[tool]
     #[track_caller]
     pub fn new(kind: ModelsErrorKind) -> Self {
         let loc = std::panic::Location::caller();

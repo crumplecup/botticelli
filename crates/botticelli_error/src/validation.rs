@@ -1,5 +1,8 @@
 //! Validation error types for TOML narrative validation.
 
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 use elicitation::{Prompt, Select};
 
 /// Result of validating a narrative TOML file.
@@ -13,12 +16,14 @@ pub struct ValidationResult {
 
 impl ValidationResult {
     /// Creates a new validation result with no errors or warnings.
+    #[tool]
     #[tracing::instrument]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Returns true if validation passed (no errors).
+    #[tool]
     #[tracing::instrument(skip(self))]
     pub fn is_valid(&self) -> bool {
         let is_valid = self.errors().is_empty();
@@ -32,6 +37,7 @@ impl ValidationResult {
     }
 
     /// Adds an error to the result.
+    #[tool]
     #[tracing::instrument(skip(self, error), fields(error_kind = ?error.kind()))]
     pub fn add_error(&mut self, error: ValidationError) {
         tracing::debug!(
@@ -43,6 +49,7 @@ impl ValidationResult {
     }
 
     /// Adds a warning to the result.
+    #[tool]
     #[tracing::instrument(skip(self, warning), fields(warning_kind = ?warning.kind()))]
     pub fn add_warning(&mut self, warning: ValidationWarning) {
         tracing::debug!(message = %warning.message(), "Validation warning added");
@@ -50,6 +57,7 @@ impl ValidationResult {
     }
 
     /// Formats errors as a human-readable string.
+    #[tool]
     #[tracing::instrument(skip(self), fields(error_count = self.errors().len()))]
     pub fn format_errors(&self) -> String {
         let mut output = String::new();
@@ -70,6 +78,7 @@ impl ValidationResult {
     }
 
     /// Formats warnings as a human-readable string.
+    #[tool]
     #[tracing::instrument(skip(self), fields(warning_count = self.warnings().len()))]
     pub fn format_warnings(&self) -> String {
         let mut output = String::new();

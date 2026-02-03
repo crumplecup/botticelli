@@ -1,6 +1,9 @@
 //! Observability-related errors.
 
 /// Specific observability error conditions.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
 pub enum ObservabilityErrorKind {
     /// Failed to initialize tracer provider
@@ -35,6 +38,7 @@ pub struct ObservabilityError {
 
 impl ObservabilityError {
     /// Create a new observability error with caller location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: ObservabilityErrorKind) -> Self {
         let location = std::panic::Location::caller();

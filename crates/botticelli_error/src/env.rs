@@ -1,5 +1,8 @@
 //! Environment variable errors.
 
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 use std::env::VarError;
 
 /// Environment variable error kind.
@@ -25,6 +28,7 @@ pub struct EnvError {
 
 impl EnvError {
     /// Creates a new environment error.
+    #[tool]
     #[track_caller]
     pub fn new(kind: EnvErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -35,6 +39,7 @@ impl EnvError {
         }
     }
 
+#[tool]
     /// Gets the error kind.
     pub fn kind(&self) -> &EnvErrorKind {
         &self.kind

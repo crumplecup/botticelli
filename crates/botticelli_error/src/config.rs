@@ -1,6 +1,9 @@
 //! Configuration error types.
 
 /// Configuration error with source location.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("Configuration Error: {} at line {} in {}", message, line, file)]
 pub struct ConfigError {
@@ -23,6 +26,7 @@ impl ConfigError {
     /// let err = ConfigError::new("Missing required field");
     /// assert!(err.message().contains("Missing required"));
     /// ```
+    #[tool]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

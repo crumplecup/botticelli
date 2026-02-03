@@ -1,6 +1,9 @@
 //! Narrative error types.
 
 /// Specific error conditions for narrative operations.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
 pub enum NarrativeErrorKind {
     /// I/O error (file read/write)
@@ -190,6 +193,7 @@ pub struct NarrativeError {
 
 impl NarrativeError {
     /// Create a new NarrativeError with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: NarrativeErrorKind) -> Self {
         let location = std::panic::Location::caller();

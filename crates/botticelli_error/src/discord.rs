@@ -3,6 +3,9 @@
 //! This module provides error handling for Discord integration, including
 //! Serenity API errors, connection issues, and Discord-specific validation errors.
 
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 use derive_getters::Getters;
 use std::sync::Arc;
 

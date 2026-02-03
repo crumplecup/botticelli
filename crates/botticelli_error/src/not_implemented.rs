@@ -1,6 +1,9 @@
 //! Not implemented error types.
 
 /// Not implemented error with source location.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Not Implemented: {} at line {} in {}", message, line, file)]
 pub struct NotImplementedError {
@@ -23,6 +26,7 @@ impl NotImplementedError {
     /// let err = NotImplementedError::new("Feature X not yet supported");
     /// assert!(err.message().contains("not yet supported"));
     /// ```
+    #[tool]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

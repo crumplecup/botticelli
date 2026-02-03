@@ -1,6 +1,9 @@
 //! JSON error types.
 
 /// Serde JSON error with source tracking.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[cfg(feature = "serde_json")]
 #[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Serde JSON error: {:?} at {}:{}", source, file, line)]
@@ -16,6 +19,7 @@ pub struct SerdeJsonError {
 #[cfg(feature = "serde_json")]
 impl SerdeJsonError {
     /// Create a new SerdeJsonError with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(err: serde_json::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -134,6 +138,7 @@ impl Ord for JsonError {
 
 impl JsonError {
     /// Create a new JsonError with the given kind at the current location.
+    #[tool]
     #[track_caller]
     pub fn new(kind: JsonErrorKind) -> Self {
         let location = std::panic::Location::caller();

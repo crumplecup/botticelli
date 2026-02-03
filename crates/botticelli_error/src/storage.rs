@@ -1,6 +1,9 @@
 //! Storage error types.
 
 /// Kinds of storage errors.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
 pub enum StorageErrorKind {
     /// Failed to create storage directory
@@ -52,6 +55,7 @@ pub struct StorageError {
 
 impl StorageError {
     /// Create a new storage error with automatic location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: StorageErrorKind) -> Self {
         let location = std::panic::Location::caller();

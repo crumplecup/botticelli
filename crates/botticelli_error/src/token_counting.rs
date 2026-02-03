@@ -1,6 +1,9 @@
 //! Token counting errors.
 
 /// Specific token counting error conditions.
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 #[derive(Debug, derive_more::Display)]
 pub enum TokenCountingErrorKind {
     /// Failed to get tokenizer from tiktoken_rs
@@ -23,6 +26,7 @@ pub struct TokenCountingError {
 
 impl TokenCountingError {
     /// Create a new token counting error with caller location tracking.
+    #[tool]
     #[track_caller]
     pub fn new(kind: TokenCountingErrorKind) -> Self {
         let location = std::panic::Location::caller();

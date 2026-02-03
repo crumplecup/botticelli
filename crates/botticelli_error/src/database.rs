@@ -1,5 +1,8 @@
 //! Database error types.
 
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 use std::sync::Arc;
 
 #[cfg(feature = "serde_json")]

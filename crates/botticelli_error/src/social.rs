@@ -3,6 +3,9 @@
 //! This module provides error types for bot command execution across
 //! different social media platforms (Discord, Slack, etc.).
 
+#[cfg(feature = "mcp")]
+use crate::tool;
+
 use derive_getters::Getters;
 use derive_more::{Display, Error};
 use std::sync::Arc;
