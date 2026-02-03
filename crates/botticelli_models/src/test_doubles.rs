@@ -18,6 +18,7 @@ pub struct TestMetadata {
 
 impl TestMetadata {
     /// Creates new test metadata.
+    #[tool]
     pub fn new() -> Self {
         Self {
             model_name: "test-model".to_string(),
@@ -49,6 +50,7 @@ pub struct TestDriver {
 
 impl TestDriver {
     /// Creates a new test driver with configured responses.
+    #[tool]
     pub fn new() -> Self {
         Self {
             responses: Arc::new(Mutex::new(Vec::new())),
@@ -59,18 +61,21 @@ impl TestDriver {
     }
 
     /// Adds a successful response to the queue.
+    #[tool]
     pub fn with_response(self, response: GenerateResponse) -> Self {
         self.responses.lock().unwrap().push(response);
         self
     }
 
     /// Adds an error response to the queue.
+    #[tool]
     pub fn with_error(self, error: ModelsError) -> Self {
         self.errors.lock().unwrap().push(error);
         self
     }
 
     /// Adds a simple text response to the queue.
+    #[tool]
     pub fn with_text(self, text: impl Into<String>) -> Self {
         let response = GenerateResponse::builder()
             .outputs(vec![Output::Text(text.into())])
@@ -81,6 +86,7 @@ impl TestDriver {
     }
 
     /// Returns the number of times generate() was called.
+    #[tool]
     pub fn call_count(&self) -> usize {
         *self.call_count.lock().unwrap()
     }

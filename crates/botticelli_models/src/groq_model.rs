@@ -42,6 +42,7 @@ impl GroqModel {
     /// Get the model string for API calls.
     #[tool]
     #[instrument]
+    #[tool]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Llama33_70BVersatile => "llama-3.3-70b-versatile",
@@ -54,6 +55,7 @@ impl GroqModel {
     /// Get laterally equivalent models in other families.
     #[tool]
     #[instrument]
+    #[tool]
     pub fn friends(&self) -> Vec<(&'static str, &'static str)> {
         match self {
             Self::Llama33_70BVersatile => vec![
@@ -78,6 +80,7 @@ impl GroqModel {
     /// Move up to a more capable/expensive model.
     #[tool]
     #[instrument]
+    #[tool]
     pub fn move_up(&self) -> Option<Self> {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
@@ -93,6 +96,7 @@ impl GroqModel {
     /// Move down to a faster/cheaper model.
     #[tool]
     #[instrument]
+    #[tool]
     pub fn move_down(&self) -> Option<Self> {
         use strum::IntoEnumIterator;
         let all: Vec<_> = Self::iter().collect();
