@@ -19,7 +19,7 @@ pub struct SerdeJsonError {
 #[cfg(feature = "serde_json")]
 impl SerdeJsonError {
     /// Create a new SerdeJsonError with automatic location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(err: serde_json::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -138,7 +138,7 @@ impl Ord for JsonError {
 
 impl JsonError {
     /// Create a new JsonError with the given kind at the current location.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: JsonErrorKind) -> Self {
         let location = std::panic::Location::caller();

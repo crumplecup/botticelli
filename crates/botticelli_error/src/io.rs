@@ -17,7 +17,7 @@ pub struct IoError {
 
 impl IoError {
     /// Create a new I/O error from a std::io::Error.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(err: std::io::Error) -> Self {
         let loc = std::panic::Location::caller();

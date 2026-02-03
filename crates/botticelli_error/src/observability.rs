@@ -38,7 +38,7 @@ pub struct ObservabilityError {
 
 impl ObservabilityError {
     /// Create a new observability error with caller location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: ObservabilityErrorKind) -> Self {
         let location = std::panic::Location::caller();

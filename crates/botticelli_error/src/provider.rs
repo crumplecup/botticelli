@@ -19,7 +19,7 @@ pub struct ProviderReqwestError {
 #[cfg(feature = "reqwest")]
 impl ProviderReqwestError {
     /// Create a new ProviderReqwestError with automatic location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(err: reqwest::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -47,7 +47,7 @@ pub struct ProviderSerdeJsonError {
 #[cfg(feature = "serde_json")]
 impl ProviderSerdeJsonError {
     /// Create a new ProviderSerdeJsonError with automatic location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(err: serde_json::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -124,7 +124,7 @@ pub enum ProviderErrorKind {
 
 impl ProviderError {
     /// Create a new provider error with location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(provider: impl Into<String>, kind: ProviderErrorKind) -> Self {
         let loc = std::panic::Location::caller();

@@ -17,7 +17,7 @@ pub struct TomlError {
 
 impl TomlError {
     /// Create a new TOML error from a toml::de::Error.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(err: toml::de::Error) -> Self {
         let loc = std::panic::Location::caller();

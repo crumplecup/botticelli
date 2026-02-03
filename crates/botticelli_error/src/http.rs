@@ -35,7 +35,7 @@ pub struct HttpError {
 
 impl HttpError {
     /// Create a new HttpError with the given kind at the current location.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: HttpErrorKind) -> Self {
         let location = std::panic::Location::caller();

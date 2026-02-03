@@ -17,7 +17,7 @@ pub struct TuiIoError {
 
 impl TuiIoError {
     /// Create a new TuiIoError with automatic location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(err: std::io::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -94,7 +94,7 @@ pub struct TuiError {
 
 impl TuiError {
     /// Create a new TuiError with automatic location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: TuiErrorKind) -> Self {
         let location = std::panic::Location::caller();

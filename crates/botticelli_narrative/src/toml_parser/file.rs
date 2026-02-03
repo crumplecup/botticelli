@@ -1,5 +1,6 @@
 //! TOML file structure and reference resolution.
 
+use elicitation::{Prompt, Select};
 use super::{
     TomlAct, TomlNarrativeDefinition, TomlNarrativeReference, definitions::*, narrative::*,
     utils::*,
@@ -36,7 +37,7 @@ pub struct TomlNarrativeFile {
 }
 
 /// Wrapper for either single narrative or multi-narrative format
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlNarrativeData {
     /// Single narrative with optional TOC at root
@@ -54,7 +55,7 @@ pub enum TomlNarrativeData {
 }
 
 /// Entry in [narratives.name] can be either a reference or inline definition.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlNarrativeEntry {
     /// Reference to another narrative file

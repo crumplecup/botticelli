@@ -35,7 +35,7 @@ pub struct BuilderError {
 
 impl BuilderError {
     /// Create a new builder error with caller location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: BuilderErrorKind) -> Self {
         let location = std::panic::Location::caller();
@@ -46,7 +46,7 @@ impl BuilderError {
         }
     }
 
-#[tool]
+#[cfg_attr(feature = "mcp", tool)]
     /// Get the error kind.
     pub fn kind(&self) -> &BuilderErrorKind {
         &self.kind

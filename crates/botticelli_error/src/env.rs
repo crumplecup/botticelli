@@ -28,7 +28,7 @@ pub struct EnvError {
 
 impl EnvError {
     /// Creates a new environment error.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: EnvErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -39,7 +39,7 @@ impl EnvError {
         }
     }
 
-#[tool]
+#[cfg_attr(feature = "mcp", tool)]
     /// Gets the error kind.
     pub fn kind(&self) -> &EnvErrorKind {
         &self.kind

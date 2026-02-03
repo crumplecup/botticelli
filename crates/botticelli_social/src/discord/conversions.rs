@@ -25,6 +25,7 @@ use crate::{
 /// # Errors
 ///
 /// Returns an error if the timestamp string cannot be parsed.
+#[tool]
 #[instrument(skip(s))]
 #[track_caller]
 pub fn parse_iso_timestamp(s: &str) -> BotticelliResult<NaiveDateTime> {
@@ -58,6 +59,7 @@ pub fn parse_iso_timestamp(s: &str) -> BotticelliResult<NaiveDateTime> {
 /// # Errors
 ///
 /// Returns an error if the channel type string is not recognized.
+#[tool]
 #[instrument(skip(s))]
 #[track_caller]
 pub fn parse_channel_type(s: &str) -> BotticelliResult<ChannelType> {

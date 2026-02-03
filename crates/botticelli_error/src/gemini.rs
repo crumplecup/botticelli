@@ -76,7 +76,7 @@ pub enum GeminiErrorKind {
 }
 
 impl GeminiErrorKind {
-#[tool]
+#[cfg_attr(feature = "mcp", tool)]
     /// Check if this error type should be retried.
     pub fn is_retryable(&self) -> bool {
         match self {
@@ -93,7 +93,7 @@ impl GeminiErrorKind {
 
     /// Get retry strategy parameters for this error type.
     ///
-#[tool]
+#[cfg_attr(feature = "mcp", tool)]
     /// Returns `(initial_backoff_ms, max_retries, max_delay_secs)`.
     pub fn retry_strategy_params(&self) -> (u64, usize, u64) {
         match self {
@@ -136,7 +136,7 @@ pub struct GeminiError {
 
 impl GeminiError {
     /// Create a new GeminiError with automatic location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: GeminiErrorKind) -> Self {
         let location = std::panic::Location::caller();

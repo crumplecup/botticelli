@@ -26,7 +26,7 @@ impl ConfigError {
     /// let err = ConfigError::new("Missing required field");
     /// assert!(err.message().contains("Missing required"));
     /// ```
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

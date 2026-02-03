@@ -1,5 +1,6 @@
 //! Narrative metadata types and TOC structures.
 
+use elicitation::{Prompt, Select};
 use super::TomlAct;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -81,7 +82,7 @@ pub struct TomlNarrativeDefinition {
 }
 
 /// Intermediate structure for deserializing the [toc] section (backwards compat).
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlToc {
     /// Simple array: toc = ["one", "two"]

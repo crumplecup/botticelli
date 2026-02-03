@@ -53,7 +53,7 @@ pub struct RateLimitError {
 
 impl RateLimitError {
     /// Create a new rate limiting error with automatic location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: RateLimitErrorKind) -> Self {
         let location = std::panic::Location::caller();

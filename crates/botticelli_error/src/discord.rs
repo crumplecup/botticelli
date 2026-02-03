@@ -129,7 +129,7 @@ impl DiscordError {
     ///
     /// let err = DiscordError::new(DiscordErrorKind::InvalidToken);
     /// ```
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: DiscordErrorKind) -> Self {
         let location = std::panic::Location::caller();
@@ -141,7 +141,7 @@ impl DiscordError {
     }
 
     /// Create from a connection error with location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn from_connection_error(error: impl std::error::Error + Send + Sync + 'static) -> Self {
         Self::new(DiscordErrorKind::ConnectionFailedWithSource {
@@ -152,7 +152,7 @@ impl DiscordError {
     /// Get the severity level for this error.
     ///
     /// Used to determine whether event processing should abort or continue.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     pub fn severity(&self) -> DiscordErrorSeverity {
         use DiscordErrorKind::*;
         use DiscordErrorSeverity::*;
@@ -184,7 +184,7 @@ impl DiscordError {
     /// Check if this error is retryable.
     ///
     /// Used for retry logic and circuit breakers.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     pub fn is_retryable(&self) -> bool {
         use DiscordErrorKind::*;
 
@@ -213,7 +213,7 @@ impl DiscordError {
     /// Get human-readable context for logging.
     ///
     /// Returns formatted string with error details and source location.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     pub fn error_context(&self) -> String {
         format!("{} at {}:{}", self.kind, self.file, self.line)
     }

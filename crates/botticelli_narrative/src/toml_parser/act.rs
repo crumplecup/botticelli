@@ -1,5 +1,6 @@
 //! Act types and conversion logic.
 
+use elicitation::{Prompt, Select};
 use super::{TomlInput, TomlNarrativeFile, utils::*};
 use crate::ActConfig;
 use botticelli_core::Input;
@@ -14,7 +15,7 @@ use tracing::{debug, error, instrument};
 /// - Resource references: `act_name = "bots.name"` or `act_name = "media.name"`
 /// - Arrays: `act_name = ["bots.name", "media.name", "text"]`
 /// - Structured tables: `[acts.act_name]` with optional `[[acts.act_name.input]]`
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlAct {
     /// Simple text act or resource reference: `act_name = "prompt"` or `act_name = "bots.name"`
@@ -26,7 +27,7 @@ pub enum TomlAct {
 }
 
 /// Input in array syntax - either a reference or inline text.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlActInput {
     /// String reference to resource or plain text

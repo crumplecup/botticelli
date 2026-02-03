@@ -26,7 +26,7 @@ impl BackendError {
     /// let err = BackendError::new("Backend service unavailable");
     /// assert!(err.message.contains("unavailable"));
     /// ```
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

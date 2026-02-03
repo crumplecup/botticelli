@@ -55,7 +55,7 @@ pub struct StorageError {
 
 impl StorageError {
     /// Create a new storage error with automatic location tracking.
-    #[tool]
+#[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: StorageErrorKind) -> Self {
         let location = std::panic::Location::caller();
