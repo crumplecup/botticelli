@@ -1,5 +1,6 @@
 //! Core validation orchestration.
 
+use rmcp::tool;
 use super::{
     analysis::Analyzer, models::ModelValidator, resources::ResourceValidator,
     structure::StructureValidator, syntax::SyntaxValidator,
@@ -71,12 +72,14 @@ impl Validator {
     /// assert!(result.is_valid());
     /// ```
     #[instrument(skip(toml), fields(toml_len = toml.len()))]
+    #[tool]
     pub fn validate_toml(toml: &str) -> ValidationResult {
         Self::validate_toml_with_config(toml, &ValidationConfig::default())
     }
 
     /// Validates a narrative TOML string with custom configuration.
     #[instrument(skip(toml, config), fields(toml_len = toml.len()))]
+    #[tool]
     pub fn validate_toml_with_config(toml: &str, config: &ValidationConfig) -> ValidationResult {
         let mut result = ValidationResult::new();
 
@@ -105,12 +108,14 @@ impl Validator {
 
     /// Validates a narrative TOML file.
     #[instrument(skip(path), fields(path = %path.as_ref().display()))]
+    #[tool]
     pub fn validate_file(path: impl AsRef<Path>) -> ValidationResult {
         Self::validate_file_with_config(path, &ValidationConfig::default())
     }
 
     /// Validates a narrative TOML file with custom configuration.
     #[instrument(skip(path, config), fields(path = %path.as_ref().display()))]
+    #[tool]
     pub fn validate_file_with_config(
         path: impl AsRef<Path>,
         config: &ValidationConfig,

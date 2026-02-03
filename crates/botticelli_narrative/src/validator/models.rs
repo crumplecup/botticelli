@@ -1,5 +1,6 @@
 //! Model name validation and fuzzy matching.
 
+use rmcp::tool;
 use botticelli_error::{
     ValidationLocation, ValidationResult, ValidationWarning, ValidationWarningKind,
 };
@@ -49,6 +50,7 @@ pub struct ModelValidator;
 impl ModelValidator {
     /// Validates a model name against known models.
     #[instrument(skip(section, result), fields(section = %section_name))]
+    #[tool]
     pub fn validate_name(
         section: &toml::map::Map<String, toml::Value>,
         section_name: &str,

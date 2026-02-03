@@ -3,6 +3,7 @@
 //! This module provides a simple HashMap-based repository that stores executions
 //! in memory. Useful for unit tests and demonstrating the trait interface.
 
+use rmcp::tool;
 use async_trait::async_trait;
 use botticelli_core::{ExecutionFilter, ExecutionStatus, ExecutionSummary, NarrativeExecution};
 use botticelli_error::NarrativeError;
@@ -52,6 +53,7 @@ struct StoredExecution {
 
 impl InMemoryNarrativeRepository {
     /// Create a new empty in-memory repository.
+    #[tool]
     pub fn new() -> Self {
         Self {
             executions: Arc::new(RwLock::new(HashMap::new())),

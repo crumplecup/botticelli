@@ -62,6 +62,7 @@ pub struct NarrativeMetadata {
 impl NarrativeMetadata {
     /// Create a minimal test metadata (for tests only).
     #[cfg(test)]
+    #[tool]
     pub fn new_test(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
@@ -161,6 +162,7 @@ impl Narrative {
     /// - The TOML is invalid
     /// - Validation fails (missing acts, empty order, etc.)
     #[tracing::instrument(skip_all, fields(path = %path.as_ref().display()))]
+    #[tool]
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, NarrativeError> {
         let path = path.as_ref();
         let content = std::fs::read_to_string(path)
@@ -193,6 +195,7 @@ impl Narrative {
     /// - Prompt assembly fails
     #[cfg(feature = "database")]
     #[tracing::instrument(skip_all, fields(path = %path.as_ref().display()))]
+    #[tool]
     pub fn from_file_with_db<P: AsRef<Path>>(
         path: P,
         conn: &mut PgConnection,
@@ -335,6 +338,7 @@ impl FromStr for Narrative {
 
 impl Narrative {
     /// Parse a narrative from TOML string, optionally specifying which narrative to load.
+    #[tool]
     pub fn from_toml_str(s: &str, narrative_name: Option<&str>) -> Result<Self, NarrativeError> {
         // Parse TOML into intermediate structure
         let toml_narrative_file: toml_parser::TomlNarrativeFile = toml::from_str(s)
@@ -513,6 +517,7 @@ impl NarrativeSource {
     /// Returns an error if the file cannot be read or parsed, or if the
     /// specified narrative name is not found.
     #[tracing::instrument(skip_all, fields(path = %path.as_ref().display(), narrative_name))]
+    #[tool]
     pub fn from_file<P: AsRef<Path>>(
         path: P,
         narrative_name: Option<&str>,

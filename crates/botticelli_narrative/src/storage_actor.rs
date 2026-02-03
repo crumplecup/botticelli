@@ -4,6 +4,7 @@
 //! handling table creation, schema inference, and row insertion through
 //! an asynchronous message-passing interface.
 
+use rmcp::tool;
 use async_trait::async_trait;
 use botticelli_database::{
     NewContentGenerationRow, PostgresContentGenerationRepository, UpdateContentGenerationRow,
@@ -34,6 +35,7 @@ pub struct StartGeneration {
 
 impl StartGeneration {
     /// Create a new StartGeneration request.
+    #[tool]
     pub fn new(
         table_name: String,
         narrative_file: String,
@@ -49,6 +51,7 @@ impl StartGeneration {
     }
 
     /// Consume the message and extract the reply port.
+    #[tool]
     pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
         self.reply
     }
@@ -72,6 +75,7 @@ pub struct CreateTableFromTemplate {
 
 impl CreateTableFromTemplate {
     /// Create a new CreateTableFromTemplate request.
+    #[tool]
     pub fn new(
         table_name: String,
         template: String,
@@ -89,6 +93,7 @@ impl CreateTableFromTemplate {
     }
 
     /// Consume the message and extract the reply port.
+    #[tool]
     pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
         self.reply
     }
@@ -112,6 +117,7 @@ pub struct CreateTableFromInference {
 
 impl CreateTableFromInference {
     /// Create a new CreateTableFromInference request.
+    #[tool]
     pub fn new(
         table_name: String,
         json_sample: JsonValue,
@@ -129,6 +135,7 @@ impl CreateTableFromInference {
     }
 
     /// Consume the message and extract the reply port.
+    #[tool]
     pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
         self.reply
     }
@@ -154,6 +161,7 @@ pub struct InsertContent {
 
 impl InsertContent {
     /// Create a new InsertContent request.
+    #[tool]
     pub fn new(
         table_name: String,
         json_data: JsonValue,
@@ -173,6 +181,7 @@ impl InsertContent {
     }
 
     /// Consume the message and extract the reply port.
+    #[tool]
     pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
         self.reply
     }
@@ -198,6 +207,7 @@ pub struct CompleteGeneration {
 
 impl CompleteGeneration {
     /// Create a new CompleteGeneration request.
+    #[tool]
     pub fn new(
         table_name: String,
         row_count: Option<i32>,
@@ -217,6 +227,7 @@ impl CompleteGeneration {
     }
 
     /// Consume the message and extract the reply port.
+    #[tool]
     pub fn into_reply(self) -> RpcReplyPort<BotticelliResult<()>> {
         self.reply
     }
@@ -230,6 +241,7 @@ pub struct StorageActor {
 impl StorageActor {
     /// Create a new storage actor with a connection pool.
     #[tracing::instrument(skip(pool))]
+    #[tool]
     pub fn new(pool: Pool<ConnectionManager<PgConnection>>) -> Self {
         tracing::debug!("Creating new StorageActor");
         Self { pool }

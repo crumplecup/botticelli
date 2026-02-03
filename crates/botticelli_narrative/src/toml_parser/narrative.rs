@@ -1,5 +1,6 @@
 //! Narrative metadata types and TOC structures.
 
+use rmcp::tool;
 use elicitation::{Prompt, Select};
 use super::TomlAct;
 use serde::Deserialize;
@@ -93,6 +94,7 @@ pub enum TomlToc {
 
 impl TomlToc {
     /// Get the order vector regardless of variant.
+    #[tool]
     pub fn order(&self) -> &[String] {
         match self {
             TomlToc::Array(v) => v,

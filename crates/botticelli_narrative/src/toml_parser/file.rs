@@ -1,5 +1,6 @@
 //! TOML file structure and reference resolution.
 
+use rmcp::tool;
 use elicitation::{Prompt, Select};
 use super::{
     TomlAct, TomlNarrativeDefinition, TomlNarrativeReference, definitions::*, narrative::*,
@@ -67,6 +68,7 @@ pub enum TomlNarrativeEntry {
 impl TomlNarrativeFile {
     /// Check if this file contains multiple narratives.
     #[instrument(skip(self))]
+    #[tool]
     pub fn is_multi_narrative(&self) -> bool {
         let result = match &self.narrative_data {
             TomlNarrativeData::Single { .. } => false,
@@ -83,6 +85,7 @@ impl TomlNarrativeFile {
     ///
     /// Returns a tuple of (metadata fields, toc, acts map).
     #[instrument(skip(self), fields(narrative_name = ?narrative_name))]
+    #[tool]
     pub fn resolve_narrative(
         &self,
         narrative_name: Option<&str>,
@@ -210,6 +213,7 @@ impl TomlNarrativeFile {
 
     /// Resolve a resource reference to an Input.
     #[instrument(skip(self), fields(reference))]
+    #[tool]
     pub fn resolve_reference(&self, reference: &str) -> NarrativeResult<Input> {
         debug!(%reference, "Resolving resource reference");
 

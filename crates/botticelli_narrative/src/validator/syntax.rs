@@ -1,5 +1,6 @@
 //! TOML syntax pattern validation.
 
+use rmcp::tool;
 use botticelli_error::{ValidationError, ValidationErrorKind, ValidationResult};
 use tracing::instrument;
 
@@ -12,6 +13,7 @@ pub struct SyntaxValidator;
 impl SyntaxValidator {
     /// Detects common TOML syntax patterns that cause errors.
     #[instrument(skip(parsed, result))]
+    #[tool]
     pub fn detect_patterns(parsed: &toml::Value, result: &mut ValidationResult) {
         if let Some(table) = parsed.as_table() {
             // Check for [[acts]] (array of tables instead of table of tables)

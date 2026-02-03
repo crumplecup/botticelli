@@ -117,6 +117,7 @@ impl ProcessorRegistry {
     ///
     /// Processors are invoked in registration order. If multiple processors
     /// match an act, all matching processors will be called.
+    #[tool]
     pub fn register<P>(&mut self, processor: P)
     where
         P: for<'a> ActProcessor<ProcessorContext<'a>, Error = botticelli_error::BotticelliError>

@@ -35,6 +35,7 @@ impl MultiNarrative {
     ///
     /// Returns an error if the file cannot be read or parsed.
     #[instrument(skip_all, fields(path = %path.as_ref().display(), narrative_name))]
+    #[tool]
     pub fn from_file<P: AsRef<Path>>(
         path: P,
         narrative_name: &str,
@@ -62,6 +63,7 @@ impl MultiNarrative {
     /// Returns an error if the file cannot be read, parsed, or schema reflection fails.
     #[cfg(feature = "database")]
     #[instrument(skip_all, fields(path = %path.as_ref().display(), narrative_name))]
+    #[tool]
     pub fn from_file_with_db<P: AsRef<Path>>(
         path: P,
         narrative_name: &str,

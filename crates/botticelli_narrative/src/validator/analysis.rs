@@ -1,5 +1,6 @@
 //! Analysis for unused resources and circular dependencies.
 
+use rmcp::tool;
 use super::resources::ResourceRegistry;
 use botticelli_error::{
     ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult, ValidationWarning,
@@ -21,6 +22,7 @@ impl Analyzer {
     #[instrument(skip(resources, result), fields(
         unused_count = tracing::field::Empty
     ))]
+    #[tool]
     pub fn check_unused_resources(resources: &ResourceRegistry, result: &mut ValidationResult) {
         let used = resources.used_resources().borrow();
         let mut unused_count = 0;
@@ -82,6 +84,7 @@ impl Analyzer {
         edge_count = tracing::field::Empty,
         cycle_count = tracing::field::Empty
     ))]
+    #[tool]
     pub fn check_circular_dependencies(
         table: &toml::map::Map<String, toml::Value>,
         result: &mut ValidationResult,

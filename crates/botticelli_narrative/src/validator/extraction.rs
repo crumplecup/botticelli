@@ -1,5 +1,6 @@
 //! Data extraction from TOML values.
 
+use rmcp::tool;
 use std::collections::HashMap;
 use tracing::instrument;
 
@@ -12,6 +13,7 @@ pub struct DataExtractor;
 impl DataExtractor {
     /// Extracts toc.order from a toc value.
     #[instrument(skip(toc_value), fields(order_len = tracing::field::Empty))]
+    #[tool]
     pub fn toc_order(toc_value: Option<&toml::Value>) -> Vec<String> {
         let toc_value = match toc_value {
             Some(v) => v,
@@ -50,6 +52,7 @@ impl DataExtractor {
 
     /// Extracts acts map from an acts value.
     #[instrument(skip(acts_value), fields(act_count = tracing::field::Empty))]
+    #[tool]
     pub fn acts(acts_value: Option<&toml::Value>) -> HashMap<String, toml::Value> {
         let acts_table = match acts_value.and_then(|v| v.as_table()) {
             Some(t) => t,

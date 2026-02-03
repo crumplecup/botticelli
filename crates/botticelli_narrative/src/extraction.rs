@@ -242,6 +242,7 @@ impl Extract {
     /// assert_eq!(user.id, 123);
     /// ```
     #[instrument(skip(json_str), fields(json_len = json_str.len()))]
+    #[tool]
     pub fn parse_json<T>(json_str: &str) -> BotticelliResult<T>
     where
         T: serde::de::DeserializeOwned,
@@ -368,6 +369,7 @@ impl Extract {
     /// assert_eq!(config.server_name, "Test Server");
     /// ```
     #[instrument(skip(toml_str), fields(toml_len = toml_str.len()))]
+    #[tool]
     pub fn parse_toml<T>(toml_str: &str) -> BotticelliResult<T>
     where
         T: serde::de::DeserializeOwned,

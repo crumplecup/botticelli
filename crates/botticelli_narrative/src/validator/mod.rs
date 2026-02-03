@@ -3,6 +3,8 @@
 //! This module provides comprehensive validation for narrative TOML files,
 //! catching common syntax errors and providing specific fix suggestions.
 
+use rmcp::tool;
+
 mod analysis;
 mod core;
 mod extraction;

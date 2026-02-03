@@ -1,5 +1,6 @@
 //! Input type and conversion logic.
 
+use rmcp::tool;
 use super::utils::*;
 use botticelli_core::{Input, MediaSource, TableFormat};
 use botticelli_error::{IoError, NarrativeErrorKind, NarrativeResult};
@@ -62,6 +63,7 @@ pub struct TomlInput {
 impl TomlInput {
     /// Convert TOML input to domain Input type.
     #[instrument(skip(self), fields(input_type = ?self.input_type))]
+    #[tool]
     pub fn to_input(&self) -> NarrativeResult<Input> {
         // Get input type, defaulting to "text" if not specified
         let input_type = self.input_type.as_deref().unwrap_or("text");

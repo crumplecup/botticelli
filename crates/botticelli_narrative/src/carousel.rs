@@ -88,6 +88,7 @@ pub struct CarouselState<T: botticelli_interface::Tier + std::fmt::Debug> {
 impl<T: botticelli_interface::Tier + std::fmt::Debug> CarouselState<T> {
     /// Creates a new carousel state with the given configuration and budget.
     #[tracing::instrument(skip(rate_limits), fields(iterations = config.iterations, estimated_tokens = config.estimated_tokens_per_iteration))]
+    #[tool]
     pub fn new(config: CarouselConfig, rate_limits: T) -> Self {
         tracing::debug!(
             iterations = config.iterations,
@@ -107,6 +108,7 @@ impl<T: botticelli_interface::Tier + std::fmt::Debug> CarouselState<T> {
     }
 
     /// Gets mutable access to the budget.
+    #[tool]
     pub fn budget_mut(&mut self) -> &mut Budget<T> {
         &mut self.budget
     }
@@ -117,6 +119,7 @@ impl<T: botticelli_interface::Tier + std::fmt::Debug> CarouselState<T> {
     /// - We haven't reached max iterations
     /// - Budget can afford the estimated tokens for next iteration
     #[tracing::instrument(skip(self))]
+    #[tool]
     pub fn can_continue(&mut self) -> bool {
         if self.current_iteration >= self.config.iterations {
             tracing::debug!("Max iterations reached");
@@ -141,6 +144,7 @@ impl<T: botticelli_interface::Tier + std::fmt::Debug> CarouselState<T> {
     ///
     /// Returns an error if max iterations reached or budget exhausted.
     #[tracing::instrument(skip(self))]
+    #[tool]
     pub fn start_iteration(&mut self) -> Result<u32, NarrativeError> {
         if !self.can_continue() {
             return Err(NarrativeError::new(
@@ -163,6 +167,7 @@ impl<T: botticelli_interface::Tier + std::fmt::Debug> CarouselState<T> {
 
     /// Records a successful iteration.
     #[tracing::instrument(skip(self), fields(iteration = self.current_iteration))]
+    #[tool]
     pub fn record_success(&mut self) {
         self.successful_iterations += 1;
         tracing::debug!(
@@ -174,6 +179,7 @@ impl<T: botticelli_interface::Tier + std::fmt::Debug> CarouselState<T> {
 
     /// Records a failed iteration.
     #[tracing::instrument(skip(self), fields(iteration = self.current_iteration))]
+    #[tool]
     pub fn record_failure(&mut self) {
         self.failed_iterations += 1;
         tracing::warn!(
@@ -185,6 +191,7 @@ impl<T: botticelli_interface::Tier + std::fmt::Debug> CarouselState<T> {
 
     /// Marks the carousel as completed.
     #[tracing::instrument(skip(self), fields(successful = self.successful_iterations, failed = self.failed_iterations))]
+    #[tool]
     pub fn finish(&mut self) {
         self.completed = true;
         tracing::info!(

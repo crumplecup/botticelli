@@ -1,5 +1,6 @@
 //! Core executor implementation.
 
+use rmcp::tool;
 use crate::{
     ActConfig, CarouselConfig, CarouselResult, CarouselState, MultiNarrative, NarrativeMetadata,
     ProcessorRegistry, StateManager,
@@ -69,6 +70,7 @@ where
     ///     .expect("Valid executor")
     /// ```
     #[instrument(skip(driver))]
+    #[tool]
     pub fn new(
         driver: std::sync::Arc<
             dyn botticelli_interface::ExecutionDriver<
@@ -100,6 +102,7 @@ where
     ///     .expect("Valid executor")
     /// ```
     #[instrument(skip(driver, registry), fields(processor_count = registry.len()))]
+    #[tool]
     pub fn with_processors(
         driver: std::sync::Arc<
             dyn botticelli_interface::ExecutionDriver<
@@ -134,6 +137,7 @@ where
     /// - Any LLM API call fails
     /// - The response format is unexpected
     #[instrument(skip(self, narrative))]
+    #[tool]
     pub fn execute<'a, N>(
         &'a self,
         narrative: &'a N,

@@ -129,6 +129,7 @@ impl StateManager {
     ///
     /// * `state_dir` - Directory where state files will be stored
     #[instrument(skip(state_dir), fields(path = %state_dir.as_ref().display()))]
+    #[tool]
     pub fn new(state_dir: impl AsRef<Path>) -> BotticelliResult<Self> {
         let state_dir = state_dir.as_ref().to_path_buf();
 

@@ -1,5 +1,6 @@
 //! Act types and conversion logic.
 
+use rmcp::tool;
 use elicitation::{Prompt, Select};
 use super::{TomlInput, TomlNarrativeFile, utils::*};
 use crate::ActConfig;
@@ -74,6 +75,7 @@ impl TomlAct {
     ///
     /// Requires the parent TomlNarrativeFile for resolving references.
     #[instrument(skip(self, narrative_file))]
+    #[tool]
     pub fn to_act_config(&self, narrative_file: &TomlNarrativeFile) -> NarrativeResult<ActConfig> {
         debug!("Converting TOML act to domain ActConfig");
         match self {

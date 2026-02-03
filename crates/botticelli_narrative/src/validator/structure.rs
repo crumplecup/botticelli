@@ -1,5 +1,6 @@
 //! Narrative structure validation.
 
+use rmcp::tool;
 use super::{
     extraction::DataExtractor,
     resources::{ResourceRegistry, ResourceValidator},
@@ -21,6 +22,7 @@ impl StructureValidator {
         toc_length = tracing::field::Empty,
         act_count = tracing::field::Empty
     ))]
+    #[tool]
     pub fn validate_single(
         table: &toml::map::Map<String, toml::Value>,
         resources: &ResourceRegistry,
@@ -90,6 +92,7 @@ impl StructureValidator {
     #[instrument(skip(table, resources, result), fields(
         narrative_count = tracing::field::Empty
     ))]
+    #[tool]
     pub fn validate_multi(
         table: &toml::map::Map<String, toml::Value>,
         resources: &ResourceRegistry,

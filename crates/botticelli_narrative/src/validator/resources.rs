@@ -1,5 +1,6 @@
 //! Resource collection and reference validation.
 
+use rmcp::tool;
 use botticelli_error::{
     ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult,
 };
@@ -39,6 +40,7 @@ impl ResourceValidator {
         tables = tracing::field::Empty,
         media = tracing::field::Empty
     ))]
+    #[tool]
     pub fn collect(table: &toml::map::Map<String, toml::Value>) -> ResourceRegistry {
         let mut registry = ResourceRegistry::default();
 
@@ -72,6 +74,7 @@ impl ResourceValidator {
 
     /// Validates references in an act value.
     #[instrument(skip(act_value, resources, result), fields(act = %act_name))]
+    #[tool]
     pub fn validate_act_references(
         act_name: &str,
         act_value: &toml::Value,
