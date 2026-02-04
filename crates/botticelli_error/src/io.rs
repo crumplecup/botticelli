@@ -4,10 +4,11 @@
 use crate::tool;
 
 use derive_getters::Getters;
+use elicitation::Prompt;
 use std::sync::Arc;
 
 /// I/O error with source preservation and location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, Getters)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, Getters, elicitation::Elicit)]
 #[display("I/O Error at {}:{}", file, line)]
 pub struct IoError {
     source: Arc<std::io::Error>,

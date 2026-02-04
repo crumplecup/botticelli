@@ -1,6 +1,7 @@
 //! Command result cache implementation.
 
 use derive_getters::Getters;
+use elicitation::Prompt;
 use rmcp::tool;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,7 @@ use std::hash::{Hash, Hasher};
 use std::time::{Duration, Instant};
 
 /// Cache entry with value and expiration.
-#[derive(Debug, Clone, Getters)]
+#[derive(Debug, Clone, Getters, elicitation::Elicit)]
 pub struct CacheEntry {
     value: JsonValue,
     created_at: Instant,

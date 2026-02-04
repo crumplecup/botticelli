@@ -40,7 +40,6 @@ pub enum GroqModel {
 
 impl GroqModel {
     /// Get the model string for API calls.
-    #[tool]
     #[instrument]
     #[tool]
     pub fn as_str(&self) -> &'static str {
@@ -53,7 +52,6 @@ impl GroqModel {
     }
 
     /// Get laterally equivalent models in other families.
-    #[tool]
     #[instrument]
     #[tool]
     pub fn friends(&self) -> Vec<(&'static str, &'static str)> {
@@ -78,7 +76,6 @@ impl GroqModel {
     }
 
     /// Move up to a more capable/expensive model.
-    #[tool]
     #[instrument]
     #[tool]
     pub fn move_up(&self) -> Option<Self> {
@@ -94,7 +91,6 @@ impl GroqModel {
     }
 
     /// Move down to a faster/cheaper model.
-    #[tool]
     #[instrument]
     #[tool]
     pub fn move_down(&self) -> Option<Self> {

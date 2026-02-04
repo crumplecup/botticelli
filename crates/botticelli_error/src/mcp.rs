@@ -3,11 +3,12 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
+use elicitation::Prompt;
 use std::sync::Arc;
 
 /// Serde JSON error with source tracking.
 #[cfg(feature = "serde_json")]
-#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("JSON serialization error: {:?} at {}:{}", source, file, line)]
 pub struct SerdeJsonError {
     /// The serde_json error source

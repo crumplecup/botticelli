@@ -4,7 +4,9 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
-#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+use elicitation::Prompt;
+
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("IO error: {:?} at {}:{}", source, file, line)]
 pub struct TuiIoError {
     /// The io::Error source

@@ -4,6 +4,8 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
+use elicitation::Prompt;
+
 #[cfg(feature = "reqwest")]
 #[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Reqwest error: {:?} at {}:{}", source, file, line)]
@@ -33,7 +35,7 @@ impl ProviderReqwestError {
 
 /// Serde JSON error with source tracking for provider operations.
 #[cfg(feature = "serde_json")]
-#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("Serde JSON error: {:?} at {}:{}", source, file, line)]
 pub struct ProviderSerdeJsonError {
     /// The serde_json error source

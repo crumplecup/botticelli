@@ -181,10 +181,12 @@ tempfile = "3"
 mockall = "0.14"
 
 # Elicitation framework
-elicitation = { version = "0.4.4", features = [
+elicitation = { version = "0.4.5", features = [
   "serde_json",
   "chrono",
+  "jiff",
   "regex",
+  "time",
   "url",
   "uuid",
 ] }

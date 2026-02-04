@@ -4,8 +4,10 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
+use elicitation::{Prompt, Select};
+
 #[cfg(feature = "serde_json")]
-#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("Serde JSON error: {:?} at {}:{}", source, file, line)]
 pub struct SerdeJsonError {
     /// The serde_json error source
@@ -84,7 +86,7 @@ impl Ord for SerdeJsonError {
 }
 
 /// JSON error kind.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display, elicitation::Elicit)]
 pub enum JsonErrorKind {
     /// Generic JSON error with message
     #[display("JSON error: {}", _0)]
@@ -97,7 +99,7 @@ pub enum JsonErrorKind {
 }
 
 /// JSON serialization/deserialization error with source location.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("JSON Error: {} at {}:{}", kind, file, line)]
 pub struct JsonError {
     /// The error kind
