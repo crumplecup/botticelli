@@ -14,6 +14,7 @@ use botticelli_error::RateLimitError;
 use elicitation::Elicit;
 use paste::paste;
 use rmcp::tool;
+use rmcp::tool_router;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -335,6 +336,7 @@ impl_budget_dtos! {
     (OpenAITier, OpenAITier, "default"),
 }
 
+#[tool_router(router = rate_limit_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Get requests per minute limit for a tier.
     #[tool]

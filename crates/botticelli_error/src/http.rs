@@ -4,7 +4,9 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
-#[derive(Debug, Clone, derive_more::Display)]
+use elicitation::{Prompt, Select};
+
+#[derive(Debug, Clone, derive_more::Display, elicitation::Elicit)]
 pub enum HttpErrorKind {
     /// Generic HTTP error with message
     #[display("HTTP error: {}", _0)]
@@ -22,7 +24,7 @@ pub enum HttpErrorKind {
 }
 
 /// HTTP error wrapping reqwest errors with source location.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("HTTP Error: {} at {}:{}", kind, file, line)]
 pub struct HttpError {
     /// The error kind

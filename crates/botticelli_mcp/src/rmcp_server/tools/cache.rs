@@ -6,6 +6,7 @@ use crate::rmcp_server::BotticelliServer;
 use botticelli_cache::{CacheKey, CommandCache, CommandCacheConfig};
 use elicitation::Elicit;
 use rmcp::tool;
+use rmcp::tool_router;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -119,6 +120,7 @@ pub struct CacheEvictLruParams {
     pub cache_id: String,
 }
 
+#[tool_router(router = cache_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Check if a cache entry is expired.
     ///

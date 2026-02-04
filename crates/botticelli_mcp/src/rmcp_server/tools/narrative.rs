@@ -22,10 +22,12 @@ use botticelli_narrative::{MultiNarrative, Narrative, StateManager};
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ErrorCode;
 use rmcp::tool;
+use rmcp::tool_router;
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 
+#[tool_router(router = narrative_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Create a new narrative from a description using LLM analysis.
     #[instrument(skip(self, params), fields(name = params.name(), description_len = params.description().len(), has_model = params.default_model().is_some()))]
@@ -772,6 +774,7 @@ pub struct AssembleNarrativeActPromptsParams {
 // MCP Tool Wrapper Implementations
 // =============================================================================
 
+#[tool_router(router = narrative_tool_router, vis = "pub")]
 impl BotticelliServer {
     // =========================================================================
     // MCP Tool Wrappers for botticelli_narrative

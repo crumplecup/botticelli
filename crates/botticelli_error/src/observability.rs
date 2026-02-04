@@ -4,7 +4,9 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+use elicitation::{Prompt, Select};
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, elicitation::Elicit)]
 pub enum ObservabilityErrorKind {
     /// Failed to initialize tracer provider
     #[display("Failed to initialize tracer provider: {}", _0)]
@@ -28,7 +30,7 @@ pub enum ObservabilityErrorKind {
 }
 
 /// Observability error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("Observability Error: {} at {}:{}", kind, file, line)]
 pub struct ObservabilityError {
     kind: ObservabilityErrorKind,

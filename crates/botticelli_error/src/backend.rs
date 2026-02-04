@@ -4,7 +4,7 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, elicitation::Elicit)]
 #[display("Backend Error: {} at line {} in {}", message, line, file)]
 pub struct BackendError {
     /// Error message

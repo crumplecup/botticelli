@@ -349,6 +349,29 @@ This index tracks all planning documents in the workspace. When documents are co
 **Active Focus**: RMCP tool migration (81% complete), trait-based architecture, elicitation refactoring
 - DISCORD_COMMANDS_HELPER_TYPE_REFACTOR.md
 
+### Elicitation & Contracts
+
+- **ELICITATION_0.4.7_CONTRACTS.md** - `current` (2026-02-04) **🎯 CONTRACT-BASED ARCHITECTURE**
+  - Analysis of elicitation 0.4.7's formally verified contract system
+  - Tool trait with preconditions/postconditions (Pre/Post type parameters)
+  - Established<P> - Zero-cost proof markers (PhantomData)
+  - Composition operators: then() for sequential, both_tools() for parallel
+  - 183 symbolic checks with Kani verification
+  - Implementation plan: Protocol trait (HumanProtocol vs AgentProtocol)
+  - Replace handrolled types (~122 lines) with contract-based tools
+  - Refactor primitive tools to be generic over Protocol
+  - Benefits: Type-safe tool chains, formal verification, zero runtime cost
+  - Status: 📋 Analysis complete - ready for implementation
+
+- **PARALLEL_IMPLEMENTATION_ANALYSIS.md** - `current` (2025-12-30) **🎯 ARCHITECTURAL VISION**
+  - Analysis of handrolled elicitation vs elicitation crate derive-based approach
+  - ~489 lines of parallel implementation in botticelli_mcp
+  - Provider trait architecture for human (TUI) vs agent (LLM sampling) protocols
+  - Vision: Enable agents to autonomously elicit through sampling
+  - Design: ElicitationProvider trait with HumanElicitation and AgentElicitation
+  - 7-phase migration plan to refactor tools to be generic over Provider
+  - Status: 📋 Strategic vision - superseded by contract-based design in ELICITATION_0.4.7_CONTRACTS.md
+
 ### Code Quality & Audits
 
 - **RMCP_MIGRATION_COMPLETION.md** - `current` (2026-01-15) **🎯 MIGRATION COMPLETION PLAN**
@@ -377,3 +400,4 @@ This index tracks all planning documents in the workspace. When documents are co
 
 - ELICITATION_REFACTOR_GUIDE.md - Plan to unify dual elicitation implementations using trait-based approach
 MCP_ORCHESTRATOR_COMPLETION.md
+PARALLEL_IMPLEMENTATION_ANALYSIS.md

@@ -4,7 +4,9 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+use elicitation::{Prompt, Select};
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, elicitation::Elicit)]
 pub enum BuilderErrorKind {
     /// Missing required field
     #[display("Missing required field: {}", _0)]
@@ -25,7 +27,7 @@ pub enum BuilderErrorKind {
 }
 
 /// Builder error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, elicitation::Elicit)]
 #[display("Builder Error: {} at line {} in {}", kind, line, file)]
 pub struct BuilderError {
     kind: BuilderErrorKind,

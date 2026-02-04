@@ -4,7 +4,9 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display)]
+use elicitation::{Prompt, Select};
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display, elicitation::Elicit)]
 pub enum RateLimitErrorKind {
     /// Configuration file error.
     #[display("Configuration error: {_0}")]
@@ -40,7 +42,7 @@ pub enum RateLimitErrorKind {
 }
 
 /// Rate limiting error with location tracking.
-#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("Rate Limit Error: {} at line {} in {}", kind, line, file)]
 pub struct RateLimitError {
     /// The kind of error that occurred

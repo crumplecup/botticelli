@@ -125,9 +125,27 @@ pub use models::HuggingFaceGenerateParams;
 #[cfg(feature = "ollama")]
 pub use models::OllamaGenerateParams;
 
-// Empty impl block required for #[tool_router] macro
-impl BotticelliServer {}
+/// Public wrapper to combine all tool routers from separate modules.
+impl BotticelliServer {
+    /// Get a combined tool router instance for this server type.
+    ///
+    /// This combines tool routers from all modules into a single router.
+    pub(crate) fn create_tool_router() -> rmcp::handler::server::tool::ToolRouter<Self> {
+        let router = cache::cache_tool_router()
+            + core::core_tool_router()
+            + core_primitives::core_primitives_tool_router()
+            + elicitation::elicitation_tool_router()
+            + extraction_tools::extraction_tool_router()
+            + library::library_tool_router()
+            + narrative::narrative_tool_router()
+            + rate_limit::rate_limit_tool_router()
+            + scene::scene_tool_router()
+            + security::security_tool_router()
+            + storage::storage_tool_router();
 
-// This macro gathers all tool methods from the separate module files
-#[tool_router]
-impl BotticelliServer {}
+        #[cfg(feature = "discord")]
+        let router = router + discord::discord_tool_router() + social::social_tool_router();
+
+        router
+    }
+}

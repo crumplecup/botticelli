@@ -10,14 +10,20 @@ use crate::{
     ElicitMetadataResult, ElicitNumberParams, ElicitNumberResult, ElicitSelectParams,
     ElicitSelectResult, ElicitTextParams, ElicitTextResult,
 };
+use botticelli_interface::ElicitationProtocol;
 use botticelli_narrative::CarouselConfig;
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ErrorCode;
+use rmcp::tool;
+use rmcp::tool_router;
 use std::borrow::Cow;
+use std::sync::Arc;
 use tracing::{debug, instrument};
 
+#[tool_router(router = elicitation_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Prompt user for text input.
+    #[tool]
     #[instrument(skip(self, params), fields(prompt_len = params.prompt().len()))]
     pub async fn elicit_text(
         &self,
@@ -26,20 +32,26 @@ impl BotticelliServer {
         let prompt = params.prompt().clone();
         debug!(?prompt, "Eliciting text input");
 
-        // Check if dialog resource is available
-        let dialog = self.dialog().as_ref().ok_or_else(|| {
-            rmcp::ErrorData::new(
+        // Get protocol (prefer protocol field, fallback to dialog for backward compatibility)
+        let protocol = if let Some(protocol) = self.protocol() {
+            protocol.clone()
+        } else if let Some(dialog) = self.dialog() {
+            Arc::new(crate::ElicitationProvider::Human(
+                crate::HumanProtocol::new(dialog.clone()),
+            ))
+        } else {
+            return Err(rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
-                Cow::Borrowed("Dialog resource not configured"),
+                Cow::Borrowed("No elicitation protocol configured"),
                 None,
-            )
-        })?;
+            ));
+        };
 
-        // Ask for text input
-        let text = dialog
-            .ask_text(&prompt)
+        // Elicit text via protocol
+        let text = protocol
+            .elicit_text(&prompt)
             .await
-            .map_err(|e| to_mcp_error(e, "Dialog error"))?;
+            .map_err(|e| to_mcp_error(e, "Elicitation error"))?;
 
         debug!(response_len = text.len(), "Received text input");
 
@@ -48,29 +60,36 @@ impl BotticelliServer {
     }
 
     /// Prompt user for yes/no input.
+    #[tool]
     #[instrument(skip(self, params), fields(prompt_len = params.prompt().len(), default = params.default()))]
     pub async fn elicit_bool(
         &self,
         Parameters(params): Parameters<ElicitBoolParams>,
     ) -> Result<Json<ElicitBoolResult>, rmcp::ErrorData> {
         let prompt = params.prompt().clone();
-        let default = params.default().clone();
+        let default = *params.default();
         debug!(?prompt, default, "Eliciting boolean confirmation");
 
-        // Check if dialog resource is available
-        let dialog = self.dialog().as_ref().ok_or_else(|| {
-            rmcp::ErrorData::new(
+        // Get protocol (prefer protocol field, fallback to dialog for backward compatibility)
+        let protocol = if let Some(protocol) = self.protocol() {
+            protocol.clone()
+        } else if let Some(dialog) = self.dialog() {
+            Arc::new(crate::ElicitationProvider::Human(
+                crate::HumanProtocol::new(dialog.clone()),
+            ))
+        } else {
+            return Err(rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
-                Cow::Borrowed("Dialog resource not configured"),
+                Cow::Borrowed("No elicitation protocol configured"),
                 None,
-            )
-        })?;
+            ));
+        };
 
-        // Ask for confirmation
-        let confirmed = dialog
-            .ask_confirmation(&prompt, default)
+        // Elicit bool via protocol
+        let confirmed = protocol
+            .elicit_bool(&prompt, default)
             .await
-            .map_err(|e| to_mcp_error(e, "Dialog error"))?;
+            .map_err(|e| to_mcp_error(e, "Elicitation error"))?;
 
         debug!(confirmed, "Received boolean confirmation");
 
@@ -79,6 +98,7 @@ impl BotticelliServer {
     }
 
     /// Prompt user for numeric input within a range.
+    #[tool]
     #[instrument(skip(self, params), fields(prompt_len = params.prompt().len(), min = params.min(), max = params.max()))]
     pub async fn elicit_number(
         &self,
@@ -98,20 +118,26 @@ impl BotticelliServer {
             ));
         }
 
-        // Check if dialog resource is available
-        let dialog = self.dialog().as_ref().ok_or_else(|| {
-            rmcp::ErrorData::new(
+        // Get protocol (prefer protocol field, fallback to dialog for backward compatibility)
+        let protocol = if let Some(protocol) = self.protocol() {
+            protocol.clone()
+        } else if let Some(dialog) = self.dialog() {
+            Arc::new(crate::ElicitationProvider::Human(
+                crate::HumanProtocol::new(dialog.clone()),
+            ))
+        } else {
+            return Err(rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
-                Cow::Borrowed("Dialog resource not configured"),
+                Cow::Borrowed("No elicitation protocol configured"),
                 None,
-            )
-        })?;
+            ));
+        };
 
-        // Ask for number input
-        let number = dialog
-            .ask_number(&prompt, min, max)
+        // Elicit number via protocol
+        let number = protocol
+            .elicit_number(&prompt, min, max)
             .await
-            .map_err(|e| to_mcp_error(e, "Dialog error"))?;
+            .map_err(|e| to_mcp_error(e, "Elicitation error"))?;
 
         debug!(number, "Received numeric input");
 
@@ -120,6 +146,7 @@ impl BotticelliServer {
     }
 
     /// Prompt user to select from a list of options.
+    #[tool]
     #[instrument(skip(self, params), fields(prompt_len = params.prompt().len(), option_count = params.options().len()))]
     pub async fn elicit_select(
         &self,
@@ -138,36 +165,33 @@ impl BotticelliServer {
             ));
         }
 
-        // Check if dialog resource is available
-        let dialog = self.dialog().as_ref().ok_or_else(|| {
-            rmcp::ErrorData::new(
+        // Get protocol (prefer protocol field, fallback to dialog for backward compatibility)
+        let protocol = if let Some(protocol) = self.protocol() {
+            protocol.clone()
+        } else if let Some(dialog) = self.dialog() {
+            Arc::new(crate::ElicitationProvider::Human(
+                crate::HumanProtocol::new(dialog.clone()),
+            ))
+        } else {
+            return Err(rmcp::ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
-                Cow::Borrowed("Dialog resource not configured"),
+                Cow::Borrowed("No elicitation protocol configured"),
                 None,
-            )
-        })?;
+            ));
+        };
 
-        // Convert to &str array for dialog API
+        // Convert to &str array for protocol API
         let option_refs: Vec<&str> = options.iter().map(|s| s.as_str()).collect();
 
-        // Ask for selection
-        let index = dialog
-            .ask_choice(&prompt, &option_refs)
+        // Elicit selection via protocol
+        let selected = protocol
+            .elicit_select(&prompt, &option_refs)
             .await
-            .map_err(|e| to_mcp_error(e, "Dialog error"))?;
+            .map_err(|e| to_mcp_error(e, "Elicitation error"))?;
 
-        // Get selected option
-        let selected = options.get(index).ok_or_else(|| {
-            rmcp::ErrorData::new(
-                ErrorCode::INTERNAL_ERROR,
-                Cow::Owned(format!("Invalid index {} (max {})", index, options.len())),
-                None,
-            )
-        })?;
+        debug!(selected = %selected, "Received selection");
 
-        debug!(selected = %selected, index, "Received selection");
-
-        let result = ElicitSelectResult::new(selected.clone());
+        let result = ElicitSelectResult::new(selected);
         Ok(Json(result))
     }
 

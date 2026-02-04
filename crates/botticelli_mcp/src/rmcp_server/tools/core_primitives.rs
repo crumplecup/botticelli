@@ -10,6 +10,7 @@ use botticelli_core::{
 use botticelli_error::{ConfigError, ObservabilityResult, TokenCountingResult};
 use elicitation::Elicit;
 use rmcp::tool;
+use rmcp::tool_router;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
@@ -161,6 +162,7 @@ pub struct CoreInputWithHistoryRetentionResult {
 // Orchestrator Wrappers
 // ============================================================================
 
+#[tool_router(router = core_primitives_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Initialize OpenTelemetry observability with default config.
     #[tool]

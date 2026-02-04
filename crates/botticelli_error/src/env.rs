@@ -3,10 +3,11 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
+use elicitation::{Prompt, Select};
 use std::env::VarError;
 
 /// Environment variable error kind.
-#[derive(Debug, Clone, derive_more::Display)]
+#[derive(Debug, Clone, derive_more::Display, elicitation::Elicit)]
 pub enum EnvErrorKind {
     /// Environment variable not found.
     #[display("Environment variable '{}' not found", _0)]
@@ -18,7 +19,7 @@ pub enum EnvErrorKind {
 }
 
 /// Environment variable error.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, elicitation::Elicit)]
 #[display("Environment error: {} at {}:{}", kind, file, line)]
 pub struct EnvError {
     kind: EnvErrorKind,

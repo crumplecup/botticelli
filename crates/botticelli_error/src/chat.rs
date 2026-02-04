@@ -3,8 +3,10 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
+use elicitation::{Prompt, Select};
+
 /// Sampling error kinds.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, elicitation::Elicit)]
 pub enum SamplingErrorKind {
     /// Max turns exceeded
     #[display("Max turns exceeded: {}", max)]
@@ -52,6 +54,7 @@ pub enum SamplingErrorKind {
     derive_more::Display,
     derive_more::Error,
     derive_getters::Getters,
+    elicitation::Elicit,
 )]
 #[display("Sampling: {} at {}:{}", kind, file, line)]
 pub struct SamplingError {
@@ -78,7 +81,7 @@ impl SamplingError {
 }
 
 /// Chat error kinds.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, elicitation::Elicit)]
 pub enum ChatErrorKind {
     /// Command not found
     #[display("Command not found: {}", _0)]

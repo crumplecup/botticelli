@@ -10,6 +10,7 @@ use crate::{
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use tracing::{debug, instrument};
 
+#[tool_router(router = scene_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Create a new scene in a narrative.
     #[instrument(skip(self, params), fields(narrative_id = params.narrative_id(), scene_name = params.scene_name(), has_description = params.description().is_some()))]

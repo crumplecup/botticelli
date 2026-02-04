@@ -4,7 +4,9 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
+use elicitation::{Prompt, Select};
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display, elicitation::Elicit)]
 pub enum StorageErrorKind {
     /// Failed to create storage directory
     #[display("Failed to create storage directory: {}", _0)]
@@ -42,7 +44,7 @@ pub enum StorageErrorKind {
 /// let err = StorageError::new(StorageErrorKind::NotFound("/path/to/file".to_string()));
 /// assert!(format!("{}", err).contains("not found"));
 /// ```
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
+#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
 #[display("Storage Error: {} at line {} in {}", kind, line, file)]
 pub struct StorageError {
     /// The kind of error that occurred

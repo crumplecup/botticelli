@@ -13,6 +13,7 @@ use rmcp::model::ErrorCode;
 use std::borrow::Cow;
 use tracing::{debug, instrument};
 
+#[tool_router(router = core_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Echo back the provided message.
     #[instrument(skip(self), fields(message))]

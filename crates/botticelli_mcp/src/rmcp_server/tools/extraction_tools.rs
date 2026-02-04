@@ -7,6 +7,7 @@ use anyhow::Result;
 use botticelli_narrative::Extract;
 use crate::rmcp_server::BotticelliServer;
 use rmcp::tool;
+use rmcp::tool_router;
 use serde::{Deserialize, Serialize};
 
 /// Parameters for JSON extraction.
@@ -112,6 +113,7 @@ macro_rules! impl_parse_toml {
     };
 }
 
+#[tool_router(router = extraction_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Extract JSON from LLM response.
     ///

@@ -10,6 +10,7 @@ use botticelli_interface::MediaStorage;
 use botticelli_storage::{FileSystemStorage, MediaMetadata, MediaReference, MediaType};
 use elicitation::Elicit;
 use rmcp::tool;
+use rmcp::tool_router;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -223,6 +224,7 @@ pub struct MediaTypeAsStrResult {
     pub value: String,
 }
 
+#[tool_router(router = storage_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Create a new filesystem storage backend.
     ///

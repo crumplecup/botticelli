@@ -25,7 +25,7 @@ use botticelli_interface::DatabaseRegistryOperations;
 ///     .expect("Valid server");
 /// ```
 #[derive(Clone, Getters, Builder)]
-#[builder(pattern = "owned")]
+#[builder(pattern = "owned", build_fn(name = "fallible_build", private))]
 pub struct BotticelliServer {
     /// Tool router for handling MCP tool requests.
     #[getter(rename = "get_tool_router")]
@@ -40,6 +40,13 @@ pub struct BotticelliServer {
     /// Dialog resource for elicitation tools (optional).
     #[builder(default)]
     dialog: Option<Arc<DialogResource>>,
+
+    /// Elicitation protocol provider (optional).
+    ///
+    /// Determines whether elicitation uses human (TUI) or agent (LLM) protocol.
+    /// If not set, falls back to dialog field for backward compatibility.
+    #[builder(default)]
+    protocol: Option<Arc<crate::ElicitationProvider>>,
 
     /// Prometheus metrics collector (optional).
     #[builder(default)]
@@ -97,5 +104,18 @@ impl BotticelliServer {
     #[tracing::instrument]
     pub fn builder() -> BotticelliServerBuilder {
         BotticelliServerBuilder::default()
+    }
+}
+
+impl BotticelliServerBuilder {
+    /// Build the server, initializing the tool router.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if required fields are missing.
+    pub fn build(self) -> Result<BotticelliServer, BotticelliServerBuilderError> {
+        let mut server = self.fallible_build()?;
+        server.tool_router = BotticelliServer::create_tool_router();
+        Ok(server)
     }
 }

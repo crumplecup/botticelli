@@ -4,6 +4,8 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
+use elicitation::{Prompt, Select};
+
 #[derive(
     Debug,
     Clone,
@@ -14,6 +16,7 @@ use crate::tool;
     serde::Serialize,
     serde::Deserialize,
     schemars::JsonSchema,
+    elicitation::Elicit,
 )]
 pub enum SecurityErrorKind {
     /// Permission denied for command
@@ -108,6 +111,7 @@ pub enum SecurityErrorKind {
     serde::Serialize,
     serde::Deserialize,
     schemars::JsonSchema,
+    elicitation::Elicit,
 )]
 #[display("Security: {} at {}:{}", kind, file, line)]
 pub struct SecurityError {

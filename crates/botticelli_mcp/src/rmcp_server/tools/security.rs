@@ -7,11 +7,13 @@ use botticelli_security::{
 };
 use elicitation::Elicit;
 use rmcp::tool;
+use rmcp::tool_router;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::instrument;
 
+#[tool_router(router = security_tool_router, vis = "pub")]
 impl BotticelliServer {
     // ========================================================================
     // PendingAction primitives

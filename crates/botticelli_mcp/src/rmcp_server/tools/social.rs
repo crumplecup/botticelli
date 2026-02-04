@@ -7,6 +7,7 @@ use botticelli_error::{BotCommandError, BotCommandResult, SecurityError};
 use botticelli_social::{hashmap_to_params, BotCommandRegistryImpl, CommandCache, SecureBotCommandExecutor};
 use elicitation::Elicit;
 use rmcp::tool;
+use rmcp::tool_router;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -95,6 +96,7 @@ pub struct BotRegistryHasPlatformResult {
     pub exists: bool,
 }
 
+#[tool_router(router = social_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Convert HashMap<String, JsonValue> to HashMap<String, String> for security checks.
     #[tool]
