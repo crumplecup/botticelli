@@ -1,9 +1,9 @@
 //! Resource collection and reference validation.
 
-use rmcp::tool;
 use botticelli_error::{
     ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult,
 };
+use rmcp::tool;
 use std::collections::HashSet;
 use tracing::instrument;
 

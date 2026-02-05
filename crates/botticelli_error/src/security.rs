@@ -126,7 +126,7 @@ pub struct SecurityError {
 impl SecurityError {
     /// Create a new security error with location tracking.
     #[track_caller]
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[tracing::instrument(skip(kind), fields(kind = ?kind))]
     pub fn new(kind: SecurityErrorKind) -> Self {
         let location = std::panic::Location::caller();
@@ -145,7 +145,7 @@ impl SecurityError {
     }
 
     /// Get the error kind.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[tracing::instrument(skip(self))]
     pub fn kind(&self) -> &SecurityErrorKind {
         &self.kind

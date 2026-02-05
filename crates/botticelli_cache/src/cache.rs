@@ -41,7 +41,9 @@ impl CacheEntry {
 }
 
 /// Cache key for command results.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, elicitation::Elicit,
+)]
 pub struct CacheKey {
     platform: String,
     command: String,

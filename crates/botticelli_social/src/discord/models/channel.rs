@@ -163,12 +163,7 @@ pub struct ChannelRow {
 /// Used to create new channel records in the database.
 #[allow(missing_docs)]
 #[derive(
-    Debug,
-    Clone,
-    Insertable,
-    derive_getters::Getters,
-    derive_builder::Builder,
-    elicitation::Elicit,
+    Debug, Clone, Insertable, derive_getters::Getters, derive_builder::Builder, elicitation::Elicit,
 )]
 #[diesel(table_name = botticelli_database::schema::discord_channels)]
 pub struct NewChannel {

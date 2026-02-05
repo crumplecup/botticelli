@@ -1,6 +1,5 @@
 //! Narrative structure validation.
 
-use rmcp::tool;
 use super::{
     extraction::DataExtractor,
     resources::{ResourceRegistry, ResourceValidator},
@@ -8,6 +7,7 @@ use super::{
 use botticelli_error::{
     ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult,
 };
+use rmcp::tool;
 use tracing::instrument;
 
 /// Unit struct providing structure validation methods.

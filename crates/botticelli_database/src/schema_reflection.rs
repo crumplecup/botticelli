@@ -18,15 +18,7 @@ use tracing::instrument;
 
 /// Represents a database column's structure
 #[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    QueryableByName,
-    elicitation::Elicit,
+    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, QueryableByName, elicitation::Elicit,
 )]
 pub struct ColumnInfo {
     /// Column name

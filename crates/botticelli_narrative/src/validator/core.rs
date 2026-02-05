@@ -1,11 +1,11 @@
 //! Core validation orchestration.
 
-use rmcp::tool;
 use super::{
     analysis::Analyzer, models::ModelValidator, resources::ResourceValidator,
     structure::StructureValidator, syntax::SyntaxValidator,
 };
 use botticelli_error::{ValidationError, ValidationErrorKind, ValidationResult};
+use rmcp::tool;
 use std::path::Path;
 use tracing::instrument;
 

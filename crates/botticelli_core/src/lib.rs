@@ -24,7 +24,9 @@ mod tool_definition;
 mod tool_result;
 
 pub use bot_server::{BotServerConfig, BotState, BotStats};
-pub use budget::{BudgetConfig, BudgetConfigBuilder, BudgetConfigBuilderError, default_multiplier_tool};
+pub use budget::{
+    BudgetConfig, BudgetConfigBuilder, BudgetConfigBuilderError, default_multiplier_tool,
+};
 pub use health::HealthStatus;
 pub use input::{HistoryRetention, Input, TableFormat};
 pub use media::MediaSource;

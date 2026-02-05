@@ -30,7 +30,14 @@ pub enum ObservabilityErrorKind {
 }
 
 /// Observability error with location tracking.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
+#[derive(
+    Debug,
+    Clone,
+    derive_more::Display,
+    derive_more::Error,
+    derive_getters::Getters,
+    elicitation::Elicit,
+)]
 #[display("Observability Error: {} at {}:{}", kind, file, line)]
 pub struct ObservabilityError {
     kind: ObservabilityErrorKind,
@@ -40,7 +47,7 @@ pub struct ObservabilityError {
 
 impl ObservabilityError {
     /// Create a new observability error with caller location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: ObservabilityErrorKind) -> Self {
         let location = std::panic::Location::caller();

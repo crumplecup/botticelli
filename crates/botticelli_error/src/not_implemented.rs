@@ -26,7 +26,7 @@ impl NotImplementedError {
     /// let err = NotImplementedError::new("Feature X not yet supported");
     /// assert!(err.message().contains("not yet supported"));
     /// ```
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

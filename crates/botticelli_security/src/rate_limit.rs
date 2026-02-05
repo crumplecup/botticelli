@@ -8,7 +8,15 @@ use std::time::{Duration, Instant};
 use tracing::{debug, instrument};
 
 /// Rate limit configuration.
-#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema, derive_getters::Getters, elicitation::Elicit)]
+#[derive(
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    schemars::JsonSchema,
+    derive_getters::Getters,
+    elicitation::Elicit,
+)]
 pub struct RateLimit {
     /// Maximum tokens (requests) allowed
     max_tokens: u32,

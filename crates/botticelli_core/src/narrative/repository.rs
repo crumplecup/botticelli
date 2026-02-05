@@ -43,7 +43,14 @@ impl ExecutionFilter {
 /// Used by `list_executions` to return metadata about executions without
 /// loading all the act data.
 #[derive(
-    Debug, Clone, PartialEq, Eq, Serialize, Deserialize, derive_getters::Getters, derive_new::new,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Serialize,
+    Deserialize,
+    derive_getters::Getters,
+    derive_new::new,
     elicitation::Elicit,
 )]
 pub struct ExecutionSummary {

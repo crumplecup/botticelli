@@ -6,7 +6,9 @@ use crate::tool;
 
 use elicitation::Prompt;
 
-#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
+#[derive(
+    Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit,
+)]
 #[display("IO error: {:?} at {}:{}", source, file, line)]
 pub struct TuiIoError {
     /// The io::Error source
@@ -19,7 +21,7 @@ pub struct TuiIoError {
 
 impl TuiIoError {
     /// Create a new TuiIoError with automatic location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(err: std::io::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -96,7 +98,7 @@ pub struct TuiError {
 
 impl TuiError {
     /// Create a new TuiError with automatic location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: TuiErrorKind) -> Self {
         let location = std::panic::Location::caller();

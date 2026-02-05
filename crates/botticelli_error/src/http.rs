@@ -24,7 +24,14 @@ pub enum HttpErrorKind {
 }
 
 /// HTTP error wrapping reqwest errors with source location.
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
+#[derive(
+    Debug,
+    Clone,
+    derive_more::Display,
+    derive_more::Error,
+    derive_getters::Getters,
+    elicitation::Elicit,
+)]
 #[display("HTTP Error: {} at {}:{}", kind, file, line)]
 pub struct HttpError {
     /// The error kind
@@ -37,7 +44,7 @@ pub struct HttpError {
 
 impl HttpError {
     /// Create a new HttpError with the given kind at the current location.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: HttpErrorKind) -> Self {
         let location = std::panic::Location::caller();

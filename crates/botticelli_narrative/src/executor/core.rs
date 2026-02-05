@@ -1,6 +1,5 @@
 //! Core executor implementation.
 
-use rmcp::tool;
 use crate::{
     ActConfig, CarouselConfig, CarouselResult, CarouselState, MultiNarrative, NarrativeMetadata,
     ProcessorRegistry, StateManager,
@@ -11,6 +10,7 @@ use botticelli_error::{
     BackendError, BotticelliError, BotticelliResult, NarrativeError, NarrativeErrorKind,
 };
 use botticelli_interface::{BotCommandRegistry, NarrativeProvider, TableQueryRegistry};
+use rmcp::tool;
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Instant;

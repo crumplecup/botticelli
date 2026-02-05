@@ -80,15 +80,7 @@ pub struct SetupMessage {
 }
 
 /// Configuration for the Live API session.
-#[derive(
-    Debug,
-    Clone,
-    Serialize,
-    Deserialize,
-    Default,
-    Getters,
-    derive_builder::Builder,
-)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, Getters, derive_builder::Builder)]
 #[serde(rename_all = "camelCase")]
 #[builder(setter(into), default)]
 pub struct SetupConfig {

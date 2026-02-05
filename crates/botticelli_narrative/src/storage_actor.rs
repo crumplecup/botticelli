@@ -4,7 +4,6 @@
 //! handling table creation, schema inference, and row insertion through
 //! an asynchronous message-passing interface.
 
-use rmcp::tool;
 use async_trait::async_trait;
 use botticelli_database::{
     NewContentGenerationRow, PostgresContentGenerationRepository, UpdateContentGenerationRow,
@@ -16,6 +15,7 @@ use chrono::Utc;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use ractor::{Actor, ActorProcessingErr, ActorRef, RpcReplyPort};
+use rmcp::tool;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 

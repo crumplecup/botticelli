@@ -41,7 +41,7 @@ pub struct SecureBotCommandExecutor<V: CommandValidator> {
 impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     /// Create a new secure bot command executor.
     /// Create a new secure bot command executor.
-#[tool]
+    #[tool]
     #[instrument(skip(
         registry,
         permission_checker,
@@ -50,7 +50,7 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
         rate_limiter,
         approval_workflow
     ))]
-#[tool]
+    #[tool]
     pub fn new(
         registry: BotCommandRegistryImpl,
         permission_checker: PermissionChecker,
@@ -78,7 +78,7 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     /// - `Ok(ExecutionResult::Success(json))` - Command executed successfully
     /// - `Ok(ExecutionResult::ApprovalRequired(action_id))` - Command requires approval
     /// - `Err(error)` - Security check failed or command execution failed
-#[tool]
+    #[tool]
     #[instrument(
         skip(self, args),
         fields(
@@ -88,7 +88,7 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
             arg_count = args.len()
         )
     )]
-#[tool]
+    #[tool]
     pub async fn execute_secure(
         &mut self,
         narrative_id: &str,
@@ -127,26 +127,25 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     }
 
     /// Get immutable access to the approval workflow.
-#[tool]
+    #[tool]
     #[instrument(skip(self))]
-#[tool]
+    #[tool]
     pub fn approval_workflow(&self) -> &ApprovalWorkflow {
         self.security.approval_workflow()
     }
 
     /// Get immutable access to the rate limiter.
-#[tool]
+    #[tool]
     #[instrument(skip(self))]
-#[tool]
+    #[tool]
     pub fn rate_limiter(&self) -> &RateLimiter {
         self.security.rate_limiter()
     }
 
     /// Convert JSON arguments to string arguments for security pipeline.
-#[tool]
-    
+    #[tool]
     #[instrument(skip(args), fields(arg_count = args.len()))]
-#[tool]
+    #[tool]
     pub fn convert_args_to_strings(
         args: &HashMap<String, JsonValue>,
     ) -> BotCommandResult<HashMap<String, String>> {
@@ -168,10 +167,9 @@ impl<V: CommandValidator> SecureBotCommandExecutor<V> {
     }
 
     /// Convert security error to bot command error.
-#[tool]
-    
+    #[tool]
     #[instrument(skip(error), fields(command = command_name, error_kind = ?error.kind))]
-#[tool]
+    #[tool]
     pub fn convert_security_error(error: SecurityError, command_name: &str) -> BotCommandError {
         debug!("Converting security error to bot command error");
         match error.kind {

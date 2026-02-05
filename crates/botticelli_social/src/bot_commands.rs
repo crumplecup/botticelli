@@ -59,7 +59,7 @@ pub struct BotCommandRegistryImpl {
 
 impl BotCommandRegistryImpl {
     /// Create a new empty registry with default cache.
-#[tool]
+    #[tool]
     #[instrument]
     pub fn new() -> Self {
         debug!("Creating new BotCommandRegistryImpl");
@@ -70,7 +70,7 @@ impl BotCommandRegistryImpl {
     }
 
     /// Create a new registry with custom cache.
-#[tool]
+    #[tool]
     #[instrument(skip(cache))]
     pub fn with_cache(cache: CommandCache) -> Self {
         debug!("Creating new BotCommandRegistry with custom cache");
@@ -88,7 +88,7 @@ impl BotCommandRegistryImpl {
     /// let mut registry = BotCommandRegistryImpl::new();
     /// registry.register(DiscordCommandExecutor::new("TOKEN"));
     /// ```
-#[tool]
+    #[tool]
     #[instrument(skip(self, executor), fields(platform = %executor.platform()))]
     pub fn register<E>(&mut self, executor: E) -> &mut Self
     where
@@ -106,7 +106,7 @@ impl BotCommandRegistryImpl {
     }
 
     /// Get executor for a platform.
-#[tool]
+    #[tool]
     #[instrument(skip(self))]
     pub fn get(
         &self,
@@ -194,7 +194,7 @@ impl BotCommandRegistryImpl {
     }
 
     /// List all registered platforms.
-#[tool]
+    #[tool]
     #[instrument(skip(self))]
     pub fn platforms(&self) -> Vec<String> {
         let platforms = self.executors.keys().cloned().collect::<Vec<_>>();
@@ -203,7 +203,7 @@ impl BotCommandRegistryImpl {
     }
 
     /// Check if a platform is registered.
-#[tool]
+    #[tool]
     #[instrument(skip(self), fields(platform))]
     pub fn has_platform(&self, platform: &str) -> bool {
         let exists = self.executors.contains_key(platform);

@@ -49,7 +49,7 @@ impl DatabaseCommandExecutor {
     /// - potential_discord_posts
     /// - content
     /// - post_history
-#[tool]
+    #[tool]
     pub fn new() -> Self {
         let mut allowed_tables = HashSet::new();
         allowed_tables.insert("approved_discord_posts".to_string());
@@ -65,19 +65,19 @@ impl DatabaseCommandExecutor {
     /// # Arguments
     ///
     /// * `allowed_tables` - Set of table names that can be updated
-#[tool]
+    #[tool]
     pub fn with_allowed_tables(allowed_tables: HashSet<String>) -> Self {
         Self { allowed_tables }
     }
 
     /// Add a table to the whitelist.
-#[tool]
+    #[tool]
     pub fn allow_table(&mut self, table_name: impl Into<String>) {
         self.allowed_tables.insert(table_name.into());
     }
 
     /// Check if a table is whitelisted.
-#[tool]
+    #[tool]
     pub fn is_table_allowed(&self, table_name: &str) -> bool {
         self.allowed_tables.contains(table_name)
     }
@@ -103,7 +103,7 @@ impl DatabaseCommandExecutor {
     /// - Table not whitelisted
     /// - Invalid WHERE clause
     /// - Database error
-#[tool]
+    #[tool]
     #[instrument(skip(self), fields(command = "update_table"))]
     async fn update_table(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
         // Extract table_name
@@ -274,19 +274,19 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
         "database"
     }
 
-#[tool]
+    #[tool]
     #[instrument(skip(self, command))]
     fn supports_command(&self, command: &str) -> bool {
         matches!(command, "update_table")
     }
 
-#[tool]
+    #[tool]
     #[instrument(skip(self))]
     fn supported_commands(&self) -> Vec<String> {
         vec!["update_table".to_string()]
     }
 
-#[tool]
+    #[tool]
     #[instrument(
         skip(self, args),
         fields(

@@ -65,7 +65,7 @@ pub struct ServerError {
 
 impl ServerError {
     /// Create a new ServerError with automatic location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: ServerErrorKind) -> Self {
         let location = std::panic::Location::caller();

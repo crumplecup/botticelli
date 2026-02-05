@@ -1,7 +1,5 @@
 //! TOML file structure and reference resolution.
 
-use rmcp::tool;
-use elicitation::{Prompt, Select};
 use super::{
     TomlAct, TomlNarrativeDefinition, TomlNarrativeReference, definitions::*, narrative::*,
     utils::*,
@@ -9,6 +7,8 @@ use super::{
 use crate::toml_parser::narrative::TomlNarrativeBuilder;
 use botticelli_core::{HistoryRetention, Input, MediaSource};
 use botticelli_error::{IoError, NarrativeErrorKind, NarrativeResult};
+use elicitation::{Prompt, Select};
+use rmcp::tool;
 use serde::Deserialize;
 use std::collections::HashMap;
 use tracing::{debug, error, instrument};

@@ -1,13 +1,15 @@
 //! Narrative metadata types and TOC structures.
 
-use rmcp::tool;
-use elicitation::{Prompt, Select};
 use super::TomlAct;
+use elicitation::{Prompt, Select};
+use rmcp::tool;
 use serde::Deserialize;
 use std::collections::HashMap;
 
 /// Root narrative metadata structure (for single narratives).
-#[derive(Debug, Clone, Deserialize, derive_getters::Getters, derive_builder::Builder, elicitation::Elicit)]
+#[derive(
+    Debug, Clone, Deserialize, derive_getters::Getters, derive_builder::Builder, elicitation::Elicit,
+)]
 #[builder(setter(into))]
 pub struct TomlNarrative {
     name: String,

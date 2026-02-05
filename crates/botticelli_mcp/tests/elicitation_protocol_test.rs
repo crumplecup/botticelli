@@ -200,7 +200,12 @@ async fn test_primitive_tools_registered() -> anyhow::Result<()> {
         tracing::info!(tool = %tool.name, description = ?tool.description, "Registered tool");
     }
 
-    let expected_tools = vec!["elicit_text", "elicit_bool", "elicit_number", "elicit_select"];
+    let expected_tools = vec![
+        "elicit_text",
+        "elicit_bool",
+        "elicit_number",
+        "elicit_select",
+    ];
 
     for tool_name in &expected_tools {
         assert!(
@@ -228,7 +233,10 @@ async fn test_tool_schemas_have_documentation() -> anyhow::Result<()> {
     let tool_router = server.get_tool_router();
     let tools = tool_router.list_all();
 
-    let elicit_tools: Vec<_> = tools.iter().filter(|t| t.name.starts_with("elicit_")).collect();
+    let elicit_tools: Vec<_> = tools
+        .iter()
+        .filter(|t| t.name.starts_with("elicit_"))
+        .collect();
 
     assert!(
         elicit_tools.len() >= 4,

@@ -184,7 +184,19 @@ impl<T: Tier + std::fmt::Debug> Budget<T> {
 }
 
 /// Remaining budget across rate limit windows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, schemars::JsonSchema, Getters, elicitation::Elicit)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+    Getters,
+    elicitation::Elicit,
+)]
 pub struct BudgetRemaining {
     /// Remaining tokens in current minute
     tokens_per_minute: u64,

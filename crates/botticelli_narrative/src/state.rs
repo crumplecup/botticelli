@@ -14,16 +14,7 @@ use std::path::{Path, PathBuf};
 use tracing::{debug, error, info, instrument};
 
 /// Represents different scopes for state storage.
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-    elicitation::Elicit,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, elicitation::Elicit)]
 pub enum StateScope {
     /// Global state shared across all narratives
     Global,

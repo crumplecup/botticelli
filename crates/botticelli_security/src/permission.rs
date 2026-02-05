@@ -84,7 +84,14 @@ pub struct ResourcePermission {
 }
 
 /// Command permission information.
-#[derive(Debug, Clone, schemars::JsonSchema, derive_getters::Getters, derive_new::new, elicitation::Elicit)]
+#[derive(
+    Debug,
+    Clone,
+    schemars::JsonSchema,
+    derive_getters::Getters,
+    derive_new::new,
+    elicitation::Elicit,
+)]
 pub struct CommandPermission {
     /// Command name
     command: String,
@@ -95,7 +102,16 @@ pub struct CommandPermission {
 }
 
 /// Permission checker for validating command execution.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, derive_getters::Getters, derive_new::new, elicitation::Elicit)]
+#[derive(
+    Debug,
+    Clone,
+    serde::Serialize,
+    serde::Deserialize,
+    schemars::JsonSchema,
+    derive_getters::Getters,
+    derive_new::new,
+    elicitation::Elicit,
+)]
 pub struct PermissionChecker {
     config: PermissionConfig,
 }

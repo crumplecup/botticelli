@@ -88,7 +88,14 @@ impl Default for ContentFilterConfig {
 }
 
 /// Content violation details.
-#[derive(Debug, Clone, schemars::JsonSchema, derive_getters::Getters, derive_new::new, elicitation::Elicit)]
+#[derive(
+    Debug,
+    Clone,
+    schemars::JsonSchema,
+    derive_getters::Getters,
+    derive_new::new,
+    elicitation::Elicit,
+)]
 pub struct ContentViolation {
     /// Type of violation
     violation_type: String,

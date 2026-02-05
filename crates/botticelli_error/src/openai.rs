@@ -63,7 +63,7 @@ pub struct OpenAIError {
 
 impl OpenAIError {
     /// Creates a new OpenAI-compatible error with source location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: OpenAIErrorKind) -> Self {
         let loc = std::panic::Location::caller();

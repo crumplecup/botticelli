@@ -1,9 +1,9 @@
 //! Model name validation and fuzzy matching.
 
-use rmcp::tool;
 use botticelli_error::{
     ValidationLocation, ValidationResult, ValidationWarning, ValidationWarningKind,
 };
+use rmcp::tool;
 use tracing::instrument;
 
 /// Known model names for validation.

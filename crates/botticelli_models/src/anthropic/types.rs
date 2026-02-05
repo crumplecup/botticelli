@@ -57,7 +57,9 @@ impl AnthropicTool {
 }
 
 /// Anthropic API request.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit,
+)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicRequest {
     /// Model identifier
@@ -88,7 +90,9 @@ impl AnthropicRequest {
 }
 
 /// Anthropic message in a conversation.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit,
+)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicMessage {
     /// Role of the message sender
@@ -121,7 +125,9 @@ pub enum AnthropicContentBlock {
 }
 
 /// Image source for Anthropic API.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit,
+)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicImageSource {
     /// Source type (always "base64")
@@ -141,7 +147,9 @@ impl AnthropicImageSource {
 }
 
 /// Anthropic API response.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit,
+)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicResponse {
     /// Response ID
@@ -195,7 +203,9 @@ pub enum AnthropicContent {
 }
 
 /// Usage information from Anthropic API.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, Getters, derive_builder::Builder, elicitation::Elicit,
+)]
 #[builder(setter(into), pattern = "owned")]
 pub struct AnthropicUsage {
     /// Input tokens

@@ -1,7 +1,7 @@
 //! TOML syntax pattern validation.
 
-use rmcp::tool;
 use botticelli_error::{ValidationError, ValidationErrorKind, ValidationResult};
+use rmcp::tool;
 use tracing::instrument;
 
 /// Unit struct providing syntax validation methods.

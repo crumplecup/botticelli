@@ -6,7 +6,9 @@ use crate::tool;
 
 use elicitation::{Prompt, Select};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display, elicitation::Elicit)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display, elicitation::Elicit,
+)]
 pub enum StorageErrorKind {
     /// Failed to create storage directory
     #[display("Failed to create storage directory: {}", _0)]
@@ -44,7 +46,14 @@ pub enum StorageErrorKind {
 /// let err = StorageError::new(StorageErrorKind::NotFound("/path/to/file".to_string()));
 /// assert!(format!("{}", err).contains("not found"));
 /// ```
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
+#[derive(
+    Debug,
+    Clone,
+    derive_more::Display,
+    derive_more::Error,
+    derive_getters::Getters,
+    elicitation::Elicit,
+)]
 #[display("Storage Error: {} at line {} in {}", kind, line, file)]
 pub struct StorageError {
     /// The kind of error that occurred
@@ -57,7 +66,7 @@ pub struct StorageError {
 
 impl StorageError {
     /// Create a new storage error with automatic location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: StorageErrorKind) -> Self {
         let location = std::panic::Location::caller();

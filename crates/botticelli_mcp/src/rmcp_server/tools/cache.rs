@@ -135,6 +135,9 @@ pub struct CacheEvictLruResult {
     pub success: bool,
 }
 
+/// Cache tool implementations for the MCP server.
+///
+/// Generated tool router function: `cache_tool_router()`
 #[tool_router(router = cache_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Check if a cache entry is expired.

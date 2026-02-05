@@ -193,7 +193,7 @@ pub struct NarrativeError {
 
 impl NarrativeError {
     /// Create a new NarrativeError with automatic location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: NarrativeErrorKind) -> Self {
         let location = std::panic::Location::caller();

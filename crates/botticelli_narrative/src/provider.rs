@@ -17,7 +17,9 @@ use serde::{Deserialize, Serialize};
 /// Acts can either:
 /// - Have direct inputs (traditional act execution)
 /// - Reference another narrative (narrative composition)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, derive_getters::Getters, elicitation::Elicit)]
+#[derive(
+    Debug, Clone, PartialEq, Serialize, Deserialize, derive_getters::Getters, elicitation::Elicit,
+)]
 pub struct ActConfig {
     /// Multimodal inputs for this act.
     ///

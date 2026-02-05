@@ -26,7 +26,7 @@ pub struct TokenCountingError {
 
 impl TokenCountingError {
     /// Create a new token counting error with caller location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: TokenCountingErrorKind) -> Self {
         let location = std::panic::Location::caller();

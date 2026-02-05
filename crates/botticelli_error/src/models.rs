@@ -56,7 +56,7 @@ pub struct OllamaError {
 #[cfg(feature = "ollama")]
 impl OllamaError {
     /// Create a new Ollama error.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: OllamaErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -67,7 +67,7 @@ impl OllamaError {
         }
     }
 
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     /// Get the error kind.
     pub fn kind(&self) -> &OllamaErrorKind {
         &self.kind
@@ -153,7 +153,7 @@ pub struct AnthropicError {
 #[cfg(feature = "anthropic")]
 impl AnthropicError {
     /// Creates a new Anthropic error with location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: AnthropicErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -234,7 +234,7 @@ pub struct ModelsError {
 
 impl ModelsError {
     /// Create a new models error.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(kind: ModelsErrorKind) -> Self {
         let loc = std::panic::Location::caller();

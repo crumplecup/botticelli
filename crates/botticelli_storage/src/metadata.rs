@@ -1,7 +1,7 @@
 //! Media metadata types.
 
-use rmcp::tool;
 use crate::MediaType;
+use rmcp::tool;
 
 /// Metadata about media being stored.
 ///
@@ -62,7 +62,7 @@ impl MediaMetadata {
             MediaType::Audio => "application/octet-stream",
             MediaType::Video => "application/octet-stream",
         };
-        
+
         Self {
             media_type,
             mime_type: mime_type.to_string(),

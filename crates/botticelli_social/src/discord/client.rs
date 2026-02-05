@@ -53,9 +53,9 @@ impl BotticelliBot {
     /// - The bot token is invalid
     /// - The Serenity client fails to initialize
     /// - Database connection fails
-#[tool]
+    #[tool]
     #[instrument(skip(token, conn), fields(token_len = token.len()))]
-#[tool]
+    #[tool]
     pub async fn new(token: String, conn: PgConnection) -> Result<Self, DiscordError> {
         info!("Initializing Botticelli Discord bot");
 
@@ -107,9 +107,9 @@ impl BotticelliBot {
     /// - The client fails to start
     /// - A critical error occurs in an event handler
     /// - A fatal network/gateway error occurs
-#[tool]
+    #[tool]
     #[instrument(skip(self))]
-#[tool]
+    #[tool]
     pub async fn start(&mut self) -> Result<(), DiscordError> {
         info!("Starting Discord bot");
 
@@ -168,7 +168,7 @@ impl BotticelliBot {
     /// Get a reference to the repository for direct database access.
     ///
     /// Useful for querying Discord data outside of event handlers.
-#[tool]
+    #[tool]
     pub fn repository(&self) -> &Arc<DiscordRepository> {
         &self.repository
     }
@@ -190,7 +190,7 @@ impl BotticelliBot {
     /// let bot = BotticelliBot::new(token, conn).await?;
     /// let executor = DiscordCommandExecutor::with_http_client(bot.http_client().await);
     /// ```
-#[tool]
+    #[tool]
     pub async fn http_client(&self) -> Arc<serenity::http::Http> {
         self.client
             .lock()

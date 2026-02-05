@@ -21,7 +21,7 @@ pub struct ProviderReqwestError {
 #[cfg(feature = "reqwest")]
 impl ProviderReqwestError {
     /// Create a new ProviderReqwestError with automatic location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(err: reqwest::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -35,7 +35,9 @@ impl ProviderReqwestError {
 
 /// Serde JSON error with source tracking for provider operations.
 #[cfg(feature = "serde_json")]
-#[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
+#[derive(
+    Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit,
+)]
 #[display("Serde JSON error: {:?} at {}:{}", source, file, line)]
 pub struct ProviderSerdeJsonError {
     /// The serde_json error source
@@ -49,7 +51,7 @@ pub struct ProviderSerdeJsonError {
 #[cfg(feature = "serde_json")]
 impl ProviderSerdeJsonError {
     /// Create a new ProviderSerdeJsonError with automatic location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(err: serde_json::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -126,7 +128,7 @@ pub enum ProviderErrorKind {
 
 impl ProviderError {
     /// Create a new provider error with location tracking.
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(provider: impl Into<String>, kind: ProviderErrorKind) -> Self {
         let loc = std::panic::Location::caller();

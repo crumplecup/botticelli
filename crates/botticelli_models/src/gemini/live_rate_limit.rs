@@ -3,10 +3,10 @@
 //! Unlike REST APIs where each request is independent, WebSocket connections are persistent.
 //! This module tracks messages sent over WebSocket connections to enforce rate limits.
 
+use rmcp::tool;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
-use rmcp::tool;
 use tokio::sync::Mutex;
 use tracing::{debug, trace, warn};
 

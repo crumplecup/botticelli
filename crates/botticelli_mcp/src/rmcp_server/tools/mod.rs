@@ -134,6 +134,9 @@ impl BotticelliServer {
         // Start with core (already has correct signatures)
         let router = Self::core_tool_router() + Self::cache_tool_router();
         
+        // TODO: Add storage and other modules as they're refactored
+        // + Self::storage_tool_router()
+        
         // TODO: Add other modules as they're refactored to use Parameters<> and Result<Json<>>
         // + cache::cache_tool_router()
         // + core_primitives::core_primitives_tool_router()

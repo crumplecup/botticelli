@@ -4,7 +4,14 @@
 #[cfg(feature = "mcp")]
 use crate::tool;
 
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit)]
+#[derive(
+    Debug,
+    Clone,
+    derive_more::Display,
+    derive_more::Error,
+    derive_getters::Getters,
+    elicitation::Elicit,
+)]
 #[display("Configuration Error: {} at line {} in {}", message, line, file)]
 pub struct ConfigError {
     /// Error message
@@ -26,7 +33,7 @@ impl ConfigError {
     /// let err = ConfigError::new("Missing required field");
     /// assert!(err.message().contains("Missing required"));
     /// ```
-#[cfg_attr(feature = "mcp", tool)]
+    #[cfg_attr(feature = "mcp", tool)]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

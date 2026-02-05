@@ -1,6 +1,5 @@
 //! Analysis for unused resources and circular dependencies.
 
-use rmcp::tool;
 use super::resources::ResourceRegistry;
 use botticelli_error::{
     ValidationError, ValidationErrorKind, ValidationLocation, ValidationResult, ValidationWarning,
@@ -8,6 +7,7 @@ use botticelli_error::{
 };
 use petgraph::algo::kosaraju_scc;
 use petgraph::graph::{DiGraph, NodeIndex};
+use rmcp::tool;
 use std::collections::HashMap;
 use tracing::instrument;
 

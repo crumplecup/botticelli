@@ -15,6 +15,9 @@ use rmcp::tool_router;
 use std::borrow::Cow;
 use tracing::{debug, instrument};
 
+/// Core tool implementations for the MCP server.
+///
+/// Generated tool router function: `core_tool_router()`
 #[tool_router(router = core_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Echo back the provided message.
