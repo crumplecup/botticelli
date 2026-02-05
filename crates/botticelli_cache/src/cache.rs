@@ -11,11 +11,17 @@ use std::hash::{Hash, Hasher};
 use std::time::{Duration, Instant};
 
 /// Cache entry with value and expiration.
-#[derive(Debug, Clone, Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, Getters, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct CacheEntry {
     value: JsonValue,
+    #[serde(skip, default = "default_instant")]
+    #[schemars(skip)]
     created_at: Instant,
     ttl: Duration,
+}
+
+fn default_instant() -> Instant {
+    Instant::now()
 }
 
 impl CacheEntry {
@@ -35,7 +41,7 @@ impl CacheEntry {
 }
 
 /// Cache key for command results.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct CacheKey {
     platform: String,
     command: String,
@@ -147,6 +153,7 @@ impl Default for CommandCacheConfig {
 ///     println!("Cached: {:?}", entry.value());
 /// }
 /// ```
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct CommandCache {
     config: CommandCacheConfig,
     entries: HashMap<CacheKey, CacheEntry>,

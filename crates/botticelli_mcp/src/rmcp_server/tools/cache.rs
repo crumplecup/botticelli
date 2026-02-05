@@ -5,6 +5,7 @@
 use crate::rmcp_server::BotticelliServer;
 use botticelli_cache::{CacheKey, CommandCache, CommandCacheConfig};
 use elicitation::Elicit;
+use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::tool;
 use rmcp::tool_router;
 use schemars::JsonSchema;
@@ -85,6 +86,13 @@ pub struct CacheClearParams {
     pub cache_id: String,
 }
 
+/// Result from cache clear.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct CacheClearResult {
+    /// Success message
+    pub success: bool,
+}
+
 /// Parameters for cache length.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
 pub struct CacheLenParams {
@@ -120,13 +128,24 @@ pub struct CacheEvictLruParams {
     pub cache_id: String,
 }
 
+/// Result from cache LRU eviction.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
+pub struct CacheEvictLruResult {
+    /// Success message
+    pub success: bool,
+}
+
+#[tool_router(router = cache_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Check if a cache entry is expired.
     ///
     /// Stateless wrapper - computes expiration based on TTL and age.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_entry_is_expired"))]
-    pub fn cache_entry_is_expired(&self, params: CacheEntryIsExpiredParams) -> CacheEntryIsExpiredResult {
+    #[instrument(skip(self), fields(tool = "cache_entry_is_expired"))]
+    pub fn cache_entry_is_expired(
+        &self,
+        Parameters(params): Parameters<CacheEntryIsExpiredParams>,
+    ) -> Result<Json<CacheEntryIsExpiredResult>, rmcp::ErrorData> {
         tracing::debug!("Computing cache entry expiration");
         
         let ttl = Duration::from_secs(params.ttl_seconds);
@@ -134,15 +153,18 @@ impl BotticelliServer {
         let is_expired = age > ttl;
         
         tracing::debug!(is_expired, "Expiration computed");
-        CacheEntryIsExpiredResult { is_expired }
+        Ok(Json(CacheEntryIsExpiredResult { is_expired }))
     }
 
     /// Get time remaining until cache entry expiration.
     ///
     /// Stateless wrapper - computes remaining time based on TTL and age.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_entry_time_remaining"))]
-    pub fn cache_entry_time_remaining(&self, params: CacheEntryTimeRemainingParams) -> CacheEntryTimeRemainingResult {
+    #[instrument(skip(self), fields(tool = "cache_entry_time_remaining"))]
+    pub fn cache_entry_time_remaining(
+        &self,
+        Parameters(params): Parameters<CacheEntryTimeRemainingParams>,
+    ) -> Result<Json<CacheEntryTimeRemainingResult>, rmcp::ErrorData> {
         tracing::debug!("Computing time remaining");
         
         let ttl = Duration::from_secs(params.ttl_seconds);
@@ -150,39 +172,48 @@ impl BotticelliServer {
         let seconds_remaining = ttl.checked_sub(age).map(|d| d.as_secs());
         
         tracing::debug!(?seconds_remaining, "Time remaining computed");
-        CacheEntryTimeRemainingResult { seconds_remaining }
+        Ok(Json(CacheEntryTimeRemainingResult { seconds_remaining }))
     }
 
     /// Create a cache key for command results.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_key_new", platform = %params.platform, command = %params.command))]
-    pub fn cache_key_new(&self, params: CacheKeyNewParams) -> CacheKey {
+    #[instrument(skip(self, params), fields(tool = "cache_key_new"))]
+    pub fn cache_key_new(
+        &self,
+        Parameters(params): Parameters<CacheKeyNewParams>,
+    ) -> Result<Json<CacheKey>, rmcp::ErrorData> {
         tracing::debug!("Delegating to botticelli_cache::CacheKey::new");
         
         let key = CacheKey::new(&params.platform, &params.command, &params.args);
         
         tracing::debug!("Cache key created");
-        key
+        Ok(Json(key))
     }
 
     /// Create a new command cache with configuration.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_new"))]
-    pub fn cache_new(&self, params: CommandCacheNewParams) -> CommandCache {
+    #[instrument(skip(self), fields(tool = "cache_new"))]
+    pub fn cache_new(
+        &self,
+        Parameters(params): Parameters<CommandCacheNewParams>,
+    ) -> Result<Json<CommandCache>, rmcp::ErrorData> {
         tracing::debug!("Delegating to botticelli_cache::CommandCache::new");
         
         let cache = CommandCache::new(params.config);
         
         tracing::debug!("Command cache created");
-        cache
+        Ok(Json(cache))
     }
 
     /// Clean up expired entries from cache.
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_cleanup_expired", cache_id = %params.cache_id))]
-    pub fn cache_cleanup_expired(&self, params: CacheCleanupParams) -> CacheCleanupResult {
+    #[instrument(skip(self, params), fields(tool = "cache_cleanup_expired"))]
+    pub fn cache_cleanup_expired(
+        &self,
+        Parameters(params): Parameters<CacheCleanupParams>,
+    ) -> Result<Json<CacheCleanupResult>, rmcp::ErrorData> {
         tracing::debug!("Cache cleanup wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");
         
@@ -192,15 +223,18 @@ impl BotticelliServer {
         let removed_count = cache.cleanup_expired();
         
         tracing::debug!(removed_count, "Cleanup completed");
-        CacheCleanupResult { removed_count }
+        Ok(Json(CacheCleanupResult { removed_count }))
     }
 
     /// Clear all entries from cache.
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_clear", cache_id = %params.cache_id))]
-    pub fn cache_clear(&self, params: CacheClearParams) {
+    #[instrument(skip(self, params), fields(tool = "cache_clear"))]
+    pub fn cache_clear(
+        &self,
+        Parameters(params): Parameters<CacheClearParams>,
+    ) -> Result<Json<CacheClearResult>, rmcp::ErrorData> {
         tracing::debug!("Cache clear wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");
         
@@ -210,14 +244,18 @@ impl BotticelliServer {
         cache.clear();
         
         tracing::debug!("Cache cleared");
+        Ok(Json(CacheClearResult { success: true }))
     }
 
     /// Get number of entries in cache.
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_len", cache_id = %params.cache_id))]
-    pub fn cache_len(&self, params: CacheLenParams) -> CacheLenResult {
+    #[instrument(skip(self, params), fields(tool = "cache_len"))]
+    pub fn cache_len(
+        &self,
+        Parameters(params): Parameters<CacheLenParams>,
+    ) -> Result<Json<CacheLenResult>, rmcp::ErrorData> {
         tracing::debug!("Cache length wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");
         
@@ -227,15 +265,18 @@ impl BotticelliServer {
         let len = cache.len();
         
         tracing::debug!(len, "Cache length retrieved");
-        CacheLenResult { len }
+        Ok(Json(CacheLenResult { len }))
     }
 
     /// Check if cache is empty.
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_is_empty", cache_id = %params.cache_id))]
-    pub fn cache_is_empty(&self, params: CacheIsEmptyParams) -> CacheIsEmptyResult {
+    #[instrument(skip(self, params), fields(tool = "cache_is_empty"))]
+    pub fn cache_is_empty(
+        &self,
+        Parameters(params): Parameters<CacheIsEmptyParams>,
+    ) -> Result<Json<CacheIsEmptyResult>, rmcp::ErrorData> {
         tracing::debug!("Cache empty check wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");
         
@@ -245,15 +286,18 @@ impl BotticelliServer {
         let is_empty = cache.is_empty();
         
         tracing::debug!(is_empty, "Cache empty status retrieved");
-        CacheIsEmptyResult { is_empty }
+        Ok(Json(CacheIsEmptyResult { is_empty }))
     }
 
     /// Evict least recently used entry from cache.
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_evict_lru", cache_id = %params.cache_id))]
-    pub fn cache_evict_lru(&self, params: CacheEvictLruParams) {
+    #[instrument(skip(self, params), fields(tool = "cache_evict_lru"))]
+    pub fn cache_evict_lru(
+        &self,
+        Parameters(params): Parameters<CacheEvictLruParams>,
+    ) -> Result<Json<CacheEvictLruResult>, rmcp::ErrorData> {
         tracing::debug!("Cache evict LRU wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");
         
@@ -263,5 +307,6 @@ impl BotticelliServer {
         cache.evict_lru();
         
         tracing::debug!("LRU entry evicted");
+        Ok(Json(CacheEvictLruResult { success: true }))
     }
 }

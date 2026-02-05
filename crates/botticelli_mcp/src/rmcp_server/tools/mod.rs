@@ -132,7 +132,7 @@ impl BotticelliServer {
     /// This combines tool routers from all modules into a single router.
     pub(crate) fn create_tool_router() -> rmcp::handler::server::tool::ToolRouter<Self> {
         // Start with core (already has correct signatures)
-        let router = Self::core_tool_router();
+        let router = Self::core_tool_router() + Self::cache_tool_router();
         
         // TODO: Add other modules as they're refactored to use Parameters<> and Result<Json<>>
         // + cache::cache_tool_router()
