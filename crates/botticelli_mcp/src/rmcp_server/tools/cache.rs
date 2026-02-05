@@ -120,7 +120,6 @@ pub struct CacheEvictLruParams {
     pub cache_id: String,
 }
 
-#[tool_router(router = cache_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Check if a cache entry is expired.
     ///

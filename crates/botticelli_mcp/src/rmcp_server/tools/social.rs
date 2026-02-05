@@ -96,7 +96,6 @@ pub struct BotRegistryHasPlatformResult {
     pub exists: bool,
 }
 
-#[tool_router(router = social_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Convert HashMap<String, JsonValue> to HashMap<String, String> for security checks.
     #[tool]

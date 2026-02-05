@@ -20,7 +20,6 @@ use std::borrow::Cow;
 use std::sync::Arc;
 use tracing::{debug, instrument};
 
-#[tool_router(router = elicitation_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Prompt user for text input.
     #[tool]

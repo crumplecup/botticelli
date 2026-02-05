@@ -8,7 +8,7 @@ description = "Model Context Protocol (MCP) server for Botticelli"
 
 [dependencies]
 # MCP SDK - using official rmcp
-rmcp = { workspace = true, features = ["server"] }
+rmcp = { workspace = true, features = ["server", "macros"] }
 rmcp-macros = { workspace = true }
 schemars = { workspace = true }
 

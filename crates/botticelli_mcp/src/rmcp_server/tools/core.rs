@@ -10,12 +10,15 @@ use crate::{
 };
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ErrorCode;
+use rmcp::tool;
+use rmcp::tool_router;
 use std::borrow::Cow;
 use tracing::{debug, instrument};
 
 #[tool_router(router = core_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Echo back the provided message.
+    #[tool]
     #[instrument(skip(self), fields(message))]
     pub async fn echo(
         &self,
@@ -31,6 +34,7 @@ impl BotticelliServer {
     }
 
     /// Get server information including version and tool count.
+    #[tool]
     #[instrument(skip(self))]
     pub async fn server_info(&self) -> Result<Json<ServerInfoResult>, rmcp::ErrorData> {
         debug!("Retrieving server information");
@@ -46,6 +50,7 @@ impl BotticelliServer {
     }
 
     /// Query content from the database.
+    #[tool]
     #[instrument(skip(self, params), fields(table = params.table(), limit = params.limit()))]
     pub async fn query_content(
         &self,
@@ -96,6 +101,7 @@ impl BotticelliServer {
     }
 
     /// Export metrics in the requested format.
+    #[tool]
     #[instrument(skip(self, params), fields(format = ?params.format()))]
     pub async fn export_metrics(
         &self,

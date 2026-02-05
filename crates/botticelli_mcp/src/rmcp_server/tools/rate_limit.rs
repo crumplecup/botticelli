@@ -336,7 +336,6 @@ impl_budget_dtos! {
     (OpenAITier, OpenAITier, "default"),
 }
 
-#[tool_router(router = rate_limit_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Get requests per minute limit for a tier.
     #[tool]

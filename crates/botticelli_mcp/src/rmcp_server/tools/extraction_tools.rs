@@ -113,7 +113,6 @@ macro_rules! impl_parse_toml {
     };
 }
 
-#[tool_router(router = extraction_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Extract JSON from LLM response.
     ///

@@ -131,7 +131,6 @@ pub struct InferSchemaResult {
     columns: Vec<InferredColumn>,
 }
 
-#[tool_router(router = library_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Validate narrative TOML without creating a file.
     ///

@@ -17,7 +17,6 @@ use serde_json::json;
 use std::borrow::Cow;
 use tracing::{debug, instrument};
 
-#[tool_router(router = discord_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Post a message to a Discord channel.
     #[instrument(skip(self, params), fields(channel_id = params.channel_id(), content_len = params.content().len()))]

@@ -224,7 +224,6 @@ pub struct MediaTypeAsStrResult {
     pub value: String,
 }
 
-#[tool_router(router = storage_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Create a new filesystem storage backend.
     ///
