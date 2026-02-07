@@ -1,4 +1,5 @@
 //! Rate limiting error types.
+use serde::{Deserialize, Serialize};
 
 /// Specific rate limiting error conditions.
 #[cfg(feature = "mcp")]
@@ -7,7 +8,7 @@ use crate::tool;
 use elicitation::{Prompt, Select};
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display, elicitation::Elicit,
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit,
 )]
 pub enum RateLimitErrorKind {
     /// Configuration file error.

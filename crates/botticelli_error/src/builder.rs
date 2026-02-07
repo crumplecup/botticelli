@@ -1,4 +1,5 @@
 //! Builder-related errors.
+use serde::{Deserialize, Serialize};
 
 /// Specific builder error conditions.
 #[cfg(feature = "mcp")]
@@ -6,7 +7,7 @@ use crate::tool;
 
 use elicitation::{Prompt, Select};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit)]
 pub enum BuilderErrorKind {
     /// Missing required field
     #[display("Missing required field: {}", _0)]

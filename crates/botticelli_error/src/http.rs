@@ -1,4 +1,5 @@
 //! HTTP error types.
+use serde::{Deserialize, Serialize};
 
 /// Specific HTTP error conditions.
 #[cfg(feature = "mcp")]
@@ -6,7 +7,7 @@ use crate::tool;
 
 use elicitation::{Prompt, Select};
 
-#[derive(Debug, Clone, derive_more::Display, elicitation::Elicit)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit)]
 pub enum HttpErrorKind {
     /// Generic HTTP error with message
     #[display("HTTP error: {}", _0)]

@@ -20,11 +20,12 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 schemars = { workspace = true }
 elicitation = { workspace = true }
+serde_json = { workspace = true }
+rmcp = { workspace = true }
 
 # Optional database error conversions
 diesel = { workspace = true, optional = true }
 r2d2 = { workspace = true, optional = true }
-serde_json = { workspace = true, optional = true }
 toml = { workspace = true }
 reqwest = { workspace = true, optional = true }
 gemini-rust = { workspace = true, optional = true }
@@ -32,18 +33,15 @@ tokio-tungstenite = { workspace = true, optional = true }
 tiktoken-rs = { workspace = true, optional = true }
 ollama-rs = { workspace = true, optional = true }
 serenity = { workspace = true, optional = true }
-rmcp = { workspace = true, optional = true }
 
 [features]
 default = []
-database = ["dep:diesel", "dep:serde_json", "dep:r2d2"]
-serde_json = ["dep:serde_json"]
+database = ["dep:diesel", "dep:r2d2"]
 reqwest = ["dep:reqwest"]
 tui = []
-models = ["dep:serde_json", "dep:reqwest", "dep:gemini-rust", "dep:tokio-tungstenite", "dep:tiktoken-rs"]
+models = ["dep:reqwest", "dep:gemini-rust", "dep:tokio-tungstenite", "dep:tiktoken-rs"]
 ollama = ["models", "dep:ollama-rs"]
 anthropic = ["models"]
 huggingface = ["models"]
 groq = ["models"]
 discord = ["dep:serenity"]
-mcp = ["dep:rmcp"]

@@ -1,4 +1,5 @@
 //! Security error types.
+use serde::{Deserialize, Serialize};
 
 /// Specific security error conditions.
 #[cfg(feature = "mcp")]

@@ -1,4 +1,5 @@
 //! Environment variable errors.
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "mcp")]
 use crate::tool;
@@ -7,7 +8,7 @@ use elicitation::{Prompt, Select};
 use std::env::VarError;
 
 /// Environment variable error kind.
-#[derive(Debug, Clone, derive_more::Display, elicitation::Elicit)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit)]
 pub enum EnvErrorKind {
     /// Environment variable not found.
     #[display("Environment variable '{}' not found", _0)]

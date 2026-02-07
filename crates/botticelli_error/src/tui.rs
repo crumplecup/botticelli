@@ -46,6 +46,59 @@ impl Clone for TuiIoError {
     }
 }
 
+impl serde::Serialize for TuiIoError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("TuiIoError", 3)?;
+        state.serialize_field("source", &format!("{:?}", self.source))?;
+        state.serialize_field("line", &self.line)?;
+        state.serialize_field("file", &self.file)?;
+        state.end()
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for TuiIoError {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(serde::Deserialize)]
+        struct Helper {
+            source: String,
+            line: u32,
+            file: String,
+        }
+
+        let helper = Helper::deserialize(deserializer)?;
+        Ok(Self {
+            source: Box::new(std::io::Error::other(helper.source)),
+            line: helper.line,
+            file: helper.file,
+        })
+    }
+}
+
+impl schemars::JsonSchema for TuiIoError {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "TuiIoError".into()
+    }
+
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        schemars::json_schema!({
+            "type": "object",
+            "required": ["source", "line", "file"],
+            "properties": {
+                "source": { "type": "string" },
+                "line": generator.subschema_for::<u32>(),
+                "file": generator.subschema_for::<String>()
+            }
+        })
+    }
+}
+
 /// TUI error kind variants.
 #[derive(Debug, Clone, derive_more::Display)]
 pub enum TuiErrorKind {

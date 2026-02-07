@@ -1,4 +1,5 @@
 //! Observability-related errors.
+use serde::{Deserialize, Serialize};
 
 /// Specific observability error conditions.
 #[cfg(feature = "mcp")]
@@ -6,7 +7,7 @@ use crate::tool;
 
 use elicitation::{Prompt, Select};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Display, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit)]
 pub enum ObservabilityErrorKind {
     /// Failed to initialize tracer provider
     #[display("Failed to initialize tracer provider: {}", _0)]

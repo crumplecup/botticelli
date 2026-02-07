@@ -5,8 +5,8 @@
 use crate::tool;
 
 use elicitation::{Prompt, Select};
+use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "serde_json")]
 #[derive(
     Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit,
 )]
@@ -20,7 +20,6 @@ pub struct SerdeJsonError {
     file: String,
 }
 
-#[cfg(feature = "serde_json")]
 impl SerdeJsonError {
     /// Create a new SerdeJsonError with automatic location tracking.
     #[cfg_attr(feature = "mcp", tool)]
@@ -35,7 +34,6 @@ impl SerdeJsonError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl Clone for SerdeJsonError {
     fn clone(&self) -> Self {
         // serde_json::Error is not Clone, so we reconstruct from the message
@@ -48,7 +46,6 @@ impl Clone for SerdeJsonError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl PartialEq for SerdeJsonError {
     fn eq(&self, other: &Self) -> bool {
         self.line == other.line
@@ -57,10 +54,8 @@ impl PartialEq for SerdeJsonError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl Eq for SerdeJsonError {}
 
-#[cfg(feature = "serde_json")]
 impl std::hash::Hash for SerdeJsonError {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.line.hash(state);
@@ -69,14 +64,12 @@ impl std::hash::Hash for SerdeJsonError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl PartialOrd for SerdeJsonError {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         Some(self.cmp(other))
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl Ord for SerdeJsonError {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         (&self.file, self.line, format!("{:?}", self.source)).cmp(&(
@@ -87,9 +80,62 @@ impl Ord for SerdeJsonError {
     }
 }
 
+impl serde::Serialize for SerdeJsonError {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("SerdeJsonError", 3)?;
+        state.serialize_field("source", &format!("{:?}", self.source))?;
+        state.serialize_field("line", &self.line)?;
+        state.serialize_field("file", &self.file)?;
+        state.end()
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for SerdeJsonError {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(serde::Deserialize)]
+        struct SerdeJsonErrorHelper {
+            source: String,
+            line: u32,
+            file: String,
+        }
+
+        let helper = SerdeJsonErrorHelper::deserialize(deserializer)?;
+        Ok(Self {
+            source: Box::new(serde_json::Error::io(std::io::Error::other(helper.source))),
+            line: helper.line,
+            file: helper.file,
+        })
+    }
+}
+
+impl schemars::JsonSchema for SerdeJsonError {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "SerdeJsonError".into()
+    }
+
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        schemars::json_schema!({
+            "type": "object",
+            "required": ["source", "line", "file"],
+            "properties": {
+                "source": { "type": "string" },
+                "line": generator.subschema_for::<u32>(),
+                "file": generator.subschema_for::<String>()
+            }
+        })
+    }
+}
+
 /// JSON error kind.
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display, elicitation::Elicit,
+    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit,
 )]
 pub enum JsonErrorKind {
     /// Generic JSON error with message
@@ -97,7 +143,6 @@ pub enum JsonErrorKind {
     Message(String),
 
     /// Serde JSON error
-    #[cfg(feature = "serde_json")]
     #[display("{}", _0)]
     SerdeJson(SerdeJsonError),
 }
@@ -181,8 +226,7 @@ impl From<&str> for JsonError {
 
 crate::impl_error_from_kind!(JsonErrorKind => JsonError);
 
-// Add support for wrapping serde_json errors when feature is enabled
-#[cfg(feature = "serde_json")]
+// Add support for wrapping serde_json errors
 impl From<serde_json::Error> for JsonError {
     #[track_caller]
     fn from(err: serde_json::Error) -> Self {
@@ -191,5 +235,4 @@ impl From<serde_json::Error> for JsonError {
 }
 
 // Bridge serde_json::Error to BotticelliErrorKind
-#[cfg(feature = "serde_json")]
 crate::bridge_error!(serde_json::Error => JsonError => crate::BotticelliErrorKind);

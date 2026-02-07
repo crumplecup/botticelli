@@ -10,7 +10,6 @@ pub enum NarrativeErrorKind {
     #[display("I/O error: {}", _0)]
     Io(crate::IoError),
     /// JSON serialization/deserialization error
-    #[cfg(feature = "serde_json")]
     #[display("JSON error: {}", _0)]
     Json(crate::JsonError),
     /// TOML deserialization error
@@ -212,7 +211,6 @@ impl From<std::io::Error> for NarrativeError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl From<serde_json::Error> for NarrativeError {
     #[track_caller]
     fn from(err: serde_json::Error) -> Self {

@@ -1,4 +1,5 @@
 //! Storage error types.
+use serde::{Deserialize, Serialize};
 
 /// Kinds of storage errors.
 #[cfg(feature = "mcp")]
@@ -7,7 +8,7 @@ use crate::tool;
 use elicitation::{Prompt, Select};
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display, elicitation::Elicit,
+    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit,
 )]
 pub enum StorageErrorKind {
     /// Failed to create storage directory

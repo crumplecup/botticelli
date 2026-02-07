@@ -7,7 +7,6 @@ use elicitation::Prompt;
 use std::sync::Arc;
 
 /// Serde JSON error with source tracking.
-#[cfg(feature = "serde_json")]
 #[derive(
     Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit,
 )]
@@ -36,7 +35,6 @@ pub struct DatabaseMcpError {
     file: String,
 }
 
-#[cfg(feature = "serde_json")]
 impl SerdeJsonError {
     /// Create a new SerdeJsonError with automatic location tracking.
     #[cfg_attr(feature = "mcp", tool)]
@@ -67,7 +65,6 @@ impl DatabaseMcpError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl Clone for SerdeJsonError {
     fn clone(&self) -> Self {
         // serde_json::Error doesn't implement Clone, recreate from message
@@ -96,7 +93,6 @@ impl Clone for DatabaseMcpError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl PartialEq for SerdeJsonError {
     fn eq(&self, other: &Self) -> bool {
         // Compare by string representation since serde_json::Error doesn't impl PartialEq
@@ -117,13 +113,11 @@ impl PartialEq for DatabaseMcpError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl Eq for SerdeJsonError {}
 
 #[cfg(feature = "database")]
 impl Eq for DatabaseMcpError {}
 
-#[cfg(feature = "serde_json")]
 impl std::hash::Hash for SerdeJsonError {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.source.to_string().hash(state);
@@ -147,7 +141,6 @@ impl std::hash::Hash for DatabaseMcpError {
 #[derive(Debug, Clone, derive_more::Display)]
 pub enum McpErrorKind {
     /// JSON serialization/deserialization error
-    #[cfg(feature = "serde_json")]
     #[display("JSON error: {}", _0)]
     Json(SerdeJsonError),
 
@@ -240,14 +233,12 @@ pub enum McpErrorKind {
 }
 
 /// From implementations for automatic error conversion
-#[cfg(feature = "serde_json")]
 impl From<serde_json::Error> for McpErrorKind {
     fn from(err: serde_json::Error) -> Self {
         Self::Json(SerdeJsonError::new(err))
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl From<SerdeJsonError> for McpErrorKind {
     fn from(err: SerdeJsonError) -> Self {
         Self::Json(err)
@@ -424,7 +415,6 @@ impl McpError {
 }
 
 /// From implementations for external errors to McpError
-#[cfg(feature = "serde_json")]
 impl From<serde_json::Error> for McpError {
     #[track_caller]
     fn from(err: serde_json::Error) -> Self {
@@ -447,7 +437,6 @@ impl From<crate::NarrativeError> for McpError {
     }
 }
 
-#[cfg(feature = "mcp")]
 impl From<rmcp::ErrorData> for McpError {
     #[track_caller]
     fn from(error: rmcp::ErrorData) -> Self {
