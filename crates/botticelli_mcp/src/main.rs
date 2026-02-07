@@ -195,6 +195,7 @@ async fn run_http(_server: BotticelliServer, port: u16) -> Result<()> {
             StreamableHttpServerConfig {
                 stateful_mode: true,
                 sse_keep_alive: None,
+                sse_retry: Some(std::time::Duration::from_secs(3)),
                 cancellation_token: ct.child_token(),
             },
         );

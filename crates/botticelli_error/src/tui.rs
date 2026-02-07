@@ -1,8 +1,7 @@
 //! TUI (Terminal User Interface) error types.
 
 /// IO error with source tracking for TUI operations.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use elicitation::Prompt;
 
@@ -21,7 +20,7 @@ pub struct TuiIoError {
 
 impl TuiIoError {
     /// Create a new TuiIoError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(err: std::io::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -151,7 +150,7 @@ pub struct TuiError {
 
 impl TuiError {
     /// Create a new TuiError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: TuiErrorKind) -> Self {
         let location = std::panic::Location::caller();

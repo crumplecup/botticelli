@@ -4,10 +4,9 @@
 
 use crate::rmcp_server::BotticelliServer;
 use botticelli_error::{BotCommandError, BotCommandResult, SecurityError};
-use botticelli_social::{hashmap_to_params, BotCommandRegistryImpl, CommandCache, SecureBotCommandExecutor};
+use botticelli_social::{hashmap_to_params, BotCommandRegistryImpl, SecureBotCommandExecutor};
 use elicitation::Elicit;
 use rmcp::tool;
-use rmcp::tool_router;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
@@ -57,13 +56,6 @@ pub struct BotRegistryNewParams {
     /// Placeholder field (unused)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub _unused: Option<()>,
-}
-
-/// Parameters for creating registry with cache.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Elicit)]
-pub struct BotRegistryWithCacheParams {
-    /// Command cache
-    pub cache: CommandCache,
 }
 
 /// Parameters for listing platforms.
@@ -156,7 +148,8 @@ impl BotticelliServer {
         registry
     }
 
-    /// Create a new bot command registry with custom cache.
+    /*
+    /// Create a new bot command registry with custom cache (INCOMPLETE - CommandCache removed).
     #[tool]
     #[instrument(skip(self, params), fields(tool = "social_bot_registry_with_cache"))]
     pub fn social_bot_registry_with_cache(&self, params: BotRegistryWithCacheParams) -> BotCommandRegistryImpl {
@@ -167,6 +160,7 @@ impl BotticelliServer {
         tracing::debug!("Registry created with cache");
         registry
     }
+    */
 
     /// List all registered platforms in a bot command registry.
     ///

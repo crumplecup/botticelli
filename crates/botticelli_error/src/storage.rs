@@ -2,11 +2,13 @@
 use serde::{Deserialize, Serialize};
 
 /// Kinds of storage errors.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use elicitation::{Prompt, Select};
 
+/// Kinds of storage errors.
+///
+/// Categorizes errors from file I/O, cloud storage, and media management.
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit,
 )]
@@ -67,7 +69,7 @@ pub struct StorageError {
 
 impl StorageError {
     /// Create a new storage error with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: StorageErrorKind) -> Self {
         let location = std::panic::Location::caller();

@@ -6,6 +6,7 @@
 
 use botticelli_error::{BackendError, BotticelliResult};
 use chrono::NaiveDateTime;
+use rmcp::tool;
 use tracing::{debug, instrument};
 
 use crate::{

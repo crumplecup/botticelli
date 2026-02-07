@@ -950,7 +950,9 @@ pub fn assemble_narrative_act_prompts(
         botticelli_error::BackendError::new(format!("Failed to get connection: {}", e))
     })?;
 
-    params.narrative.assemble_act_prompts(&mut conn).map_err(Into::into)?;
+    params.narrative.assemble_act_prompts(&mut conn).map_err(|e| {
+        botticelli_error::BackendError::new(format!("Failed to assemble act prompts: {}", e))
+    })?;
     Ok(params.narrative)
 }
 }

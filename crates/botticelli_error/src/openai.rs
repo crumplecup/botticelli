@@ -1,7 +1,6 @@
 //! OpenAI-compatible API errors.
 
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use crate::BotticelliErrorKind;
 use std::sync::Arc;
@@ -63,7 +62,7 @@ pub struct OpenAIError {
 
 impl OpenAIError {
     /// Creates a new OpenAI-compatible error with source location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: OpenAIErrorKind) -> Self {
         let loc = std::panic::Location::caller();

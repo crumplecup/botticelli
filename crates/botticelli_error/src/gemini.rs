@@ -1,9 +1,11 @@
 //! Gemini-specific error types and retry logic.
 
 /// Gemini-specific error conditions.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
+/// Specific Gemini API error conditions.
+///
+/// Categorizes errors from Gemini API calls, authentication, and responses.
 #[derive(Debug, Clone, derive_more::Display)]
 pub enum GeminiErrorKind {
     /// API key not found in environment
@@ -76,7 +78,7 @@ pub enum GeminiErrorKind {
 }
 
 impl GeminiErrorKind {
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     /// Check if this error type should be retried.
     pub fn is_retryable(&self) -> bool {
         match self {
@@ -93,7 +95,7 @@ impl GeminiErrorKind {
 
     /// Get retry strategy parameters for this error type.
     ///
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     /// Returns `(initial_backoff_ms, max_retries, max_delay_secs)`.
     pub fn retry_strategy_params(&self) -> (u64, usize, u64) {
         match self {
@@ -136,7 +138,7 @@ pub struct GeminiError {
 
 impl GeminiError {
     /// Create a new GeminiError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: GeminiErrorKind) -> Self {
         let location = std::panic::Location::caller();

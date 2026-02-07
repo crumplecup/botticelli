@@ -82,7 +82,8 @@ pub struct GetTierInfoResult {
     tier: TierInfo,
 }
 
-/// Parameters for selecting a model.
+/*
+/// Parameters for selecting a model (INCOMPLETE - requires redesign).
 #[cfg(feature = "llm")]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 pub struct SelectModelParams {
@@ -90,7 +91,7 @@ pub struct SelectModelParams {
     strategy: SelectionStrategy,
 }
 
-/// Result from model selection.
+/// Result from model selection (INCOMPLETE - requires redesign).
 #[cfg(feature = "llm")]
 #[derive(Debug, Clone, Serialize, JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 pub struct SelectModelResult {
@@ -100,6 +101,7 @@ pub struct SelectModelResult {
     /// Strategy used for selection
     strategy: String,
 }
+*/
 
 /// Parameters for inferring schema from JSON.
 #[cfg(feature = "database")]
@@ -236,17 +238,26 @@ impl BotticelliServer {
     /// Exposes `botticelli_models::ModelSelector` as an MCP tool.
     ///
     /// Available with the `llm` feature.
+    ///
+    /// NOTE: This tool is incomplete - ModelSelector::select_next requires
+    /// a current ModelId and error message, but this tool doesn't provide them.
+    /// Commented out until proper API is designed.
+    /*
     #[cfg(feature = "llm")]
     #[instrument(skip(self, params), fields(strategy = ?params.strategy()))]
     pub async fn select_model(
         &self,
         Parameters(params): Parameters<SelectModelParams>,
     ) -> Result<Json<SelectModelResult>, rmcp::ErrorData> {
-        use botticelli_models::{ModelSelector};
+        use botticelli_models::{ModelBounds, ModelSelector, RateLimitDetector};
         
         debug!(strategy = ?params.strategy(), "Selecting model");
 
-        let selector = ModelSelector::new();
+        let selector = ModelSelector::new(
+            ModelBounds::none(),
+            params.strategy().clone(),
+            RateLimitDetector::new(),
+        );
         let model_id = selector
             .select(params.strategy())
             .ok_or_else(|| {
@@ -266,6 +277,7 @@ impl BotticelliServer {
 
         Ok(Json(result))
     }
+    */
 
     /// Infer database schema from JSON sample data.
     ///

@@ -1,10 +1,8 @@
 //! I/O error types with source preservation.
 
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use derive_getters::Getters;
-use elicitation::Prompt;
 use std::sync::Arc;
 
 /// I/O error with source preservation and location tracking.
@@ -18,7 +16,7 @@ pub struct IoError {
 
 impl IoError {
     /// Create a new I/O error from a std::io::Error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(err: std::io::Error) -> Self {
         let loc = std::panic::Location::caller();

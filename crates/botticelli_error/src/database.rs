@@ -1,11 +1,9 @@
 //! Database error types.
 
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use std::sync::Arc;
 
-#[cfg(feature = "serde_json")]
 use crate::json::SerdeJsonError;
 
 /// Diesel-specific error with source tracking.
@@ -24,7 +22,7 @@ pub struct DieselError {
 #[cfg(feature = "database")]
 impl DieselError {
     /// Create a new DieselError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(err: diesel::result::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -85,7 +83,7 @@ pub struct DieselConnectionError {
 #[cfg(feature = "database")]
 impl DieselConnectionError {
     /// Create a new DieselConnectionError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(err: diesel::ConnectionError) -> Self {
         let location = std::panic::Location::caller();
@@ -146,7 +144,7 @@ pub struct R2d2Error {
 #[cfg(feature = "database")]
 impl R2d2Error {
     /// Create a new R2d2Error with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(err: r2d2::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -222,7 +220,6 @@ pub enum DatabaseErrorKind {
     Serialization(String),
 
     /// Serde JSON error
-    #[cfg(feature = "serde_json")]
     #[display("{}", _0)]
     SerdeJson(SerdeJsonError),
 
@@ -270,7 +267,7 @@ pub struct DatabaseError {
 
 impl DatabaseError {
     /// Create a new DatabaseError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: DatabaseErrorKind) -> Self {
         let location = std::panic::Location::caller();
@@ -314,7 +311,6 @@ impl From<r2d2::Error> for DatabaseError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl From<serde_json::Error> for DatabaseError {
     #[track_caller]
     fn from(err: serde_json::Error) -> Self {

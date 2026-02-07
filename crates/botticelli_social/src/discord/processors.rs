@@ -5,6 +5,7 @@
 
 use botticelli_interface::ActProcessor;
 use botticelli_narrative::{Extract, ProcessorContext};
+use rmcp::tool;
 
 use crate::{
     DiscordChannelJson, DiscordGuildJson, DiscordGuildMemberJson, DiscordMemberRoleJson,
@@ -27,7 +28,6 @@ impl DiscordGuildProcessor {
     /// Create a new guild processor.
     #[tool]
     #[instrument(skip(repository))]
-    #[tool]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -37,7 +37,6 @@ impl DiscordGuildProcessor {
 impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
     type Error = botticelli_error::BotticelliError;
 
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = "DiscordGuildProcessor"))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = match Extract::json(context.execution().response()) {
@@ -107,9 +106,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildProcessor {
         Ok(())
     }
 
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext) -> bool {
         // Process if act name suggests guild/server data
@@ -144,9 +141,7 @@ pub struct DiscordUserProcessor {
 
 impl DiscordUserProcessor {
     /// Create a new user processor.
-    #[tool]
     #[instrument(skip(repository))]
-    #[tool]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -155,7 +150,6 @@ impl DiscordUserProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(context.execution().response())?;
@@ -190,9 +184,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordUserProcessor {
         Ok(())
     }
 
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();
@@ -229,7 +221,6 @@ impl DiscordChannelProcessor {
     /// Create a new channel processor.
     #[tool]
     #[instrument(skip(repository))]
-    #[tool]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -238,7 +229,6 @@ impl DiscordChannelProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(context.execution().response())?;
@@ -274,9 +264,7 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordChannelProcessor {
         Ok(())
     }
 
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();
@@ -312,7 +300,6 @@ impl DiscordRoleProcessor {
     /// Create a new role processor.
     #[tool]
     #[instrument(skip(repository))]
-    #[tool]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -321,7 +308,6 @@ impl DiscordRoleProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(context.execution().response())?;
@@ -357,7 +343,6 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordRoleProcessor {
         Ok(())
     }
 
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();
@@ -392,9 +377,7 @@ pub struct DiscordGuildMemberProcessor {
 
 impl DiscordGuildMemberProcessor {
     /// Create a new guild member processor.
-    #[tool]
     #[instrument(skip(repository))]
-    #[tool]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -403,7 +386,6 @@ impl DiscordGuildMemberProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(context.execution().response())?;
@@ -439,7 +421,6 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordGuildMemberProcessor {
         Ok(())
     }
 
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();
@@ -475,9 +456,7 @@ pub struct DiscordMemberRoleProcessor {
 
 impl DiscordMemberRoleProcessor {
     /// Create a new member role processor.
-    #[tool]
     #[instrument(skip(repository))]
-    #[tool]
     pub fn new(repository: Arc<DiscordRepository>) -> Self {
         Self { repository }
     }
@@ -486,7 +465,6 @@ impl DiscordMemberRoleProcessor {
 #[async_trait]
 impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
     type Error = botticelli_error::BotticelliError;
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name(), processor = self.name()))]
     async fn process(&self, context: &ProcessorContext) -> Result<(), Self::Error> {
         let json_str = Extract::json(context.execution().response())?;
@@ -522,7 +500,6 @@ impl ActProcessor<ProcessorContext<'_>> for DiscordMemberRoleProcessor {
         Ok(())
     }
 
-    #[tool]
     #[instrument(skip(self, context), fields(act = %context.execution().act_name()))]
     fn should_process(&self, context: &ProcessorContext) -> bool {
         let name_lower = context.execution().act_name().to_lowercase();

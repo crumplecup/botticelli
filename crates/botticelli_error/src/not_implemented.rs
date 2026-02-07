@@ -1,9 +1,11 @@
 //! Not implemented error types.
 
 /// Not implemented error with source location.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
+/// Not implemented error with source location.
+///
+/// Used as a placeholder during development to indicate missing functionality.
 #[derive(Debug, Clone, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Not Implemented: {} at line {} in {}", message, line, file)]
 pub struct NotImplementedError {
@@ -26,7 +28,7 @@ impl NotImplementedError {
     /// let err = NotImplementedError::new("Feature X not yet supported");
     /// assert!(err.message().contains("not yet supported"));
     /// ```
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

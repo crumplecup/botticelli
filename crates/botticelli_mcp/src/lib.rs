@@ -180,14 +180,14 @@ pub use rmcp_server::{
 #[cfg(feature = "discord")]
 pub use rmcp_server::{
     BotRegistryHasPlatformParams, BotRegistryHasPlatformResult, BotRegistryNewParams,
-    BotRegistryPlatformsParams, BotRegistryPlatformsResult, BotRegistryWithCacheParams,
+    BotRegistryPlatformsParams, BotRegistryPlatformsResult,
     ConvertArgsToStringsParams, ConvertArgsToStringsResult, ConvertSecurityErrorParams,
     HashmapToParamsParams, HashmapToParamsResult,
 };
 
-// LLM feature
-#[cfg(feature = "llm")]
-pub use rmcp_server::{SelectModelParams, SelectModelResult};
+// LLM feature (incomplete tools commented out)
+// #[cfg(feature = "llm")]
+// pub use rmcp_server::{SelectModelParams, SelectModelResult};
 
 // Database feature
 #[cfg(feature = "database")]

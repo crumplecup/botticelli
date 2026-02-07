@@ -2,11 +2,13 @@
 use serde::{Deserialize, Serialize};
 
 /// Specific observability error conditions.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use elicitation::{Prompt, Select};
 
+/// Specific observability error conditions.
+///
+/// Categorizes errors from tracing initialization, subscriber setup, and metrics.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit)]
 pub enum ObservabilityErrorKind {
     /// Failed to initialize tracer provider
@@ -48,7 +50,7 @@ pub struct ObservabilityError {
 
 impl ObservabilityError {
     /// Create a new observability error with caller location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: ObservabilityErrorKind) -> Self {
         let location = std::panic::Location::caller();

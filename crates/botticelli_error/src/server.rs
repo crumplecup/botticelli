@@ -1,9 +1,11 @@
 //! Error types for the local inference server.
 
 /// Error kinds for server operations.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
+/// Error kinds for server operations.
+///
+/// Categorizes errors from server initialization, request handling, and shutdown.
 #[derive(Debug, derive_more::Display)]
 pub enum ServerErrorKind {
     /// HTTP request failed: {0}
@@ -65,7 +67,7 @@ pub struct ServerError {
 
 impl ServerError {
     /// Create a new ServerError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: ServerErrorKind) -> Self {
         let location = std::panic::Location::caller();

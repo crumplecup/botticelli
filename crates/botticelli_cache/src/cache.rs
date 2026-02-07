@@ -1,7 +1,6 @@
 //! Command result cache implementation.
 
 use derive_getters::Getters;
-use elicitation::Prompt;
 use rmcp::tool;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

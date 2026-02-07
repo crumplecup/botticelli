@@ -10,6 +10,7 @@ use crate::{
 use botticelli_error::{DiscordError, DiscordErrorKind, DiscordErrorSeverity, DiscordResult};
 use botticelli_interface::{DiscordEventProcessor, EventResult};
 use chrono::NaiveDateTime;
+use rmcp::tool;
 use serenity::all::{GuildId, Ready};
 use serenity::async_trait;
 use serenity::client::{Context, EventHandler};
@@ -78,7 +79,7 @@ impl BotticelliHandler {
     /// Store a Discord guild in the database.
     #[tool]
     #[instrument(skip(self, guild), fields(guild_id = %guild.id, guild_name = %guild.name))]
-    async fn store_guild(&self, guild: &Guild) -> DiscordResult<()> {
+    async fn store_guild<'a>(&'a self, guild: &'a Guild) -> DiscordResult<()> {
         let new_guild = NewGuildBuilder::default()
             .id(Self::to_db_id(guild.id.get()))
             .name(guild.name.clone())
@@ -139,10 +140,10 @@ impl BotticelliHandler {
     /// Store a Discord channel in the database.
     #[tool]
     #[instrument(skip(self, guild_id, channel), fields(guild_id = ?guild_id))]
-    async fn store_channel(
-        &self,
+    async fn store_channel<'a>(
+        &'a self,
         guild_id: Option<GuildId>,
-        channel: &Channel,
+        channel: &'a Channel,
     ) -> DiscordResult<()> {
         let (id, name, channel_type, position, topic, nsfw, parent_id) = match channel {
             Channel::Guild(gc) => (
@@ -218,7 +219,7 @@ impl BotticelliHandler {
     /// Store a Discord member in the database.
     #[tool]
     #[instrument(skip(self, guild_id, member), fields(guild_id = %guild_id, user_id = %member.user.id))]
-    async fn store_member(&self, guild_id: GuildId, member: &Member) -> DiscordResult<()> {
+    async fn store_member<'a>(&'a self, guild_id: GuildId, member: &'a Member) -> DiscordResult<()> {
         // First store the user
         let new_user = NewUserBuilder::default()
             .id(Self::to_db_id(member.user.id.get()))
@@ -289,7 +290,7 @@ impl BotticelliHandler {
     /// Store a Discord role in the database.
     #[tool]
     #[instrument(skip(self, guild_id, role), fields(guild_id = %guild_id, role_id = %role.id, role_name = %role.name))]
-    async fn store_role(&self, guild_id: GuildId, role: &Role) -> DiscordResult<()> {
+    async fn store_role<'a>(&'a self, guild_id: GuildId, role: &'a Role) -> DiscordResult<()> {
         let new_role = NewRoleBuilder::default()
             .id(Self::to_db_id(role.id.get()))
             .guild_id(Self::to_db_id(guild_id.get()))
@@ -364,7 +365,6 @@ impl DiscordEventProcessor for BotticelliHandler {
         error.error_context()
     }
 
-    #[tool]
     #[instrument(skip(self, guild), fields(guild_id = %guild.id, guild_name = %guild.name))]
     async fn process_guild_create(
         &self,
@@ -441,7 +441,6 @@ impl DiscordEventProcessor for BotticelliHandler {
         Ok(())
     }
 
-    #[tool]
     #[instrument(skip(self, channel), fields(channel_id = %channel.id, channel_name = %channel.name))]
     async fn process_channel_create(
         &self,
@@ -452,21 +451,18 @@ impl DiscordEventProcessor for BotticelliHandler {
             .await
     }
 
-    #[tool]
     #[instrument(skip(self, member), fields(user_id = %member.user.id))]
     async fn process_member_add(&self, member: &Self::Member) -> EventResult<(), Self::Error> {
         debug!("Processing member_add event");
         self.store_member(member.guild_id, member).await
     }
 
-    #[tool]
     #[instrument(skip(self, role), fields(role_id = %role.id, role_name = %role.name))]
     async fn process_role_create(&self, role: &Self::Role) -> EventResult<(), Self::Error> {
         debug!("Processing role_create event");
         self.store_role(role.guild_id, role).await
     }
 
-    #[tool]
     #[instrument(skip(self, user), fields(user_id = %user.id, username = %user.name))]
     async fn process_ready(
         &self,
@@ -486,7 +482,6 @@ impl DiscordEventProcessor for BotticelliHandler {
 #[async_trait]
 impl EventHandler for BotticelliHandler {
     /// Called when the bot successfully connects to Discord.
-    #[tool]
     #[instrument(skip(self, _ctx, ready), fields(user_id = %ready.user.id, username = %ready.user.name, guild_count = ready.guilds.len()))]
     async fn ready(&self, _ctx: Context, ready: Ready) {
         // The guilds in Ready are partial, we'll get full data via guild_create events
@@ -518,7 +513,6 @@ impl EventHandler for BotticelliHandler {
     }
 
     /// Called when a guild becomes available or the bot joins a guild.
-    #[tool]
     #[instrument(skip(self, _ctx, guild), fields(guild_id = %guild.id, guild_name = %guild.name, is_new = ?is_new))]
     async fn guild_create(&self, _ctx: Context, guild: Guild, is_new: Option<bool>) {
         info!(
@@ -555,7 +549,6 @@ impl EventHandler for BotticelliHandler {
     }
 
     /// Called when the bot leaves a guild or a guild becomes unavailable.
-    #[tool]
     #[instrument(skip(self, _ctx, incomplete, _full), fields(guild_id = %incomplete.id))]
     async fn guild_delete(
         &self,
@@ -575,7 +568,6 @@ impl EventHandler for BotticelliHandler {
     }
 
     /// Called when a channel is created.
-    #[tool]
     #[instrument(skip(self, _ctx, channel), fields(channel_id = %channel.id, channel_name = %channel.name))]
     async fn channel_create(&self, _ctx: Context, channel: GuildChannel) {
         info!(
@@ -592,7 +584,6 @@ impl EventHandler for BotticelliHandler {
     }
 
     /// Called when a new member joins a guild.
-    #[tool]
     #[instrument(skip(self, _ctx, new_member), fields(guild_id = %new_member.guild_id, user_id = %new_member.user.id))]
     async fn guild_member_addition(&self, _ctx: Context, new_member: Member) {
         info!(
@@ -607,7 +598,6 @@ impl EventHandler for BotticelliHandler {
     }
 
     /// Called when a member leaves a guild.
-    #[tool]
     #[instrument(skip(self, _ctx, user, _member_data_if_available), fields(guild_id = %guild_id, user_id = %user.id))]
     async fn guild_member_removal(
         &self,
@@ -641,7 +631,6 @@ impl EventHandler for BotticelliHandler {
     }
 
     /// Called when a role is created.
-    #[tool]
     #[instrument(skip(self, _ctx, new), fields(guild_id = %new.guild_id, role_id = %new.id, role_name = %new.name))]
     async fn guild_role_create(&self, _ctx: Context, new: Role) {
         info!(

@@ -2,10 +2,13 @@
 //!
 //! This module provides MCP tool wrappers for trait methods in botticelli_models
 //! that cannot have `#[tool]` directly (async methods with references, trait implementations).
+//!
+//! TODO: Add #[tool_router] to register these tools with the MCP server.
+//! Currently these functions are marked as tools but not registered, hence the
+//! "never used" warnings. This will be fixed when we add the tool_router macro.
 
 use anyhow::Result;
 use botticelli_core::{GenerateRequest, GenerateResponse};
-use botticelli_error::BotticelliError;
 use botticelli_models::{AnthropicClient, GeminiClient, GroqDriver, HuggingFaceDriver, OllamaClient};
 use rmcp::tool;
 use serde::{Deserialize, Serialize};
@@ -31,13 +34,10 @@ pub async fn gemini_generate(
 ) -> Result<GenerateResponse> {
     use botticelli_interface::BotticelliDriver;
     
-    let request: GenerateRequest = serde_json::from_value(params.request)
-        .map_err(|e| botticelli_error::CoreError::new(
-            botticelli_error::CoreErrorKind::Serialization(std::sync::Arc::new(e)),
-        ))?;
+    let request: GenerateRequest = serde_json::from_value(params.request)?;
     
     let client = GeminiClient::new()?;
-    client.generate(&request).await
+    Ok(client.generate(&request).await?)
 }
 
 /// Parameters for Anthropic generate call.
@@ -59,13 +59,10 @@ pub async fn anthropic_generate(
 ) -> Result<GenerateResponse> {
     use botticelli_interface::BotticelliDriver;
     
-    let request: GenerateRequest = serde_json::from_value(params.request)
-        .map_err(|e| botticelli_error::CoreError::new(
-            botticelli_error::CoreErrorKind::Serialization(std::sync::Arc::new(e)),
-        ))?;
+    let request: GenerateRequest = serde_json::from_value(params.request)?;
     
     let client = AnthropicClient::new(params.api_key, params.model);
-    client.generate(&request).await
+    Ok(client.generate(&request).await?)
 }
 
 /// Parameters for Groq generate call.
@@ -85,13 +82,10 @@ pub async fn groq_generate(
 ) -> Result<GenerateResponse> {
     use botticelli_interface::BotticelliDriver;
     
-    let request: GenerateRequest = serde_json::from_value(params.request)
-        .map_err(|e| botticelli_error::CoreError::new(
-            botticelli_error::CoreErrorKind::Serialization(std::sync::Arc::new(e)),
-        ))?;
+    let request: GenerateRequest = serde_json::from_value(params.request)?;
     
     let client = GroqDriver::new(params.model)?;
-    client.generate(&request).await
+    Ok(client.generate(&request).await?)
 }
 
 /// Parameters for HuggingFace generate call.
@@ -111,13 +105,10 @@ pub async fn huggingface_generate(
 ) -> Result<GenerateResponse> {
     use botticelli_interface::BotticelliDriver;
     
-    let request: GenerateRequest = serde_json::from_value(params.request)
-        .map_err(|e| botticelli_error::CoreError::new(
-            botticelli_error::CoreErrorKind::Serialization(std::sync::Arc::new(e)),
-        ))?;
+    let request: GenerateRequest = serde_json::from_value(params.request)?;
     
     let client = HuggingFaceDriver::new(params.model)?;
-    client.generate(&request).await
+    Ok(client.generate(&request).await?)
 }
 
 /// Parameters for Ollama generate call.
@@ -137,13 +128,10 @@ pub async fn ollama_generate(
 ) -> Result<GenerateResponse> {
     use botticelli_interface::BotticelliDriver;
     
-    let request: GenerateRequest = serde_json::from_value(params.request)
-        .map_err(|e| botticelli_error::CoreError::new(
-            botticelli_error::CoreErrorKind::Serialization(std::sync::Arc::new(e)),
-        ))?;
+    let request: GenerateRequest = serde_json::from_value(params.request)?;
     
     let client = OllamaClient::new(params.model)?;
-    client.generate(&request).await
+    Ok(client.generate(&request).await?)
 }
 
 // ============================================================================
@@ -162,6 +150,10 @@ pub struct CountTokensParams {
 }
 
 /// Count tokens for text using specified provider.
+///
+/// TODO: This function is not yet registered with a tool_router, so it generates
+/// a "never used" warning. This will be fixed when we add #[tool_router] to this module.
+#[allow(dead_code)]
 #[tool(description = "Count tokens in text using provider's tokenizer")]
 #[instrument(skip(params))]
 pub fn count_tokens(params: CountTokensParams) -> Result<usize> {
@@ -170,29 +162,24 @@ pub fn count_tokens(params: CountTokensParams) -> Result<usize> {
     match params.provider.as_str() {
         "gemini" => {
             let client = GeminiClient::new()?;
-            client.count_tokens(&params.text)
+            Ok(client.count_tokens(&params.text)?)
         }
         "anthropic" => {
             let client = AnthropicClient::new(String::new(), params.model);
-            client.count_tokens(&params.text)
+            Ok(client.count_tokens(&params.text)?)
         }
         "groq" => {
             let client = GroqDriver::new(params.model)?;
-            client.count_tokens(&params.text)
+            Ok(client.count_tokens(&params.text)?)
         }
         "huggingface" => {
             let client = HuggingFaceDriver::new(params.model)?;
-            client.count_tokens(&params.text)
+            Ok(client.count_tokens(&params.text)?)
         }
         "ollama" => {
             let client = OllamaClient::new(params.model)?;
-            client.count_tokens(&params.text)
+            Ok(client.count_tokens(&params.text)?)
         }
         _ => Err(anyhow::anyhow!("Unsupported provider: {}", params.provider)),
-            botticelli_error::CoreErrorKind::InvalidInput(format!(
-                "Unsupported provider: {}",
-                params.provider
-            )),
-        ))),
     }
 }

@@ -6,7 +6,6 @@
 use crate::ModelId;
 use derive_getters::Getters;
 use derive_new::new;
-use elicitation::Prompt;
 use rmcp::tool;
 use std::time::{Duration, Instant};
 use tracing::{debug, instrument, warn};

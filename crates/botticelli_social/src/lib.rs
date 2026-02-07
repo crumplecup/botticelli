@@ -47,7 +47,7 @@ pub use database::DatabaseCommandExecutor;
 
 // Export secure executor (requires database feature)
 #[cfg(feature = "database")]
-pub use secure_bot_executor::SecureBotExecutor;
+pub use secure_bot_executor::{hashmap_to_params, SecureBotExecutor};
 #[cfg(feature = "database")]
 pub use secure_executor::{ExecutionResult, SecureBotCommandExecutor};
 

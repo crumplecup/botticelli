@@ -1,9 +1,12 @@
 //! Backend error types.
 
 /// Backend error with source location.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
+/// Backend error with source location.
+///
+/// Wraps errors from connection pools, query execution, and other
+/// database backend operations.
 #[derive(Debug, Clone, derive_more::Display, derive_more::Error, elicitation::Elicit)]
 #[display("Backend Error: {} at line {} in {}", message, line, file)]
 pub struct BackendError {
@@ -26,7 +29,7 @@ impl BackendError {
     /// let err = BackendError::new("Backend service unavailable");
     /// assert!(err.message.contains("unavailable"));
     /// ```
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

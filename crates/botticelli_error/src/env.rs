@@ -1,8 +1,7 @@
 //! Environment variable errors.
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use elicitation::{Prompt, Select};
 use std::env::VarError;
@@ -30,7 +29,7 @@ pub struct EnvError {
 
 impl EnvError {
     /// Creates a new environment error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: EnvErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -41,7 +40,7 @@ impl EnvError {
         }
     }
 
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     /// Gets the error kind.
     pub fn kind(&self) -> &EnvErrorKind {
         &self.kind

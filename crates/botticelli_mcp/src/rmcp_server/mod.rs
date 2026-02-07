@@ -34,7 +34,7 @@ pub use tools::{
 pub use tools::{
     // Social primitives
     BotRegistryHasPlatformParams, BotRegistryHasPlatformResult, BotRegistryNewParams,
-    BotRegistryPlatformsParams, BotRegistryPlatformsResult, BotRegistryWithCacheParams,
+    BotRegistryPlatformsParams, BotRegistryPlatformsResult,
     ConvertArgsToStringsParams, ConvertArgsToStringsResult, ConvertSecurityErrorParams,
     HashmapToParamsParams, HashmapToParamsResult,
 };
@@ -93,9 +93,9 @@ pub use tools::{
     BudgetRemainingAnthropicTierParams, BudgetRemainingAnthropicTierResult,
 };
 
-// LLM feature
-#[cfg(feature = "llm")]
-pub use tools::{SelectModelParams, SelectModelResult};
+// LLM feature (incomplete tools commented out)
+// #[cfg(feature = "llm")]
+// pub use tools::{SelectModelParams, SelectModelResult};
 
 // Database feature
 #[cfg(feature = "database")]

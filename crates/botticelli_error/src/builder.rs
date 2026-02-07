@@ -2,11 +2,13 @@
 use serde::{Deserialize, Serialize};
 
 /// Specific builder error conditions.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use elicitation::{Prompt, Select};
 
+/// Specific builder error conditions.
+///
+/// Categorizes errors that occur during struct construction via builders.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit)]
 pub enum BuilderErrorKind {
     /// Missing required field
@@ -38,7 +40,7 @@ pub struct BuilderError {
 
 impl BuilderError {
     /// Create a new builder error with caller location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: BuilderErrorKind) -> Self {
         let location = std::panic::Location::caller();
@@ -49,7 +51,7 @@ impl BuilderError {
         }
     }
 
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     /// Get the error kind.
     pub fn kind(&self) -> &BuilderErrorKind {
         &self.kind

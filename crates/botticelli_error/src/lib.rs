@@ -28,7 +28,6 @@
 #![warn(missing_docs)]
 
 // Re-export rmcp::tool when mcp feature is enabled
-#[cfg(feature = "mcp")]
 pub use rmcp::tool;
 
 #[cfg(feature = "models")]
@@ -82,10 +81,8 @@ pub use error::{BotticelliError, BotticelliErrorKind, BotticelliResult};
 pub use gemini::{GeminiError, GeminiErrorKind};
 pub use http::{HttpError, HttpErrorKind};
 pub use io::IoError;
-#[cfg(feature = "serde_json")]
 pub use json::SerdeJsonError as JsonSerdeJsonError;
 pub use json::{JsonError, JsonErrorKind};
-#[cfg(feature = "serde_json")]
 pub use mcp::SerdeJsonError as McpSerdeJsonError;
 pub use mcp::{McpError, McpErrorKind, McpResult};
 #[cfg(feature = "anthropic")]
@@ -100,7 +97,6 @@ pub use observability::{ObservabilityError, ObservabilityErrorKind, Observabilit
 pub use openai::{OpenAIError, OpenAIErrorKind};
 #[cfg(feature = "reqwest")]
 pub use provider::ProviderReqwestError;
-#[cfg(feature = "serde_json")]
 pub use provider::ProviderSerdeJsonError;
 pub use provider::{ProviderError, ProviderErrorKind, ProviderResult};
 pub use rate_limit::{RateLimitError, RateLimitErrorKind};

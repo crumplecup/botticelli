@@ -1,11 +1,12 @@
 //! Provider error types.
 
 /// Reqwest error with source tracking for provider operations.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
-use elicitation::Prompt;
 
+/// Reqwest error with source tracking for provider operations.
+///
+/// Wraps reqwest HTTP client errors with location tracking.
 #[cfg(feature = "reqwest")]
 #[derive(Debug, derive_more::Display, derive_more::Error, derive_getters::Getters)]
 #[display("Reqwest error: {:?} at {}:{}", source, file, line)]
@@ -21,7 +22,7 @@ pub struct ProviderReqwestError {
 #[cfg(feature = "reqwest")]
 impl ProviderReqwestError {
     /// Create a new ProviderReqwestError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(err: reqwest::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -34,7 +35,6 @@ impl ProviderReqwestError {
 }
 
 /// Serde JSON error with source tracking for provider operations.
-#[cfg(feature = "serde_json")]
 #[derive(
     Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit,
 )]
@@ -48,10 +48,9 @@ pub struct ProviderSerdeJsonError {
     file: String,
 }
 
-#[cfg(feature = "serde_json")]
 impl ProviderSerdeJsonError {
     /// Create a new ProviderSerdeJsonError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(err: serde_json::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -63,7 +62,6 @@ impl ProviderSerdeJsonError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl Clone for ProviderSerdeJsonError {
     fn clone(&self) -> Self {
         // serde_json::Error is not Clone, reconstruct from message
@@ -78,7 +76,6 @@ impl Clone for ProviderSerdeJsonError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl serde::Serialize for ProviderSerdeJsonError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -93,7 +90,6 @@ impl serde::Serialize for ProviderSerdeJsonError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl<'de> serde::Deserialize<'de> for ProviderSerdeJsonError {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -115,7 +111,6 @@ impl<'de> serde::Deserialize<'de> for ProviderSerdeJsonError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl schemars::JsonSchema for ProviderSerdeJsonError {
     fn schema_name() -> std::borrow::Cow<'static, str> {
         "ProviderSerdeJsonError".into()
@@ -177,14 +172,13 @@ pub enum ProviderErrorKind {
     ParsingError(String),
 
     /// Serde JSON parsing error
-    #[cfg(feature = "serde_json")]
     #[display("{}", _0)]
     SerdeJson(ProviderSerdeJsonError),
 }
 
 impl ProviderError {
     /// Create a new provider error with location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(provider: impl Into<String>, kind: ProviderErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -208,7 +202,6 @@ impl From<reqwest::Error> for ProviderError {
     }
 }
 
-#[cfg(feature = "serde_json")]
 impl From<serde_json::Error> for ProviderError {
     #[track_caller]
     fn from(err: serde_json::Error) -> Self {

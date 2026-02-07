@@ -1,9 +1,11 @@
 //! Configuration error types.
 
 /// Configuration error with source location.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
+/// Configuration error with source location.
+///
+/// Wraps configuration parsing and validation errors with location tracking.
 #[derive(
     Debug,
     Clone,
@@ -33,7 +35,7 @@ impl ConfigError {
     /// let err = ConfigError::new("Missing required field");
     /// assert!(err.message().contains("Missing required"));
     /// ```
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(message: impl Into<String>) -> Self {
         let location = std::panic::Location::caller();

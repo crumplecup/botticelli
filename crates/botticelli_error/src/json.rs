@@ -1,12 +1,14 @@
 //! JSON error types.
 
 /// Serde JSON error with source tracking.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 
+/// Serde JSON error with source tracking.
+///
+/// Wraps serde_json errors with location tracking for better diagnostics.
 #[derive(
     Debug, derive_more::Display, derive_more::Error, derive_getters::Getters, elicitation::Elicit,
 )]
@@ -22,7 +24,7 @@ pub struct SerdeJsonError {
 
 impl SerdeJsonError {
     /// Create a new SerdeJsonError with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(err: serde_json::Error) -> Self {
         let location = std::panic::Location::caller();
@@ -196,7 +198,7 @@ impl Ord for JsonError {
 
 impl JsonError {
     /// Create a new JsonError with the given kind at the current location.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: JsonErrorKind) -> Self {
         let location = std::panic::Location::caller();

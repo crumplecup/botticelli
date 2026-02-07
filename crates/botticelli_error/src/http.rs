@@ -2,11 +2,13 @@
 use serde::{Deserialize, Serialize};
 
 /// Specific HTTP error conditions.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use elicitation::{Prompt, Select};
 
+/// Specific HTTP error conditions.
+///
+/// Categorizes errors from HTTP requests, responses, and network issues.
 #[derive(Debug, Clone, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit)]
 pub enum HttpErrorKind {
     /// Generic HTTP error with message
@@ -45,7 +47,7 @@ pub struct HttpError {
 
 impl HttpError {
     /// Create a new HttpError with the given kind at the current location.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: HttpErrorKind) -> Self {
         let location = std::panic::Location::caller();

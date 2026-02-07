@@ -1,8 +1,7 @@
 //! Chat-specific error types.
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use elicitation::{Prompt, Select};
 
@@ -72,7 +71,7 @@ pub struct SamplingError {
 
 impl SamplingError {
     /// Create a new sampling error with location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: SamplingErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -160,7 +159,7 @@ pub struct ChatError {
 
 impl ChatError {
     /// Create a new chat error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: ChatErrorKind) -> Self {
         let loc = std::panic::Location::caller();
@@ -172,14 +171,14 @@ impl ChatError {
     }
 
     /// Create a command not found error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn command_not_found(command: impl Into<String>) -> Self {
         Self::new(ChatErrorKind::CommandNotFound(command.into()))
     }
 
     /// Create an invalid arguments error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn invalid_arguments(command: impl Into<String>, reason: impl Into<String>) -> Self {
         Self::new(ChatErrorKind::InvalidArguments {
@@ -189,56 +188,56 @@ impl ChatError {
     }
 
     /// Create an execution failed error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn execution_failed(message: impl Into<String>) -> Self {
         Self::new(ChatErrorKind::ExecutionFailed(message.into()))
     }
 
     /// Create a dialog failed error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn dialog_failed(message: impl Into<String>) -> Self {
         Self::new(ChatErrorKind::DialogFailed(message.into()))
     }
 
     /// Create a user cancelled error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn user_cancelled() -> Self {
         Self::new(ChatErrorKind::UserCancelled)
     }
 
     /// Create a missing argument error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn missing_argument(arg: impl Into<String>) -> Self {
         Self::new(ChatErrorKind::MissingArgument(arg.into()))
     }
 
     /// Create a parse error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn parse_error(message: impl Into<String>) -> Self {
         Self::new(ChatErrorKind::ParseError(message.into()))
     }
 
     /// Create an invalid input error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn invalid_input(message: impl Into<String>) -> Self {
         Self::new(ChatErrorKind::InvalidInput(message.into()))
     }
 
     /// Create an invalid state error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn invalid_state(message: impl Into<String>) -> Self {
         Self::new(ChatErrorKind::InvalidState(message.into()))
     }
 
     /// Create a validation error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn validation_error(message: impl Into<String>) -> Self {
         Self::new(ChatErrorKind::ValidationError(message.into()))

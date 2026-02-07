@@ -5,6 +5,7 @@ use botticelli_database::establish_connection;
 use botticelli_error::{BotCommandError, BotCommandErrorKind, BotCommandResult};
 use botticelli_interface::BotCommandExecutor;
 use diesel::prelude::*;
+use rmcp::tool;
 use serde_json::{Value as JsonValue, json};
 use std::collections::{HashMap, HashSet};
 use tracing::{debug, info, instrument};
@@ -105,7 +106,7 @@ impl DatabaseCommandExecutor {
     /// - Database error
     #[tool]
     #[instrument(skip(self), fields(command = "update_table"))]
-    async fn update_table(&self, args: &HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
+    async fn update_table<'a>(&'a self, args: &'a HashMap<String, JsonValue>) -> BotCommandResult<JsonValue> {
         // Extract table_name
         let table_name = args
             .get("table_name")
@@ -274,19 +275,16 @@ impl BotCommandExecutor for DatabaseCommandExecutor {
         "database"
     }
 
-    #[tool]
     #[instrument(skip(self, command))]
     fn supports_command(&self, command: &str) -> bool {
         matches!(command, "update_table")
     }
 
-    #[tool]
     #[instrument(skip(self))]
     fn supported_commands(&self) -> Vec<String> {
         vec!["update_table".to_string()]
     }
 
-    #[tool]
     #[instrument(
         skip(self, args),
         fields(

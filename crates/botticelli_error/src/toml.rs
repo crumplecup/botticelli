@@ -1,7 +1,6 @@
 //! TOML error types with source preservation.
 
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use derive_getters::Getters;
 use std::sync::Arc;
@@ -17,7 +16,7 @@ pub struct TomlError {
 
 impl TomlError {
     /// Create a new TOML error from a toml::de::Error.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(err: toml::de::Error) -> Self {
         let loc = std::panic::Location::caller();

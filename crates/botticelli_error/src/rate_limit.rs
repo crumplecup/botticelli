@@ -2,11 +2,13 @@
 use serde::{Deserialize, Serialize};
 
 /// Specific rate limiting error conditions.
-#[cfg(feature = "mcp")]
-use crate::tool;
+use rmcp::tool;
 
 use elicitation::{Prompt, Select};
 
+/// Specific rate limiting error conditions.
+///
+/// Categorizes errors from rate limit enforcement and quota management.
 #[derive(
     Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, derive_more::Display, schemars::JsonSchema, elicitation::Elicit,
 )]
@@ -60,7 +62,7 @@ pub struct RateLimitError {
 
 impl RateLimitError {
     /// Create a new rate limiting error with automatic location tracking.
-    #[cfg_attr(feature = "mcp", tool)]
+    #[tool]
     #[track_caller]
     pub fn new(kind: RateLimitErrorKind) -> Self {
         let location = std::panic::Location::caller();

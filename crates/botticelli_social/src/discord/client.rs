@@ -6,6 +6,7 @@
 use crate::{BotticelliHandler, DiscordRepository};
 use botticelli_error::{DiscordError, DiscordErrorKind};
 use diesel::pg::PgConnection;
+use rmcp::tool;
 use serenity::Client;
 use std::sync::Arc;
 use tokio::sync::{Mutex, mpsc};
@@ -55,7 +56,6 @@ impl BotticelliBot {
     /// - Database connection fails
     #[tool]
     #[instrument(skip(token, conn), fields(token_len = token.len()))]
-    #[tool]
     pub async fn new(token: String, conn: PgConnection) -> Result<Self, DiscordError> {
         info!("Initializing Botticelli Discord bot");
 
@@ -109,7 +109,6 @@ impl BotticelliBot {
     /// - A fatal network/gateway error occurs
     #[tool]
     #[instrument(skip(self))]
-    #[tool]
     pub async fn start(&mut self) -> Result<(), DiscordError> {
         info!("Starting Discord bot");
 

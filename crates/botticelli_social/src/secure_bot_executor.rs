@@ -53,7 +53,6 @@ where
         ),
         fields(narrative_id)
     )]
-    #[tool]
     pub fn new(
         inner: E,
         permission_checker: PermissionChecker,
@@ -82,7 +81,6 @@ where
     /// Get reference to inner executor.
     #[tool]
     #[instrument(skip(self))]
-    #[tool]
     pub fn inner(&self) -> &E {
         &self.inner
     }
@@ -90,7 +88,6 @@ where
     /// Get mutable reference to inner executor.
     #[tool]
     #[instrument(skip(self))]
-    #[tool]
     pub fn inner_mut(&mut self) -> &mut E {
         &mut self.inner
     }
@@ -104,7 +101,6 @@ where
 {
     type Error = BotCommandError;
 
-    #[tool]
     #[instrument(skip(self, args), fields(platform = self.inner.platform(), command, narrative_id = %self.narrative_id))]
     async fn execute(
         &self,
@@ -151,7 +147,6 @@ where
         Ok(result)
     }
 
-    #[tool]
     #[instrument(skip(self))]
     fn platform(&self) -> &str {
         let platform = self.inner.platform();
@@ -159,7 +154,6 @@ where
         platform
     }
 
-    #[tool]
     #[instrument(skip(self))]
     fn supported_commands(&self) -> Vec<String> {
         let commands = self.inner.supported_commands();
@@ -167,7 +161,6 @@ where
         commands
     }
 
-    #[tool]
     #[instrument(skip(self), fields(command))]
     fn supports_command(&self, command: &str) -> bool {
         let supported = self.inner.supports_command(command);
@@ -175,7 +168,6 @@ where
         supported
     }
 
-    #[tool]
     #[instrument(skip(self), fields(command))]
     fn command_help(&self, command: &str) -> Option<String> {
         let help = self.inner.command_help(command);
@@ -187,7 +179,6 @@ where
 /// Convert HashMap<String, JsonValue> to HashMap<String, String> for security checks.
 #[tool]
 #[instrument(skip(args), fields(arg_count = args.len()))]
-#[tool]
 pub fn hashmap_to_params(
     args: &HashMap<String, JsonValue>,
 ) -> BotCommandResult<HashMap<String, String>> {

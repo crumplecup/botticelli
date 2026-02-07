@@ -21,7 +21,6 @@ use botticelli_error::{
     ValidationWarning,
     ValidationWarningKind,
 };
-use elicitation::Elicit;
 use elicitation_macros::elicit_tools;
 use rmcp::tool;
 use rmcp::tool_router;

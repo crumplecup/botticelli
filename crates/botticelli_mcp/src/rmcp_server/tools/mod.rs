@@ -85,7 +85,7 @@ pub use security::ValidateDiscordParams;
 #[cfg(feature = "discord")]
 pub use social::{
     BotRegistryHasPlatformParams, BotRegistryHasPlatformResult, BotRegistryNewParams,
-    BotRegistryPlatformsParams, BotRegistryPlatformsResult, BotRegistryWithCacheParams,
+    BotRegistryPlatformsParams, BotRegistryPlatformsResult,
     ConvertArgsToStringsParams, ConvertArgsToStringsResult, ConvertSecurityErrorParams,
     HashmapToParamsParams, HashmapToParamsResult,
 };
@@ -98,9 +98,9 @@ pub use storage::{
     StorageGetPathResult, StorageNewParams, StorageVerifyHashParams,
 };
 
-// LLM feature
-#[cfg(feature = "llm")]
-pub use library::{SelectModelParams, SelectModelResult};
+// LLM feature (incomplete tools commented out)
+// #[cfg(feature = "llm")]
+// pub use library::{SelectModelParams, SelectModelResult};
 
 // Database feature
 #[cfg(feature = "database")]

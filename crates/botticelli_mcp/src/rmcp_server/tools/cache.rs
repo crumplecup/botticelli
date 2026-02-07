@@ -140,6 +140,11 @@ pub struct CacheEvictLruResult {
 /// Cache tool implementations for the MCP server.
 ///
 /// Generated tool router function: `cache_tool_router()`
+///
+/// Note: The `#[allow(missing_docs)]` below suppresses warnings for the generated
+/// `cache_tool_router()` function. This is required because rmcp's `#[tool_router]`
+/// macro does not generate documentation. See RMCP_TOOL_ROUTER_WORKAROUND.md.
+#[allow(missing_docs)]
 #[elicit_tools(CacheKey, CacheEntry, CommandCache, CommandCacheConfig)]
 #[tool_router(router = cache_tool_router, vis = "pub")]
 impl BotticelliServer {
@@ -215,10 +220,10 @@ impl BotticelliServer {
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_cleanup_expired"))]
+    #[instrument(skip(self, _params), fields(tool = "cache_cleanup_expired"))]
     pub fn cache_cleanup_expired(
         &self,
-        Parameters(params): Parameters<CacheCleanupParams>,
+        Parameters(_params): Parameters<CacheCleanupParams>,
     ) -> Result<Json<CacheCleanupResult>, rmcp::ErrorData> {
         tracing::debug!("Cache cleanup wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");
@@ -236,10 +241,10 @@ impl BotticelliServer {
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_clear"))]
+    #[instrument(skip(self, _params), fields(tool = "cache_clear"))]
     pub fn cache_clear(
         &self,
-        Parameters(params): Parameters<CacheClearParams>,
+        Parameters(_params): Parameters<CacheClearParams>,
     ) -> Result<Json<CacheClearResult>, rmcp::ErrorData> {
         tracing::debug!("Cache clear wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");
@@ -257,10 +262,10 @@ impl BotticelliServer {
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_len"))]
+    #[instrument(skip(self, _params), fields(tool = "cache_len"))]
     pub fn cache_len(
         &self,
-        Parameters(params): Parameters<CacheLenParams>,
+        Parameters(_params): Parameters<CacheLenParams>,
     ) -> Result<Json<CacheLenResult>, rmcp::ErrorData> {
         tracing::debug!("Cache length wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");
@@ -278,10 +283,10 @@ impl BotticelliServer {
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_is_empty"))]
+    #[instrument(skip(self, _params), fields(tool = "cache_is_empty"))]
     pub fn cache_is_empty(
         &self,
-        Parameters(params): Parameters<CacheIsEmptyParams>,
+        Parameters(_params): Parameters<CacheIsEmptyParams>,
     ) -> Result<Json<CacheIsEmptyResult>, rmcp::ErrorData> {
         tracing::debug!("Cache empty check wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");
@@ -299,10 +304,10 @@ impl BotticelliServer {
     ///
     /// Note: Stateless demonstration. In real use, you'd need state management.
     #[tool]
-    #[instrument(skip(self, params), fields(tool = "cache_evict_lru"))]
+    #[instrument(skip(self, _params), fields(tool = "cache_evict_lru"))]
     pub fn cache_evict_lru(
         &self,
-        Parameters(params): Parameters<CacheEvictLruParams>,
+        Parameters(_params): Parameters<CacheEvictLruParams>,
     ) -> Result<Json<CacheEvictLruResult>, rmcp::ErrorData> {
         tracing::debug!("Cache evict LRU wrapper");
         tracing::warn!("Stateless wrapper - creating temporary cache for demonstration");

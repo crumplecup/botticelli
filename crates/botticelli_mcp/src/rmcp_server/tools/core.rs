@@ -18,6 +18,15 @@ use tracing::{debug, instrument};
 /// Core tool implementations for the MCP server.
 ///
 /// Generated tool router function: `core_tool_router()`
+/// This tool router provides core utility tools.
+///
+/// Tools include observability initialization and configuration management.
+///
+/// Note: The `#[allow(missing_docs)]` below suppresses warnings for the generated
+/// `core_tool_router()` function. This is required because rmcp's `#[tool_router]`
+/// macro does not generate documentation. This should be removed when rmcp is
+/// updated to generate docs automatically. See: https://github.com/JasonShin/rmcp/issues/XXX
+#[allow(missing_docs)]
 #[tool_router(router = core_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Echo back the provided message.

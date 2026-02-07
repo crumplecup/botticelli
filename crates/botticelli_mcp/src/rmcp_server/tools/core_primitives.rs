@@ -193,6 +193,15 @@ pub struct CoreInputWithHistoryRetentionResult {
     ToolDefinition,
     ToolResult
 )]
+/// This tool router provides elicitation tools for core primitive types.
+///
+/// Includes Budget, TokenUsage, Tokenizer, Input, and observability types.
+///
+/// Note: The `#[allow(missing_docs)]` below suppresses warnings for the generated
+/// `core_primitives_elicit_tool_router()` function. This is required because rmcp's
+/// `#[tool_router]` macro does not generate documentation. This should be removed
+/// when rmcp is updated to generate docs automatically. See: https://github.com/JasonShin/rmcp/issues/XXX
+#[allow(missing_docs)]
 #[tool_router(router = core_primitives_elicit_tool_router, vis = "pub")]
 impl BotticelliServer {}
 
