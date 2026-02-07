@@ -18,7 +18,9 @@ use tracing::instrument;
 
 /// Represents a database column's structure
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, QueryableByName, elicitation::Elicit,
+    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, QueryableByName, 
+    serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+    elicitation::Elicit,
 )]
 pub struct ColumnInfo {
     /// Column name
@@ -39,7 +41,7 @@ pub struct ColumnInfo {
 }
 
 /// Represents a table's schema structure
-#[derive(Debug, Clone, elicitation::Elicit)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 pub struct TableSchema {
     /// Table name
     pub table_name: String,

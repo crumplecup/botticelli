@@ -83,7 +83,7 @@ pub use narrative_repository::PostgresNarrativeRepository;
 pub use schema_docs::{assemble_prompt, generate_schema_prompt, is_content_focus};
 
 // Re-export schema inference types
-pub use schema_inference::{InferredSchema, create_inferred_table, infer_schema};
+pub use schema_inference::{ColumnDefinition, InferredSchema, create_inferred_table, infer_schema};
 
 // Re-export schema reflection types
 pub use schema_reflection::{

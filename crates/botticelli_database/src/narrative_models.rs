@@ -2,9 +2,10 @@
 
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// Database row for narrative_executions table.
-#[derive(Debug, Clone, Queryable, Identifiable, Selectable)]
+#[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::narrative_executions)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NarrativeExecutionRow {
@@ -19,7 +20,7 @@ pub struct NarrativeExecutionRow {
 }
 
 /// Insertable struct for narrative_executions table.
-#[derive(Debug, Clone, Insertable, elicitation::Elicit)]
+#[derive(Debug, Clone, Insertable, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::narrative_executions)]
 pub struct NewNarrativeExecutionRow {
     pub narrative_name: String,
@@ -31,7 +32,7 @@ pub struct NewNarrativeExecutionRow {
 }
 
 /// Database row for act_executions table.
-#[derive(Debug, Clone, Queryable, Identifiable, Selectable, Associations)]
+#[derive(Debug, Clone, Queryable, Identifiable, Selectable, Associations, Serialize, Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(belongs_to(NarrativeExecutionRow, foreign_key = execution_id))]
 #[diesel(table_name = crate::schema::act_executions)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -48,7 +49,7 @@ pub struct ActExecutionRow {
 }
 
 /// Insertable struct for act_executions table.
-#[derive(Debug, Clone, Insertable, elicitation::Elicit)]
+#[derive(Debug, Clone, Insertable, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::act_executions)]
 pub struct NewActExecutionRow {
     pub execution_id: i32,
@@ -61,7 +62,7 @@ pub struct NewActExecutionRow {
 }
 
 /// Database row for act_inputs table.
-#[derive(Debug, Clone, Queryable, Identifiable, Selectable, Associations)]
+#[derive(Debug, Clone, Queryable, Identifiable, Selectable, Associations, Serialize, Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(belongs_to(ActExecutionRow, foreign_key = act_execution_id))]
 #[diesel(table_name = crate::schema::act_inputs)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -78,7 +79,7 @@ pub struct ActInputRow {
 }
 
 /// Insertable struct for act_inputs table.
-#[derive(Debug, Clone, Insertable, elicitation::Elicit)]
+#[derive(Debug, Clone, Insertable, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::act_inputs)]
 pub struct NewActInputRow {
     pub act_execution_id: i32,

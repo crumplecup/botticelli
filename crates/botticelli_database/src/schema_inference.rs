@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use tracing::{instrument, warn};
 
 /// Inferred column definition from JSON analysis
-#[derive(Debug, Clone, PartialEq, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 pub struct ColumnDefinition {
     /// PostgreSQL data type
     pub pg_type: String,
@@ -42,7 +42,7 @@ impl ColumnDefinition {
 }
 
 /// Inferred schema from JSON structure
-#[derive(Debug, Clone, elicitation::Elicit)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 pub struct InferredSchema {
     /// Map of field names to column definitions
     pub fields: HashMap<String, ColumnDefinition>,

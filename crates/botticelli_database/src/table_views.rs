@@ -5,7 +5,7 @@ use derive_builder::Builder;
 use derive_getters::Getters;
 
 /// A query view for selecting rows from a database table.
-#[derive(Debug, Clone, Builder, Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, Builder, Getters, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[builder(setter(into, strip_option))]
 pub struct TableQueryView {
     /// Name of the table to query.
@@ -60,7 +60,7 @@ impl TableView for TableQueryView {
 }
 
 /// A view for counting rows in a database table.
-#[derive(Debug, Clone, Builder, Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, Builder, Getters, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[builder(setter(into, strip_option))]
 pub struct TableCountView {
     /// Name of the table to query.

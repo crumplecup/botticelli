@@ -2,13 +2,13 @@
 
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Database row for content_generations table.
 ///
 /// Tracks metadata for each content generation execution, including
 /// success/failure status, timing information, and error details.
-#[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, derive_getters::Getters)]
+#[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize, schemars::JsonSchema, derive_getters::Getters, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::content_generations)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ContentGenerationRow {
@@ -29,7 +29,7 @@ pub struct ContentGenerationRow {
 ///
 /// Used to record the start of a content generation attempt.
 /// The status should be 'running' initially.
-#[derive(Debug, Clone, Insertable, elicitation::Elicit)]
+#[derive(Debug, Clone, Insertable, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::content_generations)]
 pub struct NewContentGenerationRow {
     pub table_name: String,
@@ -43,7 +43,7 @@ pub struct NewContentGenerationRow {
 ///
 /// Used to update the generation record with completion metadata.
 /// Status should be 'success' or 'failed'.
-#[derive(Debug, Clone, AsChangeset, elicitation::Elicit)]
+#[derive(Debug, Clone, AsChangeset, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::content_generations)]
 pub struct UpdateContentGenerationRow {
     pub completed_at: Option<DateTime<Utc>>,

@@ -4,9 +4,10 @@ use chrono::NaiveDateTime;
 use derive_builder::Builder;
 use derive_getters::Getters;
 use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// Database row for actor_server_state table.
-#[derive(Debug, Clone, Queryable, Identifiable, Selectable)]
+#[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::actor_server_state)]
 #[diesel(primary_key(task_id))]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -30,7 +31,7 @@ pub struct ActorServerStateRow {
 }
 
 /// Insertable struct for actor_server_state table with builder pattern.
-#[derive(Debug, Clone, Insertable, Getters, Builder, elicitation::Elicit)]
+#[derive(Debug, Clone, Insertable, Getters, Builder, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::actor_server_state)]
 #[builder(setter(into))]
 pub struct NewActorServerState {
@@ -55,7 +56,7 @@ pub struct NewActorServerState {
 }
 
 /// Database row for actor_server_executions table.
-#[derive(Debug, Clone, Queryable, Identifiable, Selectable)]
+#[derive(Debug, Clone, Queryable, Identifiable, Selectable, Serialize, Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::actor_server_executions)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ActorServerExecutionRow {
@@ -86,7 +87,7 @@ pub struct ActorServerExecutionRow {
 }
 
 /// Insertable struct for actor_server_executions table with builder pattern.
-#[derive(Debug, Clone, Insertable, Getters, Builder, elicitation::Elicit)]
+#[derive(Debug, Clone, Insertable, Getters, Builder, serde::Serialize, serde::Deserialize, schemars::JsonSchema, elicitation::Elicit)]
 #[diesel(table_name = crate::schema::actor_server_executions)]
 #[builder(setter(into))]
 pub struct NewActorServerExecution {
