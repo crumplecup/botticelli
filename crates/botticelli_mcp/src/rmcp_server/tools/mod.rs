@@ -6,6 +6,7 @@ mod core_primitives;
 #[cfg(feature = "discord")]
 mod discord;
 mod elicitation;
+mod errors;
 mod execution;
 mod extraction_tools;
 mod library;
@@ -20,7 +21,6 @@ mod social;
 mod storage;
 
 use crate::rmcp_server::BotticelliServer;
-use rmcp::tool_router;
 
 // Re-export tool DTOs (parameters and results)
 // Always available
@@ -131,27 +131,11 @@ impl BotticelliServer {
     ///
     /// This combines tool routers from all modules into a single router.
     pub(crate) fn create_tool_router() -> rmcp::handler::server::tool::ToolRouter<Self> {
-        // Start with core (already has correct signatures)
-        let router = Self::core_tool_router() + Self::cache_tool_router();
-        
-        // TODO: Add storage and other modules as they're refactored
-        // + Self::storage_tool_router()
-        
-        // TODO: Add other modules as they're refactored to use Parameters<> and Result<Json<>>
-        // + cache::cache_tool_router()
-        // + core_primitives::core_primitives_tool_router()
-        // + elicitation::elicitation_tool_router()
-        // + extraction_tools::extraction_tool_router()
-        // + library::library_tool_router()
-        // + narrative::narrative_tool_router()
-        // + rate_limit::rate_limit_tool_router()
-        // + scene::scene_tool_router()
-        // + security::security_tool_router()
-        // + storage::storage_tool_router()
-        
-        // #[cfg(feature = "discord")]
-        // let router = router + discord::discord_tool_router() + social::social_tool_router();
-
-        router
+        // Combine all module tool routers (elicit_tools are in separate impl blocks)
+        Self::core_tool_router() 
+            + Self::cache_tool_router()
+            + Self::storage_tool_router()
+            + Self::core_primitives_elicit_tool_router()
+            + Self::errors_elicit_tool_router()
     }
 }
