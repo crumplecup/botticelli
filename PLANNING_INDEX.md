@@ -401,3 +401,4 @@ This index tracks all planning documents in the workspace. When documents are co
 - ELICITATION_REFACTOR_GUIDE.md - Plan to unify dual elicitation implementations using trait-based approach
 MCP_ORCHESTRATOR_COMPLETION.md
 PARALLEL_IMPLEMENTATION_ANALYSIS.md
+ELICITATION_TOOLS_PATTERN.md
