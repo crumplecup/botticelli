@@ -28,6 +28,7 @@ use serde::{Deserialize, Serialize};
     Hash,
     Serialize,
     Deserialize,
+    schemars::JsonSchema,
     derive_more::Display,
     elicitation::Elicit,
 )]

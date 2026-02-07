@@ -7,7 +7,6 @@ use anyhow::Result;
 use botticelli_narrative::Extract;
 use crate::rmcp_server::BotticelliServer;
 use rmcp::tool;
-use rmcp::tool_router;
 use serde::{Deserialize, Serialize};
 
 /// Parameters for JSON extraction.

@@ -41,6 +41,7 @@ use serde_json::Value;
     derive_getters::Getters,
     derive_setters::Setters,
     derive_new::new,
+    schemars::JsonSchema,
     elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]

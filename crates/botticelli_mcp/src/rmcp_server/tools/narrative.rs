@@ -22,7 +22,6 @@ use botticelli_narrative::{MultiNarrative, Narrative, StateManager};
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ErrorCode;
 use rmcp::tool;
-use rmcp::tool_router;
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};

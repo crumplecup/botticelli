@@ -7,7 +7,6 @@ use botticelli_security::{
 };
 use elicitation::Elicit;
 use rmcp::tool;
-use rmcp::tool_router;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

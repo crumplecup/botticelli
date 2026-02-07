@@ -14,7 +14,6 @@ use botticelli_error::RateLimitError;
 use elicitation::Elicit;
 use paste::paste;
 use rmcp::tool;
-use rmcp::tool_router;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;

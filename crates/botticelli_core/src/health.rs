@@ -4,7 +4,8 @@ use elicitation::{Prompt, Select};
 use serde::{Deserialize, Serialize};
 
 /// Health status of a backend.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, elicitation::Elicit)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema,
+    elicitation::Elicit)]
 pub enum HealthStatus {
     /// System is fully operational
     Healthy,

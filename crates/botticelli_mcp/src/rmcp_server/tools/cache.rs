@@ -3,8 +3,10 @@
 //! Orchestrator wrappers for command cache primitives.
 
 use crate::rmcp_server::BotticelliServer;
-use botticelli_cache::{CacheKey, CommandCache, CommandCacheConfig};
+// Import types for elicit_tools macro
+use botticelli_cache::{CacheEntry, CacheKey, CommandCache, CommandCacheConfig};
 use elicitation::Elicit;
+use elicitation_macros::elicit_tools;
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::tool;
 use rmcp::tool_router;
@@ -138,6 +140,7 @@ pub struct CacheEvictLruResult {
 /// Cache tool implementations for the MCP server.
 ///
 /// Generated tool router function: `cache_tool_router()`
+#[elicit_tools(CacheKey, CacheEntry, CommandCache, CommandCacheConfig)]
 #[tool_router(router = cache_tool_router, vis = "pub")]
 impl BotticelliServer {
     /// Check if a cache entry is expired.

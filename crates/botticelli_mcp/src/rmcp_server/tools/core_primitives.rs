@@ -5,10 +5,14 @@
 
 use crate::rmcp_server::BotticelliServer;
 use botticelli_core::{
-    BudgetConfig, HistoryRetention, Input, ObservabilityConfig, TokenUsageData,
+    BotServerConfig, BotState, BotStats, BudgetConfig, Capabilities, ExporterBackend,
+    FinishReason, GenerateRequest, GenerateResponse, HealthStatus, HistoryRetention, Input,
+    MediaSource, Message, ModelMetadata, ObservabilityConfig, Output, Role, StopReason,
+    StreamChunk, TableFormat, TokenUsageData, ToolCall, ToolDefinition, ToolResult,
 };
 use botticelli_error::{ConfigError, ObservabilityResult, TokenCountingResult};
 use elicitation::Elicit;
+use elicitation_macros::elicit_tools;
 use rmcp::tool;
 use rmcp::tool_router;
 use schemars::JsonSchema;
@@ -162,6 +166,37 @@ pub struct CoreInputWithHistoryRetentionResult {
 // Orchestrator Wrappers
 // ============================================================================
 
+/// Core primitives elicitation tools.
+///
+/// Generated tool router function: `core_primitives_elicit_tool_router()`
+#[elicit_tools(
+    BotServerConfig, BotState, BotStats,
+    BudgetConfig,
+    Capabilities,
+    ExporterBackend,
+    FinishReason,
+    GenerateRequest, GenerateResponse,
+    HealthStatus,
+    HistoryRetention,
+    Input,
+    MediaSource,
+    Message,
+    ModelMetadata,
+    ObservabilityConfig,
+    Output,
+    Role,
+    StopReason,
+    StreamChunk,
+    TableFormat,
+    TokenUsageData,
+    ToolCall,
+    ToolDefinition,
+    ToolResult
+)]
+#[tool_router(router = core_primitives_elicit_tool_router, vis = "pub")]
+impl BotticelliServer {}
+
+/// Core primitives tool implementations (delegation wrappers).
 impl BotticelliServer {
     /// Initialize OpenTelemetry observability with default config.
     #[tool]

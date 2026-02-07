@@ -5,8 +5,8 @@
 
 use crate::dialog_resource::DialogResource;
 use async_trait::async_trait;
-use botticelli_core::{GenerateRequest, GenerateResponse, Input, Message, Role};
-use botticelli_error::{BotticelliError, BotticelliResult};
+use botticelli_core::{GenerateRequest, GenerateResponse, Input, Role};
+use botticelli_error::BotticelliError;
 use botticelli_interface::{BotticelliDriver, ElicitationProtocol};
 use std::sync::Arc;
 use tracing::{debug, instrument};

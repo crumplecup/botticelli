@@ -14,6 +14,7 @@ use serde_json::Value;
     Deserialize,
     Getters,
     derive_new::new,
+    schemars::JsonSchema,
     elicitation::Elicit,
 )]
 pub struct ToolResult {

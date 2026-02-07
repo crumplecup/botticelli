@@ -15,7 +15,6 @@ use botticelli_narrative::CarouselConfig;
 use rmcp::handler::server::wrapper::{Json, Parameters};
 use rmcp::model::ErrorCode;
 use rmcp::tool;
-use rmcp::tool_router;
 use std::borrow::Cow;
 use std::sync::Arc;
 use tracing::{debug, instrument};

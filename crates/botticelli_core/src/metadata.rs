@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     derive_getters::Getters,
     derive_builder::Builder,
+    schemars::JsonSchema,
     elicitation::Elicit,
 )]
 pub struct ModelMetadata {
@@ -59,6 +60,7 @@ pub struct ModelMetadata {
     Deserialize,
     derive_getters::Getters,
     derive_setters::Setters,
+    schemars::JsonSchema,
     elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]

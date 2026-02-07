@@ -1,10 +1,12 @@
 //! Bot server types.
 
 use elicitation::{Prompt, Select};
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 /// State of a bot actor.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, elicitation::Elicit)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema,
+    elicitation::Elicit)]
 pub enum BotState {
     /// Bot is starting up.
     Starting,
@@ -21,7 +23,8 @@ pub enum BotState {
 }
 
 /// Statistics for bot execution.
-#[derive(Debug, Clone, derive_getters::Getters, elicitation::Elicit)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters, derive_new::new, schemars::JsonSchema,
+    elicitation::Elicit)]
 pub struct BotStats {
     /// Number of tasks processed successfully.
     tasks_completed: u64,
@@ -34,7 +37,8 @@ pub struct BotStats {
 }
 
 /// Configuration for the bot server.
-#[derive(Debug, Clone, derive_getters::Getters, derive_setters::Setters, elicitation::Elicit)]
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters, derive_setters::Setters, derive_new::new, schemars::JsonSchema,
+    elicitation::Elicit)]
 #[setters(prefix = "with_")]
 pub struct BotServerConfig {
     /// Path to the configuration file.

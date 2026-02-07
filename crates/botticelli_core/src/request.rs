@@ -29,6 +29,7 @@ use serde::{Deserialize, Serialize};
     derive_getters::Getters,
     derive_setters::Setters,
     derive_builder::Builder,
+    schemars::JsonSchema,
     elicitation::Elicit,
 )]
 #[setters(prefix = "with_")]
@@ -78,6 +79,7 @@ impl GenerateRequest {
     Deserialize,
     derive_builder::Builder,
     derive_getters::Getters,
+    schemars::JsonSchema,
     elicitation::Elicit,
 )]
 #[builder(setter(into))]

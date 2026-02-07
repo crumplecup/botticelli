@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     derive_builder::Builder,
     derive_getters::Getters,
+    schemars::JsonSchema,
     elicitation::Elicit,
 )]
 #[builder(setter(into))]
@@ -49,6 +50,7 @@ impl StreamChunk {
     Serialize,
     Deserialize,
     strum::EnumIter,
+    schemars::JsonSchema,
     elicitation::Elicit,
 )]
 pub enum FinishReason {
