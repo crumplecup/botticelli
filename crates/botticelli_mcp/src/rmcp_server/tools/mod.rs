@@ -3,6 +3,8 @@
 mod cache;
 mod core;
 mod core_primitives;
+#[cfg(feature = "database")]
+mod database;
 #[cfg(feature = "discord")]
 mod discord;
 mod elicitation;
@@ -132,10 +134,15 @@ impl BotticelliServer {
     /// This combines tool routers from all modules into a single router.
     pub(crate) fn create_tool_router() -> rmcp::handler::server::tool::ToolRouter<Self> {
         // Combine all module tool routers (elicit_tools are in separate impl blocks)
-        Self::core_tool_router() 
+        let router = Self::core_tool_router() 
             + Self::cache_tool_router()
             + Self::storage_tool_router()
             + Self::core_primitives_elicit_tool_router()
-            + Self::errors_elicit_tool_router()
+            + Self::errors_elicit_tool_router();
+        
+        #[cfg(feature = "database")]
+        let router = router + Self::database_elicit_tool_router();
+        
+        router
     }
 }
