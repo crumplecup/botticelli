@@ -394,7 +394,14 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         }
 
         // Store in backend
-        let reference = self.storage.store(data, metadata).await?;
+        let store_params = rmcp::handler::server::wrapper::Parameters(
+            botticelli_interface::StoreParams {
+                data: data.to_vec(),
+                metadata: metadata.clone(),
+            }
+        );
+        let store_result = self.storage.store(store_params).await?;
+        let reference = store_result.0.reference;
 
         // Save reference to database
         let mut conn = self.conn.lock().await;
@@ -455,7 +462,13 @@ impl NarrativeRepository for PostgresNarrativeRepository {
         reference: &botticelli_storage::MediaReference,
     ) -> BotticelliResult<Vec<u8>> {
         tracing::debug!("Loading media");
-        let data = self.storage.retrieve(reference).await?;
+        let retrieve_params = rmcp::handler::server::wrapper::Parameters(
+            botticelli_interface::RetrieveParams {
+                reference: reference.clone(),
+            }
+        );
+        let retrieve_result = self.storage.retrieve(retrieve_params).await?;
+        let data = retrieve_result.0.data;
         tracing::info!(size = data.len(), "Loaded media");
         Ok(data)
     }
