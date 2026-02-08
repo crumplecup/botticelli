@@ -16,6 +16,7 @@ mod library;
 mod models;
 mod narrative;
 mod rate_limit;
+mod resources;
 mod scene;
 mod security;
 #[cfg(feature = "discord")]
@@ -89,14 +90,6 @@ pub use social::{
     ConvertArgsToStringsParams, ConvertArgsToStringsResult, ConvertSecurityErrorParams,
     HashmapToParamsParams, HashmapToParamsResult,
 };
-pub use storage::{
-    MediaStorageDeleteParams, MediaStorageDeleteResult, MediaStorageExistsParams,
-    MediaStorageExistsResult, MediaStorageGetUrlParams, MediaStorageGetUrlResult,
-    MediaStorageRetrieveParams, MediaStorageRetrieveResult, MediaStorageStoreParams,
-    MediaStorageStoreResult, MediaTypeAsStrParams, MediaTypeAsStrResult,
-    StorageComputeHashParams, StorageComputeHashResult, StorageGetPathParams,
-    StorageGetPathResult, StorageNewParams, StorageVerifyHashParams,
-};
 
 // LLM feature (incomplete tools commented out)
 // #[cfg(feature = "llm")]
@@ -137,6 +130,7 @@ impl BotticelliServer {
         let router = Self::core_tool_router() 
             + Self::cache_tool_router()
             + Self::storage_tool_router()
+            + Self::resources_tool_router()
             + Self::core_primitives_elicit_tool_router()
             + Self::errors_elicit_tool_router();
         

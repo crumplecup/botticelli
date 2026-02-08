@@ -41,13 +41,6 @@ pub use tools::{
 
 // Always available tool DTOs (continued)
 pub use tools::{
-    // Storage primitives
-    MediaStorageDeleteParams, MediaStorageDeleteResult, MediaStorageExistsParams,
-    MediaStorageExistsResult, MediaStorageGetUrlParams, MediaStorageGetUrlResult,
-    MediaStorageRetrieveParams, MediaStorageRetrieveResult, MediaStorageStoreParams,
-    MediaStorageStoreResult, MediaTypeAsStrParams, MediaTypeAsStrResult, StorageComputeHashParams,
-    StorageComputeHashResult, StorageGetPathParams, StorageGetPathResult, StorageNewParams,
-    StorageVerifyHashParams,
     // Narrative primitives
     MultiNarrativeFromFileParams, NarrativeFromFileParams, NarrativeFromTomlStrParams,
     StateManagerNewParams,

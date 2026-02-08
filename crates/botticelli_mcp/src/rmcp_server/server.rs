@@ -1,5 +1,6 @@
 //! BotticelliServer struct and builder.
 
+use crate::resources::ResourceRegistry;
 use crate::PrometheusMetrics;
 use crate::dialog_resource::DialogResource;
 use derive_builder::Builder;
@@ -58,6 +59,22 @@ pub struct BotticelliServer {
         default = "Arc::new(crate::tools::PartialNarrativeRegistry::new())"
     )]
     narrative_registry: Arc<crate::tools::PartialNarrativeRegistry>,
+
+    /// MCP resource registry.
+    #[builder(
+        setter(into),
+        default = "Arc::new(ResourceRegistry::new())"
+    )]
+    pub(crate) resource_registry: Arc<ResourceRegistry>,
+
+    /// Media storage backend.
+    ///
+    /// Defaults to filesystem storage at "./media" directory.
+    #[builder(
+        setter(into),
+        default = "Arc::new(botticelli_storage::FileSystemStorage::new(\"./media\").expect(\"Failed to create default storage\"))"
+    )]
+    pub(crate) storage: Arc<botticelli_storage::FileSystemStorage>,
 
     /// Gemini LLM driver (optional).
     #[cfg(feature = "gemini")]

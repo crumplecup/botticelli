@@ -124,13 +124,6 @@ pub use rmcp_server::{
     CoreTokenUsageCalculateCostResult, CoreTokenUsageNewParams,
     // Tool/library primitives
     ExtractJsonParams, ExtractTomlParams, GetTierInfoParams, GetTierInfoResult,
-    // Storage primitives
-    MediaStorageDeleteParams, MediaStorageDeleteResult, MediaStorageExistsParams,
-    MediaStorageExistsResult, MediaStorageGetUrlParams, MediaStorageGetUrlResult,
-    MediaStorageRetrieveParams, MediaStorageRetrieveResult, MediaStorageStoreParams,
-    MediaStorageStoreResult, MediaTypeAsStrParams, MediaTypeAsStrResult, StorageComputeHashParams,
-    StorageComputeHashResult, StorageGetPathParams, StorageGetPathResult, StorageNewParams,
-    StorageVerifyHashParams,
     // Narrative primitives
     MultiNarrativeFromFileParams, NarrativeFromFileParams, NarrativeFromTomlStrParams,
     StateManagerNewParams,
