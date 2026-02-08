@@ -242,6 +242,15 @@ pub enum DatabaseErrorKind {
     /// Invalid query
     #[display("Invalid query: {}", _0)]
     InvalidQuery(String),
+
+    /// RMCP error data
+    #[display("MCP tool error: {} (code {})", message, code)]
+    RmcpError {
+        /// Error message
+        message: String,
+        /// Error code
+        code: i32,
+    },
 }
 
 /// Database error with source location tracking.
@@ -318,9 +327,21 @@ impl From<serde_json::Error> for DatabaseError {
     }
 }
 
+impl From<rmcp::ErrorData> for DatabaseError {
+    #[track_caller]
+    fn from(err: rmcp::ErrorData) -> Self {
+        DatabaseError::new(DatabaseErrorKind::RmcpError {
+            message: err.message.into_owned(),
+            code: err.code.0,
+        })
+    }
+}
+
 // Bridge external errors to BotticelliErrorKind
 #[cfg(feature = "database")]
 crate::bridge_error!(diesel::result::Error => DatabaseError => crate::BotticelliErrorKind);
 
 #[cfg(feature = "database")]
 crate::bridge_error!(diesel::ConnectionError => DatabaseError => crate::BotticelliErrorKind);
+
+crate::bridge_error!(rmcp::ErrorData => DatabaseError => crate::BotticelliErrorKind);
