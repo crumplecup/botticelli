@@ -1,5 +1,9 @@
 # Trait Tools Summary: Problem → Solution → Implementation
 
+## Executive Summary
+
+**Phase 1 (McpResource)** and **Phase 2 (MediaStorage)** are complete! We've successfully converted 2 traits (6 methods total) using `#[elicit_trait_tools_router]`, eliminating ~250 lines of wrapper boilerplate and establishing proven patterns for future conversions.
+
 ## The Problem (What We Discovered)
 
 You have **50+ trait methods** across multiple interfaces in botticelli that you wanted to expose as MCP tools. The `#[tool]` macro can't be applied to trait implementation methods due to Rust's trait system constraints.
@@ -26,18 +30,7 @@ To expose trait methods as tools, you needed **manual wrapper functions**:
 - **Total**: ~3000 lines of boilerplate
 - **Maintenance**: Update trait → update wrapper (2× work)
 
-## The Solution (What We Proposed)
-
-Created **`ELICITATION_TRAIT_TOOLS_PROPOSAL.md`** proposing:
-
-1. `#[elicit_trait_tools]` macro to mark traits for tool generation
-2. Auto-generate delegating wrapper functions from trait methods
-3. Integrate with existing `#[tool_router]` for registration
-4. Require traits use MCP-compatible signatures
-
-**Key Insight**: Separate concerns—traits define domain logic, tools define API surface.
-
-## The Implementation (What Elicitation Delivered)
+## The Solution (What Elicitation Delivered)
 
 ### ✅ **Fully Implemented in elicitation 0.6.10**
 
@@ -47,7 +40,7 @@ The `#[elicit_trait_tools_router]` macro does exactly what we proposed! Version 
 
 ```rust
 #[elicit_trait_tools_router(TraitName, field_name, [method1, method2, ...])]
-#[tool_router]
+#[tool_router(router = trait_tool_router, vis = "pub")]  // Explicit params required!
 impl MyServer {
     // Auto-generated wrappers for all listed trait methods
 }
@@ -65,7 +58,7 @@ fn method_name(
 ) -> impl Future<Output = Result<Json<MethodResult>, rmcp::ErrorData>> + Send;
 ```
 
-**Pattern 2: `#[async_trait]` (object-safe)**
+**Pattern 2: `#[async_trait]` (object-safe)** ← **We use this**
 ```rust
 #[async_trait::async_trait]
 trait MyTrait: Send + Sync {
@@ -78,6 +71,222 @@ trait MyTrait: Send + Sync {
 
 **Use `#[async_trait]` when:**
 - You need trait objects (`Box<dyn Trait>`, `Arc<dyn Trait>`)
+- Dynamic dispatch required (registries, plugins, polymorphism)
+- Simpler syntax preferred (`async fn` vs `impl Future`)
+
+**We chose Pattern 2 for all conversions** - object safety is required for registries.
+
+## Real-World Implementation (Phases 1 & 2)
+
+### ✅ Phase 1: McpResource (Complete)
+
+**Converted**: 1 method (`read`) across 2 implementations
+
+**Key pattern**: Registry as meta-resource
+```rust
+// Trait
+#[async_trait]
+pub trait McpResource: Send + Sync {
+    async fn read(
+        &self,
+        params: Parameters<ReadParams>,
+    ) -> Result<Json<ReadResult>, ErrorData>;
+}
+
+// ResourceRegistry implements the trait and routes internally
+impl McpResource for ResourceRegistry {
+    async fn read(&self, params: Parameters<ReadParams>) -> ... {
+        for resource in &self.resources {
+            if resource.matches_uri(&params.0.uri) {
+                return resource.read(params).await;  // Delegate
+            }
+        }
+        Err(not_found_error())
+    }
+}
+
+// Tool generation
+#[elicit_trait_tools_router(McpResource, resource_registry, [read])]
+#[tool_router(router = resources_tool_router, vis = "pub")]
+impl BotticelliServer {}
+```
+
+**Lessons**:
+- ✅ Method shadowing: Remove convenience methods that duplicate trait method names
+- ✅ Trait scope: Trait must be imported in tool module
+- ✅ Field visibility: Use `pub(crate)` not private (macro needs direct access)
+- ✅ Registry pattern: Implement trait on registry for unified tool interface
+
+### ✅ Phase 2: MediaStorage (Complete)
+
+**Converted**: 5 methods (`store`, `retrieve`, `get_url`, `delete`, `exists`) with generic associated types
+
+**Key pattern**: Generic wrappers with concrete type aliases
+```rust
+// Interface: Generic wrapper types
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct StoreParams<M, D> {
+    pub data: D,
+    pub metadata: M,
+}
+
+// Trait: Use Self::AssociatedType
+#[async_trait]
+pub trait MediaStorage {
+    type Metadata: Serialize + ...;
+    type Reference: Serialize + ...;
+    
+    async fn store(
+        &self,
+        params: Parameters<StoreParams<Self::Metadata, Vec<u8>>>,
+    ) -> Result<Json<StoreResult<Self::Reference>>, ErrorData>;
+}
+
+// Tool module: Concrete type aliases (CRITICAL!)
+type StoreParams = botticelli_interface::StoreParams<MediaMetadata, Vec<u8>>;
+type StoreResult = botticelli_interface::StoreResult<MediaReference>;
+
+// Tool generation
+#[elicit_trait_tools_router(MediaStorage, storage, [store, retrieve, get_url, delete, exists])]
+#[tool_router(router = storage_tool_router, vis = "pub")]
+impl BotticelliServer {}
+```
+
+**Lessons**:
+- ✅ Generic types: Macro needs concrete type aliases, can't resolve generics
+- ✅ Error chains: Add proper error variants (RmcpError), not string conversions
+- ✅ Error bridging: Use `From` impl + `bridge_error!` macro for error propagation
+- ✅ ErrorData.message: Is `Cow<'static, str>`, use `.into_owned()` for String
+- ✅ Router params: Must specify `router = name_tool_router, vis = "pub"` explicitly
+- ✅ Non-optional fields: Macro can't call methods on `Option<T>`, use defaults
+
+### Error Handling Pattern (Critical!)
+
+**NEVER convert errors to strings**. Always preserve error chains:
+
+```rust
+// 1. Add variant to domain ErrorKind
+#[derive(Debug, Clone, derive_more::Display)]
+pub enum DatabaseErrorKind {
+    #[display("MCP tool error: {} (code {})", message, code)]
+    RmcpError {
+        message: String,
+        code: i32,
+    },
+}
+
+// 2. Implement From for ErrorData
+impl From<rmcp::ErrorData> for DatabaseError {
+    fn from(err: rmcp::ErrorData) -> Self {
+        DatabaseError::new(DatabaseErrorKind::RmcpError {
+            message: err.message.into_owned(),  // Cow → String
+            code: err.code.0,
+        })
+    }
+}
+
+// 3. Bridge to umbrella error
+bridge_error!(rmcp::ErrorData => DatabaseError => BotticelliErrorKind);
+
+// 4. Use ? operator at call sites (clean!)
+let result = storage.store(params).await?;
+```
+
+## Progress Tracker
+
+| Phase | Trait | Methods | Status | Lines Saved |
+|-------|-------|---------|--------|-------------|
+| 1 | McpResource | 1 (read) | ✅ Complete | ~50 |
+| 2 | MediaStorage | 5 (store, retrieve, etc) | ✅ Complete | ~200 |
+| 3 | TBD | TBD | 🔄 Planned | ~50-500 |
+
+**Total so far**: 6 methods converted, ~250 lines eliminated
+
+**Remaining**: ~2750 lines across 44+ methods
+
+## Complete Checklist (Battle-Tested)
+
+Use this for each trait conversion:
+
+### Planning
+- [ ] Identify trait and count methods
+- [ ] Find all implementations (grep for `impl TraitName`)
+- [ ] Find all call sites (grep for trait methods)
+- [ ] Assess complexity (generics? associated types?)
+
+### Interface Changes
+- [ ] Create wrapper types (concrete or generic with type params)
+- [ ] Add serialization bounds to associated types if needed
+- [ ] Update trait to tool-native signatures with `#[async_trait]`
+- [ ] Export wrapper types from lib.rs
+
+### Implementation Updates
+- [ ] Update all trait implementations to use Parameters/Json
+- [ ] Extract values from `Parameters` wrapper
+- [ ] Wrap results in `Json`
+- [ ] Convert errors to `ErrorData`
+
+### Error Handling (CRITICAL!)
+- [ ] **Add RmcpError variant** to domain ErrorKind (NOT string conversion!)
+- [ ] **Implement From<ErrorData>** for domain error
+- [ ] **Bridge to umbrella error** with `bridge_error!` macro
+- [ ] Test error propagation with `?` operator
+
+### Call Site Updates
+- [ ] Update all call sites in dependency crates
+- [ ] Construct Parameters wrappers
+- [ ] Extract from Json results
+- [ ] Verify error handling works
+
+### Tool Module
+- [ ] **Create type aliases** for generic wrappers (if needed)
+- [ ] Create tools/[name].rs with imports
+- [ ] Import trait (must be in scope!)
+- [ ] Import wrapper types
+- [ ] Apply `#[elicit_trait_tools_router]` macro
+- [ ] **Specify explicit router parameters**: `router = name_tool_router, vis = "pub"`
+- [ ] Remove old manual tool wrappers
+- [ ] Remove old parameter/result type exports
+- [ ] Add router to `create_tool_router()`
+
+### Validation
+- [ ] `cargo check --all-features -p botticelli_mcp -p [dependencies]`
+- [ ] Fix all compilation errors
+- [ ] Fix all warnings (unused imports, etc.)
+- [ ] Verify zero errors, zero warnings
+
+### Documentation
+- [ ] Document lessons learned immediately
+- [ ] Update plan.md with progress
+- [ ] Update this file with patterns discovered
+- [ ] Commit with detailed message
+
+## Anti-Patterns (Do NOT Do These!)
+
+❌ **String error conversions**: `.map_err(|e| e.to_string())`
+✅ **Proper error types**: Add variant + From impl + bridge
+
+❌ **Direct generic imports**: `use interface::StoreParams;` (won't compile)
+✅ **Type aliases**: `type StoreParams = interface::StoreParams<Concrete, Types>;`
+
+❌ **Implicit router params**: `#[tool_router]`
+✅ **Explicit router params**: `#[tool_router(router = name_tool_router, vis = "pub")]`
+
+❌ **Optional fields**: `storage: Option<Arc<T>>`  
+✅ **Non-optional with default**: `storage: Arc<T>` with `#[builder(default = "...")]`
+
+❌ **Trait not in scope**: Macro can't find methods
+✅ **Import trait**: `use botticelli_interface::TraitName;`
+
+## Next Steps
+
+**Phase 3 candidates** (ordered by simplicity):
+
+1. **BotCommandRegistry** - 1 method, 2 implementations, simple
+2. **ActProcessor** - 1 method, multiple implementations  
+3. **BotticelliDriver** - 2 methods, high value (~500 lines saved)
+
+Choose based on team capacity and risk tolerance.
 - Dynamic dispatch is required (registries, plugins)
 - Simpler syntax preferred over performance
 
