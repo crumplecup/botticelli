@@ -5,8 +5,32 @@
 //! - `narrative://curate_content` - Narrative TOML file
 
 use async_trait::async_trait;
+use rmcp::handler::server::wrapper::Parameters;
+use rmcp::Json;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+
+/// Parameters for reading a resource.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ReadParams {
+    /// URI to read
+    pub uri: String,
+}
+
+/// Result of reading a resource.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ReadResult {
+    /// Resource content
+    pub content: String,
+}
 
 /// MCP resource that LLMs can read.
+///
+/// # Tool-Native Design
+///
+/// This trait uses MCP-compatible signatures to enable automatic tool generation
+/// via `#[elicit_trait_tools_router]`. Uses `#[async_trait]` for object safety,
+/// allowing `Box<dyn McpResource>` in registries while maintaining MCP tool compatibility.
 ///
 /// # Associated Types
 ///
@@ -17,7 +41,9 @@ use async_trait::async_trait;
 /// # Examples
 ///
 /// ```ignore
-/// use botticelli_interface::McpResource;
+/// use async_trait::async_trait;
+/// use botticelli_interface::{McpResource, ReadParams, ReadResult};
+/// use rmcp::{Parameters, Json};
 ///
 /// pub struct MyResource;
 ///
@@ -34,8 +60,13 @@ use async_trait::async_trait;
 ///         "My custom resource"
 ///     }
 ///
-///     async fn read(&self, uri: &str) -> Result<String, Self::Error> {
-///         // Implementation
+///     async fn read(
+///         &self,
+///         params: Parameters<ReadParams>,
+///     ) -> Result<Json<ReadResult>, rmcp::ErrorData> {
+///         Ok(Json(ReadResult {
+///             content: "data".to_string(),
+///         }))
 ///     }
 /// }
 /// ```
@@ -58,13 +89,19 @@ pub trait McpResource: Send + Sync {
         uri.starts_with(self.uri_pattern())
     }
 
-    /// Read resource content
-    async fn read(&self, uri: &str) -> Result<String, Self::Error>;
+    /// Read resource content (tool-native signature).
+    ///
+    /// Uses MCP-compatible parameters and return type for automatic tool generation.
+    async fn read(
+        &self,
+        params: Parameters<ReadParams>,
+    ) -> Result<Json<ReadResult>, rmcp::ErrorData>;
 
-    /// List available resources (optional)
+    /// List available resources (non-tool method for registry).
+    ///
+    /// Returns list of available resource instances. Not exposed as MCP tool.
+    /// Default implementation returns error.
     async fn list(&self) -> Result<Vec<Self::ResourceInfo>, Self::Error> {
-        // Default implementation returns empty vec
-        // Must be overridden by implementer to return actual list
         unimplemented!("list() not implemented for this resource")
     }
 }

@@ -41,7 +41,7 @@ pub use execution_driver::ExecutionDriver;
 pub use executor::BotCommandExecutor;
 pub use health::Health;
 pub use llm_sampler::LlmSamplerOperations;
-pub use mcp_resource::McpResource;
+pub use mcp_resource::{McpResource, ReadParams, ReadResult};
 pub use media_storage::MediaStorage;
 pub use metadata::Metadata;
 pub use narrative_elicitor::NarrativeElicitor;
