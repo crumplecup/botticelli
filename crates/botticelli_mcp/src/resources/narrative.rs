@@ -1,9 +1,10 @@
 //! Narrative resource for TOML narrative files.
 
-use crate::ResourceInfo;
 use async_trait::async_trait;
+use crate::ResourceInfo;
 use botticelli_error::{McpError, McpResult};
 use botticelli_interface::McpResource;
+use rmcp::handler::server::wrapper::Parameters;
 use std::fs;
 use std::path::PathBuf;
 use tracing::{debug, instrument};
@@ -127,11 +128,20 @@ impl McpResource for NarrativeResource {
         "Access narrative TOML configuration files"
     }
 
-    #[instrument(skip(self), fields(uri))]
-    async fn read(&self, uri: &str) -> Result<String, Self::Error> {
-        let name = self.parse_uri(uri)?;
+    #[instrument(skip(self), fields(uri = %params.0.uri))]
+    async fn read(
+        &self,
+        params: Parameters<botticelli_interface::ReadParams>,
+    ) -> Result<rmcp::Json<botticelli_interface::ReadResult>, rmcp::ErrorData> {
+        let name = self.parse_uri(&params.0.uri)
+            .map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
+        
         debug!(name, "Reading narrative");
-        self.read_narrative(&name)
+        
+        let content = self.read_narrative(&name)
+            .map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
+        
+        Ok(rmcp::Json(botticelli_interface::ReadResult { content }))
     }
 
     #[instrument(skip(self))]

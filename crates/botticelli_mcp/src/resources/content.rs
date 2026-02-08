@@ -1,10 +1,11 @@
 //! Content resource for database content.
 
-use crate::ResourceInfo;
 use async_trait::async_trait;
+use crate::ResourceInfo;
 use botticelli_database::{establish_connection, get_content_by_id, list_content};
 use botticelli_error::BotticelliResult;
 use botticelli_interface::McpResource;
+use rmcp::handler::server::wrapper::Parameters;
 use tracing::{debug, instrument};
 
 /// Resource for accessing database content.
@@ -83,15 +84,26 @@ impl McpResource for ContentResource {
         "Access database content by table and ID"
     }
 
-    #[instrument(skip(self), fields(uri))]
-    async fn read(&self, uri: &str) -> Result<String, Self::Error> {
-        let (table, id) = self.parse_uri(uri)?;
+    #[instrument(skip(self), fields(uri = %params.0.uri))]
+    async fn read(
+        &self,
+        params: Parameters<botticelli_interface::ReadParams>,
+    ) -> Result<rmcp::Json<botticelli_interface::ReadResult>, rmcp::ErrorData> {
+        let (table, id) = self.parse_uri(&params.0.uri)
+            .map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
+        
         debug!(table, id, "Reading content");
 
-        let content = self.query_content(&table, id)?;
+        let content = self.query_content(&table, id)
+            .map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
 
         // Format as JSON
-        serde_json::to_string_pretty(&content).map_err(Into::into)
+        let content_str = serde_json::to_string_pretty(&content)
+            .map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
+        
+        Ok(rmcp::Json(botticelli_interface::ReadResult {
+            content: content_str,
+        }))
     }
 
     #[instrument(skip(self))]
