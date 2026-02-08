@@ -2,7 +2,8 @@
 
 use crate::ResourceInfo;
 use botticelli_error::McpResult;
-use botticelli_interface::McpResource;
+use botticelli_interface::{McpResource, ReadParams};
+use rmcp::handler::server::wrapper::Parameters;
 use std::sync::Arc;
 use tracing::{debug, instrument};
 
@@ -66,7 +67,17 @@ impl ResourceRegistry {
         for resource in self.resources.as_ref() {
             if resource.matches(uri) {
                 debug!(uri, pattern = %resource.uri_pattern(), "Resource matched");
-                return resource.read(uri).await;
+                
+                // Construct Parameters for the trait method
+                let params = Parameters(ReadParams {
+                    uri: uri.to_string(),
+                });
+                
+                // Call trait method and extract content
+                let result = resource.read(params).await
+                    .map_err(|e| botticelli_error::McpError::execution_failed(e.message))?;
+                
+                return Ok(result.0.content);
             }
         }
 
