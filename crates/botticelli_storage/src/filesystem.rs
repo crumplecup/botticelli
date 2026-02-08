@@ -9,7 +9,6 @@ use botticelli_interface::MediaStorage;
 use rmcp::tool;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 use uuid::Uuid;
 
 /// Filesystem storage backend.
@@ -125,12 +124,16 @@ impl MediaStorage for FileSystemStorage {
     type Metadata = MediaMetadata;
     type Reference = MediaReference;
 
-    #[tracing::instrument(skip(self, data, metadata), fields(size = data.len(), media_type = %metadata.media_type()))]
+    #[tracing::instrument(skip(self, params), fields(size = params.0.data.len()))]
     async fn store(
         &self,
-        data: &[u8],
-        metadata: &Self::Metadata,
-    ) -> Result<Self::Reference, Self::Error> {
+        params: rmcp::handler::server::wrapper::Parameters<
+            botticelli_interface::StoreParams<Self::Metadata, Vec<u8>>,
+        >,
+    ) -> Result<rmcp::Json<botticelli_interface::StoreResult<Self::Reference>>, rmcp::ErrorData> {
+        let data = &params.0.data;
+        let metadata = &params.0.metadata;
+
         let hash = Self::compute_hash(data);
         let path = self.get_path(&hash, *metadata.media_type());
 
@@ -142,7 +145,7 @@ impl MediaStorage for FileSystemStorage {
                 "Media already exists, returning existing reference"
             );
 
-            return Ok(MediaReferenceBuilder::default()
+            let reference = MediaReferenceBuilder::default()
                 .id(Uuid::new_v4())
                 .content_hash(hash)
                 .storage_backend("filesystem")
@@ -151,37 +154,42 @@ impl MediaStorage for FileSystemStorage {
                 .media_type(*metadata.media_type())
                 .mime_type(metadata.mime_type().clone())
                 .build()
-                .expect("Valid MediaReference"));
+                .expect("Valid MediaReference");
+
+            return Ok(rmcp::Json(botticelli_interface::StoreResult { reference }));
         }
 
         // Create parent directories
         if let Some(parent) = path.parent() {
             tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                StorageError::new(StorageErrorKind::DirectoryCreation(format!(
+                let err = StorageError::new(StorageErrorKind::DirectoryCreation(format!(
                     "{}: {}",
                     parent.display(),
                     e
-                )))
+                )));
+                rmcp::ErrorData::internal_error(err.to_string(), None)
             })?;
         }
 
         // Write to temp file first, then rename for atomicity
         let temp_path = path.with_extension("tmp");
         tokio::fs::write(&temp_path, data).await.map_err(|e| {
-            StorageError::new(StorageErrorKind::FileWrite(format!(
+            let err = StorageError::new(StorageErrorKind::FileWrite(format!(
                 "{}: {}",
                 temp_path.display(),
                 e
-            )))
+            )));
+            rmcp::ErrorData::internal_error(err.to_string(), None)
         })?;
 
         tokio::fs::rename(&temp_path, &path).await.map_err(|e| {
-            StorageError::new(StorageErrorKind::FileWrite(format!(
+            let err = StorageError::new(StorageErrorKind::FileWrite(format!(
                 "rename {} to {}: {}",
                 temp_path.display(),
                 path.display(),
                 e
-            )))
+            )));
+            rmcp::ErrorData::internal_error(err.to_string(), None)
         })?;
 
         tracing::info!(
@@ -192,7 +200,7 @@ impl MediaStorage for FileSystemStorage {
             "Stored media file"
         );
 
-        Ok(MediaReferenceBuilder::default()
+        let reference = MediaReferenceBuilder::default()
             .id(Uuid::new_v4())
             .content_hash(hash)
             .storage_backend("filesystem")
@@ -201,15 +209,23 @@ impl MediaStorage for FileSystemStorage {
             .media_type(*metadata.media_type())
             .mime_type(metadata.mime_type().clone())
             .build()
-            .expect("Valid MediaReference"))
+            .expect("Valid MediaReference");
+
+        Ok(rmcp::Json(botticelli_interface::StoreResult { reference }))
     }
 
-    #[tracing::instrument(skip(self, reference), fields(hash = %reference.content_hash(), path = %reference.storage_path()))]
-    async fn retrieve(&self, reference: &Self::Reference) -> Result<Vec<u8>, Self::Error> {
+    #[tracing::instrument(skip(self, params), fields(hash = %params.0.reference.content_hash(), path = %params.0.reference.storage_path()))]
+    async fn retrieve(
+        &self,
+        params: rmcp::handler::server::wrapper::Parameters<
+            botticelli_interface::RetrieveParams<Self::Reference>,
+        >,
+    ) -> Result<rmcp::Json<botticelli_interface::RetrieveResult>, rmcp::ErrorData> {
+        let reference = &params.0.reference;
         let path = Path::new(reference.storage_path());
 
         let data = tokio::fs::read(path).await.map_err(|e| {
-            if e.kind() == std::io::ErrorKind::NotFound {
+            let err = if e.kind() == std::io::ErrorKind::NotFound {
                 StorageError::new(StorageErrorKind::NotFound(reference.storage_path().clone()))
             } else {
                 StorageError::new(StorageErrorKind::FileRead(format!(
@@ -217,11 +233,14 @@ impl MediaStorage for FileSystemStorage {
                     path.display(),
                     e
                 )))
-            }
+            };
+            rmcp::ErrorData::internal_error(err.to_string(), None)
         })?;
 
         // Verify content hash
-        Self::verify_hash(&data, reference.content_hash())?;
+        Self::verify_hash(&data, reference.content_hash()).map_err(|e| {
+            rmcp::ErrorData::internal_error(e.to_string(), None)
+        })?;
 
         tracing::debug!(
             hash = %reference.content_hash(),
@@ -230,25 +249,32 @@ impl MediaStorage for FileSystemStorage {
             "Retrieved media file"
         );
 
-        Ok(data)
+        Ok(rmcp::Json(botticelli_interface::RetrieveResult { data }))
     }
 
-    #[tracing::instrument(skip(self, _reference, _expires_in))]
+    #[tracing::instrument(skip(self, _params))]
     async fn get_url(
         &self,
-        _reference: &Self::Reference,
-        _expires_in: Duration,
-    ) -> Result<Option<String>, Self::Error> {
+        _params: rmcp::handler::server::wrapper::Parameters<
+            botticelli_interface::GetUrlParams<Self::Reference>,
+        >,
+    ) -> Result<rmcp::Json<botticelli_interface::GetUrlResult>, rmcp::ErrorData> {
         // Filesystem storage doesn't support direct URLs
-        Ok(None)
+        Ok(rmcp::Json(botticelli_interface::GetUrlResult { url: None }))
     }
 
-    #[tracing::instrument(skip(self, reference), fields(hash = %reference.content_hash(), path = %reference.storage_path()))]
-    async fn delete(&self, reference: &Self::Reference) -> Result<(), Self::Error> {
+    #[tracing::instrument(skip(self, params), fields(hash = %params.0.reference.content_hash(), path = %params.0.reference.storage_path()))]
+    async fn delete(
+        &self,
+        params: rmcp::handler::server::wrapper::Parameters<
+            botticelli_interface::DeleteParams<Self::Reference>,
+        >,
+    ) -> Result<rmcp::Json<botticelli_interface::DeleteResult>, rmcp::ErrorData> {
+        let reference = &params.0.reference;
         let path = Path::new(reference.storage_path());
 
         tokio::fs::remove_file(path).await.map_err(|e| {
-            if e.kind() == std::io::ErrorKind::NotFound {
+            let err = if e.kind() == std::io::ErrorKind::NotFound {
                 StorageError::new(StorageErrorKind::NotFound(reference.storage_path().clone()))
             } else {
                 StorageError::new(StorageErrorKind::FileWrite(format!(
@@ -256,7 +282,8 @@ impl MediaStorage for FileSystemStorage {
                     path.display(),
                     e
                 )))
-            }
+            };
+            rmcp::ErrorData::internal_error(err.to_string(), None)
         })?;
 
         tracing::info!(
@@ -265,12 +292,19 @@ impl MediaStorage for FileSystemStorage {
             "Deleted media file"
         );
 
-        Ok(())
+        Ok(rmcp::Json(botticelli_interface::DeleteResult { success: true }))
     }
 
-    #[tracing::instrument(skip(self, reference), fields(hash = %reference.content_hash(), path = %reference.storage_path()))]
-    async fn exists(&self, reference: &Self::Reference) -> Result<bool, Self::Error> {
+    #[tracing::instrument(skip(self, params), fields(hash = %params.0.reference.content_hash(), path = %params.0.reference.storage_path()))]
+    async fn exists(
+        &self,
+        params: rmcp::handler::server::wrapper::Parameters<
+            botticelli_interface::ExistsParams<Self::Reference>,
+        >,
+    ) -> Result<rmcp::Json<botticelli_interface::ExistsResult>, rmcp::ErrorData> {
+        let reference = &params.0.reference;
         let path = Path::new(reference.storage_path());
-        Ok(tokio::fs::try_exists(path).await.unwrap_or(false))
+        let exists = tokio::fs::try_exists(path).await.unwrap_or(false);
+        Ok(rmcp::Json(botticelli_interface::ExistsResult { exists }))
     }
 }
