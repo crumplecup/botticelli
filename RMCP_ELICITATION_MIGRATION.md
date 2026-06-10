@@ -69,27 +69,30 @@ If you only apply one or two of these, the code will compile but fail at runtime
 
 ### Phase 3 — Elicit + JsonSchema into botticelli_narrative
 
-- [ ] Add `elicitation.workspace = true` and `schemars.workspace = true` to
+- [x] Add `elicitation.workspace = true`, `schemars.workspace = true`,
+  `rmcp.workspace = true`, `derive-new.workspace = true` to
   `botticelli_narrative/Cargo.toml`
-- [ ] `botticelli_narrative/src/carousel.rs`:
-  add `#[derive(Elicit, schemars::JsonSchema, Serialize, Deserialize)]` to `CarouselConfig`
-  (already has Serialize/Deserialize — confirm and add the others)
-- [ ] `botticelli_narrative/src/core.rs`:
-  add `#[derive(Elicit, schemars::JsonSchema)]` to `NarrativeMetadata`
-  (already has Serialize/Deserialize — confirm and add the others)
-- [ ] `botticelli_narrative/src/provider.rs`:
-  add `#[derive(Elicit, schemars::JsonSchema)]` to `ActConfig`
-  (check Serialize/Deserialize — add if missing)
+- [x] Add `elicitation.workspace = true` and `rmcp.workspace = true` to
+  `botticelli_core/Cargo.toml`
+- [x] Enable `elicitation` feature `"serde_json"` in workspace `Cargo.toml`
+  so `serde_json::Value` implements `Elicitation` (needed by `Input` variants)
+- [x] `botticelli_core`: derive `elicitation::Elicit` on `MediaSource`,
+  `HistoryRetention`, `Input`, `TableFormat`, `Output`, `ToolCall`, `StopReason`,
+  `ToolDefinition`, `BudgetConfig`
+- [x] `botticelli_narrative/src/carousel.rs`: add `Elicit + JsonSchema` to `CarouselConfig`
+- [x] `botticelli_narrative/src/core.rs`: add `Elicit + JsonSchema` to `NarrativeMetadata`
+- [x] `botticelli_narrative/src/provider.rs`: add `Elicit + JsonSchema` to `ActConfig`
 
 #### Move PartialNarrative / PartialAct here
-- [ ] Copy `botticelli_mcp/src/elicitation/partial.rs` →
-  `botticelli_narrative/src/partial.rs`
-- [ ] Add `#[derive(Elicit, schemars::JsonSchema)]` to `PartialNarrative` and `PartialAct`
-  (Serialize/Deserialize already present — confirm)
-- [ ] Export `PartialNarrative`, `PartialAct`, `PartialNarrativeBuilder` from
+- [x] Create `botticelli_narrative/src/partial.rs` with moved `PartialNarrative`/`PartialAct`
+- [x] Add `Elicit + JsonSchema` to both types; fields changed to `pub` (transitional)
+- [x] `escape_toml_string` inlined as private fn (breaks circular dep on narrative_utils)
+- [x] Export `PartialNarrative`, `PartialAct`, `PartialNarrativeBuilder` from
   `botticelli_narrative/src/lib.rs`
-- [ ] Remove `partial.rs` from `botticelli_mcp/src/elicitation/` and update its `mod.rs`
-- [ ] `just check -p botticelli_narrative` passes
+- [x] Remove `partial.rs` from `botticelli_mcp/src/elicitation/` and update its `mod.rs`
+- [x] All botticelli_mcp internal imports updated to `botticelli_narrative::{...}` (no re-export)
+- [x] `just lint botticelli_core` and `just lint botticelli_narrative` and
+  `just lint botticelli_mcp` all pass with zero warnings/errors
 
 ---
 
