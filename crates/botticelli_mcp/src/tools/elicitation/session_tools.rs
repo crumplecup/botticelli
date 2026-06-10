@@ -1,6 +1,6 @@
 //! MCP tools for session-based narrative elicitation.
 
-use crate::elicitation::{PartialAct, PartialNarrative};
+use botticelli_narrative::{PartialAct, PartialNarrative};
 use crate::tools::elicitation::PartialNarrativeRegistry;
 use crate::tools::McpTool;
 use crate::NarrativeHelper;

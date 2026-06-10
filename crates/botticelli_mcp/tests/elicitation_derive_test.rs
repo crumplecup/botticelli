@@ -1,17 +1,20 @@
-//! Tests for elicitation crate derive macros with primitive tools.
+//! Tests for elicitation crate derive macros.
 //!
-//! Verifies Phase 3 integration: elicitation crate's #[derive(Elicit)] works
-//! with our primitive tools via InProcTransport.
+//! Verifies that #[derive(Elicit)] works correctly with MockCommunicator.
+//! These tests exercise the Select and Survey paradigms.
 
-use async_trait::async_trait;
-use botticelli_error::BotticelliResult;
-use botticelli_mcp::{DialogResource, ElicitationDialog, InProcTransport, register_all_tools};
-use elicitation::{Elicit, Elicitation, Prompt, Select};
-use pmcp::{Client, ClientCapabilities, Server};
+use elicitation::{
+    ElicitCommunicator, ElicitError, ElicitationContext, Elicitation, StyleContext,
+};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Simple enum to test Select paradigm.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Elicit)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, elicitation::Elicit,
+)]
 #[prompt("Choose an option:")]
 enum TestChoice {
     OptionA,
@@ -20,198 +23,101 @@ enum TestChoice {
 }
 
 /// Simple struct to test Survey paradigm with bool field.
-#[derive(Debug, Clone, PartialEq, Eq, Elicit)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 #[prompt("Configure settings:")]
 struct TestSettings {
     #[prompt("Enable feature?")]
     enabled: bool,
 }
 
-/// Mock dialog that returns preset values.
-#[derive(Debug)]
-struct MockDialog {
-    choice_index: usize,
-    bool_value: bool,
+/// Mock communicator backed by a queue of preset responses.
+#[derive(Clone)]
+struct MockCommunicator {
+    responses: Arc<Vec<String>>,
+    call_count: Arc<AtomicUsize>,
+    style_context: StyleContext,
+    elicitation_context: ElicitationContext,
 }
 
-impl MockDialog {
-    fn new() -> Self {
+impl MockCommunicator {
+    fn new(responses: impl IntoIterator<Item = impl Into<String>>) -> Self {
         Self {
-            choice_index: 1,
-            bool_value: true,
+            responses: Arc::new(responses.into_iter().map(Into::into).collect()),
+            call_count: Arc::new(AtomicUsize::new(0)),
+            style_context: StyleContext::default(),
+            elicitation_context: ElicitationContext::default(),
         }
     }
 
-    fn with_choice(mut self, index: usize) -> Self {
-        self.choice_index = index;
-        self
-    }
-
-    fn with_bool(mut self, value: bool) -> Self {
-        self.bool_value = value;
-        self
+    fn single(response: impl Into<String>) -> Self {
+        Self::new([response.into()])
     }
 }
 
-#[async_trait]
-impl ElicitationDialog for MockDialog {
-    async fn ask_text(&mut self, _prompt: &str) -> BotticelliResult<String> {
-        Ok("test".to_string())
+impl ElicitCommunicator for MockCommunicator {
+    async fn send_prompt(&self, _prompt: &str) -> Result<String, ElicitError> {
+        let idx = self.call_count.fetch_add(1, Ordering::SeqCst);
+        let response = self.responses.get(idx).cloned().unwrap_or_default();
+        Ok(response)
     }
 
-    async fn ask_confirmation(&mut self, _prompt: &str, _default: bool) -> BotticelliResult<bool> {
-        Ok(self.bool_value)
+    async fn call_tool(
+        &self,
+        _params: rmcp::model::CallToolRequestParams,
+    ) -> Result<rmcp::model::CallToolResult, rmcp::ServiceError> {
+        unimplemented!("call_tool not used in these tests")
     }
 
-    async fn ask_choice(&mut self, _prompt: &str, _options: &[&str]) -> BotticelliResult<usize> {
-        Ok(self.choice_index)
+    fn style_context(&self) -> &StyleContext {
+        &self.style_context
     }
 
-    async fn ask_number(&mut self, _prompt: &str, _min: i64, _max: i64) -> BotticelliResult<i64> {
-        Ok(42)
+    fn with_style<
+        T: 'static,
+        S: elicitation::StyleMarker + elicitation::style::ElicitationStyle + 'static,
+    >(
+        &self,
+        _style: S,
+    ) -> Self {
+        self.clone()
     }
 
-    async fn ask_file_path(&mut self, _prompt: &str) -> BotticelliResult<String> {
-        Ok("/mock/path".to_string())
+    fn elicitation_context(&self) -> &ElicitationContext {
+        &self.elicitation_context
     }
-
-    async fn show_info(&mut self, _message: &str) -> BotticelliResult<()> {
-        Ok(())
-    }
-
-    async fn show_warning(&mut self, _message: &str) -> BotticelliResult<()> {
-        Ok(())
-    }
-
-    async fn show_error(&mut self, _message: &str) -> BotticelliResult<()> {
-        Ok(())
-    }
-
-    async fn show_validation(&mut self, _validation_text: &str) -> BotticelliResult<()> {
-        Ok(())
-    }
-
-    async fn show_progress(
-        &mut self,
-        _current: usize,
-        _total: usize,
-        _description: &str,
-    ) -> BotticelliResult<()> {
-        Ok(())
-    }
-
-    async fn show_preview(&mut self, _toml: &str) -> BotticelliResult<()> {
-        Ok(())
-    }
-}
-
-/// Helper to create server with primitive tools and client.
-async fn setup_client_with_dialog(dialog: MockDialog) -> Client<InProcTransport> {
-    // Wrap dialog in DialogResource
-    let dialog_resource = Arc::new(DialogResource::new(Box::new(dialog)));
-
-    // Build server with primitive elicitation tools
-    let builder = Server::builder()
-        .name("test-elicitation-server")
-        .version("0.1.0")
-        .capabilities(pmcp::types::capabilities::ServerCapabilities::tools_only());
-
-    let builder = register_all_tools(
-        builder,
-        Some(dialog_resource),
-        #[cfg(feature = "database")]
-        None,
-    );
-
-    let server = builder.build().expect("Failed to build server");
-
-    // Create in-process transport
-    let (client_transport, server_transport) = InProcTransport::pair();
-    let _server_handle = InProcTransport::spawn_server(server, server_transport);
-
-    // Create and initialize client
-    let mut client = Client::new(client_transport);
-    client
-        .initialize(ClientCapabilities::minimal())
-        .await
-        .expect("Failed to initialize client");
-
-    client
 }
 
 #[tokio::test]
-async fn test_select_paradigm_with_derive() {
-    let _ = tracing_subscriber::fmt::try_init();
-
-    // Mock dialog returns index 1 = OptionB
-    let mock_dialog = MockDialog::new().with_choice(1);
-    let client = setup_client_with_dialog(mock_dialog).await;
-
-    // Use elicitation crate's derive macro to elicit the enum
-    let result = TestChoice::elicit(&client)
-        .await
-        .expect("Failed to elicit TestChoice");
-
-    assert_eq!(result, TestChoice::OptionB);
-}
-
-#[tokio::test]
-async fn test_select_first_option() {
-    let _ = tracing_subscriber::fmt::try_init();
-
-    // Mock dialog returns index 0 = OptionA
-    let mock_dialog = MockDialog::new().with_choice(0);
-    let client = setup_client_with_dialog(mock_dialog).await;
-
-    let result = TestChoice::elicit(&client)
-        .await
-        .expect("Failed to elicit TestChoice");
-
+async fn test_select_option_a() {
+    let mock = MockCommunicator::single("1");
+    let result = TestChoice::elicit(&mock).await.expect("elicitation succeeded");
     assert_eq!(result, TestChoice::OptionA);
 }
 
 #[tokio::test]
-async fn test_select_last_option() {
-    let _ = tracing_subscriber::fmt::try_init();
+async fn test_select_option_b() {
+    let mock = MockCommunicator::single("2");
+    let result = TestChoice::elicit(&mock).await.expect("elicitation succeeded");
+    assert_eq!(result, TestChoice::OptionB);
+}
 
-    // Mock dialog returns index 2 = OptionC
-    let mock_dialog = MockDialog::new().with_choice(2);
-    let client = setup_client_with_dialog(mock_dialog).await;
-
-    let result = TestChoice::elicit(&client)
-        .await
-        .expect("Failed to elicit TestChoice");
-
+#[tokio::test]
+async fn test_select_option_c() {
+    let mock = MockCommunicator::single("3");
+    let result = TestChoice::elicit(&mock).await.expect("elicitation succeeded");
     assert_eq!(result, TestChoice::OptionC);
 }
 
 #[tokio::test]
-async fn test_survey_paradigm_with_bool() {
-    let _ = tracing_subscriber::fmt::try_init();
-
-    // Mock dialog returns true for bool field
-    let mock_dialog = MockDialog::new().with_bool(true);
-    let client = setup_client_with_dialog(mock_dialog).await;
-
-    // Use elicitation crate's derive macro to elicit the struct
-    let result = TestSettings::elicit(&client)
-        .await
-        .expect("Failed to elicit TestSettings");
-
-    assert_eq!(result.enabled, true);
+async fn test_survey_enabled_true() {
+    let mock = MockCommunicator::single("true");
+    let result = TestSettings::elicit(&mock).await.expect("elicitation succeeded");
+    assert!(result.enabled);
 }
 
 #[tokio::test]
-async fn test_survey_paradigm_with_false() {
-    let _ = tracing_subscriber::fmt::try_init();
-
-    // Mock dialog returns false for bool field
-    let mock_dialog = MockDialog::new().with_bool(false);
-    let client = setup_client_with_dialog(mock_dialog).await;
-
-    let result = TestSettings::elicit(&client)
-        .await
-        .expect("Failed to elicit TestSettings");
-
-    assert_eq!(result.enabled, false);
+async fn test_survey_enabled_false() {
+    let mock = MockCommunicator::single("false");
+    let result = TestSettings::elicit(&mock).await.expect("elicitation succeeded");
+    assert!(!result.enabled);
 }

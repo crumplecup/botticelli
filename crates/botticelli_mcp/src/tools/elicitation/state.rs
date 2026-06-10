@@ -48,7 +48,7 @@ pub struct NarrativeStateSummary {
 }
 
 #[tracing::instrument(skip(registry), fields(narrative_id, format))]
-pub async fn get_narrative_state<R: ElicitationRegistryOperations<crate::PartialNarrative>>(
+pub async fn get_narrative_state<R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative>>(
     registry: &R,
     input: GetNarrativeStateInput,
 ) -> McpResult<GetNarrativeStateOutput> {

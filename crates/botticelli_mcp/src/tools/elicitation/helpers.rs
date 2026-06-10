@@ -1,4 +1,4 @@
-use crate::{PartialAct, PartialNarrative};
+use botticelli_narrative::{PartialAct, PartialNarrative};
 use botticelli_error::{McpError, McpErrorKind, McpResult};
 use tracing::instrument;
 

@@ -286,8 +286,7 @@ impl SamplingError {
     }
 }
 
-// Import PartialNarrative
-use crate::PartialNarrative;
+use botticelli_narrative::PartialNarrative;
 
 /// Helper for LLM sampling operations.
 pub struct SamplingHelper;

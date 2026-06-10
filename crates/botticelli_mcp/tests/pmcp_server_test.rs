@@ -287,7 +287,7 @@ fn test_tool_names_are_unique() {
     use std::collections::HashSet;
 
     // List of all tool names that should be registered
-    let tool_names = vec![
+    let tool_names = [
         "echo",
         "server_info",
         "create_narrative",
@@ -308,7 +308,7 @@ fn test_tool_names_are_unique() {
 #[test]
 fn test_expected_tool_count() {
     // Base tools always available
-    let mut expected_count = 6; // echo, server_info, create, validate, save, modify
+    let expected_count = 6; // echo, server_info, create, validate, save, modify
 
     #[cfg(feature = "database")]
     {

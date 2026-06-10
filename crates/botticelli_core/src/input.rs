@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 /// // Remove from history after processing
 /// let drop = HistoryRetention::Drop;
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default, JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default, JsonSchema, elicitation::Elicit)]
 #[serde(rename_all = "lowercase")]
 pub enum HistoryRetention {
     /// Retain the entire input in conversation history (default).
@@ -81,7 +81,7 @@ pub enum HistoryRetention {
 ///     filename: Some("report.pdf".to_string()),
 /// };
 /// ```
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 #[serde(tag = "type", content = "data")]
 pub enum Input {
     /// Plain text input.
@@ -257,7 +257,7 @@ impl Input {
 }
 
 /// Output format for table data.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 #[serde(rename_all = "lowercase")]
 pub enum TableFormat {
     /// JSON array of objects

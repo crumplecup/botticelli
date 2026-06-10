@@ -104,7 +104,9 @@ fn test_add_act_workflow() {
         "description": "First act"
     }));
 
-    registry.update(&narrative_id, current_state.clone());
+    registry
+        .update(&narrative_id, current_state.to_json().expect("serialize state"))
+        .expect("update succeeded");
 
     // Verify act was added
     let updated_state = registry.get(&narrative_id).unwrap();
@@ -138,7 +140,9 @@ fn test_add_input_workflow() {
         "content": "Hello world"
     }));
 
-    registry.update(&narrative_id, current_state.clone());
+    registry
+        .update(&narrative_id, current_state.to_json().expect("serialize state"))
+        .expect("update succeeded");
 
     // Verify input was added
     let updated_state = registry.get(&narrative_id).unwrap();
@@ -174,8 +178,8 @@ fn test_validation_workflow() {
     let state = registry.get(&narrative_id).unwrap();
     assert!(state.data.get("title").is_some());
     assert!(state.data.get("description").is_some());
-    assert!(state.data["acts"].as_array().unwrap().len() > 0);
-    assert!(state.data["inputs"].as_array().unwrap().len() > 0);
+    assert!(!state.data["acts"].as_array().unwrap().is_empty());
+    assert!(!state.data["inputs"].as_array().unwrap().is_empty());
 }
 
 /// Test finalization workflow
@@ -183,36 +187,29 @@ fn test_validation_workflow() {
 fn test_finalization_workflow() {
     let registry = NarrativeRegistry::new();
 
-    // Create complete narrative ready for finalization
-    let complete_state = json!({
-        "title": "Complete Story",
-        "description": "A complete test",
-        "acts": [
-            {"title": "Act 1", "description": "First"}
-        ],
-        "inputs": [
-            {"type": "text", "content": "Opening"}
-        ],
-        "carousels": [
-            {"title": "Scene 1", "prompt": "Describe"}
-        ]
-    });
+    let complete_state = TestNarrativeState::new(
+        "complete".to_string(),
+        json!({
+            "title": "Complete Story",
+            "description": "A complete test",
+            "acts": [{"title": "Act 1", "description": "First"}],
+            "inputs": [{"type": "text", "content": "Opening"}],
+            "carousels": [{"title": "Scene 1", "prompt": "Describe"}]
+        }),
+    );
 
     let narrative_id = registry.create_session(complete_state);
 
-    // Simulate finalization by removing from registry
     let finalized_state = registry.remove(&narrative_id);
     assert!(finalized_state.is_some());
 
-    // Verify it's no longer in active sessions
     assert!(!registry.list_keys().contains(&narrative_id));
 
-    // Verify the state has all required components
     let state = finalized_state.unwrap();
-    assert_eq!(state["title"], "Complete Story");
-    assert!(state["acts"].as_array().unwrap().len() > 0);
-    assert!(state["inputs"].as_array().unwrap().len() > 0);
-    assert!(state["carousels"].as_array().unwrap().len() > 0);
+    assert_eq!(state.data["title"], "Complete Story");
+    assert!(!state.data["acts"].as_array().unwrap().is_empty());
+    assert!(!state.data["inputs"].as_array().unwrap().is_empty());
+    assert!(!state.data["carousels"].as_array().unwrap().is_empty());
 }
 
 /// Test multi-session management
@@ -220,27 +217,23 @@ fn test_finalization_workflow() {
 fn test_multi_session_management() {
     let registry = NarrativeRegistry::new();
 
-    let state1 = json!({"title": "Story 1"});
-    let state2 = json!({"title": "Story 2"});
-    let state3 = json!({"title": "Story 3"});
+    let state1 = TestNarrativeState::new("s1".to_string(), json!({"title": "Story 1"}));
+    let state2 = TestNarrativeState::new("s2".to_string(), json!({"title": "Story 2"}));
+    let state3 = TestNarrativeState::new("s3".to_string(), json!({"title": "Story 3"}));
 
     let id1 = registry.create_session(state1);
     let id2 = registry.create_session(state2);
     let id3 = registry.create_session(state3);
 
-    // Verify all sessions exist
     assert_eq!(registry.session_count(), 3);
 
-    // Remove one session
     registry.remove(&id2);
     assert_eq!(registry.session_count(), 2);
 
-    // Verify remaining sessions
-    assert!(registry.get(&id1).is_some());
-    assert!(registry.get(&id2).is_none());
-    assert!(registry.get(&id3).is_some());
+    assert!(registry.get(&id1).is_ok());
+    assert!(registry.get(&id2).is_err());
+    assert!(registry.get(&id3).is_ok());
 
-    // Clear all
     registry.clear();
     assert_eq!(registry.session_count(), 0);
 }

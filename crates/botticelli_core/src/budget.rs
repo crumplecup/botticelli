@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 /// let full = BudgetConfig::default();
 /// assert_eq!(*full.rpm_multiplier(), 1.0);
 /// ```
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema, derive_getters::Getters)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema, elicitation::Elicit, derive_getters::Getters)]
 #[serde(deny_unknown_fields)]
 pub struct BudgetConfig {
     /// Multiplier for requests per minute (0.0-1.0, default 1.0).

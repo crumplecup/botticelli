@@ -1,6 +1,7 @@
 //! Trait for narrative component elicitors.
 
-use crate::elicitation::{ElicitationDialog, PartialNarrative};
+use crate::elicitation::ElicitationDialog;
+use botticelli_narrative::PartialNarrative;
 use async_trait::async_trait;
 use botticelli_error::BotticelliResult;
 

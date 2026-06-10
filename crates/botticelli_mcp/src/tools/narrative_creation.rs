@@ -1,6 +1,6 @@
 //! MCP tools for iterative narrative creation through LLM-guided elicitation.
 
-use crate::{PartialNarrative, PartialNarrativeBuilder};
+use botticelli_narrative::{PartialNarrative, PartialNarrativeBuilder};
 use botticelli_error::{BotticelliResult, BuilderError, BuilderErrorKind};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;

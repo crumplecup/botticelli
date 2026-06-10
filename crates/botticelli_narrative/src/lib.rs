@@ -43,6 +43,7 @@ mod filesystem_storage;
 mod history_retention;
 mod in_memory_repository;
 mod multi_narrative;
+mod partial;
 mod processor;
 mod provider;
 mod state;
@@ -69,6 +70,7 @@ pub use history_retention::{
 pub use in_memory_repository::InMemoryNarrativeRepository;
 pub use multi_narrative::MultiNarrative;
 pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
+pub use partial::{PartialAct, PartialNarrative, PartialNarrativeBuilder};
 pub use provider::{ActConfig, NarrativeProvider};
 pub use state::{NarrativeState, StateManager, StateScope};
 pub use table_reference::TableReference;

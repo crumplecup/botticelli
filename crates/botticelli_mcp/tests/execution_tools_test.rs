@@ -98,8 +98,8 @@ act1 = "Hello world"
     let result = tool.execute(input).await;
 
     // Test should not panic - graceful degradation is expected
-    if result.is_err() {
-        let err_msg = result.unwrap_err().to_string();
+    if let Err(err) = result {
+        let err_msg = err.to_string();
         assert!(
             err_msg.contains("backend") || err_msg.contains("available") || err_msg.contains("API"),
             "Expected backend/credential error, got: {}",

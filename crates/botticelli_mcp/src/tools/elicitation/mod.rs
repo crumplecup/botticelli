@@ -19,7 +19,7 @@ pub use validation::{
     ValidateNarrativeOutput,
 };
 
-use crate::PartialNarrative;
+use botticelli_narrative::PartialNarrative;
 
 /// Type alias for the concrete registry used in elicitation.
 pub type PartialNarrativeRegistry = NarrativeRegistry<PartialNarrative>;

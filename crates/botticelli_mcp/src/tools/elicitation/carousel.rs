@@ -53,14 +53,14 @@ pub struct CarouselSummary {
 /// MCP tool for creating carousel configurations during narrative elicitation.
 pub struct ElicitCarouselTool<R>
 where
-    R: ElicitationRegistryOperations<crate::PartialNarrative>,
+    R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative>,
 {
     registry: Arc<R>,
 }
 
 impl<R> ElicitCarouselTool<R>
 where
-    R: ElicitationRegistryOperations<crate::PartialNarrative>,
+    R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative>,
 {
     /// Creates a new carousel elicitation tool.
     pub fn new(registry: Arc<R>) -> Self {
@@ -158,7 +158,7 @@ where
 }
 
 #[async_trait]
-impl<R: ElicitationRegistryOperations<crate::PartialNarrative> + Send + Sync> McpTool
+impl<R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative> + Send + Sync> McpTool
     for ElicitCarouselTool<R>
 {
     fn name(&self) -> &str {

@@ -375,7 +375,7 @@ async fn test_sequential_tool_calls() {
         )
         .await
         .expect("Failed to call elicit_text");
-    assert!(text_result.content.len() > 0);
+    assert!(!text_result.content.is_empty());
 
     let number_result = client
         .call_tool(
@@ -384,7 +384,7 @@ async fn test_sequential_tool_calls() {
         )
         .await
         .expect("Failed to call elicit_number");
-    assert!(number_result.content.len() > 0);
+    assert!(!number_result.content.is_empty());
 
     let bool_result = client
         .call_tool(
@@ -393,5 +393,5 @@ async fn test_sequential_tool_calls() {
         )
         .await
         .expect("Failed to call elicit_bool");
-    assert!(bool_result.content.len() > 0);
+    assert!(!bool_result.content.is_empty());
 }

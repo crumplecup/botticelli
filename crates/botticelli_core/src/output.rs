@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// Note: Cannot derive `Eq`, `Hash`, `PartialOrd`, or `Ord` because the
 /// `Embedding` variant contains `Vec<f32>`, and `f32` does not implement
 /// these traits (floating point is not totally ordered).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 #[serde(tag = "type", content = "data")]
 pub enum Output {
     /// Plain text output.
@@ -79,6 +79,7 @@ pub enum Output {
     Serialize,
     Deserialize,
     JsonSchema,
+    elicitation::Elicit,
     derive_getters::Getters,
     derive_builder::Builder,
 )]
@@ -114,7 +115,7 @@ impl ToolCall {
 /// let reason = StopReason::EndTurn;
 /// assert_eq!(format!("{:?}", reason), "EndTurn");
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, elicitation::Elicit, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum StopReason {
     /// Model finished generating naturally (end of turn).

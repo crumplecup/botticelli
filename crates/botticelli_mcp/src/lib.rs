@@ -53,9 +53,7 @@ pub mod http;
 
 pub use conversation::{Attachment, ConversationSession, ConversationTurn, SessionState};
 pub use dialog_resource::DialogResource;
-pub use elicitation::{
-    ElicitationDialog, NarrativeElicitor, PartialAct, PartialNarrative, PartialNarrativeBuilder,
-};
+pub use elicitation::{ElicitationDialog, NarrativeElicitor};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::{BotticelliRouter, BotticelliRouterBuilder};
 pub use tools::{

@@ -32,11 +32,17 @@ tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true
+schemars.workspace = true
+
+# Elicitation framework
+elicitation.workspace = true
+rmcp.workspace = true
 
 # Logging
 tracing.workspace = true
 derive_builder.workspace = true
 derive-getters.workspace = true
+derive-new.workspace = true
 regex.workspace = true
 derive_setters.workspace = true
 petgraph.workspace = true

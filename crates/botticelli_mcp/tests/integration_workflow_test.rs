@@ -51,8 +51,8 @@ question = "Ask about the weather"
     let execution_result = executor.execute(execution_input).await;
 
     // Should fail gracefully without API keys
-    if execution_result.is_err() {
-        let err_msg = execution_result.unwrap_err().to_string();
+    if let Err(err) = execution_result {
+        let err_msg = err.to_string();
         assert!(
             err_msg.contains("backend") || err_msg.contains("available") || err_msg.contains("API")
         );

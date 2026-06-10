@@ -16,7 +16,14 @@ use diesel::pg::PgConnection;
 
 /// Narrative metadata from the `[narrative]` section.
 #[derive(
-    Debug, Clone, PartialEq, serde::Deserialize, serde::Serialize, derive_getters::Getters,
+    Debug,
+    Clone,
+    PartialEq,
+    serde::Deserialize,
+    serde::Serialize,
+    schemars::JsonSchema,
+    elicitation::Elicit,
+    derive_getters::Getters,
 )]
 pub struct NarrativeMetadata {
     /// Unique identifier for this narrative

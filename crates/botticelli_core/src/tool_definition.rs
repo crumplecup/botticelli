@@ -40,6 +40,7 @@ use serde_json::Value;
     Serialize,
     Deserialize,
     JsonSchema,
+    elicitation::Elicit,
     derive_getters::Getters,
     derive_setters::Setters,
 )]
