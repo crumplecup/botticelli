@@ -12,6 +12,15 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ## Active Planning Documents
 
+### rmcp + Elicitation Migration (Active)
+- **RMCP_ELICITATION_MIGRATION.md** - `current` (2026-06-10) **🚧 IN PROGRESS**
+  - Full migration from pmcp → rmcp + elicitation framework across botticelli_mcp
+  - Replaces pmcp, mcp-server, mcp-spec with rmcp + elicitation crate
+  - Propagates `#[derive(Elicit, JsonSchema, Serialize, Deserialize)]` workspace-wide
+  - Collapses 8-tool session stack to single `create_narrative` tool using `PartialNarrative::elicit()`
+  - Single binary (stdio + HTTP) with clap subcommands
+  - 10-phase checklist, tracked commit-by-commit on dev branch
+
 ### MCP Server & Testing
 - **TUI_MCP_CLIENT_FIX.md** - `current` (2025-12-24) **✅ FIXED**
   - Applied MCP server testing lessons to fix TUI client startup issues
