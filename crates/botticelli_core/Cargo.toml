@@ -19,6 +19,7 @@ anthropic = ["models", "dep:reqwest"]
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
+schemars.workspace = true
 derive_more = { workspace = true, features = ["display", "from", "error"] }
 derive-getters.workspace = true
 derive_setters.workspace = true

@@ -1,5 +1,6 @@
 //! Output types from LLM responses.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Supported output types from LLMs.
@@ -7,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// Note: Cannot derive `Eq`, `Hash`, `PartialOrd`, or `Ord` because the
 /// `Embedding` variant contains `Vec<f32>`, and `f32` does not implement
 /// these traits (floating point is not totally ordered).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", content = "data")]
 pub enum Output {
     /// Plain text output.
@@ -77,6 +78,7 @@ pub enum Output {
     Hash,
     Serialize,
     Deserialize,
+    JsonSchema,
     derive_getters::Getters,
     derive_builder::Builder,
 )]
@@ -112,9 +114,8 @@ impl ToolCall {
 /// let reason = StopReason::EndTurn;
 /// assert_eq!(format!("{:?}", reason), "EndTurn");
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "snake_case")]
-#[derive(Default)]
 pub enum StopReason {
     /// Model finished generating naturally (end of turn).
     #[default]

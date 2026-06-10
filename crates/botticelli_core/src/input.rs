@@ -1,6 +1,7 @@
 //! Input types for LLM requests.
 
 use crate::MediaSource;
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Controls how an input is retained in conversation history.
@@ -23,7 +24,7 @@ use serde::{Deserialize, Serialize};
 /// // Remove from history after processing
 /// let drop = HistoryRetention::Drop;
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum HistoryRetention {
     /// Retain the entire input in conversation history (default).
@@ -80,7 +81,7 @@ pub enum HistoryRetention {
 ///     filename: Some("report.pdf".to_string()),
 /// };
 /// ```
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(tag = "type", content = "data")]
 pub enum Input {
     /// Plain text input.
@@ -256,7 +257,7 @@ impl Input {
 }
 
 /// Output format for table data.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum TableFormat {
     /// JSON array of objects

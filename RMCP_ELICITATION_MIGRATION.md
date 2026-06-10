@@ -57,16 +57,13 @@ If you only apply one or two of these, the code will compile but fail at runtime
 
 ### Phase 2 — JsonSchema into botticelli_core
 
-- [ ] Add `schemars.workspace = true` to `botticelli_core/Cargo.toml`
-- [ ] `botticelli_core/src/tool_definition.rs`: add `schemars::JsonSchema`
-- [ ] `botticelli_core/src/input.rs`: add `schemars::JsonSchema` to `Input` and all inner
-  types (`HistoryRetention`, `TableFormat`, etc.)
-- [ ] `botticelli_core/src/output.rs`: add `schemars::JsonSchema` to `Output`, `ToolCall`,
-  `StopReason`
-- [ ] `botticelli_core/src/budget.rs`: add `schemars::JsonSchema` to `BudgetConfig`
-- [ ] `botticelli_core/src/request.rs`: add `schemars::JsonSchema` to `GenerateRequest`,
-  `GenerateResponse`
-- [ ] `just check -p botticelli_core` passes
+- [x] Add `schemars.workspace = true` to `botticelli_core/Cargo.toml`
+- [x] `botticelli_core/src/media.rs`: add `JsonSchema` to `MediaSource`
+- [x] `botticelli_core/src/tool_definition.rs`: add `JsonSchema` to `ToolDefinition`
+- [x] `botticelli_core/src/input.rs`: add `JsonSchema` to `Input`, `HistoryRetention`, `TableFormat`
+- [x] `botticelli_core/src/output.rs`: add `JsonSchema` to `Output`, `ToolCall`, `StopReason`
+- [x] `botticelli_core/src/budget.rs`: add `JsonSchema` to `BudgetConfig`
+- [x] `just check -p botticelli_core` passes
 
 ---
 

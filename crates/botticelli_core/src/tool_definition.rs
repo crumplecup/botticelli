@@ -1,5 +1,6 @@
 //! Tool definition types for LLM tool calling.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -38,6 +39,7 @@ use serde_json::Value;
     Eq,
     Serialize,
     Deserialize,
+    JsonSchema,
     derive_getters::Getters,
     derive_setters::Setters,
 )]
