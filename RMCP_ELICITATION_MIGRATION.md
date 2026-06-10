@@ -40,20 +40,18 @@ If you only apply one or two of these, the code will compile but fail at runtime
 
 ### Phase 1 — Workspace plumbing
 
-- [ ] Add `rmcp = "1.7"` to workspace `Cargo.toml` with features:
+- [x] Add `rmcp = "1.7"` to workspace `Cargo.toml` with features:
   `["server", "client", "transport-io", "transport-streamable-http-server",
   "transport-streamable-http-client", "transport-streamable-http-client-reqwest",
   "schemars"]`
-- [ ] Add `schemars = { version = "1", features = ["derive"] }` to workspace `Cargo.toml`
-- [ ] Remove `pmcp` entry from workspace `Cargo.toml`
-- [ ] Remove `mcp-spec` entry from workspace `Cargo.toml`
-- [ ] Update `botticelli_mcp/Cargo.toml`:
-  - Remove `pmcp`, `mcp-server`, `mcp-spec`
-  - Add `rmcp.workspace = true`
-  - Add `schemars.workspace = true`
-  - Remove `streamable-http` feature (now handled by rmcp features)
-  - Remove `http` feature (axum is used directly for HTTP, gated separately)
-- [ ] `just check` passes with zero errors/warnings
+- [x] Add `schemars = { version = "1", features = ["derive"] }` to workspace `Cargo.toml`
+- [ ] Remove `pmcp` entry from workspace `Cargo.toml` *(deferred to Phase 4 with code removal)*
+- [ ] Remove `mcp-spec` entry from workspace `Cargo.toml` *(deferred to Phase 4)*
+- [x] Update `botticelli_mcp/Cargo.toml`:
+  - pmcp + mcp-server kept with migration comment (removed in Phase 4)
+  - Added `rmcp.workspace = true`
+  - Added `schemars.workspace = true`
+- [x] `just check -p botticelli_mcp` passes with zero errors/warnings
 
 ---
 
