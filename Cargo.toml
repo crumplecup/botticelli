@@ -185,7 +185,6 @@ rmcp = { version = "1.7", features = [
 ] }
 schemars = { version = "1", features = ["derive"] }
 elicitation = { version = "0.11", features = ["serde_json"] }
-mcp-spec = "0.1.0"
 
 tempfile = "3"
 petgraph = "0.8"

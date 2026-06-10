@@ -3,7 +3,7 @@
 //! Provides better error formatting, suggestions, and TOML quality improvements.
 
 use botticelli_narrative::validator::{ValidationError, ValidationResult, ValidationWarning};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Format validation result as structured JSON with enhanced information.
 pub fn format_validation_result(validation: &ValidationResult) -> Value {

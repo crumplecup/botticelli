@@ -7,24 +7,20 @@
 //!
 //! - **Tools**: Functions LLMs can call (DB queries, narrative execution, etc.)
 //! - **Resources**: Data sources LLMs can read (content, narratives, etc.)
-//! - **Prompts**: Reusable prompt templates
 //!
 //! # Usage
 //!
 //! ```no_run
-//! use botticelli_mcp::{BotticelliRouter, ByteTransport, Server, RouterService};
-//! use tokio::io::{stdin, stdout};
+//! use botticelli_mcp::BotticelliServer;
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
-//!     let router = BotticelliRouter::builder()
-//!         .name("botticelli")
-//!         .version(env!("CARGO_PKG_VERSION"))
-//!         .build();
-//!     
-//!     let server = Server::new(RouterService(router));
-//!     let transport = ByteTransport::new(stdin(), stdout());
-//!     server.run(transport).await?;
+//!     let service = rmcp::service::serve_server(
+//!         BotticelliServer::new(),
+//!         rmcp::transport::stdio(),
+//!     )
+//!     .await?;
+//!     service.waiting().await.ok();
 //!     Ok(())
 //! }
 //! ```
@@ -33,42 +29,24 @@
 #![warn(missing_docs)]
 
 mod conversation;
-mod dialog_resource;
-mod elicitation;
 mod resources;
 mod server;
 pub mod tools;
 mod transport;
 
-// PMCP migration - new implementation
-mod pmcp_adapters;
-mod pmcp_middleware;
-mod pmcp_server;
-
-#[cfg(feature = "streamable-http")]
-mod pmcp_http_server;
-
-#[cfg(feature = "http")]
-pub mod http;
-
 pub use conversation::{Attachment, ConversationSession, ConversationTurn, SessionState};
-pub use dialog_resource::DialogResource;
-pub use elicitation::{ElicitationDialog, NarrativeElicitor};
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
-pub use server::{BotticelliRouter, BotticelliRouterBuilder};
+pub use server::BotticelliServer;
 pub use tools::{
     Act, ActMetrics, CreateNarrativeTool, EchoTool, ElicitActInput, ElicitActTool,
-    ElicitBoolTool, ElicitMetadataInput, ElicitMetadataTool, ElicitNumberTool,
-    ElicitSelectTool, ElicitTextTool, ElicitationHelper, ExecuteNarrativeTool, ExecutionMetrics,
-    ExportMetricsTool, FinalizeNarrativeInput, FinalizeNarrativeTool, GenerateTool, LlmSampler,
-    McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper, NarrativeRegistry,
-    PrometheusMetrics, QueryContentTool, SamplingCoordinator, SamplingError, SamplingErrorKind,
-    SamplingHelper, SamplingResult, SaveNarrativeTool, ServerInfoTool, StartNarrativeInput,
-    StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
+    ElicitMetadataInput, ElicitMetadataTool, ElicitationHelper, ExecuteNarrativeTool,
+    ExecutionMetrics, ExportMetricsTool, FinalizeNarrativeInput, FinalizeNarrativeTool,
+    GenerateTool, LlmSampler, McpTool, MetricsSummary, ModifyNarrativeTool, NarrativeHelper,
+    NarrativeRegistry, PrometheusMetrics, QueryContentTool, SamplingCoordinator, SamplingError,
+    SamplingErrorKind, SamplingHelper, SamplingResult, SaveNarrativeTool, ServerInfoTool,
+    StartNarrativeInput, StartNarrativeTool, ToolRegistry, ValidateNarrativeTool,
 };
-pub use transport::{
-    HttpTransport, InProcServerHandle, InProcTransport, McpTransport, McpTransportError,
-};
+pub use transport::{HttpTransport, McpTransport, McpTransportError};
 
 #[cfg(feature = "discord")]
 pub use tools::{
@@ -89,13 +67,3 @@ pub use tools::GenerateOllamaTool;
 
 #[cfg(feature = "database")]
 pub use resources::ContentResource;
-
-// PMCP migration exports
-pub use pmcp_server::{register_all_tools, run_pmcp_server};
-
-#[cfg(feature = "streamable-http")]
-pub use pmcp_http_server::run_pmcp_http_server;
-
-// Re-export key mcp-server types for convenience
-pub use mcp_server::router::RouterService;
-pub use mcp_server::{ByteTransport, Router, Server};

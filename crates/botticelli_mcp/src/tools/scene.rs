@@ -4,7 +4,7 @@ use crate::McpTool;
 use async_trait::async_trait;
 use botticelli_core::ToolDefinition;
 use botticelli_error::{McpError, McpErrorKind, McpResult};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::instrument;
 
 /// Create a new scene in a narrative
@@ -24,11 +24,7 @@ pub async fn create_scene(args: Value) -> McpResult<Value> {
     })?;
     let description = args.get("description").and_then(|v| v.as_str());
 
-    tracing::info!(
-        narrative_id,
-        scene_name,
-        "Creating scene in narrative"
-    );
+    tracing::info!(narrative_id, scene_name, "Creating scene in narrative");
 
     Ok(json!({
         "success": true,

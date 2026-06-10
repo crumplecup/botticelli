@@ -76,7 +76,9 @@ pub struct ApplyValidationFixesOutput {
 }
 
 #[tracing::instrument(skip(registry), fields(narrative_id, strict))]
-pub async fn validate_narrative<R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative>>(
+pub async fn validate_narrative<
+    R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative>,
+>(
     registry: &R,
     input: ValidateNarrativeInput,
 ) -> McpResult<ValidateNarrativeOutput> {
@@ -102,8 +104,7 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<botticelli_narr
         });
     }
 
-    if partial.description.is_none() || partial.description.as_ref().is_none_or(|d| d.is_empty())
-    {
+    if partial.description.is_none() || partial.description.as_ref().is_none_or(|d| d.is_empty()) {
         errors.push(ValidationIssue {
             severity: Severity::High,
             field: "description".to_string(),
@@ -209,7 +210,9 @@ pub async fn validate_narrative<R: ElicitationRegistryOperations<botticelli_narr
 
 #[tracing::instrument(skip(registry), fields(narrative_id))]
 #[tracing::instrument(skip(registry), fields(narrative_id))]
-pub async fn apply_validation_fixes<R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative>>(
+pub async fn apply_validation_fixes<
+    R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative>,
+>(
     registry: &R,
     input: ApplyValidationFixesInput,
 ) -> McpResult<ApplyValidationFixesOutput> {

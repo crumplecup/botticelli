@@ -48,7 +48,9 @@ pub struct NarrativeStateSummary {
 }
 
 #[tracing::instrument(skip(registry), fields(narrative_id, format))]
-pub async fn get_narrative_state<R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative>>(
+pub async fn get_narrative_state<
+    R: ElicitationRegistryOperations<botticelli_narrative::PartialNarrative>,
+>(
     registry: &R,
     input: GetNarrativeStateInput,
 ) -> McpResult<GetNarrativeStateOutput> {
@@ -90,7 +92,7 @@ pub async fn get_narrative_state<R: ElicitationRegistryOperations<botticelli_nar
                 return Err(McpError::invalid_input(format!(
                     "Failed to convert to TOML: {}",
                     e
-                )))
+                )));
             }
         }
     } else {

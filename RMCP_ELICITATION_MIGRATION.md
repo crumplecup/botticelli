@@ -96,22 +96,22 @@ If you only apply one or two of these, the code will compile but fail at runtime
 
 ---
 
-### Phase 4 — New rmcp server struct in botticelli_mcp
+### Phase 4 — New rmcp server struct in botticelli_mcp ✅
 
 Pattern reference: `strictly_games/crates/strictly_server/src/server.rs` (GameServer)
 
-- [ ] Create `botticelli_mcp/src/server/mod.rs` with a `BotticelliServer` struct
+- [x] Create `botticelli_mcp/src/server/mod.rs` with `BotticelliServer` struct
   ```rust
   pub struct BotticelliServer {
       tool_router: ToolRouter<Self>,
       dynamic: DynamicToolRegistry,
   }
   ```
-- [ ] Implement `rmcp::ServerHandler` for `BotticelliServer`
+- [x] Implement `rmcp::ServerHandler` for `BotticelliServer`
   - `get_info()` returns server name/version/capabilities
   - `list_tools()` delegates to `tool_router` + `dynamic`
   - `call_tool()` delegates to `tool_router` + `dynamic`
-- [ ] Delete dead infrastructure:
+- [x] Delete dead infrastructure:
   - `src/pmcp_adapters.rs`
   - `src/pmcp_middleware.rs`
   - `src/pmcp_server.rs`
@@ -120,9 +120,22 @@ Pattern reference: `strictly_games/crates/strictly_server/src/server.rs` (GameSe
   - `src/dialog_resource.rs`
   - `src/elicitation/dialog.rs` (replaced by `ElicitServer`)
   - `src/elicitation/elicitor.rs` (replaced by `#[derive(Elicit)]`)
-- [ ] Update `src/lib.rs` — remove all pmcp/mcp_server re-exports, add new server exports
-- [ ] `just check -p botticelli_mcp` passes (may have unused-import warnings from tools — fix
-  them)
+  - `src/elicitation_primitives.rs` (dialog-dependent, deleted with dialog infra)
+  - `src/http.rs` (old axum HTTP layer, replaced in Phase 7)
+  - `src/transport/in_proc.rs` (pmcp-based, rebuilt in Phase 6)
+  - `src/bin/botticelli-mcp-pmcp.rs`
+  - `src/bin/botticelli-mcp-pmcp-http.rs`
+  - `src/bin/botticelli-mcp-http.rs` (BotticelliRouter-based, replaced in Phase 7)
+  - `tests/elicitation_integration_test.rs` (pmcp-dependent)
+  - `tests/pmcp_http_test.rs` (pmcp HTTP tests)
+  - `tests/in_proc_transport_test.rs` (pmcp-based, rebuilt in Phase 6)
+- [x] Updated `src/bin/botticelli-mcp.rs` to use `BotticelliServer` + rmcp stdio
+- [x] Update `src/lib.rs` — remove all pmcp/mcp_server re-exports, add `BotticelliServer`
+- [x] Remove `mcp-spec` from workspace `Cargo.toml`
+- [x] Remove `pmcp`, `mcp-server`, `mcp-spec` from `botticelli_mcp/Cargo.toml`
+- [x] Remove `streamable-http` and `http` features from `botticelli_mcp/Cargo.toml`
+- [x] Remove stale `streamable-http` feature from `botticelli_tui/Cargo.toml`
+- [x] `just test-all botticelli_mcp` passes — zero warnings, all tests passing
 
 ---
 
@@ -267,23 +280,27 @@ Pattern reference: `strictly_games/crates/strictly_games/src/main.rs`
 These files are removed entirely during the migration:
 
 ```
-crates/botticelli_mcp/src/pmcp_adapters.rs
-crates/botticelli_mcp/src/pmcp_middleware.rs
-crates/botticelli_mcp/src/pmcp_server.rs
-crates/botticelli_mcp/src/pmcp_http_server.rs
-crates/botticelli_mcp/src/server.rs               (old BotticelliRouter)
-crates/botticelli_mcp/src/dialog_resource.rs
-crates/botticelli_mcp/src/elicitation/dialog.rs
-crates/botticelli_mcp/src/elicitation/elicitor.rs
-crates/botticelli_mcp/src/elicitation/partial.rs  (moved to botticelli_narrative)
-crates/botticelli_mcp/src/tools/elicitation/      (entire directory)
-crates/botticelli_mcp/src/tools/elicitation_primitives.rs
-crates/botticelli_mcp/src/tools/narrative_creation.rs
-crates/botticelli_mcp/src/bin/botticelli-mcp-http.rs
-crates/botticelli_mcp/src/bin/botticelli-mcp-pmcp.rs
-crates/botticelli_mcp/src/bin/botticelli-mcp-pmcp-http.rs
-crates/botticelli_mcp/tests/pmcp_server_test.rs
-crates/botticelli_mcp/tests/pmcp_http_test.rs
+crates/botticelli_mcp/src/pmcp_adapters.rs           ✅ deleted Phase 4
+crates/botticelli_mcp/src/pmcp_middleware.rs          ✅ deleted Phase 4
+crates/botticelli_mcp/src/pmcp_server.rs              ✅ deleted Phase 4
+crates/botticelli_mcp/src/pmcp_http_server.rs         ✅ deleted Phase 4
+crates/botticelli_mcp/src/server.rs                   ✅ deleted Phase 4 (old BotticelliRouter)
+crates/botticelli_mcp/src/dialog_resource.rs          ✅ deleted Phase 4
+crates/botticelli_mcp/src/elicitation/dialog.rs       ✅ deleted Phase 4
+crates/botticelli_mcp/src/elicitation/elicitor.rs     ✅ deleted Phase 4
+crates/botticelli_mcp/src/elicitation/partial.rs      ✅ moved to botticelli_narrative Phase 3
+crates/botticelli_mcp/src/http.rs                     ✅ deleted Phase 4 (old axum HTTP)
+crates/botticelli_mcp/src/transport/in_proc.rs        ✅ deleted Phase 4 (rebuilt in Phase 6)
+crates/botticelli_mcp/src/tools/elicitation/          (entire directory — deleted Phase 5)
+crates/botticelli_mcp/src/tools/elicitation_primitives.rs  ✅ deleted Phase 4
+crates/botticelli_mcp/src/tools/narrative_creation.rs (deleted Phase 5)
+crates/botticelli_mcp/src/bin/botticelli-mcp-http.rs  ✅ deleted Phase 4
+crates/botticelli_mcp/src/bin/botticelli-mcp-pmcp.rs  ✅ deleted Phase 4
+crates/botticelli_mcp/src/bin/botticelli-mcp-pmcp-http.rs  ✅ deleted Phase 4
+crates/botticelli_mcp/tests/pmcp_server_test.rs       (deleted Phase 9)
+crates/botticelli_mcp/tests/pmcp_http_test.rs         ✅ deleted Phase 4
+crates/botticelli_mcp/tests/elicitation_integration_test.rs  ✅ deleted Phase 4
+crates/botticelli_mcp/tests/in_proc_transport_test.rs  ✅ deleted Phase 4
 ```
 
 ---

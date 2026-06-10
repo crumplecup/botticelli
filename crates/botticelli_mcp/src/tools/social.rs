@@ -8,7 +8,7 @@ use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
 use botticelli_social::{BotCommandRegistryImpl, DiscordCommandExecutor};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, instrument};

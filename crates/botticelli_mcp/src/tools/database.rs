@@ -4,7 +4,7 @@ use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
 use botticelli_interface::DatabaseRegistryOperations;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 
 /// Tool for querying content from database tables.

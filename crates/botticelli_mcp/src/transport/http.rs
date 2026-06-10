@@ -35,13 +35,9 @@ impl McpTransport for HttpTransport {
     async fn initialize(&mut self) -> Result<(), McpTransportError> {
         // Test connection with a health check
         let url = format!("{}/health", self.base_url);
-        self.client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| {
-                McpTransportError::new(McpTransportErrorKind::ConnectionFailed(e.to_string()))
-            })?;
+        self.client.get(&url).send().await.map_err(|e| {
+            McpTransportError::new(McpTransportErrorKind::ConnectionFailed(e.to_string()))
+        })?;
 
         self.connected = true;
         tracing::info!("HTTP transport initialized");
@@ -51,25 +47,19 @@ impl McpTransport for HttpTransport {
     #[tracing::instrument(skip(self))]
     async fn list_tools(&self) -> Result<Vec<ToolDefinition>, McpTransportError> {
         if !self.connected {
-            return Err(McpTransportError::new(McpTransportErrorKind::NotInitialized));
+            return Err(McpTransportError::new(
+                McpTransportErrorKind::NotInitialized,
+            ));
         }
 
         let url = format!("{}/tools/list", self.base_url);
-        let response = self
-            .client
-            .post(&url)
-            .send()
-            .await
-            .map_err(|e| {
-                McpTransportError::new(McpTransportErrorKind::RequestFailed(e.to_string()))
-            })?;
+        let response = self.client.post(&url).send().await.map_err(|e| {
+            McpTransportError::new(McpTransportErrorKind::RequestFailed(e.to_string()))
+        })?;
 
-        let tools: Vec<ToolDefinition> = response
-            .json()
-            .await
-            .map_err(|e| {
-                McpTransportError::new(McpTransportErrorKind::InvalidResponse(e.to_string()))
-            })?;
+        let tools: Vec<ToolDefinition> = response.json().await.map_err(|e| {
+            McpTransportError::new(McpTransportErrorKind::InvalidResponse(e.to_string()))
+        })?;
 
         tracing::debug!(count = tools.len(), "Listed tools");
         Ok(tools)
@@ -78,7 +68,9 @@ impl McpTransport for HttpTransport {
     #[tracing::instrument(skip(self, arguments))]
     async fn call_tool(&self, name: &str, arguments: Value) -> Result<Value, McpTransportError> {
         if !self.connected {
-            return Err(McpTransportError::new(McpTransportErrorKind::NotInitialized));
+            return Err(McpTransportError::new(
+                McpTransportErrorKind::NotInitialized,
+            ));
         }
 
         let url = format!("{}/tools/call", self.base_url);
@@ -97,12 +89,9 @@ impl McpTransport for HttpTransport {
                 McpTransportError::new(McpTransportErrorKind::RequestFailed(e.to_string()))
             })?;
 
-        let result: Value = response
-            .json()
-            .await
-            .map_err(|e| {
-                McpTransportError::new(McpTransportErrorKind::InvalidResponse(e.to_string()))
-            })?;
+        let result: Value = response.json().await.map_err(|e| {
+            McpTransportError::new(McpTransportErrorKind::InvalidResponse(e.to_string()))
+        })?;
 
         tracing::debug!(tool = name, "Tool executed");
         Ok(result)

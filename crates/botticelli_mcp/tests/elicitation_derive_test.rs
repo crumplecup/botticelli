@@ -3,9 +3,7 @@
 //! Verifies that #[derive(Elicit)] works correctly with MockCommunicator.
 //! These tests exercise the Select and Survey paradigms.
 
-use elicitation::{
-    ElicitCommunicator, ElicitError, ElicitationContext, Elicitation, StyleContext,
-};
+use elicitation::{ElicitCommunicator, ElicitError, Elicitation, ElicitationContext, StyleContext};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -90,34 +88,44 @@ impl ElicitCommunicator for MockCommunicator {
 #[tokio::test]
 async fn test_select_option_a() {
     let mock = MockCommunicator::single("1");
-    let result = TestChoice::elicit(&mock).await.expect("elicitation succeeded");
+    let result = TestChoice::elicit(&mock)
+        .await
+        .expect("elicitation succeeded");
     assert_eq!(result, TestChoice::OptionA);
 }
 
 #[tokio::test]
 async fn test_select_option_b() {
     let mock = MockCommunicator::single("2");
-    let result = TestChoice::elicit(&mock).await.expect("elicitation succeeded");
+    let result = TestChoice::elicit(&mock)
+        .await
+        .expect("elicitation succeeded");
     assert_eq!(result, TestChoice::OptionB);
 }
 
 #[tokio::test]
 async fn test_select_option_c() {
     let mock = MockCommunicator::single("3");
-    let result = TestChoice::elicit(&mock).await.expect("elicitation succeeded");
+    let result = TestChoice::elicit(&mock)
+        .await
+        .expect("elicitation succeeded");
     assert_eq!(result, TestChoice::OptionC);
 }
 
 #[tokio::test]
 async fn test_survey_enabled_true() {
     let mock = MockCommunicator::single("true");
-    let result = TestSettings::elicit(&mock).await.expect("elicitation succeeded");
+    let result = TestSettings::elicit(&mock)
+        .await
+        .expect("elicitation succeeded");
     assert!(result.enabled);
 }
 
 #[tokio::test]
 async fn test_survey_enabled_false() {
     let mock = MockCommunicator::single("false");
-    let result = TestSettings::elicit(&mock).await.expect("elicitation succeeded");
+    let result = TestSettings::elicit(&mock)
+        .await
+        .expect("elicitation succeeded");
     assert!(!result.enabled);
 }

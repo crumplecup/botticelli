@@ -17,9 +17,7 @@ botticelli_social = { workspace = true, optional = true, features = [
   "discord",
 ] }
 
-# MCP SDK (pmcp + mcp-server kept during migration; removed in Phase 4)
-pmcp = { version = "1.8", features = ["streamable-http", "http"] }
-mcp-server = "0.1.0"
+# MCP SDK
 rmcp.workspace = true
 schemars.workspace = true
 
@@ -58,12 +56,6 @@ uuid.workspace = true
 # HTTP client (for HTTP transport and Discord tools)
 reqwest = { workspace = true, features = ["json"] }
 
-# HTTP server (for HTTP transport)
-axum = { workspace = true, optional = true }
-tower = { workspace = true, optional = true }
-tower-http = { workspace = true, features = ["cors", "trace"], optional = true }
-mcp-spec.workspace = true
-
 # Elicitation framework
 elicitation.workspace = true
 
@@ -78,17 +70,11 @@ futures.workspace = true
 [features]
 default = []
 
-# HTTP transport (pmcp alias — replaced by rmcp transport in Phase 4)
-streamable-http = ["pmcp/streamable-http"]
-
 # Database integration
 database = ["dep:botticelli_database", "dep:diesel"]
 
 # Discord integration
 discord = ["dep:botticelli_social"]
-
-# HTTP server (old axum-based implementation)
-http = ["dep:axum", "dep:tower", "dep:tower-http"]
 
 # LLM backend features
 gemini = ["dep:botticelli_models", "botticelli_models/gemini"]
@@ -102,24 +88,8 @@ llm = ["gemini", "anthropic", "ollama", "huggingface", "groq"]
 execution = ["llm"]                                            # Enable execution features
 
 [[bin]]
-name = "botticelli-mcp-http"
-path = "src/bin/botticelli-mcp-http.rs"
-required-features = ["http", "database", "llm"]
-
-[[bin]]
 name = "botticelli-mcp"
 path = "src/bin/botticelli-mcp.rs"
-required-features = ["database", "llm"]
-
-[[bin]]
-name = "botticelli-mcp-pmcp"
-path = "src/bin/botticelli-mcp-pmcp.rs"
-# No required features - works with any feature set
-
-[[bin]]
-name = "botticelli-mcp-pmcp-http"
-path = "src/bin/botticelli-mcp-pmcp-http.rs"
-# Placeholder for future HTTP support
 
 [package.metadata.docs.rs]
 all-features = true

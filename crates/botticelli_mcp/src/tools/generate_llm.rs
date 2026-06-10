@@ -55,7 +55,7 @@ use botticelli_interface::BotticelliDriver;
     feature = "huggingface",
     feature = "groq"
 ))]
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Common generation logic shared across all backends.
 #[cfg(any(

@@ -1,10 +1,10 @@
 //! Tool for exporting Prometheus metrics.
 
-use crate::tools::McpTool;
 use crate::PrometheusMetrics;
+use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::sync::Arc;
 use tracing::{debug, instrument};
 

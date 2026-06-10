@@ -1,10 +1,8 @@
 //! Transport abstraction for MCP clients.
 
 mod http;
-mod in_proc;
 
 pub use http::HttpTransport;
-pub use in_proc::{InProcServerHandle, InProcTransport};
 
 use async_trait::async_trait;
 use botticelli_core::ToolDefinition;

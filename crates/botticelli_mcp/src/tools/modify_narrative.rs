@@ -1,13 +1,13 @@
 //! Tool for modifying existing narratives based on natural language instructions.
 
+use crate::tools::McpTool;
 use crate::tools::narrative_validation_helpers::{
     auto_fix_common_issues, format_toml, format_validation_result,
 };
-use crate::tools::McpTool;
 use async_trait::async_trait;
 use botticelli_error::{McpError, McpResult};
 use botticelli_narrative::validator::validate_narrative_toml;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tracing::{debug, instrument};
 
 /// Tool for modifying narratives based on natural language instructions.

@@ -9,7 +9,6 @@ mod discord;
 mod discord_workflow;
 mod echo;
 mod elicitation;
-mod elicitation_primitives;
 mod execute_act;
 mod execute_narrative;
 mod export_metrics;
@@ -49,9 +48,6 @@ pub use elicitation::{
     FinalizeNarrativeTool, GetNarrativeStateInput, GetNarrativeStateOutput, NarrativeRegistry,
     PartialNarrativeRegistry, ValidateNarrativeInput, ValidateNarrativeOutput,
 };
-pub use elicitation_primitives::{
-    ElicitBoolTool, ElicitNumberTool, ElicitSelectTool, ElicitTextTool,
-};
 pub use execute_act::ExecuteActTool;
 pub use execute_narrative::ExecuteNarrativeTool;
 pub use export_metrics::ExportMetricsTool;
@@ -87,8 +83,8 @@ pub use sampling::{
 };
 pub use sampling_session_manager::SamplingSessionManager;
 pub use scene::{
-    create_scene, delete_scene, list_scenes, scene_tools, update_scene, CreateSceneTool,
-    DeleteSceneTool, ListScenesTool, UpdateSceneTool,
+    CreateSceneTool, DeleteSceneTool, ListScenesTool, UpdateSceneTool, create_scene, delete_scene,
+    list_scenes, scene_tools, update_scene,
 };
 
 // Export LLM tools based on features
@@ -179,11 +175,13 @@ impl ToolRegistry {
     pub fn tool_definitions(&self) -> Vec<botticelli_core::ToolDefinition> {
         self.tools
             .values()
-            .map(|tool| botticelli_core::ToolDefinition::new(
-                tool.name().to_string(),
-                tool.description().to_string(),
-                tool.input_schema(),
-            ))
+            .map(|tool| {
+                botticelli_core::ToolDefinition::new(
+                    tool.name().to_string(),
+                    tool.description().to_string(),
+                    tool.input_schema(),
+                )
+            })
             .collect()
     }
 }
@@ -222,9 +220,7 @@ impl Default for ToolRegistry {
         registry.register(Arc::new(ValidateNarrativeSessionTool::new(
             narrative_registry.clone(),
         )));
-        registry.register(Arc::new(ApplyValidationFixesTool::new(
-            narrative_registry,
-        )));
+        registry.register(Arc::new(ApplyValidationFixesTool::new(narrative_registry)));
 
         // Narrative generation tools (Phase 1)
         registry.register(Arc::new(CreateNarrativeTool));

@@ -1,5 +1,5 @@
-use botticelli_narrative::{PartialAct, PartialNarrative};
 use botticelli_error::{McpError, McpErrorKind, McpResult};
+use botticelli_narrative::{PartialAct, PartialNarrative};
 use tracing::instrument;
 
 /// Analysis results from narrative description.
