@@ -10,16 +10,21 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-botticelli_error = { path = "../botticelli_error" }
-derive_more = { workspace = true, features = ["display", "from", "deref", "deref_mut"] }
-derive-getters = { workspace = true }
-derive-new = { workspace = true }
-derive_builder = { workspace = true }
-derive_setters = { workspace = true }
+botticelli_error.workspace = true
+derive_more = { workspace = true, features = [
+  "display",
+  "from",
+  "deref",
+  "deref_mut",
+] }
+derive-getters.workspace = true
+derive-new.workspace = true
+derive_builder.workspace = true
+derive_setters.workspace = true
 serde = { workspace = true, features = ["derive"] }
-toml = { workspace = true }
-regex = "1"
-tracing = { workspace = true }
+toml.workspace = true
+regex.workspace = true
+tracing.workspace = true
 
 # Optional for database-backed approval workflows
 diesel = { workspace = true, optional = true }

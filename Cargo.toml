@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "crates/botticelli_chat",
+  "crates/botticelli_chat",
   "crates/botticelli_error",
   "crates/botticelli_core",
   "crates/botticelli_interface",
@@ -16,7 +16,9 @@ members = [
   "crates/botticelli_security",
   "crates/botticelli_cache",
   "crates/botticelli_actor",
-  "crates/botticelli_bot", "crates/botticelli_mcp", "crates/botticelli_mcp_client",
+  "crates/botticelli_bot",
+  "crates/botticelli_mcp",
+  "crates/botticelli_mcp_client",
 ]
 resolver = "2"
 
@@ -37,11 +39,16 @@ botticelli_core = { path = "crates/botticelli_core", version = "0.2.0" }
 botticelli_interface = { path = "crates/botticelli_interface", version = "0.2.0" }
 
 # Observability (OpenTelemetry)
-opentelemetry = "0.31"
-opentelemetry-otlp = { version = "0.31", features = ["tokio", "metrics", "http-proto", "reqwest-client"] }
-opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
-opentelemetry-stdout = { version = "0.31", features = ["trace", "metrics"] }
-tracing-opentelemetry = "0.32"
+opentelemetry = "0.32"
+opentelemetry-otlp = { version = "0.32", features = [
+  "tokio",
+  "metrics",
+  "http-proto",
+  "reqwest-client",
+] }
+opentelemetry_sdk = { version = "0.32", features = ["rt-tokio"] }
+opentelemetry-stdout = { version = "0.32", features = ["trace", "metrics"] }
+tracing-opentelemetry = "0.33"
 
 # Internal crates (Phase 2 rate limiting)
 botticelli_rate_limit = { path = "crates/botticelli_rate_limit", version = "0.2.0" }
@@ -87,6 +94,7 @@ botticelli = { path = "crates/botticelli", version = "0.2.0" }
 # Common external dependencies (shared versions)
 tokio = { version = "1", features = ["full"] }
 tokio-stream = "0.1"
+tokio-test = "0.4"
 async-stream = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -99,7 +107,7 @@ derive-new = "0.7"
 derive-getters = "0.5"
 derive_setters = "0.1"
 derive_builder = "0.20"
-strum = { version = "0.27", features = ["derive"] }
+strum = { version = "0.28", features = ["derive"] }
 
 # Rate limiting and retry
 governor = "0.10"
@@ -112,6 +120,7 @@ tracing-subscriber = { version = "0.3", features = [
 ] }
 regex = "1"
 anyhow = "1"
+tiktoken-rs = "0.9.1"
 
 # Actor system
 ractor = { version = "0.15", features = ["async-trait"] }
@@ -124,15 +133,23 @@ reqwest = { version = "0.12", features = [
   "stream",
   "rustls-tls",
 ] }
+axum = "0.8"
+tower = "0.5"
+tower-http = "0.6"
 dirs = "6"
 
 # Storage and hashing
 sha2 = "0.10"
 uuid = { version = "1", features = ["v4", "serde"] }
+dashmap = "6"
 
 # LLM provider SDKs
 gemini-rust = "1.5"
 base64 = "0.22"
+claude-client = "0.3"
+hf-hub = "0.5"
+huggingface_inference_rs = { version = "0.5", default-features = false }
+ollama-rs = "0.3"
 
 # WebSocket for live APIs
 tokio-tungstenite = "0.28"
@@ -157,7 +174,13 @@ crossterm = "0.29"
 dotenvy = "0.15"
 
 # Elicitation framework
-elicitation = "0.1"
+elicitation = "0.11"
+mcp-spec = "0.1.0"
+
+tempfile = "3"
+petgraph = "0.8"
+shellexpand = "3"
+serenity = "0.12"
 
 # The profile that 'dist' will build with
 [profile.dist]

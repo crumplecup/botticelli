@@ -7,70 +7,70 @@ license.workspace = true
 description = "Model Context Protocol (MCP) server for Botticelli"
 
 [dependencies]
-# MCP SDK - migrating to pmcp (battle-tested SDK)
+botticelli_core.workspace = true
+botticelli_error.workspace = true
+botticelli_interface.workspace = true
+botticelli_narrative.workspace = true
+botticelli_database = { workspace = true, optional = true }
+botticelli_models = { workspace = true, optional = true }
+botticelli_social = { workspace = true, optional = true, features = [
+  "discord",
+] }
+
 pmcp = { version = "1.8", features = ["streamable-http", "http"] }
-mcp-server = "0.1.0"  # Keep during migration
+mcp-server = "0.1.0"                                               # Keep during migration
 
 # Async runtime
 tokio = { workspace = true, features = ["full"] }
-async-trait = { workspace = true }
+async-trait.workspace = true
 
 # Concurrent data structures
-dashmap = "6.1"
+dashmap.workspace = true
 
 # Serialization
-serde = { workspace = true }
-serde_json = { workspace = true }
-toml = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
 
 # Error handling
 derive_more = { workspace = true, features = ["display", "from"] }
-derive_builder = { workspace = true }
-derive-getters = { workspace = true }
-derive-new = { workspace = true }
-anyhow = "1.0"
+derive_builder.workspace = true
+derive-getters.workspace = true
+derive-new.workspace = true
+anyhow.workspace = true
 
 # Tracing
-tracing = { workspace = true }
+tracing.workspace = true
 tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 # Environment
-dotenvy = { workspace = true }
+dotenvy.workspace = true
 
 # Time
-chrono = "0.4"
+chrono.workspace = true
 
 # UUID generation
-uuid = { workspace = true }
+uuid.workspace = true
 
 # HTTP client (for HTTP transport and Discord tools)
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { workspace = true, features = ["json"] }
 
 # HTTP server (for HTTP transport)
-axum = { version = "0.7", optional = true }
-tower = { version = "0.5", optional = true }
-tower-http = { version = "0.5", features = ["cors", "trace"], optional = true }
-
-# Internal dependencies
-botticelli_core = { path = "../botticelli_core", version = "0.2.0" }
-botticelli_error = { path = "../botticelli_error", version = "0.2.0" }
-botticelli_interface = { path = "../botticelli_interface", version = "0.2.0" }
-botticelli_narrative = { path = "../botticelli_narrative", version = "0.2.0" }
-botticelli_database = { path = "../botticelli_database", version = "0.2.0", optional = true }
-botticelli_models = { path = "../botticelli_models", version = "0.2.0", optional = true }
-botticelli_social = { path = "../botticelli_social", version = "0.2.0", optional = true, features = ["discord"] }
-mcp-spec = "0.1.0"
+axum = { workspace = true, optional = true }
+tower = { workspace = true, optional = true }
+tower-http = { workspace = true, features = ["cors", "trace"], optional = true }
+mcp-spec.workspace = true
 
 # Elicitation framework
-elicitation = { workspace = true }
+elicitation.workspace = true
 
 # Database (only when feature enabled)
 diesel = { workspace = true, features = ["postgres"], optional = true }
 
 [dev-dependencies]
-tokio-test = "0.4"
-reqwest = { version = "0.12", features = ["json"] }
-futures = "0.3"
+tokio-test.workspace = true
+reqwest = { workspace = true, features = ["json"] }
+futures.workspace = true
 
 [features]
 default = []
@@ -96,7 +96,7 @@ groq = ["dep:botticelli_models", "botticelli_models/groq"]
 
 # Combined LLM features
 llm = ["gemini", "anthropic", "ollama", "huggingface", "groq"]
-execution = ["llm"]  # Enable execution features
+execution = ["llm"]                                            # Enable execution features
 
 [[bin]]
 name = "botticelli-mcp-http"

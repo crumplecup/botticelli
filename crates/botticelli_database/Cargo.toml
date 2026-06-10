@@ -11,35 +11,35 @@ description = "PostgreSQL integration for Botticelli"
 
 [dependencies]
 botticelli_error = { workspace = true, features = ["database"] }
-botticelli_core = { workspace = true }
-botticelli_interface = { workspace = true }
-botticelli_storage = { workspace = true }
+botticelli_core.workspace = true
+botticelli_interface.workspace = true
+botticelli_storage.workspace = true
 
 # Async
-async-trait = { workspace = true }
-tokio = { workspace = true }
+async-trait.workspace = true
+tokio.workspace = true
 
 # Database
-diesel = { workspace = true }
-diesel_migrations = { workspace = true }
+diesel.workspace = true
+diesel_migrations.workspace = true
 
 # Serialization
-serde = { workspace = true }
-serde_json = { workspace = true }
-toml = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
 
 # Time and IDs
-chrono = { workspace = true }
-uuid = { workspace = true }
+chrono.workspace = true
+uuid.workspace = true
 
 # Logging
-tracing = { workspace = true }
+tracing.workspace = true
 
 # Hashing
-sha2 = { workspace = true }
+sha2.workspace = true
 
 # Derives
-derive-getters = { workspace = true }
+derive-getters.workspace = true
 derive_builder.workspace = true
 
 [dev-dependencies]

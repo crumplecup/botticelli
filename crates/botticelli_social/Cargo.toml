@@ -11,46 +11,56 @@ description = "Social media platform integrations for Botticelli LLM framework"
 
 [dependencies]
 # Internal workspace crates
-botticelli_error = { workspace = true }
-botticelli_interface = { workspace = true }
+botticelli_error.workspace = true
+botticelli_interface.workspace = true
 botticelli_database = { workspace = true, optional = true }
 botticelli_narrative = { workspace = true, optional = true }
-botticelli_cache = { workspace = true }
-botticelli_security = { workspace = true }
+botticelli_cache.workspace = true
+botticelli_security.workspace = true
 
 # Database
 diesel = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 
 # Async runtime
-tokio = { workspace = true }
-async-trait = { workspace = true }
+tokio.workspace = true
+async-trait.workspace = true
 
 # Serialization
-serde = { workspace = true }
-serde_json = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
 
 # Logging
-tracing = { workspace = true }
+tracing.workspace = true
 
 # Derive macros
-derive_more = { workspace = true }
-derive-getters = "0.5"
-derive_setters = "0.1"
-derive_builder = "0.20"
+derive_more.workspace = true
+derive-getters.workspace = true
+derive_setters.workspace = true
+derive_builder.workspace = true
 
 # Discord integration (optional)
-serenity = { version = "0.12", default-features = false, features = ["client", "gateway", "rustls_backend", "model"], optional = true }
+serenity = { workspace = true, features = [
+  "client",
+  "gateway",
+  "rustls_backend",
+  "model",
+], optional = true }
 
 [dev-dependencies]
-dotenvy = "0.15"
+dotenvy.workspace = true
 tokio = { workspace = true, features = ["full"] }
-botticelli_narrative = { workspace = true }
-botticelli = { path = "../../crates/botticelli", features = ["discord", "database"] }
+botticelli_narrative.workspace = true
+botticelli = { workspace = true, features = ["discord", "database"] }
 
 [features]
 default = []
 discord = ["serenity", "database"]
-database = ["dep:botticelli_database", "dep:botticelli_narrative", "dep:diesel", "dep:chrono"]
+database = [
+  "dep:botticelli_database",
+  "dep:botticelli_narrative",
+  "dep:diesel",
+  "dep:chrono",
+]
 # Empty feature flag for marking expensive API integration tests
 api = []

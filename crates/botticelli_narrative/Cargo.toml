@@ -10,44 +10,45 @@ categories.workspace = true
 description = "Narrative execution engine for Botticelli"
 
 [dependencies]
-botticelli_error = { workspace = true }
-botticelli_core = { workspace = true }
-botticelli_interface = { workspace = true }
-botticelli_storage = { workspace = true }
-shellexpand = "3"
+botticelli_error.workspace = true
+botticelli_core.workspace = true
+botticelli_interface.workspace = true
+botticelli_storage.workspace = true
+botticelli_rate_limit.workspace = true
+botticelli_database = { workspace = true, optional = true }
+
+shellexpand.workspace = true
 
 # Optional database support
-botticelli_database = { workspace = true, optional = true }
 diesel = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 ractor = { workspace = true, optional = true }
 
 # Async
-async-trait = { workspace = true }
-tokio = { workspace = true }
+async-trait.workspace = true
+tokio.workspace = true
 
 # Serialization
-serde = { workspace = true }
-serde_json = { workspace = true }
-toml = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
 
 # Logging
-tracing = { workspace = true }
+tracing.workspace = true
 derive_builder.workspace = true
 derive-getters.workspace = true
-botticelli_rate_limit = { version = "0.2.0", path = "../botticelli_rate_limit" }
-regex = { workspace = true }
+regex.workspace = true
 derive_setters.workspace = true
-petgraph = "0.6"
+petgraph.workspace = true
 
 [features]
 default = []
 database = ["dep:botticelli_database", "dep:diesel", "dep:chrono", "dep:ractor"]
-api = []  # Marker feature for tests that make real API calls
-gemini = []  # Marker feature for Gemini-specific tests
+api = []                                                                         # Marker feature for tests that make real API calls
+gemini = []                                                                      # Marker feature for Gemini-specific tests
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 botticelli_models = { workspace = true, features = ["gemini"] }
-dotenvy = { workspace = true }
-tempfile = "3.23.0"
+dotenvy.workspace = true
+tempfile.workspace = true

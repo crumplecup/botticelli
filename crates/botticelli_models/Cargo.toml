@@ -11,50 +11,50 @@ description = "LLM provider integrations for Botticelli"
 
 [dependencies]
 botticelli_error = { workspace = true, features = ["models"] }
-botticelli_core = { workspace = true }
-botticelli_interface = { workspace = true }
-botticelli_rate_limit = { workspace = true, features = [] }
+botticelli_core.workspace = true
+botticelli_interface.workspace = true
+botticelli_rate_limit.workspace = true
 
 # Async runtime
-tokio = { workspace = true }
-async-trait = { workspace = true }
-async-stream = { workspace = true }
-futures-util = { workspace = true }
-tokio-stream = { workspace = true }
+tokio.workspace = true
+async-trait.workspace = true
+async-stream.workspace = true
+futures-util.workspace = true
+tokio-stream.workspace = true
 
 # HTTP and serialization
-reqwest = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 
 # Error handling
 derive_more = { workspace = true, features = ["display", "error"] }
-derive-getters = { workspace = true }
-derive_builder = { workspace = true }
-derive-new = { workspace = true }
+derive-getters.workspace = true
+derive_builder.workspace = true
+derive-new.workspace = true
 strum = { workspace = true, features = ["derive"] }
 
 # Logging and metrics
-tracing = { workspace = true }
-opentelemetry = { workspace = true }
+tracing.workspace = true
+opentelemetry.workspace = true
 
 # Retry
-tokio-retry2 = { workspace = true }
+tokio-retry2.workspace = true
 
 # Base64 encoding
-base64 = { workspace = true }
+base64.workspace = true
 
 # WebSocket
-tokio-tungstenite = { workspace = true }
+tokio-tungstenite.workspace = true
 
 # Feature-gated provider SDKs
 gemini-rust = { workspace = true, optional = true }
-ollama-rs = { version = "0.3", optional = true, features = ["stream"] }
-claude-client = { version = "0.3", optional = true }
+ollama-rs = { workspace = true, optional = true, features = ["stream"] }
+claude-client = { workspace = true, optional = true }
 futures = { workspace = true, optional = true }
-hf-hub = { version = "0.4.3", optional = true }
-huggingface_inference_rs = { version = "0.5.0", default-features = false, optional = true }
-tiktoken-rs = "0.5"
+hf-hub = { workspace = true, optional = true }
+huggingface_inference_rs = { workspace = true, optional = true }
+tiktoken-rs.workspace = true
 
 [features]
 default = []
@@ -65,7 +65,13 @@ models = []
 # Provider-specific features (each implies models)
 gemini = ["dep:gemini-rust", "botticelli_rate_limit/gemini", "models"]
 ollama = ["dep:ollama-rs", "botticelli_error/ollama", "models"]
-anthropic = ["dep:claude-client", "dep:futures", "botticelli_rate_limit/anthropic", "botticelli_error/anthropic", "models"]
+anthropic = [
+  "dep:claude-client",
+  "dep:futures",
+  "botticelli_rate_limit/anthropic",
+  "botticelli_error/anthropic",
+  "models",
+]
 
 # OpenAI-compatible providers (use openai_compat module)
 huggingface = ["botticelli_error/huggingface", "models"]
