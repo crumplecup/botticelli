@@ -65,7 +65,7 @@ use serde_json::{Value, json};
     feature = "huggingface",
     feature = "groq"
 ))]
-async fn execute_generation<D: BotticelliDriver>(
+pub(crate) async fn execute_generation<D: BotticelliDriver>(
     driver: &D,
     input: Value,
     default_model: &str,

@@ -79,7 +79,7 @@ struct DiscordGuild {
 /// Shared Discord HTTP client for all tools.
 #[cfg(feature = "discord")]
 #[derive(Clone)]
-struct DiscordClient {
+pub(crate) struct DiscordClient {
     client: Client,
     token: String,
 }
@@ -87,7 +87,7 @@ struct DiscordClient {
 #[cfg(feature = "discord")]
 impl DiscordClient {
     /// Creates a new Discord HTTP client.
-    fn new(token: String) -> Self {
+    pub(crate) fn new(token: String) -> Self {
         Self {
             client: Client::new(),
             token,
@@ -96,7 +96,7 @@ impl DiscordClient {
 
     /// Makes an authenticated GET request to Discord API.
     #[instrument(skip(self), fields(endpoint))]
-    async fn get(&self, endpoint: &str) -> McpResult<Value> {
+    pub(crate) async fn get(&self, endpoint: &str) -> McpResult<Value> {
         let url = format!("{}{}", DISCORD_API_BASE, endpoint);
         debug!(url = %url, "Discord API GET");
 
@@ -127,7 +127,7 @@ impl DiscordClient {
 
     /// Makes an authenticated POST request to Discord API.
     #[instrument(skip(self, body), fields(endpoint))]
-    async fn post(&self, endpoint: &str, body: Value) -> McpResult<Value> {
+    pub(crate) async fn post(&self, endpoint: &str, body: Value) -> McpResult<Value> {
         let url = format!("{}{}", DISCORD_API_BASE, endpoint);
         debug!(url = %url, "Discord API POST");
 

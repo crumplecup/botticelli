@@ -1,5 +1,7 @@
 //! rmcp server implementation for Botticelli.
 
+mod tool_impls;
+
 use elicitation::{DynamicToolRegistry, ElicitPlugin as _};
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::tool::ToolCallContext;
@@ -8,13 +10,27 @@ use rmcp::model::{
     ServerCapabilities, ServerInfo,
 };
 use rmcp::service::{RequestContext, RoleServer};
-use rmcp::{ErrorData as McpError, ServerHandler, tool_router};
-use tracing::{debug, info, instrument};
+use rmcp::{ErrorData as McpError, ServerHandler};
+use std::sync::Arc;
+use tracing::{debug, instrument};
 
 /// Botticelli MCP server.
 pub struct BotticelliServer {
-    tool_router: ToolRouter<Self>,
-    dynamic: DynamicToolRegistry,
+    pub(crate) tool_router: ToolRouter<Self>,
+    pub(crate) dynamic: DynamicToolRegistry,
+    pub(crate) metrics: Arc<crate::PrometheusMetrics>,
+    #[cfg(feature = "gemini")]
+    pub(crate) gemini: Option<Arc<botticelli_models::GeminiClient>>,
+    #[cfg(feature = "anthropic")]
+    pub(crate) anthropic: Option<Arc<botticelli_models::AnthropicClient>>,
+    #[cfg(feature = "ollama")]
+    pub(crate) ollama: Option<Arc<botticelli_models::OllamaClient>>,
+    #[cfg(feature = "huggingface")]
+    pub(crate) huggingface: Option<Arc<botticelli_models::HuggingFaceDriver>>,
+    #[cfg(feature = "groq")]
+    pub(crate) groq: Option<Arc<botticelli_models::GroqDriver>>,
+    #[cfg(feature = "discord")]
+    pub(crate) discord_client: Option<Arc<crate::tools::discord::DiscordClient>>,
 }
 
 impl Default for BotticelliServer {
@@ -24,20 +40,8 @@ impl Default for BotticelliServer {
     }
 }
 
-#[tool_router]
-impl BotticelliServer {
-    /// Creates a new server instance.
-    #[instrument]
-    pub fn new() -> Self {
-        info!("Creating Botticelli MCP server");
-        Self {
-            tool_router: Self::tool_router(),
-            dynamic: DynamicToolRegistry::new(),
-        }
-    }
-}
-
 impl ServerHandler for BotticelliServer {
+    #[instrument(skip(self))]
     fn get_info(&self) -> ServerInfo {
         let capabilities = ServerCapabilities::builder().enable_tools().build();
         ServerInfo::new(capabilities)
