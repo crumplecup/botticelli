@@ -6,7 +6,7 @@
 | ------------- | ---------------------------------------------------------- | ------------------------------------------------- |
 | **Testing**   | No `#[cfg(test)]` in source files → use `tests/` directory | [Testing](#testing)                               |
 | **Errors**    | Use `derive_more::Display` + `derive_more::Error`          | [Error Handling](#error-handling)                 |
-| **Tracing**   | All public functions have `#[instrument]`                  | [Logging](#logging-and-tracing)                   |
+| **Tracing**   | All functions have `#[instrument]`                         | [Logging](#logging-and-tracing)                   |
 | **Builders**  | Always use builders, never struct literals                 | [Type Construction](#type-construction)           |
 | **Imports**   | `use crate::{Type}` not `use crate::module::Type`          | [Module Organization](#module-organization)       |
 | **lib.rs**    | Only `mod` and `pub use` statements                        | [Module Organization](#module-organization)       |
@@ -385,7 +385,7 @@ Reference: See `crates/botticelli_error` for complete implementation.
 
 ### Instrumentation
 
-All public functions have `#[instrument]`.
+All functions have `#[instrument]`.
 
 Observability is critical for debugging, performance monitoring, and error tracking. Missing instrumentation is a defect.
 
@@ -414,7 +414,7 @@ pub fn list_content(
 
 ### Instrumentation Requirements
 
-All public functions:
+All functions:
 
 1. Use `#[instrument]` for automatic span creation
 2. Skip large params: `skip(connection, data)`
@@ -444,7 +444,7 @@ info!(table = %table_name, "Creating");          // Display format
 
 ### Audit Checklist
 
-- ✅ Every public function has `#[instrument]`
+- ✅ Every function has `#[instrument]`
 - ✅ Span fields include context (IDs, counts)
 - ✅ Large structures skipped
 - ✅ Key operations emit events
@@ -832,7 +832,7 @@ AI systems operate on probabilistic pattern matching, not deterministic rules. `
 
 No amount of documentation creates "hard rules" in probabilistic systems.
 
-### Workflow
+### Linting Workflow
 
 - Let linter complete (don't deny all warnings immediately)
 - Fix all issues in single pass - address root causes, never add `#[allow]`
@@ -998,7 +998,7 @@ Before release:
 Top priorities:
 
 1. ✅ Fix all issues before commit
-2. ✅ All public functions instrumented
+2. ✅ All functions instrumented
 3. ✅ Use derive_more for all errors
 4. ✅ Always use builders, never literals
 5. ✅ Tests in `tests/`, never inline
