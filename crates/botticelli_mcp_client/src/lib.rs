@@ -10,7 +10,7 @@
 //! use botticelli_mcp_client::BotticelliClient;
 //!
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let client = BotticelliClient::connect_stdio("botticelli-mcp").await?;
+//! let client = BotticelliClient::connect_http("http://localhost:3000/mcp").await?;
 //! let tools = client.list_tools().await?;
 //! println!("Available tools: {}", tools.tools.len());
 //! # Ok(())
