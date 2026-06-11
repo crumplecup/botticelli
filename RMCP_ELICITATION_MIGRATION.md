@@ -245,65 +245,36 @@ server-side. The new client is a thin view + input relay.
 
 ---
 
-### Phase 7 — Hollow out botticelli_chat
+### Phase 7 — Delete botticelli_chat ✅
 
-`botticelli_chat` currently owns: `ConversationLoop`, `McpChatHost`, `ServiceContainer`,
-`SamplingCoordinator`, the `Executor`, startup logic, and command parsing. All orchestration
-moves to `botticelli_mcp`. All UI moves to `botticelli_tui`. The crate becomes an empty
-shell, ready for deletion.
+`botticelli_chat` had no reverse dependencies — `cargo tree --invert` returned empty.
+The TUI already had its own `Command` enum and never imported from `botticelli_chat`
+source-wise (the Cargo dep was listed but unused). All orchestration is already on the
+server; all UI is already in `botticelli_tui`.
 
-#### Move orchestration into botticelli_mcp server
-- [ ] Audit `botticelli_chat/src/conversation_loop.rs` — extract the core turn-taking
-  logic as a server-side async task; delete the file
-- [ ] Audit `botticelli_chat/src/mcp_chat_host.rs` — fold capabilities into
-  `BotticelliServer` session management; delete the file
-- [ ] Audit `botticelli_chat/src/services.rs` (`ServiceContainer`) — services are
-  already held on `BotticelliServer` fields; delete the file
-- [ ] Audit `botticelli_chat/src/sampling.rs` / `src/sampling_integration.rs` —
-  sampling is now `ElicitServer` in `BotticelliServer`; delete both files
-- [ ] Audit `botticelli_chat/src/executor.rs` — execution logic moves to the
-  `execute_act` / `execute_narrative` tools on the server; delete the file
-- [ ] Audit `botticelli_chat/src/startup.rs` — server startup moves to `botticelli-mcp`
-  binary; delete the file
-
-#### Move command / input parsing into botticelli_tui
-- [ ] Move `botticelli_chat/src/command.rs` and `src/parser.rs` into
-  `botticelli_tui/src/` (they are UI concerns, not orchestration)
-- [ ] Move `botticelli_chat/src/input.rs`, `src/interface.rs`, `src/message.rs`,
-  `src/response.rs` to `botticelli_tui/src/`
-
-#### Sever botticelli_chat dependencies
-- [ ] Remove `botticelli_chat` from `botticelli_tui/Cargo.toml`
-- [ ] Ensure `botticelli_tui` imports only from `botticelli_mcp_client`
-- [ ] `cargo tree -p botticelli_chat --invert` must show nothing
+- [x] Confirmed zero reverse dependencies via `cargo tree -p botticelli_chat --invert`
+- [x] Removed `botticelli_chat` from `botticelli_tui/Cargo.toml` dep + `cli` feature
+- [x] Removed from workspace `members` and `[workspace.dependencies]` in `Cargo.toml`
+- [x] Deleted `crates/botticelli_chat/` directory (3528 lines)
+- [x] `just check` passes — zero errors across full workspace
 
 ---
 
 ### Phase 8 — Rewrite botticelli_tui to use botticelli_mcp_client
 
-The TUI currently shells out through `botticelli_chat`. After Phase 7, it calls directly
-into the thin `botticelli_mcp_client`.
+The TUI currently has `botticelli_mcp_client` as a direct dep but its event loop
+(`minimal_loop.rs`) uses `reqwest` to talk to an HTTP endpoint. Rewrite to use
+`BotticelliClient::connect_stdio` (the thin rmcp client from Phase 6).
 
-- [ ] Replace all `use botticelli_chat::…` imports with `use botticelli_mcp_client::…`
-- [ ] Rewrite main event loop:
-  - Connect: `BotticelliClient::connect_stdio("botticelli-mcp")` or in-proc variant
-  - Accept input → `client.call_tool("…", args)`
-  - Receive sampling requests from server → `TuiCommunicator` handles them (elicitation)
-  - Render state from server resources / tool results
-- [ ] Integrate `TuiCommunicator` as the sampling handler at connection time so the
-  server's `ElicitServer` can prompt the user through the established channel
-- [ ] Smoke test: `cargo run -p botticelli_tui` starts, connects to server, accepts a
-  command, returns a response
-- [ ] `just check-all botticelli_tui` passes
-
----
-
-### Phase 9 — Delete botticelli_chat
-
-- [ ] Verify `cargo tree -p botticelli_chat --invert` is empty
-- [ ] Remove `crates/botticelli_chat` from workspace `Cargo.toml` members
-- [ ] Delete `crates/botticelli_chat/` directory
-- [ ] `just check` (full workspace) passes — zero references to deleted crate
+- [ ] Rewrite `minimal_loop.rs` main event loop:
+  - Connect: `BotticelliClient::connect_stdio("botticelli-mcp serve")`
+  - Accept input → `client.call_tool("chat", args)`
+  - Sampling/elicitation answered by `TuiHandler::create_message` automatically
+  - Render state from tool results
+- [ ] Remove the `reqwest` dep from `botticelli_tui/Cargo.toml` cli feature
+- [ ] Smoke test: `cargo run -p botticelli_tui --features cli` starts, connects,
+  accepts a message, returns a response
+- [ ] `just lint botticelli_tui` passes
 
 ---
 
@@ -416,7 +387,7 @@ crates/botticelli_mcp/tests/narrative_sampling_test.rs  ✅ deleted
 crates/botticelli_mcp/tests/pmcp_server_test.rs       ✅ deleted
 crates/botticelli_mcp/tests/narrative_generation_test.rs  ✅ deleted
 
-# Phase 6 — pending
+# Phase 6 — done ✅
 crates/botticelli_mcp_client/src/tools/              (entire directory)
 crates/botticelli_mcp_client/src/orchestrator.rs
 crates/botticelli_mcp_client/src/llm_adapter.rs
@@ -425,17 +396,8 @@ crates/botticelli_mcp_client/src/approval.rs
 crates/botticelli_mcp_client/src/retry.rs
 crates/botticelli_mcp_client/src/context.rs
 
-# Phase 7 — pending (as orchestration migrates out)
-crates/botticelli_chat/src/conversation_loop.rs
-crates/botticelli_chat/src/mcp_chat_host.rs
-crates/botticelli_chat/src/services.rs
-crates/botticelli_chat/src/sampling.rs
-crates/botticelli_chat/src/sampling_integration.rs
-crates/botticelli_chat/src/executor.rs
-crates/botticelli_chat/src/startup.rs
-
-# Phase 9 — pending
-crates/botticelli_chat/                              (entire crate)
+# Phase 7 — done ✅  (no reverse deps; crate deleted directly)
+crates/botticelli_chat/                              (entire crate — 3528 lines)
 ```
 
 ---
