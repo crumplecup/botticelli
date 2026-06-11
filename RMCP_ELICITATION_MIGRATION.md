@@ -272,17 +272,18 @@ Smoke test now unblocked: `cargo run -p botticelli_mcp -- http` listens on port 
 
 ---
 
-### Phase 11 — ToolRegistry cleanup in botticelli_interface
+### Phase 11 — ToolRegistry cleanup in botticelli_interface ✅
 
 `McpTool` and `ToolRegistry` already deleted from `botticelli_mcp` (zero-warning pass).
 Remaining: dead trait in `botticelli_interface`.
 
 - [x] Deleted `McpTool` trait and `ToolRegistry` from `botticelli_mcp/src/tools/mod.rs`
 - [x] Deleted `SamplingCoordinator` / `LlmSampler` from `botticelli_mcp` (sampling.rs)
-- [ ] Delete `ElicitationRegistryOperations<T>` from
-  `botticelli_interface/src/registry_traits.rs` — defined but never used outside the file
-- [ ] `ToolDefinition` in `botticelli_core` stays — it is the LLM tool-calling concept
-- [ ] `just check` (full workspace) passes
+- [x] Deleted `ElicitationRegistryOperations<T>` from
+  `botticelli_interface/src/registry_traits.rs` — confirmed zero uses across workspace
+- [x] Removed re-export from `botticelli_interface/src/lib.rs`
+- [x] `ToolDefinition` in `botticelli_core` stays — it is the LLM tool-calling concept
+- [x] `just check` (full workspace) passes — zero errors, zero warnings
 
 ---
 

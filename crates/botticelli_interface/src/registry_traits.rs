@@ -83,29 +83,3 @@ pub trait NarrativeStorageOperations: Send + Sync {
         name_override: Option<&str>,
     ) -> BotticelliResult<Value>;
 }
-
-/// Trait for elicitation (partial narrative) registry operations.
-pub trait ElicitationRegistryOperations<T>: Send + Sync {
-    /// Get a narrative by ID.
-    fn get_narrative(&self, id: &str) -> BotticelliResult<T>;
-
-    /// Update a narrative using a closure.
-    fn update_narrative<F>(&self, id: &str, updater: F) -> BotticelliResult<()>
-    where
-        F: FnOnce(&mut T) -> BotticelliResult<()>;
-
-    /// Remove a narrative from the registry.
-    fn remove_narrative(&self, id: &str) -> BotticelliResult<Option<T>>;
-
-    /// Add a narrative to the registry.
-    fn add_narrative(&self, narrative: T) -> String;
-
-    /// Get current state/status of a narrative.
-    fn get_narrative_state(&self, id: &str) -> BotticelliResult<Value>;
-
-    /// Validate a narrative structure.
-    fn validate_narrative(&self, id: &str) -> BotticelliResult<Value>;
-
-    /// List all narrative IDs in the registry.
-    fn list_narrative_ids(&self) -> Vec<String>;
-}
