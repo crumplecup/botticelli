@@ -97,7 +97,6 @@ database = [
     "dep:botticelli_interface",
     "dep:botticelli_storage",
     "dep:diesel",
-    "botticelli_mcp_client/database",  # Enable database feature on mcp_client
 ]
 
 

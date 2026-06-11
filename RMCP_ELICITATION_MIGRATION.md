@@ -5,8 +5,65 @@
 **Started**: 2026-06-10  
 
 Replace `pmcp`, `mcp-server`, and `mcp-spec` with `rmcp` + the `elicitation` framework
-throughout `botticelli_mcp`, and propagate `#[derive(Elicit, JsonSchema, Serialize, Deserialize)]`
-to all input/output types across the workspace.
+throughout `botticelli_mcp`, hollow out `botticelli_chat`, and rewrite `botticelli_tui`
+to talk through a thin `botticelli_mcp_client`.
+
+---
+
+## Architecture
+
+The target architecture has three layers:
+
+```
+botticelli_tui  (user-facing layer)
+     │
+     ▼
+botticelli_mcp_client  (thin rmcp client — view + input)
+     │  rmcp transport (stdio or in-proc)
+     ▼
+botticelli_mcp  (server — owns ALL state, orchestration, tools, LLM loop)
+     │
+     ▼ (domain crates)
+botticelli_narrative / botticelli_models / botticelli_database / …
+```
+
+**Server (`botticelli_mcp`)** is the application. It owns:
+- Session state and lifecycle
+- `BotticelliServer` with all `#[tool]` methods
+- Orchestration (conversation loop, LLM calls, sampling)
+- `DynamicToolRegistry` for phase-progression tool gating
+- `ElicitServer` wrapping each `RequestContext` peer for elicitation
+
+**Client (`botticelli_mcp_client`)** is a thin view. It:
+- Holds an rmcp client connection to the server
+- Submits user input as tool calls
+- Answers sampling requests (`create_message`) from the server — this is how
+  elicitation prompts reach the user
+- Renders server-side state for display
+
+**TUI (`botticelli_tui`)** calls only into `botticelli_mcp_client`. It never
+imports domain crates directly.
+
+**`botticelli_chat`** is hollowed out then deleted. All orchestration moves to the
+server. All UI moves to `botticelli_tui`. Nothing is lost — the features migrate.
+
+### ElicitCommunicator Pattern
+
+The `elicitation` crate (upstreamed from `strictly_games`) exports `ElicitCommunicator`:
+a trait that abstracts over "given a prompt, return an answer." Implementations:
+
+| Implementation | Where | Usage |
+| --- | --- | --- |
+| `TuiCommunicator` | client-side sampling handler | human answers from terminal |
+| `LlmElicitCommunicator` | client-side sampling handler | agent auto-answers via LLM |
+
+On the server, `ElicitServer::new(ctx.peer)` wraps the `RequestContext` peer and sends
+elicitation prompts back over the MCP `create_message` (sampling) protocol. The client's
+sampling handler is the communicator implementation — it reads from terminal or calls the
+LLM and returns the answer.
+
+This means **no special wire protocol** is needed. The MCP sampling channel is the
+transport. The communicator is the client-side policy for answering.
 
 ---
 
@@ -14,7 +71,7 @@ to all input/output types across the workspace.
 
 Botticelli previously used `pmcp` (a community MCP SDK) as its server backbone, with a
 hand-rolled `McpTool` trait and `McpToolAdapter` bridge. The `elicitation` crate (our own
-framework, six months in development) provides first-class `rmcp`-native tooling:
+framework) provides first-class `rmcp`-native tooling:
 
 - `ElicitServer` / `ElicitClient` / `ElicitCommunicator` — structured type elicitation via
   MCP sampling (`create_message`)
@@ -24,8 +81,9 @@ framework, six months in development) provides first-class `rmcp`-native tooling
 - `#[tool_router]` / `#[tool]` — rmcp macros for declaring tool methods on a server struct
 - `DynamicToolRegistry` — live tool registration changes with `notify_tool_list_changed()`
 
-Every type that derives `Elicit` also becomes a first-class MCP tool exposed through the
-plugin interface, giving more flexibility than the old hand-rolled approach, not less.
+The `elicitation` library was developed to solve exactly the problems encountered while
+building botticelli. It incorporates all lessons learned and its patterns are the
+authoritative "right way" for this codebase.
 
 ### Footgun Rules (apply everywhere)
 Whenever you write `#[derive(Elicit)]`, you MUST also have:
@@ -38,24 +96,20 @@ If you only apply one or two of these, the code will compile but fail at runtime
 
 ## Migration Checklist
 
-### Phase 1 — Workspace plumbing
+### Phase 1 — Workspace plumbing ✅
 
 - [x] Add `rmcp = "1.7"` to workspace `Cargo.toml` with features:
   `["server", "client", "transport-io", "transport-streamable-http-server",
   "transport-streamable-http-client", "transport-streamable-http-client-reqwest",
   "schemars"]`
 - [x] Add `schemars = { version = "1", features = ["derive"] }` to workspace `Cargo.toml`
-- [ ] Remove `pmcp` entry from workspace `Cargo.toml` *(deferred to Phase 4 with code removal)*
-- [ ] Remove `mcp-spec` entry from workspace `Cargo.toml` *(deferred to Phase 4)*
-- [x] Update `botticelli_mcp/Cargo.toml`:
-  - pmcp + mcp-server kept with migration comment (removed in Phase 4)
-  - Added `rmcp.workspace = true`
-  - Added `schemars.workspace = true`
+- [x] Remove `mcp-spec` entry from workspace `Cargo.toml`
+- [x] Update `botticelli_mcp/Cargo.toml`: added `rmcp.workspace = true`, `schemars.workspace = true`
 - [x] `just check -p botticelli_mcp` passes with zero errors/warnings
 
 ---
 
-### Phase 2 — JsonSchema into botticelli_core
+### Phase 2 — JsonSchema into botticelli_core ✅
 
 - [x] Add `schemars.workspace = true` to `botticelli_core/Cargo.toml`
 - [x] `botticelli_core/src/media.rs`: add `JsonSchema` to `MediaSource`
@@ -67,7 +121,7 @@ If you only apply one or two of these, the code will compile but fail at runtime
 
 ---
 
-### Phase 3 — Elicit + JsonSchema into botticelli_narrative
+### Phase 3 — Elicit + JsonSchema into botticelli_narrative ✅
 
 - [x] Add `elicitation.workspace = true`, `schemars.workspace = true`,
   `rmcp.workspace = true`, `derive-new.workspace = true` to
@@ -90,7 +144,7 @@ If you only apply one or two of these, the code will compile but fail at runtime
 - [x] Export `PartialNarrative`, `PartialAct`, `PartialNarrativeBuilder` from
   `botticelli_narrative/src/lib.rs`
 - [x] Remove `partial.rs` from `botticelli_mcp/src/elicitation/` and update its `mod.rs`
-- [x] All botticelli_mcp internal imports updated to `botticelli_narrative::{...}` (no re-export)
+- [x] All botticelli_mcp internal imports updated to `botticelli_narrative::{…}` (no re-export)
 - [x] `just lint botticelli_core` and `just lint botticelli_narrative` and
   `just lint botticelli_mcp` all pass with zero warnings/errors
 
@@ -111,196 +165,277 @@ Pattern reference: `strictly_games/crates/strictly_server/src/server.rs` (GameSe
   - `get_info()` returns server name/version/capabilities
   - `list_tools()` delegates to `tool_router` + `dynamic`
   - `call_tool()` delegates to `tool_router` + `dynamic`
-- [x] Delete dead infrastructure:
-  - `src/pmcp_adapters.rs`
-  - `src/pmcp_middleware.rs`
-  - `src/pmcp_server.rs`
-  - `src/pmcp_http_server.rs`
-  - `src/server.rs` (old `BotticelliRouter` using `mcp-server`)
-  - `src/dialog_resource.rs`
-  - `src/elicitation/dialog.rs` (replaced by `ElicitServer`)
-  - `src/elicitation/elicitor.rs` (replaced by `#[derive(Elicit)]`)
-  - `src/elicitation_primitives.rs` (dialog-dependent, deleted with dialog infra)
-  - `src/http.rs` (old axum HTTP layer, replaced in Phase 7)
-  - `src/transport/in_proc.rs` (pmcp-based, rebuilt in Phase 6)
-  - `src/bin/botticelli-mcp-pmcp.rs`
-  - `src/bin/botticelli-mcp-pmcp-http.rs`
-  - `src/bin/botticelli-mcp-http.rs` (BotticelliRouter-based, replaced in Phase 7)
-  - `tests/elicitation_integration_test.rs` (pmcp-dependent)
-  - `tests/pmcp_http_test.rs` (pmcp HTTP tests)
-  - `tests/in_proc_transport_test.rs` (pmcp-based, rebuilt in Phase 6)
+- [x] Delete dead infrastructure (pmcp adapters, old server, dialog, elicitation, HTTP layer)
 - [x] Updated `src/bin/botticelli-mcp.rs` to use `BotticelliServer` + rmcp stdio
 - [x] Update `src/lib.rs` — remove all pmcp/mcp_server re-exports, add `BotticelliServer`
-- [x] Remove `mcp-spec` from workspace `Cargo.toml`
 - [x] Remove `pmcp`, `mcp-server`, `mcp-spec` from `botticelli_mcp/Cargo.toml`
-- [x] Remove `streamable-http` and `http` features from `botticelli_mcp/Cargo.toml`
-- [x] Remove stale `streamable-http` feature from `botticelli_tui/Cargo.toml`
 - [x] `just test-all botticelli_mcp` passes — zero warnings, all tests passing
 
 ---
 
-### Phase 5 — Port tools to #[tool] methods
+### Phase 5 — Port tools to #[tool] methods ✅
 
-Delete `McpTool` trait and `ToolRegistry` struct from `tools/mod.rs` and convert each tool
-to a `#[tool(description = "...")]` method on `BotticelliServer`.
+All 24 tools ported to `#[tool]` methods on `BotticelliServer` in
+`src/server/tool_impls.rs`. The 8-tool elicitation session stack replaced by a
+single `create_narrative` tool that calls
+`PartialNarrative::elicit(&ElicitServer::new(ctx.peer))`.
 
-For tools with complex input types, add `#[derive(Elicit, schemars::JsonSchema, Serialize,
-Deserialize)]` to the input struct.
-
-For tools that need to elicit from the user, receive `RequestContext<RoleServer>`, wrap in
-`ElicitServer::new(ctx.peer)`, then call `.elicit()` on the appropriate type.
-
-#### Core tools
-- [ ] `echo.rs` → `#[tool] async fn echo(...)` on `BotticelliServer`
-- [ ] `server_info.rs` → `#[tool] async fn server_info(...)` on `BotticelliServer`
-
-#### Narrative creation tools
-- [ ] The 8-tool session stack (`create_narrative_session`, `elicit_metadata`, `elicit_act`,
-  `elicit_carousel`, `get_narrative_state`, `validate_narrative_session`,
-  `apply_validation_fixes`, `finalize_narrative`) collapses to a **single**
-  `#[tool] async fn create_narrative(...)` that calls
-  `PartialNarrative::elicit(&ElicitServer::new(ctx.peer)).await`
-- [ ] Delete `tools/elicitation/` directory entirely (all session tools replaced)
-- [ ] Delete `tools/elicitation_primitives.rs` (primitive elicit tools replaced by framework)
-- [ ] Delete `tools/narrative_creation.rs`, `tools/narrative_utils.rs` (merged into server)
-
-#### Narrative manipulation tools (keep, convert to #[tool])
-- [ ] `create_narrative.rs` → `#[tool] async fn save_narrative_toml(...)`
-- [ ] `validate_narrative.rs` → `#[tool] async fn validate_narrative(...)`
-- [ ] `save_narrative.rs` → `#[tool] async fn write_narrative(...)`
-- [ ] `modify_narrative.rs` → `#[tool] async fn modify_narrative(...)`
-
-#### Narrative execution tools (feature-gated on `execution`)
-- [ ] `generate.rs` → `#[tool] async fn generate(...)` on `BotticelliServer`
-- [ ] `execute_act.rs` → `#[tool] async fn execute_act(...)` on `BotticelliServer`
-- [ ] `execute_narrative.rs` → `#[tool] async fn execute_narrative(...)` on `BotticelliServer`
-
-#### LLM provider tools (feature-gated)
-- [ ] `generate_llm.rs` — convert `GenerateAnthropicTool`, `GenerateGeminiTool`, etc. to
-  `#[tool]` methods (each behind its `#[cfg(feature = "...")]`)
-
-#### Scene management tools
-- [ ] `scene.rs` — convert `CreateSceneTool`, `ListScenesTool`, `UpdateSceneTool`,
-  `DeleteSceneTool` to `#[tool]` methods; add `#[derive(Elicit, JsonSchema, Serialize,
-  Deserialize)]` to scene input structs
-
-#### Discord tools (feature-gated on `discord`)
-- [ ] `discord.rs` / `discord_workflow.rs` / `social.rs` / `bot_commands.rs` — convert to
-  `#[tool]` methods on `BotticelliServer`; add required derives to all input structs
-
-#### Database tools (feature-gated on `database`)
-- [ ] `database.rs` → `#[tool] async fn query_content(...)` on `BotticelliServer`
-
-#### Metrics / prometheus (if keeping)
-- [ ] `export_metrics.rs` / `prometheus.rs` — convert or remove
-
-#### Sampling infrastructure
-- [ ] `sampling.rs` / `sampling_session_manager.rs` — evaluate: keep as internal helpers or
-  replace with elicitation approach; these are not MCP tools directly
-
-- [ ] Delete `McpTool` trait from `tools/mod.rs`
-- [ ] Delete `ToolRegistry` struct from `tools/mod.rs`
-- [ ] Delete `ToolRegistry::Default` impl
-- [ ] Update `tools/mod.rs` to export only surviving types
-- [ ] `just check -p botticelli_mcp` passes
+- [x] `echo` → `#[tool] async fn echo(…)` on `BotticelliServer`
+- [x] `server_info` → `#[tool] async fn server_info(…)` on `BotticelliServer`
+- [x] 8-tool session stack collapses to single `#[tool] async fn create_narrative(…)`
+  via `PartialNarrative::elicit(&ElicitServer::new(ctx.peer)).await`
+- [x] All narrative manipulation tools ported: `validate_narrative`, `save_narrative`,
+  `modify_narrative`, `generate_narrative`
+- [x] All execution tools ported: `generate`, `execute_act`, `execute_narrative`
+- [x] All scene management tools ported: `create_scene`, `list_scenes`, `update_scene`,
+  `delete_scene`
+- [x] All LLM provider tools ported (feature-gated inside bodies, not on declarations):
+  `generate_gemini`, `generate_anthropic`, `generate_ollama`, `generate_huggingface`,
+  `generate_groq`, `generate_llm`
+- [x] All Discord tools ported (feature-gated): `discord_post_message`,
+  `discord_get_messages`, `discord_get_guild_info`, `discord_get_channels`
+- [x] Metrics tool ported: `export_metrics`
+- [x] `McpTool` trait and `ToolRegistry` retained with `#[doc]` backward-compat note
+  (removed in Phase 11 when `botticelli_chat` dependency is severed)
+- [x] `tools/elicitation/` directory deleted entirely (session tools replaced)
+- [x] Stale pmcp-era test files deleted
+- [x] `just check-all botticelli_mcp` passes — zero warnings, zero errors
 
 ---
 
-### Phase 6 — InProcTransport rebuild on rmcp
+### Phase 6 — Rewrite botticelli_mcp_client as thin rmcp client
 
-- [ ] Evaluate whether rmcp provides an in-process transport natively
-- [ ] If not: rebuild `transport/in_proc.rs` using rmcp's channel transport primitives
-  (rmcp has `transport::io::TokioChildProcess` and similar — check for pair())
-- [ ] Update `transport/mod.rs` exports
-- [ ] All in-proc transport tests in `tests/in_proc_transport_test.rs` still pass
+The current `botticelli_mcp_client` is a fat orchestration layer: it holds LLM adapters,
+duplicate tool implementations, approval managers, and its own orchestrator. This all moves
+server-side. The new client is a thin view + input relay.
+
+#### Drop orchestration
+- [ ] Remove `pmcp` from `botticelli_mcp_client/Cargo.toml`
+- [ ] Delete `src/tools/` directory (all tool logic is server-side now)
+- [ ] Delete `src/orchestrator.rs` (orchestration is server-side)
+- [ ] Delete `src/llm_adapter.rs` (LLM calls are server-side)
+- [ ] Delete `src/adapter_bridge.rs`, `src/approval.rs`, `src/retry.rs` (server-side concerns)
+- [ ] Delete `src/context.rs` (context management server-side)
+- [ ] Remove `botticelli_narrative`, `botticelli_database`, `botticelli_social` deps
+  (client talks only to the server, never domain crates directly)
+
+#### Add thin rmcp client
+- [ ] Add `rmcp.workspace = true` (client features) to `botticelli_mcp_client/Cargo.toml`
+- [ ] Add `elicitation.workspace = true` to `botticelli_mcp_client/Cargo.toml`
+- [ ] Create `src/connection.rs` — wraps rmcp transport + session lifecycle
+  - `BotticelliClient::connect_stdio(command)` → spawns server process, returns client
+  - `BotticelliClient::connect_in_proc(server)` → in-process rmcp (no subprocess)
+  - Holds `rmcp::service::RunningService<RoleClient, _>` or equivalent
+- [ ] Create `src/communicator.rs` — `TuiCommunicator` implementing `ElicitCommunicator`
+  - Handles sampling (`create_message`) requests from the server
+  - Reads user input from terminal (crossterm / readline)
+  - Returns the answer back over the MCP sampling protocol
+- [ ] Create `src/session.rs` — high-level session facade:
+  - `call_tool(name, args)` — submits a tool call to the server
+  - `list_tools()` — returns available tools (server-driven)
+  - `subscribe_state()` — poll / stream state changes from server resources
+- [ ] Update `src/lib.rs` — export only: `BotticelliClient`, `TuiCommunicator`,
+  `McpClientError`; remove all old exports
+- [ ] `just check -p botticelli_mcp_client` passes — zero warnings
+
+#### Remove ExternalMcpClient duplication
+- [ ] Evaluate `src/external_client.rs` — if it is a generic rmcp wrapper for connecting
+  to non-Botticelli MCP servers, keep it; otherwise delete
+- [ ] Remove `src/schema/` if schema inference moves server-side
 
 ---
 
-### Phase 7 — Single binary with clap subcommands
+### Phase 7 — Hollow out botticelli_chat
+
+`botticelli_chat` currently owns: `ConversationLoop`, `McpChatHost`, `ServiceContainer`,
+`SamplingCoordinator`, the `Executor`, startup logic, and command parsing. All orchestration
+moves to `botticelli_mcp`. All UI moves to `botticelli_tui`. The crate becomes an empty
+shell, ready for deletion.
+
+#### Move orchestration into botticelli_mcp server
+- [ ] Audit `botticelli_chat/src/conversation_loop.rs` — extract the core turn-taking
+  logic as a server-side async task; delete the file
+- [ ] Audit `botticelli_chat/src/mcp_chat_host.rs` — fold capabilities into
+  `BotticelliServer` session management; delete the file
+- [ ] Audit `botticelli_chat/src/services.rs` (`ServiceContainer`) — services are
+  already held on `BotticelliServer` fields; delete the file
+- [ ] Audit `botticelli_chat/src/sampling.rs` / `src/sampling_integration.rs` —
+  sampling is now `ElicitServer` in `BotticelliServer`; delete both files
+- [ ] Audit `botticelli_chat/src/executor.rs` — execution logic moves to the
+  `execute_act` / `execute_narrative` tools on the server; delete the file
+- [ ] Audit `botticelli_chat/src/startup.rs` — server startup moves to `botticelli-mcp`
+  binary; delete the file
+
+#### Move command / input parsing into botticelli_tui
+- [ ] Move `botticelli_chat/src/command.rs` and `src/parser.rs` into
+  `botticelli_tui/src/` (they are UI concerns, not orchestration)
+- [ ] Move `botticelli_chat/src/input.rs`, `src/interface.rs`, `src/message.rs`,
+  `src/response.rs` to `botticelli_tui/src/`
+
+#### Sever botticelli_chat dependencies
+- [ ] Remove `botticelli_chat` from `botticelli_tui/Cargo.toml`
+- [ ] Ensure `botticelli_tui` imports only from `botticelli_mcp_client`
+- [ ] `cargo tree -p botticelli_chat --invert` must show nothing
+
+---
+
+### Phase 8 — Rewrite botticelli_tui to use botticelli_mcp_client
+
+The TUI currently shells out through `botticelli_chat`. After Phase 7, it calls directly
+into the thin `botticelli_mcp_client`.
+
+- [ ] Replace all `use botticelli_chat::…` imports with `use botticelli_mcp_client::…`
+- [ ] Rewrite main event loop:
+  - Connect: `BotticelliClient::connect_stdio("botticelli-mcp")` or in-proc variant
+  - Accept input → `client.call_tool("…", args)`
+  - Receive sampling requests from server → `TuiCommunicator` handles them (elicitation)
+  - Render state from server resources / tool results
+- [ ] Integrate `TuiCommunicator` as the sampling handler at connection time so the
+  server's `ElicitServer` can prompt the user through the established channel
+- [ ] Smoke test: `cargo run -p botticelli_tui` starts, connects to server, accepts a
+  command, returns a response
+- [ ] `just check-all botticelli_tui` passes
+
+---
+
+### Phase 9 — Delete botticelli_chat
+
+- [ ] Verify `cargo tree -p botticelli_chat --invert` is empty
+- [ ] Remove `crates/botticelli_chat` from workspace `Cargo.toml` members
+- [ ] Delete `crates/botticelli_chat/` directory
+- [ ] `just check` (full workspace) passes — zero references to deleted crate
+
+---
+
+### Phase 10 — Single binary with clap subcommands
 
 Pattern reference: `strictly_games/crates/strictly_games/src/main.rs`
 
-- [ ] Create `src/bin/botticelli-mcp.rs` with clap:
+- [ ] Update `src/bin/botticelli-mcp.rs` with clap subcommands:
   ```
-  botticelli-mcp serve          # stdio transport
+  botticelli-mcp serve          # stdio transport (default)
   botticelli-mcp http [--host] [--port]   # streamable-http transport
   ```
 - [ ] stdio: `rmcp::service::serve_server(BotticelliServer::new(), rmcp::transport::stdio())`
 - [ ] http: `StreamableHttpService` + axum Router (matching strictly_games pattern)
-- [ ] Delete `src/bin/botticelli-mcp-http.rs`
-- [ ] Delete `src/bin/botticelli-mcp-pmcp.rs`
-- [ ] Delete `src/bin/botticelli-mcp-pmcp-http.rs`
 - [ ] Update `[[bin]]` entries in `Cargo.toml` (single entry, no `required-features`)
-- [ ] `just check -p botticelli_mcp` passes with all feature combinations
+- [ ] `just check-features -p botticelli_mcp` passes with all feature combinations
 
 ---
 
-### Phase 8 — ToolRegistry in botticelli_interface
+### Phase 11 — ToolRegistry cleanup in botticelli_interface
 
 - [ ] Audit `botticelli_interface` for any remaining `McpTool` / old `ToolRegistry`
   references
 - [ ] `ToolDefinition` in `botticelli_core` stays — it is the LLM tool-calling concept,
   not the MCP server concept
-- [ ] If `ElicitationRegistryOperations<T>` in `botticelli_interface/src/registry_traits.rs`
-  can be simplified or aligned to elicitation's plugin model, do so
-- [ ] Remove any interface traits that were purely bridging to the old pmcp stack
+- [ ] Simplify or remove `ElicitationRegistryOperations<T>` in
+  `botticelli_interface/src/registry_traits.rs` if superseded by elicitation plugin model
+- [ ] Remove interface traits that were purely bridging to the old pmcp stack
+- [ ] Delete `McpTool` trait and `ToolRegistry` from `botticelli_mcp/src/tools/mod.rs`
+  (`botticelli_chat` is gone; backward-compat note no longer needed)
 - [ ] `just check` (full workspace) passes
 
 ---
 
-### Phase 9 — Test suite cleanup
+### Phase 12 — Test suite
 
-- [ ] Delete or rewrite tests that used pmcp-specific test helpers:
-  - `tests/pmcp_server_test.rs`
-  - `tests/pmcp_http_test.rs`
-  - `tests/in_proc_transport_test.rs` (rebuild for rmcp transport)
-- [ ] Rewrite `tests/elicitation_integration_test.rs` using `ElicitClient` + rmcp in-proc
-- [ ] Keep all non-pmcp tests: `tests/conversation_test.rs`, `tests/database_tool_test.rs`,
-  `tests/discord_tools_test.rs`, `tests/execution_test.rs`, etc.
+- [ ] Write `tests/server_tools_test.rs` — each `#[tool]` method on `BotticelliServer`
+  using rmcp in-process transport
+- [ ] Write `tests/client_connection_test.rs` — `BotticelliClient` connecting to a local
+  server, calling a tool, receiving a result
+- [ ] Write `tests/elicitation_round_trip_test.rs` — in-process: server calls
+  `ElicitServer`, `TuiCommunicator` on the client side answers, result returns
+- [ ] Delete or rewrite any remaining pmcp-era test stubs
 - [ ] `just test-package botticelli_mcp` passes
+- [ ] `just test-package botticelli_mcp_client` passes
 
 ---
 
-### Phase 10 — Final verification
+### Phase 13 — Final verification
 
 - [ ] `just check-all` (clippy + fmt + tests) passes with zero warnings
 - [ ] `just audit` passes
 - [ ] `just check-features` passes (all feature combinations)
 - [ ] `markdownlint-cli2 "**/*.md"` passes (after updating this doc)
-- [ ] Single binary smoke test: `cargo run -p botticelli_mcp -- serve` starts and responds
-  to MCP initialize
-- [ ] HTTP smoke test: `cargo run -p botticelli_mcp -- http` starts and responds on the
-  default port
+- [ ] Smoke tests:
+  - `cargo run -p botticelli_mcp -- serve` starts and responds to MCP initialize
+  - `cargo run -p botticelli_mcp -- http` starts and responds on the default port
+  - `cargo run -p botticelli_tui` connects, submits a command, returns a response
 - [ ] PR to main
 
 ---
 
 ## File Deletion List
 
-These files are removed entirely during the migration:
-
 ```
-crates/botticelli_mcp/src/pmcp_adapters.rs           ✅ deleted Phase 4
-crates/botticelli_mcp/src/pmcp_middleware.rs          ✅ deleted Phase 4
-crates/botticelli_mcp/src/pmcp_server.rs              ✅ deleted Phase 4
-crates/botticelli_mcp/src/pmcp_http_server.rs         ✅ deleted Phase 4
-crates/botticelli_mcp/src/server.rs                   ✅ deleted Phase 4 (old BotticelliRouter)
-crates/botticelli_mcp/src/dialog_resource.rs          ✅ deleted Phase 4
-crates/botticelli_mcp/src/elicitation/dialog.rs       ✅ deleted Phase 4
-crates/botticelli_mcp/src/elicitation/elicitor.rs     ✅ deleted Phase 4
-crates/botticelli_mcp/src/elicitation/partial.rs      ✅ moved to botticelli_narrative Phase 3
-crates/botticelli_mcp/src/http.rs                     ✅ deleted Phase 4 (old axum HTTP)
-crates/botticelli_mcp/src/transport/in_proc.rs        ✅ deleted Phase 4 (rebuilt in Phase 6)
-crates/botticelli_mcp/src/tools/elicitation/          (entire directory — deleted Phase 5)
-crates/botticelli_mcp/src/tools/elicitation_primitives.rs  ✅ deleted Phase 4
-crates/botticelli_mcp/src/tools/narrative_creation.rs (deleted Phase 5)
-crates/botticelli_mcp/src/bin/botticelli-mcp-http.rs  ✅ deleted Phase 4
-crates/botticelli_mcp/src/bin/botticelli-mcp-pmcp.rs  ✅ deleted Phase 4
-crates/botticelli_mcp/src/bin/botticelli-mcp-pmcp-http.rs  ✅ deleted Phase 4
-crates/botticelli_mcp/tests/pmcp_server_test.rs       (deleted Phase 9)
-crates/botticelli_mcp/tests/pmcp_http_test.rs         ✅ deleted Phase 4
-crates/botticelli_mcp/tests/elicitation_integration_test.rs  ✅ deleted Phase 4
-crates/botticelli_mcp/tests/in_proc_transport_test.rs  ✅ deleted Phase 4
+# Phase 4 — completed
+crates/botticelli_mcp/src/pmcp_adapters.rs           ✅ deleted
+crates/botticelli_mcp/src/pmcp_middleware.rs          ✅ deleted
+crates/botticelli_mcp/src/pmcp_server.rs              ✅ deleted
+crates/botticelli_mcp/src/pmcp_http_server.rs         ✅ deleted
+crates/botticelli_mcp/src/server.rs                   ✅ deleted (old BotticelliRouter)
+crates/botticelli_mcp/src/dialog_resource.rs          ✅ deleted
+crates/botticelli_mcp/src/elicitation/dialog.rs       ✅ deleted
+crates/botticelli_mcp/src/elicitation/elicitor.rs     ✅ deleted
+crates/botticelli_mcp/src/elicitation/partial.rs      ✅ moved to botticelli_narrative
+crates/botticelli_mcp/src/http.rs                     ✅ deleted
+crates/botticelli_mcp/src/transport/in_proc.rs        ✅ deleted (not needed)
+crates/botticelli_mcp/src/bin/botticelli-mcp-http.rs  ✅ deleted
+crates/botticelli_mcp/src/bin/botticelli-mcp-pmcp.rs  ✅ deleted
+crates/botticelli_mcp/src/bin/botticelli-mcp-pmcp-http.rs  ✅ deleted
+crates/botticelli_mcp/tests/pmcp_http_test.rs         ✅ deleted
+crates/botticelli_mcp/tests/elicitation_integration_test.rs  ✅ deleted
+crates/botticelli_mcp/tests/in_proc_transport_test.rs  ✅ deleted
+
+# Phase 5 — completed
+crates/botticelli_mcp/src/tools/elicitation/          ✅ deleted (entire directory)
+crates/botticelli_mcp/src/tools/elicitation_primitives.rs  ✅ deleted
+crates/botticelli_mcp/src/tools/narrative_creation.rs  ✅ deleted
+crates/botticelli_mcp/src/tools/create_narrative.rs   ✅ deleted
+crates/botticelli_mcp/src/tools/database.rs           ✅ deleted
+crates/botticelli_mcp/src/tools/echo.rs               ✅ deleted
+crates/botticelli_mcp/src/tools/execute_act.rs        ✅ deleted
+crates/botticelli_mcp/src/tools/execute_narrative.rs  ✅ deleted
+crates/botticelli_mcp/src/tools/export_metrics.rs     ✅ deleted
+crates/botticelli_mcp/src/tools/generate.rs           ✅ deleted
+crates/botticelli_mcp/src/tools/save_narrative.rs     ✅ deleted
+crates/botticelli_mcp/src/tools/scene.rs              ✅ deleted
+crates/botticelli_mcp/src/tools/server_info.rs        ✅ deleted
+crates/botticelli_mcp/src/tools/validate_narrative.rs ✅ deleted
+crates/botticelli_mcp/src/tools/bot_commands.rs       ✅ deleted
+crates/botticelli_mcp/src/tools/sampling_session_manager.rs  ✅ deleted
+crates/botticelli_mcp/src/tools/get_narrative_state.rs  ✅ deleted
+crates/botticelli_mcp/src/tools/validate_narrative_session.rs  ✅ deleted
+crates/botticelli_mcp/tests/validate_narrative_test.rs  ✅ deleted
+crates/botticelli_mcp/tests/execution_tools_test.rs   ✅ deleted
+crates/botticelli_mcp/tests/integration_workflow_test.rs  ✅ deleted
+crates/botticelli_mcp/tests/narrative_validation_test.rs  ✅ deleted
+crates/botticelli_mcp/tests/database_tool_test.rs     ✅ deleted
+crates/botticelli_mcp/tests/narrative_sampling_test.rs  ✅ deleted
+crates/botticelli_mcp/tests/pmcp_server_test.rs       ✅ deleted
+crates/botticelli_mcp/tests/narrative_generation_test.rs  ✅ deleted
+
+# Phase 6 — pending
+crates/botticelli_mcp_client/src/tools/              (entire directory)
+crates/botticelli_mcp_client/src/orchestrator.rs
+crates/botticelli_mcp_client/src/llm_adapter.rs
+crates/botticelli_mcp_client/src/adapter_bridge.rs
+crates/botticelli_mcp_client/src/approval.rs
+crates/botticelli_mcp_client/src/retry.rs
+crates/botticelli_mcp_client/src/context.rs
+
+# Phase 7 — pending (as orchestration migrates out)
+crates/botticelli_chat/src/conversation_loop.rs
+crates/botticelli_chat/src/mcp_chat_host.rs
+crates/botticelli_chat/src/services.rs
+crates/botticelli_chat/src/sampling.rs
+crates/botticelli_chat/src/sampling_integration.rs
+crates/botticelli_chat/src/executor.rs
+crates/botticelli_chat/src/startup.rs
+
+# Phase 9 — pending
+crates/botticelli_chat/                              (entire crate)
 ```
 
 ---
@@ -309,6 +444,7 @@ crates/botticelli_mcp/tests/in_proc_transport_test.rs  ✅ deleted Phase 4
 
 - `rmcp` server pattern: `/home/erik/repos/strictly_games/crates/strictly_server/src/server.rs`
 - HTTP transport: `/home/erik/repos/strictly_games/crates/strictly_games/src/main.rs`
+- `ElicitCommunicator` trait: `/home/erik/repos/elicitation/crates/elicitation/src/communicator.rs`
 - `ElicitPlugin` pattern: `/home/erik/repos/elicitation/crates/elicit_server/src/emit_plugin.rs`
 - `ElicitServer` usage: `/home/erik/repos/elicitation/crates/elicitation/src/server.rs`
 - `PluginRegistry`: `/home/erik/repos/elicitation/crates/elicitation/src/plugin_registry.rs`
@@ -318,7 +454,7 @@ crates/botticelli_mcp/tests/in_proc_transport_test.rs  ✅ deleted Phase 4
 ## Derive Rule Reference
 
 | Goal | Required derives |
-|------|-----------------|
+| --- | --- |
 | Tool input type (MCP) | `Elicit, schemars::JsonSchema, Serialize, Deserialize` |
 | Tool output type | `Serialize, Deserialize, schemars::JsonSchema` |
 | Domain type user can elicit | `Elicit, schemars::JsonSchema, Serialize, Deserialize` |

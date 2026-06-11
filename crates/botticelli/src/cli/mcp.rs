@@ -1,19 +1,15 @@
 //! MCP client command handler.
 
 use crate::cli::McpCommandArgs;
-use botticelli_mcp_client::McpHost;
 use tracing::{info, instrument};
 
-/// Handle MCP client command
+/// Handle MCP client command.
 #[instrument(skip_all, fields(backend = %args.backend, max_turns = args.max_turns))]
 pub async fn handle_mcp_command(args: McpCommandArgs) -> anyhow::Result<()> {
     info!("Starting MCP client");
     info!(prompt = %args.prompt, backend = %args.backend, "Initial configuration");
 
-    // TODO: Implement MCP server connection and tool discovery
-    // TODO: Create LLM backend adapter
-    // TODO: Execute agentic loop
-
+    // TODO Phase 7: Implement via botticelli_mcp_client::BotticelliClient
     let _ = (
         &args.model,
         &args.server,
@@ -22,11 +18,8 @@ pub async fn handle_mcp_command(args: McpCommandArgs) -> anyhow::Result<()> {
         args.verbose,
     );
 
-    // Create MCP host
-    let _host = McpHost::builder().build();
-
-    info!("MCP client created");
-    println!("MCP client command not yet fully implemented");
+    info!("MCP client stub — awaiting Phase 7 rewrite");
+    println!("MCP client not yet implemented (Phase 7)");
     println!("Prompt: {}", args.prompt);
     println!("Backend: {}", args.backend);
     println!("Max turns: {}", args.max_turns);

@@ -6,7 +6,7 @@ use crate::{BotCommand, Command, NarrativeCommand, Response, SocialCommand};
 use crate::SamplingIntegration;
 
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
-use botticelli_mcp::PartialNarrative;
+use botticelli_narrative::PartialNarrative;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, instrument};

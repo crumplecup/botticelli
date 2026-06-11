@@ -165,9 +165,9 @@ pub fn init_observability_with_config(
         ExporterBackend::Otlp { ref endpoint } => {
             use opentelemetry_otlp::WithExportConfig;
 
-            // Build OTLP span exporter with tonic
+            // Build OTLP span exporter over HTTP
             let exporter = opentelemetry_otlp::SpanExporter::builder()
-                .with_tonic()
+                .with_http()
                 .with_endpoint(endpoint.clone())
                 .build()
                 .map_err(|e| format!("Failed to build OTLP exporter: {}", e))?;

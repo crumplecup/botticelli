@@ -2,68 +2,24 @@
 
 use derive_more::{Display, Error};
 
-/// Specific error conditions for MCP client operations.
+/// Specific error conditions for the Botticelli MCP client.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Display)]
 pub enum McpClientErrorKind {
+    /// Connection to server failed.
+    #[display("Connection error: {}", _0)]
+    ConnectionError(String),
+
     /// Tool execution failed.
     #[display("Tool execution failed: {}", _0)]
     ToolExecutionFailed(String),
 
-    /// Invalid tool call from LLM.
-    #[display("Invalid tool call: {}", _0)]
-    InvalidToolCall(String),
-
-    /// Tool not found.
-    #[display("Tool not found: {}", _0)]
-    ToolNotFound(String),
-
-    /// LLM backend error.
-    #[display("LLM error: {}", _0)]
-    LlmError(String),
-
-    /// Serialization error.
+    /// Serialization or deserialization error.
     #[display("Serialization error: {}", _0)]
     SerializationError(String),
-
-    /// Maximum iterations exceeded.
-    #[display("Maximum iterations exceeded: {}", _0)]
-    MaxIterationsExceeded(usize),
-
-    /// Connection error.
-    #[display("Connection error: {}", _0)]
-    ConnectionError(String),
-
-    /// Timeout error.
-    #[display("Timeout: {}", _0)]
-    Timeout(String),
-
-    /// Rate limit exceeded.
-    #[display("Rate limit exceeded: {}", _0)]
-    RateLimitExceeded(String),
-
-    /// Circuit breaker open.
-    #[display("Circuit breaker open for: {}", _0)]
-    CircuitBreakerOpen(String),
 
     /// Configuration error.
     #[display("Configuration error: {}", _0)]
     Configuration(String),
-
-    /// Metrics registration error.
-    #[display("Metrics error: {}", _0)]
-    MetricsError(String),
-
-    /// External server connection failed.
-    #[display("External server connection failed: {}", _0)]
-    ExternalServerConnectionFailed(String),
-
-    /// External server discovery failed.
-    #[display("External server tool discovery failed: {}", _0)]
-    ExternalServerDiscoveryFailed(String),
-
-    /// Registry lock poisoned.
-    #[display("Registry lock poisoned")]
-    RegistryLockPoisoned,
 }
 
 /// MCP client error with location tracking.
@@ -98,29 +54,5 @@ impl From<McpClientErrorKind> for McpClientError {
     #[track_caller]
     fn from(kind: McpClientErrorKind) -> Self {
         McpClientError::new(kind)
-    }
-}
-
-impl From<prometheus::Error> for McpClientError {
-    fn from(err: prometheus::Error) -> Self {
-        McpClientError::new(McpClientErrorKind::MetricsError(err.to_string()))
-    }
-}
-
-impl McpClientErrorKind {
-    /// Returns true if this error is retryable.
-    pub fn is_retryable(&self) -> bool {
-        matches!(
-            self,
-            Self::ConnectionError(_)
-                | Self::Timeout(_)
-                | Self::ToolExecutionFailed(_)
-                | Self::ExternalServerConnectionFailed(_)
-        )
-    }
-
-    /// Returns true if this error should trigger backoff.
-    pub fn should_backoff(&self) -> bool {
-        matches!(self, Self::RateLimitExceeded(_))
     }
 }

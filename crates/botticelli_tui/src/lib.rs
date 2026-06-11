@@ -34,8 +34,6 @@
 mod app;
 mod commands;
 mod debug;
-mod elicitation;
-mod elicitation_dialog;
 mod error;
 mod events;
 mod messages;
@@ -45,7 +43,6 @@ mod tui;
 mod view;
 
 pub use commands::Command;
-pub use elicitation_dialog::TuiElicitationDialog;
 pub use error::{TuiError, TuiErrorKind, TuiResult};
 pub use events::{Event, McpConversationError, McpMessage, McpUpdate};
 pub use messages::{StateUpdate, TickEvent, UserAction};

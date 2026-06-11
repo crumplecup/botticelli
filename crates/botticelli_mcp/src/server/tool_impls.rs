@@ -795,7 +795,7 @@ impl BotticelliServer {
                 req.system_prompt.as_deref(),
             );
             let result =
-                crate::tools::generate_llm::execute_generation(driver.as_ref(), input, &req.model)
+                crate::tools::generate_llm::execute_generation(&*driver, input, &req.model)
                     .await
                     .map_err(mcp_err)?;
             return json_ok(result);
@@ -850,7 +850,7 @@ impl BotticelliServer {
                 }
             };
 
-            let narrative: botticelli_narrative::Narrative = toml::from_str(&toml_content)
+            let narrative = botticelli_narrative::Narrative::from_toml_str(&toml_content, None)
                 .map_err(|e| {
                     RmcpError::invalid_params(format!("Invalid narrative TOML: {}", e), None)
                 })?;
@@ -858,20 +858,18 @@ impl BotticelliServer {
             let model = req
                 .model
                 .as_deref()
-                .or(narrative.model().as_deref())
+                .or_else(|| narrative.metadata().model().as_deref())
                 .unwrap_or("gemini-2.0-flash-exp");
 
             let driver = self.select_driver(model)?;
             let executor = NarrativeExecutor::new(driver);
-            let results = executor
-                .execute(&narrative, &req.prompt)
-                .await
-                .map_err(mcp_err)?;
+            let results = executor.execute(&narrative).await.map_err(mcp_err)?;
 
-            debug!(acts = results.len(), "Narrative execution complete");
+            let act_count = results.act_executions().len();
+            debug!(acts = act_count, "Narrative execution complete");
             return json_ok(json!({
                 "status": "completed",
-                "acts_executed": results.len(),
+                "acts_executed": act_count,
                 "results": results,
             }));
         }

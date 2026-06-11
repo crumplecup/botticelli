@@ -13,7 +13,6 @@ use {
 #[cfg(feature = "cli")]
 use {
     botticelli_database::PostgresNarrativeRepository,
-    botticelli_mcp_client::McpHost,
     botticelli_storage::FileSystemStorage,
     diesel::PgConnection,
     diesel::r2d2::{ConnectionManager, Pool},
@@ -30,9 +29,6 @@ pub struct ServiceContainer {
     db_pool: OnceCell<Pool<ConnectionManager<PgConnection>>>,
 
     #[cfg(feature = "cli")]
-    mcp_client: OnceCell<McpHost>,
-
-    #[cfg(feature = "cli")]
     narrative_repo: OnceCell<PostgresNarrativeRepository>,
 
     #[cfg(feature = "cli")]
@@ -47,9 +43,6 @@ impl ServiceContainer {
 
             #[cfg(feature = "cli")]
             db_pool: OnceCell::new(),
-
-            #[cfg(feature = "cli")]
-            mcp_client: OnceCell::new(),
 
             #[cfg(feature = "cli")]
             narrative_repo: OnceCell::new(),
@@ -100,42 +93,6 @@ impl ServiceContainer {
     /// Check if database pool is initialized.
     pub fn is_db_initialized(&self) -> bool {
         self.db_pool.initialized()
-    }
-
-    #[cfg(feature = "cli")]
-    /// Get or initialize MCP client.
-    ///
-    /// The client is created lazily on first access.
-    #[instrument(skip(self))]
-    pub async fn mcp_client(&self) -> ChatResult<&McpHost> {
-        self.mcp_client
-            .get_or_try_init(|| async {
-                info!("Initializing MCP client");
-                self.init_mcp_client()
-            })
-            .await
-    }
-
-    #[cfg(feature = "cli")]
-    #[instrument(skip(self))]
-    fn init_mcp_client(&self) -> ChatResult<McpHost> {
-        debug!(
-            url = %self.config.mcp_server().server_url(),
-            "Creating MCP client"
-        );
-
-        // Create MCP host to manage tool connections
-        // TODO: Configure with external MCP servers from config
-        let client = McpHost::builder().max_iterations(10).build();
-
-        info!("MCP client initialized");
-        Ok(client)
-    }
-
-    #[cfg(feature = "cli")]
-    /// Check if MCP client is initialized.
-    pub fn is_mcp_initialized(&self) -> bool {
-        self.mcp_client.initialized()
     }
 
     #[cfg(feature = "cli")]

@@ -2,7 +2,8 @@
 
 use crate::{ChatLlmSampler, ChatSession, ServiceContainer};
 use botticelli_error::{ChatError, ChatErrorKind, ChatResult};
-use botticelli_mcp::{PartialNarrative, SamplingCoordinator};
+use botticelli_mcp::SamplingCoordinator;
+use botticelli_narrative::PartialNarrative;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, instrument};

@@ -1,11 +1,6 @@
-//! Discord bot actor for LLM-driven command handling.
-//!
-//! This module provides a Discord bot that responds to commands using
-//! MCP orchestration for intelligent, context-aware responses.
+//! Discord bot actor — stub pending Phase 7 rewrite to use BotticelliClient.
 
 use crate::DiscordMcpBridge;
-use botticelli_mcp_client::Orchestrator;
-use std::sync::Arc;
 use tokio::sync::mpsc;
 
 /// Messages for the Discord bot actor.
@@ -27,8 +22,7 @@ pub enum DiscordMessage {
 
 /// Discord bot actor for handling commands via MCP orchestration.
 ///
-/// Receives Discord events, converts them to MCP tool calls,
-/// and orchestrates LLM-driven responses.
+/// Stub: Phase 7 will rewrite this to use `botticelli_mcp_client::BotticelliClient`.
 #[derive(Clone, derive_getters::Getters)]
 pub struct DiscordBot {
     /// MCP bridge for Discord events.
@@ -37,11 +31,11 @@ pub struct DiscordBot {
 
 impl DiscordBot {
     /// Creates a new Discord bot.
-    #[tracing::instrument(skip(orchestrator))]
-    pub fn new(orchestrator: Arc<Orchestrator>) -> Self {
-        tracing::info!("Creating Discord bot");
+    #[tracing::instrument]
+    pub fn new() -> Self {
+        tracing::info!("Creating Discord bot (stub)");
         Self {
-            bridge: DiscordMcpBridge::new(orchestrator),
+            bridge: DiscordMcpBridge,
         }
     }
 
@@ -49,7 +43,6 @@ impl DiscordBot {
     #[tracing::instrument(skip(self, rx))]
     pub async fn run(self, mut rx: mpsc::Receiver<DiscordMessage>) {
         tracing::info!("Discord bot starting");
-
         while let Some(msg) = rx.recv().await {
             match msg {
                 DiscordMessage::ProcessCommand {
@@ -60,38 +53,22 @@ impl DiscordBot {
                     tracing::debug!(
                         channel_id = %channel_id,
                         user_id = %user_id,
-                        "Processing Discord command"
+                        content_len = content.len(),
+                        "Received command (stub — not yet implemented)"
                     );
-
-                    match self
-                        .bridge
-                        .handle_message(&channel_id, &user_id, &content)
-                        .await
-                    {
-                        Ok(response) => {
-                            tracing::info!(
-                                channel_id = %channel_id,
-                                response_len = response.len(),
-                                "Command processed successfully"
-                            );
-                        }
-                        Err(e) => {
-                            tracing::error!(
-                                error = %e,
-                                channel_id = %channel_id,
-                                "Failed to process command"
-                            );
-                        }
-                    }
                 }
-
                 DiscordMessage::Shutdown => {
                     tracing::info!("Discord bot shutting down");
                     break;
                 }
             }
         }
+    }
+}
 
-        tracing::info!("Discord bot stopped");
+impl Default for DiscordBot {
+    #[tracing::instrument]
+    fn default() -> Self {
+        Self::new()
     }
 }
