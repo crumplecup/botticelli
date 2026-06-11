@@ -203,45 +203,20 @@ single `create_narrative` tool that calls
 
 ---
 
-### Phase 6 — Rewrite botticelli_mcp_client as thin rmcp client
+### Phase 6 — Rewrite botticelli_mcp_client as thin rmcp client ✅
 
-The current `botticelli_mcp_client` is a fat orchestration layer: it holds LLM adapters,
-duplicate tool implementations, approval managers, and its own orchestrator. This all moves
-server-side. The new client is a thin view + input relay.
+Replaced 9,315 lines of fat orchestration (LLM adapters, tool registry, circuit breaker,
+retry, schema adapters) with a 3-file thin rmcp client using **Streamable HTTP** transport.
 
-#### Drop orchestration
-- [ ] Remove `pmcp` from `botticelli_mcp_client/Cargo.toml`
-- [ ] Delete `src/tools/` directory (all tool logic is server-side now)
-- [ ] Delete `src/orchestrator.rs` (orchestration is server-side)
-- [ ] Delete `src/llm_adapter.rs` (LLM calls are server-side)
-- [ ] Delete `src/adapter_bridge.rs`, `src/approval.rs`, `src/retry.rs` (server-side concerns)
-- [ ] Delete `src/context.rs` (context management server-side)
-- [ ] Remove `botticelli_narrative`, `botticelli_database`, `botticelli_social` deps
-  (client talks only to the server, never domain crates directly)
-
-#### Add thin rmcp client
-- [ ] Add `rmcp.workspace = true` (client features) to `botticelli_mcp_client/Cargo.toml`
-- [ ] Add `elicitation.workspace = true` to `botticelli_mcp_client/Cargo.toml`
-- [ ] Create `src/connection.rs` — wraps rmcp transport + session lifecycle
-  - `BotticelliClient::connect_stdio(command)` → spawns server process, returns client
-  - `BotticelliClient::connect_in_proc(server)` → in-process rmcp (no subprocess)
-  - Holds `rmcp::service::RunningService<RoleClient, _>` or equivalent
-- [ ] Create `src/communicator.rs` — `TuiCommunicator` implementing `ElicitCommunicator`
-  - Handles sampling (`create_message`) requests from the server
-  - Reads user input from terminal (crossterm / readline)
-  - Returns the answer back over the MCP sampling protocol
-- [ ] Create `src/session.rs` — high-level session facade:
-  - `call_tool(name, args)` — submits a tool call to the server
-  - `list_tools()` — returns available tools (server-driven)
-  - `subscribe_state()` — poll / stream state changes from server resources
-- [ ] Update `src/lib.rs` — export only: `BotticelliClient`, `TuiCommunicator`,
-  `McpClientError`; remove all old exports
-- [ ] `just check -p botticelli_mcp_client` passes — zero warnings
-
-#### Remove ExternalMcpClient duplication
-- [ ] Evaluate `src/external_client.rs` — if it is a generic rmcp wrapper for connecting
-  to non-Botticelli MCP servers, keep it; otherwise delete
-- [ ] Remove `src/schema/` if schema inference moves server-side
+- [x] Deleted `src/tools/`, `src/schema/`, `src/orchestrator.rs`, `src/llm_adapter.rs`,
+  `src/adapter_bridge.rs`, `src/approval.rs`, `src/retry.rs`, `src/context.rs`
+- [x] Created `src/connection.rs` — `BotticelliClient::connect_http(url)` using
+  `StreamableHttpClientTransport::from_uri(url)` + `rmcp::serve_client`
+- [x] Created `src/handler.rs` — `TuiHandler: ClientHandler` that answers elicitation
+  prompts by writing to stdout and reading a line from stdin
+- [x] Stripped `src/error.rs` to 4 variants; `src/lib.rs` exports 3 types
+- [x] Deleted 7 old orchestration-layer integration test files
+- [x] `just check`: zero errors, zero warnings (full workspace)
 
 ---
 
@@ -260,21 +235,20 @@ server; all UI is already in `botticelli_tui`.
 
 ---
 
-### Phase 8 — Rewrite botticelli_tui to use botticelli_mcp_client
+### Phase 8 — Rewrite botticelli_tui to use botticelli_mcp_client ✅
 
-The TUI currently has `botticelli_mcp_client` as a direct dep but its event loop
-(`minimal_loop.rs`) uses `reqwest` to talk to an HTTP endpoint. Rewrite to use
-`BotticelliClient::connect_stdio` (the thin rmcp client from Phase 6).
+Replaced the raw `reqwest`/handcrafted-JSON background task with `BotticelliClient`.
 
-- [ ] Rewrite `minimal_loop.rs` main event loop:
-  - Connect: `BotticelliClient::connect_stdio("botticelli-mcp serve")`
-  - Accept input → `client.call_tool("chat", args)`
-  - Sampling/elicitation answered by `TuiHandler::create_message` automatically
-  - Render state from tool results
-- [ ] Remove the `reqwest` dep from `botticelli_tui/Cargo.toml` cli feature
-- [ ] Smoke test: `cargo run -p botticelli_tui --features cli` starts, connects,
-  accepts a message, returns a response
-- [ ] `just lint botticelli_tui` passes
+- [x] Rewrote `minimal_loop.rs` `#[cfg(feature = "cli")]` block:
+  - Reads `MCP_HTTP_HOST` / `MCP_HTTP_PORT` (default `127.0.0.1:3000`)
+  - `BotticelliClient::connect_http(&mcp_url).await` at task startup
+  - `SendMessage` → `client.call_tool("generate", {prompt: text})`
+  - Response extracted from `result.content[].raw.as_text().text`
+  - Connection failure surfaced as `BackgroundMessage::Error` in the TUI
+- [x] Removed `reqwest` dep from `botticelli_tui/Cargo.toml` and the binary
+- [x] `just lint botticelli_tui` passes — zero warnings
+
+Smoke test pending Phase 10 (server needs HTTP mode to listen on port 3000).
 
 ---
 
@@ -296,15 +270,14 @@ Pattern reference: `strictly_games/crates/strictly_games/src/main.rs`
 
 ### Phase 11 — ToolRegistry cleanup in botticelli_interface
 
-- [ ] Audit `botticelli_interface` for any remaining `McpTool` / old `ToolRegistry`
-  references
-- [ ] `ToolDefinition` in `botticelli_core` stays — it is the LLM tool-calling concept,
-  not the MCP server concept
-- [ ] Simplify or remove `ElicitationRegistryOperations<T>` in
-  `botticelli_interface/src/registry_traits.rs` if superseded by elicitation plugin model
-- [ ] Remove interface traits that were purely bridging to the old pmcp stack
-- [ ] Delete `McpTool` trait and `ToolRegistry` from `botticelli_mcp/src/tools/mod.rs`
-  (`botticelli_chat` is gone; backward-compat note no longer needed)
+`McpTool` and `ToolRegistry` already deleted from `botticelli_mcp` (zero-warning pass).
+Remaining: dead trait in `botticelli_interface`.
+
+- [x] Deleted `McpTool` trait and `ToolRegistry` from `botticelli_mcp/src/tools/mod.rs`
+- [x] Deleted `SamplingCoordinator` / `LlmSampler` from `botticelli_mcp` (sampling.rs)
+- [ ] Delete `ElicitationRegistryOperations<T>` from
+  `botticelli_interface/src/registry_traits.rs` — defined but never used outside the file
+- [ ] `ToolDefinition` in `botticelli_core` stays — it is the LLM tool-calling concept
 - [ ] `just check` (full workspace) passes
 
 ---
@@ -398,6 +371,17 @@ crates/botticelli_mcp_client/src/context.rs
 
 # Phase 7 — done ✅  (no reverse deps; crate deleted directly)
 crates/botticelli_chat/                              (entire crate — 3528 lines)
+
+# Warning-elimination pass (between phases 8 and 10)
+crates/botticelli_mcp/src/tools/generate_llm.rs     (Generate*Tool structs deleted; execute_generation kept)
+crates/botticelli_mcp/src/tools/discord.rs           (Discord*Tool structs deleted; DiscordClient kept)
+crates/botticelli_mcp/src/tools/discord_workflow.rs  (deleted)
+crates/botticelli_mcp/src/tools/sampling.rs          (deleted — SamplingCoordinator never instantiated)
+crates/botticelli_mcp/src/tools/social.rs            (deleted — orphan file, never compiled)
+crates/botticelli_mcp/tests/discord_tools_test.rs    (deleted — tested deleted types)
+crates/botticelli_bot/tests/boundary_discord_orchestrator_test.rs  (deleted — tested deleted types)
+crates/botticelli_tui/src/debug.rs                   (deleted — OperationTimer never used)
+crates/botticelli_tui/examples/chat_with_mcp.rs      (deleted — referenced deleted TuiApp)
 ```
 
 ---
