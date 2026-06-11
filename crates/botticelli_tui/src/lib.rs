@@ -33,7 +33,6 @@
 
 mod app;
 mod commands;
-mod debug;
 mod error;
 mod events;
 mod messages;

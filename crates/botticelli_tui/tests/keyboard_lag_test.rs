@@ -9,7 +9,7 @@ use botticelli_tui::{AppState, ChatView, View};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::Terminal;
 use ratatui::backend::TestBackend;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 // Mock ChatHost for testing
@@ -53,10 +53,10 @@ fn test_keyboard_input_lag() {
     // Create AppState with mock chat host
     let chat_host: Arc<tokio::sync::Mutex<dyn ChatHost>> =
         Arc::new(tokio::sync::Mutex::new(MockChatHost));
-    let mut state = AppState::new(chat_host);
+    let state = AppState::new(chat_host);
 
     // Create ChatView using default (implements View trait)
-    let mut chat_view = ChatView::default();
+    let chat_view = ChatView;
 
     // Simulate rapid typing: "hello world"
     let test_string = "hello world";

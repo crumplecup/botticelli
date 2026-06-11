@@ -26,11 +26,6 @@ async fn main() -> TuiResult<()> {
 
     info!("Botticelli TUI starting");
 
-    // Create HTTP client for MCP server communication
-    let mcp_client = reqwest::Client::new();
-    let mcp_url = "http://localhost:3030/mcp".to_string();
-    info!("MCP client configured for {}", mcp_url);
-
     // Setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();

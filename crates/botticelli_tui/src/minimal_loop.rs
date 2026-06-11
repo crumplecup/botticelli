@@ -22,6 +22,7 @@ pub enum UiMessage {
 #[derive(Debug, Clone)]
 pub enum BackgroundMessage {
     ChatResponse(String),
+    #[cfg(feature = "cli")]
     Error(String),
 }
 
@@ -47,168 +48,69 @@ pub async fn minimal_event_loop<B: Backend>(
     let (ui_tx, mut ui_rx) = mpsc::channel::<UiMessage>(100);
     let (bg_tx, mut bg_rx) = mpsc::channel::<BackgroundMessage>(100);
 
-    // Spawn background task for MCP HTTP client
+    // Spawn background task for MCP client
     #[cfg(feature = "cli")]
     {
-        info!("🚀 Setting up MCP HTTP client");
-
-        // Get MCP server configuration from environment or use defaults
         let mcp_host = std::env::var("MCP_HTTP_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
         let mcp_port: u16 = std::env::var("MCP_HTTP_PORT")
             .ok()
             .and_then(|p| p.parse().ok())
-            .unwrap_or(8080);
-
-        let mcp_url = format!("http://{}:{}/sse", mcp_host, mcp_port);
-        info!("📍 MCP server endpoint: {}", mcp_url);
-
-        let http_client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
-            .build()
-            .expect("Failed to build HTTP client");
-
-        // Verify MCP server is reachable, start it if not
-        info!("🔍 Verifying MCP server is reachable at {}", mcp_url);
-        let test_client = http_client.clone();
-        let test_url = mcp_url.clone();
+            .unwrap_or(3000);
+        let mcp_url = format!("http://{}:{}/mcp", mcp_host, mcp_port);
+        info!(url = %mcp_url, "Connecting to Botticelli MCP server");
 
         tokio::spawn(async move {
-            // Give server a moment if it's starting up
-            tokio::time::sleep(Duration::from_millis(100)).await;
-
-            match test_client.get(&test_url).send().await {
-                Ok(response) => {
-                    info!(
-                        "✅ MCP server already running (status: {})",
-                        response.status()
-                    );
+            let client = match botticelli_mcp_client::BotticelliClient::connect_http(&mcp_url).await
+            {
+                Ok(c) => {
+                    info!("Connected to Botticelli MCP server");
+                    c
                 }
                 Err(e) => {
-                    warn!("⚠️  MCP server not reachable: {}", e);
-                    info!("🚀 Auto-starting MCP server...");
-
-                    // Start MCP server in background
-                    #[cfg(feature = "streamable-http")]
+                    warn!(
+                        error = %e,
+                        "Could not connect to MCP server — start it with: \
+                         cargo run --bin botticelli-mcp -- http"
+                    );
+                    if let Err(send_err) = bg_tx
+                        .send(BackgroundMessage::Error(format!(
+                            "MCP server unreachable ({}). \
+                             Run: cargo run --bin botticelli-mcp -- http",
+                            e
+                        )))
+                        .await
                     {
-                        use botticelli_mcp::run_pmcp_http_server;
-
-                        tokio::spawn(async move {
-                            info!("🌐 Spawning embedded MCP HTTP server");
-                            match run_pmcp_http_server(
-                                "127.0.0.1",
-                                8080,
-                                #[cfg(feature = "database")]
-                                None,
-                            )
-                            .await
-                            {
-                                Ok(_) => info!("✅ Embedded MCP server completed"),
-                                Err(e) => warn!("❌ Embedded MCP server failed: {}", e),
-                            }
-                        });
-
-                        // Wait for server to start
-                        info!("⏳ Waiting for MCP server to start...");
-                        tokio::time::sleep(Duration::from_millis(1000)).await;
-
-                        // Verify it started
-                        match test_client.get(&test_url).send().await {
-                            Ok(response) => {
-                                info!(
-                                    "✅ MCP server auto-started successfully (status: {})",
-                                    response.status()
-                                );
-                            }
-                            Err(e) => {
-                                warn!("❌ MCP server failed to start: {}", e);
-                                warn!("💡 You can start it manually:");
-                                warn!(
-                                    "   cargo run --bin botticelli-mcp-pmcp-http --features streamable-http"
-                                );
-                            }
-                        }
+                        warn!(error = ?send_err, "Failed to send connection error to UI");
                     }
-
-                    #[cfg(not(feature = "streamable-http"))]
-                    {
-                        warn!("❌ Cannot auto-start server: streamable-http feature not enabled");
-                        warn!("💡 Start server manually:");
-                        warn!(
-                            "   cargo run --bin botticelli-mcp-pmcp-http --features streamable-http"
-                        );
-                        warn!("💡 Or enable streamable-http feature in botticelli_tui");
-                    }
+                    return;
                 }
-            }
-        });
+            };
 
-        tokio::spawn(async move {
-            info!("🌐 MCP client task started");
-            info!("📡 Listening for UI messages to forward to MCP server");
-
-            // Process messages from UI
             while let Some(msg) = ui_rx.recv().await {
                 debug!(?msg, "Received UI message");
-
                 match msg {
                     UiMessage::SendChat(text) => {
-                        info!(text = %text, "Sending chat to MCP server at {}", mcp_url);
-
-                        // Build MCP tool call request for sampling/createMessage
-                        let mcp_request = serde_json::json!({
-                            "method": "tools/call",
-                            "params": {
-                                "name": "sampling_createMessage",
-                                "arguments": {
-                                    "messages": [{
-                                        "role": "user",
-                                        "content": text
-                                    }],
-                                    "max_tokens": 1024
-                                }
-                            }
-                        });
-
-                        // Send HTTP POST request to MCP server /sse endpoint
-                        match http_client.post(&mcp_url).json(&mcp_request).send().await {
-                            Ok(response) => {
-                                let status = response.status();
-                                info!(status = ?status, "Got MCP response");
-
-                                match response.text().await {
-                                    Ok(body) => {
-                                        info!(body_len = body.len(), "MCP response body received");
-                                        debug!(body = %body, "Full response body");
-
-                                        if let Err(e) =
-                                            bg_tx.send(BackgroundMessage::ChatResponse(body)).await
-                                        {
-                                            warn!(error = ?e, "Failed to send response to UI");
-                                        }
-                                    }
-                                    Err(e) => {
-                                        warn!(error = ?e, "Failed to read MCP response body");
-                                        if let Err(e) = bg_tx
-                                            .send(BackgroundMessage::Error(e.to_string()))
-                                            .await
-                                        {
-                                            warn!(error = ?e, "Failed to send error to UI");
-                                        }
-                                    }
+                        info!(text = %text, "Calling generate tool");
+                        let mut args = serde_json::Map::new();
+                        args.insert("prompt".into(), serde_json::Value::String(text));
+                        match client.call_tool("generate", Some(args)).await {
+                            Ok(result) => {
+                                let response = result
+                                    .content
+                                    .iter()
+                                    .filter_map(|c| c.raw.as_text().map(|t| t.text.as_str()))
+                                    .collect::<Vec<_>>()
+                                    .join("\n");
+                                if let Err(e) =
+                                    bg_tx.send(BackgroundMessage::ChatResponse(response)).await
+                                {
+                                    warn!(error = ?e, "Failed to send response to UI");
                                 }
                             }
                             Err(e) => {
-                                warn!(error = ?e, "Failed to send to MCP server at {}", mcp_url);
-                                warn!(
-                                    "💡 Is the MCP server running? Check: cargo run --bin botticelli-mcp-pmcp-http --features streamable-http"
-                                );
-
-                                if let Err(e) = bg_tx
-                                    .send(BackgroundMessage::Error(format!(
-                                        "MCP server error: {}",
-                                        e
-                                    )))
-                                    .await
+                                warn!(error = %e, "Tool call failed");
+                                if let Err(e) =
+                                    bg_tx.send(BackgroundMessage::Error(e.to_string())).await
                                 {
                                     warn!(error = ?e, "Failed to send error to UI");
                                 }
@@ -218,7 +120,7 @@ pub async fn minimal_event_loop<B: Backend>(
                 }
             }
 
-            info!("🛑 MCP client task ending");
+            info!("MCP client task ending");
         });
     }
 
@@ -228,13 +130,11 @@ pub async fn minimal_event_loop<B: Backend>(
         info!("💡 To enable MCP client: cargo run --features cli");
 
         tokio::spawn(async move {
-            while let Some(msg) = ui_rx.recv().await {
-                if let UiMessage::SendChat(text) = msg {
-                    debug!(text = %text, "Mock: would send to MCP server");
-                    let _ = bg_tx
-                        .send(BackgroundMessage::ChatResponse(format!("Echo: {}", text)))
-                        .await;
-                }
+            while let Some(UiMessage::SendChat(text)) = ui_rx.recv().await {
+                debug!(text = %text, "Mock: would send to MCP server");
+                let _ = bg_tx
+                    .send(BackgroundMessage::ChatResponse(format!("Echo: {}", text)))
+                    .await;
             }
         });
     }
@@ -249,6 +149,7 @@ pub async fn minimal_event_loop<B: Backend>(
                         debug!(response = %response, "Received chat response");
                         state.add_chat_response(response);
                     }
+                    #[cfg(feature = "cli")]
                     BackgroundMessage::Error(err) => {
                         warn!(error = %err, "Background error");
                     }

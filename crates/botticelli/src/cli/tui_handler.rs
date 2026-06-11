@@ -2,21 +2,12 @@
 
 use botticelli_error::BotticelliResult;
 
-/// Launch the terminal user interface for a table.
-#[cfg(all(feature = "tui", feature = "database"))]
+/// Launch the terminal user interface.
+///
+/// The TUI is a separate binary (`botticelli-tui`). This stub tells the user
+/// how to run it when they invoke the `tui` subcommand on the main binary.
+#[tracing::instrument]
 pub async fn launch_tui(_table: &str) -> BotticelliResult<()> {
-    use botticelli_tui::Tui;
-
-    tracing::info!("Launching TUI");
-
-    let mut tui = Tui::new()?;
-    tui.run().await?;
-
-    Ok(())
-}
-
-#[cfg(not(all(feature = "tui", feature = "database")))]
-pub async fn launch_tui(_table: &str) -> BotticelliResult<()> {
-    eprintln!("Error: TUI and database features not enabled. Rebuild with --features tui,database");
+    eprintln!("The TUI is a separate binary. Run: botticelli-tui");
     std::process::exit(1);
 }

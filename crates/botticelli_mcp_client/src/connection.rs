@@ -5,44 +5,33 @@ use crate::handler::TuiHandler;
 use rmcp::RoleClient;
 use rmcp::model::{CallToolRequestParams, CallToolResult, ListToolsResult};
 use rmcp::service::{Peer, RunningService};
-use std::process::Stdio;
 use std::sync::Arc;
 use tracing::instrument;
 
 /// Thin rmcp client for the Botticelli MCP server.
 ///
 /// Holds the server connection and the running service that keeps it alive.
-/// Use [`connect_stdio`](Self::connect_stdio) to spawn the server and connect.
+/// Use [`connect_http`](Self::connect_http) to connect to a running server.
 pub struct BotticelliClient {
     peer: Arc<Peer<RoleClient>>,
     _service: RunningService<RoleClient, TuiHandler>,
-    _child: Option<tokio::process::Child>,
 }
 
 impl BotticelliClient {
-    /// Spawn `command serve` as a subprocess and connect via stdio.
+    /// Connect to a Botticelli MCP server over Streamable HTTP.
     ///
-    /// The child process lives as long as this client. The [`TuiHandler`]
-    /// handles elicitation prompts by printing them to stdout and reading
-    /// the user's answer from stdin.
-    #[instrument(fields(command = %command.as_ref()))]
-    pub async fn connect_stdio(command: impl AsRef<str>) -> McpClientResult<Self> {
-        let command = command.as_ref();
-        tracing::info!("Spawning Botticelli server");
+    /// `url` should be the server's MCP endpoint, e.g. `http://localhost:3000/mcp`.
+    /// The [`TuiHandler`] answers elicitation prompts by writing to stdout and
+    /// reading a line from stdin.
+    #[instrument(fields(url = %url.as_ref()))]
+    pub async fn connect_http(url: impl AsRef<str>) -> McpClientResult<Self> {
+        use rmcp::transport::StreamableHttpClientTransport;
 
-        let mut child = tokio::process::Command::new(command)
-            .args(["serve"])
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .spawn()
-            .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(e.to_string())))?;
+        let url = url.as_ref();
+        tracing::info!("Connecting to Botticelli server");
 
-        let server_stdin = child.stdin.take().expect("stdin was piped");
-        let server_stdout = child.stdout.take().expect("stdout was piped");
-
-        tracing::debug!("Performing MCP handshake");
-        let service = rmcp::serve_client(TuiHandler::new(), (server_stdout, server_stdin))
+        let transport = StreamableHttpClientTransport::from_uri(url);
+        let service = rmcp::serve_client(TuiHandler::new(), transport)
             .await
             .map_err(|e| McpClientError::new(McpClientErrorKind::ConnectionError(e.to_string())))?;
 
@@ -52,7 +41,6 @@ impl BotticelliClient {
         Ok(Self {
             peer,
             _service: service,
-            _child: Some(child),
         })
     }
 
@@ -83,7 +71,6 @@ impl BotticelliClient {
     }
 
     /// Return the underlying rmcp peer for direct low-level access.
-    #[instrument(skip(self))]
     pub fn peer(&self) -> &Peer<RoleClient> {
         &self.peer
     }

@@ -59,12 +59,11 @@ derive_setters = { workspace = true }
 # CLI dependencies
 clap = { version = "4.5", features = ["derive", "env"], optional = true }
 dotenvy = { version = "0.15", optional = true }
-reqwest = { version = "0.12", features = ["json"], optional = true }
 
 [features]
 default = ["database"]
 database = ["dep:botticelli_database", "dep:diesel", "botticelli_error/database"]
-cli = ["dep:clap", "dep:dotenvy", "dep:reqwest", "dep:botticelli_mcp", "database"]
+cli = ["dep:clap", "dep:dotenvy", "dep:botticelli_mcp", "database"]
 
 [[bin]]
 name = "botticelli-tui"

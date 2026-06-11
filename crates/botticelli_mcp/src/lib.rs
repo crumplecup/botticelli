@@ -33,9 +33,7 @@ pub use conversation::{Attachment, ConversationSession, ConversationTurn, Sessio
 pub use resources::{McpResource, NarrativeResource, ResourceInfo, ResourceRegistry};
 pub use server::BotticelliServer;
 pub use tools::{
-    Act, ActMetrics, ExecutionMetrics, LlmSampler, McpTool, MetricsSummary, NarrativeHelper,
-    PrometheusMetrics, SamplingCoordinator, SamplingError, SamplingErrorKind, SamplingHelper,
-    SamplingResult, ToolRegistry,
+    Act, ActMetrics, ExecutionMetrics, MetricsSummary, NarrativeHelper, PrometheusMetrics,
 };
 pub use transport::{HttpTransport, McpTransport, McpTransportError};
 

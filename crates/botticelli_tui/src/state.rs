@@ -160,7 +160,7 @@ impl AppState {
 
         // Use provided or create new conversation
         let conversation_id = conversation_id
-            .or_else(|| self.current_conversation)
+            .or(self.current_conversation)
             .unwrap_or_else(Uuid::new_v4);
 
         self.current_conversation = Some(conversation_id);
