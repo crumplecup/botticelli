@@ -4,8 +4,8 @@
 
 use botticelli_tui::AppState;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::backend::TestBackend;
 use ratatui::Terminal;
+use ratatui::backend::TestBackend;
 use std::time::{Duration, Instant};
 use tracing::{debug, info, warn};
 
@@ -27,7 +27,7 @@ async fn test_keyboard_lag_end_to_end() {
     let mut state = AppState::default();
     let backend = TestBackend::new(80, 24);
     let mut terminal = Terminal::new(backend).unwrap();
-    
+
     // Test string to type
     let test_input = "Hello, this is a typing test!";
     let mut total_latency = Duration::ZERO;
@@ -39,48 +39,56 @@ async fn test_keyboard_lag_end_to_end() {
 
     for (i, ch) in test_input.chars().enumerate() {
         let start = Instant::now();
-        
-        // Simulate key press event  
+
+        // Simulate key press event
         let key_event = KeyEvent::new(KeyCode::Char(ch), KeyModifiers::NONE);
-        
+
         // Process the event
-        state.handle_key(key_event).expect("Handle key should succeed");
-        
+        state
+            .handle_key(key_event)
+            .expect("Handle key should succeed");
+
         let handle_time = start.elapsed();
-        
+
         // Simulate render cycle (this is what happens in real TUI)
         let render_start = Instant::now();
         terminal
             .draw(|f| {
                 use botticelli_tui::View;
                 use botticelli_tui::ViewMode;
-                
+
                 // Render the current view (matches real code)
                 let result = match state.mode() {
                     ViewMode::Chat => botticelli_tui::ChatView.render(f, &state),
-                    ViewMode::NarrativeBrowser => botticelli_tui::NarrativeBrowserView.render(f, &state),
-                    ViewMode::ConversationHistory => botticelli_tui::ConversationHistoryView.render(f, &state),
-                    ViewMode::NarrativeEditor => botticelli_tui::NarrativeEditorView.render(f, &state),
+                    ViewMode::NarrativeBrowser => {
+                        botticelli_tui::NarrativeBrowserView.render(f, &state)
+                    }
+                    ViewMode::ConversationHistory => {
+                        botticelli_tui::ConversationHistoryView.render(f, &state)
+                    }
+                    ViewMode::NarrativeEditor => {
+                        botticelli_tui::NarrativeEditorView.render(f, &state)
+                    }
                     ViewMode::Bots => botticelli_tui::BotsView.render(f, &state),
                     ViewMode::Database => botticelli_tui::DatabaseView.render(f, &state),
                     ViewMode::Schedule => botticelli_tui::ScheduleView.render(f, &state),
                     ViewMode::Settings => Ok(()), // Settings view not yet implemented
                 };
-                
+
                 if let Err(e) = result {
                     warn!(error = ?e, "Render error");
                 }
             })
             .expect("Render should succeed");
         let render_time = render_start.elapsed();
-        
+
         let total_time = start.elapsed();
-        
+
         total_latency += total_time;
         max_latency = max_latency.max(total_time);
         total_render_time += render_time;
         max_render_time = max_render_time.max(render_time);
-        
+
         debug!(
             char = %ch,
             handle_ms = handle_time.as_millis(),
@@ -161,46 +169,54 @@ async fn test_rapid_typing_burst() {
     let mut state = AppState::default();
     let backend = TestBackend::new(80, 24);
     let mut terminal = Terminal::new(backend).unwrap();
-    
+
     // Simulate 50 rapid keystrokes
     let burst_size = 50;
     let start = Instant::now();
-    
+
     let mut max_per_key = Duration::ZERO;
     let mut slow_count = 0;
 
     for i in 0..burst_size {
         let key_start = Instant::now();
-        
+
         let key_event = KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE);
-        state.handle_key(key_event).expect("Handle key should succeed");
-        
+        state
+            .handle_key(key_event)
+            .expect("Handle key should succeed");
+
         // Render after each keystroke (matches real behavior)
         terminal
             .draw(|f| {
                 use botticelli_tui::View;
                 use botticelli_tui::ViewMode;
-                
+
                 let result = match state.mode() {
                     ViewMode::Chat => botticelli_tui::ChatView.render(f, &state),
-                    ViewMode::NarrativeBrowser => botticelli_tui::NarrativeBrowserView.render(f, &state),
-                    ViewMode::ConversationHistory => botticelli_tui::ConversationHistoryView.render(f, &state),
-                    ViewMode::NarrativeEditor => botticelli_tui::NarrativeEditorView.render(f, &state),
+                    ViewMode::NarrativeBrowser => {
+                        botticelli_tui::NarrativeBrowserView.render(f, &state)
+                    }
+                    ViewMode::ConversationHistory => {
+                        botticelli_tui::ConversationHistoryView.render(f, &state)
+                    }
+                    ViewMode::NarrativeEditor => {
+                        botticelli_tui::NarrativeEditorView.render(f, &state)
+                    }
                     ViewMode::Bots => botticelli_tui::BotsView.render(f, &state),
                     ViewMode::Database => botticelli_tui::DatabaseView.render(f, &state),
                     ViewMode::Schedule => botticelli_tui::ScheduleView.render(f, &state),
                     ViewMode::Settings => Ok(()), // Settings view not yet implemented
                 };
-                
+
                 if let Err(e) = result {
                     warn!(error = ?e, "Render error");
                 }
             })
             .expect("Render should succeed");
-            
+
         let key_time = key_start.elapsed();
         max_per_key = max_per_key.max(key_time);
-        
+
         if key_time.as_millis() > 16 {
             slow_count += 1;
             warn!(
@@ -231,7 +247,7 @@ async fn test_rapid_typing_burst() {
         avg_per_key,
         MAX_ACCEPTABLE_LATENCY_MS
     );
-    
+
     // Max should be reasonable too
     assert!(
         max_per_key_ms < MAX_ACCEPTABLE_LATENCY_MS * 2,

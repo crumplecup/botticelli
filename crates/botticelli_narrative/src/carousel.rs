@@ -12,7 +12,9 @@ use serde::{Deserialize, Serialize};
 /// A carousel allows an act or entire narrative to execute multiple times
 /// while respecting rate limit budgets. The carousel will execute as many
 /// iterations as the budget allows, stopping when limits are approached.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, elicitation::Elicit, Getters)]
+#[derive(
+    Debug, Clone, PartialEq, Deserialize, Serialize, JsonSchema, elicitation::Elicit, Getters,
+)]
 pub struct CarouselConfig {
     /// Maximum number of iterations to attempt
     iterations: u32,

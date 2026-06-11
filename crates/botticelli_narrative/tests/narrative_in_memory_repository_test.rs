@@ -7,13 +7,7 @@ use botticelli_narrative::InMemoryNarrativeRepository;
 async fn test_save_and_list() {
     let repo = InMemoryNarrativeRepository::new();
 
-    let execution = NarrativeExecution::new(
-        "test".to_string(),
-        vec![],
-        None,
-        None,
-        None,
-    );
+    let execution = NarrativeExecution::new("test".to_string(), vec![], None, None, None);
 
     let _id = repo.save_execution(&execution).await.unwrap();
 

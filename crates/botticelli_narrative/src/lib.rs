@@ -69,8 +69,8 @@ pub use history_retention::{
 };
 pub use in_memory_repository::InMemoryNarrativeRepository;
 pub use multi_narrative::MultiNarrative;
-pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
 pub use partial::{PartialAct, PartialNarrative, PartialNarrativeBuilder};
+pub use processor::{ActProcessor, ProcessorContext, ProcessorRegistry};
 pub use provider::{ActConfig, NarrativeProvider};
 pub use state::{NarrativeState, StateManager, StateScope};
 pub use table_reference::TableReference;

@@ -115,7 +115,19 @@ impl ToolCall {
 /// let reason = StopReason::EndTurn;
 /// assert_eq!(format!("{:?}", reason), "EndTurn");
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema, elicitation::Elicit, Default)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+    elicitation::Elicit,
+    Default,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum StopReason {
     /// Model finished generating naturally (end of turn).

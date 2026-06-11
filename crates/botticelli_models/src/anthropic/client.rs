@@ -99,11 +99,8 @@ impl AnthropicClient {
                 AnthropicContent::Text { text } => Output::Text(text.clone()),
                 AnthropicContent::ToolUse { id, name, input } => {
                     // Convert to ToolCall
-                    let tool_call = botticelli_core::ToolCall::new(
-                        id.clone(),
-                        name.clone(),
-                        input.clone(),
-                    );
+                    let tool_call =
+                        botticelli_core::ToolCall::new(id.clone(), name.clone(), input.clone());
                     Output::ToolCalls(vec![tool_call])
                 }
             })
@@ -198,10 +195,8 @@ impl botticelli_interface::ToolCalling for AnthropicClient {
         debug!("Generating response with tools (ToolCalling trait)");
 
         // Convert tools to Anthropic format - already botticelli_core::ToolDefinition
-        let anthropic_tools: Vec<AnthropicTool> = tools
-            .iter()
-            .map(AnthropicTool::from_mcp)
-            .collect();
+        let anthropic_tools: Vec<AnthropicTool> =
+            tools.iter().map(AnthropicTool::from_mcp).collect();
 
         // Convert messages
         let messages: Result<Vec<AnthropicMessage>, ModelsError> = request
@@ -300,12 +295,7 @@ impl botticelli_interface::Vision for AnthropicClient {
     }
 
     fn supported_image_formats(&self) -> &[&'static str] {
-        &[
-            "image/png",
-            "image/jpeg",
-            "image/webp",
-            "image/gif",
-        ]
+        &["image/png", "image/jpeg", "image/webp", "image/gif"]
     }
 
     fn max_image_size_bytes(&self) -> usize {

@@ -14,8 +14,8 @@ use serde_json::json;
 #[cfg_attr(not(feature = "api"), ignore)]
 async fn test_anthropic_tool_calling() {
     // Get API key from environment
-    let api_key = std::env::var("ANTHROPIC_API_KEY")
-        .expect("ANTHROPIC_API_KEY must be set for API tests");
+    let api_key =
+        std::env::var("ANTHROPIC_API_KEY").expect("ANTHROPIC_API_KEY must be set for API tests");
 
     // Create client with latest Sonnet model
     let client = AnthropicClient::new(api_key, "claude-3-5-sonnet-20241022");
@@ -42,8 +42,7 @@ async fn test_anthropic_tool_calling() {
         vec![Input::Text("Use echo to say 'Hi'".to_string())],
     );
 
-    let request = GenerateRequest::new(vec![message])
-        .with_max_tokens(Some(100)); // Minimal tokens to conserve rate limits
+    let request = GenerateRequest::new(vec![message]).with_max_tokens(Some(100)); // Minimal tokens to conserve rate limits
 
     // Use ToolCalling trait - tools passed as explicit parameter
     let response = client

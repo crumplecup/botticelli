@@ -2,7 +2,9 @@
 
 use botticelli_core::Input;
 use botticelli_error::{BackendError, BotticelliError, BotticelliResult};
-use botticelli_interface::{ActExecution, ActExecutionBuilder, ExecutionStatus, NarrativeExecution};
+use botticelli_interface::{
+    ActExecution, ActExecutionBuilder, ExecutionStatus, NarrativeExecution,
+};
 use tracing::instrument;
 
 use crate::{

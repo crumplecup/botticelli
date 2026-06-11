@@ -5,6 +5,7 @@
 
 mod adapter_bridge;
 mod approval;
+mod client;
 mod context;
 mod error;
 mod external_client;
@@ -16,7 +17,6 @@ pub mod schema;
 mod tool_registry;
 pub mod tools;
 mod transport;
-mod client;
 
 pub use adapter_bridge::DriverAdapter;
 pub use approval::{ApprovalHandler, ApprovalManager, ApprovalPolicy, ConsoleApprovalHandler};
@@ -52,6 +52,6 @@ pub use tools::{
 // #[cfg(feature = "discord")]
 // pub use tools::{DiscordGetMessagesTool, DiscordSendMessageTool};
 pub use client::{
-    ExecutionResult, LlmBackend, ToolCall, ToolCallRecord, UnifiedClientMetrics,
-    McpHost, extract_tool_calls,
+    ExecutionResult, LlmBackend, McpHost, ToolCall, ToolCallRecord, UnifiedClientMetrics,
+    extract_tool_calls,
 };

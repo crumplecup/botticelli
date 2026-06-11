@@ -38,16 +38,17 @@ impl NarrativeStorageOperations for FilesystemNarrativeStorage {
         while let Ok(Some(entry)) = entries.next_entry().await {
             let path = entry.path();
             if path.extension().and_then(|s| s.to_str()) == Some("toml")
-                && let Some(filename) = path.file_name().and_then(|s| s.to_str()) {
-                    // Apply pattern filter if provided
-                    if let Some(pat) = pattern {
-                        if filename.contains(pat) {
-                            narratives.push(filename.to_string());
-                        }
-                    } else {
+                && let Some(filename) = path.file_name().and_then(|s| s.to_str())
+            {
+                // Apply pattern filter if provided
+                if let Some(pat) = pattern {
+                    if filename.contains(pat) {
                         narratives.push(filename.to_string());
                     }
+                } else {
+                    narratives.push(filename.to_string());
                 }
+            }
         }
 
         narratives.sort();

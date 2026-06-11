@@ -157,25 +157,25 @@ impl AppState {
     /// Adds a user message to the current conversation.
     pub fn add_user_message(&mut self, content: String, conversation_id: Option<Uuid>) {
         tracing::debug!(content = %content, "Adding user message");
-        
+
         // Use provided or create new conversation
         let conversation_id = conversation_id
             .or_else(|| self.current_conversation)
             .unwrap_or_else(Uuid::new_v4);
-        
+
         self.current_conversation = Some(conversation_id);
-        
+
         // Add user message to conversation
         let message = ChatMessage {
             role: "user".to_string(),
             content,
         };
-        
+
         self.conversations
             .entry(conversation_id)
             .or_default()
             .push(message);
-        
+
         self.mark_dirty();
         tracing::debug!("User message added successfully");
     }
@@ -183,21 +183,21 @@ impl AppState {
     /// Adds an assistant response to the current conversation.
     pub fn add_chat_response(&mut self, response: String) {
         tracing::debug!(response = %response, "Adding chat response");
-        
+
         // Create conversation if it doesn't exist
         let conversation_id = self.current_conversation.get_or_insert_with(Uuid::new_v4);
-        
+
         // Add assistant message to conversation
         let message = ChatMessage {
             role: "assistant".to_string(),
             content: response,
         };
-        
+
         self.conversations
             .entry(*conversation_id)
             .or_default()
             .push(message);
-        
+
         self.mark_dirty();
         tracing::debug!("Chat response added successfully");
     }
@@ -217,7 +217,11 @@ impl AppState {
         self.input_buffer.push_str(text);
         self.mark_dirty();
         let elapsed = start.elapsed();
-        tracing::trace!(new_len = self.input_buffer.len(), elapsed_us = elapsed.as_micros(), "Appended to input buffer");
+        tracing::trace!(
+            new_len = self.input_buffer.len(),
+            elapsed_us = elapsed.as_micros(),
+            "Appended to input buffer"
+        );
     }
 
     /// Deletes the last character from the input buffer.
@@ -227,7 +231,11 @@ impl AppState {
         self.input_buffer.pop();
         self.mark_dirty();
         let elapsed = start.elapsed();
-        tracing::trace!(new_len = self.input_buffer.len(), elapsed_us = elapsed.as_micros(), "Deleted char from buffer");
+        tracing::trace!(
+            new_len = self.input_buffer.len(),
+            elapsed_us = elapsed.as_micros(),
+            "Deleted char from buffer"
+        );
     }
 
     /// Clears the input buffer.
@@ -371,13 +379,13 @@ impl AppState {
             tracing::info!("Spawning async task for chat host");
             tokio::spawn(async move {
                 tracing::info!("Inside async task, acquiring chat host lock");
-                
+
                 // Use the chat host to send the message
                 let mut host = chat_host.lock().await;
                 tracing::info!("Acquired lock, calling send_message");
                 let response = host.send_message(user_msg.clone()).await;
                 drop(host); // Explicitly drop before processing
-                
+
                 tracing::info!("send_message returned, processing response");
                 match response {
                     Ok(response) => {
@@ -426,7 +434,7 @@ impl AppState {
         use crossterm::event::{KeyCode, KeyModifiers};
 
         let start = std::time::Instant::now();
-        
+
         let result = match key.code {
             KeyCode::Char(_c) if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 tracing::trace!("Control key combination");
@@ -460,14 +468,14 @@ impl AppState {
                 Ok(())
             }
         };
-        
+
         let elapsed = start.elapsed();
         if elapsed.as_millis() > 1 {
             tracing::warn!(elapsed_ms = elapsed.as_millis(), "handle_key SLOW!");
         } else {
             tracing::trace!(elapsed_us = elapsed.as_micros(), "handle_key completed");
         }
-        
+
         result
     }
 
@@ -479,7 +487,10 @@ impl AppState {
 
     /// Handles mouse events.
     #[tracing::instrument(skip(self))]
-    pub fn handle_mouse(&mut self, _event: crossterm::event::MouseEvent) -> Result<(), std::io::Error> {
+    pub fn handle_mouse(
+        &mut self,
+        _event: crossterm::event::MouseEvent,
+    ) -> Result<(), std::io::Error> {
         // Mouse handling can be implemented later
         Ok(())
     }
@@ -507,7 +518,10 @@ impl AppState {
 
     /// Handles MCP errors.
     #[tracing::instrument(skip(self))]
-    pub fn handle_mcp_error(&mut self, error: crate::McpConversationError) -> Result<(), std::io::Error> {
+    pub fn handle_mcp_error(
+        &mut self,
+        error: crate::McpConversationError,
+    ) -> Result<(), std::io::Error> {
         tracing::error!("MCP error: {:?}", error);
         // Could display error in UI
         Ok(())
