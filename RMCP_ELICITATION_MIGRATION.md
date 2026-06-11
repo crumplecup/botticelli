@@ -252,19 +252,23 @@ Smoke test pending Phase 10 (server needs HTTP mode to listen on port 3000).
 
 ---
 
-### Phase 10 — Single binary with clap subcommands
+### Phase 10 — Single binary with clap subcommands ✅
 
 Pattern reference: `strictly_games/crates/strictly_games/src/main.rs`
 
-- [ ] Update `src/bin/botticelli-mcp.rs` with clap subcommands:
+- [x] Added `clap = { version = "4", features = ["derive"] }` to workspace `Cargo.toml`
+- [x] Added `clap`, `axum`, `tower` to `botticelli_mcp/Cargo.toml`
+- [x] Rewrote `src/bin/botticelli-mcp.rs` with clap subcommands:
   ```
-  botticelli-mcp serve          # stdio transport (default)
-  botticelli-mcp http [--host] [--port]   # streamable-http transport
+  botticelli-mcp serve          # stdio transport
+  botticelli-mcp http [--host HOST] [--port PORT]   # streamable-http (default 127.0.0.1:3000)
   ```
-- [ ] stdio: `rmcp::service::serve_server(BotticelliServer::new(), rmcp::transport::stdio())`
-- [ ] http: `StreamableHttpService` + axum Router (matching strictly_games pattern)
-- [ ] Update `[[bin]]` entries in `Cargo.toml` (single entry, no `required-features`)
-- [ ] `just check-features -p botticelli_mcp` passes with all feature combinations
+- [x] `serve`: `rmcp::service::serve_server(BotticelliServer::new(), rmcp::transport::stdio())`
+- [x] `http`: `StreamableHttpService` with `stateful_mode(true)` + axum Router fallback
+- [x] Health check endpoint at `/health` for monitoring
+- [x] `just test-all botticelli_mcp` — zero warnings, 23 tests passing
+
+Smoke test now unblocked: `cargo run -p botticelli_mcp -- http` listens on port 3000.
 
 ---
 

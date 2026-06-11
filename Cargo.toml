@@ -134,6 +134,7 @@ reqwest = { version = "0.12", features = [
 axum = "0.8"
 tower = "0.5"
 tower-http = "0.6"
+clap = { version = "4", features = ["derive"] }
 dirs = "6"
 
 # Storage and hashing

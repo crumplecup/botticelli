@@ -56,6 +56,13 @@ uuid.workspace = true
 # HTTP client (for HTTP transport and Discord tools)
 reqwest = { workspace = true, features = ["json"] }
 
+# CLI argument parsing
+clap.workspace = true
+
+# HTTP server (for `http` subcommand)
+axum.workspace = true
+tower.workspace = true
+
 # Elicitation framework
 elicitation.workspace = true
 
