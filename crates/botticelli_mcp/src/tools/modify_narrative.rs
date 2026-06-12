@@ -242,11 +242,10 @@ fn extract_model_name(text: &str) -> McpResult<String> {
 #[instrument]
 fn extract_temperature(text: &str) -> McpResult<f64> {
     for word in text.split_whitespace() {
-        if let Ok(temp) = word.trim().parse::<f64>() {
-            if (0.0..=1.0).contains(&temp) {
+        if let Ok(temp) = word.trim().parse::<f64>()
+            && (0.0..=1.0).contains(&temp) {
                 return Ok(temp);
             }
-        }
     }
     Err(McpError::invalid_input(
         "Could not extract temperature value (must be 0.0-1.0)".to_string(),

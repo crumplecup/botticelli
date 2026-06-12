@@ -89,11 +89,10 @@ impl NarrativeResource {
                 .map_err(|e| McpError::execution_failed(format!("Failed to read entry: {}", e)))?;
             let path = entry.path();
 
-            if path.extension().and_then(|s| s.to_str()) == Some("toml") {
-                if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
+            if path.extension().and_then(|s| s.to_str()) == Some("toml")
+                && let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
                     narratives.push(name.to_string());
                 }
-            }
         }
 
         narratives.sort();

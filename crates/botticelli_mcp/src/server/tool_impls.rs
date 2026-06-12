@@ -5,15 +5,14 @@
 //! handled inside method bodies with `#[cfg(...)]` blocks.
 
 use super::BotticelliServer;
-use crate::tools::narrative_utils::NarrativeHelper;
 use crate::tools::narrative_validation_helpers::{
-    add_helpful_comments, auto_fix_common_issues, format_toml, format_validation_result,
+    auto_fix_common_issues, format_toml, format_validation_result,
 };
 use botticelli_narrative::{
-    PartialNarrative,
+    TomlNarrativeFile,
     validator::{ValidationConfig, validate_narrative_toml, validate_narrative_toml_with_config},
 };
-use elicitation::{DynamicToolRegistry, ElicitServer, Elicitation as _};
+use elicitation::{DynamicToolRegistry, ElicitJson as _, ElicitServer, elicit_tools};
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{CallToolResult, Content};
 use rmcp::service::{Peer, RoleServer};
@@ -34,19 +33,6 @@ use tracing::{debug, info, instrument, warn};
 pub struct EchoInput {
     /// Message to echo back.
     pub message: String,
-}
-
-/// Input for creating a narrative from a natural language description.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-pub struct GenerateNarrativeInput {
-    /// Natural language description of the narrative workflow.
-    pub description: String,
-    /// Narrative name (alphanumeric + underscores).
-    pub name: String,
-    /// Optional default model for all acts.
-    pub default_model: Option<String>,
-    /// Optional default temperature (0.0–1.0).
-    pub default_temperature: Option<f64>,
 }
 
 /// Input for validating a narrative TOML.
@@ -183,6 +169,18 @@ pub struct DeleteSceneInput {
     pub narrative_id: String,
     /// Scene ID to delete.
     pub scene_id: String,
+}
+
+/// Input for writing a pre-built narrative file to disk.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct WriteNarrativeFileInput {
+    /// Fully-specified narrative file structure (serialized to TOML by the server).
+    pub narrative: TomlNarrativeFile,
+    /// Destination file path (must end in .toml).
+    pub file_path: String,
+    /// Allow overwriting an existing file.
+    #[serde(default)]
+    pub overwrite: bool,
 }
 
 /// Input for exporting metrics.
@@ -415,88 +413,31 @@ impl BotticelliServer {
     // Narrative creation
     // ========================================================================
 
-    /// Create a narrative via guided interactive elicitation.
+    /// Create a narrative by presenting the full schema and asking for a JSON blob.
     #[instrument(skip(self, peer))]
-    #[tool(description = "Create a new narrative TOML via guided elicitation. \
-        Interactively asks for name, description, model, acts, and other settings, \
-        then returns the completed narrative as TOML.")]
+    #[tool(
+        description = "Create a new narrative TOML. Presents the full TomlNarrativeFile \
+        JSON schema, asks the agent to supply a matching JSON object, then returns the \
+        result serialized as TOML."
+    )]
     pub async fn create_narrative(
         &self,
         peer: Peer<RoleServer>,
     ) -> Result<CallToolResult, RmcpError> {
-        info!("Starting narrative elicitation");
+        info!("Starting narrative elicitation (ElicitJson)");
         let server = ElicitServer::new(peer);
-        let partial = PartialNarrative::elicit(&server).await.map_err(mcp_err)?;
-        let toml = partial.to_toml().map_err(mcp_err)?;
-        info!("Narrative elicitation complete");
+        let narrative = TomlNarrativeFile::elicit_json(&server)
+            .await
+            .map_err(mcp_err)?;
+        let toml = toml::to_string_pretty(&narrative).map_err(mcp_err)?;
+        info!(bytes = toml.len(), "Narrative elicitation complete");
         Ok(CallToolResult::success(vec![Content::text(toml)]))
     }
 
-    /// Generate a narrative TOML from a natural language description.
-    #[instrument(skip(self))]
-    #[tool(
-        description = "Generate a complete narrative TOML from a natural language description. \
-        Uses heuristics to extract workflow steps. For guided authoring, prefer create_narrative."
-    )]
-    pub async fn generate_narrative_toml(
-        &self,
-        Parameters(req): Parameters<GenerateNarrativeInput>,
-    ) -> Result<CallToolResult, RmcpError> {
-        debug!(name = %req.name, "Generating narrative from description");
-
-        let acts = NarrativeHelper::extract_acts_from_description(&req.description);
-
-        let mut toml = String::new();
-        toml.push_str("[narrative]\n");
-        toml.push_str(&format!("name = \"{}\"\n", req.name));
-        toml.push_str(&format!(
-            "description = \"{}\"\n",
-            NarrativeHelper::escape_toml_string(&req.description)
-        ));
-        if let Some(model) = &req.default_model {
-            toml.push_str(&format!("model = \"{}\"\n", model));
-        }
-        if let Some(temp) = req.default_temperature {
-            toml.push_str(&format!("temperature = {}\n", temp));
-        }
-        toml.push('\n');
-        toml.push_str("[toc]\norder = [");
-        for (i, act) in acts.iter().enumerate() {
-            if i > 0 {
-                toml.push_str(", ");
-            }
-            toml.push_str(&format!("\"{}\"", act.name));
-        }
-        toml.push_str("]\n\n[acts]\n");
-        for act in &acts {
-            toml.push_str(&format!(
-                "{} = \"{}\"\n",
-                act.name,
-                NarrativeHelper::escape_toml_string(&act.prompt)
-            ));
-        }
-
-        let (toml, fixes) = auto_fix_common_issues(&toml);
-        let toml = format_toml(&toml);
-        let toml_with_comments = add_helpful_comments(&toml);
-        let validation = validate_narrative_toml(&toml);
-        let validation_json = format_validation_result(&validation);
-        let act_count = NarrativeHelper::count_acts(&toml);
-
-        debug!(
-            valid = validation.is_valid(),
-            acts = act_count,
-            "Narrative generated"
-        );
-        json_ok(json!({
-            "toml": toml,
-            "toml_with_comments": toml_with_comments,
-            "validation": validation_json,
-            "summary": format!("Created narrative '{}' with {} act(s)", req.name, act_count),
-            "auto_fixes_applied": fixes,
-            "act_count": act_count,
-        }))
-    }
+    // Elicitation builder tools — expose TomlNarrativeFile schema-driven construction
+    // directly through the MCP protocol. The calling agent fills in each field via
+    // the elicitation/create protocol and receives the completed struct as JSON.
+    elicit_tools! { TomlNarrativeFile }
 
     // ========================================================================
     // Narrative manipulation
@@ -608,13 +549,12 @@ impl BotticelliServer {
                 None,
             ));
         }
-        if let Some(parent) = path.parent() {
-            if !parent.exists() {
+        if let Some(parent) = path.parent()
+            && !parent.exists() {
                 tokio::fs::create_dir_all(parent)
                     .await
                     .map_err(|e| mcp_err(format!("Failed to create directories: {}", e)))?;
             }
-        }
         tokio::fs::write(path, &req.narrative_toml)
             .await
             .map_err(|e| mcp_err(format!("Failed to write file: {}", e)))?;
@@ -1289,6 +1229,60 @@ impl BotticelliServer {
             "success": true,
             "narrative_id": req.narrative_id,
             "scene_id": req.scene_id,
+        }))
+    }
+
+    /// Serialize a TomlNarrativeFile to TOML and write it to disk.
+    #[instrument(skip(self))]
+    #[tool(
+        description = "Write a fully-specified narrative structure to a TOML file. \
+        The TOML is produced by the library's own serializer, guaranteeing structural validity."
+    )]
+    pub async fn write_narrative_file(
+        &self,
+        Parameters(req): Parameters<WriteNarrativeFileInput>,
+    ) -> Result<CallToolResult, RmcpError> {
+        debug!(path = %req.file_path, "Writing narrative file");
+
+        let path = Path::new(&req.file_path);
+        if path.extension().and_then(|s| s.to_str()) != Some("toml") {
+            return Err(RmcpError::invalid_params(
+                "File path must end with .toml",
+                None,
+            ));
+        }
+        if path.exists() && !req.overwrite {
+            return Err(RmcpError::invalid_params(
+                format!(
+                    "'{}' already exists. Set overwrite=true to replace it.",
+                    req.file_path
+                ),
+                None,
+            ));
+        }
+        if let Some(parent) = path.parent()
+            && !parent.exists() {
+                tokio::fs::create_dir_all(parent)
+                    .await
+                    .map_err(|e| mcp_err(format!("Failed to create directories: {}", e)))?;
+            }
+
+        let toml_content = toml::to_string_pretty(&req.narrative)
+            .map_err(|e| mcp_err(format!("Failed to serialize narrative to TOML: {}", e)))?;
+
+        tokio::fs::write(path, &toml_content)
+            .await
+            .map_err(|e| mcp_err(format!("Failed to write file: {}", e)))?;
+
+        let absolute_path = std::fs::canonicalize(path)
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| req.file_path.clone());
+
+        info!(path = %absolute_path, bytes = toml_content.len(), "Narrative file written");
+        json_ok(json!({
+            "status": "written",
+            "file_path": absolute_path,
+            "size_bytes": toml_content.len(),
         }))
     }
 

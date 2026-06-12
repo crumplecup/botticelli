@@ -187,39 +187,6 @@ pub fn format_toml(toml: &str) -> String {
     formatted.trim_end().to_string()
 }
 
-/// Add helpful comments to generated TOML.
-pub fn add_helpful_comments(toml: &str) -> String {
-    let mut output = String::new();
-
-    // Add header comment
-    output.push_str("# Generated narrative TOML\n");
-    output.push_str("# Edit as needed and validate with: botticelli validate <file>\n\n");
-
-    for line in toml.lines() {
-        let trimmed = line.trim();
-
-        // Add section comments
-        if trimmed == "[narrative]" {
-            output.push_str("# Narrative metadata\n");
-        } else if trimmed == "[toc]" {
-            output.push_str("\n# Table of contents - execution order\n");
-        } else if trimmed == "[acts]" {
-            output.push_str("\n# Act definitions\n");
-        } else if trimmed.starts_with("[bots.") {
-            output.push_str("\n# Bot command definition\n");
-        } else if trimmed.starts_with("[tables.") {
-            output.push_str("\n# Database table query\n");
-        } else if trimmed.starts_with("[media.") {
-            output.push_str("\n# Media resource\n");
-        }
-
-        output.push_str(line);
-        output.push('\n');
-    }
-
-    output
-}
-
 /// Validate and auto-fix common TOML issues.
 pub fn auto_fix_common_issues(toml: &str) -> (String, Vec<String>) {
     let mut fixed = toml.to_string();
@@ -290,11 +257,10 @@ fn extract_act_names(toml: &str) -> Vec<String> {
             break;
         }
 
-        if in_acts_section && trimmed.contains('=') {
-            if let Some(name) = trimmed.split('=').next() {
+        if in_acts_section && trimmed.contains('=')
+            && let Some(name) = trimmed.split('=').next() {
                 names.push(name.trim().to_string());
             }
-        }
     }
 
     names
