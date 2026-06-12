@@ -1,8 +1,10 @@
-use botticelli_models::GeminiClient;
+use botticelli_interface::BotticelliDriver;
 use botticelli_narrative::{MultiNarrative, NarrativeExecutor, NarrativeProvider};
+use derive_new::new;
 use ractor::{Actor, ActorProcessingErr, ActorRef};
 use std::path::PathBuf;
-use std::time::Duration;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::time;
 use tracing::{error, info, instrument, warn};
 
@@ -18,7 +20,7 @@ pub enum GenerationMessage {
 }
 
 /// Arguments for GenerationBot initialization
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, new)]
 pub struct GenerationBotArgs {
     /// How often to run generation
     pub interval: Duration,
@@ -30,20 +32,20 @@ pub struct GenerationBotArgs {
 
 /// Bot that generates content on a schedule
 pub struct GenerationBot {
+    driver: Arc<dyn BotticelliDriver>,
     args: GenerationBotArgs,
 }
 
 impl GenerationBot {
-    /// Creates a new generation bot
-    pub fn new(args: GenerationBotArgs) -> Self {
-        Self { args }
+    /// Creates a new generation bot with the given driver and args.
+    pub fn new(driver: Arc<dyn BotticelliDriver>, args: GenerationBotArgs) -> Self {
+        Self { driver, args }
     }
 
     #[instrument(skip(self))]
     async fn run_generation_cycle(&self) -> Result<(), Box<dyn std::error::Error>> {
         info!("Running generation cycle");
 
-        // Load narrative
         let multi_narrative =
             MultiNarrative::from_file(&self.args.narrative_path, &self.args.narrative_name)?;
 
@@ -53,18 +55,20 @@ impl GenerationBot {
             "Loaded multi-narrative structure"
         );
 
-        // Create executor with Gemini client
-        let client = GeminiClient::new()?;
-        let executor = NarrativeExecutor::new(client);
+        let executor = NarrativeExecutor::new(self.driver.clone());
 
-        // Execute the narrative
+        info!("Executing generation narrative");
+        let start = Instant::now();
         match executor.execute(&multi_narrative).await {
             Ok(_) => {
-                info!("Generation cycle completed successfully");
+                info!(
+                    elapsed_secs = start.elapsed().as_secs(),
+                    "Generation cycle completed"
+                );
                 Ok(())
             }
             Err(e) => {
-                error!(error = ?e, "Generation narrative failed");
+                error!(elapsed_secs = start.elapsed().as_secs(), error = ?e, "Generation narrative failed");
                 Err(e.into())
             }
         }
@@ -83,6 +87,7 @@ impl Actor for GenerationBot {
     type State = GenerationBotState;
     type Arguments = GenerationBotArgs;
 
+    #[instrument(skip(self, _myself, args), fields(narrative = %args.narrative_name))]
     async fn pre_start(
         &self,
         _myself: ActorRef<Self::Msg>,
@@ -116,7 +121,6 @@ impl Actor for GenerationBot {
                 info!("Starting generation loop");
                 state.running = true;
 
-                // Spawn background task for periodic execution
                 let interval = self.args.interval;
                 let myself_clone = myself.clone();
                 let handle = tokio::spawn(async move {

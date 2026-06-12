@@ -5,9 +5,9 @@ use crate::{
 #[cfg(feature = "metrics")]
 use crate::{MetricsCollector, create_metrics_router};
 use botticelli_error::{BotticelliError, BotticelliResult, ServerError, ServerErrorKind};
+use botticelli_interface::BotticelliDriver;
 use ractor::{Actor, ActorRef};
 use std::path::PathBuf;
-#[cfg(feature = "metrics")]
 use std::sync::Arc;
 use std::time::Duration;
 #[cfg(feature = "metrics")]
@@ -18,6 +18,7 @@ use tracing::{error, info, instrument};
 
 /// Bot server that orchestrates generation, curation, and posting actors.
 pub struct BotServer {
+    driver: Arc<dyn BotticelliDriver>,
     generation_ref: Option<ActorRef<GenerationMessage>>,
     curation_ref: Option<ActorRef<CurationMessage>>,
     posting_ref: Option<ActorRef<PostingMessage>>,
@@ -28,9 +29,10 @@ pub struct BotServer {
 }
 
 impl BotServer {
-    /// Creates a new bot server with metrics collection.
-    pub fn new() -> Self {
+    /// Creates a new bot server with the given inference driver.
+    pub fn new(driver: Arc<dyn BotticelliDriver>) -> Self {
         Self {
+            driver,
             generation_ref: None,
             curation_ref: None,
             posting_ref: None,
@@ -87,19 +89,24 @@ impl BotServer {
             warn!("Metrics port specified but metrics feature not enabled");
         }
 
-        // Define narrative paths (relative to workspace root)
         let narratives_dir = PathBuf::from("./crates/botticelli_narrative/narratives/discord");
 
         // Spawn generation bot
-        let generation_args = GenerationBotArgs {
-            interval: generation_interval,
-            narrative_path: narratives_dir.join("generation_carousel.toml"),
-            narrative_name: "batch_generate".to_string(),
-        };
+        let generation_args = GenerationBotArgs::new(
+            generation_interval,
+            narratives_dir.join("generation_carousel.toml"),
+            "batch_generate".to_string(),
+        );
 
+        info!(
+            narrative = %generation_args.narrative_name,
+            path = ?generation_args.narrative_path,
+            interval_hours = generation_interval.as_secs() / 3600,
+            "Spawning generation bot"
+        );
         let (generation_ref, _) = Actor::spawn(
             Some("generation_bot".to_string()),
-            GenerationBot::new(generation_args.clone()),
+            GenerationBot::new(self.driver.clone(), generation_args.clone()),
             generation_args,
         )
         .await
@@ -119,17 +126,24 @@ impl BotServer {
                     "Failed to start generation bot".to_string(),
                 )))
             })?;
+        info!("Generation bot started");
 
         // Spawn curation bot
-        let curation_args = CurationBotArgs {
-            check_interval: curation_interval,
-            narrative_path: narratives_dir.join("curation.toml"),
-            narrative_name: "curate_and_approve".to_string(),
-        };
+        let curation_args = CurationBotArgs::new(
+            curation_interval,
+            narratives_dir.join("curation.toml"),
+            "curate_and_approve".to_string(),
+        );
 
+        info!(
+            narrative = %curation_args.narrative_name,
+            path = ?curation_args.narrative_path,
+            interval_hours = curation_interval.as_secs() / 3600,
+            "Spawning curation bot"
+        );
         let (curation_ref, _) = Actor::spawn(
             Some("curation_bot".to_string()),
-            CurationBot::new(curation_args.clone()),
+            CurationBot::new(self.driver.clone(), curation_args.clone()),
             curation_args,
         )
         .await
@@ -149,18 +163,25 @@ impl BotServer {
                     "Failed to start curation bot".to_string(),
                 )))
             })?;
+        info!("Curation bot started");
 
         // Spawn posting bot
-        let posting_args = PostingBotArgs {
-            base_interval: posting_interval,
-            jitter_percent: 0.2,
-            narrative_path: narratives_dir.join("posting.toml"),
-            narrative_name: "post_approved".to_string(),
-        };
+        let posting_args = PostingBotArgs::new(
+            posting_interval,
+            0.2,
+            narratives_dir.join("posting.toml"),
+            "post_approved".to_string(),
+        );
 
+        info!(
+            narrative = %posting_args.narrative_name,
+            path = ?posting_args.narrative_path,
+            interval_hours = posting_interval.as_secs() / 3600,
+            "Spawning posting bot"
+        );
         let (posting_ref, _) = Actor::spawn(
             Some("posting_bot".to_string()),
-            PostingBot::new(posting_args.clone()),
+            PostingBot::new(self.driver.clone(), posting_args.clone()),
             posting_args,
         )
         .await
@@ -180,6 +201,7 @@ impl BotServer {
                     "Failed to start posting bot".to_string(),
                 )))
             })?;
+        info!("Posting bot started");
 
         info!("All bots started");
         Ok(())
@@ -216,11 +238,5 @@ impl BotServer {
     /// Returns whether the server is running.
     pub fn is_running(&self) -> bool {
         self.generation_ref.is_some() || self.curation_ref.is_some() || self.posting_ref.is_some()
-    }
-}
-
-impl Default for BotServer {
-    fn default() -> Self {
-        Self::new()
     }
 }

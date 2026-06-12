@@ -9,42 +9,47 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-async-trait = "0.1"
-botticelli_core = { path = "../botticelli_core" }
-botticelli_database = { path = "../botticelli_database" }
-botticelli_error = { path = "../botticelli_error" }
-botticelli_interface = { path = "../botticelli_interface" }
-botticelli_models = { path = "../botticelli_models", features = ["gemini"] }
-botticelli_narrative = { path = "../botticelli_narrative" }
-botticelli_rate_limit = { path = "../botticelli_rate_limit" }
+botticelli_core.workspace = true
+botticelli_error.workspace = true
+botticelli_interface.workspace = true
+botticelli_models = { workspace = true, optional = true }
+botticelli_narrative.workspace = true
+botticelli_rate_limit.workspace = true
 
-reqwest = { version = "0.12", features = ["json", "stream"] }
-tokio = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
-futures = "0.3"
-chrono = { workspace = true }
+# Backend: embedded mistral-rs inference (optional, enabled by "mistral" feature)
+mistralrs = { workspace = true, optional = true }
+
+anyhow.workspace = true
+async-trait.workspace = true
+clap.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+chrono.workspace = true
+ractor.workspace = true
+axum.workspace = true
+derive-getters.workspace = true
+derive_builder.workspace = true
+derive-new.workspace = true
+
 cron = "0.12"
-ractor = { workspace = true }
 rand = "0.8"
-diesel = { workspace = true }
-axum = "0.7"
-derive-getters = { workspace = true }
-derive_builder = { workspace = true }
 
 # Observability
-opentelemetry = { workspace = true }
-opentelemetry-otlp = { workspace = true }
-opentelemetry_sdk = { workspace = true }
-opentelemetry-stdout = { workspace = true }
-tracing-opentelemetry = { workspace = true }
+opentelemetry.workspace = true
+opentelemetry-otlp.workspace = true
+opentelemetry_sdk.workspace = true
+opentelemetry-stdout.workspace = true
+tracing-opentelemetry.workspace = true
 
 [dev-dependencies]
 
 [features]
 default = ["models"]
-models = ["botticelli_error/models"]
-api = []
+models  = ["botticelli_error/models"]
+mistral = ["dep:mistralrs"]
+ollama  = ["dep:botticelli_models", "botticelli_models/ollama"]
+api     = []
 metrics = []

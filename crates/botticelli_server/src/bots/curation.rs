@@ -1,8 +1,10 @@
-use botticelli_models::GeminiClient;
+use botticelli_interface::BotticelliDriver;
 use botticelli_narrative::{MultiNarrative, NarrativeExecutor};
+use derive_new::new;
 use ractor::{Actor, ActorProcessingErr, ActorRef};
 use std::path::PathBuf;
-use std::time::Duration;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::time;
 use tracing::{error, info, instrument, warn};
 
@@ -18,7 +20,7 @@ pub enum CurationMessage {
 }
 
 /// Arguments for CurationBot initialization
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, new)]
 pub struct CurationBotArgs {
     /// How often to check for content
     pub check_interval: Duration,
@@ -30,35 +32,37 @@ pub struct CurationBotArgs {
 
 /// Bot that curates generated content
 pub struct CurationBot {
+    driver: Arc<dyn BotticelliDriver>,
     args: CurationBotArgs,
 }
 
 impl CurationBot {
-    /// Creates a new curation bot
-    pub fn new(args: CurationBotArgs) -> Self {
-        Self { args }
+    /// Creates a new curation bot with the given driver and args.
+    pub fn new(driver: Arc<dyn BotticelliDriver>, args: CurationBotArgs) -> Self {
+        Self { driver, args }
     }
 
     #[instrument(skip(self))]
     async fn process_curation_queue(&self) -> Result<(), Box<dyn std::error::Error>> {
         info!("Starting queue processing cycle");
 
-        // Load narrative
         let narrative =
             MultiNarrative::from_file(&self.args.narrative_path, &self.args.narrative_name)?;
 
-        // Create executor with Gemini client
-        let client = GeminiClient::new()?;
-        let executor = NarrativeExecutor::new(client);
+        let executor = NarrativeExecutor::new(self.driver.clone());
 
-        // Execute the narrative
+        info!("Executing curation narrative");
+        let start = Instant::now();
         match executor.execute(&narrative).await {
             Ok(_) => {
-                info!("Curation cycle completed successfully");
+                info!(
+                    elapsed_secs = start.elapsed().as_secs(),
+                    "Curation cycle completed"
+                );
                 Ok(())
             }
             Err(e) => {
-                error!(error = ?e, "Curation narrative failed");
+                error!(elapsed_secs = start.elapsed().as_secs(), error = ?e, "Curation narrative failed");
                 Err(e.into())
             }
         }
@@ -72,12 +76,12 @@ pub struct CurationBotState {
 }
 
 #[async_trait::async_trait]
-#[async_trait::async_trait]
 impl Actor for CurationBot {
     type Msg = CurationMessage;
     type State = CurationBotState;
     type Arguments = CurationBotArgs;
 
+    #[instrument(skip(self, _myself, args), fields(narrative = %args.narrative_name))]
     async fn pre_start(
         &self,
         _myself: ActorRef<Self::Msg>,
@@ -111,16 +115,12 @@ impl Actor for CurationBot {
                 info!("Starting curation loop");
                 state.running = true;
 
-                // Spawn background task for periodic checks
                 let check_interval = self.args.check_interval;
                 let myself_clone = myself.clone();
-
                 let handle = tokio::spawn(async move {
                     let mut timer = time::interval(check_interval);
-
                     loop {
                         timer.tick().await;
-
                         if let Err(e) = myself_clone.send_message(CurationMessage::ProcessQueue) {
                             error!(error = ?e, "Failed to send ProcessQueue message");
                             break;

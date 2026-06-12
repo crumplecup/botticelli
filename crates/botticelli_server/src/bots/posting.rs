@@ -1,9 +1,11 @@
-use botticelli_models::GeminiClient;
+use botticelli_interface::BotticelliDriver;
 use botticelli_narrative::{MultiNarrative, NarrativeExecutor};
+use derive_new::new;
 use ractor::{Actor, ActorProcessingErr, ActorRef};
 use rand::Rng;
 use std::path::PathBuf;
-use std::time::Duration;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::time;
 use tracing::{debug, error, info, instrument, warn};
 
@@ -19,7 +21,7 @@ pub enum PostingMessage {
 }
 
 /// Arguments for PostingBot initialization
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, new)]
 pub struct PostingBotArgs {
     /// Base interval between posts
     pub base_interval: Duration,
@@ -33,23 +35,24 @@ pub struct PostingBotArgs {
 
 /// Bot that posts curated content to Discord
 pub struct PostingBot {
+    driver: Arc<dyn BotticelliDriver>,
     args: PostingBotArgs,
 }
 
 impl PostingBot {
-    /// Creates a new posting bot
-    pub fn new(args: PostingBotArgs) -> Self {
-        Self { args }
+    /// Creates a new posting bot with the given driver and args.
+    pub fn new(driver: Arc<dyn BotticelliDriver>, args: PostingBotArgs) -> Self {
+        Self { driver, args }
     }
 
-    /// Calculate next posting delay with jitter
+    /// Calculate next posting delay with jitter.
     #[instrument(skip(self))]
     fn calculate_next_delay(&self) -> Duration {
         let mut rng = rand::thread_rng();
         let jitter_range =
             (self.args.base_interval.as_secs_f64() * self.args.jitter_percent) as i64;
         let jitter = rng.gen_range(-jitter_range..=jitter_range);
-        let next_secs = (self.args.base_interval.as_secs() as i64 + jitter).max(60); // Minimum 1 minute
+        let next_secs = (self.args.base_interval.as_secs() as i64 + jitter).max(60);
 
         let delay = Duration::from_secs(next_secs as u64);
         debug!(
@@ -65,22 +68,23 @@ impl PostingBot {
     async fn post_next_content(&self) -> Result<(), Box<dyn std::error::Error>> {
         info!("Posting next approved content");
 
-        // Load narrative
         let narrative =
             MultiNarrative::from_file(&self.args.narrative_path, &self.args.narrative_name)?;
 
-        // Create executor with Gemini client
-        let client = GeminiClient::new()?;
-        let executor = NarrativeExecutor::new(client);
+        let executor = NarrativeExecutor::new(self.driver.clone());
 
-        // Execute the narrative
+        info!("Executing posting narrative");
+        let start = Instant::now();
         match executor.execute(&narrative).await {
             Ok(_) => {
-                info!("Posting cycle completed successfully");
+                info!(
+                    elapsed_secs = start.elapsed().as_secs(),
+                    "Posting cycle completed"
+                );
                 Ok(())
             }
             Err(e) => {
-                error!(error = ?e, "Posting narrative failed");
+                error!(elapsed_secs = start.elapsed().as_secs(), error = ?e, "Posting narrative failed");
                 Err(e.into())
             }
         }
@@ -99,6 +103,7 @@ impl Actor for PostingBot {
     type State = PostingBotState;
     type Arguments = PostingBotArgs;
 
+    #[instrument(skip(self, _myself, args), fields(narrative = %args.narrative_name))]
     async fn pre_start(
         &self,
         _myself: ActorRef<Self::Msg>,
@@ -133,12 +138,8 @@ impl Actor for PostingBot {
                 info!("Starting posting loop");
                 state.running = true;
 
-                // Spawn background task with jittered intervals
                 let myself_clone = myself.clone();
-                let bot_clone = Self {
-                    args: self.args.clone(),
-                };
-
+                let bot_clone = PostingBot::new(self.driver.clone(), self.args.clone());
                 let handle = tokio::spawn(async move {
                     loop {
                         let delay = bot_clone.calculate_next_delay();
