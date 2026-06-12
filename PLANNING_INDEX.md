@@ -12,6 +12,13 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ## Active Planning Documents
 
+### botticelli_server Overhaul (Active)
+- **BOTTICELLI_SERVER_OVERHAUL.md** - `current` (2026-06-11) **📋 READY TO IMPLEMENT**
+  - Replace dead inference infrastructure with backend-agnostic design
+  - CLI flag selects mistral-rs (default, embedded GGUF) or Ollama (external)
+  - Delete: `ServerClient`, OpenAI-compat types, dead trait impls; refactor bots to accept `Arc<dyn BotticelliDriver>`
+  - 8-phase checklist on dev branch
+
 ### rmcp + Elicitation Migration (Active)
 - **RMCP_ELICITATION_MIGRATION.md** - `current` (2026-06-10) **🚧 IN PROGRESS**
   - Full migration from pmcp → rmcp + elicitation framework across botticelli_mcp

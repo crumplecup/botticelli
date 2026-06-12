@@ -93,7 +93,7 @@ impl NarrativeProvider for TableReferenceNarrative {
 struct MockDriver;
 
 #[async_trait::async_trait]
-impl botticelli_interface::LlmDriver for MockDriver {
+impl botticelli_interface::BotticelliDriver for MockDriver {
     fn provider_name(&self) -> &'static str {
         "mock"
     }
@@ -201,19 +201,19 @@ async fn test_table_reference_query() -> BotticelliResult<()> {
     let execution = executor.execute(&narrative).await?;
 
     // Verify execution
-    assert_eq!(execution.act_executions.len(), 1);
-    let act_exec = &execution.act_executions[0];
-    assert_eq!(act_exec.act_name, "query_table");
+    assert_eq!(execution.act_executions().len(), 1);
+    let act_exec = &execution.act_executions()[0];
+    assert_eq!(act_exec.act_name(), "query_table");
 
     // Verify that table data was processed
-    if execution.act_executions[0].inputs.is_empty() {
+    if execution.act_executions()[0].inputs().is_empty() {
         return Err(DatabaseError::new(DatabaseErrorKind::Query(
             "No inputs found after table processing".to_string(),
         ))
         .into());
     }
 
-    match &execution.act_executions[0].inputs[0] {
+    match &execution.act_executions()[0].inputs()[0] {
         Input::Text(text) => {
             // Should contain formatted table data
             if !text.contains("Widget") && !text.contains("Gadget") {
@@ -346,11 +346,11 @@ async fn test_table_reference_with_filter() -> BotticelliResult<()> {
     let execution = executor.execute(&narrative).await?;
 
     // Verify execution
-    assert_eq!(execution.act_executions.len(), 1);
-    let act_exec = &execution.act_executions[0];
+    assert_eq!(execution.act_executions().len(), 1);
+    let act_exec = &execution.act_executions()[0];
 
     // Verify filtered data (should only have completed orders, sorted by total DESC)
-    match &act_exec.inputs[0] {
+    match &act_exec.inputs()[0] {
         Input::Text(text) => {
             // Should contain Eve (highest total) and not contain Bob or Diana
             assert!(text.contains("Eve") || text.contains("300"));
@@ -482,11 +482,11 @@ async fn test_table_reference_format_csv() -> BotticelliResult<()> {
     let execution = executor.execute(&narrative).await?;
 
     // Verify execution
-    assert_eq!(execution.act_executions.len(), 1);
-    let act_exec = &execution.act_executions[0];
+    assert_eq!(execution.act_executions().len(), 1);
+    let act_exec = &execution.act_executions()[0];
 
     // Verify CSV formatting
-    match &act_exec.inputs[0] {
+    match &act_exec.inputs()[0] {
         Input::Text(text) => {
             // CSV should have comma-separated values
             assert!(text.contains(','));

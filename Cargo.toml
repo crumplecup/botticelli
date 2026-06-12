@@ -24,7 +24,7 @@ resolver = "2"
 [workspace.package]
 version = "0.2.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 license = "MIT OR Apache-2.0"
 authors = ["Erik Rose <erik.w.rose@gmail.com>"]
 repository = "https://github.com/crumplecup/botticelli"
@@ -184,6 +184,8 @@ rmcp = { version = "1.7", features = [
 ] }
 schemars = { version = "1", features = ["derive"] }
 elicitation = { version = "0.11", features = ["serde_json"] }
+
+mistralrs = { version = "0.8", default-features = false }
 
 tempfile = "3"
 petgraph = "0.8"

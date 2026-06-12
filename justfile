@@ -528,17 +528,10 @@ check package="":
     #!/usr/bin/env bash
     if [ -z "{{package}}" ]; then
         echo "🔍 Checking all packages with all features..."
-        cargo check --all-features
+        cargo check --all-features --all-targets
     else
-        # Check if package has a 'local' feature, use it if available
-        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
-           jq -e ".packages[] | select(.name == \"{{package}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
-            echo "🔍 Checking package: {{package}} with local features"
-            cargo check -p "{{package}}" --features local
-        else
-            echo "🔍 Checking package: {{package}}"
-            cargo check -p "{{package}}"
-        fi
+        echo "🔍 Checking package: {{package}}"
+        cargo check -p "{{package}}" --all-features --all-targets
     fi
 
 # Run clippy linter (no warnings allowed)
@@ -546,18 +539,11 @@ check package="":
 lint package='':
     #!/usr/bin/env bash
     if [ -z "{{package}}" ]; then
-        echo "🔍 Linting entire workspace with local features"
-        cargo clippy --workspace --features local --all-targets
+        echo "🔍 Linting entire workspace"
+        cargo clippy --workspace --all-features --all-targets
     else
-        # Check if package has a 'local' feature, use it if available
-        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
-           jq -e ".packages[] | select(.name == \"{{package}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
-            echo "🔍 Linting {{package}} with local features"
-            cargo clippy -p {{package}} --features local --all-targets
-        else
-            echo "🔍 Linting {{package}} without features"
-            cargo clippy -p {{package}} --all-targets
-        fi
+        echo "🔍 Linting {{package}}"
+        cargo clippy -p {{package}} --all-features --all-targets
     fi
 
 # Run clippy and fix issues automatically

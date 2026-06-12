@@ -10,7 +10,7 @@
 #![cfg(all(feature = "gemini", feature = "discord", feature = "database"))]
 
 use botticelli_database::{DatabaseTableQueryRegistry, TableQueryExecutor, establish_connection};
-use botticelli_gemini::GeminiClient;
+use botticelli_models::GeminiClient;
 use botticelli_narrative::{Narrative, NarrativeExecutor};
 use botticelli_social::{BotCommandRegistryImpl, DiscordCommandExecutor};
 use dotenvy::dotenv;
@@ -75,7 +75,7 @@ async fn test_publish_welcome() {
 
     println!(
         "welcome_content_generation completed: {} acts",
-        gen_result.act_executions.len()
+        gen_result.act_executions().len()
     );
 
     // Now run publish_welcome which references the generated content
@@ -92,13 +92,13 @@ async fn test_publish_welcome() {
 
     // Verify we got results
     assert!(
-        !result.act_executions.is_empty(),
+        !result.act_executions().is_empty(),
         "Should have act executions"
     );
 
     println!("\nPublish_welcome executed successfully:");
-    for act in &result.act_executions {
-        println!("  Act {}: {}", act.sequence_number, act.act_name);
-        println!("    Response length: {} chars", act.response.len());
+    for act in result.act_executions() {
+        println!("  Act {}: {}", act.sequence_number(), act.act_name());
+        println!("    Response length: {} chars", act.response().len());
     }
 }
