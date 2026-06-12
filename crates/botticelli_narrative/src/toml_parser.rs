@@ -5,7 +5,8 @@
 
 use crate::ActConfig;
 use botticelli_core::{HistoryRetention, Input, MediaSource};
-use serde::Deserialize;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tracing::{debug, error, instrument, warn};
@@ -135,9 +136,11 @@ fn expand_env_vars(
 }
 
 /// Intermediate structure for deserializing the [narrative] section (single narrative).
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlNarrative {
+    /// Narrative name.
     pub name: String,
+    /// Human-readable description.
     pub description: String,
     /// Optional template table to use as schema source for content generation
     pub template: Option<String>,
@@ -164,7 +167,7 @@ pub struct TomlNarrative {
 }
 
 /// Intermediate structure for deserializing individual [narratives.name] sections.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlNarrativeDefinition {
     /// Name is optional here because it comes from the table key [narratives.NAME]
     #[serde(default)]
@@ -202,13 +205,16 @@ pub struct TomlNarrativeDefinition {
 }
 
 /// Intermediate structure for deserializing the [toc] section (backwards compat).
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlToc {
     /// Simple array: toc = ["one", "two"]
     Array(Vec<String>),
     /// Structured: [toc] with order field
-    Structured { order: Vec<String> },
+    Structured {
+        /// Ordered list of act names.
+        order: Vec<String>,
+    },
 }
 
 impl TomlToc {
@@ -222,9 +228,11 @@ impl TomlToc {
 }
 
 /// Bot command definition from [bots.name] section.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlBotDefinition {
+    /// Bot platform identifier (e.g. "discord").
     pub platform: String,
+    /// Bot command name.
     pub command: String,
     /// All other fields are flattened into args
     #[serde(flatten)]
@@ -232,33 +240,48 @@ pub struct TomlBotDefinition {
 }
 
 /// Table query definition from [tables.name] section.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlTableDefinition {
+    /// Database table name.
     pub table_name: String,
+    /// Columns to select (all if omitted).
     pub columns: Option<Vec<String>>,
+    /// SQL WHERE clause.
     #[serde(rename = "where")]
     pub where_clause: Option<String>,
+    /// Maximum rows to return.
     pub limit: Option<u32>,
+    /// Row offset for pagination.
     pub offset: Option<u32>,
+    /// ORDER BY expression.
     pub order_by: Option<String>,
+    /// Output format: "json", "markdown", or "csv".
     pub format: Option<String>,
+    /// Random sample size (rows).
     pub sample: Option<u32>,
+    /// Delete rows after reading.
     pub pull_and_delete: Option<bool>,
 }
 
 /// Media source definition from [media.name] section.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlMediaDefinition {
+    /// Remote URL source.
     pub url: Option<String>,
+    /// Local file path.
     pub file: Option<String>,
+    /// Base64-encoded data.
     pub base64: Option<String>,
+    /// MIME type (inferred from extension if omitted).
     pub mime: Option<String>,
+    /// Original filename for document inputs.
     pub filename: Option<String>,
 }
 
 /// Nested narrative reference from [narratives.name] section.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlNarrativeReference {
+    /// Path to the referenced narrative file.
     pub narrative: String,
 }
 
@@ -269,7 +292,7 @@ pub struct TomlNarrativeReference {
 /// - Resource references: `act_name = "bots.name"` or `act_name = "media.name"`
 /// - Arrays: `act_name = ["bots.name", "media.name", "text"]`
 /// - Structured tables: `[acts.act_name]` with optional `[[acts.act_name.input]]`
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlAct {
     /// Simple text act or resource reference: `act_name = "prompt"` or `act_name = "bots.name"`
@@ -281,7 +304,7 @@ pub enum TomlAct {
 }
 
 /// Input in array syntax - either a reference or inline text.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlActInput {
     /// String reference to resource or plain text
@@ -291,7 +314,7 @@ pub enum TomlActInput {
 }
 
 /// Structured act configuration from TOML.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlActConfig {
     /// Array of inputs via `[[acts.act_name.input]]` syntax
     #[serde(default)]
@@ -323,7 +346,7 @@ pub struct TomlActConfig {
 ///
 /// The `type` field determines which other fields are required.
 /// Source is detected from which of url/base64/file is present.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlInput {
     /// Input type: "text", "image", "audio", "video", "document", "bot_command", "table"
     #[serde(rename = "type")]
@@ -333,45 +356,59 @@ pub struct TomlInput {
     #[serde(rename = "ref")]
     pub reference: Option<String>,
 
-    // Text input field
+    /// Inline text content (text inputs).
     pub content: Option<String>,
 
-    // Media input fields
+    /// MIME type (media inputs).
     pub mime: Option<String>,
+    /// Remote URL source (media inputs).
     pub url: Option<String>,
+    /// Base64-encoded data (media inputs).
     pub base64: Option<String>,
+    /// Local file path (text or media inputs).
     pub file: Option<String>,
 
-    // Document-specific field
+    /// Original filename (document inputs).
     pub filename: Option<String>,
 
-    // Bot command fields
+    /// Bot platform identifier (bot_command inputs).
     pub platform: Option<String>,
+    /// Bot command name (bot_command inputs).
     pub command: Option<String>,
+    /// Bot command arguments (bot_command inputs).
     pub args: Option<HashMap<String, serde_json::Value>>,
+    /// Whether the bot command result is required (bot_command inputs).
     pub required: Option<bool>,
+    /// Cache duration in seconds (bot_command inputs).
     pub cache_duration: Option<u64>,
 
-    // Table reference fields
+    /// Database table name (table inputs).
     pub table_name: Option<String>,
+    /// Columns to select (table inputs).
     pub columns: Option<Vec<String>>,
+    /// SQL WHERE clause (table inputs).
     #[serde(rename = "where")]
     pub where_clause: Option<String>,
+    /// Row limit (table inputs).
     pub limit: Option<u32>,
+    /// Row offset (table inputs).
     pub offset: Option<u32>,
+    /// ORDER BY expression (table inputs).
     pub order_by: Option<String>,
+    /// Output format: "json", "markdown", "csv" (table inputs).
     pub format: Option<String>,
+    /// Random sample size (table inputs).
     pub sample: Option<u32>,
 
-    // History retention field (applies to bot_command, table, narrative)
+    /// History retention policy: "full", "summary", or "drop".
     pub history_retention: Option<String>,
 
-    // Pull and delete flag for destructive reads (table only)
+    /// Delete rows after reading (table inputs).
     pub pull_and_delete: Option<bool>,
 }
 
 /// Root TOML structure supporting both single and multi-narrative files.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlNarrativeFile {
     /// Shared act definitions (available to all narratives)
     #[serde(default)]
@@ -399,25 +436,36 @@ pub struct TomlNarrativeFile {
 }
 
 /// Wrapper for either single narrative or multi-narrative format
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlNarrativeData {
     /// Single narrative with optional TOC at root
     Single {
+        /// The single narrative definition.
         #[serde(default)]
         narrative: Box<Option<TomlNarrative>>,
+        /// Act order for single-narrative files.
         #[serde(default)]
         toc: Option<TomlToc>,
     },
     /// Multi-narrative with [narrative.name] entries
     Multi {
+        /// Named narrative entries keyed by narrative name.
         #[serde(default)]
         narrative: HashMap<String, TomlNarrativeEntry>,
     },
 }
 
+impl Default for TomlNarrativeData {
+    fn default() -> Self {
+        Self::Multi {
+            narrative: HashMap::new(),
+        }
+    }
+}
+
 /// Entry in [narratives.name] can be either a reference or inline definition.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 #[serde(untagged)]
 pub enum TomlNarrativeEntry {
     /// Reference to another narrative file
