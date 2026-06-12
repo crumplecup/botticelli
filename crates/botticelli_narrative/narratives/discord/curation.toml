@@ -1,0 +1,17 @@
+[acts]
+review_content = "Review the following generated content and determine whether it is appropriate and engaging for a Discord community. Respond with APPROVE or REJECT, followed by a brief reason."
+
+[bots]
+
+[tables]
+
+[media]
+
+[narrative.curate_and_approve]
+description = "Review and approve generated content before posting"
+skip_content_generation = false
+toc = ["review_content"]
+
+[narrative.curate_and_approve.acts]
+
+[narratives]

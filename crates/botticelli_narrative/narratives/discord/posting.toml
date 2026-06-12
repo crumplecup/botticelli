@@ -1,0 +1,17 @@
+[acts]
+prepare_post = "Format the following approved content for posting to Discord. Ensure it fits within Discord's 2000 character limit and reads naturally."
+
+[bots]
+
+[tables]
+
+[media]
+
+[narrative.post_approved]
+description = "Format and post approved content to Discord"
+skip_content_generation = false
+toc = ["prepare_post"]
+
+[narrative.post_approved.acts]
+
+[narratives]
