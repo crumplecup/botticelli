@@ -12,6 +12,15 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ## Active Planning Documents
 
+### botticelli_tui elicit_ui Refactor (Active)
+- **BOTTICELLI_TUI_ELICIT_REFACTOR.md** - `current` (2026-06-12) **📋 READY TO IMPLEMENT**
+  - Replace hand-rolled ratatui event loop + global AppState with elicit_ui IR pipeline
+  - `BotScreen` trait: `to_verified_tree(viewport)` + `handle_key() → BotTransition`
+  - Per-screen state ownership, proof-carrying `verified_draw`, no global mutation
+  - 8 screens: Bots (operator console), Chat, Narrative Browser/Editor, Database, Schedule, Log Viewer, Settings
+  - Live wire to BotServer actors + MetricsCollector; narrative persistence via TomlNarrativeFile
+  - 8-phase checklist; IR tests run without a terminal
+
 ### botticelli_server Overhaul (Active)
 - **BOTTICELLI_SERVER_OVERHAUL.md** - `current` (2026-06-11) **📋 READY TO IMPLEMENT**
   - Replace dead inference infrastructure with backend-agnostic design
