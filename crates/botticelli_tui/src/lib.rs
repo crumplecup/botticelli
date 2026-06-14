@@ -1,59 +1,26 @@
 //! Terminal User Interface for Botticelli.
 //!
-//! Provides an interactive TUI for chat, narrative management, and settings.
-//! Built with ratatui for terminal rendering and tokio for async operations.
+//! # Architecture (elicit_ui IR pipeline)
 //!
-//! ## Architecture
-//!
-//! The TUI follows a clean separation of concerns:
-//!
-//! - **State** ([`AppState`]): Central application state with view modes
-//! - **Views** ([`View`]): Composable UI components (chat, narrative browser, editor)
-//! - **Events** ([`Event`], [`EventHandler`]): Input handling and async event loop
-//! - **Commands** ([`Command`]): User actions that modify state
-//! - **Rendering**: Decoupled from state via ratatui's immediate mode
-//!
-//! ## View Modes
-//!
-//! - **Chat**: Interactive conversation with LLM (streaming responses)
-//! - **Narrative Browser**: Browse and manage narrative templates
-//! - **Narrative Editor**: Edit narrative structure and sections
-//! - **Settings**: Configure model, temperature, and system prompt
-//!
-//! ## Key Features
-//!
-//! - Async streaming LLM responses with visual feedback
-//! - Real-time syntax highlighting for code blocks
-//! - Keyboard-driven navigation (Vim-style and arrow keys)
-//! - Responsive layout with status bar and help text
-//! - Integration with MCP tool calling and narrative generation
+//! Screens implement [`BotScreen`]: produce a [`elicit_ratatui::TuiNode`] and
+//! handle key events returning a [`BotTransition`]. The [`BotController`]
+//! drives the state machine — it renders each frame via `verified_draw`
+//! (which carries `Established<BotUiConsistent>`) and applies transitions.
+//! Screens own their own state; no global `AppState`.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
-mod app;
-mod commands;
-mod error;
-mod events;
-mod messages;
-mod minimal_loop;
-mod state;
-mod tui;
-mod view;
+pub mod context;
+pub mod contracts;
+pub mod controller;
+pub mod screen;
+pub mod screens;
 
-pub use commands::Command;
+pub use context::BotScreenContext;
+pub use contracts::{BotUiConsistent, LayoutError, verified_draw};
+pub use controller::BotController;
 pub use error::{TuiError, TuiErrorKind, TuiResult};
-pub use events::{Event, McpConversationError, McpMessage, McpUpdate};
-pub use messages::{StateUpdate, TickEvent, UserAction};
-pub use minimal_loop::minimal_event_loop;
-pub use state::{AppState, ConversationId, NarrativeId, ViewMode};
-pub use tui::Tui;
-pub use view::{
-    BotInfo, BotStatus, BotsView, ChatView, ColumnDisplay, ContentFilter, ContentRow,
-    ConversationHistoryView, DatabaseView, DatabaseViewMode, NarrativeBrowserView,
-    NarrativeEditorView, ScheduleView, ScheduledTask, SettingsView, TableInfo, TaskSchedule,
-    TaskStatus, View,
-};
+pub use screen::{BotKind, BotScreen, BotTransition};
 
-// Re-export ChatMessage from botticelli_interface for convenience
-pub use botticelli_interface::ChatMessage;
+mod error;

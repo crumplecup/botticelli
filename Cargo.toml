@@ -166,7 +166,7 @@ diesel_migrations = "2"
 chrono = { version = "0.4", features = ["serde"] }
 
 # TUI
-ratatui = "0.29"
+ratatui = { version = "0.30", features = ["crossterm"] }
 crossterm = "0.29"
 
 # Environment variables
@@ -184,6 +184,8 @@ rmcp = { version = "1.7", features = [
 ] }
 schemars = { version = "1", features = ["derive"] }
 elicitation = { version = "0.11", features = ["serde_json"] }
+elicit_ui = "0.11"
+elicit_ratatui = { version = "0.11", features = ["runtime"] }
 
 mistralrs = { version = "0.8", default-features = false }
 

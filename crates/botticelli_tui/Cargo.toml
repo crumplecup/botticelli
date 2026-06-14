@@ -10,32 +10,19 @@ categories.workspace = true
 description = "Terminal UI for reviewing and managing Botticelli-generated content"
 
 [dependencies]
-# Internal workspace crates
+# Error types
 botticelli_error = { workspace = true, features = ["tui"] }
-botticelli_database = { workspace = true, optional = true }
-botticelli_narrative = { workspace = true }
-botticelli_mcp = { workspace = true, optional = true }
-botticelli_mcp_client = { workspace = true }
-botticelli_models = { workspace = true, features = ["anthropic"] }
-botticelli_core = { workspace = true }
-botticelli_interface = { workspace = true }
 
-# MCP protocol
-pmcp = "1.8.6"
+# Bot server actor (Phase 3+: BotStatusScreen wiring)
+botticelli_server = { workspace = true, optional = true }
 
-# Database
-diesel = { workspace = true, optional = true }
+# elicit_ui IR pipeline
+elicit_ui.workspace = true
+elicit_ratatui.workspace = true
+elicitation = { workspace = true }
 
 # Async runtime
 tokio = { workspace = true }
-async-trait = { workspace = true }
-
-# Date/time
-chrono = { version = "0.4", features = ["serde"] }
-
-# Serialization
-serde = { workspace = true }
-serde_json = { workspace = true }
 
 # Logging
 tracing = { workspace = true }
@@ -44,26 +31,19 @@ tracing-subscriber = { workspace = true }
 # TUI libraries
 ratatui = { workspace = true }
 crossterm = { workspace = true, features = ["event-stream"] }
-futures = { workspace = true }
-
-# UUID
-uuid = { workspace = true }
-
-# System utilities
-dirs = { workspace = true }
 
 # Derives
-derive-getters = { workspace = true }
-derive_setters = { workspace = true }
+derive_more = { workspace = true }
+unicode-width = "0.2"
 
-# CLI dependencies
+# CLI dependencies (optional)
 clap = { version = "4.5", features = ["derive", "env"], optional = true }
 dotenvy = { version = "0.15", optional = true }
+botticelli_mcp = { workspace = true, optional = true }
 
 [features]
-default = ["database"]
-database = ["dep:botticelli_database", "dep:diesel", "botticelli_error/database"]
-cli = ["dep:clap", "dep:dotenvy", "dep:botticelli_mcp", "database"]
+default = []
+cli = ["dep:clap", "dep:dotenvy", "dep:botticelli_mcp", "dep:botticelli_server"]
 
 [[bin]]
 name = "botticelli-tui"

@@ -1,8 +1,6 @@
-//! Botticelli TUI Binary - Minimal keyboard-only version
-//!
-//! Terminal user interface for Botticelli.
+//! botticelli-tui: operator console for the Botticelli bot server.
 
-use botticelli_tui::{AppState, TuiResult, minimal_event_loop};
+use botticelli_tui::{BotController, BotScreenContext, TuiError, TuiErrorKind, TuiResult};
 use crossterm::{
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
@@ -10,21 +8,32 @@ use crossterm::{
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 use tracing::info;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> TuiResult<()> {
-    // Initialize tracing
-    use tracing_subscriber::{EnvFilter, fmt};
-    let file = std::fs::File::create("botticelli-chat.log").expect("Failed to create log file");
-    fmt()
-        .with_env_filter(
-            EnvFilter::from_default_env().add_directive("botticelli_tui=debug".parse().unwrap()),
-        )
-        .with_writer(file)
-        .with_ansi(false)
+    // Dual-layer logging: stderr + append log file
+    let log_file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("botticelli-tui.log")
+        .map_err(|e| TuiError::new(TuiErrorKind::TerminalSetup(e.to_string())))?;
+
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+
+    let stderr_layer = tracing_subscriber::fmt::layer().with_writer(io::stderr);
+    let file_layer = tracing_subscriber::fmt::layer()
+        .with_writer(log_file)
+        .with_ansi(false);
+
+    use tracing_subscriber::prelude::*;
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(stderr_layer)
+        .with(file_layer)
         .init();
 
-    info!("Botticelli TUI starting");
+    info!("botticelli-tui starting");
 
     // Setup terminal
     enable_raw_mode()?;
@@ -33,11 +42,18 @@ async fn main() -> TuiResult<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    // Create app state
-    let mut state = AppState::default();
+    // Build context (Phase 3+ will wire in BotServer)
+    let ctx = BotScreenContext {
+        narratives_dir: Some(
+            std::env::current_dir()
+                .unwrap_or_default()
+                .join("crates/botticelli_narrative/narratives/discord"),
+        ),
+        log_file: Some(std::path::PathBuf::from("botticelli-server.log")),
+    };
 
-    // Run minimal event loop - JUST keyboard input
-    let result = minimal_event_loop(&mut terminal, &mut state).await;
+    let mut controller = BotController::new(ctx);
+    let result = controller.run(&mut terminal).await;
 
     // Restore terminal
     disable_raw_mode()?;
