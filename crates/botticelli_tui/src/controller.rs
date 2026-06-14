@@ -16,7 +16,7 @@ use crate::context::BotScreenContext;
 use crate::contracts::{render_resize_prompt, verified_draw};
 use crate::error::TuiResult;
 use crate::screen::{BotScreen, BotTransition};
-use crate::screens::PlaceholderScreen;
+use crate::screens::{BotStatusScreen, PlaceholderScreen};
 
 /// Top-level controller for the botticelli TUI.
 pub struct BotController {
@@ -30,7 +30,7 @@ impl BotController {
     pub fn new(ctx: BotScreenContext) -> Self {
         info!("BotController starting on Bots screen");
         Self {
-            screen: Box::new(PlaceholderScreen::new("Bots")),
+            screen: Box::new(BotStatusScreen::new()),
             ctx,
         }
     }
@@ -87,7 +87,7 @@ impl BotController {
             BotTransition::Quit => return Ok(true),
 
             BotTransition::GoToBots => {
-                self.screen = Box::new(PlaceholderScreen::new("Bots"));
+                self.screen = Box::new(BotStatusScreen::new());
             }
             BotTransition::GoToChat => {
                 self.screen = Box::new(PlaceholderScreen::new("Chat"));
@@ -120,14 +120,17 @@ impl BotController {
             #[cfg(feature = "cli")]
             BotTransition::StartBot(kind) => {
                 info!(%kind, "StartBot requested (not yet wired to BotServer)");
+                self.screen.on_bot_state_changed(kind, true);
             }
             #[cfg(feature = "cli")]
             BotTransition::StopBot(kind) => {
                 info!(%kind, "StopBot requested (not yet wired to BotServer)");
+                self.screen.on_bot_state_changed(kind, false);
             }
             #[cfg(feature = "cli")]
             BotTransition::RestartBot(kind) => {
-                info!(%kind, "RestartBot requested (not yet wired to BotServer)");
+                info!(%kind, "RestartBot (not yet wired to BotServer) — marking running");
+                self.screen.on_bot_state_changed(kind, true);
             }
         }
         Ok(false)

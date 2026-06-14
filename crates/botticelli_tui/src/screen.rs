@@ -72,10 +72,6 @@ pub enum BotKind {
 /// Screens are **pure**: `to_tui_node` takes `&self` and has no side effects.
 /// All I/O and shared-state mutations are delegated to
 /// [`BotController`](crate::controller::BotController) via `BotTransition`.
-///
-/// Phase 3+ screens may opt into the full WCAG pipeline by also implementing
-/// an `into_verified_tree` helper that feeds `to_tui_node` through
-/// `tui_node_to_tree_update` → `VerifiedTree::from_parts`.
 pub trait BotScreen: Send {
     /// Produce the ratatui widget tree for the current screen state.
     fn to_tui_node(&self) -> TuiNode;
@@ -85,4 +81,11 @@ pub trait BotScreen: Send {
 
     /// Human-readable name for this screen (used in status bar).
     fn screen_name(&self) -> &'static str;
+
+    /// Notify the screen that a bot's run state changed.
+    ///
+    /// Called by [`BotController`](crate::controller::BotController) after
+    /// executing a `StartBot` / `StopBot` / `RestartBot` transition. The
+    /// default implementation is a no-op; [`BotStatusScreen`] overrides it.
+    fn on_bot_state_changed(&mut self, _kind: BotKind, _running: bool) {}
 }

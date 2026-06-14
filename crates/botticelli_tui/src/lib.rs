@@ -20,7 +20,8 @@ pub mod screens;
 pub use context::BotScreenContext;
 pub use contracts::{BotUiConsistent, LayoutError, verified_draw};
 pub use controller::BotController;
-pub use error::{TuiError, TuiErrorKind, TuiResult};
 pub use screen::{BotKind, BotScreen, BotTransition};
+pub use screens::{BotStatusScreen, PlaceholderScreen, RunState};
 
 mod error;
+pub use error::{TuiError, TuiErrorKind, TuiResult};

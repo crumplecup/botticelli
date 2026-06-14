@@ -896,7 +896,7 @@ tui:
 
     # Run with proper logging
     RUST_LOG="${RUST_LOG:-botticelli_tui=info,botticelli_mcp_client=info}" \
-        cargo run --bin tui --features anthropic
+        cargo run --package botticelli_tui --bin botticelli-tui --features cli
 
 # Launch chat TUI interface (old interface - for backward compatibility)
 tui-chat:
@@ -917,7 +917,7 @@ tui-debug:
     echo "🔍 Starting Botticelli TUI with debug logging..."
     echo ""
     RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug,botticelli_mcp=debug \
-        cargo run --bin tui --features anthropic
+        cargo run --package botticelli_tui --bin botticelli-tui --features cli
 
 # Run TUI example with debug logging
 tui-example:
