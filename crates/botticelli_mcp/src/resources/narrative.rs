@@ -90,9 +90,10 @@ impl NarrativeResource {
             let path = entry.path();
 
             if path.extension().and_then(|s| s.to_str()) == Some("toml")
-                && let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
-                    narratives.push(name.to_string());
-                }
+                && let Some(name) = path.file_stem().and_then(|s| s.to_str())
+            {
+                narratives.push(name.to_string());
+            }
         }
 
         narratives.sort();

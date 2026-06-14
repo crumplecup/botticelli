@@ -550,11 +550,12 @@ impl BotticelliServer {
             ));
         }
         if let Some(parent) = path.parent()
-            && !parent.exists() {
-                tokio::fs::create_dir_all(parent)
-                    .await
-                    .map_err(|e| mcp_err(format!("Failed to create directories: {}", e)))?;
-            }
+            && !parent.exists()
+        {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| mcp_err(format!("Failed to create directories: {}", e)))?;
+        }
         tokio::fs::write(path, &req.narrative_toml)
             .await
             .map_err(|e| mcp_err(format!("Failed to write file: {}", e)))?;
@@ -1261,11 +1262,12 @@ impl BotticelliServer {
             ));
         }
         if let Some(parent) = path.parent()
-            && !parent.exists() {
-                tokio::fs::create_dir_all(parent)
-                    .await
-                    .map_err(|e| mcp_err(format!("Failed to create directories: {}", e)))?;
-            }
+            && !parent.exists()
+        {
+            tokio::fs::create_dir_all(parent)
+                .await
+                .map_err(|e| mcp_err(format!("Failed to create directories: {}", e)))?;
+        }
 
         let toml_content = toml::to_string_pretty(&req.narrative)
             .map_err(|e| mcp_err(format!("Failed to serialize narrative to TOML: {}", e)))?;

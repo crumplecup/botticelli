@@ -257,10 +257,12 @@ fn extract_act_names(toml: &str) -> Vec<String> {
             break;
         }
 
-        if in_acts_section && trimmed.contains('=')
-            && let Some(name) = trimmed.split('=').next() {
-                names.push(name.trim().to_string());
-            }
+        if in_acts_section
+            && trimmed.contains('=')
+            && let Some(name) = trimmed.split('=').next()
+        {
+            names.push(name.trim().to_string());
+        }
     }
 
     names
