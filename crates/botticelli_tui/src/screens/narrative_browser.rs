@@ -113,7 +113,7 @@ impl NarrativeBrowserScreen {
             widget: Box::new(WidgetJson::Paragraph {
                 text: ParagraphText::Plain(String::new()),
                 style: None,
-                wrap: false,
+                wrap: true,
                 scroll: None,
                 alignment: None,
                 block: Some(BlockJson {
@@ -136,7 +136,7 @@ impl NarrativeBrowserScreen {
                 widget: Box::new(WidgetJson::Paragraph {
                     text: ParagraphText::Plain("  (no narratives found)".to_string()),
                     style: None,
-                    wrap: false,
+                    wrap: true,
                     scroll: None,
                     alignment: None,
                     block: None,
@@ -154,7 +154,7 @@ impl NarrativeBrowserScreen {
                             cursor, entry.name, valid_mark
                         )),
                         style: None,
-                        wrap: false,
+                        wrap: true,
                         scroll: None,
                         alignment: None,
                         block: None,
@@ -166,7 +166,7 @@ impl NarrativeBrowserScreen {
                 widget: Box::new(WidgetJson::Paragraph {
                     text: ParagraphText::Plain(String::new()),
                     style: None,
-                    wrap: false,
+                    wrap: true,
                     scroll: None,
                     alignment: None,
                     block: None,
@@ -223,7 +223,7 @@ impl BotScreen for NarrativeBrowserScreen {
                     "  j/k=navigate  Enter=edit  n=new  Esc=bots".to_string(),
                 ),
                 style: None,
-                wrap: false,
+                wrap: true,
                 scroll: None,
                 alignment: None,
                 block: None,

@@ -156,7 +156,7 @@ impl BotScreen for NarrativeEditorScreen {
             widget: Box::new(WidgetJson::Paragraph {
                 text: ParagraphText::Plain(String::new()),
                 style: None,
-                wrap: false,
+                wrap: true,
                 scroll: None,
                 alignment: None,
                 block: Some(BlockJson {
@@ -182,7 +182,7 @@ impl BotScreen for NarrativeEditorScreen {
                 widget: Box::new(WidgetJson::Paragraph {
                     text: ParagraphText::Plain(row.clone()),
                     style: None,
-                    wrap: false,
+                    wrap: true,
                     scroll: None,
                     alignment: None,
                     block: None,
@@ -196,7 +196,7 @@ impl BotScreen for NarrativeEditorScreen {
             widget: Box::new(WidgetJson::Paragraph {
                 text: ParagraphText::Plain(String::new()),
                 style: None,
-                wrap: false,
+                wrap: true,
                 scroll: None,
                 alignment: None,
                 block: None,
@@ -209,7 +209,7 @@ impl BotScreen for NarrativeEditorScreen {
             widget: Box::new(WidgetJson::Paragraph {
                 text: ParagraphText::Plain(format!("  {}", self.validation_summary)),
                 style: None,
-                wrap: false,
+                wrap: true,
                 scroll: None,
                 alignment: None,
                 block: None,
@@ -222,7 +222,7 @@ impl BotScreen for NarrativeEditorScreen {
             widget: Box::new(WidgetJson::Paragraph {
                 text: ParagraphText::Plain("  j/k=scroll  Ctrl+S=save  Esc=browser".to_string()),
                 style: None,
-                wrap: false,
+                wrap: true,
                 scroll: None,
                 alignment: None,
                 block: None,

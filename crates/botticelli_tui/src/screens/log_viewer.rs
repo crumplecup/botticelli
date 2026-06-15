@@ -102,7 +102,7 @@ impl LogViewerScreen {
             widget: Box::new(WidgetJson::Paragraph {
                 text: ParagraphText::Plain(text.into()),
                 style: None,
-                wrap: false,
+                wrap: true,
                 scroll: None,
                 alignment: None,
                 block: title.map(|t| BlockJson {
