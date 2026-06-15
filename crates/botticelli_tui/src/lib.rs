@@ -19,9 +19,13 @@ pub mod screens;
 
 pub use context::BotScreenContext;
 pub use contracts::{BotUiConsistent, LayoutError, verified_draw};
-pub use controller::BotController;
+pub use controller::{BotController, CurrentScreen};
 pub use screen::{BotKind, BotScreen, BotTransition};
-pub use screens::{BotStatusScreen, PlaceholderScreen, RunState};
+pub use screens::{
+    BotStatusScreen, ChatMessage, ChatRole, ChatScreen, DatabaseBrowserScreen, EditorContent,
+    LogFilter, LogViewerScreen, ModelStatus, NarrativeBrowserScreen, NarrativeEditorScreen,
+    NarrativeEntry, PlaceholderScreen, RunState, ScheduleScreen, SettingsScreen,
+};
 
 mod error;
 pub use error::{TuiError, TuiErrorKind, TuiResult};

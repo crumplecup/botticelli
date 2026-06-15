@@ -42,12 +42,38 @@ pub enum BotTransition {
     /// Request the controller to restart a bot actor.
     #[cfg(feature = "cli")]
     RestartBot(BotKind),
+    /// Send a chat message to the LLM; controller executes and calls back.
+    ChatSend {
+        /// User input text to send.
+        content: String,
+    },
     /// Serialize `content` and write it to `path`.
     SaveNarrative {
         /// Destination path.
         path: PathBuf,
         /// Serialized TOML string (produced by the editor screen).
         toml: String,
+    },
+    /// Fetch rows for a named storage table; controller loads and calls back.
+    LoadDatabaseTable {
+        /// Logical table name (e.g. `"narrative_executions"`).
+        table: String,
+    },
+    /// Fetch actor state list; controller loads and calls [`BotScreen::on_schedule_loaded`].
+    LoadScheduleData,
+    /// Fetch execution history for one task; controller loads and calls
+    /// [`BotScreen::on_task_executions_loaded`].
+    LoadTaskExecutions {
+        /// Task identifier to load executions for.
+        task_id: String,
+    },
+    /// Fetch (or refresh) the log file tail; controller loads and calls
+    /// [`BotScreen::on_log_lines_loaded`].
+    LoadLogLines,
+    /// Persist the selected log level to `botticelli-settings.env`.
+    SaveSettings {
+        /// `RUST_LOG` value to write (e.g. `"debug"`, `"info"`).
+        rust_log: String,
     },
     /// Exit the TUI cleanly.
     Quit,
@@ -88,4 +114,28 @@ pub trait BotScreen: Send {
     /// executing a `StartBot` / `StopBot` / `RestartBot` transition. The
     /// default implementation is a no-op; [`BotStatusScreen`] overrides it.
     fn on_bot_state_changed(&mut self, _kind: BotKind, _running: bool) {}
+
+    /// Deliver fetched storage table rows to the screen.
+    ///
+    /// Called by the controller after a `LoadDatabaseTable` transition
+    /// completes. Each string is a pre-formatted one-line summary of one row.
+    /// The default implementation is a no-op; [`DatabaseBrowserScreen`] overrides it.
+    fn on_table_loaded(&mut self, _table: &str, _rows: Vec<String>) {}
+
+    /// Deliver fetched actor-state rows and their task IDs to the screen.
+    ///
+    /// Called after `LoadScheduleData` completes. `task_rows` are pre-formatted
+    /// display strings; `task_ids` are the corresponding task identifier strings
+    /// (parallel slices). [`ScheduleScreen`] overrides this.
+    fn on_schedule_loaded(&mut self, _task_rows: Vec<String>, _task_ids: Vec<String>) {}
+
+    /// Deliver execution history rows for the currently selected task.
+    ///
+    /// Called after `LoadTaskExecutions` completes. [`ScheduleScreen`] overrides this.
+    fn on_task_executions_loaded(&mut self, _exec_rows: Vec<String>) {}
+
+    /// Deliver fresh log file lines to the screen.
+    ///
+    /// Called after `LoadLogLines` completes. [`LogViewerScreen`] overrides this.
+    fn on_log_lines_loaded(&mut self, _lines: Vec<String>) {}
 }

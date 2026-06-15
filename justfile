@@ -853,71 +853,37 @@ server-status:
 # TUI (Terminal User Interface)
 # ==============================
 
-# Launch new Botticelli TUI with full MCP integration
-tui:
+# Launch TUI operator console.
+# provider: server (default) | gemini | anthropic | ollama
+# model: leave blank to use provider default
+# server_url: only used with provider=server
+tui provider="server" model="" server_url="":
     #!/usr/bin/env bash
-    set +u
-
-    # Check for API key
-    if [ -z "${ANTHROPIC_API_KEY}" ]; then
-        echo "❌ ANTHROPIC_API_KEY environment variable not set"
-        echo ""
-        echo "Please set your Anthropic API key:"
-        echo "  export ANTHROPIC_API_KEY=sk-ant-..."
-        echo ""
-        echo "Or add it to your .env file in the project root"
-        exit 1
-    fi
-
-    # Create narratives directory if it doesn't exist
-    if [ ! -d "narratives" ]; then
-        echo "📁 Creating narratives/ directory..."
-        mkdir -p narratives
-    fi
-
-    # Show startup message
-    echo "🚀 Starting Botticelli TUI..."
-    echo ""
-    echo "Features enabled:"
-    echo "  💬 Chat with Claude (MCP tool integration)"
-    echo "  📝 Narrative tools (create, validate, list, load)"
-    echo "  🔧 5 tools available (echo, create_narrative, validate_narrative, list_narratives, load_narrative)"
-    echo "  ⚡ Async tool execution with real-time UI updates"
-    echo ""
-    echo "Controls:"
-    echo "  Tab       - Switch views (Chat → Narratives → Editor → Settings)"
-    echo "  Shift+Tab - Cycle views backwards"
-    echo "  Ctrl+Q    - Quit"
-    echo "  Ctrl+C    - Quit"
-    echo ""
-    echo "Set RUST_LOG for debug output:"
-    echo "  RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug just tui"
-    echo ""
-
-    # Run with proper logging
+    mkdir -p narratives
+    MODEL_ARG=""
+    SERVER_URL_ARG=""
+    if [ -n "{{model}}" ]; then MODEL_ARG="--model {{model}}"; fi
+    if [ -n "{{server_url}}" ]; then SERVER_URL_ARG="--server-url {{server_url}}"; fi
     RUST_LOG="${RUST_LOG:-botticelli_tui=info,botticelli_mcp_client=info}" \
-        cargo run --package botticelli_tui --bin botticelli-tui --features cli
+        cargo run --package botticelli_tui --bin botticelli-tui --features cli -- \
+        --provider {{provider}} $SERVER_URL_ARG $MODEL_ARG
 
 # Launch chat TUI interface (old interface - for backward compatibility)
 tui-chat:
     cargo run --bin botticelli-chat --features="cli,tui" -- --skip-health-checks
 
-# Launch TUI with debug logging enabled
-tui-debug:
+# Launch TUI with debug logging. Same optional args as `tui`.
+tui-debug provider="server" model="" server_url="":
     #!/usr/bin/env bash
-    set +u
-
-    if [ -z "${ANTHROPIC_API_KEY}" ]; then
-        echo "❌ ANTHROPIC_API_KEY not set"
-        exit 1
-    fi
-
     mkdir -p narratives
-
     echo "🔍 Starting Botticelli TUI with debug logging..."
-    echo ""
-    RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug,botticelli_mcp=debug \
-        cargo run --package botticelli_tui --bin botticelli-tui --features cli
+    MODEL_ARG=""
+    SERVER_URL_ARG=""
+    if [ -n "{{model}}" ]; then MODEL_ARG="--model {{model}}"; fi
+    if [ -n "{{server_url}}" ]; then SERVER_URL_ARG="--server-url {{server_url}}"; fi
+    RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug,botticelli_mcp=debug,botticelli_models=debug \
+        cargo run --package botticelli_tui --bin botticelli-tui --features cli -- \
+        --provider {{provider}} $SERVER_URL_ARG $MODEL_ARG
 
 # Run TUI example with debug logging
 tui-example:
@@ -936,44 +902,6 @@ tui-example:
     RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug \
         cargo run --example chat_with_mcp --features anthropic
 
-# Launch TUI for a specific table
-tui-table table:
-    cargo run -p botticelli --release --features tui -- tui {{table}}
-
-# Launch TUI server management view
-tui-server:
-    cargo run -p botticelli --release --features tui,server -- tui-server
-
-# Launch TUI for a table with all features enabled
-tui-all table:
-    cargo run -p botticelli --release --features local -- tui {{table}}
-
-# Generate test guilds and launch TUI (full workflow)
-tui-test-guilds:
-    #!/usr/bin/env bash
-    echo "🎲 Generating test guilds..."
-    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
-    echo "✅ Content generated in table: potential_guilds"
-    echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --features local -- tui "potential_guilds"
-
-# Generate test channels and launch TUI (full workflow)
-tui-test-channels:
-    #!/usr/bin/env bash
-    echo "🎲 Generating test channels..."
-    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_channel_posts.toml
-    echo "✅ Content generated in table: potential_posts"
-    echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --features local -- tui "potential_posts"
-
-# Generate test users and launch TUI (full workflow)
-tui-test-users:
-    #!/usr/bin/env bash
-    echo "🎲 Generating test users..."
-    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_users.toml
-    echo "✅ Content generated in table: potential_users"
-    echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --features local -- tui "potential_users"
 
 # Generate Discord infrastructure and launch TUI for review
 tui-test-discord:
@@ -985,12 +913,6 @@ tui-test-discord:
     echo "🖥️  To review generated content, use:"
     echo "   just content-list discord_guilds"
 
-# List all content generation tables in database  
-tui-list-tables:
-    #!/usr/bin/env bash
-    echo "📋 Content Generation Tables:"
-    echo "============================="
-    psql "${DATABASE_URL}" -c "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE '%_gen_%' OR tablename LIKE '%_generation_%' ORDER BY tablename;" -t
 
 # List all content generations with tracking metadata
 content-generations:
@@ -1000,40 +922,6 @@ content-generations:
 content-last:
     cargo run -p botticelli --release --features local -- content last
 
-# Launch TUI on the most recently generated table
-tui-last:
-    #!/usr/bin/env bash
-    set -e
-    echo "📊 Getting latest generation..."
-    TABLE=$(cargo run -p botticelli --release --features local -- content last --format=table-name-only 2>/dev/null || echo "")
-    if [ -z "$TABLE" ]; then
-        echo "❌ No content generations found"
-        echo "💡 Generate content first with: just example-guilds"
-        exit 1
-    fi
-    echo "   Table: $TABLE"
-    echo ""
-    echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --features local -- tui "$TABLE"
-
-# Quick TUI demo with sample data
-tui-demo:
-    #!/usr/bin/env bash
-    set -e
-    echo "🎲 Generating sample content..."
-    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
-    echo "✅ Content generated"
-    echo ""
-    echo "📊 Getting latest generation..."
-    TABLE=$(cargo run -p botticelli --release --features local -- content last --format=table-name-only 2>/dev/null || echo "")
-    if [ -z "$TABLE" ]; then
-        echo "❌ No content generations found"
-        exit 1
-    fi
-    echo "   Table: $TABLE"
-    echo ""
-    echo "🖥️  Launching TUI..."
-    cargo run -p botticelli --release --features local -- tui "$TABLE"
 
 # Full Workflow (CI/CD)
 # ====================

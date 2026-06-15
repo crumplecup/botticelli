@@ -20,10 +20,10 @@ fn collect_texts(node: &TuiNode) -> Vec<String> {
         TuiNode::Widget { widget } => {
             if let WidgetJson::Paragraph { text, block, .. } = widget.as_ref() {
                 out.push(text.to_plain_string());
-                if let Some(b) = block {
-                    if let Some(t) = &b.title {
-                        out.push(t.clone());
-                    }
+                if let Some(b) = block
+                    && let Some(t) = &b.title
+                {
+                    out.push(t.clone());
                 }
             }
         }

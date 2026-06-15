@@ -20,10 +20,12 @@
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
 
+mod adapter;
 mod connection;
 mod error;
 mod handler;
 
+pub use adapter::ServerDriverAdapter;
 pub use connection::BotticelliClient;
 pub use error::{McpClientError, McpClientErrorKind, McpClientResult};
 pub use handler::TuiHandler;
