@@ -6,11 +6,13 @@
 use botticelli_actor::ActorServerConfig;
 #[cfg(feature = "discord")]
 use botticelli_actor::{
-    Actor, ActorConfig, ActorExecutionTracker, DatabaseExecutionResult, DatabaseStatePersistence,
+    Actor, ActorConfig, ActorExecutionTracker, BotStorageStatePersistence, DatabaseExecutionResult,
     NarrativeExecutionSkill, ScheduleConfig, SkillRegistry,
 };
 #[cfg(feature = "discord")]
-use botticelli_database::create_pool;
+use botticelli_database::RedbStorage;
+#[cfg(feature = "discord")]
+use botticelli_interface::BotStorage;
 #[cfg(feature = "discord")]
 use botticelli_server::ActorServer;
 #[cfg(feature = "discord")]
@@ -48,9 +50,9 @@ struct Args {
     #[arg(short, long, default_value = "actor_server.toml")]
     config: PathBuf,
 
-    /// Database URL for state persistence
-    #[arg(long, env = "DATABASE_URL")]
-    database_url: Option<String>,
+    /// Path to redb database file (defaults to platform data dir)
+    #[arg(long, env = "BOTTICELLI_DB")]
+    db_path: Option<PathBuf>,
 
     /// Discord bot token
     #[arg(long, env = "DISCORD_TOKEN")]
@@ -72,7 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         let config = botticelli_core::ObservabilityConfig::new("botticelli-actor-server")
             .with_version(env!("CARGO_PKG_VERSION"))
-            .with_metrics(false); // Disable metrics for now (traces only)
+            .with_metrics(false);
         botticelli_core::init_observability_with_config(config)?;
         info!(
             "Observability initialized (OTEL_EXPORTER={:?})",
@@ -80,7 +82,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    // Fallback to basic tracing if observability feature not enabled
     #[cfg(not(feature = "observability"))]
     {
         tracing_subscriber::fmt()
@@ -94,7 +95,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Starting Botticelli Actor Server");
     info!(config_file = ?args.config, "Loading configuration");
 
-    // Load server configuration
     let server_config = ActorServerConfig::from_file(&args.config)?;
     info!(
         actors = server_config.actors.len(),
@@ -104,7 +104,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if args.dry_run {
         info!("DRY RUN MODE - No actions will be executed");
-        // Just validate configuration and exit
         for actor_instance in &server_config.actors {
             info!(
                 actor = %actor_instance.name,
@@ -119,32 +118,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     #[cfg(feature = "discord")]
     {
+        // Determine redb database path
+        let db_path = args
+            .db_path
+            .or_else(|| {
+                dirs::data_dir().map(|d| d.join("botticelli").join("botticelli.redb"))
+            })
+            .ok_or("Cannot determine database path")?;
+
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
+        info!(db_path = %db_path.display(), "Opening redb storage");
+        let storage: Arc<dyn BotStorage> = Arc::new(RedbStorage::open(&db_path)?);
+        let persistence = Arc::new(BotStorageStatePersistence::new(Arc::clone(&storage)));
+
         // Type alias for actor tracking
         type ActorEntry = (
             Actor,
             ScheduleConfig,
             Option<DateTime<Utc>>,
-            Option<ActorExecutionTracker<DatabaseStatePersistence>>,
+            Option<ActorExecutionTracker<BotStorageStatePersistence>>,
         );
-
-        // Set up database state persistence if DATABASE_URL is set
-        let persistence = if args.database_url.is_some() || std::env::var("DATABASE_URL").is_ok() {
-            info!("Database state persistence enabled");
-            match DatabaseStatePersistence::new() {
-                Ok(p) => {
-                    info!("Created connection pool for state persistence");
-                    Some(Arc::new(p))
-                }
-                Err(e) => {
-                    warn!("Failed to create persistence: {}", e);
-                    warn!("Continuing without state persistence");
-                    None
-                }
-            }
-        } else {
-            warn!("DATABASE_URL not set - state persistence disabled");
-            None
-        };
 
         // Initialize Discord server
         let discord_token = args
@@ -152,22 +148,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .or_else(|| std::env::var("DISCORD_TOKEN").ok())
             .ok_or("DISCORD_TOKEN not provided")?;
 
-        // Create Discord HTTP client
         let http = Arc::new(Http::new(&discord_token));
 
-        // Create database connection pool for actor execution
-        info!("Creating database connection pool for actor execution");
-        let db_pool = create_pool()?;
-        info!("Database connection pool created");
-
-        // Initialize server with state file path
         let state_path = PathBuf::from(".actor_server_state.json");
         let mut server = DiscordActorServer::new(http.clone(), state_path);
 
-        // Track actors, their schedules, last run time, and execution trackers
         let mut actors: HashMap<String, ActorEntry> = HashMap::new();
 
-        // Initialize metrics for the server (if enabled)
         #[cfg(feature = "metrics")]
         let metrics = {
             let m = Arc::new(ServerMetrics::new());
@@ -179,7 +166,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         #[cfg(not(feature = "metrics"))]
         info!("Metrics disabled");
 
-        // Load and register actors from configuration
         for actor_instance in &server_config.actors {
             if !actor_instance.enabled {
                 info!(actor = %actor_instance.name, "Actor disabled, skipping");
@@ -192,10 +178,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "Loading actor"
             );
 
-            // Load actor configuration
             let actor_config = ActorConfig::from_file(&actor_instance.config_file)?;
 
-            // Create platform (Discord if channel_id provided, NoOp otherwise)
             let platform: Arc<dyn botticelli_actor::Platform> =
                 if let Some(channel_id) = &actor_instance.channel_id {
                     info!(
@@ -204,7 +188,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         "Creating Discord platform for actor"
                     );
                     {
-                        let _ = discord_token; // Token validation happens elsewhere
+                        let _ = discord_token.as_str();
                         Arc::new(DiscordPlatform::new(channel_id)?)
                     }
                 } else {
@@ -215,11 +199,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Arc::new(botticelli_actor::NoOpPlatform::new())
                 };
 
-            // Create skill registry and register narrative execution skill
             let mut registry = SkillRegistry::new();
             registry.register(Arc::new(NarrativeExecutionSkill::new()));
 
-            // Build actor with platform and skills
             let actor = Actor::builder()
                 .config(actor_config)
                 .skills(registry)
@@ -228,51 +210,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             info!(actor = %actor_instance.name, "Actor created successfully");
 
-            // Load previous state from database if available
-            let mut loaded_last_run = None;
-            if let Some(ref persistence) = persistence {
-                match persistence.load_task_state(&actor_instance.name).await {
-                    Ok(Some(state)) => {
-                        info!(
-                            actor = %actor_instance.name,
-                            consecutive_failures = ?state.consecutive_failures,
-                            is_paused = ?state.is_paused,
-                            "Loaded previous task state from database"
-                        );
-                        loaded_last_run = state
-                            .last_run
-                            .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc));
-                    }
-                    Ok(None) => {
-                        debug!(actor = %actor_instance.name, "No previous state found");
-                    }
-                    Err(e) => {
-                        warn!(
-                            actor = %actor_instance.name,
-                            error = ?e,
-                            "Failed to load previous state"
-                        );
-                    }
+            // Load previous state from storage if available
+            let mut loaded_last_run: Option<DateTime<Utc>> = None;
+            match persistence.load_task_state(&actor_instance.name).await {
+                Ok(Some(state)) => {
+                    info!(
+                        actor = %actor_instance.name,
+                        consecutive_failures = state.consecutive_failures,
+                        is_paused = state.is_paused,
+                        "Loaded previous task state"
+                    );
+                    loaded_last_run = state.last_run;
+                }
+                Ok(None) => {
+                    debug!(actor = %actor_instance.name, "No previous state found");
+                }
+                Err(e) => {
+                    warn!(
+                        actor = %actor_instance.name,
+                        error = ?e,
+                        "Failed to load previous state"
+                    );
                 }
             }
 
-            // Create execution tracker if persistence is enabled
-            let tracker = persistence.as_ref().map(|p| {
-                ActorExecutionTracker::new(
-                    p.clone(),
-                    actor_instance.name.clone(),
-                    actor_instance.name.clone(),
-                )
-            });
+            let tracker = ActorExecutionTracker::new(
+                Arc::clone(&persistence),
+                actor_instance.name.clone(),
+                actor_instance.name.clone(),
+            );
 
-            // Store actor with schedule, last run, and tracker
             actors.insert(
                 actor_instance.name.clone(),
                 (
                     actor,
                     actor_instance.schedule.clone(),
                     loaded_last_run,
-                    tracker,
+                    Some(tracker),
                 ),
             );
 
@@ -293,7 +267,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        // Set up graceful shutdown signal handler
         let shutdown_flag = Arc::new(tokio::sync::Notify::new());
         let shutdown_flag_clone = shutdown_flag.clone();
 
@@ -306,7 +279,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         info!("Actor server starting");
 
-        // Start the server
         server
             .start()
             .await
@@ -314,7 +286,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         info!("Actor server running. Press CTRL+C to shutdown.");
 
-        // Test metric: Record server startup (if metrics enabled)
         #[cfg(feature = "metrics")]
         {
             info!("Recording test startup metric");
@@ -322,7 +293,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             info!("Test startup metric recorded");
         }
 
-        // Main execution loop
         let check_interval =
             std::time::Duration::from_secs(server_config.server.check_interval_seconds);
         let mut interval = tokio::time::interval(check_interval);
@@ -332,9 +302,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 _ = interval.tick() => {
                     debug!("Checking for ready actors");
 
-                    // Check each actor's schedule
                     for (name, (actor, schedule, last_run, tracker)) in actors.iter_mut() {
-                        // Check circuit breaker if tracker available
                         if let Some(tracker) = tracker.as_ref() {
                             match tracker.should_execute().await {
                                 Ok(should_run) => {
@@ -359,11 +327,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         if check.should_run {
                             info!(actor = %name, "Executing scheduled actor");
 
-                            // Start execution history if tracker available
                             let exec_id = if let Some(tracker) = tracker.as_ref() {
                                 match tracker.start_execution().await {
                                     Ok(id) => {
-                                        debug!(actor = %name, exec_id = id, "Started execution record");
+                                        debug!(actor = %name, exec_id = %id, "Started execution record");
                                         Some(id)
                                     }
                                     Err(e) => {
@@ -379,9 +346,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 None
                             };
 
-                            // Execute the actor with database pool
                             let start_time = std::time::Instant::now();
-                            match actor.execute(&db_pool).await {
+                            match actor.execute(&storage).await {
                                 Ok(result) => {
                                     let duration = start_time.elapsed().as_secs_f64();
                                     info!(
@@ -394,11 +360,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     );
                                     *last_run = Some(Utc::now());
 
-                                    // Record metrics (if enabled)
                                     #[cfg(feature = "metrics")]
                                     metrics.bots.record_execution(name, duration);
 
-                                    // Record success if tracker available
                                     if let Some(exec_id) = exec_id
                                         && let Some(tracker) = tracker.as_ref() {
                                         let db_result = DatabaseExecutionResult {
@@ -422,11 +386,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 Err(e) => {
                                     error!(actor = %name, error = ?e, "Actor execution failed");
 
-                                    // Record failure metric (if enabled)
                                     #[cfg(feature = "metrics")]
                                     metrics.bots.record_failure(name);
 
-                                    // Record failure if tracker available
                                     if let Some(exec_id) = exec_id
                                         && let Some(tracker) = tracker.as_ref() {
                                         match tracker
@@ -466,40 +428,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        // Save final state before shutdown if persistence available
-        if let Some(ref persistence) = persistence {
-            info!("Saving final task state to database");
-            for (name, (_, _, last_run, _)) in &actors {
-                if let Some(last_run_time) = last_run {
-                    match persistence.load_task_state(name).await {
-                        Ok(Some(mut state)) => {
-                            state.last_run = Some(last_run_time.naive_utc());
-                            if let Err(e) = persistence.save_task_state(name, &state).await {
-                                warn!(
-                                    actor = %name,
-                                    error = ?e,
-                                    "Failed to save final state"
-                                );
-                            } else {
-                                debug!(actor = %name, "Saved final state");
-                            }
-                        }
-                        Ok(None) => {
-                            debug!(actor = %name, "No state to update on shutdown");
-                        }
-                        Err(e) => {
+        // Save final state before shutdown
+        info!("Saving final task state");
+        for (name, (_, _, last_run, _)) in &actors {
+            if let Some(last_run_time) = last_run {
+                match persistence.load_task_state(name).await {
+                    Ok(Some(mut state)) => {
+                        state.last_run = Some(*last_run_time);
+                        if let Err(e) = persistence.save_task_state(name, &state).await {
                             warn!(
                                 actor = %name,
                                 error = ?e,
-                                "Failed to load state for final save"
+                                "Failed to save final state"
                             );
+                        } else {
+                            debug!(actor = %name, "Saved final state");
                         }
+                    }
+                    Ok(None) => {
+                        debug!(actor = %name, "No state to update on shutdown");
+                    }
+                    Err(e) => {
+                        warn!(
+                            actor = %name,
+                            error = ?e,
+                            "Failed to load state for final save"
+                        );
                     }
                 }
             }
         }
 
-        // Graceful shutdown
         server
             .stop()
             .await

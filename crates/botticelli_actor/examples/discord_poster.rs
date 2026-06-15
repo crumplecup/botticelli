@@ -25,7 +25,8 @@ use botticelli_actor::skills::{
 use botticelli_actor::{
     Actor, ActorConfigBuilder, DiscordPlatform, ExecutionConfigBuilder, Skill, SkillRegistry,
 };
-use botticelli_database::create_pool;
+use botticelli_database::RedbStorage;
+use botticelli_interface::BotStorage;
 use std::sync::Arc;
 use tracing::{error, info};
 
@@ -48,9 +49,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!(channel_id = %channel_id, "Loaded configuration");
 
-    // Connect to database
-    let pool = create_pool().expect("Failed to create database pool");
-    info!("Connected to database");
+    // Open redb storage
+    let db_path = dirs::data_dir()
+        .map(|d| d.join("botticelli").join("botticelli.redb"))
+        .expect("Cannot determine data directory");
+    std::fs::create_dir_all(db_path.parent().unwrap()).ok();
+    let storage: Arc<dyn BotStorage> =
+        Arc::new(RedbStorage::open(&db_path).expect("Failed to open redb storage"));
+    info!("Opened redb storage");
 
     // Create actor configuration
     let execution_config = ExecutionConfigBuilder::default()
@@ -111,7 +117,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Built actor, executing...");
 
     // Execute actor
-    match actor.execute(&pool).await {
+    match actor.execute(&storage).await {
         Ok(result) => {
             info!("Actor execution completed");
             info!("  Succeeded: {}", result.succeeded.len());

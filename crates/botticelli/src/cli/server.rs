@@ -1,14 +1,15 @@
 //! Bot server command handler.
 
 use botticelli_bot::{BotConfig, BotServer};
-use botticelli_database::{DatabaseTableQueryRegistry, TableQueryExecutor, create_pool};
-use botticelli_error::{BotticelliResult, ServerError, ServerErrorKind};
+use botticelli_database::{BotStorageTableQueryRegistry, RedbStorage};
+use botticelli_error::{BackendError, BotticelliError, BotticelliResult, ServerError, ServerErrorKind};
+use botticelli_interface::BotStorage;
 use botticelli_models::GeminiClient;
 use botticelli_narrative::{
     ContentGenerationProcessor, NarrativeExecutor, ProcessorRegistry, StorageActor,
 };
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use tracing::info;
 
 /// Handle the `server` command
@@ -21,21 +22,31 @@ pub async fn handle_server_command(
     // Load configuration
     let config = BotConfig::from_file("bot_server.toml")?;
 
-    // Establish database connection pool
-    let pool = create_pool()?;
+    // Open redb storage
+    let db_path = dirs::data_dir()
+        .map(|d| d.join("botticelli").join("botticelli.redb"))
+        .ok_or_else(|| BackendError::new("Cannot determine data directory for redb"))?;
+
+    if let Some(parent) = db_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| BotticelliError::from(BackendError::new(format!("{e}"))))?;
+    }
+
+    let storage: Arc<dyn BotStorage> = Arc::new(
+        RedbStorage::open(&db_path)
+            .map_err(|e| BotticelliError::from(BackendError::new(format!("{e}"))))?,
+    );
 
     // Create Gemini client
     let client = GeminiClient::new()?;
 
-    // Create database connection for table queries
-    let table_conn = botticelli_database::establish_connection()?;
-    let table_executor = TableQueryExecutor::new(Arc::new(Mutex::new(table_conn)));
-    let table_registry = DatabaseTableQueryRegistry::new(table_executor);
+    // Create table query registry backed by storage
+    let table_registry = BotStorageTableQueryRegistry::new(Arc::clone(&storage));
 
     // Start storage actor with Ractor
     info!("Starting storage actor");
-    let actor = StorageActor::new(pool.clone());
-    let (actor_ref, _handle) = ractor::Actor::spawn(None, actor, pool.clone())
+    let actor = StorageActor::new(Arc::clone(&storage));
+    let (actor_ref, _handle) = ractor::Actor::spawn(None, actor, Arc::clone(&storage))
         .await
         .map_err(|e| {
             ServerError::new(ServerErrorKind::ServerStartFailed(format!(
@@ -55,7 +66,7 @@ pub async fn handle_server_command(
     executor = executor.with_table_registry(Box::new(table_registry));
 
     // Create and start server
-    let server = BotServer::new(config, executor, pool);
+    let server = BotServer::new(config, executor, storage);
 
     info!("Starting bot server with configured intervals");
 

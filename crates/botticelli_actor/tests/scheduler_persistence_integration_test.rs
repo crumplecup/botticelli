@@ -1,14 +1,17 @@
 //! Integration tests for task scheduler with database persistence.
 
-use botticelli_actor::{DatabaseStatePersistence, SimpleTaskScheduler};
+use botticelli_actor::{BotStorageStatePersistence, SimpleTaskScheduler};
+use botticelli_database::RedbStorage;
+use botticelli_interface::BotStorage;
+use std::sync::Arc;
 use botticelli_server::{ActorServerResult, TaskScheduler};
 use std::time::Duration;
 
 #[tokio::test]
 async fn test_scheduler_with_persistence() -> ActorServerResult<()> {
-    dotenvy::dotenv().ok();
-    let persistence =
-        DatabaseStatePersistence::with_pool_size(2).expect("Failed to create persistence");
+    let storage: Arc<dyn BotStorage> =
+        Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
+    let persistence = BotStorageStatePersistence::new(storage);
     let mut scheduler = SimpleTaskScheduler::with_persistence(persistence);
 
     assert!(scheduler.has_persistence());
@@ -53,9 +56,9 @@ async fn test_scheduler_without_persistence() -> ActorServerResult<()> {
 
 #[tokio::test]
 async fn test_scheduler_task_recovery() -> ActorServerResult<()> {
-    dotenvy::dotenv().ok();
-    let persistence =
-        DatabaseStatePersistence::with_pool_size(2).expect("Failed to create persistence");
+    let storage: Arc<dyn BotStorage> =
+        Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
+    let persistence = BotStorageStatePersistence::new(storage);
     let scheduler = SimpleTaskScheduler::with_persistence(persistence);
 
     // Attempt recovery (should handle empty state gracefully)

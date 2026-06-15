@@ -1,12 +1,12 @@
 //! Serenity event handler for Discord bot.
 //!
 //! This module implements the EventHandler trait to respond to Discord events
-//! and persist data to the database.
+//! and persist data to the KV storage backend.
 
 use crate::{
     ChannelType, DiscordRepository, NewChannel, NewGuildBuilder, NewGuildMember, NewRole, NewUser,
 };
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serenity::all::{GuildId, Ready};
 use serenity::async_trait;
 use serenity::client::{Context, EventHandler};
@@ -17,19 +17,19 @@ use serenity::model::guild::{Guild, Member, Role};
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
-/// Convert Serenity Timestamp to Chrono NaiveDateTime
-fn timestamp_to_naive(ts: &Timestamp) -> NaiveDateTime {
-    chrono::DateTime::from_timestamp(ts.unix_timestamp(), 0)
+/// Convert Serenity Timestamp to `DateTime<Utc>`.
+#[tracing::instrument(skip_all)]
+fn timestamp_to_utc(ts: &Timestamp) -> DateTime<Utc> {
+    DateTime::from_timestamp(ts.unix_timestamp(), 0)
         .expect("Timestamp should be valid")
-        .naive_utc()
 }
 
 /// Event handler for the Botticelli Discord bot.
 ///
 /// Implements Serenity's EventHandler trait to respond to Discord events
-/// and persist data to the database via DiscordRepository.
+/// and persist data to the storage backend via DiscordRepository.
 pub struct BotticelliHandler {
-    /// Repository for database operations
+    /// Repository for storage operations
     repository: Arc<DiscordRepository>,
 }
 
@@ -40,8 +40,6 @@ impl BotticelliHandler {
     }
 
     /// Required gateway intents for the bot.
-    ///
-    /// This specifies what events the bot will receive from Discord.
     pub fn intents() -> GatewayIntents {
         GatewayIntents::GUILDS
             | GatewayIntents::GUILD_MEMBERS
@@ -49,14 +47,13 @@ impl BotticelliHandler {
             | GatewayIntents::MESSAGE_CONTENT
     }
 
-    /// Convert Discord snowflake ID (u64) to database ID (i64).
-    ///
-    /// Discord IDs are 64-bit unsigned integers, but PostgreSQL uses signed bigints.
+    /// Convert Discord snowflake ID (u64) to storage ID (i64).
     fn to_db_id(id: u64) -> i64 {
         id as i64
     }
 
-    /// Store a Discord guild in the database.
+    /// Store a Discord guild.
+    #[tracing::instrument(skip(self, guild), fields(guild_id = %guild.id))]
     async fn store_guild(&self, guild: &Guild) {
         let new_guild = NewGuildBuilder::default()
             .id(Self::to_db_id(guild.id.get()))
@@ -65,9 +62,7 @@ impl BotticelliHandler {
             .banner(guild.banner.as_ref().map(|b| b.to_string()))
             .splash(guild.splash.as_ref().map(|s| s.to_string()))
             .owner_id(Self::to_db_id(guild.owner_id.get()))
-            .features(Some(
-                guild.features.iter().map(|f| Some(f.clone())).collect(),
-            ))
+            .features(Some(guild.features.iter().map(|f| f.clone()).collect()))
             .description(guild.description.clone())
             .vanity_url_code(guild.vanity_url_code.clone())
             .member_count(Some(guild.member_count as i32))
@@ -102,7 +97,7 @@ impl BotticelliHandler {
             .max_video_channel_users(guild.max_video_channel_users.map(|c| c as i32))
             .large(Some(guild.large))
             .unavailable(Some(guild.unavailable))
-            .joined_at(Some(timestamp_to_naive(&guild.joined_at)))
+            .joined_at(Some(timestamp_to_utc(&guild.joined_at)))
             .bot_active(Some(true))
             .build()
             .expect("NewGuild builder should succeed with valid data");
@@ -117,7 +112,8 @@ impl BotticelliHandler {
         }
     }
 
-    /// Store a Discord channel in the database.
+    /// Store a Discord channel.
+    #[tracing::instrument(skip(self, channel))]
     async fn store_channel(&self, guild_id: Option<GuildId>, channel: &Channel) {
         let (id, name, channel_type, position, topic, nsfw, parent_id) = match channel {
             Channel::Guild(gc) => (
@@ -184,9 +180,9 @@ impl BotticelliHandler {
         }
     }
 
-    /// Store a Discord member in the database.
+    /// Store a Discord member.
+    #[tracing::instrument(skip(self, member), fields(user_id = %member.user.id))]
     async fn store_member(&self, guild_id: GuildId, member: &Member) {
-        // First store the user
         let new_user = NewUser {
             id: Self::to_db_id(member.user.id.get()),
             username: member.user.name.clone(),
@@ -209,7 +205,6 @@ impl BotticelliHandler {
             return;
         }
 
-        // Then store the guild member
         let new_member = NewGuildMember {
             guild_id: Self::to_db_id(guild_id.get()),
             user_id: Self::to_db_id(member.user.id.get()),
@@ -218,8 +213,8 @@ impl BotticelliHandler {
             joined_at: member
                 .joined_at
                 .as_ref()
-                .map_or_else(|| chrono::Utc::now().naive_utc(), timestamp_to_naive),
-            premium_since: member.premium_since.as_ref().map(timestamp_to_naive),
+                .map_or_else(Utc::now, |ts| timestamp_to_utc(ts)),
+            premium_since: member.premium_since.as_ref().map(|ts| timestamp_to_utc(ts)),
             deaf: Some(member.deaf),
             mute: Some(member.mute),
             pending: Some(member.pending),
@@ -227,7 +222,7 @@ impl BotticelliHandler {
             communication_disabled_until: member
                 .communication_disabled_until
                 .as_ref()
-                .map(timestamp_to_naive),
+                .map(|ts| timestamp_to_utc(ts)),
         };
 
         match self.repository.store_guild_member(&new_member).await {
@@ -249,7 +244,8 @@ impl BotticelliHandler {
         }
     }
 
-    /// Store a Discord role in the database.
+    /// Store a Discord role.
+    #[tracing::instrument(skip(self, role), fields(role_id = %role.id))]
     async fn store_role(&self, guild_id: GuildId, role: &Role) {
         let new_role = NewRole {
             id: Self::to_db_id(role.id.get()),
@@ -277,6 +273,7 @@ impl BotticelliHandler {
     }
 
     /// Map Serenity ChannelType to our ChannelType enum.
+    #[tracing::instrument]
     fn map_channel_type(kind: serenity::model::channel::ChannelType) -> ChannelType {
         use serenity::model::channel::ChannelType as ST;
         match kind {
@@ -302,7 +299,6 @@ impl BotticelliHandler {
 
 #[async_trait]
 impl EventHandler for BotticelliHandler {
-    /// Called when the bot successfully connects to Discord.
     async fn ready(&self, _ctx: Context, ready: Ready) {
         info!(
             bot_user = %ready.user.name,
@@ -310,16 +306,8 @@ impl EventHandler for BotticelliHandler {
             guilds = ready.guilds.len(),
             "Bot connected to Discord"
         );
-
-        // The guilds in Ready are partial, we'll get full data via guild_create events
-        for guild in &ready.guilds {
-            debug!(guild_id = %guild.id, "Bot is in guild");
-        }
     }
 
-    /// Called when a guild becomes available or the bot joins a guild.
-    ///
-    /// This is where we store the full guild data including channels, roles, and members.
     async fn guild_create(&self, _ctx: Context, guild: Guild, _is_new: Option<bool>) {
         info!(
             guild_id = %guild.id,
@@ -330,21 +318,17 @@ impl EventHandler for BotticelliHandler {
             "Guild available"
         );
 
-        // Store the guild
         self.store_guild(&guild).await;
 
-        // Store all channels
         for channel in guild.channels.values() {
             self.store_channel(Some(guild.id), &Channel::Guild(channel.clone()))
                 .await;
         }
 
-        // Store all roles
         for role in guild.roles.values() {
             self.store_role(guild.id, role).await;
         }
 
-        // Store all members
         for member in guild.members.values() {
             self.store_member(guild.id, member).await;
         }
@@ -352,7 +336,6 @@ impl EventHandler for BotticelliHandler {
         info!(guild_id = %guild.id, "Finished storing guild data");
     }
 
-    /// Called when the bot leaves a guild or a guild becomes unavailable.
     async fn guild_delete(
         &self,
         _ctx: Context,
@@ -370,7 +353,6 @@ impl EventHandler for BotticelliHandler {
         }
     }
 
-    /// Called when a channel is created.
     async fn channel_create(&self, _ctx: Context, channel: GuildChannel) {
         info!(
             channel_id = %channel.id,
@@ -381,7 +363,6 @@ impl EventHandler for BotticelliHandler {
             .await;
     }
 
-    /// Called when a new member joins a guild.
     async fn guild_member_addition(&self, _ctx: Context, new_member: Member) {
         info!(
             guild_id = %new_member.guild_id,
@@ -392,7 +373,6 @@ impl EventHandler for BotticelliHandler {
         self.store_member(new_member.guild_id, &new_member).await;
     }
 
-    /// Called when a member leaves a guild.
     async fn guild_member_removal(
         &self,
         _ctx: Context,
@@ -424,7 +404,6 @@ impl EventHandler for BotticelliHandler {
         }
     }
 
-    /// Called when a role is created.
     async fn guild_role_create(&self, _ctx: Context, new: Role) {
         info!(
             guild_id = %new.guild_id,

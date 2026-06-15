@@ -4,8 +4,7 @@ use crate::{
     ActorConfig, ActorError, ActorErrorKind, ActorResult, KnowledgeTable, Platform, SkillContext,
     SkillContextBuilder, SkillOutput, SkillRegistry,
 };
-use diesel::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
+use botticelli_interface::BotStorage;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -34,10 +33,6 @@ pub struct Actor {
 
 impl Actor {
     /// Create a new actor with builder pattern.
-    ///
-    /// # Returns
-    ///
-    /// Actor builder.
     pub fn builder() -> ActorBuilder {
         ActorBuilder::default()
     }
@@ -49,7 +44,7 @@ impl Actor {
     ///
     /// # Arguments
     ///
-    /// * `pool` - Database connection pool for knowledge queries and skill execution
+    /// * `storage` - Storage backend for knowledge queries and skill execution
     ///
     /// # Returns
     ///
@@ -60,59 +55,36 @@ impl Actor {
     /// Returns error if:
     /// - Knowledge tables cannot be loaded
     /// - Unrecoverable error occurs with stop_on_unrecoverable=true
-    #[tracing::instrument(skip(self, pool), fields(actor_name = %self.config.name()))]
     #[tracing::instrument(
-        skip(self, pool),
+        skip(self, storage),
         fields(
             actor_name = %self.config.name(),
             skill_count = self.config.skills().len(),
             knowledge_tables = self.config.knowledge().len(),
         )
     )]
-    #[tracing::instrument(
-        skip(self, pool),
-        fields(
-            actor_name = %self.config.name(),
-            skill_count = self.config.skills().len(),
-            knowledge_tables = self.config.knowledge().len(),
-        )
-    )]
-    pub async fn execute(
-        &self,
-        pool: &Pool<ConnectionManager<PgConnection>>,
-    ) -> ActorResult<ExecutionResult> {
+    pub async fn execute(&self, storage: &Arc<dyn BotStorage>) -> ActorResult<ExecutionResult> {
         tracing::info!("Starting actor execution");
 
-        // Get connection from pool for knowledge loading
-        let mut conn = pool.get().map_err(|e| {
-            ActorError::new(ActorErrorKind::DatabaseFailed(format!(
-                "Failed to get database connection: {}",
-                e
-            )))
-        })?;
-
-        // Load knowledge from configured tables
-        let knowledge_span = tracing::debug_span!(
-            "load_knowledge",
-            table_count = self.config.knowledge().len()
-        );
         let knowledge = {
-            let _enter = knowledge_span.enter();
-            self.load_knowledge(&mut conn)?
+            let _span = tracing::debug_span!(
+                "load_knowledge",
+                table_count = self.config.knowledge().len()
+            )
+            .entered();
+            self.load_knowledge(storage).await?
         };
 
         let mut result = ExecutionResultBuilder::default()
             .build()
             .expect("ExecutionResult with valid defaults");
 
-        // Execute each configured skill
         for skill_name in self.config.skills() {
             let skill_span = tracing::info_span!("execute_skill", skill = %skill_name);
             let _enter = skill_span.enter();
 
             tracing::debug!("Preparing skill execution");
 
-            // Check if skill is enabled in configuration
             if let Some(skill_config) = self.config.skill_configs().get(skill_name)
                 && !skill_config.enabled()
             {
@@ -121,16 +93,14 @@ impl Actor {
                 continue;
             }
 
-            // Build skill context
             let context = SkillContextBuilder::default()
                 .knowledge(knowledge.clone())
                 .config(self.extract_skill_config(skill_name))
                 .platform(Arc::clone(&self.platform))
-                .db_pool(pool.clone())
+                .storage(Arc::clone(storage))
                 .build()
                 .expect("SkillContext with valid fields");
 
-            // Execute skill with retry logic
             match self.execute_skill_with_retry(skill_name, &context).await {
                 Ok(output) => {
                     tracing::info!(skill = %skill_name, "Skill executed successfully");
@@ -146,13 +116,11 @@ impl Actor {
 
                     result.failed.push((skill_name.clone(), error.clone()));
 
-                    // Check if we should stop on unrecoverable errors
                     if !error.is_recoverable() && *self.config.execution().stop_on_unrecoverable() {
                         tracing::error!("Unrecoverable error, stopping execution");
                         return Err(error);
                     }
 
-                    // Check if we should fail fast on any error
                     if !*self.config.execution().continue_on_error() {
                         tracing::error!("Continue on error disabled, stopping execution");
                         return Err(error);
@@ -172,10 +140,10 @@ impl Actor {
     }
 
     /// Load knowledge from configured tables.
-    #[tracing::instrument(skip(self, conn))]
-    fn load_knowledge(
+    #[tracing::instrument(skip(self, storage))]
+    async fn load_knowledge(
         &self,
-        conn: &mut PgConnection,
+        storage: &Arc<dyn BotStorage>,
     ) -> ActorResult<HashMap<String, Vec<JsonValue>>> {
         tracing::debug!(
             table_count = self.config.knowledge().len(),
@@ -187,8 +155,7 @@ impl Actor {
         for table_name in self.config.knowledge() {
             let table = KnowledgeTable::new(table_name);
 
-            // Check if table exists
-            if !table.exists(conn) {
+            if !table.exists(storage).await {
                 tracing::warn!(table = %table_name, "Knowledge table does not exist");
                 if *self.config.execution().stop_on_unrecoverable() {
                     return Err(ActorError::new(ActorErrorKind::KnowledgeTableNotFound(
@@ -198,8 +165,7 @@ impl Actor {
                 continue;
             }
 
-            // Query table data
-            let rows = table.query(conn)?;
+            let rows = table.query(storage).await?;
             tracing::debug!(table = %table_name, rows = rows.len(), "Loaded knowledge table");
             knowledge.insert(table_name.clone(), rows);
         }
@@ -213,7 +179,6 @@ impl Actor {
         let mut config = HashMap::new();
 
         if let Some(skill_config) = self.config.skill_configs().get(skill_name) {
-            // Convert JSON values to strings
             for (key, value) in skill_config.settings() {
                 if let Some(s) = value.as_str() {
                     config.insert(key.clone(), s.to_string());
@@ -286,11 +251,11 @@ impl Actor {
             }
         }
 
-        Err(last_error.unwrap())
+        Err(last_error.expect("loop always sets last_error before exhausting retries"))
     }
 }
 
-/// Builder for creating Actor instances.
+/// Builder for [`Actor`].
 #[derive(Default)]
 pub struct ActorBuilder {
     config: Option<ActorConfig>,
@@ -299,19 +264,19 @@ pub struct ActorBuilder {
 }
 
 impl ActorBuilder {
-    /// Set actor configuration.
+    /// Set the actor configuration.
     pub fn config(mut self, config: ActorConfig) -> Self {
         self.config = Some(config);
         self
     }
 
-    /// Set skill registry.
+    /// Set the skill registry.
     pub fn skills(mut self, skills: SkillRegistry) -> Self {
         self.skills = Some(skills);
         self
     }
 
-    /// Set platform implementation.
+    /// Set the platform.
     pub fn platform(mut self, platform: Arc<dyn Platform>) -> Self {
         self.platform = Some(platform);
         self
@@ -319,32 +284,26 @@ impl ActorBuilder {
 
     /// Build the actor.
     ///
-    /// # Returns
-    ///
-    /// Configured actor instance.
-    ///
     /// # Errors
     ///
     /// Returns error if required fields are missing.
     pub fn build(self) -> ActorResult<Actor> {
-        let config = self.config.ok_or_else(|| {
-            ActorError::new(ActorErrorKind::InvalidConfiguration(
-                "Actor config is required".to_string(),
-            ))
-        })?;
-
-        let skills = self.skills.unwrap_or_default();
-
-        let platform = self.platform.ok_or_else(|| {
-            ActorError::new(ActorErrorKind::InvalidConfiguration(
-                "Platform implementation is required".to_string(),
-            ))
-        })?;
-
         Ok(Actor {
-            config,
-            skills,
-            platform,
+            config: self.config.ok_or_else(|| {
+                ActorError::new(ActorErrorKind::InvalidConfiguration(
+                    "Actor config is required".to_string(),
+                ))
+            })?,
+            skills: self.skills.ok_or_else(|| {
+                ActorError::new(ActorErrorKind::InvalidConfiguration(
+                    "Skill registry is required".to_string(),
+                ))
+            })?,
+            platform: self.platform.ok_or_else(|| {
+                ActorError::new(ActorErrorKind::InvalidConfiguration(
+                    "Platform is required".to_string(),
+                ))
+            })?,
         })
     }
 }

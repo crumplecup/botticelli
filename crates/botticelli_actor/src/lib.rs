@@ -91,7 +91,7 @@ pub use skills::{
     ContentFormatterSkill, ContentSchedulingSkill, ContentSelectionSkill, DuplicateCheckSkill,
     NarrativeExecutionSkill, RateLimitingSkill,
 };
-pub use state_persistence::{DatabaseExecutionResult, DatabaseStatePersistence};
+pub use state_persistence::{BotStorageStatePersistence, DatabaseExecutionResult};
 
 #[cfg(feature = "discord")]
 pub use discord_server::{

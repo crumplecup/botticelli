@@ -1,14 +1,10 @@
 //! Guild (Discord server) models.
 
-use chrono::NaiveDateTime;
-use diesel::prelude::*;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
-/// Database row for discord_guilds table.
-///
-/// Represents a Discord guild (server) with all metadata, settings, and bot-specific state.
-#[derive(Debug, Clone, Queryable, Identifiable, Selectable, derive_getters::Getters)]
-#[diesel(table_name = botticelli_database::schema::discord_guilds)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+/// Stored guild data.
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
 pub struct GuildRow {
     /// Guild ID
     pub id: i64,
@@ -23,57 +19,45 @@ pub struct GuildRow {
     /// Guild owner user ID
     pub owner_id: i64,
 
-    // Guild features
-    features: Option<Vec<Option<String>>>,
+    features: Option<Vec<String>>,
     description: Option<String>,
     vanity_url_code: Option<String>,
 
-    // Member counts
     member_count: Option<i32>,
     approximate_member_count: Option<i32>,
     approximate_presence_count: Option<i32>,
 
-    // Guild settings
     afk_channel_id: Option<i64>,
     afk_timeout: Option<i32>,
     system_channel_id: Option<i64>,
     rules_channel_id: Option<i64>,
     public_updates_channel_id: Option<i64>,
 
-    // Verification and content filtering
     verification_level: Option<i16>,
     explicit_content_filter: Option<i16>,
     mfa_level: Option<i16>,
 
-    // Premium features
     premium_tier: Option<i16>,
     premium_subscription_count: Option<i32>,
 
-    // Server boost progress
     max_presences: Option<i32>,
     max_members: Option<i32>,
     max_video_channel_users: Option<i32>,
 
-    // Status flags
     large: Option<bool>,
     unavailable: Option<bool>,
 
-    // Timestamps
-    joined_at: Option<NaiveDateTime>,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
-    left_at: Option<NaiveDateTime>,
+    joined_at: Option<DateTime<Utc>>,
+    pub(crate) created_at: DateTime<Utc>,
+    pub(crate) updated_at: DateTime<Utc>,
+    pub(crate) left_at: Option<DateTime<Utc>>,
 
-    // Bot-specific metadata
     bot_permissions: Option<i64>,
-    bot_active: Option<bool>,
+    pub(crate) bot_active: Option<bool>,
 }
 
-/// Insertable struct for discord_guilds table.
-///
-/// Used to create new guild records in the database.
-#[derive(Debug, Clone, Insertable, derive_getters::Getters, derive_builder::Builder)]
-#[diesel(table_name = botticelli_database::schema::discord_guilds)]
+/// Input for creating or updating a guild record.
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters, derive_builder::Builder)]
 #[builder(setter(into))]
 pub struct NewGuild {
     /// Discord guild snowflake ID
@@ -94,7 +78,7 @@ pub struct NewGuild {
 
     /// Discord guild features enabled
     #[builder(default)]
-    pub(crate) features: Option<Vec<Option<String>>>,
+    pub(crate) features: Option<Vec<String>>,
     /// Guild description text
     #[builder(default)]
     pub(crate) description: Option<String>,
@@ -164,10 +148,10 @@ pub struct NewGuild {
 
     /// Timestamp when bot joined guild
     #[builder(default)]
-    pub(crate) joined_at: Option<NaiveDateTime>,
+    pub(crate) joined_at: Option<DateTime<Utc>>,
     /// Timestamp when bot left guild
     #[builder(default)]
-    pub(crate) left_at: Option<NaiveDateTime>,
+    pub(crate) left_at: Option<DateTime<Utc>>,
 
     /// Bot's permission bitfield in this guild
     #[builder(default)]
@@ -175,4 +159,45 @@ pub struct NewGuild {
     /// Whether bot is currently active in guild
     #[builder(default)]
     pub(crate) bot_active: Option<bool>,
+}
+
+impl GuildRow {
+    /// Create a `GuildRow` from a `NewGuild` input, using the provided timestamps.
+    pub fn from_new(guild: &NewGuild, created_at: DateTime<Utc>, updated_at: DateTime<Utc>) -> Self {
+        Self {
+            id: guild.id,
+            name: guild.name.clone(),
+            icon: guild.icon.clone(),
+            banner: guild.banner.clone(),
+            splash: guild.splash.clone(),
+            owner_id: guild.owner_id,
+            features: guild.features.clone(),
+            description: guild.description.clone(),
+            vanity_url_code: guild.vanity_url_code.clone(),
+            member_count: guild.member_count,
+            approximate_member_count: guild.approximate_member_count,
+            approximate_presence_count: guild.approximate_presence_count,
+            afk_channel_id: guild.afk_channel_id,
+            afk_timeout: guild.afk_timeout,
+            system_channel_id: guild.system_channel_id,
+            rules_channel_id: guild.rules_channel_id,
+            public_updates_channel_id: guild.public_updates_channel_id,
+            verification_level: guild.verification_level,
+            explicit_content_filter: guild.explicit_content_filter,
+            mfa_level: guild.mfa_level,
+            premium_tier: guild.premium_tier,
+            premium_subscription_count: guild.premium_subscription_count,
+            max_presences: guild.max_presences,
+            max_members: guild.max_members,
+            max_video_channel_users: guild.max_video_channel_users,
+            large: guild.large,
+            unavailable: guild.unavailable,
+            joined_at: guild.joined_at,
+            left_at: guild.left_at,
+            bot_permissions: guild.bot_permissions,
+            bot_active: guild.bot_active,
+            created_at,
+            updated_at,
+        }
+    }
 }

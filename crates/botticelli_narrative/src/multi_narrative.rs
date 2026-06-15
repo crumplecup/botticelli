@@ -9,8 +9,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use tracing::{debug, instrument};
 
-#[cfg(feature = "database")]
-use diesel::pg::PgConnection;
 
 /// Container for multiple narratives from a single TOML file.
 ///
@@ -42,31 +40,6 @@ impl MultiNarrative {
             .map_err(|e| NarrativeError::new(NarrativeErrorKind::FileRead(e.to_string())))?;
 
         Self::from_toml_str(&content, path, narrative_name)
-    }
-
-    /// Load all narratives from a TOML file with database support.
-    ///
-    /// # Arguments
-    ///
-    /// * `path` - Path to the TOML file
-    /// * `narrative_name` - Name of the narrative to set as active
-    /// * `conn` - Database connection for schema reflection
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the file cannot be read, parsed, or schema reflection fails.
-    #[cfg(feature = "database")]
-    #[instrument(skip_all, fields(path = %path.as_ref().display(), narrative_name))]
-    pub fn from_file_with_db<P: AsRef<Path>>(
-        path: P,
-        narrative_name: &str,
-        conn: &mut PgConnection,
-    ) -> Result<Self, NarrativeError> {
-        let path = path.as_ref();
-        let content = std::fs::read_to_string(path)
-            .map_err(|e| NarrativeError::new(NarrativeErrorKind::FileRead(e.to_string())))?;
-
-        Self::from_toml_str_with_db(&content, path, narrative_name, conn)
     }
 
     /// Parse all narratives from TOML string.
@@ -102,65 +75,6 @@ impl MultiNarrative {
         for name in &narrative_names {
             let mut narrative = Narrative::from_toml_str(s, Some(name))?;
             narrative.set_source_path(Some(source_path.to_path_buf()));
-            narratives.insert(name.clone(), narrative);
-        }
-
-        // Verify the requested narrative exists
-        if !narratives.contains_key(narrative_name) {
-            return Err(NarrativeError::new(NarrativeErrorKind::TomlParse(format!(
-                "Narrative '{}' not found. Available: {}",
-                narrative_name,
-                narrative_names.join(", ")
-            ))));
-        }
-
-        Ok(Self {
-            narratives,
-            active_narrative: narrative_name.to_string(),
-        })
-    }
-
-    /// Parse all narratives from TOML string with database support.
-    #[cfg(feature = "database")]
-    #[instrument(skip_all, fields(narrative_name))]
-    fn from_toml_str_with_db(
-        s: &str,
-        source_path: &Path,
-        narrative_name: &str,
-        conn: &mut PgConnection,
-    ) -> Result<Self, NarrativeError> {
-        use crate::toml_parser::{TomlNarrativeData, TomlNarrativeFile};
-
-        // Parse the TOML file
-        let toml_file: TomlNarrativeFile = toml::from_str(s)
-            .map_err(|e| NarrativeError::new(NarrativeErrorKind::TomlParse(e.to_string())))?;
-
-        // Extract all narrative names from [narrative.name] or [narratives.name]
-        let narrative_names: Vec<String> = match &toml_file.narrative_data {
-            TomlNarrativeData::Multi { narrative } => narrative.keys().cloned().collect(),
-            TomlNarrativeData::Single { narrative, .. } => {
-                if let Some(n) = narrative.as_ref() {
-                    vec![n.name.clone()]
-                } else {
-                    vec![]
-                }
-            }
-        };
-
-        debug!(count = narrative_names.len(), names = ?narrative_names, "Found narratives in file");
-
-        // Load each narrative with database support
-        let mut narratives = HashMap::new();
-        for name in &narrative_names {
-            // Parse narrative from TOML
-            let mut narrative = Narrative::from_toml_str(s, Some(name))?;
-            narrative.set_source_path(Some(source_path.to_path_buf()));
-
-            // Assemble prompts if template specified
-            if narrative.metadata().template().is_some() {
-                narrative.assemble_act_prompts(conn)?;
-            }
-
             narratives.insert(name.clone(), narrative);
         }
 

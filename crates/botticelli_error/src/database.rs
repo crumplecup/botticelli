@@ -62,28 +62,3 @@ impl DatabaseError {
         }
     }
 }
-
-// Diesel error conversions (only available with database feature)
-#[cfg(feature = "database")]
-impl From<diesel::result::Error> for DatabaseError {
-    fn from(err: diesel::result::Error) -> Self {
-        match err {
-            diesel::result::Error::NotFound => DatabaseError::new(DatabaseErrorKind::NotFound),
-            _ => DatabaseError::new(DatabaseErrorKind::Query(err.to_string())),
-        }
-    }
-}
-
-#[cfg(feature = "database")]
-impl From<diesel::ConnectionError> for DatabaseError {
-    fn from(err: diesel::ConnectionError) -> Self {
-        DatabaseError::new(DatabaseErrorKind::Connection(err.to_string()))
-    }
-}
-
-#[cfg(feature = "database")]
-impl From<serde_json::Error> for DatabaseError {
-    fn from(err: serde_json::Error) -> Self {
-        DatabaseError::new(DatabaseErrorKind::Serialization(err.to_string()))
-    }
-}

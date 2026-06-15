@@ -13,13 +13,11 @@ description = "Social media platform integrations for Botticelli LLM framework"
 # Internal workspace crates
 botticelli_error.workspace = true
 botticelli_interface.workspace = true
-botticelli_database = { workspace = true, optional = true }
 botticelli_narrative = { workspace = true, optional = true }
 botticelli_cache.workspace = true
 botticelli_security.workspace = true
 
-# Database
-diesel = { workspace = true, optional = true }
+# Runtime utilities
 chrono = { workspace = true, optional = true }
 
 # Async runtime
@@ -57,9 +55,7 @@ botticelli = { workspace = true, features = ["discord", "database"] }
 default = []
 discord = ["serenity", "database"]
 database = [
-  "dep:botticelli_database",
   "dep:botticelli_narrative",
-  "dep:diesel",
   "dep:chrono",
 ]
 # Empty feature flag for marking expensive API integration tests

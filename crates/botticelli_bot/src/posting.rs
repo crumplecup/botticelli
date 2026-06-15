@@ -1,10 +1,8 @@
 use crate::config::PostingConfig;
 use crate::metrics::BotMetrics;
-use botticelli_interface::BotticelliDriver;
+use botticelli_interface::{BotStorage, BotticelliDriver};
 use botticelli_narrative::NarrativeExecutor;
 use derive_getters::Getters;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
 use rand::Rng;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -25,7 +23,7 @@ pub enum PostingMessage {
 pub struct PostingBot<D: BotticelliDriver> {
     config: PostingConfig,
     executor: Arc<NarrativeExecutor<D>>,
-    database: Arc<Pool<ConnectionManager<PgConnection>>>,
+    storage: Arc<dyn BotStorage>,
     metrics: Arc<BotMetrics>,
     rx: mpsc::Receiver<PostingMessage>,
 }
@@ -35,17 +33,11 @@ impl<D: BotticelliDriver> PostingBot<D> {
     pub fn new(
         config: PostingConfig,
         executor: Arc<NarrativeExecutor<D>>,
-        database: Arc<Pool<ConnectionManager<PgConnection>>>,
+        storage: Arc<dyn BotStorage>,
         metrics: Arc<BotMetrics>,
         rx: mpsc::Receiver<PostingMessage>,
     ) -> Self {
-        Self {
-            config,
-            executor,
-            database,
-            metrics,
-            rx,
-        }
+        Self { config, executor, storage, metrics, rx }
     }
 
     /// Runs the posting bot loop.
@@ -79,7 +71,7 @@ impl<D: BotticelliDriver> PostingBot<D> {
 
         if !has_approved {
             info!("No approved content available to post");
-            self.metrics.record_posting_success(); // Not a failure, just nothing to do
+            self.metrics.record_posting_success();
             return Ok(());
         }
 
@@ -98,38 +90,33 @@ impl<D: BotticelliDriver> PostingBot<D> {
         match result {
             Ok(_) => {
                 self.metrics.record_posting_success();
-                info!(
-                    duration_ms = duration.as_millis(),
-                    "Successfully posted content"
-                );
+                info!(duration_ms = duration.as_millis(), "Successfully posted content");
                 Ok(())
             }
             Err(e) => {
                 self.metrics.record_posting_failure();
-                error!(
-                    duration_ms = duration.as_millis(),
-                    error = ?e,
-                    "Posting failed"
-                );
+                error!(duration_ms = duration.as_millis(), error = ?e, "Posting failed");
                 Err(e.into())
             }
         }
     }
 
+    #[instrument(skip(self))]
     async fn check_approved_content(&self) -> Result<bool, Box<dyn std::error::Error>> {
-        let mut conn = self.database.get()?;
+        let rows = self
+            .storage
+            .list_content("approved_discord_posts", 10_000)
+            .await
+            .map_err(|e| format!("Storage error: {e}"))?;
 
-        use diesel::dsl::sql;
-        use diesel::prelude::*;
-        use diesel::sql_types::BigInt;
+        let has_unposted = rows.iter().any(|r| {
+            r.content_json
+                .get("posted_at")
+                .map(|v| v.is_null())
+                .unwrap_or(true)
+        });
 
-        let count: i64 = diesel::select(sql::<BigInt>(
-            "COUNT(*) FROM approved_discord_posts WHERE posted_at IS NULL",
-        ))
-        .get_result(&mut conn)
-        .unwrap_or(0);
-
-        Ok(count > 0)
+        Ok(has_unposted)
     }
 
     /// Calculates next post time with jitter.
@@ -140,7 +127,6 @@ impl<D: BotticelliDriver> PostingBot<D> {
         let mut rng = rand::thread_rng();
         let jitter = rng.gen_range(0..=jitter_secs);
 
-        // Add or subtract jitter randomly
         if rng.gen_bool(0.5) {
             base + Duration::from_secs(jitter)
         } else {

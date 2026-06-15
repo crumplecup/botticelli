@@ -40,12 +40,11 @@ impl HuggingFaceDriver {
     /// Returns error if client cannot be initialized.
     #[instrument(skip(api_token), fields(model = %model))]
     pub fn with_api_token(api_token: String, model: String) -> ModelsResult<Self> {
-        let inner = OpenAICompatibleClient::new(
-            api_token,
-            model,
-            "https://router.huggingface.co/v1/chat/completions".to_string(),
-            "huggingface",
+        let url = format!(
+            "https://api-inference.huggingface.co/models/{}/v1/chat/completions",
+            model
         );
+        let inner = OpenAICompatibleClient::new(api_token, model, url, "huggingface");
 
         Ok(Self { inner })
     }

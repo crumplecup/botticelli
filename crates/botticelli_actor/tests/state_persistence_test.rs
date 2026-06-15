@@ -1,34 +1,26 @@
-//! Tests for database state persistence.
-//!
-//! Note: These tests validate the state persistence plumbing works correctly.
-//! Full integration testing requires a running PostgreSQL instance.
+//! Tests for BotStorageStatePersistence.
 
-use botticelli_actor::DatabaseStatePersistence;
+use botticelli_actor::BotStorageStatePersistence;
+use botticelli_database::RedbStorage;
+use botticelli_interface::BotStorage;
 use botticelli_server::StatePersistence;
+use std::sync::Arc;
+
+fn make_storage() -> Arc<dyn BotStorage> {
+    Arc::new(RedbStorage::in_memory().expect("in-memory redb"))
+}
 
 #[tokio::test]
 async fn test_state_persistence_interface() {
-    dotenvy::dotenv().ok();
+    let persistence = BotStorageStatePersistence::new(make_storage());
 
-    // Validate that DatabaseStatePersistence implements the trait
-    let persistence =
-        DatabaseStatePersistence::with_pool_size(2).expect("Failed to create persistence");
-
-    // The trait methods are available
-    let _result = persistence.load_state().await;
-
-    // Note: Actual database operations require DATABASE_URL and a running PostgreSQL instance
-    // Full integration tests would go here with proper database setup
+    // Trait methods are available
+    let result = persistence.load_state().await;
+    assert!(result.is_ok(), "load_state should not error on empty store");
+    assert!(result.unwrap().is_none(), "no state initially");
 }
 
 #[test]
 fn test_state_persistence_construction() {
-    dotenvy::dotenv().ok();
-
-    // Verify DatabaseStatePersistence can be constructed
-    let _persistence =
-        DatabaseStatePersistence::with_pool_size(2).expect("Failed to create persistence");
-
-    // The type is constructible and implements required traits
-    // Actual database operations are tested in integration tests
+    let _persistence = BotStorageStatePersistence::new(make_storage());
 }

@@ -11,7 +11,6 @@ botticelli_core.workspace = true
 botticelli_error.workspace = true
 botticelli_interface.workspace = true
 botticelli_narrative.workspace = true
-botticelli_database = { workspace = true, optional = true }
 botticelli_models = { workspace = true, optional = true }
 botticelli_social = { workspace = true, optional = true, features = [
   "discord",
@@ -66,10 +65,8 @@ tower.workspace = true
 # Elicitation framework
 elicitation.workspace = true
 
-# Database (only when feature enabled)
-diesel = { workspace = true, features = ["postgres"], optional = true }
-
 [dev-dependencies]
+botticelli_database = { path = "../botticelli_database" }
 tokio-test.workspace = true
 reqwest = { workspace = true, features = ["json"] }
 futures.workspace = true
@@ -77,8 +74,8 @@ futures.workspace = true
 [features]
 default = []
 
-# Database integration
-database = ["dep:botticelli_database", "dep:diesel"]
+# Database integration (enables ContentResource)
+database = []
 
 # Discord integration
 discord = ["dep:botticelli_social"]

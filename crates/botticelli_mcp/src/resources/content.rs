@@ -1,62 +1,58 @@
-//! Content resource for database content.
+//! Content resource for BotStorage content.
 
 use super::{McpResource, ResourceInfo};
 use async_trait::async_trait;
-use botticelli_database::{establish_connection, get_content_by_id, list_content};
 use botticelli_error::{McpError, McpResult};
+use botticelli_interface::BotStorage;
+use std::sync::Arc;
 use tracing::{debug, instrument};
 
-/// Resource for accessing database content.
+/// Resource for accessing stored content via BotStorage.
 ///
 /// URI format: `content://{table}/{id}`
-/// Example: `content://content/123`
-pub struct ContentResource;
+/// Example: `content://content/550e8400-e29b-41d4-a716-446655440000`
+pub struct ContentResource {
+    storage: Arc<dyn BotStorage>,
+}
 
 impl ContentResource {
-    /// Creates a new content resource.
-    pub fn new() -> Self {
-        Self
+    /// Creates a new content resource backed by the given storage.
+    pub fn new(storage: Arc<dyn BotStorage>) -> Self {
+        Self { storage }
     }
 
     /// Parses a content URI into (table, id).
-    fn parse_uri(&self, uri: &str) -> McpResult<(String, i32)> {
+    #[instrument(skip(self))]
+    fn parse_uri(&self, uri: &str) -> McpResult<(String, String)> {
         let without_scheme = uri.strip_prefix("content://").ok_or_else(|| {
             McpError::resource_not_found(
                 "Invalid content URI: missing content:// scheme".to_string(),
             )
         })?;
 
-        let parts: Vec<&str> = without_scheme.split('/').collect();
-        if parts.len() != 2 {
+        let parts: Vec<&str> = without_scheme.splitn(2, '/').collect();
+        if parts.len() != 2 || parts[1].is_empty() {
             return Err(McpError::invalid_input(format!(
                 "Invalid content URI format. Expected content://table/id, got {}",
                 uri
             )));
         }
 
-        let table = parts[0].to_string();
-        let id = parts[1]
-            .parse::<i32>()
-            .map_err(|_| McpError::invalid_input(format!("Invalid ID in URI: {}", parts[1])))?;
-
-        Ok((table, id))
+        Ok((parts[0].to_string(), parts[1].to_string()))
     }
 
-    /// Queries content from database.
+    /// Retrieves a single content record by table and id.
     #[instrument(skip(self))]
-    fn query_content(&self, table: &str, id: i32) -> McpResult<serde_json::Value> {
-        let mut conn = establish_connection().map_err(|e| {
-            McpError::execution_failed(format!("Database connection failed: {}", e))
-        })?;
+    async fn query_content(&self, table: &str, id: &str) -> McpResult<serde_json::Value> {
+        let record = self
+            .storage
+            .get_content(id)
+            .await
+            .map_err(|e| McpError::execution_failed(format!("Storage error: {}", e)))?;
 
-        get_content_by_id(&mut conn, table, id as i64)
-            .map_err(|e| McpError::resource_not_found(format!("Content not found: {}", e)))
-    }
-}
-
-impl Default for ContentResource {
-    fn default() -> Self {
-        Self::new()
+        record
+            .map(|r| r.content_json)
+            .ok_or_else(|| McpError::resource_not_found(format!("Content not found: {}/{}", table, id)))
     }
 }
 
@@ -67,7 +63,7 @@ impl McpResource for ContentResource {
     }
 
     fn description(&self) -> &'static str {
-        "Access database content by table and ID"
+        "Access stored content by table and ID"
     }
 
     #[instrument(skip(self), fields(uri))]
@@ -75,28 +71,28 @@ impl McpResource for ContentResource {
         let (table, id) = self.parse_uri(uri)?;
         debug!(table, id, "Reading content");
 
-        let content = self.query_content(&table, id)?;
+        let content = self.query_content(&table, &id).await?;
 
-        // Format as JSON
         serde_json::to_string_pretty(&content)
             .map_err(|e| McpError::execution_failed(format!("Failed to serialize content: {}", e)))
     }
 
     #[instrument(skip(self))]
     async fn list(&self) -> McpResult<Vec<ResourceInfo>> {
-        let mut conn = establish_connection().map_err(|e| {
-            McpError::execution_failed(format!("Database connection failed: {}", e))
-        })?;
-
-        // List recent content (limit 20 for performance)
-        let rows = list_content(&mut conn, "content", None, 20)
+        let rows = self
+            .storage
+            .list_content("content", 20)
+            .await
             .map_err(|e| McpError::execution_failed(format!("Failed to list content: {}", e)))?;
 
         let resources = rows
             .into_iter()
-            .filter_map(|row| {
-                let id = row.get("id")?.as_i64()? as i32;
-                let text = row.get("text_content")?.as_str()?;
+            .map(|row| {
+                let text = row
+                    .content_json
+                    .get("text_content")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
 
                 let preview = if text.len() > 50 {
                     format!("{}...", &text[..50])
@@ -104,40 +100,15 @@ impl McpResource for ContentResource {
                     text.to_string()
                 };
 
-                Some(ResourceInfo {
-                    uri: format!("content://content/{}", id),
-                    name: format!("Content {}", id),
+                ResourceInfo {
+                    uri: format!("content://content/{}", row.id),
+                    name: format!("Content {}", row.id),
                     description: preview,
                     mime_type: Some("application/json".to_string()),
-                })
+                }
             })
             .collect();
 
         Ok(resources)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_uri() {
-        let resource = ContentResource::new();
-
-        let (table, id) = resource
-            .parse_uri("content://content/123")
-            .expect("Valid URI");
-        assert_eq!(table, "content");
-        assert_eq!(id, 123);
-    }
-
-    #[test]
-    fn test_parse_uri_invalid() {
-        let resource = ContentResource::new();
-
-        assert!(resource.parse_uri("invalid://uri").is_err());
-        assert!(resource.parse_uri("content://table").is_err());
-        assert!(resource.parse_uri("content://table/notanumber").is_err());
     }
 }

@@ -26,9 +26,5 @@ toml.workspace = true
 regex.workspace = true
 tracing.workspace = true
 
-# Optional for database-backed approval workflows
-diesel = { workspace = true, optional = true }
-
 [features]
 default = []
-database = ["dep:diesel", "botticelli_error/database"]

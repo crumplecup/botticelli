@@ -158,8 +158,6 @@ pub async fn run_narrative(
     use botticelli_models::GeminiClient;
     use botticelli_narrative::NarrativeExecutor;
 
-    #[cfg(not(feature = "database"))]
-
     tracing::info!(
         path = %source.path().display(),
         narrative_name = ?source.name(),
@@ -168,37 +166,6 @@ pub async fn run_narrative(
 
     // Load and parse the narrative TOML file
     // Use MultiNarrative if a name is provided (enables composition), otherwise single Narrative
-    #[cfg(feature = "database")]
-    let narrative: Box<dyn botticelli_narrative::NarrativeProvider> = {
-        let mut conn = botticelli_database::establish_connection()?;
-
-        if let Some(name) = source.name() {
-            // Load as MultiNarrative for composition support
-            Box::new(botticelli_narrative::MultiNarrative::from_file_with_db(
-                source.path(),
-                name,
-                &mut conn,
-            )?)
-        } else {
-            // Load as single Narrative for backwards compatibility
-            let content = std::fs::read_to_string(source.path()).map_err(|e| {
-                botticelli_error::NarrativeError::new(
-                    botticelli_error::NarrativeErrorKind::FileRead(e.to_string()),
-                )
-            })?;
-            let mut narrative = botticelli_narrative::Narrative::from_toml_str(&content, None)?;
-            narrative.set_source_path(Some(source.path().to_path_buf()));
-
-            // Assemble prompts if template specified
-            if narrative.metadata().template().is_some() {
-                narrative.assemble_act_prompts(&mut conn)?;
-            }
-
-            Box::new(narrative)
-        }
-    };
-
-    #[cfg(not(feature = "database"))]
     let narrative: Box<dyn botticelli_narrative::NarrativeProvider> = {
         if let Some(name) = source.name() {
             // Load as MultiNarrative for composition support
@@ -337,48 +304,52 @@ pub async fn run_narrative(
         GeminiClient::new_with_tier(Some(Box::new(adjusted_tier)))?
     };
 
-    // Create executor with content generation processor and table registry
+    // Open redb content storage when database feature is enabled
+    #[cfg(feature = "database")]
+    let redb_storage: std::sync::Arc<dyn botticelli_interface::BotStorage> = {
+        use botticelli_error::{BackendError, BotticelliError};
+        let db_path = options
+            .state_dir()
+            .map(|d| d.join("botticelli.redb"))
+            .or_else(|| {
+                dirs::data_dir().map(|d| d.join("botticelli").join("botticelli.redb"))
+            })
+            .ok_or_else(|| BackendError::new("Cannot determine data directory for redb"))?;
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| BotticelliError::from(BackendError::new(format!("{e}"))))?;
+        }
+        std::sync::Arc::new(
+            botticelli_database::RedbStorage::open(&db_path)
+                .map_err(|e| BotticelliError::from(BackendError::new(format!("{e}"))))?,
+        )
+    };
+
+    // Create executor with content generation processor
     let executor = {
         #[cfg(feature = "database")]
         {
-            use botticelli_database::{
-                DatabaseTableQueryRegistry, TableQueryExecutor, create_pool,
-            };
-            use botticelli_narrative::ProcessorRegistry;
-            use botticelli_narrative::{ContentGenerationProcessor, StorageActor};
-            use std::sync::{Arc, Mutex};
-
-            // Create database connection for table queries
-            let table_conn = botticelli_database::establish_connection()?;
-            let table_executor = TableQueryExecutor::new(Arc::new(Mutex::new(table_conn)));
-            let table_registry = DatabaseTableQueryRegistry::new(table_executor);
+            use botticelli_narrative::{ContentGenerationProcessor, ProcessorRegistry, StorageActor};
 
             // Start storage actor with Ractor
             tracing::info!("Starting storage actor");
-            let pool = create_pool()?;
-
-            let actor = StorageActor::new(pool.clone());
-            let (actor_ref, _handle) =
-                ractor::Actor::spawn(None, actor, pool).await.map_err(|e| {
-                    botticelli_error::BackendError::new(format!(
-                        "Failed to spawn storage actor: {}",
-                        e
-                    ))
-                })?;
-
+            let actor = StorageActor::new(std::sync::Arc::clone(&redb_storage));
+            let (actor_ref, _handle) = ractor::Actor::spawn(
+                None,
+                actor,
+                std::sync::Arc::clone(&redb_storage),
+            )
+            .await
+            .map_err(|e| {
+                botticelli_error::BackendError::new(format!("Failed to spawn storage actor: {}", e))
+            })?;
             tracing::info!("Storage actor started");
 
-            // Create content generation processor with storage actor
             let processor = ContentGenerationProcessor::new(actor_ref);
-
             let mut registry = ProcessorRegistry::new();
             registry.register(Box::new(processor));
 
-            // Build executor with processors and table registry
-            tracing::info!("Configuring executor with table registry");
             let mut executor = NarrativeExecutor::with_processors(client, registry);
-            executor = executor.with_table_registry(Box::new(table_registry));
-            tracing::info!("Table registry configured");
 
             // Configure bot command registry (requires discord feature for social integration)
             #[cfg(all(feature = "database", feature = "discord"))]
@@ -388,12 +359,10 @@ pub async fn run_narrative(
                 tracing::info!("Configuring bot command registry");
                 let mut bot_registry = BotCommandRegistryImpl::new();
 
-                // Always register database executor
-                let database_executor = DatabaseCommandExecutor::new();
+                let database_executor = DatabaseCommandExecutor::new(std::sync::Arc::clone(&redb_storage));
                 bot_registry.register(database_executor);
                 tracing::info!("Database command executor registered");
 
-                // Configure Discord bot executor if feature enabled and requested
                 #[cfg(feature = "discord")]
                 if options.process_discord() {
                     use botticelli_social::DiscordCommandExecutor;
@@ -481,25 +450,53 @@ pub async fn run_narrative(
         "Narrative execution completed"
     );
 
-    // Save to database if requested
+    // Save to redb if requested
     if options.save() {
         #[cfg(feature = "database")]
         {
-            use botticelli_database::{PostgresNarrativeRepository, establish_connection};
-            use botticelli_interface::NarrativeRepository;
-            use botticelli_storage::FileSystemStorage;
-            use std::sync::Arc;
+            use botticelli_error::{BackendError, BotticelliError};
+            use botticelli_interface::{ActExecutionRecord, NarrativeExecutionRecord};
+            use chrono::Utc;
+            use uuid::Uuid;
 
-            let conn = establish_connection()?;
-            let storage_dir = dirs::data_dir()
-                .expect("Could not determine data directory")
-                .join("botticelli")
-                .join("storage");
-            let storage = Arc::new(FileSystemStorage::new(storage_dir)?);
-            let repo = PostgresNarrativeRepository::new(conn, storage);
+            let now = Utc::now();
+            let exec_id = Uuid::new_v4().to_string();
 
-            let exec_id = repo.save_execution(&execution).await?;
-            tracing::info!(execution_id = exec_id, "Execution saved to database");
+            let narrative_record = NarrativeExecutionRecord {
+                id: exec_id.clone(),
+                narrative_name: execution.narrative_name().to_string(),
+                narrative_description: None,
+                started_at: now,
+                completed_at: Some(now),
+                status: "completed".to_string(),
+                error_message: None,
+                created_at: now,
+            };
+
+            redb_storage
+                .save_narrative_execution(&narrative_record)
+                .await
+                .map_err(|e| BotticelliError::from(BackendError::new(format!("{e}"))))?;
+
+            for act in execution.act_executions() {
+                let act_record = ActExecutionRecord {
+                    id: Uuid::new_v4().to_string(),
+                    narrative_execution_id: exec_id.clone(),
+                    act_name: act.act_name().to_string(),
+                    sequence_number: *act.sequence_number() as i32,
+                    model: act.model().clone(),
+                    temperature: *act.temperature(),
+                    max_tokens: act.max_tokens().map(|m| m as i32),
+                    response: act.response().to_string(),
+                    created_at: now,
+                };
+                redb_storage
+                    .save_act_execution(&act_record)
+                    .await
+                    .map_err(|e| BotticelliError::from(BackendError::new(format!("{e}"))))?;
+            }
+
+            tracing::info!(execution_id = %exec_id, "Execution saved to redb");
         }
 
         #[cfg(not(feature = "database"))]

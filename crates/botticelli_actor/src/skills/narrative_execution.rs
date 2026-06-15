@@ -4,13 +4,13 @@ use crate::{
     ActorError, ActorErrorKind, Skill, SkillContext, SkillOutput, SkillOutputBuilder, SkillResult,
 };
 use async_trait::async_trait;
-use botticelli_database::{DatabaseTableQueryRegistry, TableQueryExecutor, establish_connection};
+use botticelli_database::BotStorageTableQueryRegistry;
 use botticelli_models::GeminiClient;
 use botticelli_narrative::{NarrativeExecutor, ProcessorRegistry};
 use ractor::Actor;
 use serde_json::json;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Skill for executing narrative workflows.
 pub struct NarrativeExecutionSkill {
@@ -60,7 +60,6 @@ impl Skill for NarrativeExecutionSkill {
             "Loading narrative for execution"
         );
 
-        // Load narrative from file - automatically detects composition
         let path = Path::new(narrative_path);
         let narrative_source = botticelli_narrative::NarrativeSource::from_file(
             path,
@@ -79,10 +78,6 @@ impl Skill for NarrativeExecutionSkill {
             "Narrative loaded successfully"
         );
 
-        // Create Gemini client for narrative execution
-        // TODO: Make this configurable to support other LLM providers
-        // GeminiClient::new_with_config() reads GEMINI_API_KEY from environment
-        // and loads tier config + budget multipliers from botticelli.toml
         let client = GeminiClient::new_with_config(None).map_err(|e| {
             ActorError::new(ActorErrorKind::InvalidConfiguration(format!(
                 "Failed to create Gemini client: {}",
@@ -90,41 +85,36 @@ impl Skill for NarrativeExecutionSkill {
             )))
         })?;
 
-        // Spawn storage actor for database operations
         tracing::debug!("Spawning storage actor");
-        let storage_actor = botticelli_narrative::StorageActor::new(context.db_pool().clone());
-        let (storage_ref, _handle) = Actor::spawn(None, storage_actor, context.db_pool().clone())
-            .await
-            .map_err(|e| {
-                ActorError::new(ActorErrorKind::Narrative(format!(
-                    "Failed to spawn storage actor: {}",
-                    e
-                )))
-            })?;
+        let storage_actor = botticelli_narrative::StorageActor::new(Arc::clone(context.storage()));
+        let (storage_ref, _handle) =
+            Actor::spawn(None, storage_actor, Arc::clone(context.storage()))
+                .await
+                .map_err(|e| {
+                    ActorError::new(ActorErrorKind::Narrative(format!(
+                        "Failed to spawn storage actor: {}",
+                        e
+                    )))
+                })?;
 
-        // Create processor registry with content generation processor
         tracing::debug!("Creating processor registry");
         let processor = botticelli_narrative::ContentGenerationProcessor::new(storage_ref.clone());
         let mut registry = ProcessorRegistry::new();
         registry.register(Box::new(processor));
 
-        // Create bot command registry for narrative bot commands
         #[cfg(feature = "discord")]
         let bot_registry = {
             use botticelli_social::{BotCommandRegistryImpl, DatabaseCommandExecutor};
 
-            // Load .env file if present
             let _ = dotenvy::dotenv();
 
             tracing::debug!("Creating bot command registry");
             let mut bot_registry = BotCommandRegistryImpl::new();
 
-            // Always register database executor
-            let database_executor = DatabaseCommandExecutor::new();
+            let database_executor = DatabaseCommandExecutor::new(Arc::clone(context.storage()));
             bot_registry.register(database_executor);
             tracing::debug!("Database command executor registered");
 
-            // Register Discord executor if token is available
             if let Ok(token) = std::env::var("DISCORD_TOKEN") {
                 use botticelli_social::DiscordCommandExecutor;
                 tracing::debug!("Configuring Discord bot executor");
@@ -141,22 +131,9 @@ impl Skill for NarrativeExecutionSkill {
         #[cfg(not(feature = "discord"))]
         let bot_registry: Option<Box<dyn botticelli_narrative::BotCommandRegistry>> = None;
 
-        // Create table query registry for database table access
         tracing::debug!("Creating table query registry");
+        let table_registry = BotStorageTableQueryRegistry::new(Arc::clone(context.storage()));
 
-        // Establish a standalone connection for table queries
-        // TODO: Refactor TableQueryExecutor to use connection pool
-        let conn = establish_connection().map_err(|e| {
-            ActorError::new(ActorErrorKind::DatabaseFailed(format!(
-                "Failed to establish database connection for table queries: {}",
-                e
-            )))
-        })?;
-
-        let table_executor = TableQueryExecutor::new(Arc::new(Mutex::new(conn)));
-        let table_registry = DatabaseTableQueryRegistry::new(table_executor);
-
-        // Create executor with the client, processors, table registry, and bot registry
         let mut executor = NarrativeExecutor::with_processors(client, registry)
             .with_table_registry(Box::new(table_registry));
         tracing::debug!("Table query registry configured");
@@ -166,7 +143,6 @@ impl Skill for NarrativeExecutionSkill {
             tracing::debug!("Bot command registry configured");
         }
 
-        // Execute narrative - automatically handles composition context
         tracing::info!(
             narrative_name = narrative_source.name(),
             has_composition = narrative_source.has_composition_context(),
@@ -189,7 +165,6 @@ impl Skill for NarrativeExecutionSkill {
             .map(|n| n.acts().len())
             .unwrap_or(0);
 
-        // Shutdown the storage actor
         tracing::debug!("Shutting down storage actor");
         storage_ref.stop(None);
 

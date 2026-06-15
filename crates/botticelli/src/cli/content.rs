@@ -13,7 +13,7 @@ pub async fn handle_content_command(cmd: ContentCommands) -> BotticelliResult<()
             format,
         } => list_content(&table, status.as_deref(), limit, format).await,
 
-        ContentCommands::Show { table, id } => show_content(&table, id).await,
+        ContentCommands::Show { table, id } => show_content(&table, &id).await,
 
         ContentCommands::Last { format } => last_generation(format).await,
 
@@ -23,18 +23,38 @@ pub async fn handle_content_command(cmd: ContentCommands) -> BotticelliResult<()
     }
 }
 
-/// List content from a table.
+// ── Storage helper ────────────────────────────────────────────────────────────
+
+#[cfg(feature = "database")]
+fn open_storage() -> BotticelliResult<std::sync::Arc<dyn botticelli_interface::BotStorage>> {
+    use botticelli_error::{BackendError, BotticelliError};
+    let db_path = dirs::data_dir()
+        .map(|d| d.join("botticelli").join("botticelli.redb"))
+        .ok_or_else(|| BackendError::new("Cannot determine data directory"))?;
+    if let Some(parent) = db_path.parent() {
+        std::fs::create_dir_all(parent)
+            .map_err(|e| BotticelliError::from(BackendError::new(format!("{e}"))))?;
+    }
+    Ok(std::sync::Arc::new(
+        botticelli_database::RedbStorage::open(&db_path)
+            .map_err(|e| BotticelliError::from(BackendError::new(format!("{e}"))))?,
+    ))
+}
+
+// ── list_content ──────────────────────────────────────────────────────────────
+
 #[cfg(feature = "database")]
 async fn list_content(
     table: &str,
-    status: Option<&str>,
+    _status: Option<&str>,
     limit: i64,
     format: OutputFormat,
 ) -> BotticelliResult<()> {
-    use botticelli_database::{establish_connection, list_content as db_list_content};
-
-    let mut conn = establish_connection()?;
-    let content = db_list_content(&mut conn, table, status, limit as usize)?;
+    let storage = open_storage()?;
+    let content = storage
+        .list_content(table, limit as usize)
+        .await
+        .map_err(|e| botticelli_error::BackendError::new(format!("{e}")))?;
 
     match format {
         OutputFormat::Json => {
@@ -46,8 +66,9 @@ async fn list_content(
             println!("Content from table '{}':", table);
             println!("{:-<80}", "");
             for item in &content {
-                let json = serde_json::to_string_pretty(item)
+                let json = serde_json::to_string_pretty(item.content_json())
                     .map_err(|e| botticelli_error::JsonError::new(e.to_string()))?;
+                println!("id: {}  created: {}", item.id(), item.created_at());
                 println!("{}", json);
                 println!("{:-<80}", "");
             }
@@ -72,38 +93,51 @@ async fn list_content(
     std::process::exit(1);
 }
 
-/// Show a specific content item.
+// ── show_content ──────────────────────────────────────────────────────────────
+
 #[cfg(feature = "database")]
-async fn show_content(table: &str, id: i64) -> BotticelliResult<()> {
-    use botticelli_database::{establish_connection, get_content_by_id};
-
-    let mut conn = establish_connection()?;
-    let content = get_content_by_id(&mut conn, table, id)?;
-
-    let json = serde_json::to_string_pretty(&content)
-        .map_err(|e| botticelli_error::JsonError::new(e.to_string()))?;
-    println!("{}", json);
+async fn show_content(table: &str, id: &str) -> BotticelliResult<()> {
+    let storage = open_storage()?;
+    match storage
+        .get_content(id)
+        .await
+        .map_err(|e| botticelli_error::BackendError::new(format!("{e}")))?
+    {
+        Some(item) if item.table_name() == table => {
+            let json = serde_json::to_string_pretty(item.content_json())
+                .map_err(|e| botticelli_error::JsonError::new(e.to_string()))?;
+            println!("{}", json);
+        }
+        Some(_) => {
+            eprintln!("Content {} does not belong to table '{}'", id, table);
+            std::process::exit(1);
+        }
+        None => {
+            eprintln!("Content {} not found", id);
+            std::process::exit(1);
+        }
+    }
 
     Ok(())
 }
 
 #[cfg(not(feature = "database"))]
-async fn show_content(_table: &str, _id: i64) -> BotticelliResult<()> {
+async fn show_content(_table: &str, _id: &str) -> BotticelliResult<()> {
     eprintln!("Error: Database feature not enabled. Rebuild with --features database");
     std::process::exit(1);
 }
 
-/// Get the last successful generation.
+// ── last_generation ───────────────────────────────────────────────────────────
+
 #[cfg(feature = "database")]
 async fn last_generation(format: OutputFormat) -> BotticelliResult<()> {
-    use botticelli_database::{
-        ContentGenerationRepository, PostgresContentGenerationRepository, establish_connection,
-    };
+    let storage = open_storage()?;
+    let generations = storage
+        .list_content_generations(50)
+        .await
+        .map_err(|e| botticelli_error::BackendError::new(format!("{e}")))?;
 
-    let mut conn = establish_connection()?;
-    let mut repo = PostgresContentGenerationRepository::new(&mut conn);
-
-    match repo.get_last_successful()? {
+    match generations.into_iter().find(|g| g.status() == "success") {
         Some(generation) => match format {
             OutputFormat::TableNameOnly => {
                 println!("{}", generation.table_name());
@@ -141,17 +175,19 @@ async fn last_generation(_format: OutputFormat) -> BotticelliResult<()> {
     std::process::exit(1);
 }
 
-/// List all content generations.
+// ── list_generations ──────────────────────────────────────────────────────────
+
 #[cfg(feature = "database")]
 async fn list_generations(status: Option<&str>, limit: i64) -> BotticelliResult<()> {
-    use botticelli_database::{
-        ContentGenerationRepository, PostgresContentGenerationRepository, establish_connection,
-    };
+    let storage = open_storage()?;
+    let mut generations = storage
+        .list_content_generations(limit as usize)
+        .await
+        .map_err(|e| botticelli_error::BackendError::new(format!("{e}")))?;
 
-    let mut conn = establish_connection()?;
-    let mut repo = PostgresContentGenerationRepository::new(&mut conn);
-
-    let generations = repo.list_generations(status.map(String::from), limit)?;
+    if let Some(s) = status {
+        generations.retain(|g| g.status() == s);
+    }
 
     println!(
         "{:<20} {:<15} {:<10} {:<20}",

@@ -7,40 +7,37 @@ authors.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "PostgreSQL integration for Botticelli"
+description = "Storage backends for Botticelli (redb default, PostgreSQL optional)"
+
+[features]
+default = ["redb"]
+redb     = ["dep:elicit_redb", "dep:elicit_db"]
+postgres = ["dep:elicit_sqlx", "dep:elicit_db", "dep:sqlx"]
 
 [dependencies]
-botticelli_error = { workspace = true, features = ["database"] }
-botticelli_core.workspace = true
 botticelli_interface.workspace = true
-botticelli_storage.workspace = true
 
 # Async
 async-trait.workspace = true
-tokio.workspace = true
 
-# Database
-diesel.workspace = true
-diesel_migrations.workspace = true
+# Backends (optional)
+elicit_db   = { workspace = true, optional = true }
+elicit_redb = { workspace = true, optional = true }
+elicit_sqlx = { workspace = true, optional = true }
+sqlx        = { workspace = true, optional = true }
 
 # Serialization
 serde.workspace = true
 serde_json.workspace = true
-toml.workspace = true
 
-# Time and IDs
+# Time
 chrono.workspace = true
-uuid.workspace = true
 
 # Logging
 tracing.workspace = true
 
-# Hashing
-sha2.workspace = true
-
 # Derives
-derive-getters.workspace = true
-derive_builder.workspace = true
+derive_more.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

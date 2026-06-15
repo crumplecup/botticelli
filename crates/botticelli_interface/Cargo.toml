@@ -18,6 +18,7 @@ botticelli_storage.workspace = true
 
 # external
 async-trait.workspace = true
+elicit_db.workspace = true
 chrono.workspace = true
 derive_builder.workspace = true
 derive-getters.workspace = true
@@ -28,3 +29,5 @@ futures-util.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
+tracing.workspace = true
+uuid.workspace = true

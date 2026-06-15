@@ -1,17 +1,31 @@
 //! Tests for actor execution tracker integration
 
-use botticelli_actor::{ActorExecutionTracker, DatabaseExecutionResult, DatabaseStatePersistence};
-use botticelli_database::{NewActorServerStateBuilder, establish_connection};
-use chrono::{Duration, Utc};
-use diesel::RunQueryDsl;
+use botticelli_actor::{ActorExecutionTracker, BotStorageStatePersistence, DatabaseExecutionResult};
+use botticelli_database::RedbStorage;
+use botticelli_interface::{ActorServerStateRecord, BotStorage};
+use chrono::Utc;
 use std::sync::Arc;
+
+fn make_storage() -> Arc<dyn BotStorage> {
+    Arc::new(RedbStorage::in_memory().expect("in-memory redb"))
+}
+
+fn create_state(task_id: &str, actor_name: &str) -> ActorServerStateRecord {
+    ActorServerStateRecord {
+        task_id: task_id.to_string(),
+        actor_name: actor_name.to_string(),
+        last_run: None,
+        next_run: Utc::now(),
+        consecutive_failures: 0,
+        is_paused: false,
+        metadata: serde_json::json!({}),
+        updated_at: Utc::now(),
+    }
+}
 
 #[tokio::test]
 async fn test_execution_tracker_lifecycle() {
-    dotenvy::dotenv().ok();
-    let persistence = Arc::new(
-        DatabaseStatePersistence::with_pool_size(2).expect("Failed to create persistence"),
-    );
+    let persistence = Arc::new(BotStorageStatePersistence::new(make_storage()));
     let task_id = format!(
         "test-tracker-{}-{}",
         Utc::now().timestamp_millis(),
@@ -20,23 +34,10 @@ async fn test_execution_tracker_lifecycle() {
     let actor_name = "test-actor";
 
     // Setup: Create initial state
-    {
-        let mut conn = establish_connection().expect("Database connection");
-        let new_state = NewActorServerStateBuilder::default()
-            .task_id(task_id.clone())
-            .actor_name(actor_name.to_string())
-            .next_run(Utc::now().naive_utc())
-            .is_paused(false)
-            .consecutive_failures(0)
-            .metadata(serde_json::json!({}))
-            .build()
-            .expect("Valid state");
-
-        diesel::insert_into(botticelli_database::schema::actor_server_state::table)
-            .values(&new_state)
-            .execute(&mut conn)
-            .expect("Insert state");
-    }
+    persistence
+        .save_task_state(&task_id, &create_state(&task_id, actor_name))
+        .await
+        .expect("Insert state");
 
     let tracker =
         ActorExecutionTracker::new(persistence.clone(), task_id.clone(), actor_name.to_string());
@@ -49,7 +50,7 @@ async fn test_execution_tracker_lifecycle() {
 
     // Start execution
     let exec_id = tracker.start_execution().await.expect("Start execution");
-    assert!(exec_id > 0, "Execution ID should be positive");
+    assert!(!exec_id.is_empty(), "Execution ID should be non-empty");
 
     // Record success
     let result = DatabaseExecutionResult {
@@ -65,7 +66,7 @@ async fn test_execution_tracker_lifecycle() {
         .expect("Record success");
 
     // Update next run
-    let next_run = (Utc::now() + Duration::seconds(60)).naive_utc();
+    let next_run = Utc::now() + chrono::Duration::seconds(60);
     tracker
         .update_next_run(next_run)
         .await
@@ -80,10 +81,7 @@ async fn test_execution_tracker_lifecycle() {
 
 #[tokio::test]
 async fn test_execution_tracker_circuit_breaker() {
-    dotenvy::dotenv().ok();
-    let persistence = Arc::new(
-        DatabaseStatePersistence::with_pool_size(2).expect("Failed to create persistence"),
-    );
+    let persistence = Arc::new(BotStorageStatePersistence::new(make_storage()));
     let task_id = format!(
         "test-circuit-{}-{}",
         Utc::now().timestamp_millis(),
@@ -92,23 +90,20 @@ async fn test_execution_tracker_circuit_breaker() {
     let actor_name = "failing-actor";
 
     // Setup with max_failures = 3 in metadata
-    {
-        let mut conn = establish_connection().expect("Database connection");
-        let new_state = NewActorServerStateBuilder::default()
-            .task_id(task_id.clone())
-            .actor_name(actor_name.to_string())
-            .next_run(Utc::now().naive_utc())
-            .is_paused(false)
-            .consecutive_failures(0)
-            .metadata(serde_json::json!({"max_failures": 3}))
-            .build()
-            .expect("Valid state");
-
-        diesel::insert_into(botticelli_database::schema::actor_server_state::table)
-            .values(&new_state)
-            .execute(&mut conn)
-            .expect("Insert state");
-    }
+    let state = ActorServerStateRecord {
+        task_id: task_id.clone(),
+        actor_name: actor_name.to_string(),
+        last_run: None,
+        next_run: Utc::now(),
+        consecutive_failures: 0,
+        is_paused: false,
+        metadata: serde_json::json!({"max_failures": 3}),
+        updated_at: Utc::now(),
+    };
+    persistence
+        .save_task_state(&task_id, &state)
+        .await
+        .expect("Insert state");
 
     let tracker =
         ActorExecutionTracker::new(persistence.clone(), task_id.clone(), actor_name.to_string());
@@ -143,10 +138,8 @@ async fn test_execution_tracker_circuit_breaker() {
 
 #[tokio::test]
 async fn test_execution_tracker_accessors() {
-    dotenvy::dotenv().ok();
-    let persistence = Arc::new(
-        DatabaseStatePersistence::with_pool_size(2).expect("Failed to create persistence"),
-    );
+    let storage = make_storage();
+    let persistence = Arc::new(BotStorageStatePersistence::new(storage));
     let task_id = "test-task".to_string();
     let actor_name = "test-actor".to_string();
 

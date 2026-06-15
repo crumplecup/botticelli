@@ -1,14 +1,14 @@
 //! Knowledge table abstraction for actor data access.
 
 use crate::{ActorError, ActorErrorKind, ActorResult};
-use diesel::PgConnection;
-use diesel::prelude::*;
+use botticelli_interface::BotStorage;
 use serde_json::Value as JsonValue;
+use std::sync::Arc;
 
-/// Wrapper for knowledge table access.
+/// Wrapper for knowledge table access backed by [`BotStorage`].
 ///
-/// Provides type-safe access to database tables produced by narratives.
-/// Knowledge tables contain structured data that actors consume.
+/// Knowledge tables contain structured data produced by narratives that
+/// actors consume during execution.
 #[derive(Debug, Clone)]
 pub struct KnowledgeTable {
     name: String,
@@ -16,10 +16,6 @@ pub struct KnowledgeTable {
 
 impl KnowledgeTable {
     /// Create a new knowledge table reference.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - Table name
     #[tracing::instrument(skip_all, fields(table_name))]
     pub fn new(name: impl Into<String>) -> Self {
         let name = name.into();
@@ -34,155 +30,88 @@ impl KnowledgeTable {
 
     /// Query all rows from the knowledge table.
     ///
-    /// # Arguments
-    ///
-    /// * `conn` - Database connection
-    ///
-    /// # Returns
-    ///
-    /// Vector of rows as JSON objects.
-    ///
     /// # Errors
     ///
-    /// Returns error if:
-    /// - Table does not exist
-    /// - Query fails
-    /// - JSON parsing fails
-    #[tracing::instrument(skip(self, conn), fields(table_name = %self.name))]
-    pub fn query(&self, conn: &mut PgConnection) -> ActorResult<Vec<JsonValue>> {
+    /// Returns error if the storage backend fails.
+    #[tracing::instrument(skip(self, storage), fields(table_name = %self.name))]
+    pub async fn query(&self, storage: &Arc<dyn BotStorage>) -> ActorResult<Vec<JsonValue>> {
         tracing::debug!("Querying knowledge table");
 
-        // Use raw SQL to query dynamic table names
-        let query = format!("SELECT row_to_json(t.*) as data FROM {} as t", self.name);
-
-        tracing::debug!(sql = %query, "Executing query");
-
-        let results: Vec<JsonValue> = diesel::sql_query(&query)
-            .load::<QueryRow>(conn)
+        let records = storage
+            .list_content(&self.name, 10_000)
+            .await
             .map_err(|e| {
                 tracing::error!(error = ?e, "Knowledge table query failed");
                 ActorError::new(ActorErrorKind::KnowledgeTableNotFound(format!(
                     "{}: {}",
                     self.name, e
                 )))
-            })?
-            .into_iter()
-            .map(|row| row.data)
-            .collect();
+            })?;
 
-        tracing::info!(count = results.len(), "Retrieved rows from knowledge table");
-        Ok(results)
+        tracing::info!(count = records.len(), "Retrieved rows from knowledge table");
+        Ok(records.into_iter().map(|r| r.content_json).collect())
     }
 
-    /// Query rows with a WHERE clause.
+    /// Query rows matching a field value.
     ///
-    /// # Arguments
-    ///
-    /// * `conn` - Database connection
-    /// * `where_clause` - SQL WHERE clause (without "WHERE" keyword)
-    ///
-    /// # Returns
-    ///
-    /// Vector of matching rows as JSON objects.
-    ///
-    /// # Errors
-    ///
-    /// Returns error if:
-    /// - Table does not exist
-    /// - Query fails
-    /// - Invalid WHERE clause
-    #[tracing::instrument(skip(self, conn), fields(table_name = %self.name, where_clause))]
-    pub fn query_where(
+    /// Performs an in-memory filter on `field = value`.
+    #[tracing::instrument(skip(self, storage), fields(table_name = %self.name, filter))]
+    pub async fn query_where(
         &self,
-        conn: &mut PgConnection,
-        where_clause: &str,
+        storage: &Arc<dyn BotStorage>,
+        filter: &str,
     ) -> ActorResult<Vec<JsonValue>> {
-        tracing::debug!("Querying knowledge table with WHERE clause");
+        tracing::debug!("Querying knowledge table with filter");
 
-        let query = format!(
-            "SELECT row_to_json(t.*) as data FROM {} as t WHERE {}",
-            self.name, where_clause
-        );
+        let all = self.query(storage).await?;
 
-        tracing::debug!(sql = %query, "Executing query");
-
-        let results: Vec<JsonValue> = diesel::sql_query(&query)
-            .load::<QueryRow>(conn)
-            .map_err(|e| {
-                tracing::error!(error = ?e, "Knowledge table query failed");
-                ActorError::new(ActorErrorKind::KnowledgeTableNotFound(format!(
-                    "{}: {}",
-                    self.name, e
-                )))
-            })?
-            .into_iter()
-            .map(|row| row.data)
-            .collect();
+        let clause = filter.trim();
+        let filtered: Vec<JsonValue> = if let Some((col, val_part)) = clause.split_once(" = ") {
+            let col = col.trim();
+            let val = val_part.trim().trim_matches('\'');
+            all.into_iter()
+                .filter(|row| {
+                    row.get(col)
+                        .and_then(|v| v.as_str())
+                        .map(|s| s == val)
+                        .unwrap_or(false)
+                })
+                .collect()
+        } else {
+            all
+        };
 
         tracing::info!(
-            count = results.len(),
+            count = filtered.len(),
             "Retrieved filtered rows from knowledge table"
         );
-        Ok(results)
+        Ok(filtered)
     }
 
     /// Get row count from table.
-    ///
-    /// # Arguments
-    ///
-    /// * `conn` - Database connection
-    ///
-    /// # Returns
-    ///
-    /// Number of rows in table.
-    ///
-    /// # Errors
-    ///
-    /// Returns error if table does not exist or query fails.
-    #[tracing::instrument(skip(self, conn), fields(table_name = %self.name))]
-    pub fn count(&self, conn: &mut PgConnection) -> ActorResult<i64> {
+    #[tracing::instrument(skip(self, storage), fields(table_name = %self.name))]
+    pub async fn count(&self, storage: &Arc<dyn BotStorage>) -> ActorResult<i64> {
         tracing::debug!("Counting rows in knowledge table");
-
-        let query = format!("SELECT COUNT(*) as count FROM {}", self.name);
-
-        tracing::debug!(sql = %query, "Executing query");
-
-        let result: CountRow = diesel::sql_query(&query).get_result(conn).map_err(|e| {
-            tracing::error!(error = ?e, "Count query failed");
-            ActorError::new(ActorErrorKind::KnowledgeTableNotFound(format!(
-                "{}: {}",
-                self.name, e
-            )))
-        })?;
-
-        tracing::debug!(count = result.count, "Row count retrieved");
-        Ok(result.count)
+        let records = storage
+            .list_content(&self.name, 10_000)
+            .await
+            .map_err(|e| {
+                ActorError::new(ActorErrorKind::KnowledgeTableNotFound(format!(
+                    "{}: {}",
+                    self.name, e
+                )))
+            })?;
+        tracing::debug!(count = records.len(), "Row count retrieved");
+        Ok(records.len() as i64)
     }
 
-    /// Check if table exists.
-    ///
-    /// # Arguments
-    ///
-    /// * `conn` - Database connection
-    ///
-    /// # Returns
-    ///
-    /// True if table exists, false otherwise.
-    #[tracing::instrument(skip(self, conn), fields(table_name = %self.name))]
-    pub fn exists(&self, conn: &mut PgConnection) -> bool {
-        let query = format!(
-            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{}')",
-            self.name
-        );
-
-        tracing::debug!(sql = %query, "Checking table existence");
-
-        let result: Result<ExistsRow, _> = diesel::sql_query(&query).get_result(conn);
-
-        match result {
-            Ok(row) => {
-                tracing::debug!(exists = row.exists, "Table existence checked");
-                row.exists
+    /// Check if the table has any rows.
+    #[tracing::instrument(skip(self, storage), fields(table_name = %self.name))]
+    pub async fn exists(&self, storage: &Arc<dyn BotStorage>) -> bool {
+        match storage.list_content(&self.name, 1).await {
+            Ok(rows) => {
+                tracing::debug!(exists = !rows.is_empty(), "Table existence checked");
+                !rows.is_empty()
             }
             Err(e) => {
                 tracing::warn!(error = ?e, "Failed to check table existence");
@@ -190,25 +119,4 @@ impl KnowledgeTable {
             }
         }
     }
-}
-
-/// Row result for JSON queries.
-#[derive(Debug, QueryableByName)]
-struct QueryRow {
-    #[diesel(sql_type = diesel::sql_types::Jsonb)]
-    data: JsonValue,
-}
-
-/// Row result for count queries.
-#[derive(Debug, QueryableByName)]
-struct CountRow {
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    count: i64,
-}
-
-/// Row result for existence checks.
-#[derive(Debug, QueryableByName)]
-struct ExistsRow {
-    #[diesel(sql_type = diesel::sql_types::Bool)]
-    exists: bool,
 }

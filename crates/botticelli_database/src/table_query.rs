@@ -1,368 +1,310 @@
-//! Table query execution for narrative table references.
+//! `TableQueryRegistry` implementation backed by `BotStorage`.
+//!
+//! Bridges the narrative executor's table query interface to the KV storage
+//! backend, enabling narratives to read content tables without a SQL database.
 
-use crate::{DatabaseError, DatabaseErrorKind, DatabaseResult};
-use botticelli_interface::{TableCountView, TableQueryView};
-use diesel::prelude::*;
-use diesel::sql_types::{BigInt, Text};
+use async_trait::async_trait;
+use botticelli_interface::{BotStorage, TableQueryRegistry, TableQueryView};
 use serde_json::Value as JsonValue;
-use std::sync::{Arc, Mutex};
-use tracing::{debug, instrument};
+use std::sync::Arc;
+use tracing::{debug, info, instrument};
 
-/// Executes table queries for narrative table references.
-#[derive(Clone, derive_getters::Getters)]
-pub struct TableQueryExecutor {
-    connection: Arc<Mutex<PgConnection>>,
+/// Implements [`TableQueryRegistry`] over an [`Arc<dyn BotStorage>`].
+///
+/// Queries are resolved by calling [`BotStorage::list_content`], filtering
+/// in Rust with the provided WHERE clause, then formatting as JSON, Markdown,
+/// or CSV.
+pub struct BotStorageTableQueryRegistry {
+    storage: Arc<dyn BotStorage>,
 }
 
-impl TableQueryExecutor {
-    /// Creates a new table query executor.
-    pub fn new(connection: Arc<Mutex<PgConnection>>) -> Self {
-        Self { connection }
+impl BotStorageTableQueryRegistry {
+    /// Create a new registry backed by the given storage.
+    pub fn new(storage: Arc<dyn BotStorage>) -> Self {
+        Self { storage }
     }
+}
 
-    /// Queries a table and returns results as JSON values.
-    #[instrument(skip(self), fields(table_name = %view.table_name(), limit = ?view.limit(), offset = ?view.offset()))]
-    pub fn query_table(&self, view: &TableQueryView) -> DatabaseResult<Vec<JsonValue>> {
-        debug!("Querying table");
-
-        let mut conn = self
-            .connection
-            .lock()
-            .map_err(|e| DatabaseError::new(DatabaseErrorKind::Connection(e.to_string())))?;
-
-        // Validate table exists
-        if !self.table_exists(&mut conn, view.table_name())? {
-            return Err(DatabaseError::new(DatabaseErrorKind::TableNotFound(
-                view.table_name().to_string(),
-            )));
-        }
-
-        // Build SQL query
-        let query = self.build_query(view)?;
-
-        debug!(query = %query, "Executing table query");
-
-        // Execute query using raw SQL
-        let results = self.execute_raw_query(&mut conn, &query)?;
-
-        debug!(count = results.len(), "Retrieved rows");
-        Ok(results)
+impl std::fmt::Debug for BotStorageTableQueryRegistry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BotStorageTableQueryRegistry").finish_non_exhaustive()
     }
+}
 
-    /// Queries a table, returns results, and deletes those rows (destructive read).
-    #[instrument(skip(self), fields(table_name = %view.table_name(), limit = ?view.limit(), offset = ?view.offset()))]
-    pub fn query_and_delete_table(&self, view: &TableQueryView) -> DatabaseResult<Vec<JsonValue>> {
-        debug!("Querying and deleting from table");
-
-        let mut conn = self
-            .connection
-            .lock()
-            .map_err(|e| DatabaseError::new(DatabaseErrorKind::Connection(e.to_string())))?;
-
-        // Validate table exists
-        if !self.table_exists(&mut conn, view.table_name())? {
-            return Err(DatabaseError::new(DatabaseErrorKind::TableNotFound(
-                view.table_name().to_string(),
-            )));
+/// Apply a simple `col = 'value'` or `col = number` WHERE clause to a JSON row.
+#[instrument(skip(json))]
+fn matches_where(json: &JsonValue, where_clause: &str) -> bool {
+    let clause = where_clause.trim();
+    if let Some((col, val_part)) = clause.split_once(" = ") {
+        let col = col.trim();
+        let val = val_part.trim();
+        if val.starts_with('\'') && val.ends_with('\'') {
+            let expected = &val[1..val.len() - 1];
+            return json.get(col).and_then(|v| v.as_str()) == Some(expected);
         }
-
-        // Call pull_and_delete from content_management
-        let limit = view.limit().unwrap_or(10) as usize;
-        let results =
-            crate::content_management::pull_and_delete(&mut conn, view.table_name(), limit)
-                .map_err(|e| DatabaseError::new(DatabaseErrorKind::Query(e.to_string())))?;
-
-        debug!(count = results.len(), "Retrieved and deleted rows");
-        Ok(results)
+        if let Ok(n) = val.parse::<i64>() {
+            return json.get(col).and_then(|v| v.as_i64()) == Some(n);
+        }
     }
+    false
+}
 
-    /// Checks if a table exists in the database.
-    #[instrument(skip(self, conn))]
-    fn table_exists(&self, conn: &mut PgConnection, table_name: &str) -> DatabaseResult<bool> {
-        #[derive(QueryableByName)]
-        struct ExistsResult {
-            #[diesel(sql_type = diesel::sql_types::Bool)]
-            exists: bool,
-        }
-
-        let query = "SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = $1
-        ) as exists";
-
-        let result: ExistsResult = diesel::sql_query(query)
-            .bind::<Text, _>(table_name)
-            .get_result(conn)
-            .map_err(|e| DatabaseError::new(DatabaseErrorKind::Query(e.to_string())))?;
-
-        Ok(result.exists)
-    }
-
-    /// Builds a SELECT query from the provided view.
-    fn build_query(&self, view: &TableQueryView) -> DatabaseResult<String> {
-        let table_name = view.table_name();
-
-        // Sanitize table name (alphanumeric and underscores only)
-        if !table_name.chars().all(|c| c.is_alphanumeric() || c == '_') {
-            return Err(DatabaseError::new(DatabaseErrorKind::InvalidQuery(
-                "Table name contains invalid characters".into(),
-            )));
-        }
-
-        let col_list = if let Some(cols) = view.columns() {
-            // Sanitize column names
+/// Extract the columns specified in the query view, or return all keys.
+#[instrument(skip(json, columns))]
+fn project_columns(json: &JsonValue, columns: Option<&[String]>) -> JsonValue {
+    match columns {
+        None => json.clone(),
+        Some(cols) => {
+            let mut map = serde_json::Map::new();
             for col in cols {
-                if !col.chars().all(|c| c.is_alphanumeric() || c == '_') {
-                    return Err(DatabaseError::new(DatabaseErrorKind::InvalidQuery(
-                        format!("Column name '{}' contains invalid characters", col),
-                    )));
+                if let Some(v) = json.get(col) {
+                    map.insert(col.clone(), v.clone());
                 }
             }
-            cols.join(", ")
-        } else {
-            "*".to_string()
-        };
-
-        let mut query = format!("SELECT {} FROM {}", col_list, table_name);
-
-        if let Some(where_clause) = view.filter() {
-            let safe_clause = self.sanitize_where_clause(where_clause)?;
-            query.push_str(&format!(" WHERE {}", safe_clause));
+            JsonValue::Object(map)
         }
-
-        if let Some(order) = view.order_by() {
-            // Basic sanitization for ORDER BY
-            if !order
-                .chars()
-                .all(|c| c.is_alphanumeric() || c == '_' || c == ' ' || c == ',')
-            {
-                return Err(DatabaseError::new(DatabaseErrorKind::InvalidQuery(
-                    "ORDER BY contains invalid characters".into(),
-                )));
-            }
-            query.push_str(&format!(" ORDER BY {}", order));
-        }
-
-        if let Some(lim) = view.limit() {
-            query.push_str(&format!(" LIMIT {}", lim));
-        }
-
-        if let Some(off) = view.offset() {
-            query.push_str(&format!(" OFFSET {}", off));
-        }
-
-        Ok(query)
-    }
-
-    /// Sanitizes a WHERE clause to prevent SQL injection.
-    fn sanitize_where_clause(&self, clause: &str) -> DatabaseResult<String> {
-        // Basic SQL injection prevention
-        // Check for dangerous patterns
-        if clause.contains(';') || clause.contains("--") || clause.to_lowercase().contains("drop ")
-        {
-            return Err(DatabaseError::new(DatabaseErrorKind::InvalidQuery(
-                "WHERE clause contains unsafe patterns".into(),
-            )));
-        }
-
-        // This is a basic check. In production, use parameterized queries
-        // or a proper SQL parser
-        Ok(clause.to_string())
-    }
-
-    /// Executes a raw SQL query and returns results as JSON.
-    fn execute_raw_query(
-        &self,
-        conn: &mut PgConnection,
-        query: &str,
-    ) -> DatabaseResult<Vec<JsonValue>> {
-        use tracing::warn;
-
-        // Use diesel's sql_query to execute raw SQL
-        // We'll return the results as JSON strings from PostgreSQL
-        let json_query = format!("SELECT row_to_json(t) as json FROM ({}) t", query);
-
-        #[derive(QueryableByName)]
-        struct JsonRow {
-            #[diesel(sql_type = diesel::sql_types::Json)]
-            json: JsonValue,
-        }
-
-        match diesel::sql_query(&json_query).load::<JsonRow>(conn) {
-            Ok(results) => Ok(results.into_iter().map(|row| row.json).collect()),
-            Err(e) => {
-                let err_msg = e.to_string();
-                // Handle missing column errors gracefully
-                if err_msg.contains("column") && err_msg.contains("does not exist") {
-                    warn!(
-                        error = %err_msg,
-                        query = %query,
-                        "Query references non-existent column - returning empty result set"
-                    );
-                    // Return empty result instead of propagating error
-                    Ok(Vec::new())
-                } else {
-                    Err(DatabaseError::new(DatabaseErrorKind::Query(err_msg)))
-                }
-            }
-        }
-    }
-
-    /// Gets the count of rows that would be returned by a query.
-    #[instrument(skip(self), fields(table_name = %view.table_name()))]
-    pub fn count_rows(&self, view: &TableCountView) -> DatabaseResult<i64> {
-        let mut conn = self
-            .connection
-            .lock()
-            .map_err(|e| DatabaseError::new(DatabaseErrorKind::Connection(e.to_string())))?;
-
-        let table_name = view.table_name();
-
-        // Validate table exists
-        if !self.table_exists(&mut conn, table_name)? {
-            return Err(DatabaseError::new(DatabaseErrorKind::TableNotFound(
-                table_name.to_string(),
-            )));
-        }
-
-        let mut query = format!("SELECT COUNT(*) as count FROM {}", table_name);
-
-        if let Some(where_clause) = view.filter() {
-            let safe_clause = self.sanitize_where_clause(where_clause)?;
-            query.push_str(&format!(" WHERE {}", safe_clause));
-        }
-
-        debug!(query = %query, "Counting rows");
-
-        #[derive(QueryableByName)]
-        struct CountResult {
-            #[diesel(sql_type = BigInt)]
-            count: i64,
-        }
-
-        let result: CountResult = diesel::sql_query(&query)
-            .get_result(&mut *conn)
-            .map_err(|e| DatabaseError::new(DatabaseErrorKind::Query(e.to_string())))?;
-
-        Ok(result.count)
     }
 }
 
-/// Formats table results as JSON.
-pub fn format_as_json(rows: &[JsonValue]) -> String {
-    serde_json::to_string_pretty(rows).unwrap_or_else(|_| "[]".to_string())
-}
-
-/// Formats table results as Markdown table.
-pub fn format_as_markdown(rows: &[JsonValue]) -> String {
-    if rows.is_empty() {
-        return "No data".to_string();
-    }
-
-    // Extract column names from first row
-    let first = &rows[0];
-    let columns: Vec<String> = if let Some(obj) = first.as_object() {
-        obj.keys().cloned().collect()
+/// Sort a list of JSON values by the ORDER BY clause.
+///
+/// Supports `field ASC` and `field DESC` (case-insensitive suffix).
+#[instrument(skip(rows))]
+fn apply_order_by(rows: &mut [JsonValue], order_by: &str) {
+    let order_by = order_by.trim();
+    let (field, descending) = if let Some(col) = order_by.strip_suffix(" DESC") {
+        (col.trim(), true)
+    } else if let Some(col) = order_by.strip_suffix(" ASC") {
+        (col.trim(), false)
     } else {
-        return "Invalid data format".to_string();
+        (order_by, false)
     };
 
-    if columns.is_empty() {
-        return "No columns".to_string();
-    }
-
-    let mut output = String::new();
-
-    // Header row
-    output.push_str("| ");
-    output.push_str(&columns.join(" | "));
-    output.push_str(" |\n");
-
-    // Separator
-    output.push('|');
-    for _ in &columns {
-        output.push_str(" --- |");
-    }
-    output.push('\n');
-
-    // Data rows
-    for row in rows {
-        if let Some(obj) = row.as_object() {
-            output.push_str("| ");
-            let values: Vec<String> = columns
-                .iter()
-                .map(|col| {
-                    obj.get(col)
-                        .map(|v| match v {
-                            JsonValue::String(s) => s.clone(),
-                            JsonValue::Number(n) => n.to_string(),
-                            JsonValue::Bool(b) => b.to_string(),
-                            JsonValue::Null => "null".to_string(),
-                            _ => serde_json::to_string(v).unwrap_or_default(),
-                        })
-                        .unwrap_or_else(|| "".to_string())
-                })
-                .collect();
-            output.push_str(&values.join(" | "));
-            output.push_str(" |\n");
-        }
-    }
-
-    output
+    rows.sort_by(|a, b| {
+        let va = a.get(field);
+        let vb = b.get(field);
+        let ord = compare_json_values(va, vb);
+        if descending { ord.reverse() } else { ord }
+    });
 }
 
-/// Formats table results as CSV.
-pub fn format_as_csv(rows: &[JsonValue]) -> String {
+fn compare_json_values(a: Option<&JsonValue>, b: Option<&JsonValue>) -> std::cmp::Ordering {
+    match (a, b) {
+        (None, None) => std::cmp::Ordering::Equal,
+        (None, Some(_)) => std::cmp::Ordering::Less,
+        (Some(_), None) => std::cmp::Ordering::Greater,
+        (Some(a), Some(b)) => {
+            if let (Some(an), Some(bn)) = (a.as_f64(), b.as_f64()) {
+                an.partial_cmp(&bn).unwrap_or(std::cmp::Ordering::Equal)
+            } else if let (Some(as_), Some(bs)) = (a.as_str(), b.as_str()) {
+                as_.cmp(bs)
+            } else {
+                a.to_string().cmp(&b.to_string())
+            }
+        }
+    }
+}
+
+/// Format a row list as a JSON array string.
+#[instrument(skip(rows))]
+fn format_json(rows: &[JsonValue]) -> String {
+    serde_json::to_string_pretty(&JsonValue::Array(rows.to_vec()))
+        .unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Format a row list as a Markdown table string.
+#[instrument(skip(rows))]
+fn format_markdown(rows: &[JsonValue]) -> String {
+    if rows.is_empty() {
+        return "_No results_".to_string();
+    }
+
+    let all_keys: Vec<String> = rows
+        .iter()
+        .filter_map(|r| r.as_object())
+        .flat_map(|m| m.keys().cloned())
+        .fold(Vec::new(), |mut acc, k| {
+            if !acc.contains(&k) {
+                acc.push(k);
+            }
+            acc
+        });
+
+    let header = format!("| {} |", all_keys.join(" | "));
+    let separator = format!("| {} |", all_keys.iter().map(|_| "---").collect::<Vec<_>>().join(" | "));
+
+    let row_lines: Vec<String> = rows
+        .iter()
+        .map(|r| {
+            let cells: Vec<String> = all_keys
+                .iter()
+                .map(|k| {
+                    r.get(k)
+                        .map(|v| match v {
+                            JsonValue::String(s) => s.clone(),
+                            other => other.to_string(),
+                        })
+                        .unwrap_or_default()
+                })
+                .collect();
+            format!("| {} |", cells.join(" | "))
+        })
+        .collect();
+
+    [header, separator].into_iter().chain(row_lines).collect::<Vec<_>>().join("\n")
+}
+
+/// Format a row list as CSV.
+#[instrument(skip(rows))]
+fn format_csv(rows: &[JsonValue]) -> String {
     if rows.is_empty() {
         return String::new();
     }
 
-    // Extract column names from first row
-    let first = &rows[0];
-    let columns: Vec<String> = if let Some(obj) = first.as_object() {
-        obj.keys().cloned().collect()
-    } else {
-        return "Invalid data format\n".to_string();
-    };
+    let all_keys: Vec<String> = rows
+        .iter()
+        .filter_map(|r| r.as_object())
+        .flat_map(|m| m.keys().cloned())
+        .fold(Vec::new(), |mut acc, k| {
+            if !acc.contains(&k) {
+                acc.push(k);
+            }
+            acc
+        });
 
-    if columns.is_empty() {
-        return "No columns\n".to_string();
-    }
+    let header = all_keys.join(",");
 
-    let mut output = String::new();
-
-    // Header row
-    output.push_str(&columns.join(","));
-    output.push('\n');
-
-    // Data rows
-    for row in rows {
-        if let Some(obj) = row.as_object() {
-            let values: Vec<String> = columns
+    let row_lines: Vec<String> = rows
+        .iter()
+        .map(|r| {
+            all_keys
                 .iter()
-                .map(|col| {
-                    obj.get(col)
+                .map(|k| {
+                    r.get(k)
                         .map(|v| match v {
                             JsonValue::String(s) => {
-                                // Escape quotes and wrap in quotes if contains comma
                                 if s.contains(',') || s.contains('"') || s.contains('\n') {
                                     format!("\"{}\"", s.replace('"', "\"\""))
                                 } else {
                                     s.clone()
                                 }
                             }
-                            JsonValue::Number(n) => n.to_string(),
-                            JsonValue::Bool(b) => b.to_string(),
-                            JsonValue::Null => String::new(),
-                            _ => serde_json::to_string(v).unwrap_or_default(),
+                            other => other.to_string(),
                         })
                         .unwrap_or_default()
                 })
-                .collect();
-            output.push_str(&values.join(","));
-            output.push('\n');
-        }
+                .collect::<Vec<_>>()
+                .join(",")
+        })
+        .collect();
+
+    [header].into_iter().chain(row_lines).collect::<Vec<_>>().join("\n")
+}
+
+/// Execute the full query pipeline: load → filter → project → sort → paginate → format.
+#[instrument(skip(storage, query), fields(table_name = %query.table_name(), format = %query.format()))]
+async fn execute_query(
+    storage: &Arc<dyn BotStorage>,
+    query: &TableQueryView,
+) -> Result<Vec<(String, JsonValue)>, Box<dyn std::error::Error + Send + Sync>> {
+    let limit_for_fetch = (*query.limit())
+        .map(|l| (l + (*query.offset()).unwrap_or(0)) as usize)
+        .unwrap_or(10_000);
+
+    let records = storage
+        .list_content(query.table_name(), limit_for_fetch)
+        .await
+        .map_err(|e| format!("Storage error: {e}"))?;
+
+    debug!(table_name = %query.table_name(), fetched = records.len(), "Loaded records from storage");
+
+    let mut rows: Vec<(String, JsonValue)> = records
+        .into_iter()
+        .filter(|r| {
+            if let Some(where_clause) = query.filter() {
+                matches_where(&r.content_json, where_clause)
+            } else {
+                true
+            }
+        })
+        .map(|r| {
+            let projected = project_columns(&r.content_json, query.columns().as_deref());
+            (r.id, projected)
+        })
+        .collect();
+
+    if let Some(order_by) = query.order_by() {
+        let mut just_rows: Vec<JsonValue> = rows.iter().map(|(_, v)| v.clone()).collect();
+        apply_order_by(&mut just_rows, order_by);
+        rows = rows.into_iter().zip(just_rows).map(|((id, _), v)| (id, v)).collect();
     }
 
-    output
+    if let Some(offset) = *query.offset()
+        && offset > 0
+    {
+        let skip = offset as usize;
+        if skip >= rows.len() {
+            return Ok(vec![]);
+        }
+        rows = rows.into_iter().skip(skip).collect();
+    }
+
+    if let Some(limit) = *query.limit() {
+        rows.truncate(limit as usize);
+    }
+
+    Ok(rows)
+}
+
+#[async_trait]
+impl TableQueryRegistry for BotStorageTableQueryRegistry {
+    #[instrument(skip(self, query), fields(table_name = %query.table_name(), format = %query.format()))]
+    async fn query_table(
+        &self,
+        query: &TableQueryView,
+    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        let rows = execute_query(&self.storage, query).await?;
+        let json_rows: Vec<JsonValue> = rows.into_iter().map(|(_, v)| v).collect();
+
+        info!(table_name = %query.table_name(), rows = json_rows.len(), format = %query.format(), "Query complete");
+
+        let output = match query.format().as_str() {
+            "markdown" => format_markdown(&json_rows),
+            "csv" => format_csv(&json_rows),
+            _ => format_json(&json_rows),
+        };
+
+        Ok(output)
+    }
+
+    #[instrument(skip(self, query), fields(table_name = %query.table_name(), format = %query.format()))]
+    async fn query_and_delete_table(
+        &self,
+        query: &TableQueryView,
+    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+        let rows = execute_query(&self.storage, query).await?;
+
+        let (ids, json_rows): (Vec<String>, Vec<JsonValue>) = rows.into_iter().unzip();
+
+        for id in &ids {
+            self.storage
+                .delete_content(id)
+                .await
+                .map_err(|e| format!("Failed to delete content row '{}': {}", id, e))?;
+        }
+
+        info!(
+            table_name = %query.table_name(),
+            rows = json_rows.len(),
+            "Query-and-delete complete"
+        );
+
+        let output = match query.format().as_str() {
+            "markdown" => format_markdown(&json_rows),
+            "csv" => format_csv(&json_rows),
+            _ => format_json(&json_rows),
+        };
+
+        Ok(output)
+    }
 }

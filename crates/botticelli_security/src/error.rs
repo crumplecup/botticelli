@@ -79,11 +79,6 @@ pub enum SecurityErrorKind {
     /// Configuration error
     #[display("Configuration error: {}", _0)]
     Configuration(String),
-
-    /// Database error
-    #[cfg(feature = "database")]
-    #[display("Database error: {}", _0)]
-    Database(String),
 }
 
 /// Security error with location tracking.
@@ -118,10 +113,3 @@ impl SecurityError {
 
 /// Result type for security operations.
 pub type SecurityResult<T> = Result<T, SecurityError>;
-
-#[cfg(feature = "database")]
-impl From<diesel::result::Error> for SecurityError {
-    fn from(err: diesel::result::Error) -> Self {
-        SecurityError::new(SecurityErrorKind::Database(err.to_string()))
-    }
-}

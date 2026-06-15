@@ -153,16 +153,6 @@ ollama-rs = "0.3"
 # WebSocket for live APIs
 tokio-tungstenite = "0.28"
 
-# Database
-diesel = { version = "2", features = [
-  "postgres",
-  "chrono",
-  "uuid",
-  "serde_json",
-  "64-column-tables",
-  "r2d2",
-] }
-diesel_migrations = "2"
 chrono = { version = "0.4", features = ["serde"] }
 
 # TUI
@@ -186,6 +176,11 @@ schemars = { version = "1", features = ["derive"] }
 elicitation = { version = "0.11", features = ["serde_json"] }
 elicit_ui = "0.11"
 elicit_ratatui = { version = "0.11", features = ["runtime"] }
+elicit_db = "0.11"
+elicit_redb = "0.11"
+elicit_sqlx = "0.11"
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres"] }
+redb = "2"
 
 mistralrs = { version = "0.8", default-features = false }
 

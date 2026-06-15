@@ -3,11 +3,9 @@ use crate::curation::{CurationBot, CurationMessage};
 use crate::generation::{GenerationBot, GenerationMessage};
 use crate::metrics::BotMetrics;
 use crate::posting::{PostingBot, PostingMessage};
-use botticelli_interface::BotticelliDriver;
+use botticelli_interface::{BotStorage, BotticelliDriver};
 use botticelli_narrative::NarrativeExecutor;
 use derive_getters::Getters;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
 use rand::Rng;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -20,7 +18,7 @@ pub struct BotServer<D: BotticelliDriver> {
     config: BotConfig,
     schedule: BotSchedule,
     executor: Arc<NarrativeExecutor<D>>,
-    database: Arc<Pool<ConnectionManager<PgConnection>>>,
+    storage: Arc<dyn BotStorage>,
     metrics: Arc<BotMetrics>,
 }
 
@@ -29,14 +27,14 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
     pub fn new(
         config: BotConfig,
         executor: NarrativeExecutor<D>,
-        database: Pool<ConnectionManager<PgConnection>>,
+        storage: Arc<dyn BotStorage>,
     ) -> Self {
         let schedule = BotSchedule::from(&config);
         Self {
             config,
             schedule,
             executor: Arc::new(executor),
-            database: Arc::new(database),
+            storage,
             metrics: Arc::new(BotMetrics::new()),
         }
     }
@@ -71,10 +69,7 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
                 }
             });
 
-            info!(
-                port = port,
-                "Metrics HTTP server started at http://0.0.0.0:{}/metrics", port
-            );
+            info!(port = port, "Metrics HTTP server started at http://0.0.0.0:{}/metrics", port);
         }
 
         // Create channels
@@ -93,7 +88,7 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         let curation_bot = CurationBot::new(
             self.config.curation().clone(),
             Arc::clone(&self.executor),
-            Arc::clone(&self.database),
+            Arc::clone(&self.storage),
             Arc::clone(&self.metrics),
             cur_rx,
         );
@@ -101,7 +96,7 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         let posting_bot = PostingBot::new(
             self.config.posting().clone(),
             Arc::clone(&self.executor),
-            Arc::clone(&self.database),
+            Arc::clone(&self.storage),
             Arc::clone(&self.metrics),
             post_rx,
         );
@@ -134,6 +129,7 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         Ok(())
     }
 
+    #[instrument(skip(tx))]
     fn spawn_generation_scheduler_static(
         generation_interval: std::time::Duration,
         tx: mpsc::Sender<GenerationMessage>,
@@ -150,6 +146,7 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         });
     }
 
+    #[instrument(skip(tx))]
     fn spawn_curation_scheduler_static(
         curation_interval: std::time::Duration,
         tx: mpsc::Sender<CurationMessage>,
@@ -166,6 +163,7 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         });
     }
 
+    #[instrument(skip(tx))]
     fn spawn_posting_scheduler_static(
         base_interval_hours: u64,
         jitter_minutes: u64,
@@ -173,7 +171,6 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
     ) {
         tokio::spawn(async move {
             loop {
-                // Calculate next post time with jitter
                 let base = std::time::Duration::from_secs(base_interval_hours * 3600);
                 let jitter_secs = jitter_minutes * 60;
 

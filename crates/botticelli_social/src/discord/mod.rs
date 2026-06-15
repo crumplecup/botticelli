@@ -71,7 +71,8 @@ pub use models::{
 //     DiscordChannelProcessor, DiscordGuildMemberProcessor, DiscordGuildProcessor,
 //     DiscordMemberRoleProcessor, DiscordRoleProcessor, DiscordUserProcessor,
 // };
-pub use repository::{DiscordRepository, DiscordResult};
+pub use error::DiscordResult;
+pub use repository::DiscordRepository;
 
 // TODO: Uncomment exports as modules are implemented
 // commands, poster

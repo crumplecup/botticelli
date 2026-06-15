@@ -34,7 +34,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde_json = { workspace = true }
 dirs = { workspace = true }
 ractor = { workspace = true, optional = true }
-diesel = { workspace = true, optional = true }
 anyhow = "1.0"
 
 # OpenTelemetry dependencies (optional)
@@ -49,6 +48,8 @@ opentelemetry-appender-tracing = { version = "0.31", optional = true }
 ratatui = { version = "0.29", optional = true }
 crossterm = { version = "0.29", optional = true }
 dotenvy.workspace = true
+chrono = { workspace = true, optional = true }
+uuid = { workspace = true, optional = true }
 opentelemetry-stdout = { version = "0.31", optional = true }
 tracing-opentelemetry = { version = "0.32", optional = true }
 
@@ -63,7 +64,7 @@ huggingface = ["botticelli_models", "botticelli_models/huggingface"]
 groq = ["botticelli_models", "botticelli_models/groq"]
 
 # Database feature
-database = ["botticelli_database", "botticelli_narrative/database", "dep:ractor"]
+database = ["botticelli_database", "botticelli_narrative/database", "dep:ractor", "dep:chrono", "dep:uuid"]
 
 # Social platform features
 discord = ["botticelli_social", "botticelli_social/discord", "botticelli_social/database"]
@@ -71,7 +72,7 @@ discord = ["botticelli_social", "botticelli_social/discord", "botticelli_social/
 # TUI feature - removed, use botticelli_tui crate directly
 
 # Bot server feature (generation/curation/posting actors)
-bots = ["botticelli_bot", "gemini", "database", "discord", "dep:diesel"]
+bots = ["botticelli_bot", "gemini", "database", "discord"]
 
 # MCP client feature
 mcp = ["botticelli_mcp", "botticelli_mcp_client", "botticelli_models", "botticelli_models/gemini"]
@@ -116,7 +117,6 @@ dotenvy = { workspace = true }
 async-trait = { workspace = true }
 serde_json = { workspace = true }
 botticelli_cache = { workspace = true }
-diesel = { workspace = true, features = ["postgres"] }
 reqwest = { workspace = true }
 tokio = { workspace = true }
 botticelli_mcp_client = { workspace = true }

@@ -12,13 +12,9 @@ categories.workspace = true
 [dependencies]
 derive_more = { workspace = true, features = ["from", "display", "error"] }
 
-# Optional database error conversions
-diesel = { workspace = true, optional = true }
-serde_json = { workspace = true, optional = true }
-
 [features]
 default = []
-database = ["dep:diesel", "dep:serde_json"]
+database = []
 tui = []
 models = []
 ollama = ["models"]

@@ -1,10 +1,8 @@
 use crate::config::CurationConfig;
 use crate::metrics::BotMetrics;
-use botticelli_interface::BotticelliDriver;
+use botticelli_interface::{BotStorage, BotticelliDriver};
 use botticelli_narrative::NarrativeExecutor;
 use derive_getters::Getters;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::mpsc;
@@ -24,7 +22,7 @@ pub enum CurationMessage {
 pub struct CurationBot<D: BotticelliDriver> {
     config: CurationConfig,
     executor: Arc<NarrativeExecutor<D>>,
-    database: Arc<Pool<ConnectionManager<PgConnection>>>,
+    storage: Arc<dyn BotStorage>,
     metrics: Arc<BotMetrics>,
     rx: mpsc::Receiver<CurationMessage>,
 }
@@ -34,17 +32,11 @@ impl<D: BotticelliDriver> CurationBot<D> {
     pub fn new(
         config: CurationConfig,
         executor: Arc<NarrativeExecutor<D>>,
-        database: Arc<Pool<ConnectionManager<PgConnection>>>,
+        storage: Arc<dyn BotStorage>,
         metrics: Arc<BotMetrics>,
         rx: mpsc::Receiver<CurationMessage>,
     ) -> Self {
-        Self {
-            config,
-            executor,
-            database,
-            metrics,
-            rx,
-        }
+        Self { config, executor, storage, metrics, rx }
     }
 
     /// Runs the curation bot loop.
@@ -85,7 +77,6 @@ impl<D: BotticelliDriver> CurationBot<D> {
 
                 debug!(pending_count, "Found pending content, processing batch");
 
-                // Process batch - the narrative will pull and delete content atomically
                 self.executor
                     .execute_narrative_by_name(
                         &self.config.narrative_path().to_string_lossy(),
@@ -110,28 +101,19 @@ impl<D: BotticelliDriver> CurationBot<D> {
             }
             Err(e) => {
                 self.metrics.record_curation_failure();
-                error!(
-                    duration_ms = duration.as_millis(),
-                    error = ?e,
-                    "Curation failed"
-                );
+                error!(duration_ms = duration.as_millis(), error = ?e, "Curation failed");
                 Err(e)
             }
         }
     }
 
+    #[instrument(skip(self))]
     async fn check_pending_count(&self) -> Result<usize, Box<dyn std::error::Error>> {
-        // Check if potential_discord_posts table has any content
-        let mut conn = self.database.get()?;
-
-        use diesel::dsl::sql;
-        use diesel::prelude::*;
-        use diesel::sql_types::BigInt;
-
-        let count: i64 = diesel::select(sql::<BigInt>("COUNT(*) FROM potential_discord_posts"))
-            .get_result(&mut conn)
-            .unwrap_or(0);
-
-        Ok(count as usize)
+        let rows = self
+            .storage
+            .list_content("potential_discord_posts", 1)
+            .await
+            .map_err(|e| format!("Storage error: {e}"))?;
+        Ok(rows.len())
     }
 }

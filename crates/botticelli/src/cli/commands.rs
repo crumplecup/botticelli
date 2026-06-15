@@ -188,8 +188,8 @@ pub enum ContentCommands {
         /// Name of the table
         table: String,
 
-        /// ID of the content item
-        id: i64,
+        /// UUID of the content item
+        id: String,
     },
 
     /// Get the most recently generated table

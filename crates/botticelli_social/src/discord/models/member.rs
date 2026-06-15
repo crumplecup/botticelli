@@ -1,67 +1,76 @@
 //! Discord guild member models.
 
-use chrono::NaiveDateTime;
-use diesel::prelude::*;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
-/// Database row for discord_guild_members table.
+/// Stored guild member data.
 ///
 /// Represents a user's membership in a specific guild with guild-specific data.
-/// Uses composite primary key (guild_id, user_id).
-#[derive(Debug, Clone, Queryable, Selectable, Associations, derive_getters::Getters)]
-#[diesel(belongs_to(super::guild::GuildRow, foreign_key = guild_id))]
-#[diesel(belongs_to(super::user::UserRow, foreign_key = user_id))]
-#[diesel(table_name = botticelli_database::schema::discord_guild_members)]
-#[diesel(primary_key(guild_id, user_id))]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+/// Uses composite key (guild_id, user_id).
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
 pub struct GuildMemberRow {
     /// Guild ID
     pub guild_id: i64,
     /// User ID
     pub user_id: i64,
 
-    // Member-specific data
     nick: Option<String>,
-    avatar: Option<String>, // Guild-specific avatar
+    avatar: Option<String>,
 
-    // Timestamps
-    joined_at: NaiveDateTime,
-    premium_since: Option<NaiveDateTime>, // Server boost date
-    communication_disabled_until: Option<NaiveDateTime>, // Timeout
+    joined_at: DateTime<Utc>,
+    premium_since: Option<DateTime<Utc>>,
+    communication_disabled_until: Option<DateTime<Utc>>,
 
-    // Flags
     deaf: Option<bool>,
     mute: Option<bool>,
-    pending: Option<bool>, // Passed membership screening
+    pending: Option<bool>,
 
-    // Metadata
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
-    left_at: Option<NaiveDateTime>,
+    pub(crate) created_at: DateTime<Utc>,
+    pub(crate) updated_at: DateTime<Utc>,
+    pub(crate) left_at: Option<DateTime<Utc>>,
 }
 
-/// Insertable struct for discord_guild_members table.
-///
-/// Used to create new guild member records in the database.
-#[derive(Debug, Clone, Insertable, derive_getters::Getters)]
-#[diesel(table_name = botticelli_database::schema::discord_guild_members)]
+/// Input for creating or updating a guild member record.
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
 pub struct NewGuildMember {
     pub(crate) guild_id: i64,
     pub(crate) user_id: i64,
 
-    // Member-specific data
     pub(crate) nick: Option<String>,
     pub(crate) avatar: Option<String>,
 
-    // Timestamps
-    pub(crate) joined_at: NaiveDateTime,
-    pub(crate) premium_since: Option<NaiveDateTime>,
-    pub(crate) communication_disabled_until: Option<NaiveDateTime>,
+    pub(crate) joined_at: DateTime<Utc>,
+    pub(crate) premium_since: Option<DateTime<Utc>>,
+    pub(crate) communication_disabled_until: Option<DateTime<Utc>>,
 
-    // Flags
     pub(crate) deaf: Option<bool>,
     pub(crate) mute: Option<bool>,
     pub(crate) pending: Option<bool>,
 
-    // left_at is set when member leaves
-    pub(crate) left_at: Option<NaiveDateTime>,
+    pub(crate) left_at: Option<DateTime<Utc>>,
+}
+
+impl GuildMemberRow {
+    /// Create a `GuildMemberRow` from a `NewGuildMember` input, using the provided timestamps.
+    pub fn from_new(
+        member: &NewGuildMember,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            guild_id: member.guild_id,
+            user_id: member.user_id,
+            nick: member.nick.clone(),
+            avatar: member.avatar.clone(),
+            joined_at: member.joined_at,
+            premium_since: member.premium_since,
+            communication_disabled_until: member.communication_disabled_until,
+            deaf: member.deaf,
+            mute: member.mute,
+            pending: member.pending,
+            left_at: member.left_at,
+            created_at,
+            updated_at,
+        }
+    }
 }

@@ -1,7 +1,10 @@
 use botticelli_actor::{WorkflowConfigBuilder, WorkflowExecutor};
-use botticelli_database::create_pool_from_url;
+use botticelli_database::RedbStorage;
+use botticelli_interface::BotStorage;
 use clap::Parser;
+use std::path::PathBuf;
 use std::process;
+use std::sync::Arc;
 use tracing::{error, info, warn};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -9,9 +12,9 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 #[command(name = "demo-workflow")]
 #[command(about = "Execute Botticelli demo workflow with validation", long_about = None)]
 struct Args {
-    /// Database URL.
-    #[arg(long, env = "DATABASE_URL")]
-    database_url: String,
+    /// Path to redb database file.
+    #[arg(long, env = "BOTTICELLI_DB")]
+    db_path: Option<PathBuf>,
 
     /// Delay between stages in milliseconds.
     #[arg(long, default_value = "2000")]
@@ -41,29 +44,35 @@ async fn main() {
         .init();
 
     info!("Starting Botticelli demo workflow");
-    warn!("Note: This demo assumes PostgreSQL and MCP server are already running");
+    warn!("Note: This demo assumes MCP server is already running");
     warn!("Run 'just chat-local' first to start all required services");
 
-    let db_pool = match create_pool_from_url(&args.database_url) {
-        Ok(pool) => {
-            info!("Database connection pool created");
-            Some(pool)
+    let db_path = args
+        .db_path
+        .or_else(|| dirs::data_dir().map(|d| d.join("botticelli").join("botticelli.redb")))
+        .unwrap_or_else(|| PathBuf::from("botticelli.redb"));
+
+    std::fs::create_dir_all(db_path.parent().unwrap_or(std::path::Path::new("."))).ok();
+
+    let storage: Option<Arc<dyn BotStorage>> = match RedbStorage::open(&db_path) {
+        Ok(s) => {
+            info!("Opened redb storage");
+            Some(Arc::new(s))
         }
         Err(e) => {
             if args.test_mode {
-                info!("Test mode - continuing without database");
+                info!("Test mode - continuing without storage");
                 None
             } else {
-                error!(error = %e, "Failed to connect to database");
-                eprintln!("Error: Failed to connect to database: {}", e);
-                eprintln!("Hint: Run 'just chat-local' to start all services");
+                error!(error = %e, "Failed to open redb storage");
+                eprintln!("Error: Failed to open storage: {}", e);
                 process::exit(1);
             }
         }
     };
 
     let config = WorkflowConfigBuilder::default()
-        .db_pool(db_pool)
+        .storage(storage)
         .mcp_endpoint("http://localhost:3000".to_string())
         .stage_delay_ms(args.stage_delay_ms)
         .test_mode(args.test_mode)

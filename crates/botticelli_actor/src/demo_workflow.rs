@@ -1,16 +1,13 @@
 use crate::{ActorError, ActorErrorKind, ActorResult};
-use botticelli_database::DbPool;
-use diesel::prelude::*;
-use diesel::sql_query;
-use diesel::sql_types::BigInt;
+use botticelli_interface::BotStorage;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
 use tracing::{debug, error, info, instrument, warn};
 
 /// Configuration for demo workflow.
 #[derive(
-    Debug,
     Clone,
     Serialize,
     Deserialize,
@@ -20,15 +17,25 @@ use tracing::{debug, error, info, instrument, warn};
 )]
 #[setters(prefix = "with_")]
 pub struct WorkflowConfig {
-    /// Database connection pool.
+    /// Storage backend for validation queries.
     #[serde(skip)]
-    db_pool: Option<DbPool>,
+    storage: Option<Arc<dyn BotStorage>>,
     /// MCP server HTTP endpoint.
     mcp_endpoint: String,
     /// Delay between stages in milliseconds.
     stage_delay_ms: u64,
     /// Whether to run in test mode (skip actual execution).
     test_mode: bool,
+}
+
+impl std::fmt::Debug for WorkflowConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WorkflowConfig")
+            .field("mcp_endpoint", &self.mcp_endpoint)
+            .field("stage_delay_ms", &self.stage_delay_ms)
+            .field("test_mode", &self.test_mode)
+            .finish_non_exhaustive()
+    }
 }
 
 /// Workflow stage with validation.
@@ -219,7 +226,6 @@ impl WorkflowExecutor {
 
         info!(endpoint = %endpoint, "Sending prompt to MCP server");
 
-        // Call create_narrative tool via HTTP
         let response = client
             .post(format!("{}/tools/create_narrative", endpoint))
             .json(&serde_json::json!({
@@ -246,7 +252,7 @@ impl WorkflowExecutor {
         Ok(())
     }
 
-    /// Validates stage output by checking database tables.
+    /// Validates stage output by checking content table row counts.
     #[instrument(skip(self, stage))]
     async fn validate_stage(&self, stage: &WorkflowStage) -> ActorResult<ValidationResult> {
         if stage.expected_table.is_none() {
@@ -272,32 +278,15 @@ impl WorkflowExecutor {
             });
         }
 
-        let db_pool = self.config.db_pool.as_ref().ok_or_else(|| {
+        let storage = self.config.storage.as_ref().ok_or_else(|| {
             ActorError::new(ActorErrorKind::InvalidConfiguration(
-                "Database pool not configured".to_string(),
+                "Storage not configured".to_string(),
             ))
         })?;
 
-        let mut conn = db_pool.get().map_err(|e| {
-            ActorError::new(ActorErrorKind::PlatformPermanent(format!(
-                "Failed to get database connection: {}",
-                e
-            )))
-        })?;
-
-        let query = format!("SELECT COUNT(*) as count FROM {}", table_name);
-
-        #[derive(QueryableByName)]
-        struct CountResult {
-            #[diesel(sql_type = BigInt)]
-            count: i64,
-        }
-
-        let result: Result<CountResult, _> = sql_query(&query).get_result(&mut conn);
-
-        match result {
-            Ok(count_result) => {
-                let rows_found = count_result.count as usize;
+        match storage.list_content(table_name, 10_000).await {
+            Ok(records) => {
+                let rows_found = records.len();
                 let passed = rows_found >= stage.min_rows;
 
                 info!(

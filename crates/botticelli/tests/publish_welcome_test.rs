@@ -9,15 +9,13 @@
 
 #![cfg(all(feature = "gemini", feature = "discord", feature = "database"))]
 
-use botticelli_database::{DatabaseTableQueryRegistry, TableQueryExecutor, establish_connection};
+use botticelli_database::{BotStorageTableQueryRegistry, RedbStorage};
+use botticelli_interface::BotStorage;
 use botticelli_models::GeminiClient;
 use botticelli_narrative::{Narrative, NarrativeExecutor};
 use botticelli_social::{BotCommandRegistryImpl, DiscordCommandExecutor};
 use dotenvy::dotenv;
-use std::{
-    env,
-    sync::{Arc, Mutex},
-};
+use std::{env, sync::Arc};
 
 #[tokio::test]
 #[cfg_attr(not(feature = "api"), ignore)]
@@ -29,9 +27,9 @@ async fn test_publish_welcome() {
     let _gemini_key = env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY must be set");
     let discord_token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN must be set");
 
-    // Set up database connection
-    let conn = establish_connection().expect("Failed to connect to database");
-    let conn = Arc::new(Mutex::new(conn));
+    // Set up in-memory storage for table queries
+    let storage: Arc<dyn BotStorage> =
+        Arc::new(RedbStorage::in_memory().expect("in-memory redb for test"));
 
     // Get narratives directory (tests run from workspace root)
     let narratives_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -49,9 +47,8 @@ async fn test_publish_welcome() {
     let discord_executor = DiscordCommandExecutor::new(&discord_token);
     bot_registry.register(discord_executor);
 
-    // Create table query registry
-    let table_executor = TableQueryExecutor::new(conn.clone());
-    let table_registry = DatabaseTableQueryRegistry::new(table_executor);
+    // Create table query registry backed by storage
+    let table_registry = BotStorageTableQueryRegistry::new(Arc::clone(&storage));
 
     // Create executor with bot and table support
     let executor = NarrativeExecutor::new(driver)

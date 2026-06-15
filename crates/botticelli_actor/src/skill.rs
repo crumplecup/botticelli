@@ -2,8 +2,7 @@
 
 use crate::{ActorError, ActorErrorKind, Platform};
 use async_trait::async_trait;
-use diesel::pg::PgConnection;
-use diesel::r2d2::{ConnectionManager, Pool};
+use botticelli_interface::BotStorage;
 use serde_json::Value as JsonValue;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -42,8 +41,8 @@ pub struct SkillContext {
     config: HashMap<String, String>,
     /// Platform interface.
     platform: Arc<dyn Platform>,
-    /// Database connection pool for table operations.
-    db_pool: Pool<ConnectionManager<PgConnection>>,
+    /// Storage backend for table operations and state.
+    storage: Arc<dyn BotStorage>,
 }
 
 /// Information about a skill.

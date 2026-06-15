@@ -1,22 +1,12 @@
 //! Discord channel models.
 
-use chrono::NaiveDateTime;
-use diesel::prelude::*;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
-/// Discord channel type enum.
-///
-/// Maps to the discord_channel_type PostgreSQL ENUM.
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    diesel::deserialize::FromSqlRow,
-    diesel::expression::AsExpression,
-)]
-#[diesel(sql_type = botticelli_database::schema::sql_types::DiscordChannelType)]
+/// Discord channel type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ChannelType {
     /// Text channel in a guild
     GuildText,
@@ -46,72 +36,8 @@ pub enum ChannelType {
     GuildMedia,
 }
 
-impl
-    diesel::serialize::ToSql<
-        botticelli_database::schema::sql_types::DiscordChannelType,
-        diesel::pg::Pg,
-    > for ChannelType
-{
-    fn to_sql<'b>(
-        &'b self,
-        out: &mut diesel::serialize::Output<'b, '_, diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        use std::io::Write;
-        let s = match self {
-            ChannelType::GuildText => "guild_text",
-            ChannelType::Dm => "dm",
-            ChannelType::GuildVoice => "guild_voice",
-            ChannelType::GroupDm => "group_dm",
-            ChannelType::GuildCategory => "guild_category",
-            ChannelType::GuildAnnouncement => "guild_announcement",
-            ChannelType::AnnouncementThread => "announcement_thread",
-            ChannelType::PublicThread => "public_thread",
-            ChannelType::PrivateThread => "private_thread",
-            ChannelType::GuildStageVoice => "guild_stage_voice",
-            ChannelType::GuildDirectory => "guild_directory",
-            ChannelType::GuildForum => "guild_forum",
-            ChannelType::GuildMedia => "guild_media",
-        };
-        out.write_all(s.as_bytes())?;
-        Ok(diesel::serialize::IsNull::No)
-    }
-}
-
-impl
-    diesel::deserialize::FromSql<
-        botticelli_database::schema::sql_types::DiscordChannelType,
-        diesel::pg::Pg,
-    > for ChannelType
-{
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        match bytes.as_bytes() {
-            b"guild_text" => Ok(ChannelType::GuildText),
-            b"dm" => Ok(ChannelType::Dm),
-            b"guild_voice" => Ok(ChannelType::GuildVoice),
-            b"group_dm" => Ok(ChannelType::GroupDm),
-            b"guild_category" => Ok(ChannelType::GuildCategory),
-            b"guild_announcement" => Ok(ChannelType::GuildAnnouncement),
-            b"announcement_thread" => Ok(ChannelType::AnnouncementThread),
-            b"public_thread" => Ok(ChannelType::PublicThread),
-            b"private_thread" => Ok(ChannelType::PrivateThread),
-            b"guild_stage_voice" => Ok(ChannelType::GuildStageVoice),
-            b"guild_directory" => Ok(ChannelType::GuildDirectory),
-            b"guild_forum" => Ok(ChannelType::GuildForum),
-            b"guild_media" => Ok(ChannelType::GuildMedia),
-            _ => Err("Unrecognized enum variant".into()),
-        }
-    }
-}
-
-/// Database row for discord_channels table.
-///
-/// Represents a Discord channel (text, voice, thread, forum, etc.) with all settings and metadata.
-#[derive(
-    Debug, Clone, Queryable, Identifiable, Selectable, Associations, derive_getters::Getters,
-)]
-#[diesel(belongs_to(super::guild::GuildRow, foreign_key = guild_id))]
-#[diesel(table_name = botticelli_database::schema::discord_channels)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+/// Stored channel data.
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
 pub struct ChannelRow {
     id: i64,
     guild_id: Option<i64>,
@@ -119,48 +45,39 @@ pub struct ChannelRow {
     channel_type: ChannelType,
     position: Option<i32>,
 
-    // Topic and description
     topic: Option<String>,
 
-    // Channel settings
     nsfw: Option<bool>,
     rate_limit_per_user: Option<i32>,
     bitrate: Option<i32>,
     user_limit: Option<i32>,
 
-    // Thread-specific
     parent_id: Option<i64>,
     owner_id: Option<i64>,
     message_count: Option<i32>,
     member_count: Option<i32>,
     archived: Option<bool>,
     auto_archive_duration: Option<i32>,
-    archive_timestamp: Option<NaiveDateTime>,
+    archive_timestamp: Option<DateTime<Utc>>,
     locked: Option<bool>,
     invitable: Option<bool>,
 
-    // Forum-specific
     available_tags: Option<JsonValue>,
     default_reaction_emoji: Option<JsonValue>,
     default_thread_rate_limit: Option<i32>,
     default_sort_order: Option<i16>,
     default_forum_layout: Option<i16>,
 
-    // Timestamps
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
-    last_message_at: Option<NaiveDateTime>,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+    last_message_at: Option<DateTime<Utc>>,
 
-    // Bot tracking
     last_read_message_id: Option<i64>,
     bot_has_access: Option<bool>,
 }
 
-/// Insertable struct for discord_channels table.
-///
-/// Used to create new channel records in the database.
-#[derive(Debug, Clone, Insertable, derive_getters::Getters)]
-#[diesel(table_name = botticelli_database::schema::discord_channels)]
+/// Input for creating or updating a channel record.
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
 pub struct NewChannel {
     pub(crate) id: i64,
     pub(crate) guild_id: Option<i64>,
@@ -168,37 +85,72 @@ pub struct NewChannel {
     pub(crate) channel_type: ChannelType,
     pub(crate) position: Option<i32>,
 
-    // Topic and description
     pub(crate) topic: Option<String>,
 
-    // Channel settings
     pub(crate) nsfw: Option<bool>,
     pub(crate) rate_limit_per_user: Option<i32>,
     pub(crate) bitrate: Option<i32>,
     pub(crate) user_limit: Option<i32>,
 
-    // Thread-specific
     pub(crate) parent_id: Option<i64>,
     pub(crate) owner_id: Option<i64>,
     pub(crate) message_count: Option<i32>,
     pub(crate) member_count: Option<i32>,
     pub(crate) archived: Option<bool>,
     pub(crate) auto_archive_duration: Option<i32>,
-    pub(crate) archive_timestamp: Option<NaiveDateTime>,
+    pub(crate) archive_timestamp: Option<DateTime<Utc>>,
     pub(crate) locked: Option<bool>,
     pub(crate) invitable: Option<bool>,
 
-    // Forum-specific
     pub(crate) available_tags: Option<JsonValue>,
     pub(crate) default_reaction_emoji: Option<JsonValue>,
     pub(crate) default_thread_rate_limit: Option<i32>,
     pub(crate) default_sort_order: Option<i16>,
     pub(crate) default_forum_layout: Option<i16>,
 
-    // Timestamps (last_message_at can be set)
-    pub(crate) last_message_at: Option<NaiveDateTime>,
+    pub(crate) last_message_at: Option<DateTime<Utc>>,
 
-    // Bot tracking
     pub(crate) last_read_message_id: Option<i64>,
     pub(crate) bot_has_access: Option<bool>,
+}
+
+impl ChannelRow {
+    /// Create a `ChannelRow` from a `NewChannel` input, using the provided timestamps.
+    pub fn from_new(
+        channel: &NewChannel,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id: channel.id,
+            guild_id: channel.guild_id,
+            name: channel.name.clone(),
+            channel_type: channel.channel_type,
+            position: channel.position,
+            topic: channel.topic.clone(),
+            nsfw: channel.nsfw,
+            rate_limit_per_user: channel.rate_limit_per_user,
+            bitrate: channel.bitrate,
+            user_limit: channel.user_limit,
+            parent_id: channel.parent_id,
+            owner_id: channel.owner_id,
+            message_count: channel.message_count,
+            member_count: channel.member_count,
+            archived: channel.archived,
+            auto_archive_duration: channel.auto_archive_duration,
+            archive_timestamp: channel.archive_timestamp,
+            locked: channel.locked,
+            invitable: channel.invitable,
+            available_tags: channel.available_tags.clone(),
+            default_reaction_emoji: channel.default_reaction_emoji.clone(),
+            default_thread_rate_limit: channel.default_thread_rate_limit,
+            default_sort_order: channel.default_sort_order,
+            default_forum_layout: channel.default_forum_layout,
+            last_message_at: channel.last_message_at,
+            last_read_message_id: channel.last_read_message_id,
+            bot_has_access: channel.bot_has_access,
+            created_at,
+            updated_at,
+        }
+    }
 }

@@ -8,6 +8,7 @@ mod chat_host;
 mod narrative;
 mod registry;
 mod registry_traits;
+mod storage;
 mod table_query_view;
 mod table_view;
 mod traits;
@@ -22,6 +23,12 @@ pub use narrative::{
 pub use registry::RegistryOperations;
 pub use registry_traits::{
     DatabaseRegistryOperations, NarrativeRegistryOperations, NarrativeStorageOperations,
+};
+pub use storage::{
+    ActExecutionRecord, ActInputRecord, ActorServerExecutionRecord, ActorServerStateRecord,
+    ActorStateStore, BotStorage, BotStorageError, BotStorageResult, ContentGenerationRecord,
+    ContentRecord, ContentStore, ModelResponseRecord, NarrativeExecutionRecord, NarrativeStore,
+    PostHistoryRecord, PostStore,
 };
 pub use table_query_view::{
     TableCountView, TableCountViewBuilder, TableQueryView, TableQueryViewBuilder,

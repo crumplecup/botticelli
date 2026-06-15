@@ -1,8 +1,9 @@
 //! Helper for tracking actor execution with persistence
 
-use crate::DatabaseExecutionResult;
+use crate::{BotStorageStatePersistence, DatabaseExecutionResult};
 use botticelli_server::{ActorServerResult, StatePersistence};
-use chrono::NaiveDateTime;
+use chrono::DateTime;
+use chrono::Utc;
 use std::sync::Arc;
 use tracing::{debug, instrument, warn};
 
@@ -14,15 +15,13 @@ use tracing::{debug, instrument, warn};
 /// # Example
 ///
 /// ```no_run
-/// use botticelli_actor::{ActorExecutionTracker, DatabaseStatePersistence, DatabaseExecutionResult};
+/// use botticelli_actor::{ActorExecutionTracker, BotStorageStatePersistence, DatabaseExecutionResult};
 /// use botticelli_server::ActorServerResult;
 /// use std::sync::Arc;
 ///
 /// # async fn example() -> ActorServerResult<()> {
-/// let persistence = Arc::new(
-///     DatabaseStatePersistence::new()
-///         .expect("Failed to create persistence")
-/// );
+/// # let storage: Arc<dyn botticelli_interface::BotStorage> = unimplemented!();
+/// let persistence = Arc::new(BotStorageStatePersistence::new(storage));
 /// let tracker = ActorExecutionTracker::new(
 ///     persistence,
 ///     "my-task-id".to_string(),
@@ -101,48 +100,51 @@ where
     }
 }
 
-// DatabaseStatePersistence-specific methods
-impl ActorExecutionTracker<crate::DatabaseStatePersistence> {
-    /// Start execution and return execution ID for logging
-    ///
-    /// Creates a new execution record in the database.
+// BotStorageStatePersistence-specific methods
+impl ActorExecutionTracker<BotStorageStatePersistence> {
+    /// Start execution and return execution ID (UUID string) for logging.
     #[instrument(skip(self), fields(task_id = %self.task_id, actor = %self.actor_name))]
-    pub async fn start_execution(&self) -> ActorServerResult<i64> {
+    pub async fn start_execution(&self) -> ActorServerResult<String> {
         debug!("Starting execution");
         self.persistence
             .start_execution(&self.task_id, &self.actor_name)
             .await
     }
 
-    /// Record successful execution
+    /// Record successful execution.
     ///
     /// Updates execution record and resets consecutive failure count.
-    #[instrument(skip(self, result), fields(task_id = %self.task_id, exec_id))]
+    #[instrument(skip(self, result), fields(task_id = %self.task_id, exec_id = %exec_id))]
     pub async fn record_success(
         &self,
-        exec_id: i64,
+        exec_id: String,
         result: DatabaseExecutionResult,
     ) -> ActorServerResult<()> {
         debug!("Recording success");
-        self.persistence.complete_execution(exec_id, result).await?;
+        self.persistence
+            .complete_execution(&exec_id, &self.task_id, result)
+            .await?;
         self.persistence.record_success(&self.task_id).await?;
         Ok(())
     }
 
-    /// Record failed execution
+    /// Record failed execution.
     ///
     /// Updates execution record, increments failure count, and checks circuit breaker.
     ///
-    /// Uses max_failures from task metadata (default: 10 if not set).
-    ///
     /// # Returns
     /// `true` if circuit breaker threshold exceeded and task should pause
-    #[instrument(skip(self, error), fields(task_id = %self.task_id, exec_id))]
-    pub async fn record_failure(&self, exec_id: i64, error: &str) -> ActorServerResult<bool> {
+    #[instrument(skip(self, error), fields(task_id = %self.task_id, exec_id = %exec_id))]
+    pub async fn record_failure(
+        &self,
+        exec_id: String,
+        error: &str,
+    ) -> ActorServerResult<bool> {
         debug!("Recording failure");
-        self.persistence.fail_execution(exec_id, error).await?;
+        self.persistence
+            .fail_execution(&exec_id, &self.task_id, error)
+            .await?;
 
-        // Get max_failures from task state metadata, or use default
         let state = self
             .persistence
             .load_task_state(&self.task_id)
@@ -153,8 +155,7 @@ impl ActorExecutionTracker<crate::DatabaseStatePersistence> {
 
         let max_failures = state
             .metadata
-            .as_ref()
-            .and_then(|m| m.get("max_failures"))
+            .get("max_failures")
             .and_then(|v| v.as_i64())
             .map(|v| v as i32)
             .unwrap_or(10);
@@ -171,17 +172,15 @@ impl ActorExecutionTracker<crate::DatabaseStatePersistence> {
         Ok(should_pause)
     }
 
-    /// Check if task should execute
-    ///
-    /// Returns `false` if task is paused or circuit breaker is open.
+    /// Check if task should execute (not paused by circuit breaker).
     #[instrument(skip(self), fields(task_id = %self.task_id))]
     pub async fn should_execute(&self) -> ActorServerResult<bool> {
         self.persistence.should_execute(&self.task_id).await
     }
 
-    /// Update next scheduled run time
+    /// Update next scheduled run time.
     #[instrument(skip(self), fields(task_id = %self.task_id, next_run = %next_run))]
-    pub async fn update_next_run(&self, next_run: NaiveDateTime) -> ActorServerResult<()> {
+    pub async fn update_next_run(&self, next_run: DateTime<Utc>) -> ActorServerResult<()> {
         debug!("Updating next run");
         self.persistence
             .update_next_run(&self.task_id, next_run)

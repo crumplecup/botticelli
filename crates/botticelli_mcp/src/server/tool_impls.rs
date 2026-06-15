@@ -705,6 +705,22 @@ impl BotticelliServer {
             return Err(RmcpError::internal_error("Ollama not configured", None));
         }
 
+        #[cfg(feature = "huggingface")]
+        if let Some(ref client) = self.huggingface {
+            let input = build_llm_json(
+                &req.prompt,
+                model,
+                req.max_tokens,
+                req.temperature,
+                req.system_prompt.as_deref(),
+            );
+            let result =
+                crate::tools::generate_llm::execute_generation(client.as_ref(), input, model)
+                    .await
+                    .map_err(mcp_err)?;
+            return json_ok(result);
+        }
+
         Err(RmcpError::invalid_params(
             format!("Unknown or unsupported model prefix: '{}'", model),
             None,

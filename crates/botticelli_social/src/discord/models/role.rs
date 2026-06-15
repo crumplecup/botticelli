@@ -1,44 +1,32 @@
 //! Discord role models.
 
-use chrono::NaiveDateTime;
-use diesel::prelude::*;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
-/// Database row for discord_roles table.
-///
-/// Represents a Discord role within a guild, defining permissions and visual display.
-#[derive(
-    Debug, Clone, Queryable, Identifiable, Selectable, Associations, derive_getters::Getters,
-)]
-#[diesel(belongs_to(super::guild::GuildRow, foreign_key = guild_id))]
-#[diesel(table_name = botticelli_database::schema::discord_roles)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+/// Stored role data.
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
 pub struct RoleRow {
     id: i64,
     guild_id: i64,
     name: String,
     color: i32,
-    hoist: Option<bool>, // Display separately in member list
+    hoist: Option<bool>,
     icon: Option<String>,
     unicode_emoji: Option<String>,
     position: i32,
     permissions: i64,
-    managed: Option<bool>, // Managed by integration (bot, boost, etc.)
+    managed: Option<bool>,
     mentionable: Option<bool>,
 
-    // Role tags (bot, integration, premium subscriber)
     tags: Option<JsonValue>,
 
-    // Timestamps
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
 }
 
-/// Insertable struct for discord_roles table.
-///
-/// Used to create new role records in the database.
-#[derive(Debug, Clone, Insertable, derive_getters::Getters)]
-#[diesel(table_name = botticelli_database::schema::discord_roles)]
+/// Input for creating or updating a role record.
+#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters)]
 pub struct NewRole {
     pub(crate) id: i64,
     pub(crate) guild_id: i64,
@@ -52,6 +40,27 @@ pub struct NewRole {
     pub(crate) managed: Option<bool>,
     pub(crate) mentionable: Option<bool>,
 
-    // Role tags
     pub(crate) tags: Option<JsonValue>,
+}
+
+impl RoleRow {
+    /// Create a `RoleRow` from a `NewRole` input, using the provided timestamps.
+    pub fn from_new(role: &NewRole, created_at: DateTime<Utc>, updated_at: DateTime<Utc>) -> Self {
+        Self {
+            id: role.id,
+            guild_id: role.guild_id,
+            name: role.name.clone(),
+            color: role.color,
+            hoist: role.hoist,
+            icon: role.icon.clone(),
+            unicode_emoji: role.unicode_emoji.clone(),
+            position: role.position,
+            permissions: role.permissions,
+            managed: role.managed,
+            mentionable: role.mentionable,
+            tags: role.tags.clone(),
+            created_at,
+            updated_at,
+        }
+    }
 }

@@ -1,30 +1,31 @@
 //! Discord bot client setup and lifecycle management.
 //!
 //! This module provides the BotticelliBot struct which manages the Discord client
-//! connection, event handling, and database integration.
+//! connection, event handling, and KV storage integration.
 
 use crate::{BotticelliHandler, DiscordError, DiscordErrorKind, DiscordRepository};
-use diesel::pg::PgConnection;
+use botticelli_interface::BotStorage;
 use serenity::Client;
 use std::sync::Arc;
 use tracing::{info, instrument};
 
 /// Main Discord bot client for Botticelli.
 ///
-/// Manages the Serenity client connection and integrates with the database
-/// via DiscordRepository.
+/// Manages the Serenity client connection and integrates with the KV storage
+/// backend via DiscordRepository.
 ///
 /// # Example
 /// ```no_run
 /// use botticelli_social::BotticelliBot;
-/// use botticelli_database::establish_connection;
+/// use botticelli_interface::BotStorage;
+/// use std::sync::Arc;
 ///
 /// #[tokio::main]
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let token = std::env::var("DISCORD_TOKEN")?;
-///     let conn = establish_connection()?;
-///
-///     let mut bot = BotticelliBot::new(token, conn).await?;
+///     // storage: Arc<dyn BotStorage> provided by caller
+///     # let storage: Arc<dyn BotStorage> = unimplemented!();
+///     let mut bot = BotticelliBot::new(token, storage).await?;
 ///     bot.start().await?;
 ///     Ok(())
 /// }
@@ -32,7 +33,7 @@ use tracing::{info, instrument};
 pub struct BotticelliBot {
     /// Serenity client instance
     client: Client,
-    /// Database repository for direct database access
+    /// Repository for direct storage access
     repository: Arc<DiscordRepository>,
 }
 
@@ -41,29 +42,26 @@ impl BotticelliBot {
     ///
     /// # Arguments
     /// * `token` - Discord bot token from the Discord Developer Portal
-    /// * `conn` - PostgreSQL database connection
+    /// * `storage` - Backend storage implementation
     ///
     /// # Errors
     /// Returns an error if:
     /// - The bot token is invalid
     /// - The Serenity client fails to initialize
-    /// - Database connection fails
-    #[instrument(skip(token, conn), fields(token_len = token.len()))]
-    pub async fn new(token: String, conn: PgConnection) -> Result<Self, DiscordError> {
+    #[instrument(skip(token, storage), fields(token_len = token.len()))]
+    pub async fn new(
+        token: String,
+        storage: Arc<dyn BotStorage>,
+    ) -> Result<Self, DiscordError> {
         info!("Initializing Botticelli Discord bot");
 
-        // Wrap connection in Arc<Mutex> for async access
-        let repository = Arc::new(DiscordRepository::new(conn));
+        let repository = Arc::new(DiscordRepository::new(storage));
 
-        // Create event handler
         let handler = BotticelliHandler::new(repository.clone());
-
-        // Get required gateway intents
         let intents = BotticelliHandler::intents();
 
         info!("Building Serenity client with intents: {:?}", intents);
 
-        // Build the Serenity client
         let client = Client::builder(&token, intents)
             .event_handler(handler)
             .await
@@ -99,26 +97,12 @@ impl BotticelliBot {
         Ok(())
     }
 
-    /// Get a reference to the repository for direct database access.
-    ///
-    /// Useful for querying Discord data outside of event handlers.
+    /// Get a reference to the repository for direct storage access.
     pub fn repository(&self) -> &Arc<DiscordRepository> {
         &self.repository
     }
 
     /// Get a reference to the HTTP client for making Discord API requests.
-    ///
-    /// This allows bot commands to share the bot's authentication and HTTP client,
-    /// coordinating rate limits and reducing connections.
-    ///
-    /// # Example
-    ///
-    /// ```rust,ignore
-    /// use botticelli_social::{BotticelliBot, DiscordCommandExecutor};
-    ///
-    /// let bot = BotticelliBot::new(token, conn).await?;
-    /// let executor = DiscordCommandExecutor::with_http_client(bot.http_client());
-    /// ```
     pub fn http_client(&self) -> Arc<serenity::http::Http> {
         self.client.http.clone()
     }

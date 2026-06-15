@@ -15,14 +15,12 @@ botticelli_core.workspace = true
 botticelli_interface.workspace = true
 botticelli_storage.workspace = true
 botticelli_rate_limit.workspace = true
-botticelli_database = { workspace = true, optional = true }
-
 shellexpand.workspace = true
 
 # Optional database support
-diesel = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 ractor = { workspace = true, optional = true }
+uuid = { workspace = true, optional = true }
 
 # Async
 async-trait.workspace = true
@@ -49,7 +47,7 @@ petgraph.workspace = true
 
 [features]
 default = []
-database = ["dep:botticelli_database", "dep:diesel", "dep:chrono", "dep:ractor"]
+database = ["dep:chrono", "dep:ractor", "dep:uuid"]
 api = []                                                                         # Marker feature for tests that make real API calls
 gemini = []                                                                      # Marker feature for Gemini-specific tests
 
