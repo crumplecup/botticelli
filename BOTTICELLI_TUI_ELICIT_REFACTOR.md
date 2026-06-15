@@ -1,6 +1,6 @@
 # botticelli_tui — elicit_ui Refactor Plan
 
-**Status**: 📋 READY TO IMPLEMENT  
+**Status**: ✅ COMPLETE (all 8 phases)  
 **Branch**: dev  
 **Supercedes**: All archived TUI planning docs (see PLANNING_INDEX.md)
 
@@ -44,8 +44,11 @@ pub trait BotScreen {
 ```
 
 `BotScreenContext` carries read-only shared handles: `Arc<BotServer>`,
-`Arc<MetricsCollector>`, `Arc<dyn BotticelliDriver>`. Screens never mutate shared
-state directly — they return commands via `BotTransition`.
+`Arc<MetricsCollector>`, `Arc<dyn BotticelliDriver>`, `Arc<dyn BotStorage>`.
+Screens never mutate shared state directly — they return commands via `BotTransition`.
+
+`storage` is optional in context (`Option<Arc<dyn BotStorage>>`); screens that need
+it (Database Browser, Schedule history) degrade gracefully when absent.
 
 ### BotTransition enum
 
@@ -166,17 +169,27 @@ and prompt pane management.
 ### 5. Database Browser
 
 **What it shows:**
-- Mode 1 (Tables): list of tables from `botticelli_database`
-- Mode 2 (Schema): selected table's columns and types
-- Mode 3 (Content): paginated row data as a ratatui `Table` widget
+- Mode 1 (Tables): fixed list of BotStorage logical tables —
+  `narrative_executions`, `act_executions`, `actor_states`, `actor_executions`,
+  `content`, `post_history`, `model_responses`
+- Mode 2 (Content): paginated row data rendered as a ratatui `Table` widget;
+  each row is a `serde_json::Value` from the typed record's `content_json`
+  or serialized as JSON
 
 **Keys:**
-- `Enter` — drill down one level
-- `Esc` — back one level
-- `j`/`k` — navigate rows
+- `Enter` — drill into table content
+- `Esc` — back to table list
+- `j`/`k` / `PgUp`/`PgDn` — navigate rows
 
-**Data source:** `Arc<dyn TableQueryRegistry>` injected into `BotScreenContext`
-(optional — shows "no database" message if absent)
+**Data source:** `Arc<dyn BotStorage>` from `BotScreenContext` (optional —
+shows "storage not configured" message when absent). Calls the appropriate
+sub-trait method per table:
+- `narrative_executions` → `NarrativeStore::list_narrative_executions`
+- `actor_states` → `ActorStateStore::list_actor_states`
+- `content` → `ContentStore::list_content("content", limit)`
+- etc.
+
+No SQL schema mode — BotStorage tables have typed structs, not inferred columns.
 
 ---
 
@@ -190,7 +203,9 @@ and prompt pane management.
 - `t` — toggle task enabled/disabled
 - `r` — run now (immediate trigger)
 
-**Data source:** `BotServer::schedule` (real `Schedule` structs from `botticelli_server`)
+**Data source:**
+- Live task list: `BotServer::schedule` (running `Schedule` structs from `botticelli_server`)
+- Execution history: `ActorStateStore::list_actor_executions` via `Arc<dyn BotStorage>`
 
 ---
 
@@ -262,32 +277,40 @@ and prompt pane management.
 - [ ] Async response via mpsc channel (same pattern as current `minimal_loop`)
 - [ ] Test with pre-baked `MockDriver`
 
-### Phase 5 — Narrative Browser + Editor
+### Phase 5 — Narrative Browser + Editor ✅
 
-- [ ] Implement `NarrativeBrowserScreen`
-- [ ] Implement `NarrativeEditorScreen` with `TomlNarrativeFile` round-trip
-- [ ] Wire `SaveNarrative` transition to disk write
-- [ ] Live validation via `validate_narrative_toml`
-- [ ] Test editor save/load in `tests/narrative_editor_test.rs`
+- [x] Implement `NarrativeBrowserScreen`
+- [x] Implement `NarrativeEditorScreen` with `TomlNarrativeFile` round-trip
+- [x] Wire `SaveNarrative` transition to disk write
+- [x] Live validation via `validate_narrative_toml`
+- [x] Test editor save/load in `tests/narrative_editor_test.rs`
 
-### Phase 6 — Database Browser
+### Phase 6 — Database Browser ✅
 
-- [ ] Implement `DatabaseBrowserScreen` with three-mode drill-down
-- [ ] Wire to `Arc<dyn TableQueryRegistry>` in `BotScreenContext`
-- [ ] Graceful "no database configured" fallback screen
+- [x] Add `storage: Option<Arc<dyn BotStorage>>` to `BotScreenContext`
+- [x] Wire `open_storage_from_env()` in binary startup; pass into context
+- [x] Add `botticelli_database` to `cli` feature in `botticelli_tui/Cargo.toml`
+- [x] Implement `DatabaseBrowserScreen` with two-mode drill-down:
+      table list → paginated row content (no SQL schema mode)
+- [x] Wire to `Arc<dyn BotStorage>` in `BotScreenContext`
+- [x] Graceful "storage not configured" fallback when `storage` is `None`
+- [x] Test IR in `tests/database_browser_ir_test.rs` (14 tests, no terminal required)
 
-### Phase 7 — Schedule + Log Viewer
+### Phase 7 — Schedule + Log Viewer ✅
 
-- [ ] Implement `ScheduleScreen` wired to `BotServer::schedule`
-- [ ] Implement `LogViewerScreen` with async file tail + level filter
+- [x] Implement `ScheduleScreen` with actor-state list from storage + per-task
+      execution history; `r` refreshes, `Enter` loads executions for selected task
+- [x] Implement `LogViewerScreen` with async file tail (500-line window),
+      level filter (All/INFO+/WARN+/ERROR), `f` cycles filter, `G` jumps to tail
 
-### Phase 8 — Settings + final cleanup
+### Phase 8 — Settings + final cleanup ✅
 
-- [ ] Implement `SettingsScreen` with persistence
-- [ ] Update all `just tui-*` recipes to use new binary
-- [ ] `just test-all botticelli_tui` — zero warnings, all tests pass
-- [ ] `just check-features botticelli_tui`
-- [ ] Update PLANNING_INDEX.md
+- [x] Implement `SettingsScreen` — shows Narratives Dir, Log File, Storage Path,
+      Log Level (cycle with Enter, save with `s` → writes `botticelli-settings.env`)
+- [x] Remove 6 dead diesel-era `tui-table/server/all/last/demo/list-tables` justfile
+      recipes; live `tui`, `tui-debug`, `tui-example`, `tui-chat` preserved
+- [x] 115 tests passing, zero clippy warnings, all feature combos (default / no-default / cli) clean
+- [x] PLANNING_INDEX.md updated
 
 ---
 
@@ -342,7 +365,8 @@ crates/botticelli_tui/
 └── tests/
     ├── bot_status_ir_test.rs            # IR test (no terminal)           (NEW)
     ├── narrative_editor_test.rs         # save/load round-trip            (NEW)
-    └── chat_screen_test.rs              # mock driver chat test           (NEW)
+    ├── chat_screen_test.rs              # mock driver chat test           (NEW)
+    └── database_browser_ir_test.rs      # IR test with RedbStorage::in_memory (NEW)
 ```
 
 ---
@@ -350,16 +374,24 @@ crates/botticelli_tui/
 ## Dependencies to Add
 
 ```toml
-# botticelli_tui/Cargo.toml
+# botticelli_tui/Cargo.toml — add to [features] cli = [...]
+"dep:botticelli_database",   # open_storage_from_env(), RedbStorage for tests
+```
+
+```toml
+# botticelli_tui/Cargo.toml — already present (added in Phase 1):
 elicit_ui.workspace = true
 elicit_ratatui = { workspace = true, features = ["runtime"] }
 botticelli_server.workspace = true   # for BotServer, MetricsCollector
 ```
 
-```toml
-# workspace Cargo.toml (if not already present)
-elicit_ui = { path = "../elicitation/crates/elicit_ui" }
-elicit_ratatui = { path = "../elicitation/crates/elicit_ratatui" }
+Storage is initialized in the binary:
+```rust
+// src/bin/botticelli-tui.rs
+use botticelli_database::open_storage_from_env;
+
+let storage = open_storage_from_env().await.ok();  // None if env not set
+let ctx = BotScreenContext { storage, ..Default::default() };
 ```
 
 ---

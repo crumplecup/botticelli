@@ -12,14 +12,22 @@ This index tracks all planning documents in the workspace. When documents are co
 
 ## Active Planning Documents
 
-### botticelli_tui elicit_ui Refactor (Active)
-- **BOTTICELLI_TUI_ELICIT_REFACTOR.md** - `current` (2026-06-12) **📋 READY TO IMPLEMENT**
-  - Replace hand-rolled ratatui event loop + global AppState with elicit_ui IR pipeline
-  - `BotScreen` trait: `to_verified_tree(viewport)` + `handle_key() → BotTransition`
-  - Per-screen state ownership, proof-carrying `verified_draw`, no global mutation
-  - 8 screens: Bots (operator console), Chat, Narrative Browser/Editor, Database, Schedule, Log Viewer, Settings
-  - Live wire to BotServer actors + MetricsCollector; narrative persistence via TomlNarrativeFile
-  - 8-phase checklist; IR tests run without a terminal
+### Database redb Migration (Complete)
+- **BOTTICELLI_DATABASE_REDB_MIGRATION.md** - `current` (2026-06-14) **✅ COMPLETE**
+  - Diesel/PostgreSQL replaced with redb as default; postgres remains opt-in feature
+  - `BotStorage` trait family in `botticelli_interface`; diesel removed from workspace
+  - `redb` feature (default) → `RedbStorage`; `postgres` feature (opt-in) → `PostgresStorage`
+  - `open_storage_from_env()` reads `REDB_PATH` / `DATABASE_URL`; tests use `in_memory()`
+  - All consumers migrated; 24 new redb tests pass; zero diesel references in code
+
+### botticelli_tui elicit_ui Refactor (Complete)
+- **BOTTICELLI_TUI_ELICIT_REFACTOR.md** - `current` (2026-06-15) **✅ COMPLETE**
+  - All 8 screens implemented: Bots, Chat, Narrative Browser/Editor, Database Browser,
+    Schedule, Log Viewer, Settings
+  - elicit_ui IR pipeline: `BotScreen::to_tui_node()` + `handle_key() → BotTransition`
+  - `BotController` drives state machine; all I/O async in controller, screens are pure
+  - `BotScreenContext` carries `Arc<dyn BotStorage>` (optional), log file, narratives dir
+  - 115 IR tests; zero terminal needed; `open_storage_from_env()` wired in binary
 
 ### botticelli_server Overhaul (Active)
 - **BOTTICELLI_SERVER_OVERHAUL.md** - `current` (2026-06-11) **📋 READY TO IMPLEMENT**
