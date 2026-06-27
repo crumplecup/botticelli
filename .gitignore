@@ -32,6 +32,7 @@ coverage/
 narrations/*
 !narrations/mint.toml
 !narrations/showcase.toml
+narratives/
 
 # Application State
 .narrative_state/
