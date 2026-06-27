@@ -214,7 +214,7 @@ pub fn init_observability_with_config(
         .with(env_filter)
         .with(fmt_layer)
         .with(otel_layer)
-        .init();
+        .try_init()?;
 
     Ok(())
 }

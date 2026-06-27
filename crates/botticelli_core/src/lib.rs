@@ -7,6 +7,7 @@
 
 mod budget;
 mod input;
+mod jitter;
 mod media;
 mod message;
 mod observability;
@@ -21,6 +22,7 @@ mod tool_result;
 
 pub use budget::{BudgetConfig, BudgetConfigBuilder};
 pub use input::{HistoryRetention, Input, TableFormat};
+pub use jitter::{PostingJitter, PostingJitterGen};
 pub use media::MediaSource;
 pub use message::{Message, MessageBuilder};
 pub use observability::{
