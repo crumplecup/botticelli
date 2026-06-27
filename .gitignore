@@ -20,6 +20,7 @@ Cargo.lock
 *.db
 *.sqlite
 *.sqlite3
+*.redb
 
 # Testing and coverage
 *.profraw
