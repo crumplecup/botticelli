@@ -9,6 +9,7 @@
 //! Screens own their own state; no global `AppState`.
 
 #![warn(missing_docs)]
+#![recursion_limit = "256"]
 #![forbid(unsafe_code)]
 
 pub mod context;
@@ -24,7 +25,8 @@ pub use screen::{BotKind, BotScreen, BotTransition};
 pub use screens::{
     BotStatusScreen, ChatMessage, ChatRole, ChatScreen, DatabaseBrowserScreen, EditorContent,
     LogFilter, LogViewerScreen, ModelStatus, NarrativeBrowserScreen, NarrativeEditorScreen,
-    NarrativeEntry, PlaceholderScreen, RunState, ScheduleScreen, SettingsScreen,
+    NarrativeEntry, NarrativeWizardScreen, PlaceholderScreen, RunState, ScheduleScreen,
+    SettingsScreen,
 };
 
 mod error;

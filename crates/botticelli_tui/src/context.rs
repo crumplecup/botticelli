@@ -4,12 +4,10 @@
 //! and return a `BotTransition` for the controller to act on.
 
 use std::path::PathBuf;
+use std::sync::Arc;
 use tracing::instrument;
 
-#[cfg(feature = "cli")]
 use botticelli_interface::BotStorage;
-#[cfg(feature = "cli")]
-use std::sync::Arc;
 
 /// Read-only handles injected into every screen.
 ///
@@ -27,7 +25,6 @@ pub struct BotScreenContext {
     ///
     /// `None` when storage is not configured — affected screens degrade
     /// gracefully with a "storage not configured" message.
-    #[cfg(feature = "cli")]
     pub storage: Option<Arc<dyn BotStorage>>,
 }
 

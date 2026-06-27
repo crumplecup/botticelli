@@ -220,7 +220,8 @@ impl BotScreen for NarrativeBrowserScreen {
         let help = TuiNode::Widget {
             widget: Box::new(WidgetJson::Paragraph {
                 text: ParagraphText::Plain(
-                    "  j/k=navigate  Enter=edit  n=new  Esc=bots".to_string(),
+                    "  j/k=navigate  Enter=edit  n=new wizard  w=wizard on selected  Esc=bots"
+                        .to_string(),
                 ),
                 style: None,
                 wrap: true,
@@ -266,7 +267,11 @@ impl BotScreen for NarrativeBrowserScreen {
                 let path = self.selected_entry().map(|e| e.path.clone());
                 BotTransition::GoToNarrativeEditor { path }
             }
-            KeyCode::Char('n') => BotTransition::GoToNarrativeEditor { path: None },
+            KeyCode::Char('n') => BotTransition::GoToNarrativeWizard { path: None },
+            KeyCode::Char('w') => {
+                let path = self.selected_entry().map(|e| e.path.clone());
+                BotTransition::GoToNarrativeWizard { path }
+            }
             _ => BotTransition::Stay,
         }
     }

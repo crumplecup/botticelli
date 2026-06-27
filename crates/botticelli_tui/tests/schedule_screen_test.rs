@@ -13,7 +13,9 @@ fn ctx() -> BotScreenContext {
 }
 
 fn task_rows(n: usize) -> (Vec<String>, Vec<String>) {
-    let rows = (0..n).map(|i| format!("active | task-{i} | actor-{i} | next: 2026-06-10")).collect();
+    let rows = (0..n)
+        .map(|i| format!("active | task-{i} | actor-{i} | next: 2026-06-10"))
+        .collect();
     let ids = (0..n).map(|i| format!("task-{i}")).collect();
     (rows, ids)
 }
@@ -90,9 +92,7 @@ fn enter_emits_load_task_executions() {
     let mut screen = ScheduleScreen::new(rows, ids, true);
     screen.handle_key(key(KeyCode::Char('j')), &ctx()); // select task-1
     let t = screen.handle_key(key(KeyCode::Enter), &ctx());
-    assert!(
-        matches!(t, BotTransition::LoadTaskExecutions { ref task_id } if task_id == "task-1"),
-    );
+    assert!(matches!(t, BotTransition::LoadTaskExecutions { ref task_id } if task_id == "task-1"),);
 }
 
 // ── Callbacks ─────────────────────────────────────────────────────────────────
@@ -121,7 +121,10 @@ fn on_schedule_loaded_resets_exec_rows() {
     screen.on_task_executions_loaded(vec!["old".to_string()]);
     let (rows, ids) = task_rows(1);
     screen.on_schedule_loaded(rows, ids);
-    assert!(screen.exec_rows().is_empty(), "refresh clears old exec rows");
+    assert!(
+        screen.exec_rows().is_empty(),
+        "refresh clears old exec rows"
+    );
 }
 
 #[test]

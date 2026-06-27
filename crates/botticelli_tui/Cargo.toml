@@ -13,8 +13,16 @@ description = "Terminal UI for reviewing and managing Botticelli-generated conte
 # Error types
 botticelli_error = { workspace = true, features = ["tui"] }
 
-# Bot server actor (Phase 3+: BotStatusScreen wiring)
-botticelli_server = { workspace = true, optional = true, features = ["mistral"] }
+# Bot subsystems
+botticelli_server = { workspace = true, features = ["mistral"] }
+botticelli_bot = { workspace = true }
+botticelli_core = { workspace = true }
+botticelli_interface = { workspace = true }
+botticelli_database = { workspace = true }
+botticelli_mcp = { workspace = true }
+botticelli_mcp_client = { workspace = true }
+botticelli_models = { workspace = true, features = ["anthropic", "gemini", "ollama"] }
+botticelli_rate_limit = { workspace = true }
 
 # elicit_ui IR pipeline
 elicit_ui.workspace = true
@@ -23,6 +31,7 @@ elicitation = { workspace = true }
 
 # Async runtime
 tokio = { workspace = true }
+futures = { workspace = true }
 
 # Logging
 tracing = { workspace = true }
@@ -33,45 +42,24 @@ ratatui = { workspace = true }
 crossterm = { workspace = true, features = ["event-stream"] }
 
 # Derives
+async-trait = { workspace = true }
 derive_more = { workspace = true }
 derive-getters = { workspace = true }
-unicode-width = "0.2"
+unicode-width = { version = "0.2" }
 
 # Narrative browsing and editing
 botticelli_narrative = { workspace = true }
 toml = { workspace = true }
+schemars = { workspace = true }
+serde_json = { workspace = true }
 
-# CLI dependencies (optional)
-clap = { version = "4.5", features = ["derive", "env"], optional = true }
-dotenvy = { version = "0.15", optional = true }
-botticelli_mcp = { workspace = true, optional = true }
-botticelli_mcp_client = { workspace = true, optional = true }
-botticelli_interface = { workspace = true, optional = true }
-botticelli_database = { workspace = true, optional = true }
-botticelli_core = { workspace = true, optional = true }
-botticelli_models = { workspace = true, optional = true, features = ["anthropic", "gemini", "ollama"] }
-botticelli_rate_limit = { workspace = true, optional = true }
-async-trait = { workspace = true, optional = true }
-
-[features]
-default = []
-cli = [
-    "dep:clap",
-    "dep:dotenvy",
-    "dep:botticelli_mcp",
-    "dep:botticelli_server",
-    "dep:botticelli_mcp_client",
-    "dep:botticelli_interface",
-    "dep:botticelli_database",
-    "dep:botticelli_core",
-    "dep:botticelli_models",
-    "dep:botticelli_rate_limit",
-    "dep:async-trait",
-]
+# CLI binary
+clap = { workspace = true, features = ["env"] }
+dotenvy = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
+serde_json = { workspace = true }
 
 [[bin]]
 name = "botticelli-tui"
-required-features = ["cli"]

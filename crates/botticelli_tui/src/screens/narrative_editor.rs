@@ -102,6 +102,38 @@ impl NarrativeEditorScreen {
         }
     }
 
+    /// Open the editor pre-loaded from an in-memory `TomlNarrativeFile` (e.g. from agent one-shot).
+    ///
+    /// `raw` is the TOML serialisation of `file`; both are stored together so
+    /// Ctrl+S can round-trip without re-serialising.
+    #[instrument]
+    pub fn from_parsed(path: Option<PathBuf>, file: TomlNarrativeFile, raw: String) -> Self {
+        use botticelli_narrative::validator::validate_narrative_toml;
+        let result = validate_narrative_toml(&raw);
+        let validation_summary = if result.is_valid() {
+            format!("✓ Valid  ({} acts)", file.acts.len())
+        } else {
+            format!(
+                "✗ {} error(s)  {}",
+                result.errors.len(),
+                result
+                    .errors
+                    .first()
+                    .map(|e| e.message.as_str())
+                    .unwrap_or_default()
+            )
+        };
+        Self {
+            path,
+            content: EditorContent::Loaded {
+                file: Box::new(file),
+                raw,
+            },
+            validation_summary,
+            scroll: 0,
+        }
+    }
+
     fn act_rows(&self) -> Vec<String> {
         match &self.content {
             EditorContent::New => vec!["  (blank narrative — press Ctrl+S to save)".to_string()],
@@ -220,7 +252,9 @@ impl BotScreen for NarrativeEditorScreen {
         constraints.push(ConstraintJson::Length { value: 1 });
         children.push(TuiNode::Widget {
             widget: Box::new(WidgetJson::Paragraph {
-                text: ParagraphText::Plain("  j/k=scroll  Ctrl+S=save  Esc=browser".to_string()),
+                text: ParagraphText::Plain(
+                    "  j/k=scroll  Ctrl+S=save  w=wizard  Esc=browser".to_string(),
+                ),
                 style: None,
                 wrap: true,
                 scroll: None,
@@ -241,6 +275,9 @@ impl BotScreen for NarrativeEditorScreen {
         match key.code {
             KeyCode::Esc => BotTransition::GoToNarratives,
             KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => self.do_save(),
+            KeyCode::Char('w') => BotTransition::GoToNarrativeWizard {
+                path: self.path.clone(),
+            },
             KeyCode::Char('j') | KeyCode::Down => {
                 self.scroll = self.scroll.saturating_add(1);
                 BotTransition::Stay

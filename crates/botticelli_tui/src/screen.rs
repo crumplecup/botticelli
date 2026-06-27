@@ -34,13 +34,10 @@ pub enum BotTransition {
     /// Navigate to the settings screen.
     GoToSettings,
     /// Request the controller to start a bot actor.
-    #[cfg(feature = "cli")]
     StartBot(BotKind),
     /// Request the controller to stop a bot actor.
-    #[cfg(feature = "cli")]
     StopBot(BotKind),
     /// Request the controller to restart a bot actor.
-    #[cfg(feature = "cli")]
     RestartBot(BotKind),
     /// Send a chat message to the LLM; controller executes and calls back.
     ChatSend {
@@ -74,6 +71,55 @@ pub enum BotTransition {
     SaveSettings {
         /// `RUST_LOG` value to write (e.g. `"debug"`, `"info"`).
         rust_log: String,
+    },
+    /// Open the narrative creation wizard, optionally pre-loading a file for re-elicitation.
+    GoToNarrativeWizard {
+        /// Path of the existing file, or `None` to create a new narrative.
+        path: Option<PathBuf>,
+    },
+    /// Ask the agent to fill the current wizard step only.
+    ///
+    /// The screen embeds the prompt text so the controller needs no screen-internal knowledge.
+    AgentFillNarrativeNext {
+        /// The prompt text for the current step.
+        prompt: String,
+    },
+    /// Ask the agent to fill all remaining wizard steps.
+    ///
+    /// The agent may choose the fast one-shot JSON path or the reliable per-field path.
+    AgentFillNarrativeAll {
+        /// Prompt texts for each remaining step, in order.
+        remaining_prompts: Vec<String>,
+        /// JSON schema for `TomlNarrativeFile` (used for one-shot path).
+        json_schema: String,
+    },
+    /// All wizard answers are collected — controller builds the struct and saves.
+    NarrativeWizardComplete {
+        /// One answer per assembled prompt, in order.
+        answers: Vec<String>,
+        /// Destination path (`None` if not yet chosen).
+        path: Option<PathBuf>,
+    },
+    /// Open the bot creation wizard.
+    ///
+    /// The controller suspends the ratatui loop, runs `BotConfigGenerator::elicit`
+    /// directly via [`elicit_ratatui::TuiCommunicator`], calls `.generate()` to
+    /// produce the full config, saves it, then resumes the ratatui loop.
+    GoToBotWizard,
+    /// Request the controller to start a user-created bot by name.
+    StartUserBot {
+        /// Bot name as stored in `botticelli-user-bots.jsonl`.
+        name: String,
+    },
+    /// Request the controller to stop a user-created bot by name.
+    StopUserBot {
+        /// Bot name as stored in `botticelli-user-bots.jsonl`.
+        name: String,
+    },
+    /// Request the controller to restart a user-created bot by name.
+    RestartUserBot {
+        /// Bot name as stored in `botticelli-user-bots.jsonl`.
+        name: String,
     },
     /// Exit the TUI cleanly.
     Quit,
@@ -138,4 +184,32 @@ pub trait BotScreen: Send {
     ///
     /// Called after `LoadLogLines` completes. [`LogViewerScreen`] overrides this.
     fn on_log_lines_loaded(&mut self, _lines: Vec<String>) {}
+
+    /// Deliver a single agent-generated answer for the current wizard step.
+    ///
+    /// Called by the controller after `AgentFillNarrativeNext` completes.
+    /// [`NarrativeWizardScreen`](crate::screens::NarrativeWizardScreen) overrides this.
+    fn on_wizard_field_filled(&mut self, _answer: String) {}
+
+    /// Deliver agent-generated answers for all remaining wizard steps.
+    ///
+    /// Called by the controller after `AgentFillNarrativeAll` falls back to
+    /// per-field generation. [`NarrativeWizardScreen`](crate::screens::NarrativeWizardScreen)
+    /// overrides this.
+    fn on_wizard_fields_filled(&mut self, _answers: Vec<String>) {}
+
+    /// Populate the list of user-created bots.
+    ///
+    /// Called by the controller whenever user bots are (re)loaded from
+    /// `botticelli-user-bots.jsonl` — on startup, after `GoToBotWizard` completes,
+    /// and on every `GoToBots` navigation.
+    /// [`BotStatusScreen`](crate::screens::BotStatusScreen) overrides this.
+    fn on_user_bots_loaded(&mut self, _names: Vec<String>) {}
+
+    /// Notify the screen that a user-created bot's run state changed.
+    ///
+    /// Called by the controller after `StartUserBot` / `StopUserBot` /
+    /// `RestartUserBot`. [`BotStatusScreen`](crate::screens::BotStatusScreen)
+    /// overrides this.
+    fn on_user_bot_state_changed(&mut self, _name: &str, _running: bool) {}
 }

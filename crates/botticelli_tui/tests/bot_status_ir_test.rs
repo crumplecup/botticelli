@@ -155,3 +155,99 @@ fn screen_name_is_bots() {
     let screen = BotStatusScreen::new();
     assert_eq!(screen.screen_name(), "Bots");
 }
+
+// ── User bot tests ────────────────────────────────────────────────────────────
+
+#[test]
+fn user_bots_appear_in_ir_after_loaded() {
+    let mut screen = BotStatusScreen::new();
+    screen.on_user_bots_loaded(vec!["morning_news".to_string(), "weekly_recap".to_string()]);
+    let combined = collect_texts(&screen.to_tui_node()).join(" ");
+    assert!(
+        combined.contains("morning_news"),
+        "missing morning_news in: {combined}"
+    );
+    assert!(
+        combined.contains("weekly_recap"),
+        "missing weekly_recap in: {combined}"
+    );
+}
+
+#[test]
+fn user_bots_default_to_stopped() {
+    let mut screen = BotStatusScreen::new();
+    screen.on_user_bots_loaded(vec!["my_bot".to_string()]);
+    assert_eq!(screen.user_state("my_bot"), Some(RunState::Stopped));
+}
+
+#[test]
+fn user_bot_state_changed_to_running() {
+    let mut screen = BotStatusScreen::new();
+    screen.on_user_bots_loaded(vec!["my_bot".to_string()]);
+    screen.on_user_bot_state_changed("my_bot", true);
+    assert_eq!(screen.user_state("my_bot"), Some(RunState::Running));
+}
+
+#[test]
+fn user_bot_state_changed_to_stopped() {
+    let mut screen = BotStatusScreen::new();
+    screen.on_user_bots_loaded(vec!["my_bot".to_string()]);
+    screen.on_user_bot_state_changed("my_bot", true);
+    screen.on_user_bot_state_changed("my_bot", false);
+    assert_eq!(screen.user_state("my_bot"), Some(RunState::Stopped));
+}
+
+#[test]
+fn j_navigates_into_user_bot_rows() {
+    let mut screen = BotStatusScreen::new();
+    let ctx = BotScreenContext::mock();
+    screen.on_user_bots_loaded(vec!["my_bot".to_string()]);
+    // Move past the 3 system bots to the user bot at index 3.
+    for _ in 0..3 {
+        screen.handle_key(make_key(KeyCode::Char('j')), &ctx);
+    }
+    assert_eq!(screen.selected(), 3);
+}
+
+#[test]
+fn j_wraps_with_user_bots() {
+    let mut screen = BotStatusScreen::new();
+    let ctx = BotScreenContext::mock();
+    screen.on_user_bots_loaded(vec!["my_bot".to_string()]);
+    // Total 4 rows — 4 presses wraps back to 0.
+    for _ in 0..4 {
+        screen.handle_key(make_key(KeyCode::Char('j')), &ctx);
+    }
+    assert_eq!(screen.selected(), 0);
+}
+
+#[test]
+fn s_on_user_bot_emits_start_user_bot() {
+    let mut screen = BotStatusScreen::new();
+    let ctx = BotScreenContext::mock();
+    screen.on_user_bots_loaded(vec!["my_bot".to_string()]);
+    // Navigate to user bot row.
+    for _ in 0..3 {
+        screen.handle_key(make_key(KeyCode::Char('j')), &ctx);
+    }
+    let t = screen.handle_key(make_key(KeyCode::Char('s')), &ctx);
+    assert!(
+        matches!(&t, BotTransition::StartUserBot { name } if name == "my_bot"),
+        "expected StartUserBot(my_bot), got: {t:?}"
+    );
+}
+
+#[test]
+fn x_on_user_bot_emits_stop_user_bot() {
+    let mut screen = BotStatusScreen::new();
+    let ctx = BotScreenContext::mock();
+    screen.on_user_bots_loaded(vec!["my_bot".to_string()]);
+    for _ in 0..3 {
+        screen.handle_key(make_key(KeyCode::Char('j')), &ctx);
+    }
+    let t = screen.handle_key(make_key(KeyCode::Char('x')), &ctx);
+    assert!(
+        matches!(&t, BotTransition::StopUserBot { name } if name == "my_bot"),
+        "expected StopUserBot(my_bot), got: {t:?}"
+    );
+}

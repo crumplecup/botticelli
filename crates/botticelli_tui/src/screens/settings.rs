@@ -144,10 +144,7 @@ impl BotScreen for SettingsScreen {
         constraints.push(ConstraintJson::Length { value: 1 });
 
         let feedback = self.save_feedback.unwrap_or("");
-        children.push(Self::paragraph(
-            format!("  {}", feedback),
-            None,
-        ));
+        children.push(Self::paragraph(format!("  {}", feedback), None));
         constraints.push(ConstraintJson::Length { value: 1 });
 
         // fill

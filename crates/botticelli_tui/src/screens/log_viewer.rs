@@ -159,10 +159,7 @@ impl BotScreen for LogViewerScreen {
     fn handle_key(&mut self, key: KeyEvent, _ctx: &BotScreenContext) -> BotTransition {
         match key.code {
             KeyCode::Char('j') | KeyCode::Down => {
-                let max = self
-                    .filtered_lines()
-                    .len()
-                    .saturating_sub(1);
+                let max = self.filtered_lines().len().saturating_sub(1);
                 self.offset = (self.offset + 1).min(max);
                 self.tail = self.offset >= max;
                 BotTransition::Stay
@@ -173,10 +170,7 @@ impl BotScreen for LogViewerScreen {
                 BotTransition::Stay
             }
             KeyCode::PageDown => {
-                let max = self
-                    .filtered_lines()
-                    .len()
-                    .saturating_sub(1);
+                let max = self.filtered_lines().len().saturating_sub(1);
                 self.offset = (self.offset + PAGE_SIZE).min(max);
                 self.tail = self.offset >= max;
                 BotTransition::Stay

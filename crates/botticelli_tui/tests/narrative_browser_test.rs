@@ -139,13 +139,13 @@ fn enter_on_entry_returns_editor_with_path() {
 }
 
 #[test]
-fn n_opens_new_editor() {
+fn n_opens_new_wizard() {
     let ctx = BotScreenContext::mock();
     let mut screen = make_screen(None);
     let t = screen.handle_key(key(KeyCode::Char('n')), &ctx);
     assert!(matches!(
         t,
-        BotTransition::GoToNarrativeEditor { path: None }
+        BotTransition::GoToNarrativeWizard { path: None }
     ));
 }
 

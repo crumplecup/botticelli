@@ -1,9 +1,5 @@
+#![recursion_limit = "256"]
 //! Integration tests for the chat round-trip through [`BotController`].
-//!
-//! These tests require the `cli` feature (driver types live behind it).
-//! Run with: `cargo test -p botticelli_tui --features cli`
-
-#![cfg(feature = "cli")]
 
 use std::sync::Arc;
 

@@ -1,11 +1,13 @@
+#![recursion_limit = "256"]
 //! botticelli-tui: operator console for the Botticelli bot server.
 
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use botticelli_error::BuilderError;
 use botticelli_interface::BotticelliDriver;
 use botticelli_rate_limit::RateLimitConfig;
-use botticelli_tui::{BotController, BotScreenContext, TuiError, TuiErrorKind, TuiResult};
+use botticelli_tui::{BotController, BotScreenContext, TuiResult};
 use clap::Parser;
 use crossterm::{
     execute,
@@ -64,8 +66,7 @@ async fn main() -> TuiResult<()> {
     let log_file = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
-        .open("botticelli-tui.log")
-        .map_err(|e| TuiError::new(TuiErrorKind::TerminalSetup(e.to_string())))?;
+        .open("botticelli-tui.log")?;
 
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
@@ -96,12 +97,11 @@ async fn main() -> TuiResult<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let storage = botticelli_database::open_storage_from_env().await.ok();
+    let narratives_dir = std::env::current_dir()
+        .unwrap_or_default()
+        .join("narratives");
     let ctx = BotScreenContext {
-        narratives_dir: Some(
-            std::env::current_dir()
-                .unwrap_or_default()
-                .join("crates/botticelli_narrative/narratives/discord"),
-        ),
+        narratives_dir: Some(narratives_dir),
         log_file: Some(std::path::PathBuf::from("botticelli-server.log")),
         storage,
     };
@@ -129,10 +129,8 @@ async fn build_driver(args: &Args) -> TuiResult<Arc<dyn BotticelliDriver>> {
                 .model_path(model.clone())
                 .model_id(model)
                 .build()
-                .map_err(|e| TuiError::new(TuiErrorKind::TerminalSetup(e.to_string())))?;
-            let driver = botticelli_server::MistralDriver::load(config)
-                .await
-                .map_err(|e| TuiError::new(TuiErrorKind::TerminalSetup(e.to_string())))?;
+                .map_err(|e| BuilderError::from(e.to_string()))?;
+            let driver = botticelli_server::MistralDriver::load(config).await?;
             Ok(Arc::new(driver))
         }
         Provider::Gemini => {
@@ -140,9 +138,7 @@ async fn build_driver(args: &Args) -> TuiResult<Arc<dyn BotticelliDriver>> {
                 .model
                 .clone()
                 .unwrap_or_else(|| "gemini-2.0-flash-exp".to_string());
-            let client = botticelli_models::GeminiClient::new()
-                .map_err(|e| TuiError::new(TuiErrorKind::TerminalSetup(e.to_string())))?;
-            // GeminiClient picks model from the request; store it in a wrapper.
+            let client = botticelli_models::GeminiClient::new()?;
             Ok(Arc::new(GeminiDriverWithModel::new(client, model)))
         }
         Provider::Anthropic => {
@@ -150,11 +146,7 @@ async fn build_driver(args: &Args) -> TuiResult<Arc<dyn BotticelliDriver>> {
                 .model
                 .clone()
                 .unwrap_or_else(|| "claude-sonnet-4-6".to_string());
-            let key = std::env::var("ANTHROPIC_API_KEY").map_err(|_| {
-                TuiError::new(TuiErrorKind::TerminalSetup(
-                    "ANTHROPIC_API_KEY not set".to_string(),
-                ))
-            })?;
+            let key = std::env::var("ANTHROPIC_API_KEY")?;
             Ok(Arc::new(botticelli_models::AnthropicClient::new(
                 key, model,
             )))
@@ -162,7 +154,7 @@ async fn build_driver(args: &Args) -> TuiResult<Arc<dyn BotticelliDriver>> {
         Provider::Ollama => {
             let model = args.model.clone().unwrap_or_else(|| "mistral".to_string());
             let client = botticelli_models::OllamaClient::new(&model)
-                .map_err(|e| TuiError::new(TuiErrorKind::TerminalSetup(e.to_string())))?;
+                .map_err(botticelli_error::BotticelliError::from)?;
             Ok(Arc::new(client))
         }
     }
@@ -192,7 +184,6 @@ impl BotticelliDriver for GeminiDriverWithModel {
         &self,
         req: &botticelli_core::GenerateRequest,
     ) -> botticelli_error::BotticelliResult<botticelli_core::GenerateResponse> {
-        // Inject default model if the request doesn't specify one.
         if req.model().is_none() {
             let req2 = req.clone().with_model(Some(self.model.clone()));
             self.inner.generate(&req2).await
