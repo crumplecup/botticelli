@@ -137,16 +137,24 @@ fn expand_env_vars(
 
 /// Intermediate structure for deserializing the [narrative] section (single narrative).
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
+#[prompt("Configure your narrative:")]
 pub struct TomlNarrative {
     /// Narrative name.
+    #[prompt("What is the name of this narrative?")]
     pub name: String,
     /// Human-readable description.
+    #[prompt("Describe what this narrative does (shown in logs and tooling):")]
     pub description: String,
     /// Optional template table to use as schema source for content generation
+    #[prompt(
+        "Which database table should be used as the schema template? (optional — press Enter to skip)"
+    )]
     pub template: Option<String>,
     /// Optional target table name for content generation (overrides narrative name)
+    #[prompt("Target table for generated content? (optional — defaults to the narrative name)")]
     pub target: Option<String>,
     /// Optional flag to skip content generation (both template and inference modes)
+    #[prompt("Skip content generation for this narrative? (true/false, default: false)")]
     #[serde(default)]
     pub skip_content_generation: bool,
     /// Optional carousel configuration
@@ -154,12 +162,17 @@ pub struct TomlNarrative {
     pub carousel: Option<crate::CarouselConfig>,
     /// Optional default model for all acts
     #[serde(default)]
+    #[prompt(
+        "Default LLM model for all acts in this narrative? (optional, e.g. claude-sonnet-4-6)"
+    )]
     pub model: Option<String>,
     /// Optional default temperature for all acts
     #[serde(default)]
+    #[prompt("Default temperature for all acts? (optional, 0.0–2.0)")]
     pub temperature: Option<f32>,
     /// Optional default max_tokens for all acts
     #[serde(default)]
+    #[prompt("Default max tokens per act? (optional)")]
     pub max_tokens: Option<u32>,
     /// Optional budget multipliers
     #[serde(default)]
@@ -293,13 +306,19 @@ pub struct TomlNarrativeReference {
 /// - Arrays: `act_name = ["bots.name", "media.name", "text"]`
 /// - Structured tables: `[acts.act_name]` with optional `[[acts.act_name.input]]`
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
+#[prompt("What form should this act take?")]
 #[serde(untagged)]
 pub enum TomlAct {
     /// Simple text act or resource reference: `act_name = "prompt"` or `act_name = "bots.name"`
+    #[prompt(
+        "A single prompt string or resource reference (e.g. \"Summarise the data\" or \"bots.my_bot\")"
+    )]
     Simple(String),
     /// Array of references/inputs: `act_name = ["bots.name", "text"]`
+    #[prompt("A list of inputs combined into one act (mix of text, bot results, table data, etc.)")]
     Array(Vec<TomlActInput>),
     /// Structured act with configuration
+    #[prompt("A structured act with explicit configuration (model overrides, carousel, etc.)")]
     Structured(TomlActConfig),
 }
 
@@ -314,23 +333,29 @@ pub enum TomlActInput {
 }
 
 /// Structured act configuration from TOML.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
+#[prompt("Configure this act's inputs and settings:")]
 pub struct TomlActConfig {
     /// Array of inputs via `[[acts.act_name.input]]` syntax
     #[serde(default)]
+    #[prompt("Inputs for this act (bot commands, table queries, media, or inline text):")]
     pub input: Vec<TomlInput>,
 
     /// Reference to another narrative to execute as this act
     #[serde(default, alias = "narrative_ref")]
+    #[prompt("Run another narrative as this act? Enter the narrative key, or leave blank:")]
     pub narrative: Option<String>,
 
     /// Optional model override
+    #[prompt("Model override for this act? (optional, e.g. claude-haiku-4-5)")]
     pub model: Option<String>,
 
     /// Optional temperature override
+    #[prompt("Temperature override for this act? (optional, 0.0–2.0)")]
     pub temperature: Option<f32>,
 
     /// Optional max_tokens override
+    #[prompt("Max tokens override for this act? (optional)")]
     pub max_tokens: Option<u32>,
 
     /// Optional carousel configuration for this act
@@ -346,7 +371,7 @@ pub struct TomlActConfig {
 ///
 /// The `type` field determines which other fields are required.
 /// Source is detected from which of url/base64/file is present.
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
 pub struct TomlInput {
     /// Input type: "text", "image", "audio", "video", "document", "bot_command", "table"
     #[serde(rename = "type")]
@@ -409,25 +434,35 @@ pub struct TomlInput {
 
 /// Root TOML structure supporting both single and multi-narrative files.
 #[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema, elicitation::Elicit)]
+#[prompt(
+    "Let's build a narrative file. We'll define acts (AI prompt steps) and then the narrative configuration."
+)]
 pub struct TomlNarrativeFile {
     /// Shared act definitions (available to all narratives)
     #[serde(default)]
+    #[prompt(
+        "Define the shared acts for this file. Each act is an AI prompt step identified by name."
+    )]
     pub acts: HashMap<String, TomlAct>,
 
     /// Optional bot command definitions (shared)
     #[serde(default)]
+    #[prompt("Define bot command sources (optional). Leave empty if not pulling data from bots.")]
     pub bots: HashMap<String, TomlBotDefinition>,
 
     /// Optional table query definitions (shared)
     #[serde(default)]
+    #[prompt("Define database table queries (optional). Leave empty if not using table data.")]
     pub tables: HashMap<String, TomlTableDefinition>,
 
     /// Optional media source definitions (shared)
     #[serde(default)]
+    #[prompt("Define media sources (optional). Leave empty if not using images, audio, or video.")]
     pub media: HashMap<String, TomlMediaDefinition>,
 
     /// Flattened narrative field - can be single TomlNarrative or HashMap<String, TomlNarrativeEntry>
     #[serde(flatten)]
+    #[prompt("Configure the narrative(s) contained in this file:")]
     pub narrative_data: TomlNarrativeData,
 
     /// Legacy support for [narratives.name] syntax (deprecated)

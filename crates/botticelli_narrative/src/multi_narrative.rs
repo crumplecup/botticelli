@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use std::path::Path;
 use tracing::{debug, instrument};
 
-
 /// Container for multiple narratives from a single TOML file.
 ///
 /// Enables narrative composition where narratives can reference each other.

@@ -7,7 +7,6 @@ use std::path::Path;
 use std::str::FromStr;
 use tracing::debug;
 
-
 /// Narrative metadata from the `[narrative]` section.
 #[derive(
     Debug,
