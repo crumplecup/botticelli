@@ -13,102 +13,60 @@ default:
 # Development Setup
 # ================
 
-# Install all development dependencies (Rust, cargo tools, node tools)
+# Install all development dependencies
 setup:
-    @echo "📦 Installing development dependencies..."
     @just install-rust
     @just install-cargo-tools
-    @echo "✅ Setup complete!"
 
 # Install or update Rust toolchain
 install-rust:
-    @echo "🦀 Installing/updating Rust toolchain..."
     rustup update stable
     rustup default stable
     rustup component add clippy rustfmt
 
 # Install required cargo plugins
 install-cargo-tools:
-    @echo "🔧 Installing cargo tools..."
-    cargo install diesel_cli --no-default-features --features postgres || true
     cargo install cargo-audit || true
     cargo install cargo-watch || true
     cargo install cargo-hack || true
     cargo install cargo-dist || true
     cargo install omnibor-cli || true
     cargo install cargo-nextest || true
-    @echo "✅ Cargo tools installed"
 
 # Update just itself
 update-just:
-    @echo "⚡ Updating just..."
     cargo install just || true
 
 # Update all dependencies (Rust, cargo tools, just)
 update-all: install-rust install-cargo-tools update-just
-    @echo "✅ All tools updated!"
 
-# Building and Checking
-# ======================
+# Building
+# ========
 
-
-
-# Build specific package or all workspace with local features
+# Build specific package or all workspace
 build PACKAGE="":
     #!/usr/bin/env bash
     if [ -z "{{PACKAGE}}" ]; then
-        cargo build --release --features local
+        cargo build --release
     else
-        # Check if package has local feature
-        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
-           jq -e ".packages[] | select(.name == \"{{PACKAGE}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
-            cargo build --release --package {{PACKAGE}} --features local
-        else
-            cargo build --release --package {{PACKAGE}}
-        fi
+        cargo build --release --package {{PACKAGE}}
     fi
 
-# Build with local features (all except api)
-build-local:
-    cargo build --features local
-
-# Build with all features enabled
+# Build the workspace (debug, all features)
 build-all:
     cargo build --all-features
-
-# Build an example for a specific package
-build-example package example:
-    #!/usr/bin/env bash
-    # Check if package has a 'local' feature, use it if available
-    if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
-       jq -e ".packages[] | select(.name == \"{{package}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
-        echo "🔨 Building example '{{example}}' for {{package}} with local features"
-        cargo build --example {{example}} -p {{package}} --features local
-    else
-        echo "🔨 Building example '{{example}}' for {{package}} without features"
-        cargo build --example {{example}} -p {{package}}
-    fi
-
-# Run an example for a specific package
-run-example package example *args='':
-    #!/usr/bin/env bash
-    # Check if package has a 'local' feature, use it if available
-    if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
-       jq -e ".packages[] | select(.name == \"{{package}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
-        echo "🚀 Running example '{{example}}' for {{package}} with local features"
-        cargo run --example {{example}} -p {{package}} --features local -- {{args}}
-    else
-        echo "🚀 Running example '{{example}}' for {{package}} without features"
-        cargo run --example {{example}} -p {{package}} -- {{args}}
-    fi
-
-# Build release with local features
-build-release-local:
-    cargo build --release --features local
 
 # Build release with all features
 build-release-all:
     cargo build --release --all-features
+
+# Build an example for a specific package
+build-example package example:
+    cargo build --example {{example}} -p {{package}}
+
+# Run an example for a specific package
+run-example package example *args='':
+    cargo run --example {{example}} -p {{package}} -- {{args}}
 
 # Clean build artifacts
 clean:
@@ -120,161 +78,301 @@ rebuild: clean build
 # Testing
 # =======
 
-# Run tests: just test [package] [test_name]
-# Examples: 
-#   just test                              # Run all tests with local features
-#   just test botticelli                   # Run all tests for botticelli package
-#   just test botticelli table_references  # Run specific test in botticelli
+# Run tests.  Args: PACKAGE (optional), TEST filter (optional).
 test PACKAGE="" TEST="":
     #!/usr/bin/env bash
     if [ -z "{{PACKAGE}}" ]; then
-        # No package specified - run all tests with local features
-        cargo test --workspace --features local --lib --tests
+        cargo test --workspace --all-features --lib --tests
     elif [ -z "{{TEST}}" ]; then
-        # Package specified, no test - run all tests for package
-        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
-           jq -e ".packages[] | select(.name == \"{{PACKAGE}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
-            cargo test --package {{PACKAGE}} --features local --lib --tests
-        else
-            cargo test --package {{PACKAGE}} --lib --tests
-        fi
+        cargo test --package {{PACKAGE}} --all-features --lib --tests
     else
-        # Package and test specified - run specific test
-        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
-           jq -e ".packages[] | select(.name == \"{{PACKAGE}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
-            cargo test --package {{PACKAGE}} --features local --lib --tests {{TEST}} -- --nocapture
-        else
-            cargo test --package {{PACKAGE}} --lib --tests {{TEST}} -- --nocapture
-        fi
+        cargo test --package {{PACKAGE}} --all-features --lib --tests {{TEST}} -- --nocapture
     fi
 
-# Run LOCAL tests with verbose output
+# Run tests with verbose output
 test-verbose:
-    cargo test --workspace --features local --lib --tests -- --nocapture
+    cargo test --workspace --all-features --lib --tests -- --nocapture
 
-# Run doctests (usually fast)
+# Run doctests
 test-doc:
-    cargo test --workspace --features local --doc
+    cargo test --workspace --doc
 
 # Run tests for a specific package, optionally filtering by test name
 test-package package test_name="":
     #!/usr/bin/env bash
-    # Check if package has a 'local' feature, use it if available
-    if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
-       jq -e ".packages[] | select(.name == \"{{package}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
-        echo "📦 Testing {{package}} with local features"
-        if [ -n "{{test_name}}" ]; then
-            cargo test -p {{package}} --features local --lib --tests {{test_name}} -- --nocapture
-        else
-            cargo test -p {{package}} --features local --lib --tests
-        fi
+    if [ -n "{{test_name}}" ]; then
+        cargo test -p {{package}} --all-features --lib --tests {{test_name}} -- --nocapture
     else
-        echo "📦 Testing {{package}} without features"
-        if [ -n "{{test_name}}" ]; then
-            cargo test -p {{package}} --lib --tests {{test_name}} -- --nocapture
-        else
-            cargo test -p {{package}} --lib --tests
-        fi
+        cargo test -p {{package}} --all-features --lib --tests
     fi
 
-# Quick test that metrics API is functional (no container/network required)
-test-metrics:
-    @echo "🔍 Testing metrics API..."
-    cargo test --package botticelli_actor --test metrics_collection_test -- --nocapture
-
-# Run API tests for Gemini (requires GEMINI_API_KEY)
-test-api-gemini:
-    #!/usr/bin/env bash
-    set +u
-    test -n "${GEMINI_API_KEY}" || (echo "❌ GEMINI_API_KEY not set. API tests require this environment variable." && exit 1)
-    
-    LOG_FILE="/tmp/botticelli-test-api-gemini.log"
-    rm -f "$LOG_FILE"
-    
-    if cargo test --workspace --features gemini,api 2>&1 | tee "$LOG_FILE"; then
-        if [ -s "$LOG_FILE" ] && grep -qE "^(warning:|error:|\s+\^|error\[|test result:.*FAILED)" "$LOG_FILE"; then
-            echo "⚠️  API tests completed with warnings/errors. See: $LOG_FILE"
-            exit 1
-        else
-            echo "✅ All API tests passed!"
-            rm -f "$LOG_FILE"
-        fi
-    else
-        echo "❌ API tests failed. See: $LOG_FILE"
-        exit 1
-    fi
-
-# Run API tests for Anthropic (requires ANTHROPIC_API_KEY) - optional package and test name
+# Run API tests (requires ANTHROPIC_API_KEY; expensive — use sparingly).  Args: package, test_name.
 test-api package="" test_name="":
     #!/usr/bin/env bash
     set +u
-    
+
     LOG_FILE="/tmp/botticelli-test-api.log"
     rm -f "$LOG_FILE"
-    
+
     PACKAGE_FLAG=""
     if [ -n "{{package}}" ]; then
         PACKAGE_FLAG="-p {{package}}"
     fi
-    
+
     TEST_NAME=""
     if [ -n "{{test_name}}" ]; then
         TEST_NAME="{{test_name}}"
     fi
-    
-    if cargo test $PACKAGE_FLAG --features local,api $TEST_NAME -- --nocapture --show-output 2>&1 | tee "$LOG_FILE"; then
+
+    if cargo test $PACKAGE_FLAG --features api $TEST_NAME -- --nocapture --show-output 2>&1 | tee "$LOG_FILE"; then
         if [ -s "$LOG_FILE" ] && grep -qE "^(warning:|error:|\s+\^|error\[|test result:.*FAILED)" "$LOG_FILE"; then
-            echo "⚠️  API tests completed with warnings/errors. See: $LOG_FILE"
+            echo "API tests completed with warnings/errors. See: $LOG_FILE"
             exit 1
         else
-            echo "✅ All API tests passed!"
+            echo "All API tests passed!"
             rm -f "$LOG_FILE"
         fi
     else
-        echo "❌ API tests failed. See: $LOG_FILE"
+        echo "API tests failed. See: $LOG_FILE"
         exit 1
     fi
 
-# Run ALL API tests (requires all API keys, expensive!)
-test-api-all:
-    #!/usr/bin/env bash
-    set +u
-    test -n "${GEMINI_API_KEY}" || (echo "⚠️  Warning: GEMINI_API_KEY not set" && exit 0)
-    
-    LOG_FILE="/tmp/botticelli-test-api-all.log"
-    rm -f "$LOG_FILE"
-    
-    echo "🚀 Running all API tests (this will consume API quotas)..."
-    if cargo test --workspace --all-features 2>&1 | tee "$LOG_FILE"; then
-        if [ -s "$LOG_FILE" ] && grep -qE "^(warning:|error:|\s+\^|error\[|test result:.*FAILED)" "$LOG_FILE"; then
-            echo "⚠️  API tests completed with warnings/errors. See: $LOG_FILE"
-            exit 1
-        else
-            echo "✅ All API tests passed!"
-            rm -f "$LOG_FILE"
-        fi
-    else
-        echo "❌ API tests failed. See: $LOG_FILE"
-        exit 1
-    fi
+# Run tests with timing information using nextest
+test-timings:
+    cargo nextest run --workspace
 
-# Run database tests (requires DATABASE_URL)
-test-db:
-    #!/usr/bin/env bash
-    set +u
-    test -n "${DATABASE_URL}" || (echo "❌ DATABASE_URL not set. Database tests require a PostgreSQL database." && exit 1)
-    cargo test --workspace --features database
+# Install nextest if not present
+install-nextest:
+    cargo install cargo-nextest --locked
+
+# Quick test that metrics API is functional
+test-metrics:
+    cargo test --package botticelli_actor --test metrics_collection_test -- --nocapture
 
 # Run local + doc tests (no linting)
 test-full: test test-doc
 
-# Run tests and show coverage (requires cargo-tarpaulin)
-test-coverage:
-    @command -v cargo-tarpaulin >/dev/null 2>&1 || (echo "Installing cargo-tarpaulin..." && cargo install cargo-tarpaulin)
-    cargo tarpaulin --workspace --lib --tests --out Html --output-dir coverage
+# Code Quality
+# ============
 
-# Run complete test suite including API tests (for pre-merge)
-test-pre-merge: test test-doc test-api-gemini
+# Check compilation (optionally for a specific package)
+check package="":
+    #!/usr/bin/env bash
+    if [ -z "{{package}}" ]; then
+        cargo check --all-features --all-targets
+    else
+        cargo check -p "{{package}}" --all-features --all-targets
+    fi
+
+# Run clippy linter (optionally for a specific package)
+lint package='':
+    #!/usr/bin/env bash
+    if [ -z "{{package}}" ]; then
+        cargo clippy --workspace --all-features --all-targets
+    else
+        cargo clippy -p {{package}} --all-features --all-targets
+    fi
+
+# Run clippy and fix issues automatically
+lint-fix:
+    cargo clippy --workspace --all-targets --fix --allow-dirty --allow-staged
+
+# Check code formatting
+fmt-check:
+    cargo fmt --all -- --check
+
+# Format all code
+fmt:
+    cargo fmt --all
+
+# Check markdown files for issues
+lint-md:
+    @command -v markdownlint-cli2 >/dev/null 2>&1 || (echo "markdownlint-cli2 not installed. Run: npm install -g markdownlint-cli2" && exit 1)
+    markdownlint-cli2 "**/*.md" "#target" "#node_modules"
+
+# Run clippy + fmt + tests for a package (full workspace is slow — prefer a package arg).
+check-all package='':
+    #!/usr/bin/env bash
+    set -uo pipefail
+    LOG_FILE="/tmp/botticelli_check_all.log"
+    rm -f "$LOG_FILE"
+    EXIT_CODE=0
+
+    if [ -z "{{package}}" ]; then
+        cargo fmt --all
+        if ! cargo clippy --workspace --all-features --all-targets 2>&1 | tee -a "$LOG_FILE"; then
+            EXIT_CODE=1
+        fi
+        if ! cargo test --workspace --all-features --lib --tests 2>&1 | tee -a "$LOG_FILE"; then
+            EXIT_CODE=1
+        fi
+    else
+        cargo fmt --all
+        if ! cargo clippy -p {{package}} --all-features --all-targets 2>&1 | tee -a "$LOG_FILE"; then
+            EXIT_CODE=1
+        fi
+        if ! cargo test -p {{package}} --all-features --lib --tests 2>&1 | tee -a "$LOG_FILE"; then
+            EXIT_CODE=1
+        fi
+        cargo test -p {{package}} --all-features --doc 2>&1 | tee -a "$LOG_FILE" || EXIT_CODE=1
+    fi
+
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo ""
+        echo "Checks completed with warnings/errors. Full log saved to: $LOG_FILE"
+        exit 1
+    else
+        echo ""
+        echo "All checks passed!"
+        rm -f "$LOG_FILE"
+    fi
+
+# Test feature gate combinations with cargo-hack (mirrors CI workflow)
+check-features:
+    cargo check --workspace --no-default-features
+    cargo check --workspace
+    cargo check --workspace --all-features
+    cargo hack check --workspace --feature-powerset --exclude-features api --optional-deps --depth 2
+    cargo clippy --workspace --no-default-features -- -D warnings
+    cargo clippy --workspace -- -D warnings
+    cargo clippy --workspace --all-features -- -D warnings
+
+# Fix all auto-fixable issues
+fix-all: fmt lint-fix
+
+# Security
+# ========
+
+# Check for security vulnerabilities in dependencies
+audit:
+    cargo audit
+
+# Update dependencies and check for vulnerabilities
+audit-fix:
+    cargo update
+    cargo audit
+
+# Generate OmniBOR artifact tree for supply chain transparency
+omnibor:
+    @command -v omnibor >/dev/null 2>&1 || (echo "Installing omnibor-cli..." && cargo install omnibor-cli)
+    omnibor --help > /dev/null && echo "OmniBOR installed" || echo "OmniBOR not found - install with: cargo install omnibor"
+
+# Run all security checks
+security: audit omnibor
+
+# TUI (Terminal User Interface)
+# ==============================
+
+# Launch TUI operator console.
+# provider: server (default) | gemini | anthropic | ollama
+# model: leave blank to use provider default
+tui provider="server" model="" server_url="":
+    #!/usr/bin/env bash
+    mkdir -p narratives
+    MODEL_ARG=""
+    SERVER_URL_ARG=""
+    if [ -n "{{model}}" ]; then MODEL_ARG="--model {{model}}"; fi
+    if [ -n "{{server_url}}" ]; then SERVER_URL_ARG="--server-url {{server_url}}"; fi
+    RUST_LOG="${RUST_LOG:-botticelli_tui=info,botticelli_mcp_client=info}" \
+        cargo run --package botticelli_tui --bin botticelli-tui -- \
+        --provider {{provider}} $SERVER_URL_ARG $MODEL_ARG
+
+# Launch TUI with debug logging. Same optional args as `tui`.
+tui-debug provider="server" model="" server_url="":
+    #!/usr/bin/env bash
+    mkdir -p narratives
+    MODEL_ARG=""
+    SERVER_URL_ARG=""
+    if [ -n "{{model}}" ]; then MODEL_ARG="--model {{model}}"; fi
+    if [ -n "{{server_url}}" ]; then SERVER_URL_ARG="--server-url {{server_url}}"; fi
+    RUST_LOG=botticelli_tui=debug,botticelli_server=debug,botticelli_mcp_client=debug,botticelli_mcp=debug,botticelli_models=debug \
+        cargo run --package botticelli_tui --bin botticelli-tui -- \
+        --provider {{provider}} $SERVER_URL_ARG $MODEL_ARG
+
+# Bot Server Management
+# ======================
+
+# Start the bot server with all three bots (generation, curation, posting)
+bot-server:
+    cargo run --release --features bots --bin botticelli -- server
+
+# Start only the generation bot (for testing)
+bot-generate:
+    cargo run --release --features bots --bin botticelli -- server --only generation
+
+# Start only the curation bot (for testing)
+bot-curate:
+    cargo run --release --features bots --bin botticelli -- server --only curation
+
+# Start only the posting bot (for testing)
+bot-post:
+    cargo run --release --features bots --bin botticelli -- server \
+        --posting-narrative ./crates/botticelli_narrative/narratives/discord/posting.toml \
+        --posting-name scheduled_post
+
+# Actor Server
+# ============
+
+# Run actor server with observability enabled (reads .env automatically)
+run-actor-server:
+    cargo run --bin actor-server --release --package botticelli_actor --features "discord,otel-otlp"
+
+# Container Management
+# ===================
+
+# Build the actor-server container image
+container-build:
+    podman build -t botticelli-actor-server:latest -f Containerfile .
+
+alias bot-build := container-build
+
+# Run the actor-server container (requires .env file and observability stack)
+container-run:
+    podman run -d \
+        --name botticelli-actor-server \
+        --env-file .env \
+        -e OTEL_EXPORTER=otlp \
+        -e OTEL_EXPORTER_OTLP_ENDPOINT=http://host.containers.internal:4318 \
+        -p 9090:9090 \
+        --network host \
+        botticelli-actor-server:latest
+
+alias bot-run := container-run
+
+# Start all services with docker-compose
+bot-up:
+    podman-compose up -d
+
+# Stop all services
+bot-down:
+    podman-compose down
+
+# Restart actor-server service only
+bot-restart:
+    podman-compose restart actor-server
+
+# View actor-server logs
+bot-logs:
+    podman logs -f botticelli-actor-server
+
+# Rebuild and restart actor-server
+bot-rebuild: container-build
+    podman-compose up -d --force-recreate actor-server
+
+# Stop and remove the actor-server container
+container-stop:
+    podman stop botticelli-actor-server || true
+    podman rm botticelli-actor-server || true
+
+# View actor-server container logs
+container-logs:
+    podman logs -f botticelli-actor-server
+
+# Restart the actor-server container
+container-restart: container-stop container-run
+
+# Rebuild and restart the actor-server container
+container-rebuild: container-build container-restart
 
 # Observability
 # =============
@@ -283,7 +381,7 @@ test-pre-merge: test test-doc test-api-gemini
 test-observability:
     @./scripts/test-observability.sh
 
-# Verify metrics pipeline is working (Application → Prometheus → Grafana)
+# Verify metrics pipeline is working
 verify-metrics:
     @./scripts/verify-metrics.sh
 
@@ -308,439 +406,37 @@ obs-logs service="":
 obs-restart:
     podman-compose -f docker-compose.observability.yml restart
 
-# Run actor server with observability enabled (reads .env automatically)
-run-actor-server:
-    cargo run --bin actor-server --release --features "discord,otel-otlp"
-
-# Container Management
-# ===================
-
-# Build the actor-server container image (alias: bot-build)
-container-build:
-    @echo "🐳 Building actor-server container..."
-    podman build -t botticelli-actor-server:latest -f Containerfile .
-
-# Alias for container-build
-alias bot-build := container-build
-
-# Run the actor-server container (requires .env file and observability stack) (alias: bot-run)
-container-run:
-    @echo "🚀 Starting actor-server container..."
-    podman run -d \
-        --name botticelli-actor-server \
-        --env-file .env \
-        -e OTEL_EXPORTER=otlp \
-        -e OTEL_EXPORTER_OTLP_ENDPOINT=http://host.containers.internal:4318 \
-        -p 9090:9090 \
-        --network host \
-        botticelli-actor-server:latest
-
-# Alias for container-run
-alias bot-run := container-run
-
-# Start all services (observability + actor-server) with docker-compose
-bot-up:
-    @echo "🚀 Starting all Botticelli services..."
-    podman-compose up -d
-
-# Stop all services
-bot-down:
-    @echo "🛑 Stopping all Botticelli services..."
-    podman-compose down
-
-# Restart actor-server service only
-bot-restart:
-    @echo "🔄 Restarting actor-server..."
-    podman-compose restart actor-server
-
-# View actor-server logs
-bot-logs:
-    @echo "📋 Actor-server logs:"
-    podman logs -f botticelli-actor-server
-
-# Rebuild and restart actor-server
-bot-rebuild: container-build
-    @echo "🔄 Rebuilding and restarting actor-server..."
-    podman-compose up -d --force-recreate actor-server
-
-# Stop and remove the actor-server container
-container-stop:
-    @echo "🛑 Stopping actor-server container..."
-    podman stop botticelli-actor-server || true
-    podman rm botticelli-actor-server || true
-
-# View actor-server container logs
-container-logs:
-    podman logs -f botticelli-actor-server
-
-# Restart the actor-server container
-container-restart: container-stop container-run
-
-# Rebuild and restart the actor-server container
-container-rebuild: container-build container-restart
-
 # Complete container setup: build image and start with observability
 container-setup: obs-up container-build container-run
-    @echo "✅ Actor server container running with observability"
-    @echo "📊 Grafana: http://localhost:3000"
-    @echo "📈 Prometheus: http://localhost:9091"
-    @echo "🔍 Jaeger: http://localhost:16686"
-    @echo "📊 Metrics: http://localhost:9090/metrics"
+    @echo "Actor server container running with observability"
+    @echo "  Grafana:    http://localhost:3000"
+    @echo "  Prometheus: http://localhost:9091"
+    @echo "  Jaeger:     http://localhost:16686"
+    @echo "  Metrics:    http://localhost:9090/metrics"
 
-# Chat Interface
-# ==============
-
-# Run chat interface locally for development
-chat force="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "💬 Starting MCP HTTP server in background..."
-    pkill -f botticelli-mcp-http || true
-    if [ "{{ force }}" = "rebuild" ]; then
-        cargo clean -p botticelli_mcp
-        cargo clean -p botticelli_tui
-    fi
-    cargo run --package botticelli_mcp --bin botticelli-mcp-http --features="http,database,llm" > /tmp/mcp-server.log 2>&1 &
-    SERVER_PID=$!
-    echo "⏳ Waiting for server to be ready (PID: $SERVER_PID)..."
-    for i in {1..30}; do
-        if curl -sf http://localhost:3030/health > /dev/null 2>&1; then
-            echo "✅ Server ready!"
-            break
-        fi
-        sleep 0.5
-    done
-    echo "💬 Starting chat interface..."
-    RUST_LOG=debug cargo run --package botticelli_tui --bin botticelli-tui --features cli 2>&1 | tee -a botticelli-chat.log
-    echo "🛑 Stopping MCP server..."
-    kill $SERVER_PID 2>/dev/null || true
-
-# Build the chat interface container image
-chat-build:
-    @echo "🐳 Building chat interface container..."
-    podman build -t botticelli-chat:latest -f Containerfile.chat .
-
-# Start the complete chat stack (postgres, mcp-server, chat interface)
-chat-up:
-    @echo "🚀 Starting chat interface stack..."
-    podman-compose -f docker-compose.chat.yml up
-
-# Start chat stack in background
-chat-up-bg:
-    @echo "🚀 Starting chat interface stack in background..."
-    podman-compose -f docker-compose.chat.yml up -d
-
-# Start chat stack with Jaeger for debugging
-chat-up-debug:
-    @echo "🚀 Starting chat interface stack with Jaeger..."
-    podman-compose -f docker-compose.chat.yml --profile debug up
-
-# Stop the chat stack
-chat-down:
-    @echo "🛑 Stopping chat interface stack..."
-    podman-compose -f docker-compose.chat.yml down
-
-# View chat logs
-chat-logs service="":
-    #!/usr/bin/env bash
-    if [ -z "{{service}}" ]; then
-        podman-compose -f docker-compose.chat.yml logs -f
-    else
-        podman logs -f botticelli-chat-{{service}}
-    fi
-
-# Rebuild and restart chat interface
-chat-rebuild: chat-build
-    @echo "🔄 Rebuilding and restarting chat interface..."
-    podman-compose -f docker-compose.chat.yml up -d --force-recreate chat
-
-# Build MCP HTTP server binary (required for auto-start)
-build-mcp-server:
-    @echo "🔧 Building MCP HTTP server..."
-    cargo build --bin botticelli-mcp-http --features="http,database,llm"
-
-# Run chat interface locally (skip health checks for development)
-chat-local:
-    @echo "💬 Starting chat interface locally..."
-    cargo run --bin botticelli-chat --features="cli,tui" -- --skip-health-checks
-
-# Run chat interface with health checks and auto-start (builds MCP server if needed)
-chat-local-check: build-mcp-server
-    @echo "💬 Starting chat interface with health checks and auto-start..."
-    cargo run --bin botticelli-chat --features="cli,tui"
-
-# Start services in background (for testing/automation)
-chat-local-bg: build-mcp-server
-    @echo "🔧 Starting services in background..."
-    @echo "Note: Use 'pkill botticelli-chat' or 'pkill mcp-server' to stop"
-    nohup cargo run --bin botticelli-chat --features="cli,tui" > /tmp/botticelli-chat.log 2>&1 &
-    @echo "✅ Services starting... Check /tmp/botticelli-chat.log for output"
-
-# Run automated demo with actor exercising all MCP tools
-chat-demo: build-mcp-server
-    @echo "🎬 Starting Botticelli Automated Demo..."
-    cargo run --bin demo --features="demo"
-
-# Run complete workflow demo (test mode)
-demo-workflow-test:
-    @echo "🎬 Running workflow demo in test mode..."
-    cargo run --bin demo-workflow -- --test-mode
-
-# Run complete workflow demo (with database)
-# NOTE: Requires PostgreSQL and MCP server to be running.
-# Run 'just chat-local' in another terminal first, or use 'just demo-workflow-auto'
-demo-workflow: build-mcp-server
-    @echo "🎬 Running workflow demo with database validation..."
-    @echo "⚠️  Ensure 'just chat-local' is running in another terminal"
-    cargo run --bin demo-workflow
-
-# Auto-start services and run workflow demo
-demo-workflow-auto:
-    @echo "🎬 Starting services and running workflow demo..."
-    @echo "📝 Note: This will start services in the background"
-    just chat-local-bg
-    @sleep 5
-    just demo-workflow
-    @echo "✅ Demo complete. Services still running in background."
-
-# Run chat interface in container mode
-chat-container:
-    @echo "💬 Starting chat interface in container mode..."
-    cargo run --bin botticelli-chat --features="cli,tui" -- --mode container --skip-health-checks
-
-# Run chat interface with verbose logging
-chat-verbose:
-    @echo "💬 Starting chat interface with verbose logging..."
-    cargo run --bin botticelli-chat --features="cli,tui" -- --skip-health-checks --verbose
-
-# Complete chat setup: build and start all services
-chat-setup: chat-build chat-up-bg
-    @echo "✅ Chat interface running"
-    @echo "💬 Chat: Attached to terminal"
-    @echo "🗄️  PostgreSQL: localhost:5433"
-    @echo "🔧 MCP Server: Running in background"
-
-# Code Quality
-# ============
-
-# Check compilation (all features by default, or specific package)
-check package="":
-    #!/usr/bin/env bash
-    if [ -z "{{package}}" ]; then
-        echo "🔍 Checking all packages with all features..."
-        cargo check --all-features --all-targets
-    else
-        echo "🔍 Checking package: {{package}}"
-        cargo check -p "{{package}}" --all-features --all-targets
-    fi
-
-# Run clippy linter (no warnings allowed)
-# Uses local features to match test environment
-lint package='':
-    #!/usr/bin/env bash
-    if [ -z "{{package}}" ]; then
-        echo "🔍 Linting entire workspace"
-        cargo clippy --workspace --all-features --all-targets
-    else
-        echo "🔍 Linting {{package}}"
-        cargo clippy -p {{package}} --all-features --all-targets
-    fi
-
-# Run clippy and fix issues automatically
-lint-fix:
-    cargo clippy --workspace --features local --all-targets --fix --allow-dirty --allow-staged
-
-# Check code formatting
-fmt-check:
-    cargo fmt --all -- --check
-
-# Format all code
-fmt:
-    cargo fmt --all
-
-# Check markdown files for issues
-lint-md:
-    @command -v markdownlint-cli2 >/dev/null 2>&1 || (echo "❌ markdownlint-cli2 not installed. Run: just install-node-tools" && exit 1)
-    markdownlint-cli2 "**/*.md" "#target" "#node_modules"
-
-# Test various feature gate combinations (requires cargo-hack)
-check-features:
-    #!/usr/bin/env bash
-    set -e
-    command -v cargo-hack >/dev/null 2>&1 || (echo "❌ cargo-hack not installed. Run: cargo install cargo-hack" && exit 1)
-    
-    LOG_FILE="/tmp/botticelli-check-features.log"
-    rm -f "$LOG_FILE"
-    
-    # Run feature gate checks and capture output
-    if ./scripts/feature-gate-check.sh 2>&1 | tee "$LOG_FILE"; then
-        if [ -s "$LOG_FILE" ] && grep -qE "^(warning:|error:|\s+\^|error\[)" "$LOG_FILE"; then
-            echo "⚠️  Feature gate checks completed with warnings/errors. See: $LOG_FILE"
-            exit 1
-        else
-            echo "✅ All feature gate checks passed!"
-            rm -f "$LOG_FILE"
-        fi
-    else
-        echo "❌ Feature gate checks failed. See: $LOG_FILE"
-        exit 1
-    fi
-
-# Run all checks (lint, format check, tests)
-test-all package='':
-    #!/usr/bin/env bash
-    set -uo pipefail  # Removed -e so we can capture exit codes
-    LOG_FILE="/tmp/botticelli_check_all.log"
-    rm -f "$LOG_FILE"
-    EXIT_CODE=0
-    
-    if [ -z "{{package}}" ]; then
-        echo "🔍 Running all checks on entire workspace..."
-        
-        # Run fmt (errors only)
-        cargo fmt --all
-        
-        # Run lint (show output and log warnings/errors)
-        echo "🔍 Linting entire workspace with local features"
-        if ! cargo clippy --workspace --features local --all-targets 2>&1 | tee -a "$LOG_FILE"; then
-            EXIT_CODE=1
-        fi
-        
-        # Run tests (show output and log failures)
-        if ! cargo test --workspace --features local --lib --tests 2>&1 | tee -a "$LOG_FILE"; then
-            EXIT_CODE=1
-        fi
-        
-        # Report results
-        if [ $EXIT_CODE -ne 0 ]; then
-            echo ""
-            echo "⚠️  Checks completed with warnings/errors. Full log saved to: $LOG_FILE"
-            exit 1
-        else
-            echo ""
-            echo "✅ All checks passed!"
-            rm -f "$LOG_FILE"
-        fi
-    else
-        echo "🔍 Running all checks on {{package}}..."
-        just fmt
-        just lint "{{package}}"
-        just test-package "{{package}}"
-        # Run doc tests for the package if it has any
-        if cargo metadata --format-version 1 --no-deps 2>/dev/null | \
-           jq -e ".packages[] | select(.name == \"{{package}}\") | .features | has(\"local\")" >/dev/null 2>&1; then
-            cargo test -p "{{package}}" --features local --doc
-        else
-            cargo test -p "{{package}}" --doc
-        fi
-    fi
-    echo "✅ All checks passed!"
-
-# Fix all auto-fixable issues
-fix-all: fmt lint-fix
-    @echo "✅ Auto-fixes applied!"
-
-# Security
-# ========
-
-# Check for security vulnerabilities in dependencies
-audit:
-    cargo audit
-
-# Update dependencies and check for vulnerabilities
-audit-fix:
-    cargo update
-    cargo audit
-
-# Database
-# ========
-
-# Run database migrations
-db-migrate:
-    diesel migration run
-
-# Revert last database migration
-db-revert:
-    diesel migration revert
-
-# Redo last migration (revert then run)
-db-redo:
-    diesel migration redo
-
-# Reset database (revert all, then run all)
-db-reset:
-    diesel migration revert --all
-    diesel migration run
-
-# Create a new migration
-db-migration name:
-    diesel migration generate {{name}}
-
-# Check database connection
-db-check:
-    #!/usr/bin/env bash
-    set +u
-    echo "🔍 Checking database connection..."
-    diesel database setup --database-url="${DATABASE_URL}" && echo "✅ Database setup complete" || echo "⚠️  Database setup failed or already exists"
-
-# Setup database from scratch
-db-setup:
-    diesel setup
-
-# Development
-# ===========
-
-# Watch for changes and run local tests
-watch:
-    @command -v cargo-watch >/dev/null 2>&1 || (echo "Installing cargo-watch..." && cargo install cargo-watch)
-    cargo watch -x 'test --workspace --features local --lib --tests'
-
-# Watch and run specific command on changes
-watch-cmd cmd:
-    @command -v cargo-watch >/dev/null 2>&1 || (echo "Installing cargo-watch..." && cargo install cargo-watch)
-    cargo watch -x '{{cmd}}'
-
-# Run the binary in development mode
-run *args:
-    cargo run -p botticelli -- {{args}}
-
-# Run with database features enabled
-run-db *args:
-    cargo run -p botticelli --features database -- {{args}}
-
-# Run with all features
-run-all *args:
-    cargo run -p botticelli --all-features -- {{args}}
-
-# Content Generation Examples
-# ===========================
+# Narrative Execution
+# ===================
 
 # Execute a narrative by name (supports file.narrative syntax for multi-narrative files)
 narrate PATTERN:
     #!/usr/bin/env bash
     set -e
-    
-    # Check if pattern contains a dot (file.narrative_name syntax)
+
     PATTERN="{{PATTERN}}"
     if [[ "$PATTERN" == *.* ]]; then
         FILE_PART="${PATTERN%.*}"
         NARRATIVE_NAME="${PATTERN##*.}"
-        
-        echo "🔍 Searching for multi-narrative file: ${FILE_PART}"
+
         NARRATIVE_FILE=$(find ./crates/botticelli_narrative/narratives -type f -path "*/${FILE_PART}.toml" | head -1)
-        
+
         if [ -z "$NARRATIVE_FILE" ]; then
-            echo "❌ No narrative file found matching '${FILE_PART}'"
+            echo "No narrative file found matching '${FILE_PART}'"
             echo ""
-            echo "📂 Available narratives:"
+            echo "Available narratives:"
             find crates/botticelli_narrative/narratives -type f -name "*.toml" 2>/dev/null | sed 's|crates/botticelli_narrative/narratives/||' | sed 's/\.toml$//' | sort || echo "  (no narratives directory)"
             exit 1
         fi
-        
-        echo "✓ Found: $NARRATIVE_FILE"
-        echo "✓ Loading narrative: ${NARRATIVE_NAME}"
-        echo ""
-        echo "🚀 Executing narrative..."
+
         STATE_DIR="${BOTTICELLI_STATE_DIR:-.narrative_state}"
         cargo run -p botticelli --release --features local -- run \
             --narrative "$NARRATIVE_FILE" \
@@ -750,28 +446,20 @@ narrate PATTERN:
             --process-discord \
             --verbose
     else
-        # Original behavior: search for file by name
-        echo "🔍 Searching for narrative: {{PATTERN}}"
-        
-        # Find all TOML files recursively that match the name
         MATCHES=$(find ./crates/botticelli_narrative/narratives -type f -name "*.toml" | grep -i "{{PATTERN}}" | grep -v target | grep -v node_modules || true)
-        
+
         if [ -z "$MATCHES" ]; then
-            echo "❌ No narrative found matching '{{PATTERN}}'"
+            echo "No narrative found matching '{{PATTERN}}'"
             echo ""
-            echo "📂 Available narratives:"
+            echo "Available narratives:"
             find crates/botticelli_narrative/narratives -type f -name "*.toml" 2>/dev/null | sed 's|crates/botticelli_narrative/narratives/||' | sed 's/\.toml$//' | sort || echo "  (no narratives directory)"
             exit 1
         fi
-        
-        # Count matches
+
         COUNT=$(echo "$MATCHES" | wc -l)
-        
+
         if [ "$COUNT" -eq 1 ]; then
             NARRATIVE="$MATCHES"
-            echo "✓ Found: $NARRATIVE"
-            echo ""
-            echo "🚀 Executing narrative..."
             STATE_DIR="${BOTTICELLI_STATE_DIR:-.narrative_state}"
             cargo run -p botticelli --release --features local -- run \
                 --narrative "$NARRATIVE" \
@@ -780,28 +468,13 @@ narrate PATTERN:
                 --process-discord \
                 --verbose
         else
-            echo "❌ Multiple narratives found matching '{{PATTERN}}':"
+            echo "Multiple narratives found matching '{{PATTERN}}':"
             echo "$MATCHES" | sed 's/^/  /'
             echo ""
-            echo "💡 Please be more specific with the name"
+            echo "Please be more specific with the name"
             exit 1
         fi
     fi
-    
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo "✅ Narrative execution completed successfully"
-    else
-        echo ""
-        echo "❌ Narrative execution failed"
-        exit 1
-    fi
-
-# Execute a narrative from tests for testing purposes
-test-narrate path:
-    #!/usr/bin/env bash
-    set -e
-    cargo run -p botticelli --features local -- run --narrative "{{path}}" --save --process-discord
 
 # Run example narrative: generate channel posts
 example-channels:
@@ -815,9 +488,12 @@ example-users:
 example-guilds:
     cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_guilds.toml
 
-# Run example narrative: generate guilds (simplified with prompt injection)
+# Run example narrative: generate guilds (simplified)
 example-guilds-simple:
     cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/generate_guilds_simple.toml
+
+# Content Management
+# ==================
 
 # List content from a generation table
 content-list table:
@@ -827,93 +503,6 @@ content-list table:
 content-show table id:
     cargo run -p botticelli --release --features local -- content show {{table}} {{id}}
 
-# Model Server Management
-# =======================
-
-# List available models for download
-server-models:
-    cargo run -p botticelli --release --features server -- server list
-
-# Download a model by name
-server-download model:
-    cargo run -p botticelli --release --features server -- server download {{model}}
-
-# Start the inference server
-server-start model="mistral":
-    cargo run -p botticelli --release --features server -- server start {{model}}
-
-# Stop the inference server
-server-stop:
-    cargo run -p botticelli --release --features server -- server stop
-
-# Check server status
-server-status:
-    cargo run -p botticelli --release --features server -- server status
-
-# TUI (Terminal User Interface)
-# ==============================
-
-# Launch TUI operator console.
-# provider: server (default) | gemini | anthropic | ollama
-# model: leave blank to use provider default
-# server_url: only used with provider=server
-tui provider="server" model="" server_url="":
-    #!/usr/bin/env bash
-    mkdir -p narratives
-    MODEL_ARG=""
-    SERVER_URL_ARG=""
-    if [ -n "{{model}}" ]; then MODEL_ARG="--model {{model}}"; fi
-    if [ -n "{{server_url}}" ]; then SERVER_URL_ARG="--server-url {{server_url}}"; fi
-    RUST_LOG="${RUST_LOG:-botticelli_tui=info,botticelli_mcp_client=info}" \
-        cargo run --package botticelli_tui --bin botticelli-tui --features cli -- \
-        --provider {{provider}} $SERVER_URL_ARG $MODEL_ARG
-
-# Launch chat TUI interface (old interface - for backward compatibility)
-tui-chat:
-    cargo run --bin botticelli-chat --features="cli,tui" -- --skip-health-checks
-
-# Launch TUI with debug logging. Same optional args as `tui`.
-tui-debug provider="server" model="" server_url="":
-    #!/usr/bin/env bash
-    mkdir -p narratives
-    echo "🔍 Starting Botticelli TUI with debug logging..."
-    MODEL_ARG=""
-    SERVER_URL_ARG=""
-    if [ -n "{{model}}" ]; then MODEL_ARG="--model {{model}}"; fi
-    if [ -n "{{server_url}}" ]; then SERVER_URL_ARG="--server-url {{server_url}}"; fi
-    RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug,botticelli_mcp=debug,botticelli_models=debug \
-        cargo run --package botticelli_tui --bin botticelli-tui --features cli -- \
-        --provider {{provider}} $SERVER_URL_ARG $MODEL_ARG
-
-# Run TUI example with debug logging
-tui-example:
-    #!/usr/bin/env bash
-    set +u
-
-    if [ -z "${ANTHROPIC_API_KEY}" ]; then
-        echo "❌ ANTHROPIC_API_KEY not set"
-        exit 1
-    fi
-
-    mkdir -p narratives
-
-    echo "🚀 Running TUI example..."
-    echo ""
-    RUST_LOG=botticelli_tui=debug,botticelli_mcp_client=debug \
-        cargo run --example chat_with_mcp --features anthropic
-
-
-# Generate Discord infrastructure and launch TUI for review
-tui-test-discord:
-    #!/usr/bin/env bash
-    echo "🎲 Generating Discord infrastructure..."
-    cargo run -p botticelli --release --features local -- run --narrative crates/botticelli_narrative/narratives/discord_infrastructure.toml --process-discord
-    echo "✅ Discord infrastructure generated"
-    echo "💡 Note: Discord infrastructure uses fixed IDs, check discord_guilds table directly"
-    echo "🖥️  To review generated content, use:"
-    echo "   just content-list discord_guilds"
-
-
 # List all content generations with tracking metadata
 content-generations:
     cargo run -p botticelli --release --features local -- content generations
@@ -922,27 +511,43 @@ content-generations:
 content-last:
     cargo run -p botticelli --release --features local -- content last
 
+# Development
+# ===========
 
-# Full Workflow (CI/CD)
-# ====================
+# Watch for changes and run tests
+watch:
+    @command -v cargo-watch >/dev/null 2>&1 || (echo "Installing cargo-watch..." && cargo install cargo-watch)
+    cargo watch -x 'test --workspace --lib --tests'
 
-# Run the complete CI pipeline locally (includes API tests)
-ci: fmt-check lint check-features test-pre-merge audit
-    @echo "✅ CI pipeline completed successfully!"
+# Watch and run specific command on changes
+watch-cmd cmd:
+    @command -v cargo-watch >/dev/null 2>&1 || (echo "Installing cargo-watch..." && cargo install cargo-watch)
+    cargo watch -x '{{cmd}}'
+
+# Run the binary in development mode
+run *args:
+    cargo run -p botticelli -- {{args}}
+
+# Run with all features
+run-all *args:
+    cargo run -p botticelli --all-features -- {{args}}
+
+# CI/CD
+# =====
+
+# Run the complete CI pipeline locally
+ci: fmt-check lint check-features test-full audit
 
 # Prepare for commit (format, lint, local tests, feature checks)
 pre-commit: fix-all check-features test-full
-    @echo "✅ Ready to commit!"
 
 # Prepare for merge (all checks including API tests)
-pre-merge: pre-commit test-api-gemini
-    @echo "✅ Ready to merge!"
+pre-merge: pre-commit test-api
 
 # Prepare for release (all checks + release build)
-pre-release: ci build-release-local
-    @echo "✅ Ready for release!"
+pre-release: ci build-release-all
 
-# Git helpers
+# Git Helpers
 # ===========
 
 # Stage all changes and show status
@@ -950,25 +555,16 @@ stage:
     git add -A
     git status --short
 
-# Quick commit with message
-commit msg: pre-commit stage
-    git commit -m "{{msg}}"
-
-# Quick commit and push to current branch
-push msg: 
-    @just commit "{{msg}}"
-    git push origin $(git branch --show-current)
-
 # Documentation
 # =============
 
 # Generate and open Rust documentation
 docs:
-    cargo doc --workspace --features local --no-deps --open
+    cargo doc --workspace --no-deps --open
 
 # Check documentation for issues
 docs-check:
-    cargo doc --workspace --features local --no-deps
+    cargo doc --workspace --no-deps
 
 # Build and view documentation for a specific crate
 docs-crate crate:
@@ -979,9 +575,6 @@ docs-crate crate:
 
 # Show project statistics
 stats:
-    @echo "📊 Project Statistics"
-    @echo "===================="
-    @echo ""
     @echo "Workspace crates:"
     @ls -1d crates/*/ | wc -l
     @echo ""
@@ -993,50 +586,29 @@ stats:
     @echo ""
     @echo "Number of dependencies:"
     @grep -c "^name =" Cargo.lock 2>/dev/null || echo "  0"
-    @echo ""
-    @echo "Database migrations:"
-    @ls migrations/ 2>/dev/null | grep -v "^total" | wc -l || echo "  0 migrations"
 
 # Show environment information
 env:
     #!/usr/bin/env bash
     set +u
-    echo "🔧 Environment Information"
-    echo "========================="
-    echo ""
-    echo "Rust version:"
     rustc --version
-    echo ""
-    echo "Cargo version:"
     cargo --version
-    echo ""
-    echo "Just version:"
     just --version
-    echo ""
-    echo "Diesel CLI:"
-    diesel --version 2>/dev/null || echo "  Not installed"
-    echo ""
-    echo "Database URL:"
-    echo "  ${DATABASE_URL:-Not set}"
+    echo "ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:+(set)}"
+    echo "GEMINI_API_KEY:    ${GEMINI_API_KEY:+(set)}"
 
-# Show available features
+# Show available features in main crate
 features:
-    @echo "🎛️  Available Features"
-    @echo "===================="
-    @echo ""
-    @echo "Main crate features:"
-    @grep '^\[features\]' -A 20 crates/botticelli/Cargo.toml | grep -v '^\[' | grep '='
+    @grep '^\[features\]' -A 30 crates/botticelli/Cargo.toml | grep -v '^\[' | grep '='
 
 # Utility
 # =======
 
 # Remove generated files and caches
 clean-all: clean
-    @echo "🧹 Deep cleaning..."
     rm -rf target/
     rm -rf coverage/
     rm -f Cargo.lock
-    @echo "✅ All build artifacts removed"
 
 # Check for outdated dependencies
 outdated:
@@ -1046,16 +618,6 @@ outdated:
 # Update dependencies to latest compatible versions
 update-deps:
     cargo update
-    @echo "✅ Dependencies updated. Run 'just test' to verify."
-
-# Generate OmniBOR artifact tree for supply chain transparency
-omnibor:
-    @command -v omnibor >/dev/null 2>&1 || (echo "Installing omnibor-cli..." && cargo install omnibor-cli)
-    omnibor --help > /dev/null && echo "✅ OmniBOR installed" || echo "❌ OmniBOR not found - install with: cargo install omnibor"
-
-# Run all security checks
-security: audit omnibor
-    @echo "✅ Security checks completed!"
 
 # Release Management
 # ==================
@@ -1080,43 +642,15 @@ dist-plan:
 dist-generate:
     dist generate
 
-# Benchmarking (if applicable)
-# ============================
+# Benchmarking
+# ============
 
-# Run benchmarks (requires bench tests)
+# Run benchmarks
 bench:
-    cargo bench --features local
+    cargo bench
 
-# Bot Server Management
-# ======================
-
-# Start the bot server with all three bots (generation, curation, posting)
-bot-server:
-    @echo "🤖 Starting Botticelli bot server..."
-    @echo "📝 Generation bot: Every 6 hours"
-    @echo "🎯 Curation bot: Every 12 hours, processes until queue empty"
-    @echo "📤 Posting bot: Every 2-4 hours with jitter"
-    cargo run --release --features bots --bin botticelli -- server
-
-# Start only the generation bot (for testing)
-bot-generate:
-    @echo "📝 Starting generation bot only..."
-    cargo run --release --features local --bin botticelli -- server --only generation
-
-# Start only the curation bot (for testing)
-bot-curate:
-    @echo "🎯 Starting curation bot only..."
-    cargo run --release --features local --bin botticelli -- server --only curation
-
-# Start only the posting bot (for testing)
-bot-post:
-    @echo "📤 Starting posting bot only..."
-    cargo run --release --features local --bin botticelli -- server \
-        --posting-narrative ./crates/botticelli_narrative/narratives/discord/posting.toml \
-        --posting-name scheduled_post
-
-# Aliases for common tasks
-# ========================
+# Aliases
+# =======
 
 alias b := build
 alias t := test
@@ -1125,85 +659,3 @@ alias f := fmt
 alias c := check
 alias r := run
 alias d := docs
-
-# Run tests with timing information using nextest
-test-timings:
-    cargo nextest run --workspace --features local
-
-# Install nextest if not present
-install-nextest:
-    cargo install cargo-nextest --locked
-
-# Database Management
-# ===================
-
-# Export host database to SQL file
-db-export output="botticelli_backup.sql":
-    @echo "📦 Exporting host database to {{output}}..."
-    pg_dump -U botticelli -h localhost -d botticelli -f {{output}}
-    @echo "✅ Database exported"
-
-# Import SQL file to host database
-db-import input="botticelli_backup.sql":
-    @echo "📥 Importing {{input}} to host database..."
-    psql -U botticelli -h localhost -d botticelli -f {{input}}
-    @echo "✅ Database imported"
-
-# Snapshot container database to stdout
-db-snapshot-container:
-    @echo "📸 Creating container database snapshot..." >&2
-    podman exec botticelli-bot-server pg_dump -U botticelli -d botticelli
-
-# Restore snapshot to container from file
-db-restore-container input="botticelli_backup.sql":
-    @echo "♻️  Restoring {{input}} to container database..."
-    cat {{input}} | podman exec -i botticelli-bot-server psql -U botticelli -d botticelli
-    @echo "✅ Database restored"
-
-# Sync host database to container
-db-sync-to-container:
-    @echo "🔄 Syncing host database to container..."
-    @echo "⚠️  This will overwrite container database!"
-    @read -p "Continue? [y/N] " -n 1 -r; \
-    if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-        pg_dump -U botticelli -h localhost -d botticelli | \
-            podman exec -i botticelli-bot-server psql -U botticelli -d botticelli; \
-        echo "✅ Sync complete"; \
-    else \
-        echo "❌ Cancelled"; \
-    fi
-
-# Sync container database to host
-db-sync-from-container:
-    @echo "🔄 Syncing container database to host..."
-    @echo "⚠️  This will overwrite host database!"
-    @read -p "Continue? [y/N] " -n 1 -r; \
-    if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-        podman exec botticelli-bot-server pg_dump -U botticelli -d botticelli | \
-            psql -U botticelli -h localhost -d botticelli; \
-        echo "✅ Sync complete"; \
-    else \
-        echo "❌ Cancelled"; \
-    fi
-
-# Compare row counts between host and container databases
-db-compare:
-    @echo "📊 Comparing databases..."
-    @echo "\n🏠 Host database (localhost:5432):"
-    @psql -U botticelli -h localhost -d botticelli -c "SELECT 'narrative_executions' as table, COUNT(*) FROM narrative_executions UNION ALL SELECT 'act_executions', COUNT(*) FROM act_executions UNION ALL SELECT 'media_references', COUNT(*) FROM media_references;"
-    @echo "\n📦 Container database:"
-    @podman exec botticelli-bot-server psql -U botticelli -d botticelli -c "SELECT 'narrative_executions' as table, COUNT(*) FROM narrative_executions UNION ALL SELECT 'act_executions', COUNT(*) FROM act_executions UNION ALL SELECT 'media_references', COUNT(*) FROM media_references;"
-
-# Backup both host and container databases with timestamp
-db-backup-all:
-    #!/usr/bin/env bash
-    timestamp=$(date +%Y%m%d_%H%M%S)
-    echo "💾 Creating timestamped backups..."
-    just db-export "backup_host_${timestamp}.sql"
-    just db-snapshot-container > "backup_container_${timestamp}.sql"
-    echo "✅ Backups created:"
-    echo "   - backup_host_${timestamp}.sql"
-    echo "   - backup_container_${timestamp}.sql"
-
-# Test API-based features (expensive - use sparingly)
-# Usage: just test-api [package]
