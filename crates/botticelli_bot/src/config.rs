@@ -1,20 +1,18 @@
+use botticelli_core::PostingJitter;
 use botticelli_error::{BotticelliResult, ConfigError};
+use derive_builder::Builder;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use typed_builder::TypedBuilder;
 
 /// Configuration for the bot server.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, TypedBuilder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, Builder)]
 pub struct BotConfig {
     /// Generation bot configuration
-    #[builder(setter(into))]
     generation: GenerationConfig,
     /// Curation bot configuration
-    #[builder(setter(into))]
     curation: CurationConfig,
     /// Posting bot configuration
-    #[builder(setter(into))]
     posting: PostingConfig,
 }
 
@@ -39,26 +37,22 @@ impl BotConfig {
 }
 
 /// Configuration for the generation bot.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, TypedBuilder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, Builder)]
 pub struct GenerationConfig {
     /// Path to generation narrative TOML
-    #[builder(setter(into))]
     narrative_path: PathBuf,
     /// Name of narrative within file
-    #[builder(setter(into))]
     narrative_name: String,
     /// How often to run generation (hours)
     interval_hours: u64,
 }
 
 /// Configuration for the curation bot.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, TypedBuilder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, Builder)]
 pub struct CurationConfig {
     /// Path to curation narrative TOML
-    #[builder(setter(into))]
     narrative_path: PathBuf,
     /// Name of narrative within file
-    #[builder(setter(into))]
     narrative_name: String,
     /// How often to check for new content (hours)
     #[serde(default)]
@@ -73,22 +67,20 @@ pub struct CurationConfig {
 }
 
 /// Configuration for the posting bot.
-#[derive(Debug, Clone, Serialize, Deserialize, Getters, TypedBuilder)]
+#[derive(Debug, Clone, Serialize, Deserialize, Getters, Builder)]
 pub struct PostingConfig {
     /// Path to posting narrative TOML
-    #[builder(setter(into))]
     narrative_path: PathBuf,
     /// Name of narrative within file
-    #[builder(setter(into))]
     narrative_name: String,
     /// Base interval between posts (hours)
     base_interval_hours: u64,
-    /// Maximum jitter to add (±minutes)
-    jitter_minutes: u64,
+    /// Jitter configuration for posting timing
+    jitter: PostingJitter,
 }
 
 /// Bot scheduling configuration.
-#[derive(Debug, Clone, Getters, TypedBuilder)]
+#[derive(Debug, Clone, Getters, Builder)]
 pub struct BotSchedule {
     /// Generation interval
     generation_interval: std::time::Duration,
@@ -96,22 +88,19 @@ pub struct BotSchedule {
     curation_interval: std::time::Duration,
     /// Posting base interval
     posting_base_interval: std::time::Duration,
-    /// Posting jitter range
-    posting_jitter: std::time::Duration,
 }
 
 impl From<&BotConfig> for BotSchedule {
     fn from(config: &BotConfig) -> Self {
-        // Prefer minutes over hours for curation if specified
         let curation_secs = if let Some(mins) = config.curation().check_interval_minutes() {
             *mins * 60
         } else if let Some(hours) = config.curation().check_interval_hours() {
             *hours * 3600
         } else {
-            12 * 3600 // Default to 12 hours
+            12 * 3600
         };
 
-        Self::builder()
+        BotScheduleBuilder::default()
             .generation_interval(std::time::Duration::from_secs(
                 *config.generation().interval_hours() * 3600,
             ))
@@ -119,9 +108,7 @@ impl From<&BotConfig> for BotSchedule {
             .posting_base_interval(std::time::Duration::from_secs(
                 *config.posting().base_interval_hours() * 3600,
             ))
-            .posting_jitter(std::time::Duration::from_secs(
-                *config.posting().jitter_minutes() * 60,
-            ))
             .build()
+            .expect("BotSchedule fields all set")
     }
 }

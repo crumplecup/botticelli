@@ -9,28 +9,32 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-botticelli_core = { path = "../botticelli_core", version = "0.2.0" }
-botticelli_interface = { path = "../botticelli_interface", version = "0.2.0" }
-botticelli_narrative = { path = "../botticelli_narrative", version = "0.2.0" }
-botticelli_database = { path = "../botticelli_database", version = "0.2.0" }
-botticelli_social = { path = "../botticelli_social", version = "0.2.0" }
-botticelli_error = { path = "../botticelli_error", version = "0.2.0" }
-botticelli_mcp_client = { path = "../botticelli_mcp_client", version = "0.2.0" }
+botticelli_core = { workspace = true }
+botticelli_interface = { workspace = true }
+botticelli_narrative = { workspace = true }
+botticelli_database = { workspace = true }
+botticelli_social = { workspace = true }
+botticelli_error = { workspace = true }
+botticelli_mcp_client = { workspace = true }
 
-tokio = { version = "1.42", features = ["full"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-toml = "0.8"
-chrono = "0.4"
-rand = "0.8"
-parking_lot = "0.12.5"
-axum = "0.7"
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+chrono = { workspace = true }
+parking_lot = { workspace = true }
+axum = { workspace = true }
 derive_more = { workspace = true }
-derive-getters = "0.5"
-typed-builder = "0.20"
+derive-getters = { workspace = true }
+derive_builder = { workspace = true }
+derive-new.workspace = true
+elicitation = { workspace = true }
+elicitation_rand = { workspace = true }
+rmcp = { workspace = true }
+schemars = { workspace = true }
 
 [dev-dependencies]
-tokio-test = "0.4"
-async-trait = "0.1"
+tokio-test = { workspace = true }
+async-trait = { workspace = true }

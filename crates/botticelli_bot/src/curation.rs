@@ -36,7 +36,13 @@ impl<D: BotticelliDriver> CurationBot<D> {
         metrics: Arc<BotMetrics>,
         rx: mpsc::Receiver<CurationMessage>,
     ) -> Self {
-        Self { config, executor, storage, metrics, rx }
+        Self {
+            config,
+            executor,
+            storage,
+            metrics,
+            rx,
+        }
     }
 
     /// Runs the curation bot loop.

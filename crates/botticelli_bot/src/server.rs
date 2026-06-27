@@ -3,10 +3,11 @@ use crate::curation::{CurationBot, CurationMessage};
 use crate::generation::{GenerationBot, GenerationMessage};
 use crate::metrics::BotMetrics;
 use crate::posting::{PostingBot, PostingMessage};
+use botticelli_core::PostingJitter;
 use botticelli_interface::{BotStorage, BotticelliDriver};
 use botticelli_narrative::NarrativeExecutor;
 use derive_getters::Getters;
-use rand::Rng;
+use elicitation::Generator;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::time::{interval, sleep};
@@ -69,7 +70,10 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
                 }
             });
 
-            info!(port = port, "Metrics HTTP server started at http://0.0.0.0:{}/metrics", port);
+            info!(
+                port = port,
+                "Metrics HTTP server started at http://0.0.0.0:{}/metrics", port
+            );
         }
 
         // Create channels
@@ -118,7 +122,7 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         Self::spawn_curation_scheduler_static(*self.schedule.curation_interval(), cur_tx);
         Self::spawn_posting_scheduler_static(
             *self.config.posting().base_interval_hours(),
-            *self.config.posting().jitter_minutes(),
+            self.config.posting().jitter().clone(),
             post_tx,
         );
 
@@ -163,27 +167,17 @@ impl<D: BotticelliDriver + Send + Sync + 'static> BotServer<D> {
         });
     }
 
-    #[instrument(skip(tx))]
+    #[instrument(skip(jitter, tx))]
     fn spawn_posting_scheduler_static(
         base_interval_hours: u64,
-        jitter_minutes: u64,
+        jitter: PostingJitter,
         tx: mpsc::Sender<PostingMessage>,
     ) {
+        let base = std::time::Duration::from_secs(base_interval_hours * 3600);
+        let jitter_gen = jitter.make_generator();
         tokio::spawn(async move {
             loop {
-                let base = std::time::Duration::from_secs(base_interval_hours * 3600);
-                let jitter_secs = jitter_minutes * 60;
-
-                let next_post = {
-                    let mut rng = rand::thread_rng();
-                    let jitter = rng.gen_range(0..=jitter_secs);
-
-                    if rng.gen_bool(0.5) {
-                        base + std::time::Duration::from_secs(jitter)
-                    } else {
-                        base.saturating_sub(std::time::Duration::from_secs(jitter))
-                    }
-                };
+                let next_post = base + jitter_gen.generate();
 
                 info!(delay_secs = next_post.as_secs(), "Next post scheduled");
 

@@ -3,7 +3,7 @@ use crate::metrics::BotMetrics;
 use botticelli_interface::{BotStorage, BotticelliDriver};
 use botticelli_narrative::NarrativeExecutor;
 use derive_getters::Getters;
-use rand::Rng;
+use elicitation::Generator;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -37,7 +37,13 @@ impl<D: BotticelliDriver> PostingBot<D> {
         metrics: Arc<BotMetrics>,
         rx: mpsc::Receiver<PostingMessage>,
     ) -> Self {
-        Self { config, executor, storage, metrics, rx }
+        Self {
+            config,
+            executor,
+            storage,
+            metrics,
+            rx,
+        }
     }
 
     /// Runs the posting bot loop.
@@ -90,7 +96,10 @@ impl<D: BotticelliDriver> PostingBot<D> {
         match result {
             Ok(_) => {
                 self.metrics.record_posting_success();
-                info!(duration_ms = duration.as_millis(), "Successfully posted content");
+                info!(
+                    duration_ms = duration.as_millis(),
+                    "Successfully posted content"
+                );
                 Ok(())
             }
             Err(e) => {
@@ -122,15 +131,7 @@ impl<D: BotticelliDriver> PostingBot<D> {
     /// Calculates next post time with jitter.
     pub fn calculate_next_post_time(&self) -> Duration {
         let base = Duration::from_secs(*self.config.base_interval_hours() * 3600);
-        let jitter_secs = *self.config.jitter_minutes() * 60;
-
-        let mut rng = rand::thread_rng();
-        let jitter = rng.gen_range(0..=jitter_secs);
-
-        if rng.gen_bool(0.5) {
-            base + Duration::from_secs(jitter)
-        } else {
-            base.saturating_sub(Duration::from_secs(jitter))
-        }
+        let offset = self.config.jitter().make_generator().generate();
+        base + offset
     }
 }
