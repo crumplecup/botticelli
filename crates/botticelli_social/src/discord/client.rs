@@ -49,10 +49,7 @@ impl BotticelliBot {
     /// - The bot token is invalid
     /// - The Serenity client fails to initialize
     #[instrument(skip(token, storage), fields(token_len = token.len()))]
-    pub async fn new(
-        token: String,
-        storage: Arc<dyn BotStorage>,
-    ) -> Result<Self, DiscordError> {
+    pub async fn new(token: String, storage: Arc<dyn BotStorage>) -> Result<Self, DiscordError> {
         info!("Initializing Botticelli Discord bot");
 
         let repository = Arc::new(DiscordRepository::new(storage));

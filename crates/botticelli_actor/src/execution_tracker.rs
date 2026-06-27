@@ -135,11 +135,7 @@ impl ActorExecutionTracker<BotStorageStatePersistence> {
     /// # Returns
     /// `true` if circuit breaker threshold exceeded and task should pause
     #[instrument(skip(self, error), fields(task_id = %self.task_id, exec_id = %exec_id))]
-    pub async fn record_failure(
-        &self,
-        exec_id: String,
-        error: &str,
-    ) -> ActorServerResult<bool> {
+    pub async fn record_failure(&self, exec_id: String, error: &str) -> ActorServerResult<bool> {
         debug!("Recording failure");
         self.persistence
             .fail_execution(&exec_id, &self.task_id, error)

@@ -311,9 +311,7 @@ pub async fn run_narrative(
         let db_path = options
             .state_dir()
             .map(|d| d.join("botticelli.redb"))
-            .or_else(|| {
-                dirs::data_dir().map(|d| d.join("botticelli").join("botticelli.redb"))
-            })
+            .or_else(|| dirs::data_dir().map(|d| d.join("botticelli").join("botticelli.redb")))
             .ok_or_else(|| BackendError::new("Cannot determine data directory for redb"))?;
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent)
@@ -329,20 +327,22 @@ pub async fn run_narrative(
     let executor = {
         #[cfg(feature = "database")]
         {
-            use botticelli_narrative::{ContentGenerationProcessor, ProcessorRegistry, StorageActor};
+            use botticelli_narrative::{
+                ContentGenerationProcessor, ProcessorRegistry, StorageActor,
+            };
 
             // Start storage actor with Ractor
             tracing::info!("Starting storage actor");
             let actor = StorageActor::new(std::sync::Arc::clone(&redb_storage));
-            let (actor_ref, _handle) = ractor::Actor::spawn(
-                None,
-                actor,
-                std::sync::Arc::clone(&redb_storage),
-            )
-            .await
-            .map_err(|e| {
-                botticelli_error::BackendError::new(format!("Failed to spawn storage actor: {}", e))
-            })?;
+            let (actor_ref, _handle) =
+                ractor::Actor::spawn(None, actor, std::sync::Arc::clone(&redb_storage))
+                    .await
+                    .map_err(|e| {
+                        botticelli_error::BackendError::new(format!(
+                            "Failed to spawn storage actor: {}",
+                            e
+                        ))
+                    })?;
             tracing::info!("Storage actor started");
 
             let processor = ContentGenerationProcessor::new(actor_ref);
@@ -359,7 +359,8 @@ pub async fn run_narrative(
                 tracing::info!("Configuring bot command registry");
                 let mut bot_registry = BotCommandRegistryImpl::new();
 
-                let database_executor = DatabaseCommandExecutor::new(std::sync::Arc::clone(&redb_storage));
+                let database_executor =
+                    DatabaseCommandExecutor::new(std::sync::Arc::clone(&redb_storage));
                 bot_registry.register(database_executor);
                 tracing::info!("Database command executor registered");
 

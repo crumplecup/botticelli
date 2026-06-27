@@ -81,7 +81,10 @@ async fn test_record_failure_triggers_circuit_breaker() {
         .await
         .expect("Load state")
         .expect("State exists");
-    assert!(loaded.is_paused, "Task should be paused after circuit breaker");
+    assert!(
+        loaded.is_paused,
+        "Task should be paused after circuit breaker"
+    );
     assert_eq!(loaded.consecutive_failures, 3);
 }
 

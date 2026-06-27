@@ -32,7 +32,8 @@ pub struct BotStorageStatePersistence {
 
 impl std::fmt::Debug for BotStorageStatePersistence {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BotStorageStatePersistence").finish_non_exhaustive()
+        f.debug_struct("BotStorageStatePersistence")
+            .finish_non_exhaustive()
     }
 }
 
@@ -194,12 +195,11 @@ impl BotStorageStatePersistence {
     #[instrument(skip(self), fields(task_id))]
     pub async fn pause_task(&self, task_id: &str) -> ActorServerResult<()> {
         debug!(task_id, "Pausing task");
-        let mut state = self
-            .load_task_state(task_id)
-            .await?
-            .ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+        let mut state = self.load_task_state(task_id).await?.ok_or_else(
+            || -> Box<dyn std::error::Error + Send + Sync> {
                 format!("Task {task_id} not found").into()
-            })?;
+            },
+        )?;
         state.is_paused = true;
         state.updated_at = Utc::now();
         self.save_task_state(task_id, &state).await?;
@@ -211,12 +211,11 @@ impl BotStorageStatePersistence {
     #[instrument(skip(self), fields(task_id))]
     pub async fn resume_task(&self, task_id: &str) -> ActorServerResult<()> {
         debug!(task_id, "Resuming task");
-        let mut state = self
-            .load_task_state(task_id)
-            .await?
-            .ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+        let mut state = self.load_task_state(task_id).await?.ok_or_else(
+            || -> Box<dyn std::error::Error + Send + Sync> {
                 format!("Task {task_id} not found").into()
-            })?;
+            },
+        )?;
         state.is_paused = false;
         state.updated_at = Utc::now();
         self.save_task_state(task_id, &state).await?;
@@ -232,12 +231,11 @@ impl BotStorageStatePersistence {
         next_run: DateTime<Utc>,
     ) -> ActorServerResult<()> {
         debug!(task_id, next_run = %next_run, "Updating next run time");
-        let mut state = self
-            .load_task_state(task_id)
-            .await?
-            .ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+        let mut state = self.load_task_state(task_id).await?.ok_or_else(
+            || -> Box<dyn std::error::Error + Send + Sync> {
                 format!("Task {task_id} not found").into()
-            })?;
+            },
+        )?;
         state.next_run = next_run;
         state.updated_at = Utc::now();
         self.save_task_state(task_id, &state).await?;
@@ -355,7 +353,11 @@ impl BotStorageStatePersistence {
             .list_actor_executions(task_id, limit as usize)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
-        info!(task_id, count = executions.len(), "Retrieved execution history");
+        info!(
+            task_id,
+            count = executions.len(),
+            "Retrieved execution history"
+        );
         Ok(executions)
     }
 
@@ -377,7 +379,11 @@ impl BotStorageStatePersistence {
             .filter(|e| !e.success)
             .take(limit as usize)
             .collect();
-        info!(task_id, count = executions.len(), "Retrieved failed executions");
+        info!(
+            task_id,
+            count = executions.len(),
+            "Retrieved failed executions"
+        );
         Ok(executions)
     }
 
@@ -409,10 +415,7 @@ impl BotStorageStatePersistence {
             .list_all_actor_executions(usize::MAX)
             .await
             .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
-        let to_delete: Vec<_> = all
-            .into_iter()
-            .filter(|e| e.started_at < cutoff)
-            .collect();
+        let to_delete: Vec<_> = all.into_iter().filter(|e| e.started_at < cutoff).collect();
         let count = to_delete.len();
         for exec in to_delete {
             self.storage
@@ -434,18 +437,20 @@ impl BotStorageStatePersistence {
         max_failures: i32,
     ) -> ActorServerResult<bool> {
         debug!(task_id, max_failures, "Recording task failure");
-        let mut state = self
-            .load_task_state(task_id)
-            .await?
-            .ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+        let mut state = self.load_task_state(task_id).await?.ok_or_else(
+            || -> Box<dyn std::error::Error + Send + Sync> {
                 format!("Task {task_id} not found").into()
-            })?;
+            },
+        )?;
         state.consecutive_failures += 1;
         state.updated_at = Utc::now();
         let threshold_exceeded = state.consecutive_failures >= max_failures;
         if threshold_exceeded {
             state.is_paused = true;
-            info!(task_id, max_failures, "Task failure threshold exceeded, pausing task");
+            info!(
+                task_id,
+                max_failures, "Task failure threshold exceeded, pausing task"
+            );
         } else {
             debug!(task_id, "Task failure recorded");
         }
@@ -457,12 +462,11 @@ impl BotStorageStatePersistence {
     #[instrument(skip(self), fields(task_id))]
     pub async fn record_success(&self, task_id: &str) -> ActorServerResult<()> {
         debug!(task_id, "Recording task success");
-        let mut state = self
-            .load_task_state(task_id)
-            .await?
-            .ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
+        let mut state = self.load_task_state(task_id).await?.ok_or_else(
+            || -> Box<dyn std::error::Error + Send + Sync> {
                 format!("Task {task_id} not found").into()
-            })?;
+            },
+        )?;
         state.consecutive_failures = 0;
         state.updated_at = Utc::now();
         self.save_task_state(task_id, &state).await?;

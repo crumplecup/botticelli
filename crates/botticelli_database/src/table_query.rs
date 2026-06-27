@@ -27,7 +27,8 @@ impl BotStorageTableQueryRegistry {
 
 impl std::fmt::Debug for BotStorageTableQueryRegistry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BotStorageTableQueryRegistry").finish_non_exhaustive()
+        f.debug_struct("BotStorageTableQueryRegistry")
+            .finish_non_exhaustive()
     }
 }
 
@@ -131,7 +132,14 @@ fn format_markdown(rows: &[JsonValue]) -> String {
         });
 
     let header = format!("| {} |", all_keys.join(" | "));
-    let separator = format!("| {} |", all_keys.iter().map(|_| "---").collect::<Vec<_>>().join(" | "));
+    let separator = format!(
+        "| {} |",
+        all_keys
+            .iter()
+            .map(|_| "---")
+            .collect::<Vec<_>>()
+            .join(" | ")
+    );
 
     let row_lines: Vec<String> = rows
         .iter()
@@ -151,7 +159,11 @@ fn format_markdown(rows: &[JsonValue]) -> String {
         })
         .collect();
 
-    [header, separator].into_iter().chain(row_lines).collect::<Vec<_>>().join("\n")
+    [header, separator]
+        .into_iter()
+        .chain(row_lines)
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Format a row list as CSV.
@@ -198,7 +210,11 @@ fn format_csv(rows: &[JsonValue]) -> String {
         })
         .collect();
 
-    [header].into_iter().chain(row_lines).collect::<Vec<_>>().join("\n")
+    [header]
+        .into_iter()
+        .chain(row_lines)
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Execute the full query pipeline: load → filter → project → sort → paginate → format.
@@ -236,7 +252,11 @@ async fn execute_query(
     if let Some(order_by) = query.order_by() {
         let mut just_rows: Vec<JsonValue> = rows.iter().map(|(_, v)| v.clone()).collect();
         apply_order_by(&mut just_rows, order_by);
-        rows = rows.into_iter().zip(just_rows).map(|((id, _), v)| (id, v)).collect();
+        rows = rows
+            .into_iter()
+            .zip(just_rows)
+            .map(|((id, _), v)| (id, v))
+            .collect();
     }
 
     if let Some(offset) = *query.offset()

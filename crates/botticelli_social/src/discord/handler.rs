@@ -20,8 +20,7 @@ use tracing::{debug, error, info, warn};
 /// Convert Serenity Timestamp to `DateTime<Utc>`.
 #[tracing::instrument(skip_all)]
 fn timestamp_to_utc(ts: &Timestamp) -> DateTime<Utc> {
-    DateTime::from_timestamp(ts.unix_timestamp(), 0)
-        .expect("Timestamp should be valid")
+    DateTime::from_timestamp(ts.unix_timestamp(), 0).expect("Timestamp should be valid")
 }
 
 /// Event handler for the Botticelli Discord bot.

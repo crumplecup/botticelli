@@ -50,9 +50,9 @@ impl ContentResource {
             .await
             .map_err(|e| McpError::execution_failed(format!("Storage error: {}", e)))?;
 
-        record
-            .map(|r| r.content_json)
-            .ok_or_else(|| McpError::resource_not_found(format!("Content not found: {}/{}", table, id)))
+        record.map(|r| r.content_json).ok_or_else(|| {
+            McpError::resource_not_found(format!("Content not found: {}/{}", table, id))
+        })
     }
 }
 

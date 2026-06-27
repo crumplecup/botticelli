@@ -3,14 +3,13 @@
 use botticelli_actor::{BotStorageStatePersistence, SimpleTaskScheduler};
 use botticelli_database::RedbStorage;
 use botticelli_interface::BotStorage;
-use std::sync::Arc;
 use botticelli_server::{ActorServerResult, TaskScheduler};
+use std::sync::Arc;
 use std::time::Duration;
 
 #[tokio::test]
 async fn test_scheduler_with_persistence() -> ActorServerResult<()> {
-    let storage: Arc<dyn BotStorage> =
-        Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
+    let storage: Arc<dyn BotStorage> = Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
     let persistence = BotStorageStatePersistence::new(storage);
     let mut scheduler = SimpleTaskScheduler::with_persistence(persistence);
 
@@ -56,8 +55,7 @@ async fn test_scheduler_without_persistence() -> ActorServerResult<()> {
 
 #[tokio::test]
 async fn test_scheduler_task_recovery() -> ActorServerResult<()> {
-    let storage: Arc<dyn BotStorage> =
-        Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
+    let storage: Arc<dyn BotStorage> = Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
     let persistence = BotStorageStatePersistence::new(storage);
     let scheduler = SimpleTaskScheduler::with_persistence(persistence);
 

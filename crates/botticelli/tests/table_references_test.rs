@@ -13,11 +13,7 @@ use botticelli_narrative::{ActConfig, NarrativeExecutor, NarrativeMetadata, Narr
 use std::sync::Arc;
 
 /// Seed a content table with JSON rows for testing.
-async fn seed_table(
-    storage: &Arc<dyn BotStorage>,
-    table_name: &str,
-    rows: Vec<serde_json::Value>,
-) {
+async fn seed_table(storage: &Arc<dyn BotStorage>, table_name: &str, rows: Vec<serde_json::Value>) {
     for (i, row) in rows.into_iter().enumerate() {
         let record = ContentRecord {
             id: format!("{}:{}", table_name, i),
@@ -150,8 +146,7 @@ impl botticelli_interface::BotticelliDriver for MockDriver {
 
 #[tokio::test]
 async fn test_table_reference_query() -> BotticelliResult<()> {
-    let storage: Arc<dyn BotStorage> =
-        Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
+    let storage: Arc<dyn BotStorage> = Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
 
     seed_table(
         &storage,
@@ -168,8 +163,7 @@ async fn test_table_reference_query() -> BotticelliResult<()> {
 
     let table_registry = BotStorageTableQueryRegistry::new(Arc::clone(&storage));
     let narrative = TableReferenceNarrative::new("test_products", TableFormat::Markdown)?;
-    let executor =
-        NarrativeExecutor::new(MockDriver).with_table_registry(Box::new(table_registry));
+    let executor = NarrativeExecutor::new(MockDriver).with_table_registry(Box::new(table_registry));
 
     let execution = executor.execute(&narrative).await?;
     assert_eq!(execution.act_executions().len(), 1);
@@ -194,8 +188,7 @@ async fn test_table_reference_query() -> BotticelliResult<()> {
 
 #[tokio::test]
 async fn test_table_reference_with_filter() -> BotticelliResult<()> {
-    let storage: Arc<dyn BotStorage> =
-        Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
+    let storage: Arc<dyn BotStorage> = Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
 
     seed_table(
         &storage,
@@ -274,8 +267,7 @@ async fn test_table_reference_with_filter() -> BotticelliResult<()> {
         act_config,
     };
 
-    let executor =
-        NarrativeExecutor::new(MockDriver).with_table_registry(Box::new(table_registry));
+    let executor = NarrativeExecutor::new(MockDriver).with_table_registry(Box::new(table_registry));
     let execution = executor.execute(&narrative).await?;
 
     assert_eq!(execution.act_executions().len(), 1);
@@ -288,8 +280,14 @@ async fn test_table_reference_with_filter() -> BotticelliResult<()> {
                 "Expected completed orders (Eve/300) in output: {}",
                 text
             );
-            assert!(!text.contains("Bob"), "Bob is pending, should be filtered out");
-            assert!(!text.contains("Diana"), "Diana is cancelled, should be filtered out");
+            assert!(
+                !text.contains("Bob"),
+                "Bob is pending, should be filtered out"
+            );
+            assert!(
+                !text.contains("Diana"),
+                "Diana is cancelled, should be filtered out"
+            );
         }
         _ => panic!("Expected Text input after table processing"),
     }
@@ -298,8 +296,7 @@ async fn test_table_reference_with_filter() -> BotticelliResult<()> {
 
 #[tokio::test]
 async fn test_table_reference_format_csv() -> BotticelliResult<()> {
-    let storage: Arc<dyn BotStorage> =
-        Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
+    let storage: Arc<dyn BotStorage> = Arc::new(RedbStorage::in_memory().expect("in-memory redb"));
 
     seed_table(
         &storage,
@@ -314,8 +311,7 @@ async fn test_table_reference_format_csv() -> BotticelliResult<()> {
 
     let table_registry = BotStorageTableQueryRegistry::new(Arc::clone(&storage));
     let narrative = TableReferenceNarrative::new("test_employees", TableFormat::Csv)?;
-    let executor =
-        NarrativeExecutor::new(MockDriver).with_table_registry(Box::new(table_registry));
+    let executor = NarrativeExecutor::new(MockDriver).with_table_registry(Box::new(table_registry));
     let execution = executor.execute(&narrative).await?;
 
     assert_eq!(execution.act_executions().len(), 1);

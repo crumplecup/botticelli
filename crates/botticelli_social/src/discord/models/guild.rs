@@ -57,7 +57,9 @@ pub struct GuildRow {
 }
 
 /// Input for creating or updating a guild record.
-#[derive(Debug, Clone, Serialize, Deserialize, derive_getters::Getters, derive_builder::Builder)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, derive_getters::Getters, derive_builder::Builder,
+)]
 #[builder(setter(into))]
 pub struct NewGuild {
     /// Discord guild snowflake ID
@@ -163,7 +165,11 @@ pub struct NewGuild {
 
 impl GuildRow {
     /// Create a `GuildRow` from a `NewGuild` input, using the provided timestamps.
-    pub fn from_new(guild: &NewGuild, created_at: DateTime<Utc>, updated_at: DateTime<Utc>) -> Self {
+    pub fn from_new(
+        guild: &NewGuild,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
         Self {
             id: guild.id,
             name: guild.name.clone(),

@@ -71,12 +71,21 @@ impl DatabaseCommandExecutor {
         allowed_tables.insert("content".to_string());
         allowed_tables.insert("post_history".to_string());
 
-        Self { storage, allowed_tables }
+        Self {
+            storage,
+            allowed_tables,
+        }
     }
 
     /// Create a new executor with custom allowed tables.
-    pub fn with_allowed_tables(storage: Arc<dyn BotStorage>, allowed_tables: HashSet<String>) -> Self {
-        Self { storage, allowed_tables }
+    pub fn with_allowed_tables(
+        storage: Arc<dyn BotStorage>,
+        allowed_tables: HashSet<String>,
+    ) -> Self {
+        Self {
+            storage,
+            allowed_tables,
+        }
     }
 
     /// Add a table to the whitelist.
@@ -183,7 +192,10 @@ impl DatabaseCommandExecutor {
             }));
         }
 
-        let limit = args.get("limit").and_then(|v| v.as_i64()).map(|l| l as usize);
+        let limit = args
+            .get("limit")
+            .and_then(|v| v.as_i64())
+            .map(|l| l as usize);
 
         debug!(
             table_name = %table_name,
@@ -223,15 +235,12 @@ impl DatabaseCommandExecutor {
                 created_at: record.created_at,
             };
 
-            self.storage
-                .save_content(&updated)
-                .await
-                .map_err(|e| {
-                    BotCommandError::new(BotCommandErrorKind::ApiError {
-                        command: "update_table".to_string(),
-                        reason: format!("Storage write failed: {}", e),
-                    })
-                })?;
+            self.storage.save_content(&updated).await.map_err(|e| {
+                BotCommandError::new(BotCommandErrorKind::ApiError {
+                    command: "update_table".to_string(),
+                    reason: format!("Storage write failed: {}", e),
+                })
+            })?;
 
             rows_affected += 1;
             if limit.is_some_and(|l| rows_affected >= l) {

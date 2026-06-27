@@ -36,7 +36,8 @@ mod database_tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
-            format!("{}", err).contains("not found") || format!("{}", err).contains("Content not found"),
+            format!("{}", err).contains("not found")
+                || format!("{}", err).contains("Content not found"),
             "Expected resource-not-found error, got: {}",
             err
         );

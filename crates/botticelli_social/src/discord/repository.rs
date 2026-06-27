@@ -64,8 +64,7 @@ impl DiscordRepository {
         T: serde::Serialize,
     {
         let cid = Self::content_id(table, id);
-        let content_json =
-            serde_json::to_value(value).map_err(Self::json_err)?;
+        let content_json = serde_json::to_value(value).map_err(Self::json_err)?;
         let record = ContentRecord {
             id: cid,
             table_name: table.to_string(),
@@ -248,9 +247,7 @@ impl DiscordRepository {
         let mut row: GuildMemberRow = self
             .get_row(TABLE_MEMBERS, &id)
             .await?
-            .ok_or_else(|| {
-                DiscordError::new(DiscordErrorKind::UserNotFound(user_id))
-            })?;
+            .ok_or_else(|| DiscordError::new(DiscordErrorKind::UserNotFound(user_id)))?;
 
         row.left_at = Some(Utc::now());
         row.updated_at = Utc::now();
@@ -337,7 +334,12 @@ impl DiscordRepository {
 
     /// Remove a role from a guild member.
     #[instrument(skip(self))]
-    pub async fn remove_role(&self, guild_id: i64, user_id: i64, role_id: i64) -> DiscordResult<()> {
+    pub async fn remove_role(
+        &self,
+        guild_id: i64,
+        user_id: i64,
+        role_id: i64,
+    ) -> DiscordResult<()> {
         let cid = Self::content_id(
             TABLE_MEMBER_ROLES,
             &format!("{}:{}:{}", guild_id, user_id, role_id),

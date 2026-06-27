@@ -121,9 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Determine redb database path
         let db_path = args
             .db_path
-            .or_else(|| {
-                dirs::data_dir().map(|d| d.join("botticelli").join("botticelli.redb"))
-            })
+            .or_else(|| dirs::data_dir().map(|d| d.join("botticelli").join("botticelli.redb")))
             .ok_or("Cannot determine database path")?;
 
         if let Some(parent) = db_path.parent() {

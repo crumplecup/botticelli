@@ -217,7 +217,9 @@ async fn test_delete_actor_execution() {
         .expect("list");
     assert_eq!(before.len(), 1);
 
-    s.delete_actor_execution("exec-del-1").await.expect("delete");
+    s.delete_actor_execution("exec-del-1")
+        .await
+        .expect("delete");
 
     let after = s
         .list_actor_executions("task-exec-del", 10)

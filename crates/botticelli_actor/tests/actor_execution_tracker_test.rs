@@ -1,6 +1,8 @@
 //! Tests for actor execution tracker integration
 
-use botticelli_actor::{ActorExecutionTracker, BotStorageStatePersistence, DatabaseExecutionResult};
+use botticelli_actor::{
+    ActorExecutionTracker, BotStorageStatePersistence, DatabaseExecutionResult,
+};
 use botticelli_database::RedbStorage;
 use botticelli_interface::{ActorServerStateRecord, BotStorage};
 use chrono::Utc;

@@ -95,9 +95,18 @@ async fn test_list_all_tasks() {
     let state2 = create_test_state(task_ids[1], "actor2");
     let state3 = create_test_state(task_ids[2], "actor1");
 
-    persistence.save_task_state(task_ids[0], &state1).await.expect("Save failed");
-    persistence.save_task_state(task_ids[1], &state2).await.expect("Save failed");
-    persistence.save_task_state(task_ids[2], &state3).await.expect("Save failed");
+    persistence
+        .save_task_state(task_ids[0], &state1)
+        .await
+        .expect("Save failed");
+    persistence
+        .save_task_state(task_ids[1], &state2)
+        .await
+        .expect("Save failed");
+    persistence
+        .save_task_state(task_ids[2], &state3)
+        .await
+        .expect("Save failed");
 
     let tasks = persistence.list_all_tasks().await.expect("List failed");
 
@@ -120,9 +129,18 @@ async fn test_list_tasks_by_actor() {
     let state2 = create_test_state(task_ids[1], "test_actor_unique_2");
     let state3 = create_test_state(task_ids[2], "test_actor_unique_1");
 
-    persistence.save_task_state(task_ids[0], &state1).await.expect("Save failed");
-    persistence.save_task_state(task_ids[1], &state2).await.expect("Save failed");
-    persistence.save_task_state(task_ids[2], &state3).await.expect("Save failed");
+    persistence
+        .save_task_state(task_ids[0], &state1)
+        .await
+        .expect("Save failed");
+    persistence
+        .save_task_state(task_ids[1], &state2)
+        .await
+        .expect("Save failed");
+    persistence
+        .save_task_state(task_ids[2], &state3)
+        .await
+        .expect("Save failed");
 
     let tasks = persistence
         .list_tasks_by_actor("test_actor_unique_1")
@@ -147,9 +165,18 @@ async fn test_list_active_and_paused_tasks() {
     state2.is_paused = true;
     let state3 = create_test_state(task_ids[2], "actor3");
 
-    persistence.save_task_state(task_ids[0], &state1).await.expect("Save failed");
-    persistence.save_task_state(task_ids[1], &state2).await.expect("Save failed");
-    persistence.save_task_state(task_ids[2], &state3).await.expect("Save failed");
+    persistence
+        .save_task_state(task_ids[0], &state1)
+        .await
+        .expect("Save failed");
+    persistence
+        .save_task_state(task_ids[1], &state2)
+        .await
+        .expect("Save failed");
+    persistence
+        .save_task_state(task_ids[2], &state3)
+        .await
+        .expect("Save failed");
 
     let active = persistence.list_active_tasks().await.expect("List failed");
     assert!(active.iter().any(|t| t.task_id == task_ids[0]));
@@ -180,7 +207,10 @@ async fn test_pause_and_resume_task() {
         .expect("State not found");
     assert!(paused_state.is_paused);
 
-    persistence.resume_task(task_id).await.expect("Resume failed");
+    persistence
+        .resume_task(task_id)
+        .await
+        .expect("Resume failed");
 
     let resumed_state = persistence
         .load_task_state(task_id)

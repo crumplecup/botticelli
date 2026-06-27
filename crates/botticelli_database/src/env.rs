@@ -35,7 +35,9 @@ async fn open_storage_from_env_inner() -> BotStorageResult<Arc<dyn BotStorage>> 
 #[cfg(all(feature = "postgres", not(feature = "redb")))]
 async fn open_storage_from_env_inner() -> BotStorageResult<Arc<dyn BotStorage>> {
     let url = std::env::var("DATABASE_URL").map_err(|_| {
-        BotStorageError::Config("DATABASE_URL must be set when using the postgres backend".to_string())
+        BotStorageError::Config(
+            "DATABASE_URL must be set when using the postgres backend".to_string(),
+        )
     })?;
     tracing::info!(%url, "Opening PostgresStorage from DATABASE_URL");
     let storage = crate::PostgresStorage::connect(&url)

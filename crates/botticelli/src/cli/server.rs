@@ -2,7 +2,9 @@
 
 use botticelli_bot::{BotConfig, BotServer};
 use botticelli_database::{BotStorageTableQueryRegistry, RedbStorage};
-use botticelli_error::{BackendError, BotticelliError, BotticelliResult, ServerError, ServerErrorKind};
+use botticelli_error::{
+    BackendError, BotticelliError, BotticelliResult, ServerError, ServerErrorKind,
+};
 use botticelli_interface::BotStorage;
 use botticelli_models::GeminiClient;
 use botticelli_narrative::{

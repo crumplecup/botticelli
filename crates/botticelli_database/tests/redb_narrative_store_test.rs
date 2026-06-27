@@ -1,9 +1,7 @@
 //! Tests for RedbStorage's NarrativeStore implementation.
 
 use botticelli_database::RedbStorage;
-use botticelli_interface::{
-    ActExecutionRecord, NarrativeExecutionRecord, NarrativeStore,
-};
+use botticelli_interface::{ActExecutionRecord, NarrativeExecutionRecord, NarrativeStore};
 use chrono::Utc;
 
 fn make_storage() -> RedbStorage {
@@ -129,7 +127,9 @@ async fn test_list_narrative_executions_limit() {
 async fn test_act_execution_round_trip() {
     let s = make_storage();
     let narr = narrative_record("narr-act-parent", "parent_narrative");
-    s.save_narrative_execution(&narr).await.expect("save narrative");
+    s.save_narrative_execution(&narr)
+        .await
+        .expect("save narrative");
 
     let act = act_record("act-1", "narr-act-parent", "generate_content");
     s.save_act_execution(&act).await.expect("save act");
@@ -167,6 +167,10 @@ async fn test_list_act_executions_isolation() {
 
     assert_eq!(acts_a.len(), 2);
     assert_eq!(acts_b.len(), 1);
-    assert!(acts_a.iter().all(|a| a.narrative_execution_id == "narr-iso-a"));
+    assert!(
+        acts_a
+            .iter()
+            .all(|a| a.narrative_execution_id == "narr-iso-a")
+    );
     assert_eq!(acts_b[0].narrative_execution_id, "narr-iso-b");
 }
