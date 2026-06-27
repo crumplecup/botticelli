@@ -1,29 +1,42 @@
 //! TUI (Terminal User Interface) error types.
 
+use crate::{BotticelliError, BuilderError, GeminiError};
+
 /// TUI error kind variants.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, derive_more::Display)]
+///
+/// Every variant holds the **original typed error** (not a stringified representation)
+/// so the full error chain is preserved for logging and diagnostics.
+#[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum TuiErrorKind {
-    /// Failed to set up terminal (enable raw mode, alternate screen, etc.)
-    #[display("Failed to set up terminal: {}", _0)]
-    TerminalSetup(String),
-    /// Failed to restore terminal to original state
-    #[display("Failed to restore terminal: {}", _0)]
-    TerminalRestore(String),
-    /// Failed to poll for terminal events
-    #[display("Failed to poll for events: {}", _0)]
-    EventPoll(String),
-    /// Failed to read terminal event
-    #[display("Failed to read event: {}", _0)]
-    EventRead(String),
-    /// Failed to render TUI frame
-    #[display("Failed to render: {}", _0)]
-    Rendering(String),
-    /// Database operation failed
-    #[display("Database error: {}", _0)]
-    Database(String),
-    /// Conversation storage operation failed
-    #[display("Storage error: {}", _0)]
-    Storage(String),
+    /// Terminal or file I/O failure.
+    #[display("I/O error: {}", _0)]
+    Io(std::io::Error),
+
+    /// Upstream Botticelli error (driver load, model initialisation, etc.)
+    #[display("Botticelli error: {}", _0)]
+    Botticelli(BotticelliError),
+
+    /// Gemini client error.
+    #[display("Gemini error: {}", _0)]
+    Gemini(GeminiError),
+
+    /// Builder or configuration validation error.
+    #[display("Builder error: {}", _0)]
+    Builder(BuilderError),
+
+    /// Missing or invalid environment variable (e.g. API key).
+    #[display("Environment variable error: {}", _0)]
+    EnvVar(std::env::VarError),
+
+    /// A code path that is statically unreachable was reached at runtime.
+    ///
+    /// Used instead of `unreachable!()` so the invariant violation is surfaced
+    /// as a structured error rather than a panic.
+    #[display("Unreachable invariant violated: {message}")]
+    Unreachable {
+        /// Description of the violated invariant.
+        message: String,
+    },
 }
 
 /// TUI error with source location tracking.
@@ -32,11 +45,12 @@ pub enum TuiErrorKind {
 ///
 /// ```
 /// use botticelli_error::{TuiError, TuiErrorKind};
+/// use std::io;
 ///
-/// let err = TuiError::new(TuiErrorKind::TerminalSetup("Raw mode failed".to_string()));
-/// assert!(format!("{}", err).contains("terminal"));
+/// let err = TuiError::from(io::Error::new(io::ErrorKind::PermissionDenied, "raw mode failed"));
+/// assert!(format!("{}", err).contains("I/O"));
 /// ```
-#[derive(Debug, Clone, derive_more::Display, derive_more::Error)]
+#[derive(Debug, derive_more::Display, derive_more::Error)]
 #[display("TUI Error: {} at line {} in {}", kind, line, file)]
 pub struct TuiError {
     /// Error kind
@@ -63,7 +77,60 @@ impl TuiError {
 impl From<std::io::Error> for TuiError {
     #[track_caller]
     fn from(err: std::io::Error) -> Self {
-        Self::new(TuiErrorKind::Rendering(err.to_string()))
+        let loc = std::panic::Location::caller();
+        Self {
+            kind: TuiErrorKind::Io(err),
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
+}
+
+impl From<BotticelliError> for TuiError {
+    #[track_caller]
+    fn from(err: BotticelliError) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind: TuiErrorKind::Botticelli(err),
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
+}
+
+impl From<GeminiError> for TuiError {
+    #[track_caller]
+    fn from(err: GeminiError) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind: TuiErrorKind::Gemini(err),
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
+}
+
+impl From<BuilderError> for TuiError {
+    #[track_caller]
+    fn from(err: BuilderError) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind: TuiErrorKind::Builder(err),
+            line: loc.line(),
+            file: loc.file(),
+        }
+    }
+}
+
+impl From<std::env::VarError> for TuiError {
+    #[track_caller]
+    fn from(err: std::env::VarError) -> Self {
+        let loc = std::panic::Location::caller();
+        Self {
+            kind: TuiErrorKind::EnvVar(err),
+            line: loc.line(),
+            file: loc.file(),
+        }
     }
 }
 
