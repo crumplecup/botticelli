@@ -60,6 +60,24 @@ pub trait BotticelliDriver: Send + Sync {
             batch_generation: false,
         }
     }
+
+    /// Attempt a streaming generate.
+    ///
+    /// Returns `Ok(Some(stream))` when this driver supports streaming.
+    /// Returns `Ok(None)` (the default) when streaming is not available,
+    /// signalling the caller to fall back to [`Self::generate`].
+    ///
+    /// Models that emit chain-of-thought tokens (DeepSeek-R1, Qwen3…) set
+    /// [`StreamChunk::is_thinking`] on those chunks so the UI can render them
+    /// separately from the final answer.  Models that do not support thinking
+    /// simply omit those chunks — the caller receives only content chunks.
+    async fn stream_generate(
+        &self,
+        _req: &GenerateRequest,
+    ) -> BotticelliResult<Option<Pin<Box<dyn Stream<Item = BotticelliResult<StreamChunk>> + Send>>>>
+    {
+        Ok(None)
+    }
 }
 
 /// Trait for models that support streaming responses.
@@ -474,5 +492,13 @@ impl<T: BotticelliDriver + ?Sized> BotticelliDriver for std::sync::Arc<T> {
 
     fn rate_limits(&self) -> &botticelli_rate_limit::RateLimitConfig {
         (**self).rate_limits()
+    }
+
+    async fn stream_generate(
+        &self,
+        req: &GenerateRequest,
+    ) -> BotticelliResult<Option<Pin<Box<dyn Stream<Item = BotticelliResult<StreamChunk>> + Send>>>>
+    {
+        (**self).stream_generate(req).await
     }
 }

@@ -11,16 +11,26 @@ use serde::{Deserialize, Serialize};
     Deserialize,
     derive_builder::Builder,
     derive_getters::Getters,
+    derive_new::new,
 )]
 #[builder(setter(into))]
 pub struct StreamChunk {
     /// Incremental content (usually partial text).
     content: botticelli_core::Output,
-    /// Whether this is the final chunk.
+    /// Whether this is the final chunk (stream is exhausted).
     is_final: bool,
+    /// Whether this chunk is reasoning/thinking content (not part of the final answer).
+    ///
+    /// Models like DeepSeek-R1 and Qwen3 emit chain-of-thought tokens before the
+    /// answer.  Thinking chunks should be displayed differently (e.g. dimmed) and
+    /// are not included in the canonical response.
+    #[builder(default)]
+    #[new(default)]
+    is_thinking: bool,
     /// Optional finish reason if final.
     #[serde(skip_serializing_if = "Option::is_none")]
     #[builder(default)]
+    #[new(default)]
     finish_reason: Option<FinishReason>,
 }
 

@@ -4,6 +4,7 @@ use crate::{
 };
 #[cfg(feature = "metrics")]
 use crate::{MetricsCollector, create_metrics_router};
+use botticelli_core::PostingJitter;
 use botticelli_error::{BotticelliError, BotticelliResult, ServerError, ServerErrorKind};
 use botticelli_interface::BotticelliDriver;
 use ractor::{Actor, ActorRef};
@@ -168,7 +169,7 @@ impl BotServer {
         // Spawn posting bot
         let posting_args = PostingBotArgs::new(
             posting_interval,
-            0.2,
+            PostingJitter::new(10, 42),
             narratives_dir.join("posting.toml"),
             "post_approved".to_string(),
         );

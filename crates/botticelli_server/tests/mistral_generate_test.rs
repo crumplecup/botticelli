@@ -6,13 +6,18 @@
 //!
 //! Run with: `just test-api`
 
+#[cfg(feature = "mistral")]
 use botticelli_core::{GenerateRequest, Input, Message, Role};
+#[cfg(feature = "mistral")]
 use botticelli_interface::BotticelliDriver;
+#[cfg(feature = "mistral")]
 use botticelli_server::{MistralConfigBuilder, MistralDriver};
 
+#[cfg(feature = "mistral")]
 const MODEL: &str = "Qwen/Qwen2.5-Coder-0.5B-Instruct";
 
 #[tokio::test]
+#[cfg(feature = "mistral")]
 #[cfg_attr(not(feature = "api"), ignore)]
 async fn test_local_model_loads_and_generates() {
     let config = MistralConfigBuilder::default()

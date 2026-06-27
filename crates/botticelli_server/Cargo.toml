@@ -21,6 +21,7 @@ mistralrs = { workspace = true, optional = true }
 
 anyhow.workspace = true
 async-trait.workspace = true
+futures.workspace = true
 clap.workspace = true
 tokio.workspace = true
 serde.workspace = true
@@ -34,8 +35,8 @@ derive-getters.workspace = true
 derive_builder.workspace = true
 derive-new.workspace = true
 
-cron = "0.12"
-rand = "0.8"
+cron = { workspace = true }
+elicitation = { workspace = true }
 
 # Observability
 opentelemetry.workspace = true

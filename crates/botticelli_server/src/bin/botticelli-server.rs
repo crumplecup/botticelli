@@ -7,9 +7,6 @@
 //! botticelli-server ollama  --model llama3.2
 //! ```
 
-#[cfg(not(any(feature = "mistral", feature = "ollama")))]
-compile_error!("botticelli-server requires at least one backend feature: `mistral` or `ollama`");
-
 use anyhow::Context as _;
 use botticelli_interface::BotticelliDriver;
 use botticelli_server::BotServer;
@@ -82,6 +79,14 @@ enum Backend {
         #[arg(long)]
         model: String,
     },
+
+    /// Placeholder used when no backend features were compiled in.
+    ///
+    /// Always hidden from help; produces a clear runtime error rather than
+    /// an opaque compile-time failure.
+    #[cfg(not(any(feature = "mistral", feature = "ollama")))]
+    #[command(hide = true)]
+    NoBackend,
 }
 
 #[tokio::main]
@@ -158,6 +163,17 @@ async fn main() -> anyhow::Result<()> {
 
             let client = OllamaClient::new_with_url(model.clone(), url.clone())?;
             Arc::new(client)
+        }
+
+        #[cfg(not(any(feature = "mistral", feature = "ollama")))]
+        Backend::NoBackend => {
+            anyhow::bail!(
+                "botticelli-server was compiled without any inference backend.\n\
+                 Rebuild with at least one backend feature:\n\
+                 \n\
+                 cargo build -p botticelli_server --features mistral\n\
+                 cargo build -p botticelli_server --features ollama"
+            );
         }
     };
 

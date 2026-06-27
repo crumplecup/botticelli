@@ -7,13 +7,14 @@
 
 use async_trait::async_trait;
 use botticelli_core::{GenerateRequest, GenerateResponse, Input, Output, Role, StopReason};
-use botticelli_error::{BotticelliResult, ServerError, ServerErrorKind};
-use botticelli_interface::BotticelliDriver;
+use botticelli_error::{BotticelliError, BotticelliResult, ServerError, ServerErrorKind};
+use botticelli_interface::{BotticelliDriver, StreamChunk};
 use botticelli_rate_limit::RateLimitConfig;
 use derive_builder::Builder;
-use mistralrs::{Model, ModelBuilder, TextMessageRole, TextMessages};
+use mistralrs::{Model, ModelBuilder, Response, TextMessageRole, TextMessages};
+use std::pin::Pin;
 use std::time::Instant;
-use tracing::{debug, info, instrument};
+use tracing::{debug, error, info, instrument, warn};
 
 /// Configuration for the embedded mistral-rs backend.
 #[derive(Debug, Clone, Builder)]
@@ -26,10 +27,10 @@ pub struct MistralConfig {
 
 /// Embedded inference backend backed by mistral-rs.
 ///
-/// Wraps a mistral-rs [`Model`], which internally runs the inference engine
-/// in its own task. Construct with [`MistralDriver::load`].
+/// Wraps a mistral-rs [`Model`] behind an `Arc` so the handle can be moved into
+/// spawned tasks for streaming without requiring `Model: Clone`.
 pub struct MistralDriver {
-    model: Model,
+    model: std::sync::Arc<Model>,
     config: MistralConfig,
     rate_limits: RateLimitConfig,
 }
@@ -68,7 +69,7 @@ impl MistralDriver {
 
         let rate_limits = RateLimitConfig::unlimited("mistral-rs");
         Ok(Self {
-            model,
+            model: std::sync::Arc::new(model),
             config,
             rate_limits,
         })
@@ -156,5 +157,186 @@ impl BotticelliDriver for MistralDriver {
 
     fn rate_limits(&self) -> &RateLimitConfig {
         &self.rate_limits
+    }
+
+    #[instrument(skip(self, req), fields(messages = req.messages().len()))]
+    async fn stream_generate(
+        &self,
+        req: &GenerateRequest,
+    ) -> BotticelliResult<
+        Option<Pin<Box<dyn futures::stream::Stream<Item = BotticelliResult<StreamChunk>> + Send>>>,
+    > {
+        // Build thinking-enabled messages and a plain fallback for models that
+        // reject the thinking flag (e.g. non-reasoning GGUF quantisations).
+        let mut messages_thinking = TextMessages::new().enable_thinking(true);
+        let mut messages_plain = TextMessages::new();
+        for msg in req.messages() {
+            let text = inputs_to_text(msg.content());
+            messages_thinking =
+                messages_thinking.add_message(to_mistral_role(msg.role()), text.clone());
+            messages_plain = messages_plain.add_message(to_mistral_role(msg.role()), text);
+        }
+
+        info!(
+            message_count = req.messages().len(),
+            "Starting streaming generate"
+        );
+
+        let model = std::sync::Arc::clone(&self.model);
+        let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<BotticelliResult<StreamChunk>>();
+
+        tokio::spawn(async move {
+            let inner: BotticelliResult<()> = (async {
+                // Try thinking-enabled first; fall back to plain if the model rejects it.
+                let mut mistral_stream = match model.stream_chat_request(messages_thinking).await {
+                    Ok(s) => {
+                        info!("Stream session open (thinking enabled)");
+                        s
+                    }
+                    Err(e) => {
+                        warn!(error = %e, "Thinking-enabled stream failed — retrying without thinking");
+                        match model.stream_chat_request(messages_plain).await {
+                            Ok(s) => {
+                                info!("Stream session open (thinking disabled, plain fallback)");
+                                s
+                            }
+                            Err(e2) => {
+                                return Err(ServerError::new(ServerErrorKind::Api(format!(
+                                    "stream init failed: {e2}"
+                                )))
+                                .into());
+                            }
+                        }
+                    }
+                };
+
+                // mistral-rs separates reasoning from answer via Delta fields:
+                //   delta.reasoning_content → thinking tokens (is_thinking = true)
+                //   delta.content           → answer tokens  (is_thinking = false)
+                // No <think> tag parsing needed — the driver handles the split.
+                let mut chunk_count = 0usize;
+                let mut thinking_chunks = 0usize;
+                let mut answer_chunks = 0usize;
+
+                info!("Entering mistral-rs stream poll loop");
+
+                while let Some(response) = mistral_stream.next().await {
+                    let delta = match response {
+                        Response::Chunk(c) => {
+                            match c.choices.into_iter().next().map(|ch| ch.delta) {
+                                Some(d) => d,
+                                None => {
+                                    debug!("Chunk with no choices — skipping");
+                                    continue;
+                                }
+                            }
+                        }
+                        Response::Done(r) => {
+                            info!(
+                                usage = ?r.usage,
+                                "mistral-rs stream Done response received"
+                            );
+                            continue;
+                        }
+                        _ => {
+                            warn!("Unexpected non-Chunk/non-Done mistral-rs response variant — skipping");
+                            continue;
+                        }
+                    };
+
+                    chunk_count += 1;
+                    if chunk_count == 1 {
+                        info!("First streaming chunk received from mistral-rs");
+                    }
+
+                    // Emit reasoning content as thinking chunks.
+                    if let Some(thinking_text) = delta.reasoning_content
+                        && !thinking_text.is_empty()
+                    {
+                        thinking_chunks += 1;
+                        debug!(
+                            chunk_count,
+                            thinking_chunks,
+                            text_len = thinking_text.len(),
+                            "Emitting thinking chunk"
+                        );
+                        let chunk = StreamChunk::builder()
+                            .content(Output::Text(thinking_text))
+                            .is_final(false)
+                            .is_thinking(true)
+                            .build()
+                            .map_err(|e| {
+                                ServerError::new(ServerErrorKind::Api(format!(
+                                    "thinking chunk build failed: {e}"
+                                )))
+                            })?;
+                        if tx.send(Ok(chunk)).is_err() {
+                            warn!("Receiver dropped during thinking phase");
+                            return Ok(());
+                        }
+                    }
+
+                    // Emit answer content as regular chunks.
+                    if let Some(answer_text) = delta.content
+                        && !answer_text.is_empty()
+                    {
+                        answer_chunks += 1;
+                        debug!(
+                            chunk_count,
+                            answer_chunks,
+                            text_len = answer_text.len(),
+                            "Emitting answer chunk"
+                        );
+                        let chunk = StreamChunk::builder()
+                            .content(Output::Text(answer_text))
+                            .is_final(false)
+                            .build()
+                            .map_err(|e| {
+                                ServerError::new(ServerErrorKind::Api(format!(
+                                    "answer chunk build failed: {e}"
+                                )))
+                            })?;
+                        if tx.send(Ok(chunk)).is_err() {
+                            warn!("Receiver dropped during answer phase");
+                            return Ok(());
+                        }
+                    }
+                }
+
+                info!(
+                    chunk_count,
+                    thinking_chunks,
+                    answer_chunks,
+                    "Mistral stream exhausted"
+                );
+
+                // Final sentinel — receiver uses this to mark the stream done.
+                let sentinel = StreamChunk::builder()
+                    .content(Output::Text(String::new()))
+                    .is_final(true)
+                    .build()
+                    .map_err(|e| {
+                        ServerError::new(ServerErrorKind::Api(format!(
+                            "sentinel build failed: {e}"
+                        )))
+                    })?;
+                let _ = tx.send(Ok(sentinel));
+                info!("Final sentinel chunk sent");
+
+                Ok::<(), BotticelliError>(())
+            })
+            .await;
+
+            if let Err(e) = inner {
+                error!(error = %e, "Streaming worker failed");
+                let _ = tx.send(Err(e));
+            }
+        });
+
+        let stream = futures::stream::unfold(rx, |mut rx| async move {
+            rx.recv().await.map(|item| (item, rx))
+        });
+
+        Ok(Some(Box::pin(stream)))
     }
 }

@@ -1,8 +1,9 @@
+use botticelli_core::PostingJitter;
 use botticelli_interface::BotticelliDriver;
 use botticelli_narrative::{MultiNarrative, NarrativeExecutor};
 use derive_new::new;
+use elicitation::Generator;
 use ractor::{Actor, ActorProcessingErr, ActorRef};
-use rand::Rng;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -25,8 +26,8 @@ pub enum PostingMessage {
 pub struct PostingBotArgs {
     /// Base interval between posts
     pub base_interval: Duration,
-    /// Jitter percentage (0.0 to 1.0)
-    pub jitter_percent: f64,
+    /// Jitter configuration for posting timing
+    pub jitter: PostingJitter,
     /// Path to posting narrative
     pub narrative_path: PathBuf,
     /// Narrative name within the file
@@ -48,17 +49,12 @@ impl PostingBot {
     /// Calculate next posting delay with jitter.
     #[instrument(skip(self))]
     fn calculate_next_delay(&self) -> Duration {
-        let mut rng = rand::thread_rng();
-        let jitter_range =
-            (self.args.base_interval.as_secs_f64() * self.args.jitter_percent) as i64;
-        let jitter = rng.gen_range(-jitter_range..=jitter_range);
-        let next_secs = (self.args.base_interval.as_secs() as i64 + jitter).max(60);
-
-        let delay = Duration::from_secs(next_secs as u64);
+        let offset = self.args.jitter.make_generator().generate();
+        let delay = (self.args.base_interval + offset).max(Duration::from_secs(60));
         debug!(
             base_secs = self.args.base_interval.as_secs(),
-            jitter_secs = jitter,
-            next_secs,
+            offset_secs = offset.as_secs(),
+            delay_secs = delay.as_secs(),
             "Calculated next posting delay"
         );
         delay
@@ -110,8 +106,8 @@ impl Actor for PostingBot {
         args: PostingBotArgs,
     ) -> Result<Self::State, ActorProcessingErr> {
         info!(
-            interval_hours = ?args.base_interval.as_secs() / 3600,
-            jitter_percent = args.jitter_percent,
+            interval_hours = args.base_interval.as_secs() / 3600,
+            jitter_max_minutes = args.jitter.max_minutes,
             narrative = %args.narrative_name,
             "PostingBot starting"
         );

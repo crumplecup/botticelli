@@ -1,30 +1,24 @@
 use botticelli_core::{init_observability, shutdown_observability};
 
+fn init_succeeds_or_already_set() {
+    match init_observability() {
+        Ok(()) => {}
+        Err(e) if e.to_string().contains("already been set") => {
+            // A prior test already installed the global subscriber — that's fine.
+        }
+        Err(e) => panic!("init_observability failed unexpectedly: {e}"),
+    }
+}
+
 #[test]
 fn test_init_observability_without_metrics() {
-    // Test that observability initializes successfully with metrics disabled
-    let result = init_observability();
-    assert!(
-        result.is_ok(),
-        "Observability initialization should succeed without metrics feature: {:?}",
-        result.err()
-    );
-
-    // Clean up
+    init_succeeds_or_already_set();
     shutdown_observability();
 }
 
 #[test]
 #[cfg(feature = "metrics")]
 fn test_init_observability_with_metrics() {
-    // Test that observability initializes successfully with metrics enabled
-    let result = init_observability();
-    assert!(
-        result.is_ok(),
-        "Observability initialization should succeed with metrics feature: {:?}",
-        result.err()
-    );
-
-    // Clean up
+    init_succeeds_or_already_set();
     shutdown_observability();
 }
